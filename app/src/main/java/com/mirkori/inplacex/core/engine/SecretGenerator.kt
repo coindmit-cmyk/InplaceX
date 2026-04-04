@@ -1,7 +1,6 @@
 package com.mirkori.inplacex.core.engine
 
 import com.mirkori.inplacex.core.model.GameConfig
-import kotlin.random.Random
 
 object SecretGenerator {
 
