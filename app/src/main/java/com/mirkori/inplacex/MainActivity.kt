@@ -5,12 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import com.mirkori.inplacex.core.engine.GameEngine
 import com.mirkori.inplacex.core.model.AnalysisBoardState
+import com.mirkori.inplacex.core.model.AnalysisCellState
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameStatus
 import com.mirkori.inplacex.core.model.GameTab
@@ -48,17 +52,32 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(AnalysisBoardState.create(config.codeLength))
                 }
 
-                val statusText = when (gameState.status) {
-                    GameStatus.IN_PROGRESS -> "Игра идёт"
-                    GameStatus.WON -> "Победа"
-                    GameStatus.LOST -> "Поражение"
+                var startTime by remember {
+                    mutableLongStateOf(System.currentTimeMillis())
                 }
+
+                var elapsedSeconds by remember {
+                    mutableLongStateOf(0L)
+                }
+
+                LaunchedEffect(startTime) {
+                    while (true) {
+                        elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000
+                        delay(1000)
+                    }
+                }
+
+                val elapsedTime = "%02d:%02d".format(
+                    elapsedSeconds / 60,
+                    elapsedSeconds % 60
+                )
 
                 GameScreen(
                     paddingValues = PaddingValues(),
                     currentTab = currentTab,
                     onTabChange = { currentTab = it },
-                    knownDigits = List(config.codeLength) { null },
+                    elapsedTime = elapsedTime,
+                    knownDigits = buildKnownDigitsFromAnalysis(analysisBoard),
                     currentGuess = currentGuess,
                     onGuessChange = { value ->
                         currentGuess = value
@@ -67,7 +86,11 @@ class MainActivity : ComponentActivity() {
                     },
                     attemptLimit = config.attemptLimit,
                     attemptsUsed = gameState.attempts.size,
-                    statusText = statusText,
+                    statusText = when (gameState.status) {
+                        GameStatus.IN_PROGRESS -> "Игра идёт"
+                        GameStatus.WON -> "Победа"
+                        GameStatus.LOST -> "Поражение"
+                    },
                     historyLines = gameState.attempts.map {
                         "${it.guess} -> ${it.exactMatches}"
                     },
@@ -84,12 +107,29 @@ class MainActivity : ComponentActivity() {
                         currentGuess = ""
                         analysisBoard = AnalysisBoardState.create(config.codeLength)
                         currentTab = GameTab.HISTORY
+                        startTime = System.currentTimeMillis()
                     },
                     isSubmitEnabled = currentGuess.length == config.codeLength &&
-                            gameState.status == GameStatus.IN_PROGRESS,
+                        gameState.status == GameStatus.IN_PROGRESS,
                     debugSecret = gameState.secret
                 )
             }
+        }
+    }
+}
+
+private fun buildKnownDigitsFromAnalysis(
+    analysisBoard: AnalysisBoardState
+): List<Char?> {
+    return List(analysisBoard.codeLength) { position ->
+        val yesDigits = (0..9).filter { digit ->
+            analysisBoard.cells[digit][position] == AnalysisCellState.YES
+        }
+
+        if (yesDigits.size == 1) {
+            yesDigits.first().digitToChar()
+        } else {
+            null
         }
     }
 }

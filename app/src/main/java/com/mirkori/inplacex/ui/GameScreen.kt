@@ -39,6 +39,7 @@ fun GameScreen(
     paddingValues: PaddingValues,
     currentTab: GameTab,
     onTabChange: (GameTab) -> Unit,
+    elapsedTime: String,
     knownDigits: List<Char?>,
     currentGuess: String,
     onGuessChange: (String) -> Unit,
@@ -59,11 +60,24 @@ fun GameScreen(
             .padding(paddingValues)
     ) {
         KnownDigitsRow(
+
             knownDigits = knownDigits,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
+
+
         )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Попытки: $attemptsUsed / $attemptLimit")
+            Text("Время: $elapsedTime")
+        }
 
         when (currentTab) {
             GameTab.HISTORY -> {
@@ -205,65 +219,48 @@ private fun AnalysisBlock(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Аналитика")
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .verticalScroll(rememberScrollState())
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+
+                // 🔹 Верхняя строка (позиции)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(board.codeLength) { position ->
                         Box(
                             modifier = Modifier
-                                .width(36.dp)
-                                .size(36.dp),
+                                .size(36.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.outline),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("#")
-                        }
-
-                        repeat(board.codeLength) { position ->
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .border(1.dp, MaterialTheme.colorScheme.outline),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("${position + 1}")
-                            }
+                            Text("${position + 1}")
                         }
                     }
+                }
 
-                    repeat(10) { digit ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // 🔹 Основная таблица
+                repeat(10) { digit ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(board.codeLength) { position ->
+                            val state = board.cells[digit][position]
+
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .border(1.dp, MaterialTheme.colorScheme.outline),
+                                    .background(cellColor(state))
+                                    .border(1.dp, MaterialTheme.colorScheme.outline)
+                                    .clickable {
+                                        onCellClick(digit, position)
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("$digit")
-                            }
-
-                            repeat(board.codeLength) { position ->
-                                val state = board.cells[digit][position]
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .background(cellColor(state))
-                                        .border(1.dp, MaterialTheme.colorScheme.outline)
-                                        .clickable {
-                                            onCellClick(digit, position)
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(cellLabel(state))
-                                }
                             }
                         }
                     }
