@@ -4,14 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import com.mirkori.inplacex.core.engine.GameEngine
 import com.mirkori.inplacex.core.model.AnalysisBoardState
 import com.mirkori.inplacex.core.model.AnalysisCellState
@@ -20,6 +19,7 @@ import com.mirkori.inplacex.core.model.GameStatus
 import com.mirkori.inplacex.core.model.GameTab
 import com.mirkori.inplacex.ui.GameScreen
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,47 +72,44 @@ class MainActivity : ComponentActivity() {
                     elapsedSeconds % 60
                 )
 
-                GameScreen(
-                    paddingValues = PaddingValues(),
-                    currentTab = currentTab,
-                    onTabChange = { currentTab = it },
-                    elapsedTime = elapsedTime,
-                    knownDigits = buildKnownDigitsFromAnalysis(analysisBoard),
-                    currentGuess = currentGuess,
-                    onGuessChange = { value ->
-                        currentGuess = value
-                            .filter { it.isDigit() }
-                            .take(config.codeLength)
-                    },
-                    attemptLimit = config.attemptLimit,
-                    attemptsUsed = gameState.attempts.size,
-                    statusText = when (gameState.status) {
-                        GameStatus.IN_PROGRESS -> "Игра идёт"
-                        GameStatus.WON -> "Победа"
-                        GameStatus.LOST -> "Поражение"
-                    },
-                    historyLines = gameState.attempts.map {
-                        "${it.guess} -> ${it.exactMatches}"
-                    },
-                    analysisBoard = analysisBoard,
-                    onAnalysisCellClick = { digit, position ->
-                        analysisBoard = analysisBoard.toggleCell(digit, position)
-                    },
-                    onSubmitGuess = {
-                        gameState = GameEngine.makeGuess(gameState, currentGuess)
-                        currentGuess = ""
-                    },
-                    onRestart = {
-                        gameState = GameEngine.createNewGame(config)
-                        currentGuess = ""
-                        analysisBoard = AnalysisBoardState.create(config.codeLength)
-                        currentTab = GameTab.HISTORY
-                        startTime = System.currentTimeMillis()
-                    },
-                    isSubmitEnabled = currentGuess.length == config.codeLength &&
-                        gameState.status == GameStatus.IN_PROGRESS,
-                    debugSecret = gameState.secret
-                )
+                Scaffold { innerPadding ->
+                    GameScreen(
+                        paddingValues = innerPadding,
+                        currentTab = currentTab,
+                        onTabChange = { currentTab = it },
+                        elapsedTime = elapsedTime,
+                        knownDigits = buildKnownDigitsFromAnalysis(analysisBoard),
+                        currentGuess = currentGuess,
+                        onGuessChange = { value ->
+                            currentGuess = value
+                                .filter { it.isDigit() }
+                                .take(config.codeLength)
+                        },
+                        attemptLimit = config.attemptLimit,
+                        attemptsUsed = gameState.attempts.size,
+                        historyLines = gameState.attempts.map {
+                            "${it.guess} -> ${it.exactMatches}"
+                        },
+                        analysisBoard = analysisBoard,
+                        onAnalysisCellClick = { digit, position ->
+                            analysisBoard = analysisBoard.toggleCell(digit, position)
+                        },
+                        onSubmitGuess = {
+                            gameState = GameEngine.makeGuess(gameState, currentGuess)
+                            currentGuess = ""
+                        },
+                        onRestart = {
+                            gameState = GameEngine.createNewGame(config)
+                            currentGuess = ""
+                            analysisBoard = AnalysisBoardState.create(config.codeLength)
+                            currentTab = GameTab.HISTORY
+                            startTime = System.currentTimeMillis()
+                        },
+                        isSubmitEnabled = currentGuess.length == config.codeLength &&
+                            gameState.status == GameStatus.IN_PROGRESS,
+                        debugSecret = gameState.secret
+                    )
+                }
             }
         }
     }

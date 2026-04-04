@@ -9,22 +9,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +48,6 @@ fun GameScreen(
     onGuessChange: (String) -> Unit,
     attemptLimit: Int,
     attemptsUsed: Int,
-    statusText: String,
     historyLines: List<String>,
     analysisBoard: AnalysisBoardState,
     onAnalysisCellClick: (digit: Int, position: Int) -> Unit,
@@ -54,42 +56,39 @@ fun GameScreen(
     isSubmitEnabled: Boolean,
     debugSecret: String
 ) {
+    val safeTopBottomPadding = WindowInsets.safeDrawing.asPaddingValues()
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
+            .padding(top = safeTopBottomPadding.calculateTopPadding())
     ) {
         KnownDigitsRow(
-
             knownDigits = knownDigits,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
-
-
         )
 
-        Row(
+        MatchInfoRow(
+            attemptsUsed = attemptsUsed,
+            attemptLimit = attemptLimit,
+            elapsedTime = elapsedTime,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Попытки: $attemptsUsed / $attemptLimit")
-            Text("Время: $elapsedTime")
-        }
+                .padding(horizontal = 12.dp)
+        )
 
         when (currentTab) {
             GameTab.HISTORY -> {
                 HistoryBlock(
-                    attemptLimit = attemptLimit,
-                    attemptsUsed = attemptsUsed,
-                    statusText = statusText,
                     historyLines = historyLines,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 12.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
 
@@ -100,7 +99,7 @@ fun GameScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 12.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }
@@ -125,7 +124,8 @@ fun GameScreen(
 
         BottomNavBar(
             currentTab = currentTab,
-            onTabChange = onTabChange
+            onTabChange = onTabChange,
+            modifier = Modifier.padding(bottom = navBarPadding.calculateBottomPadding())
         )
     }
 }
@@ -160,10 +160,23 @@ private fun KnownDigitsRow(
 }
 
 @Composable
-private fun HistoryBlock(
-    attemptLimit: Int,
+private fun MatchInfoRow(
     attemptsUsed: Int,
-    statusText: String,
+    attemptLimit: Int,
+    elapsedTime: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("Попытки: $attemptsUsed / $attemptLimit")
+        Text("Время: $elapsedTime")
+    }
+}
+
+@Composable
+private fun HistoryBlock(
     historyLines: List<String>,
     modifier: Modifier = Modifier
 ) {
@@ -178,8 +191,6 @@ private fun HistoryBlock(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text("История")
-            Text("Попытки: $attemptsUsed / $attemptLimit")
-            Text("Статус: $statusText")
 
             HorizontalDivider()
 
@@ -223,14 +234,14 @@ private fun AnalysisBlock(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Аналитика")
-
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             Column(
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-                // 🔹 Верхняя строка (позиции)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(board.codeLength) { position ->
                         Box(
@@ -244,7 +255,6 @@ private fun AnalysisBlock(
                     }
                 }
 
-                // 🔹 Основная таблица
                 repeat(10) { digit ->
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         repeat(board.codeLength) { position ->
@@ -337,9 +347,10 @@ private fun DebugBlock(
 @Composable
 private fun BottomNavBar(
     currentTab: GameTab,
-    onTabChange: (GameTab) -> Unit
+    onTabChange: (GameTab) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    NavigationBar {
+    NavigationBar(modifier = modifier) {
         NavigationBarItem(
             selected = currentTab == GameTab.HISTORY,
             onClick = { onTabChange(GameTab.HISTORY) },
@@ -362,14 +373,5 @@ private fun cellColor(state: AnalysisCellState): Color {
         AnalysisCellState.NO -> Color(0xFFFFCDD2)
         AnalysisCellState.MAYBE -> Color(0xFFFFF59D)
         AnalysisCellState.YES -> Color(0xFFC8E6C9)
-    }
-}
-
-private fun cellLabel(state: AnalysisCellState): String {
-    return when (state) {
-        AnalysisCellState.EMPTY -> ""
-        AnalysisCellState.NO -> "X"
-        AnalysisCellState.MAYBE -> "?"
-        AnalysisCellState.YES -> "✓"
     }
 }
