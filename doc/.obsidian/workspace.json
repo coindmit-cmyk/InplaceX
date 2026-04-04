@@ -11,10 +11,14 @@
             "id": "a72fd0828e5d8be3",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Без названия.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "Новая вкладка"
+              "title": "Без названия"
             }
           }
         ]
@@ -176,8 +180,9 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "c3f92072a7f2da29",
+  "active": "a72fd0828e5d8be3",
   "lastOpenFiles": [
+    "Без названия.md",
     "Image/Пример вида",
     "Image"
   ]
