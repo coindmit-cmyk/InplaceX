@@ -1,0 +1,69 @@
+
+ВСТАВЬ В GameFieldScreen.kt
+
+1. Найди место где объявлен currentGuess:
+
+var currentGuess by remember { mutableStateOf("") }
+
+НИЖЕ добавь функцию:
+
+fun rebuildGuessFromBoard() {
+    val newGuess = CharArray(params.lenSecret) { '_' }
+
+    for (digit in 0..9) {
+        for (pos in 0 until params.lenSecret) {
+            if (board[digit][pos] == CellMark.YES) {
+                newGuess[pos] = ('0' + digit)
+            }
+        }
+    }
+
+    currentGuess = newGuess.map { if (it == '_') "" else it.toString() }.joinToString("")
+}
+
+---
+
+2. Найди DigitsModule → onApplyToolToBoard
+
+ЗАМЕНИ НА:
+
+onApplyToolToBoard = { digit ->
+    val mark = when (selectedTool) {
+        TableTool.NO -> CellMark.NO
+        TableTool.MAYBE -> CellMark.MAYBE
+        TableTool.YES -> CellMark.YES
+    }
+
+    repeat(params.lenSecret) { position ->
+        board[digit.digitToInt()][position] = mark
+    }
+
+    if (selectedTool == TableTool.YES) {
+        rebuildGuessFromBoard()
+    }
+}
+
+---
+
+3. (ВАЖНО) Добавь очистку конфликтов
+
+ПЕРЕД установкой YES добавь:
+
+if (selectedTool == TableTool.YES) {
+    repeat(10) { d ->
+        board[d][position] = CellMark.EMPTY
+    }
+}
+
+(иначе будет несколько YES в колонке)
+
+---
+
+РЕЗУЛЬТАТ:
+
+Теперь:
+- ты нажимаешь Y
+- кликаешь цифру
+- она сразу появляется в поле ввода
+- таблица начинает реально работать как помощник
+

@@ -2,6 +2,7 @@ package com.mirkori.inplacex.ui.screens.game
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
@@ -32,10 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.Dp
-import androidx.compose.foundation.layout.*
+import androidx.compose.ui.unit.dp
+import kotlin.random.Random
 
 private enum class TableTool { NO, MAYBE, YES }
 
@@ -56,7 +58,62 @@ fun GameFieldScreen(
     var currentGuess by remember { mutableStateOf("") }
     var selectedTool by remember { mutableStateOf(TableTool.NO) }
     val board = remember(params.lenSecret) {
-        List(10) { MutableList(params.lenSecret) { CellMark.EMPTY } }
+        List(10) {
+            mutableStateListOf<CellMark>().apply {
+                repeat(params.lenSecret) { add(CellMark.EMPTY) }
+            }
+        }
+    }
+
+    var secret by remember(params.lenSecret, params.typeGame) {
+        mutableStateOf(generateSecret(params.lenSecret))
+    }
+    var statusText by remember { mutableStateOf("Выбери инструмент и отмечай таблицу") }
+
+    fun clearBoard() {
+        repeat(10) { digit ->
+            repeat(params.lenSecret) { position ->
+                board[digit][position] = CellMark.EMPTY
+            }
+        }
+    }
+
+    fun rebuildGuessFromBoard() {
+        val chars = MutableList(params.lenSecret) { ' ' }
+        repeat(params.lenSecret) { position ->
+            val yesDigit = (0..9).firstOrNull { digit ->
+                board[digit][position] == CellMark.YES
+            }
+            if (yesDigit != null) {
+                chars[position] = ('0'.code + yesDigit).toChar()
+            }
+        }
+        currentGuess = chars.joinToString("")
+    }
+
+    fun applyMarkAt(digit: Int, position: Int) {
+        when (selectedTool) {
+            TableTool.NO -> {
+                board[digit][position] =
+                    if (board[digit][position] == CellMark.NO) CellMark.EMPTY else CellMark.NO
+            }
+
+            TableTool.MAYBE -> {
+                board[digit][position] =
+                    if (board[digit][position] == CellMark.MAYBE) CellMark.EMPTY else CellMark.MAYBE
+            }
+
+            TableTool.YES -> {
+                val alreadyYes = board[digit][position] == CellMark.YES
+                repeat(10) { d ->
+                    board[d][position] = CellMark.EMPTY
+                }
+                if (!alreadyYes) {
+                    board[digit][position] = CellMark.YES
+                }
+                rebuildGuessFromBoard()
+            }
+        }
     }
 
     BoxWithConstraints(
@@ -79,14 +136,14 @@ fun GameFieldScreen(
         val outerVerticalPadding = screenHeight * 0.004f
         val blockGap = screenHeight * 0.003f
         val middleGap = screenWidth * 0.008f
-
-        val topHeight = screenHeight * 0.080f
+        val topHeight = screenHeight * 0.095f
         val infoHeight = screenHeight * 0.068f
-        val middleHeight = screenHeight * 0.520f
+        val middleHeight = screenHeight * 0.505f
         val toolsHeight = screenHeight * 0.060f
         val inputHeight = screenHeight * 0.085f
         val digitsHeight = screenHeight * 0.070f
-        val checkHeight = screenHeight * 0.065f
+        val checkHeight = screenHeight * 0.075f
+        var autoExclude by remember { mutableStateOf(true) }
 
         Column(
             modifier = Modifier
@@ -108,7 +165,9 @@ fun GameFieldScreen(
                 TopModule(
                     title = title,
                     params = params,
-                    onBack = onBack
+                    onBack = onBack,
+                    debugSecret = secret,
+                    statusText = statusText
                 )
             }
 
@@ -120,7 +179,10 @@ fun GameFieldScreen(
                 tonalElevation = 2.dp,
                 color = Color.White.copy(alpha = 0.92f)
             ) {
-                GameInfoModule(params = params)
+                GameInfoModule(
+                    params = params,
+                    movesDone = attempts.size
+                )
             }
 
             Row(
@@ -150,7 +212,10 @@ fun GameFieldScreen(
                 ) {
                     VariantsModule(
                         lenSecret = params.lenSecret,
-                        board = board
+                        board = board,
+                        onCellClick = { digit, position ->
+                            applyMarkAt(digit, position)
+                        }
                     )
                 }
             }
@@ -166,7 +231,14 @@ fun GameFieldScreen(
                 ToolsModule(
                     useHints = params.useHints,
                     selectedTool = selectedTool,
-                    onToolSelect = { selectedTool = it }
+                    onToolSelect = {
+                        selectedTool = it
+                        statusText = when (it) {
+                            TableTool.NO -> "N: цифры нет в позиции"
+                            TableTool.MAYBE -> "M: цифра возможна в позиции"
+                            TableTool.YES -> "Y: точная цифра в позиции"
+                        }
+                    }
                 )
             }
 
@@ -197,24 +269,28 @@ fun GameFieldScreen(
                     currentGuess = currentGuess,
                     lenSecret = params.lenSecret,
                     onDigitClick = { digit ->
-                        if (currentGuess.length < params.lenSecret) {
-                            currentGuess += digit
+
+                        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
+
+                        // ищем первую пустую позицию
+                        val index = chars.indexOfFirst { it == ' ' }
+
+                        if (index != -1) {
+                            chars[index] = digit[0]
                         }
+
+                        currentGuess = String(chars)
                     },
                     onBackspace = {
-                        if (currentGuess.isNotEmpty()) {
-                            currentGuess = currentGuess.dropLast(1)
+                        val chars = currentGuess.toCharArray()
+
+                        val index = chars.indexOfLast { it != ' ' }
+
+                        if (index != -1) {
+                            chars[index] = ' '
                         }
-                    },
-                    onApplyToolToBoard = { digit ->
-                        val mark = when (selectedTool) {
-                            TableTool.NO -> CellMark.NO
-                            TableTool.MAYBE -> CellMark.MAYBE
-                            TableTool.YES -> CellMark.YES
-                        }
-                        repeat(params.lenSecret) { position ->
-                            board[digit.digitToInt()][position] = mark
-                        }
+
+                        currentGuess = String(chars)
                     }
                 )
             }
@@ -231,9 +307,31 @@ fun GameFieldScreen(
                     canCheck = currentGuess.length == params.lenSecret,
                     onCheck = {
                         if (currentGuess.length == params.lenSecret) {
-                            attempts.add("${currentGuess} → ?")
+                            val score = exactMatches(secret, currentGuess)
+                            attempts.add("${currentGuess} → ${score}")
+                            statusText = if (score == params.lenSecret) {
+                                "Угадал. Новое число сгенерировано"
+                            } else {
+                                "Совпадений: $score"
+                            }
+
+                            if (score == params.lenSecret) {
+                                secret = generateSecret(params.lenSecret)
+                                attempts.clear()
+                                clearBoard()
+                            }
+
                             currentGuess = ""
+                        } else {
+                            statusText = "Введите ${params.lenSecret} цифр"
                         }
+                    },
+                    onReset = {
+                        secret = generateSecret(params.lenSecret)
+                        attempts.clear()
+                        currentGuess = ""
+                        clearBoard()
+                        statusText = "Сгенерировано новое число"
                     }
                 )
             }
@@ -241,11 +339,25 @@ fun GameFieldScreen(
     }
 }
 
+private fun generateSecret(len: Int): String {
+    return buildString {
+        repeat(len) {
+            append(Random.nextInt(0, 10))
+        }
+    }
+}
+
+private fun exactMatches(secret: String, guess: String): Int {
+    return secret.indices.count { index -> secret[index] == guess[index] }
+}
+
 @Composable
 private fun TopModule(
     title: String,
     params: GameFieldParams,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    debugSecret: String,
+    statusText: String
 ) {
     Row(
         modifier = Modifier
@@ -273,13 +385,23 @@ private fun TopModule(
                 text = if (params.typeGame == TypeGame.RaceMatch) "RaceMatch" else "DuelMatch",
                 style = MaterialTheme.typography.bodySmall
             )
+            Text(
+                text = "DEBUG: $debugSecret",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFB00020)
+            )
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
 
 @Composable
 private fun GameInfoModule(
-    params: GameFieldParams
+    params: GameFieldParams,
+    movesDone: Int
 ) {
     Row(
         modifier = Modifier
@@ -291,7 +413,7 @@ private fun GameInfoModule(
         InfoChip("Hints", if (params.useHints) "ON" else "OFF", Modifier.weight(1f))
         InfoChip("T.All", if (params.timeAll == 0) "∞" else params.timeAll.toString(), Modifier.weight(1f))
         InfoChip("T.Move", if (params.timeMove == 0) "∞" else params.timeMove.toString(), Modifier.weight(1f))
-        InfoChip("Moves", if (params.limitMoves == 0) "∞" else params.limitMoves.toString(), Modifier.weight(1f))
+        InfoChip("Moves", movesDone.toString(), Modifier.weight(1f))
     }
 }
 
@@ -320,9 +442,7 @@ private fun InfoChip(
 }
 
 @Composable
-private fun AttemptsModule(
-    attempts: List<String>
-) {
+private fun AttemptsModule(attempts: List<String>) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -362,7 +482,8 @@ private fun AttemptsModule(
 @Composable
 private fun VariantsModule(
     lenSecret: Int,
-    board: List<MutableList<CellMark>>
+    board: List<List<CellMark>>,
+    onCellClick: (digit: Int, position: Int) -> Unit
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -386,7 +507,8 @@ private fun VariantsModule(
                             modifier = Modifier
                                 .size(cellSize)
                                 .background(board[digit][position].color, RoundedCornerShape(5.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(5.dp)),
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(5.dp))
+                                .clickable { onCellClick(digit, position) },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -482,6 +604,7 @@ private fun InputModule(
                 ) {
                     repeat(lenSecret) { index ->
                         val value = currentGuess.getOrNull(index)?.toString().orEmpty()
+
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -506,8 +629,7 @@ private fun DigitsModule(
     currentGuess: String,
     lenSecret: Int,
     onDigitClick: (String) -> Unit,
-    onBackspace: () -> Unit,
-    onApplyToolToBoard: (Char) -> Unit
+    onBackspace: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -522,7 +644,6 @@ private fun DigitsModule(
                     if (currentGuess.length < lenSecret) {
                         onDigitClick(digit.toString())
                     }
-                    onApplyToolToBoard(digit)
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -551,7 +672,8 @@ private fun DigitsModule(
 @Composable
 private fun CheckModule(
     canCheck: Boolean,
-    onCheck: () -> Unit
+    onCheck: () -> Unit,
+    onReset: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -559,16 +681,32 @@ private fun CheckModule(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Button(
-            onClick = onCheck,
-            enabled = canCheck,
-            modifier = Modifier.fillMaxWidth(0.70f)
+        Row(
+            modifier = Modifier.fillMaxWidth(0.92f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "Проверить",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelMedium
-            )
+            Button(
+                onClick = onCheck,
+                enabled = canCheck,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Проверить",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+
+            FilledTonalButton(
+                onClick = onReset,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Сброс",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
     }
 }
