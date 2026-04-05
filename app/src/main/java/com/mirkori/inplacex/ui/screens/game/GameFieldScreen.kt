@@ -2,7 +2,6 @@ package com.mirkori.inplacex.ui.screens.game
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,8 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
@@ -35,7 +33,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.*
 
 private enum class TableTool { NO, MAYBE, YES }
 
@@ -75,18 +75,18 @@ fun GameFieldScreen(
         val screenWidth = maxWidth
         val screenHeight = maxHeight
 
-        val outerHorizontalPadding = screenWidth * 0.015f
-        val outerVerticalPadding = screenHeight * 0.006f
-        val blockGap = screenHeight * 0.005f
-        val middleGap = screenWidth * 0.010f
+        val outerHorizontalPadding = screenWidth * 0.010f
+        val outerVerticalPadding = screenHeight * 0.004f
+        val blockGap = screenHeight * 0.003f
+        val middleGap = screenWidth * 0.008f
 
-        val topHeight = screenHeight * 0.082f
+        val topHeight = screenHeight * 0.080f
         val infoHeight = screenHeight * 0.068f
-        val middleHeight = screenHeight * 0.405f
+        val middleHeight = screenHeight * 0.520f
         val toolsHeight = screenHeight * 0.060f
-        val inputHeight = screenHeight * 0.078f
+        val inputHeight = screenHeight * 0.085f
         val digitsHeight = screenHeight * 0.070f
-        val checkHeight = screenHeight * 0.058f
+        val checkHeight = screenHeight * 0.065f
 
         Column(
             modifier = Modifier
@@ -131,7 +131,7 @@ fun GameFieldScreen(
             ) {
                 Surface(
                     modifier = Modifier
-                        .weight(0.42f)
+                        .weight(0.43f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
                     tonalElevation = 2.dp,
@@ -142,7 +142,7 @@ fun GameFieldScreen(
 
                 Surface(
                     modifier = Modifier
-                        .weight(0.58f)
+                        .weight(0.57f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
                     tonalElevation = 2.dp,
@@ -180,7 +180,8 @@ fun GameFieldScreen(
             ) {
                 InputModule(
                     lenSecret = params.lenSecret,
-                    currentGuess = currentGuess
+                    currentGuess = currentGuess,
+                    containerHeight = inputHeight
                 )
             }
 
@@ -249,13 +250,13 @@ private fun TopModule(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         FilledTonalButton(
             onClick = onBack,
-            modifier = Modifier.fillMaxHeight(0.82f)
+            modifier = Modifier.fillMaxHeight(0.84f)
         ) {
             Text("Назад", style = MaterialTheme.typography.labelMedium)
         }
@@ -283,8 +284,8 @@ private fun GameInfoModule(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 5.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = 4.dp, vertical = 3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         InfoChip("Len", params.lenSecret.toString(), Modifier.weight(1f))
         InfoChip("Hints", if (params.useHints) "ON" else "OFF", Modifier.weight(1f))
@@ -308,18 +309,12 @@ private fun InfoChip(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 2.dp, vertical = 2.dp),
+                .padding(horizontal = 1.dp, vertical = 1.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text(text = label, style = MaterialTheme.typography.labelSmall)
+            Text(text = value, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -333,10 +328,7 @@ private fun AttemptsModule(
             .fillMaxSize()
             .padding(6.dp)
     ) {
-        Text(
-            text = "Попытки",
-            style = MaterialTheme.typography.titleSmall
-        )
+        Text(text = "Попытки", style = MaterialTheme.typography.titleSmall)
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
         if (attempts.isEmpty()) {
@@ -344,21 +336,15 @@ private fun AttemptsModule(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Пока нет",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = "Пока нет", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                attempts.asReversed().take(8).forEach { line ->
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        tonalElevation = 1.dp
-                    ) {
+                attempts.asReversed().take(10).forEach { line ->
+                    Surface(shape = RoundedCornerShape(8.dp), tonalElevation = 1.dp) {
                         Text(
                             text = line,
                             modifier = Modifier
@@ -378,23 +364,23 @@ private fun VariantsModule(
     lenSecret: Int,
     board: List<MutableList<CellMark>>
 ) {
-    val scroll = rememberScrollState()
-
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(4.dp)
     ) {
-        val cellSize = ((maxWidth - 18.dp) / lenSecret).coerceAtMost(maxHeight / 10)
+        val verticalGap = 2.dp
+        val horizontalGap = 2.dp
+        val rawCellWidth = (maxWidth - horizontalGap * (lenSecret - 1)) / lenSecret
+        val rawCellHeight = (maxHeight - verticalGap * 9) / 10
+        val cellSize = minOf(rawCellWidth, rawCellHeight)
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .horizontalScroll(scroll),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(verticalGap)
         ) {
             repeat(10) { digit ->
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
                     repeat(lenSecret) { position ->
                         Box(
                             modifier = Modifier
@@ -425,13 +411,13 @@ private fun ToolsModule(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Инстр.",
-            modifier = Modifier.weight(0.8f),
+            modifier = Modifier.weight(0.9f),
             style = MaterialTheme.typography.bodySmall
         )
 
@@ -470,36 +456,45 @@ private fun ToolsModule(
 @Composable
 private fun InputModule(
     lenSecret: Int,
-    currentGuess: String
+    currentGuess: String,
+    containerHeight: Dp
 ) {
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = 6.dp, vertical = 4.dp)
     ) {
-        Text(
-            text = "Комбинация",
-            style = MaterialTheme.typography.bodySmall
-        )
+        val rowWidthFraction = 0.84f
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            repeat(lenSecret) { index ->
-                val value = currentGuess.getOrNull(index)?.toString().orEmpty()
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
+            Text(text = "Комбинация", style = MaterialTheme.typography.bodySmall)
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(rowWidthFraction),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = if (value.isEmpty()) " " else value,
-                        style = MaterialTheme.typography.titleSmall
-                    )
+                    repeat(lenSecret) { index ->
+                        val value = currentGuess.getOrNull(index)?.toString().orEmpty()
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(containerHeight * 0.42f)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (value.isEmpty()) " " else value,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -514,39 +509,41 @@ private fun DigitsModule(
     onBackspace: () -> Unit,
     onApplyToolToBoard: (Char) -> Unit
 ) {
-    BoxWithConstraints(
+    Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val buttonGap = 2.dp
-        val buttonWidth = ((maxWidth - buttonGap * 9 - 18.dp) / 11).coerceAtLeast(20.dp)
-
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(buttonGap),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            "1234567890".forEach { digit ->
-                FilledTonalButton(
-                    onClick = {
-                        if (currentGuess.length < lenSecret) {
-                            onDigitClick(digit.toString())
-                        }
-                        onApplyToolToBoard(digit)
-                    },
-                    modifier = Modifier.width(buttonWidth)
-                ) {
-                    Text(digit.toString(), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-
-            TextButton(
-                onClick = onBackspace,
-                modifier = Modifier.width(buttonWidth)
+        "1234567890".forEach { digit ->
+            FilledTonalButton(
+                onClick = {
+                    if (currentGuess.length < lenSecret) {
+                        onDigitClick(digit.toString())
+                    }
+                    onApplyToolToBoard(digit)
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(0.86f)
             ) {
-                Text("⌫", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    text = digit.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center
+                )
             }
+        }
+
+        TextButton(
+            onClick = onBackspace,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(0.86f)
+                .widthIn(min = 24.dp)
+        ) {
+            Text("⌫", style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -565,7 +562,7 @@ private fun CheckModule(
         Button(
             onClick = onCheck,
             enabled = canCheck,
-            modifier = Modifier.fillMaxWidth(0.62f)
+            modifier = Modifier.fillMaxWidth(0.70f)
         ) {
             Text(
                 text = "Проверить",
