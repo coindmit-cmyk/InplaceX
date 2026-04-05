@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.mirkori.inplacex.buildKnownDigitsFromAnalysis
 import com.mirkori.inplacex.core.model.AnalysisBoardState
 import com.mirkori.inplacex.core.model.AnalysisCellState
 import com.mirkori.inplacex.core.model.GameConfig
@@ -45,6 +44,7 @@ import com.mirkori.inplacex.core.model.GameStatus
 import com.mirkori.inplacex.core.model.MatchState
 import com.mirkori.inplacex.ui.common.BottomReserveMode
 import com.mirkori.inplacex.ui.common.ScreenBottomReserve
+import com.mirkori.inplacex.ui.utils.buildKnownDigitsFromAnalysis
 import kotlinx.coroutines.delay
 
 @Composable
