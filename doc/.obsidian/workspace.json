@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Human/Основы V1.md",
+                "file": "Human/Devops/Screens/Игровое поле.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Основы V1"
+              "title": "Игровое поле"
             }
           },
           {
@@ -197,10 +197,14 @@
   "active": "a72fd0828e5d8be3",
   "lastOpenFiles": [
     "Human/3. Игровые режимы.md",
+    "Human/Devops/Screens/Игровое поле.md",
+    "Human/Devops/Screens/Модуль BOTTOM.md",
     "Human/Основы V1.md",
+    "Human/Devops/Screens",
+    "Human/1. Общая концепция.md",
+    "Human/Devops",
     "Human/2. Параметры игры.md",
     "Human/3.1. Общая классификация.md",
-    "Human/1. Общая концепция.md",
     "Без названия.md",
     "Image/Пример вида",
     "Image"
