@@ -44,8 +44,18 @@ fun AppBottomBar(
             )
 
             AppBottomReserve(
-                currentSection = currentSection
+                text = reserveText(currentSection)
             )
         }
+    }
+}
+
+private fun reserveText(section: AppSection): String {
+    return when (section) {
+        AppSection.HOME -> "Нижний резерв: баннер / акция / быстрый вход"
+        AppSection.SOCIAL -> "Нижний резерв: реклама / комната / онлайн-событие"
+        AppSection.TOURNAMENTS -> "Нижний резерв: турнирный баннер / таймер события"
+        AppSection.SHOP -> "Нижний резерв: оффер / премиум / акция магазина"
+        AppSection.PROFILE -> "Нижний резерв: premium / статус / сервисная зона"
     }
 }
