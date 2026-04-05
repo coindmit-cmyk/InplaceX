@@ -27,6 +27,8 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 fun AppShell(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    isInGame: Boolean = false,
+    isPremium: Boolean = false,
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -36,6 +38,8 @@ fun AppShell(
             paddingValues = paddingValues,
             currentSection = currentSection,
             onSectionChange = onSectionChange,
+            isInGame = isInGame,
+            isPremium = isPremium,
             content = content
         )
     }
@@ -46,6 +50,8 @@ private fun ShellBackground(
     paddingValues: PaddingValues,
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    isInGame: Boolean,
+    isPremium: Boolean,
     content: @Composable () -> Unit
 ) {
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
@@ -68,10 +74,15 @@ private fun ShellBackground(
                 )
             )
     ) {
+        val screenWidth = maxWidth
+        val outerHorizontalPadding = screenWidth * 0.03f
+        val innerHorizontalPadding = screenWidth * 0.04f
+        val outerVerticalPadding = 12.dp
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(horizontal = outerHorizontalPadding, vertical = outerVerticalPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(
@@ -84,15 +95,17 @@ private fun ShellBackground(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(horizontal = innerHorizontalPadding, vertical = 16.dp)
                 ) {
                     content()
                 }
             }
 
-            AppBottomBar(
+            AppBottomSlot(
                 currentSection = currentSection,
-                onSectionChange = onSectionChange
+                onSectionChange = onSectionChange,
+                isInGame = isInGame,
+                isPremium = isPremium
             )
         }
     }
