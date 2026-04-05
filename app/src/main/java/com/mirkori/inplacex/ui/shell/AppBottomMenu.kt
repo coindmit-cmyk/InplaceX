@@ -1,9 +1,8 @@
 package com.mirkori.inplacex.ui.shell
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -21,33 +20,29 @@ fun AppBottomMenu(
     onSectionChange: (AppSection) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(
-        modifier = modifier.fillMaxWidth()
+    Row(
+        modifier = modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val screenWidth = maxWidth
-        val buttonGap = screenWidth * 0.015f
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(buttonGap),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppSection.entries.forEach { section ->
-                FilledTonalButton(
-                    onClick = { onSectionChange(section) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = section.shortLabel,
-                        textAlign = TextAlign.Center,
-                        style = if (section == currentSection) {
-                            MaterialTheme.typography.labelLarge
-                        } else {
-                            MaterialTheme.typography.labelMedium
-                        }
-                    )
-                }
+        AppSection.entries.forEach { section ->
+            FilledTonalButton(
+                onClick = { onSectionChange(section) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = section.shortLabel,
+                    textAlign = TextAlign.Center,
+                    style = if (section == currentSection) {
+                        MaterialTheme.typography.labelLarge
+                    } else {
+                        MaterialTheme.typography.labelMedium
+                    },
+                    maxLines = 1
+                )
             }
         }
     }
