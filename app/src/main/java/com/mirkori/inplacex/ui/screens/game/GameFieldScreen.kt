@@ -1,3 +1,4 @@
+
 package com.mirkori.inplacex.ui.screens.game
 
 import androidx.compose.foundation.background
@@ -45,7 +46,9 @@ private enum class CellMark(val color: Color) {
     EMPTY(Color.Transparent),
     NO(Color(0xFFE57373)),
     MAYBE(Color(0xFFFFF176)),
-    YES(Color(0xFF81C784))
+    YES(Color(0xFF81C784)),
+    AUTO_NO(Color(0xFFB71C1C)),
+    LOCK_YES(Color(0xFF1B5E20))
 }
 
 @Composable
@@ -57,6 +60,8 @@ fun GameFieldScreen(
     val attempts = remember { mutableStateListOf<String>() }
     var currentGuess by remember { mutableStateOf("") }
     var selectedTool by remember { mutableStateOf(TableTool.NO) }
+    var autoExclude by remember { mutableStateOf(true) }
+
     val board = remember(params.lenSecret) {
         List(10) {
             mutableStateListOf<CellMark>().apply {
@@ -65,10 +70,10 @@ fun GameFieldScreen(
         }
     }
 
-    var secret by remember(params.lenSecret, params.typeGame) {
+    var debugSecret by remember(params.lenSecret, params.typeGame) {
         mutableStateOf(generateSecret(params.lenSecret))
     }
-    var statusText by remember { mutableStateOf("Выбери инструмент и отмечай таблицу") }
+    var statusText by remember { mutableStateOf("Введите комбинацию или отмечай таблицу") }
 
     fun clearBoard() {
         repeat(10) { digit ->
@@ -82,7 +87,8 @@ fun GameFieldScreen(
         val chars = MutableList(params.lenSecret) { ' ' }
         repeat(params.lenSecret) { position ->
             val yesDigit = (0..9).firstOrNull { digit ->
-                board[digit][position] == CellMark.YES
+                board[digit][position] == CellMark.YES ||
+                    board[digit][position] == CellMark.LOCK_YES
             }
             if (yesDigit != null) {
                 chars[position] = ('0'.code + yesDigit).toChar()
@@ -91,7 +97,66 @@ fun GameFieldScreen(
         currentGuess = chars.joinToString("")
     }
 
+    fun setLockedYes(digit: Int, position: Int) {
+        repeat(10) { d ->
+            if (board[d][position] != CellMark.AUTO_NO) {
+                board[d][position] = CellMark.EMPTY
+            }
+        }
+
+        board[digit][position] = CellMark.LOCK_YES
+
+        repeat(10) { d ->
+            if (d != digit && board[d][position] != CellMark.AUTO_NO) {
+                board[d][position] = CellMark.AUTO_NO
+            }
+        }
+
+        rebuildGuessFromBoard()
+    }
+
+    fun tryAutoSolve() {
+        repeat(params.lenSecret) { position ->
+            val possible = (0..9).filter { digit ->
+                board[digit][position] != CellMark.AUTO_NO
+            }
+
+            if (possible.size == 1) {
+                val digit = possible.first()
+                if (board[digit][position] != CellMark.LOCK_YES) {
+                    setLockedYes(digit, position)
+                }
+            }
+        }
+    }
+
+    fun addDigitLeftToRight(digit: Char) {
+        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
+        val index = chars.indexOfFirst { it == ' ' }
+        if (index != -1) {
+            chars[index] = digit
+            currentGuess = String(chars)
+        }
+    }
+
+    fun backspaceGuess() {
+        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
+        val index = chars.indexOfLast { it != ' ' }
+        if (index != -1) {
+            chars[index] = ' '
+            currentGuess = String(chars)
+        }
+    }
+
+    fun normalizedGuess(): String = currentGuess.filter { it.isDigit() }
+
     fun applyMarkAt(digit: Int, position: Int) {
+        if (board[digit][position] == CellMark.AUTO_NO ||
+            board[digit][position] == CellMark.LOCK_YES
+        ) {
+            return
+        }
+
         when (selectedTool) {
             TableTool.NO -> {
                 board[digit][position] =
@@ -105,12 +170,17 @@ fun GameFieldScreen(
 
             TableTool.YES -> {
                 val alreadyYes = board[digit][position] == CellMark.YES
+
                 repeat(10) { d ->
-                    board[d][position] = CellMark.EMPTY
+                    if (board[d][position] == CellMark.YES) {
+                        board[d][position] = CellMark.EMPTY
+                    }
                 }
+
                 if (!alreadyYes) {
                     board[digit][position] = CellMark.YES
                 }
+
                 rebuildGuessFromBoard()
             }
         }
@@ -136,14 +206,13 @@ fun GameFieldScreen(
         val outerVerticalPadding = screenHeight * 0.004f
         val blockGap = screenHeight * 0.003f
         val middleGap = screenWidth * 0.008f
-        val topHeight = screenHeight * 0.095f
+        val topHeight = screenHeight * 0.080f
         val infoHeight = screenHeight * 0.068f
-        val middleHeight = screenHeight * 0.505f
+        val middleHeight = screenHeight * 0.520f
         val toolsHeight = screenHeight * 0.060f
         val inputHeight = screenHeight * 0.085f
         val digitsHeight = screenHeight * 0.070f
-        val checkHeight = screenHeight * 0.075f
-        var autoExclude by remember { mutableStateOf(true) }
+        val checkHeight = screenHeight * 0.065f
 
         Column(
             modifier = Modifier
@@ -166,7 +235,7 @@ fun GameFieldScreen(
                     title = title,
                     params = params,
                     onBack = onBack,
-                    debugSecret = secret,
+                    debugSecret = debugSecret,
                     statusText = statusText
                 )
             }
@@ -181,7 +250,8 @@ fun GameFieldScreen(
             ) {
                 GameInfoModule(
                     params = params,
-                    movesDone = attempts.size
+                    movesDone = attempts.size,
+                    autoExclude = autoExclude
                 )
             }
 
@@ -231,14 +301,9 @@ fun GameFieldScreen(
                 ToolsModule(
                     useHints = params.useHints,
                     selectedTool = selectedTool,
-                    onToolSelect = {
-                        selectedTool = it
-                        statusText = when (it) {
-                            TableTool.NO -> "N: цифры нет в позиции"
-                            TableTool.MAYBE -> "M: цифра возможна в позиции"
-                            TableTool.YES -> "Y: точная цифра в позиции"
-                        }
-                    }
+                    autoExclude = autoExclude,
+                    onToolSelect = { selectedTool = it },
+                    onToggleAutoExclude = { autoExclude = !autoExclude }
                 )
             }
 
@@ -269,28 +334,10 @@ fun GameFieldScreen(
                     currentGuess = currentGuess,
                     lenSecret = params.lenSecret,
                     onDigitClick = { digit ->
-
-                        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
-
-                        // ищем первую пустую позицию
-                        val index = chars.indexOfFirst { it == ' ' }
-
-                        if (index != -1) {
-                            chars[index] = digit[0]
-                        }
-
-                        currentGuess = String(chars)
+                        addDigitLeftToRight(digit.first())
                     },
                     onBackspace = {
-                        val chars = currentGuess.toCharArray()
-
-                        val index = chars.indexOfLast { it != ' ' }
-
-                        if (index != -1) {
-                            chars[index] = ' '
-                        }
-
-                        currentGuess = String(chars)
+                        backspaceGuess()
                     }
                 )
             }
@@ -304,30 +351,45 @@ fun GameFieldScreen(
                 color = Color.White.copy(alpha = 0.92f)
             ) {
                 CheckModule(
-                    canCheck = currentGuess.length == params.lenSecret,
+                    canCheck = normalizedGuess().length == params.lenSecret,
                     onCheck = {
-                        if (currentGuess.length == params.lenSecret) {
-                            val score = exactMatches(secret, currentGuess)
-                            attempts.add("${currentGuess} → ${score}")
-                            statusText = if (score == params.lenSecret) {
-                                "Угадал. Новое число сгенерировано"
-                            } else {
-                                "Совпадений: $score"
+                        val guess = normalizedGuess()
+
+                        if (guess.length == params.lenSecret) {
+                            val score = exactMatches(debugSecret, guess)
+
+                            if (score == 0 && autoExclude) {
+                                guess.forEachIndexed { index, ch ->
+                                    val digit = ch.digitToInt()
+
+                                    if (board[digit][index] != CellMark.YES &&
+                                        board[digit][index] != CellMark.LOCK_YES
+                                    ) {
+                                        board[digit][index] = CellMark.AUTO_NO
+                                    }
+                                }
                             }
+
+                            tryAutoSolve()
+                            attempts.add("${guess} → ${score}")
 
                             if (score == params.lenSecret) {
-                                secret = generateSecret(params.lenSecret)
+                                statusText = "Угадал. Новое число сгенерировано"
+
+                                debugSecret = generateSecret(params.lenSecret)
                                 attempts.clear()
                                 clearBoard()
+                                currentGuess = ""
+                            } else {
+                                statusText = "Совпадений: $score"
+                                rebuildGuessFromBoard()
                             }
-
-                            currentGuess = ""
                         } else {
                             statusText = "Введите ${params.lenSecret} цифр"
                         }
                     },
                     onReset = {
-                        secret = generateSecret(params.lenSecret)
+                        debugSecret = generateSecret(params.lenSecret)
                         attempts.clear()
                         currentGuess = ""
                         clearBoard()
@@ -401,7 +463,8 @@ private fun TopModule(
 @Composable
 private fun GameInfoModule(
     params: GameFieldParams,
-    movesDone: Int
+    movesDone: Int,
+    autoExclude: Boolean
 ) {
     Row(
         modifier = Modifier
@@ -411,7 +474,7 @@ private fun GameInfoModule(
     ) {
         InfoChip("Len", params.lenSecret.toString(), Modifier.weight(1f))
         InfoChip("Hints", if (params.useHints) "ON" else "OFF", Modifier.weight(1f))
-        InfoChip("T.All", if (params.timeAll == 0) "∞" else params.timeAll.toString(), Modifier.weight(1f))
+        InfoChip("Auto", if (autoExclude) "ON" else "OFF", Modifier.weight(1f))
         InfoChip("T.Move", if (params.timeMove == 0) "∞" else params.timeMove.toString(), Modifier.weight(1f))
         InfoChip("Moves", movesDone.toString(), Modifier.weight(1f))
     }
@@ -503,11 +566,21 @@ private fun VariantsModule(
             repeat(10) { digit ->
                 Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
                     repeat(lenSecret) { position ->
+                        val cell = board[digit][position]
+
                         Box(
                             modifier = Modifier
                                 .size(cellSize)
-                                .background(board[digit][position].color, RoundedCornerShape(5.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(5.dp))
+                                .background(cell.color, RoundedCornerShape(5.dp))
+                                .border(
+                                    width = if (cell == CellMark.AUTO_NO || cell == CellMark.LOCK_YES) 2.dp else 1.dp,
+                                    color = when (cell) {
+                                        CellMark.AUTO_NO -> Color.Black
+                                        CellMark.LOCK_YES -> Color(0xFF1B5E20)
+                                        else -> MaterialTheme.colorScheme.outline
+                                    },
+                                    shape = RoundedCornerShape(5.dp)
+                                )
                                 .clickable { onCellClick(digit, position) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -528,7 +601,9 @@ private fun VariantsModule(
 private fun ToolsModule(
     useHints: Boolean,
     selectedTool: TableTool,
-    onToolSelect: (TableTool) -> Unit
+    autoExclude: Boolean,
+    onToolSelect: (TableTool) -> Unit,
+    onToggleAutoExclude: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -562,6 +637,13 @@ private fun ToolsModule(
             modifier = Modifier.weight(1f)
         ) {
             Text(if (selectedTool == TableTool.YES) "Y*" else "Y", style = MaterialTheme.typography.labelSmall)
+        }
+
+        TextButton(
+            onClick = onToggleAutoExclude,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(if (autoExclude) "A*" else "A", style = MaterialTheme.typography.labelSmall)
         }
 
         if (useHints) {
@@ -603,7 +685,7 @@ private fun InputModule(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     repeat(lenSecret) { index ->
-                        val value = currentGuess.getOrNull(index)?.toString().orEmpty()
+                        val value = currentGuess.padEnd(lenSecret, ' ').getOrNull(index)?.toString().orEmpty()
 
                         Box(
                             modifier = Modifier
@@ -613,7 +695,7 @@ private fun InputModule(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (value.isEmpty()) " " else value,
+                                text = if (value.isBlank()) " " else value,
                                 style = MaterialTheme.typography.titleSmall
                             )
                         }
@@ -641,7 +723,7 @@ private fun DigitsModule(
         "1234567890".forEach { digit ->
             FilledTonalButton(
                 onClick = {
-                    if (currentGuess.length < lenSecret) {
+                    if (currentGuess.filter { it.isDigit() }.length < lenSecret) {
                         onDigitClick(digit.toString())
                     }
                 },
