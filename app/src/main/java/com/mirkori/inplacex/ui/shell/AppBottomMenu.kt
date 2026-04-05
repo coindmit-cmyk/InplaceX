@@ -26,7 +26,6 @@ fun AppBottomMenu(
     ) {
         val screenWidth = maxWidth
         val buttonGap = screenWidth * 0.015f
-        val buttonCorner = 16.dp
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -37,7 +36,7 @@ fun AppBottomMenu(
                 FilledTonalButton(
                     onClick = { onSectionChange(section) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(buttonCorner)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
                         text = section.shortLabel,

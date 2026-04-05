@@ -42,8 +42,7 @@ import com.mirkori.inplacex.core.model.AnalysisCellState
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameStatus
 import com.mirkori.inplacex.core.model.MatchState
-import com.mirkori.inplacex.ui.common.BottomReserveMode
-import com.mirkori.inplacex.ui.common.ScreenBottomReserve
+import com.mirkori.inplacex.ui.shell.AppBottomAd
 import com.mirkori.inplacex.ui.utils.buildKnownDigitsFromAnalysis
 import kotlinx.coroutines.delay
 
@@ -93,7 +92,6 @@ fun RaceGameScreen(
                 )
             )
     ) {
-        val outerGap = 10.dp
         val topPanelHeight = maxHeight * 0.10f
         val guessPanelHeight = maxHeight * 0.12f
         val middleHeight = maxHeight * 0.46f
@@ -104,7 +102,7 @@ fun RaceGameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(outerGap)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Surface(
                 modifier = Modifier
@@ -198,9 +196,7 @@ fun RaceGameScreen(
                 )
             }
 
-            ScreenBottomReserve(
-                mode = BottomReserveMode.AD_PLACEHOLDER
-            )
+            AppBottomAd()
         }
     }
 }

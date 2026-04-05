@@ -77,12 +77,11 @@ private fun ShellBackground(
         val screenWidth = maxWidth
         val outerHorizontalPadding = screenWidth * 0.03f
         val innerHorizontalPadding = screenWidth * 0.04f
-        val outerVerticalPadding = 12.dp
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = outerHorizontalPadding, vertical = outerVerticalPadding),
+                .padding(horizontal = outerHorizontalPadding, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(

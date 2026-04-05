@@ -29,7 +29,9 @@ class MainActivity : ComponentActivity() {
 
                 AppShell(
                     currentSection = currentSection,
-                    onSectionChange = { currentSection = it }
+                    onSectionChange = { currentSection = it },
+                    isInGame = false,
+                    isPremium = false
                 ) {
                     when (currentSection) {
                         AppSection.HOME -> HomeRootScreen()

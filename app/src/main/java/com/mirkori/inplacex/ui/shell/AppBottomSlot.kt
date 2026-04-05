@@ -13,20 +13,12 @@ fun AppBottomSlot(
     modifier: Modifier = Modifier
 ) {
     when {
-        isPremium -> {
-            AppBottomPremium(modifier = modifier)
-        }
-
-        isInGame -> {
-            AppBottomAd(modifier = modifier)
-        }
-
-        else -> {
-            AppBottomMenu(
-                currentSection = currentSection,
-                onSectionChange = onSectionChange,
-                modifier = modifier
-            )
-        }
+        isPremium -> AppBottomPremium(modifier = modifier)
+        isInGame -> AppBottomAd(modifier = modifier)
+        else -> AppBottomMenu(
+            currentSection = currentSection,
+            onSectionChange = onSectionChange,
+            modifier = modifier
+        )
     }
 }
