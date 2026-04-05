@@ -16,6 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mirkori.inplacex.ui.screens.game.GameFieldParams
+import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
+import com.mirkori.inplacex.ui.screens.game.TypeGame
 
 @Composable
 fun HomeRootScreen() {
@@ -24,19 +27,35 @@ fun HomeRootScreen() {
     when (screenState) {
         HomeScreenState.ROOT -> {
             HomeSelectionScreen(
-                onOpenPve = { screenState = HomeScreenState.PVE },
-                onOpenPvp = { screenState = HomeScreenState.PVP }
+                onOpenPve = { screenState = HomeScreenState.PVE_GAME },
+                onOpenPvp = { screenState = HomeScreenState.PVP_GAME }
             )
         }
-
-        HomeScreenState.PVE -> {
-            PveModesScreen(
+        HomeScreenState.PVE_GAME -> {
+            GameFieldScreen(
+                title = "PvE игра",
+                params = GameFieldParams(
+                    typeGame = TypeGame.RaceMatch,
+                    useHints = true,
+                    timeAll = 0,
+                    timeMove = 0,
+                    limitMoves = 0,
+                    lenSecret = 6
+                ),
                 onBack = { screenState = HomeScreenState.ROOT }
             )
         }
-
-        HomeScreenState.PVP -> {
-            PvpModesScreen(
+        HomeScreenState.PVP_GAME -> {
+            GameFieldScreen(
+                title = "PvP игра",
+                params = GameFieldParams(
+                    typeGame = TypeGame.DuelMatch,
+                    useHints = false,
+                    timeAll = 0,
+                    timeMove = 30,
+                    limitMoves = 0,
+                    lenSecret = 6
+                ),
                 onBack = { screenState = HomeScreenState.ROOT }
             )
         }
@@ -48,9 +67,7 @@ private fun HomeSelectionScreen(
     onOpenPve: () -> Unit,
     onOpenPvp: () -> Unit
 ) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(
@@ -63,19 +80,16 @@ private fun HomeSelectionScreen(
                 text = "Главный экран",
                 style = MaterialTheme.typography.headlineMedium
             )
-
             Text(
-                text = "Выбор между PvE и PvP режимами",
+                text = "Вход сразу в игровое окно",
                 style = MaterialTheme.typography.bodyLarge
             )
-
             Button(
                 onClick = onOpenPve,
                 modifier = Modifier.fillMaxWidth(fraction = 0.62f)
             ) {
                 Text("PvE")
             }
-
             FilledTonalButton(
                 onClick = onOpenPvp,
                 modifier = Modifier.fillMaxWidth(fraction = 0.62f)

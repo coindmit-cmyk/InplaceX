@@ -2,6 +2,6 @@ package com.mirkori.inplacex.ui.screens.home
 
 internal enum class HomeScreenState {
     ROOT,
-    PVE,
-    PVP
+    PVE_GAME,
+    PVP_GAME
 }
