@@ -35,8 +35,7 @@
               "title": "3. Игровые режимы"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -195,10 +194,10 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "5cff92918f1f8d0f",
+  "active": "a72fd0828e5d8be3",
   "lastOpenFiles": [
-    "Human/Основы V1.md",
     "Human/3. Игровые режимы.md",
+    "Human/Основы V1.md",
     "Human/2. Параметры игры.md",
     "Human/3.1. Общая классификация.md",
     "Human/1. Общая концепция.md",
