@@ -58,6 +58,7 @@ fun GameFieldScreen(
     onBack: () -> Unit
 ) {
     val attempts = remember { mutableStateListOf<String>() }
+    val evaluatedAttempts = remember { mutableStateListOf<Pair<String, Int>>() }
     var currentGuess by remember { mutableStateOf("") }
     var selectedTool by remember { mutableStateOf(TableTool.NO) }
     var autoExclude by remember { mutableStateOf(true) }
@@ -99,16 +100,51 @@ fun GameFieldScreen(
 
     fun setLockedYes(digit: Int, position: Int) {
         repeat(10) { d ->
-            if (board[d][position] != CellMark.AUTO_NO) {
-                board[d][position] = CellMark.EMPTY
+            when {
+                d == digit -> board[d][position] = CellMark.LOCK_YES
+                board[d][position] != CellMark.LOCK_YES -> board[d][position] = CellMark.AUTO_NO
             }
         }
 
-        board[digit][position] = CellMark.LOCK_YES
+        rebuildGuessFromBoard()
+    }
 
-        repeat(10) { d ->
-            if (d != digit && board[d][position] != CellMark.AUTO_NO) {
-                board[d][position] = CellMark.AUTO_NO
+    fun inferFromSingleChange(
+        prevGuess: String,
+        prevScore: Int,
+        newGuess: String,
+        newScore: Int
+    ) {
+        val changedPositions = prevGuess.indices.filter { prevGuess[it] != newGuess[it] }
+        if (changedPositions.size != 1) return
+
+        val position = changedPositions.first()
+        val oldDigit = prevGuess[position].digitToInt()
+        val newDigit = newGuess[position].digitToInt()
+        val delta = newScore - prevScore
+
+        when (delta) {
+            1 -> {
+                if (board[oldDigit][position] != CellMark.LOCK_YES) {
+                    board[oldDigit][position] = CellMark.AUTO_NO
+                }
+                setLockedYes(newDigit, position)
+            }
+
+            -1 -> {
+                if (board[newDigit][position] != CellMark.LOCK_YES) {
+                    board[newDigit][position] = CellMark.AUTO_NO
+                }
+                setLockedYes(oldDigit, position)
+            }
+
+            0 -> {
+                if (board[oldDigit][position] != CellMark.LOCK_YES) {
+                    board[oldDigit][position] = CellMark.AUTO_NO
+                }
+                if (board[newDigit][position] != CellMark.LOCK_YES) {
+                    board[newDigit][position] = CellMark.AUTO_NO
+                }
             }
         }
 
@@ -118,14 +154,12 @@ fun GameFieldScreen(
     fun tryAutoSolve() {
         repeat(params.lenSecret) { position ->
             val possible = (0..9).filter { digit ->
-                board[digit][position] != CellMark.AUTO_NO
+                board[digit][position] != CellMark.NO &&
+                        board[digit][position] != CellMark.AUTO_NO
             }
 
             if (possible.size == 1) {
-                val digit = possible.first()
-                if (board[digit][position] != CellMark.LOCK_YES) {
-                    setLockedYes(digit, position)
-                }
+                setLockedYes(possible.first(), position)
             }
         }
     }
@@ -361,23 +395,32 @@ fun GameFieldScreen(
                             if (score == 0 && autoExclude) {
                                 guess.forEachIndexed { index, ch ->
                                     val digit = ch.digitToInt()
-
-                                    if (board[digit][index] != CellMark.YES &&
-                                        board[digit][index] != CellMark.LOCK_YES
-                                    ) {
+                                    if (board[digit][index] != CellMark.LOCK_YES) {
                                         board[digit][index] = CellMark.AUTO_NO
                                     }
                                 }
                             }
 
+                            if (evaluatedAttempts.isNotEmpty()) {
+                                val (prevGuess, prevScore) = evaluatedAttempts.last()
+                                inferFromSingleChange(
+                                    prevGuess = prevGuess,
+                                    prevScore = prevScore,
+                                    newGuess = guess,
+                                    newScore = score
+                                )
+                            }
+
                             tryAutoSolve()
-                            attempts.add("${guess} → ${score}")
+
+                            attempts.add("$guess → $score")
+                            evaluatedAttempts.add(guess to score)
 
                             if (score == params.lenSecret) {
                                 statusText = "Угадал. Новое число сгенерировано"
-
                                 debugSecret = generateSecret(params.lenSecret)
                                 attempts.clear()
+                                evaluatedAttempts.clear()
                                 clearBoard()
                                 currentGuess = ""
                             } else {
