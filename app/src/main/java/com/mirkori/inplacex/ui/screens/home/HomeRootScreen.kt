@@ -23,28 +23,47 @@ import com.mirkori.inplacex.ui.screens.game.TypeGame
 @Composable
 fun HomeRootScreen() {
     var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+    var pveTitle by remember { mutableStateOf("PvE игра") }
+    var pveParams by remember {
+        mutableStateOf(
+            GameFieldParams(
+                typeGame = TypeGame.RaceMatch,
+                useHints = true,
+                timeAll = 0,
+                timeMove = 0,
+                limitMoves = 0,
+                lenSecret = 6
+            )
+        )
+    }
 
     when (screenState) {
         HomeScreenState.ROOT -> {
             HomeSelectionScreen(
-                onOpenPve = { screenState = HomeScreenState.PVE_GAME },
+                onOpenPve = { screenState = HomeScreenState.PVE_SETUP },
                 onOpenPvp = { screenState = HomeScreenState.PVP_GAME }
             )
         }
-        HomeScreenState.PVE_GAME -> {
-            GameFieldScreen(
-                title = "PvE игра",
-                params = GameFieldParams(
-                    typeGame = TypeGame.RaceMatch,
-                    useHints = true,
-                    timeAll = 0,
-                    timeMove = 0,
-                    limitMoves = 0,
-                    lenSecret = 6
-                ),
-                onBack = { screenState = HomeScreenState.ROOT }
+
+        HomeScreenState.PVE_SETUP -> {
+            PveGameSetupScreen(
+                onBack = { screenState = HomeScreenState.ROOT },
+                onStartGame = { params, modeTitle ->
+                    pveParams = params
+                    pveTitle = "PvE • $modeTitle"
+                    screenState = HomeScreenState.PVE_GAME
+                }
             )
         }
+
+        HomeScreenState.PVE_GAME -> {
+            GameFieldScreen(
+                title = pveTitle,
+                params = pveParams,
+                onBack = { screenState = HomeScreenState.PVE_SETUP }
+            )
+        }
+
         HomeScreenState.PVP_GAME -> {
             GameFieldScreen(
                 title = "PvP игра",
@@ -81,7 +100,7 @@ private fun HomeSelectionScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             Text(
-                text = "Вход сразу в игровое окно",
+                text = "PvE теперь открывает экран создания матча",
                 style = MaterialTheme.typography.bodyLarge
             )
             Button(
