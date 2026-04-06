@@ -1,12 +1,12 @@
 package com.mirkori.inplacex.ui.screens.profile
 
-import com.mirkori.inplacex.BuildConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,6 +39,8 @@ data class ProfilePlatformState(
     val connected: Boolean,
     val accountId: String
 )
+
+private const val IS_DEVELOPER_BUILD = false
 
 @Composable
 fun ProfileRootScreen() {
@@ -122,7 +124,7 @@ fun ProfileRootScreen() {
             )
         }
 
-        if (BuildConfig.DEBUG) {
+        if (IS_DEVELOPER_BUILD) {
             DeveloperBindingsCard(
                 showBindings = showDeveloperBindings,
                 onToggleShow = { showDeveloperBindings = !showDeveloperBindings },
@@ -261,7 +263,7 @@ private fun AchievementsCard() {
 }
 
 @Composable
-private fun AchievementSlot() {
+private fun RowScope.AchievementSlot() {
     Box(
         modifier = Modifier
             .weight(1f)
@@ -301,7 +303,7 @@ private fun StatisticsCard() {
 }
 
 @Composable
-private fun MiniStatCard(
+private fun RowScope.MiniStatCard(
     title: String,
     value: String
 ) {
