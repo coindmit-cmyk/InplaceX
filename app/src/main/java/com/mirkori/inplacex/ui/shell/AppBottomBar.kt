@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.navigation.AppSection
+import com.mirkori.inplacex.ui.navigation.AppSectionCatalog
 
 @Composable
 fun AppBottomBar(
@@ -20,6 +22,8 @@ fun AppBottomBar(
     onSectionChange: (AppSection) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -32,7 +36,7 @@ fun AppBottomBar(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = currentSection.title,
+                text = AppSectionCatalog.title(currentSection, strings),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
@@ -44,18 +48,8 @@ fun AppBottomBar(
             )
 
             AppBottomReserve(
-                text = reserveText(currentSection)
+                text = AppSectionCatalog.reserveText(currentSection, strings)
             )
         }
-    }
-}
-
-private fun reserveText(section: AppSection): String {
-    return when (section) {
-        AppSection.HOME -> "Нижний резерв: баннер / акция / быстрый вход"
-        AppSection.SOCIAL -> "Нижний резерв: реклама / комната / онлайн-событие"
-        AppSection.TOURNAMENTS -> "Нижний резерв: турнирный баннер / таймер события"
-        AppSection.SHOP -> "Нижний резерв: оффер / премиум / акция магазина"
-        AppSection.PROFILE -> "Нижний резерв: premium / статус / сервисная зона"
     }
 }

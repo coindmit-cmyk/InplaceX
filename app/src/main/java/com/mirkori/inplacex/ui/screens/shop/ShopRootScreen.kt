@@ -10,23 +10,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun ShopRootScreen() {
+    val strings = LocalAppStrings.current
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Магазин",
+            text = strings.text("shop.title"),
             style = MaterialTheme.typography.headlineSmall
         )
         FilledTonalButton(onClick = { }) {
-            Text("Подсказки")
+            Text(strings.text("shop.hints"))
         }
         FilledTonalButton(onClick = { }) {
-            Text("Премиум")
+            Text(strings.text("shop.premium"))
         }
     }
 }

@@ -8,17 +8,18 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 fun AppBottomSlot(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
-    isInGame: Boolean,
-    isPremium: Boolean,
+    bottomMode: BottomLayerMode,
     modifier: Modifier = Modifier
 ) {
-    when {
-        isPremium -> AppBottomPremium(modifier = modifier)
-        isInGame -> AppBottomAd(modifier = modifier)
-        else -> AppBottomMenu(
+    when (bottomMode) {
+        BottomLayerMode.MENU -> AppBottomMenu(
             currentSection = currentSection,
             onSectionChange = onSectionChange,
             modifier = modifier
         )
+
+        BottomLayerMode.AD -> AppBottomAd(modifier = modifier)
+
+        BottomLayerMode.NONE -> Unit
     }
 }

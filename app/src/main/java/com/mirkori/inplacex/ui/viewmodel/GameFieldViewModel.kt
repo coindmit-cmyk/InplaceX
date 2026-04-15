@@ -1,9 +1,9 @@
 package com.mirkori.inplacex.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.mirkori.inplacex.core.engine.GameConfig
 import com.mirkori.inplacex.core.engine.GameEngine
-import com.mirkori.inplacex.core.engine.GameSnapshot
+import com.mirkori.inplacex.core.match.MatchSnapshot
+import com.mirkori.inplacex.core.model.GameConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +19,7 @@ class GameFieldViewModel : ViewModel() {
     )
 
     private val _state = MutableStateFlow(engine.start())
-    val state: StateFlow<GameSnapshot> = _state.asStateFlow()
+    val state: StateFlow<MatchSnapshot> = _state.asStateFlow()
 
     fun submit(guess: String) {
         _state.value = engine.submit(guess)

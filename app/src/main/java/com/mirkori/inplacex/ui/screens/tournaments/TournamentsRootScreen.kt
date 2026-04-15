@@ -10,24 +10,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun TournamentsRootScreen() {
+    val strings = LocalAppStrings.current
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Турниры",
+            text = strings.text("tournaments.title"),
             style = MaterialTheme.typography.headlineSmall
         )
         Text(
-            text = "Экран-заглушка под список турниров и событий",
+            text = strings.text("tournaments.placeholder"),
             style = MaterialTheme.typography.bodyLarge
         )
         FilledTonalButton(onClick = { }) {
-            Text("Список турниров")
+            Text(strings.text("tournaments.list"))
         }
     }
 }

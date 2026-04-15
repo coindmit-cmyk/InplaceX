@@ -10,23 +10,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun SocialRootScreen() {
+    val strings = LocalAppStrings.current
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Игры с друзьями / Онлайн",
+            text = strings.text("social.title"),
             style = MaterialTheme.typography.headlineSmall
         )
         FilledTonalButton(onClick = { }) {
-            Text("С друзьями")
+            Text(strings.text("social.friends"))
         }
         FilledTonalButton(onClick = { }) {
-            Text("Онлайн")
+            Text(strings.text("social.online"))
         }
     }
 }

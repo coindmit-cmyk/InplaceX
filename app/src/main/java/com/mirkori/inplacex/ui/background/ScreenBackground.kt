@@ -8,6 +8,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
+sealed interface ScreenBackgroundStyle {
+    data class Preset(
+        val preset: ScreenBackgroundPreset
+    ) : ScreenBackgroundStyle
+
+    data class SolidColor(
+        val color: Color
+    ) : ScreenBackgroundStyle
+}
+
 enum class ScreenBackgroundPreset {
     DefaultBlue,
     DeepBlue,
@@ -17,16 +27,27 @@ enum class ScreenBackgroundPreset {
 
 @Composable
 fun ScreenBackground(
-    preset: ScreenBackgroundPreset,
+    style: ScreenBackgroundStyle,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(backgroundBrush(preset))
+            .background(backgroundBrush(style))
     ) {
         content()
+    }
+}
+
+private fun backgroundBrush(
+    style: ScreenBackgroundStyle
+): Brush {
+    return when (style) {
+        is ScreenBackgroundStyle.Preset -> backgroundBrush(style.preset)
+        is ScreenBackgroundStyle.SolidColor -> Brush.verticalGradient(
+            colors = listOf(style.color, style.color)
+        )
     }
 }
 
