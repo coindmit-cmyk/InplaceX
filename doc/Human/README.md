@@ -1,30 +1,32 @@
 # Human Docs Index
 
-`doc/Human` — каноническая человеко-ориентированная документация по продукту и архитектуре InplaceX.
+`doc/Human` is the canonical human-readable documentation set for InplaceX.
 
-## Что читать сначала
+## Read First
 
 1. `Vision.md`
-2. `Game Modes and Rules.md`
-3. `Platform Vision.md`
-4. `UX Flows and Screen Map.md`
-5. `Configs Localization Branding.md`
-6. `Integrations.md`
-7. `Roadmap.md`
-8. `ADR Index.md`
+2. `Scaffold Definition.md`
+3. `Game Modes and Rules.md`
+4. `Mode Matrix.md`
+5. `Duel Setup Flow.md`
+6. `PvP Bot and Campaign.md`
+7. `Platform Vision.md`
+8. `UX Flows and Screen Map.md`
+9. `Configs Localization Branding.md`
+10. `Integrations.md`
+11. `Roadmap.md`
+12. `ADR Index.md`
 
-## Роль папки
+## Purpose
 
-- объяснить продукт и целевую архитектуру без чтения кода
-- дать разработчику и человеку общий язык
-- фиксировать текущее состояние, целевую модель и ближайшие этапы
+- explain the product and target architecture without reading code
+- keep product decisions, mode rules, and progression rules in one place
+- give both humans and GPT a stable source of truth for future changes
 
 ## Legacy
 
-Legacy-материалы вынесены в `doc/Human/Legacy/V1`.
-
-Канонический вход в документацию теперь начинается с этого индекса, а старая структура используется только как архив и источник исторической детализации.
+Legacy materials were moved to `doc/Human/Legacy/V1`.
 
 ## Migration
 
-- карта миграции: `Migration Map.md`
+- migration map: `Migration Map.md`

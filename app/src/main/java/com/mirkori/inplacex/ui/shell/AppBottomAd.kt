@@ -5,10 +5,12 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun AppBottomAd(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    content: (@Composable () -> Unit)? = null
 ) {
     AppBottomReserve(
         text = "Рекламный слот игрового экрана",
-        modifier = modifier
+        modifier = modifier,
+        content = content
     )
 }

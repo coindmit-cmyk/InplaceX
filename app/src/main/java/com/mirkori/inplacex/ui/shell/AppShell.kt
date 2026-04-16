@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.ui.background.ScreenBackground
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.layout.UiLayoutConfig
@@ -33,6 +34,7 @@ fun AppShell(
     backgroundStyle: ScreenBackgroundStyle = ScreenBackgroundStyle.SolidColor(Color(0xFF4A73D9)),
     layoutConfig: UiLayoutConfig = UiLayoutConfigs.Default,
     topContent: (@Composable () -> Unit)? = null,
+    bottomAdContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -48,6 +50,7 @@ fun AppShell(
             backgroundStyle = backgroundStyle,
             layoutConfig = layoutConfig,
             topContent = topContent,
+            bottomAdContent = bottomAdContent,
             content = content
         )
     }
@@ -63,9 +66,11 @@ private fun ShellBackground(
     backgroundStyle: ScreenBackgroundStyle,
     layoutConfig: UiLayoutConfig,
     topContent: (@Composable () -> Unit)?,
+    bottomAdContent: (@Composable () -> Unit)?,
     content: @Composable () -> Unit
 ) {
     val navBar = WindowInsets.navigationBars.asPaddingValues()
+    val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
 
     ScreenBackground(
         style = backgroundStyle,
@@ -125,7 +130,11 @@ private fun ShellBackground(
                     .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
                     .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp),
                 tonalElevation = 0.dp,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                color = if (centerSurfaceColor != Color.Transparent) {
+                    centerSurfaceColor
+                } else {
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                }
             ) {
                 Box(
                     modifier = Modifier
@@ -152,6 +161,7 @@ private fun ShellBackground(
                         currentSection = currentSection,
                         onSectionChange = onSectionChange,
                         bottomMode = bottomMode,
+                        adContent = bottomAdContent,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

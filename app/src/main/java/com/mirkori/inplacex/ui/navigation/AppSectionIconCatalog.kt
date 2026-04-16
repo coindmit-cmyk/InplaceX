@@ -26,7 +26,7 @@ object AppSectionIconCatalog {
                 fallbackIcon = Icons.Outlined.Groups
             )
 
-            AppSection.TOURNAMENTS -> SectionIconSpec(
+            AppSection.COMPANY -> SectionIconSpec(
                 sourcePath = "image/icon/section_tournaments.svg",
                 fallbackIcon = Icons.Outlined.EmojiEvents
             )

@@ -8,6 +8,7 @@ enum class TypeGame {
 data class GameFieldParams(
     val typeGame: TypeGame,
     val useHints: Boolean = true,
+    val useBoosts: Boolean = false,
     val timeAll: Int = 0,
     val timeMove: Int = 0,
     val limitMoves: Int = 0,

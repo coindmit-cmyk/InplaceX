@@ -9,6 +9,7 @@ fun AppBottomSlot(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
     bottomMode: BottomLayerMode,
+    adContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     when (bottomMode) {
@@ -18,7 +19,10 @@ fun AppBottomSlot(
             modifier = modifier
         )
 
-        BottomLayerMode.AD -> AppBottomAd(modifier = modifier)
+        BottomLayerMode.AD -> AppBottomAd(
+            modifier = modifier,
+            content = adContent
+        )
 
         BottomLayerMode.NONE -> Unit
     }

@@ -12,7 +12,7 @@ data class UiLayoutConfig(
     val topSlotHeightPercent: Float = 0.115f,
     val topSlotBottomGap: Dp = 4.dp,
     val shellBottomGap: Dp = 4.dp,
-    val bottomSlotHeightPercent: Float = 0.112f,
+    val bottomSlotHeightPercent: Float = 0.092f,
     val bottomSlotBottomPadding: Dp = 2.dp,
     val bottomMenuButtonCorner: Dp = 14.dp,
     val bottomMenuButtonGap: Dp = 2.dp
@@ -24,7 +24,7 @@ object UiLayoutConfigs {
         shellHorizontalPaddingPercent = 0.008f,
         shellInnerHorizontalPaddingPercent = 0.010f,
         topSlotHeightPercent = 0.105f,
-        bottomSlotHeightPercent = 0.102f,
+        bottomSlotHeightPercent = 0.086f,
         bottomMenuButtonGap = 1.dp
     )
 }

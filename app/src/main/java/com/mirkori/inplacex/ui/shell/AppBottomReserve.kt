@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AppBottomReserve(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    content: (@Composable () -> Unit)? = null
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth()
@@ -41,11 +42,15 @@ fun AppBottomReserve(
                     .padding(horizontal = horizontalPadding, vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = text,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                if (content == null) {
+                    Text(
+                        text = text,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    content()
+                }
             }
         }
     }

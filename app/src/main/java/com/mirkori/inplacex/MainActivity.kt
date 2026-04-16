@@ -6,28 +6,33 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.mirkori.inplacex.data.local.GameProgressRepository
+import com.mirkori.inplacex.data.local.BoostStockType
+import com.mirkori.inplacex.data.local.GameModeStatType
+import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
+import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
-import com.mirkori.inplacex.ui.screens.tournaments.TournamentsRootScreen
-import com.mirkori.inplacex.ui.shell.AppShell
 import com.mirkori.inplacex.ui.shell.AppTopBar
+import com.mirkori.inplacex.ui.shell.AppShell
 import com.mirkori.inplacex.ui.shell.BottomLayerMode
+import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 
@@ -40,11 +45,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             InplaceXTheme {
+                val progressRepository = remember { GameProgressRepository(applicationContext) }
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
+                var currentDebugSecret by rememberSaveable { mutableStateOf<String?>(null) }
+                var progressState by remember { mutableStateOf(progressRepository.loadState()) }
+                val campaignBlockStart = ((progressState.highestUnlockedCampaignLevel - 1) / 10) * 10 + 1
+                val campaignProgress = remember(progressState.highestUnlockedCampaignLevel, progressState.totalCampaignRating) {
+                    progressRepository.loadCampaignProgressRange(campaignBlockStart, campaignBlockStart + 9)
+                }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
@@ -56,8 +68,6 @@ class MainActivity : ComponentActivity() {
                     else -> BottomLayerMode.MENU
                 }
 
-                val canGoBack = isSettingsOpen || isInGame
-
                 CompositionLocalProvider(LocalAppStrings provides strings) {
                     AppShell(
                         currentSection = currentSection,
@@ -67,40 +77,188 @@ class MainActivity : ComponentActivity() {
                         },
                         bottomMode = bottomMode,
                         topMode = TopLayerMode.OVERLAY,
-                        backgroundStyle = ScreenBackgroundStyle.SolidColor(Color(0xFF4C6FFF)),
+                        backgroundStyle = ScreenBackgroundStyle.ImageAsset(
+                            assetPath = "image/background/app_bg.png",
+                            fallbackColor = Color(0xFF4C6FFF)
+                        ),
                         topContent = {
                             AppTopBar(
-                                canGoBack = canGoBack,
-                                onBackClick = {
-                                    when {
-                                        isSettingsOpen -> isSettingsOpen = false
-                                        isInGame -> requestExitGame = true
-                                    }
-                                },
-                                onSettingsClick = {
-                                    isSettingsOpen = true
-                                }
+                                energy = progressState.campaignEnergy,
+                                coins = progressState.coins,
+                                showBack = isInGame,
+                                onBackClick = { requestExitGame = true },
+                                onSettingsClick = { isSettingsOpen = true }
                             )
+                        },
+                        bottomAdContent = currentDebugSecret?.let { secret ->
+                            {
+                                DebugSecretAdSlot(debugSecret = secret)
+                            }
                         }
                     ) {
                         when {
-                            isSettingsOpen -> SettingsRootScreen(
-                                currentLanguage = currentLanguage,
-                                onLanguageChange = { language ->
-                                    currentLanguageName = language.name
-                                }
-                            )
-
                             currentSection == AppSection.HOME -> HomeRootScreen(
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
-                                onInGameChange = { inGame -> isInGame = inGame }
+                                onInGameChange = { inGame -> isInGame = inGame },
+                                onDebugSecretChange = { currentDebugSecret = it },
+                                openPositionHints = progressState.openPositionHints,
+                                checkDigitHints = progressState.checkDigitHints,
+                                checkPositionHints = progressState.checkPositionHints,
+                                onConsumeOpenPositionHint = {
+                                    if (progressRepository.consumeHint(HintStockType.OPEN_POSITION)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeCheckDigitHint = {
+                                    if (progressRepository.consumeHint(HintStockType.CHECK_DIGIT)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeCheckPositionHint = {
+                                    if (progressRepository.consumeHint(HintStockType.CHECK_POSITION)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onMatchStarted = {
+                                    progressState = progressRepository.recordMatchStarted()
+                                },
+                                onRecordPveResult = { won ->
+                                    progressState = progressRepository.recordModeResult(GameModeStatType.PVE_RACE, won)
+                                },
+                                onRecordPvpResult = { won ->
+                                    progressState = progressRepository.recordModeResult(GameModeStatType.PVP_DUEL, won)
+                                }
                             )
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen()
-                            currentSection == AppSection.TOURNAMENTS -> TournamentsRootScreen()
-                            currentSection == AppSection.SHOP -> ShopRootScreen()
-                            currentSection == AppSection.PROFILE -> ProfileRootScreen()
+                            currentSection == AppSection.COMPANY -> CompanyRootScreen(
+                                progressState = progressState,
+                                campaignProgress = campaignProgress,
+                                requestExitGame = requestExitGame,
+                                onExitGameConsumed = { requestExitGame = false },
+                                onInGameChange = { inGame -> isInGame = inGame },
+                                onDebugSecretChange = { currentDebugSecret = it },
+                                openPositionHints = progressState.openPositionHints,
+                                checkDigitHints = progressState.checkDigitHints,
+                                checkPositionHints = progressState.checkPositionHints,
+                                extraMovesBoosts = progressState.extraMovesBoosts,
+                                extraTimeBoosts = progressState.extraTimeBoosts,
+                                onConsumeOpenPositionHint = {
+                                    if (progressRepository.consumeHint(HintStockType.OPEN_POSITION)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeCheckDigitHint = {
+                                    if (progressRepository.consumeHint(HintStockType.CHECK_DIGIT)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeCheckPositionHint = {
+                                    if (progressRepository.consumeHint(HintStockType.CHECK_POSITION)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeExtraMovesBoost = {
+                                    if (progressRepository.consumeBoost(BoostStockType.EXTRA_MOVES)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onConsumeExtraTimeBoost = {
+                                    if (progressRepository.consumeBoost(BoostStockType.EXTRA_TIME)) {
+                                        progressState = progressRepository.loadState()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                                onBuyEnergy = {
+                                    if (progressRepository.buyCampaignEnergy(costCoins = 25)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onRecordCampaignCompletion = { level, rating ->
+                                    progressState = progressRepository.recordCampaignCompletion(level, rating)
+                                },
+                                onRecordCompanyLoss = {
+                                    progressState = progressRepository.recordCompanyLoss()
+                                },
+                                onMatchStarted = {
+                                    progressState = progressRepository.recordMatchStarted()
+                                }
+                            )
+                            currentSection == AppSection.SHOP -> ShopRootScreen(
+                                progressState = progressState,
+                                onBuyOpenPositionHint = {
+                                    if (progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onBuyCheckDigitHint = {
+                                    if (progressRepository.buyHint(HintStockType.CHECK_DIGIT, costCoins = 15)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onBuyCheckPositionHint = {
+                                    if (progressRepository.buyHint(HintStockType.CHECK_POSITION, costCoins = 25)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onBuyExtraMovesBoost = {
+                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_MOVES, costCoins = 30)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onBuyExtraTimeBoost = {
+                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_TIME, costCoins = 30)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onBuyEnergy = {
+                                    if (progressRepository.buyCampaignEnergy(costCoins = 25)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                }
+                            )
+                            currentSection == AppSection.PROFILE -> ProfileRootScreen(
+                                progressState = progressState,
+                                onAddDeveloperCoins = {
+                                    progressState = progressRepository.addCoins(100)
+                                }
+                            )
+                        }
+
+                        if (isSettingsOpen) {
+                            SettingsRootScreen(
+                                currentLanguage = currentLanguage,
+                                onLanguageChange = { language ->
+                                    currentLanguageName = language.name
+                                },
+                                onClose = {
+                                    isSettingsOpen = false
+                                }
+                            )
                         }
                     }
                 }

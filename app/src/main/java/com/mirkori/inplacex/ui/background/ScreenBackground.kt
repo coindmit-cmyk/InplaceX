@@ -13,6 +13,11 @@ sealed interface ScreenBackgroundStyle {
         val preset: ScreenBackgroundPreset
     ) : ScreenBackgroundStyle
 
+    data class ImageAsset(
+        val assetPath: String,
+        val fallbackColor: Color
+    ) : ScreenBackgroundStyle
+
     data class SolidColor(
         val color: Color
     ) : ScreenBackgroundStyle
@@ -45,6 +50,9 @@ private fun backgroundBrush(
 ): Brush {
     return when (style) {
         is ScreenBackgroundStyle.Preset -> backgroundBrush(style.preset)
+        is ScreenBackgroundStyle.ImageAsset -> Brush.verticalGradient(
+            colors = listOf(style.fallbackColor, style.fallbackColor)
+        )
         is ScreenBackgroundStyle.SolidColor -> Brush.verticalGradient(
             colors = listOf(style.color, style.color)
         )

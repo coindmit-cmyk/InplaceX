@@ -1,6 +1,6 @@
 # GPT Docs Index
 
-`doc/GPT` — каноническая машинно-ориентированная документация.
+`doc/GPT` is the canonical machine-oriented documentation set.
 
 ## Read Order
 
@@ -8,23 +8,22 @@
 2. `Layer Contracts.md`
 3. `Match Domain Model.md`
 4. `Public Interfaces.md`
-5. `Data Driven Model.md`
-6. `Add New Mode.md`
-7. `Add New Game.md`
-8. `Technical Debt.md`
-9. `ADR/`
+5. `Bot and Campaign Systems.md`
+6. `Data Driven Model.md`
+7. `Add New Mode.md`
+8. `Add New Game.md`
+9. `Technical Debt.md`
+10. `ADR/`
 
 ## Intent
 
-Эта папка должна отвечать на вопросы:
+This folder should answer:
 
-- какие есть слои
-- какие зависимости разрешены
-- какие контракты считаются каноническими
-- как безопасно добавлять режимы и новые игры
+- which layers exist
+- which dependencies are allowed
+- which contracts are canonical
+- how to safely add new modes, bots, and campaign content
 
 ## Legacy
 
-Старые GPT-материалы вынесены в `doc/GPT/Legacy/V1`.
-
-Текущая папка — единственная каноническая машинно-ориентированная база.
+Legacy GPT materials were moved to `doc/GPT/Legacy/V1`.

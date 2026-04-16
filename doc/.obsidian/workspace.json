@@ -11,10 +11,14 @@
             "id": "a72fd0828e5d8be3",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Без названия 1.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "Новая вкладка"
+              "title": "Без названия 1"
             }
           }
         ]
@@ -178,6 +182,15 @@
   },
   "active": "a72fd0828e5d8be3",
   "lastOpenFiles": [
+    "GPT/Shell Appearance Contracts.md",
+    "Human/Shell UI.md",
+    "Human/Duel Setup Flow.md",
+    "GPT/Bot and Campaign Systems.md",
+    "Human/PvP Bot and Campaign.md",
+    "Без названия 1.md",
+    "Без названия",
+    "Human/Mode Matrix.md",
+    "Human/Scaffold Definition.md",
     "GPT/Legacy/README.md",
     "GPT/Migration Notes.md",
     "Human/Legacy/README.md",
@@ -204,15 +217,6 @@
     "GPT/Technical Debt.md",
     "GPT/Add New Game.md",
     "GPT/Add New Mode.md",
-    "GPT/Data Driven Model.md",
-    "GPT/Public Interfaces.md",
-    "GPT/Match Domain Model.md",
-    "GPT/Layer Contracts.md",
-    "GPT/Module Map.md",
-    "GPT/README.md",
-    "Human/ADR Index.md",
-    "Human/Roadmap.md",
-    "Human/Devops/Screens",
-    "Human/Devops"
+    "Human/Devops/Screens"
   ]
 }

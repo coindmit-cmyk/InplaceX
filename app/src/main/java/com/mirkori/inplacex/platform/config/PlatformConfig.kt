@@ -4,6 +4,18 @@ data class PlatformConfig(
     val navigationItems: List<SectionSpec>,
     val featureFlags: FeatureFlags = FeatureFlags(),
     val layoutProfile: LayoutProfile = LayoutProfile(),
+    val shellAppearance: ShellAppearanceConfig = ShellAppearanceConfig(
+        appBackground = LayerBackgroundConfig(useOwnBackground = false),
+        topBar = TopBarAppearanceConfig(
+            container = LayerBackgroundConfig(useOwnBackground = false),
+            backIcon = IconAssetConfig(),
+            energyIcon = IconAssetConfig(),
+            coinsIcon = IconAssetConfig(),
+            settingsIcon = IconAssetConfig(),
+        ),
+        centerSurface = LayerBackgroundConfig(useOwnBackground = false),
+        bottomBar = LayerBackgroundConfig(useOwnBackground = false),
+    ),
 )
 
 data class SectionSpec(

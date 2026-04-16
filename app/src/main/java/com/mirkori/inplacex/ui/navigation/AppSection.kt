@@ -5,7 +5,7 @@ enum class AppSection(
 ) {
     HOME("home"),
     SOCIAL("social"),
-    TOURNAMENTS("tournaments"),
+    COMPANY("company"),
     SHOP("shop"),
     PROFILE("profile");
 }
