@@ -159,6 +159,15 @@ class GameProgressRepository(context: Context) {
         }
     }
 
+    fun clearBoosts(): GameProgressState {
+        return mutate { row ->
+            row.copy(
+                boostExtraMoves = 0,
+                boostExtraTime = 0,
+            )
+        }
+    }
+
     fun consumeHint(type: HintStockType): Boolean = consumeResource(
         currentValue = { row ->
             when (type) {
@@ -599,7 +608,7 @@ class GameProgressRepository(context: Context) {
     }
 }
 
-private class GameProgressDbHelper(context: Context) : SQLiteOpenHelper(
+internal class GameProgressDbHelper(context: Context) : SQLiteOpenHelper(
     context,
     DB_NAME,
     null,
@@ -645,6 +654,8 @@ private class GameProgressDbHelper(context: Context) : SQLiteOpenHelper(
             )
             """.trimIndent()
         )
+
+        createPlatformTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -692,14 +703,209 @@ private class GameProgressDbHelper(context: Context) : SQLiteOpenHelper(
             db.execSQL("ALTER TABLE $TABLE_PROGRESS ADD COLUMN $COL_PRO_SUBSCRIPTION_ACTIVE INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE $TABLE_PROGRESS ADD COLUMN $COL_PRO_PLUS_SUBSCRIPTION_ACTIVE INTEGER NOT NULL DEFAULT 0")
         }
+
+        if (oldVersion < 6) {
+            createPlatformTables(db)
+        }
+    }
+
+    private fun createPlatformTables(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_PLAYER_PROFILE (
+                profile_id INTEGER PRIMARY KEY,
+                player_id TEXT NOT NULL,
+                installation_id TEXT NOT NULL,
+                display_name TEXT NOT NULL DEFAULT 'Player_7065',
+                avatar_url TEXT,
+                auth_provider TEXT NOT NULL DEFAULT 'guest',
+                is_guest INTEGER NOT NULL DEFAULT 1,
+                is_online INTEGER NOT NULL DEFAULT 0,
+                locale TEXT,
+                region_code TEXT,
+                cloud_revision INTEGER NOT NULL DEFAULT 0,
+                last_seen_at INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_IDENTITY_LINKS (
+                id TEXT PRIMARY KEY,
+                provider TEXT NOT NULL,
+                provider_subject TEXT NOT NULL,
+                player_id TEXT NOT NULL,
+                display_name TEXT,
+                email TEXT,
+                is_primary INTEGER NOT NULL DEFAULT 0,
+                linked_at INTEGER NOT NULL DEFAULT 0,
+                last_refreshed_at INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(provider, provider_subject)
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_SOCIAL_RELATIONSHIPS (
+                id TEXT PRIMARY KEY,
+                player_id TEXT NOT NULL,
+                target_player_id TEXT NOT NULL,
+                target_display_name TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'local',
+                note TEXT,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(player_id, target_player_id, relationship_type)
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_ONLINE_ROOMS (
+                room_id TEXT PRIMARY KEY,
+                game_slug TEXT NOT NULL,
+                room_name TEXT NOT NULL,
+                invite_code TEXT,
+                visibility TEXT NOT NULL,
+                host_player_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                max_members INTEGER NOT NULL DEFAULT 2,
+                config_json TEXT NOT NULL DEFAULT '{}',
+                server_revision INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_ONLINE_ROOM_MEMBERS (
+                id TEXT PRIMARY KEY,
+                room_id TEXT NOT NULL,
+                player_id TEXT NOT NULL,
+                display_name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                status TEXT NOT NULL,
+                seat_no INTEGER,
+                joined_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(room_id, player_id)
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_ONLINE_MATCHES (
+                match_id TEXT PRIMARY KEY,
+                room_id TEXT,
+                game_slug TEXT NOT NULL,
+                local_player_id TEXT NOT NULL,
+                opponent_player_id TEXT,
+                status TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                code_length INTEGER NOT NULL,
+                allow_duplicates INTEGER NOT NULL DEFAULT 0,
+                attempt_limit INTEGER NOT NULL,
+                turn_time_limit_sec INTEGER,
+                player_secret_hash TEXT,
+                opponent_secret_hash TEXT,
+                local_result TEXT,
+                remote_result TEXT,
+                started_at INTEGER NOT NULL DEFAULT 0,
+                finished_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_ONLINE_MATCH_TURNS (
+                id TEXT PRIMARY KEY,
+                match_id TEXT NOT NULL,
+                player_id TEXT NOT NULL,
+                turn_index INTEGER NOT NULL,
+                guess TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                server_acknowledged INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(match_id, player_id, turn_index)
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_SYNC_QUEUE (
+                id TEXT PRIMARY KEY,
+                scope TEXT NOT NULL,
+                entity_id TEXT,
+                operation_type TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                endpoint_path TEXT NOT NULL,
+                method TEXT NOT NULL,
+                idempotency_key TEXT,
+                status TEXT NOT NULL,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS idx_social_relationships_player_status
+            ON $TABLE_SOCIAL_RELATIONSHIPS(player_id, status)
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS idx_online_rooms_status_updated
+            ON $TABLE_ONLINE_ROOMS(status, updated_at)
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS idx_online_match_turns_match_created
+            ON $TABLE_ONLINE_MATCH_TURNS(match_id, created_at)
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS idx_sync_queue_status_created
+            ON $TABLE_SYNC_QUEUE(status, created_at)
+            """.trimIndent()
+        )
     }
 
     companion object {
         private const val DB_NAME = "inplacex_progress.db"
-        private const val DB_VERSION = 5
+        private const val DB_VERSION = 6
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
+        const val TABLE_PLAYER_PROFILE = "player_profile"
+        const val TABLE_IDENTITY_LINKS = "identity_links"
+        const val TABLE_SOCIAL_RELATIONSHIPS = "social_relationships"
+        const val TABLE_ONLINE_ROOMS = "online_rooms"
+        const val TABLE_ONLINE_ROOM_MEMBERS = "online_room_members"
+        const val TABLE_ONLINE_MATCHES = "online_matches"
+        const val TABLE_ONLINE_MATCH_TURNS = "online_match_turns"
+        const val TABLE_SYNC_QUEUE = "sync_queue"
         const val COL_ID = "id"
         const val COL_PLAYER_DISPLAY_NAME = "player_display_name"
         const val COL_GOOGLE_PLAY_SIGNED_IN = "google_play_signed_in"

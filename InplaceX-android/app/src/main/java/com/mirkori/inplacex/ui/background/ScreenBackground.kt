@@ -2,6 +2,7 @@ package com.mirkori.inplacex.ui.background
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ sealed interface ScreenBackgroundStyle {
 }
 
 enum class ScreenBackgroundPreset {
+    SoftSky,
     DefaultBlue,
     DeepBlue,
     Violet,
@@ -41,7 +43,23 @@ fun ScreenBackground(
             .fillMaxSize()
             .background(backgroundBrush(style))
     ) {
+        BackgroundDecor(style)
         content()
+    }
+}
+
+@Composable
+private fun BoxScope.BackgroundDecor(
+    style: ScreenBackgroundStyle
+) {
+    val preset = (style as? ScreenBackgroundStyle.Preset)?.preset ?: return
+
+    when (preset) {
+        ScreenBackgroundPreset.SoftSky,
+        ScreenBackgroundPreset.DefaultBlue,
+        ScreenBackgroundPreset.DeepBlue,
+        ScreenBackgroundPreset.Violet,
+        ScreenBackgroundPreset.Dark -> Unit
     }
 }
 
@@ -63,6 +81,16 @@ private fun backgroundBrush(
     preset: ScreenBackgroundPreset
 ): Brush {
     return when (preset) {
+        ScreenBackgroundPreset.SoftSky -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFDCEBFF),
+                    Color(0xFFF3F8FF),
+                    Color(0xFFF9FBFF)
+                )
+            )
+        }
+
         ScreenBackgroundPreset.DefaultBlue -> {
             Brush.verticalGradient(
                 colors = listOf(

@@ -4,11 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -20,8 +21,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -36,6 +38,9 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
+import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
+import com.mirkori.inplacex.ui.screens.shared.SceneCard
+import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -431,35 +436,74 @@ private fun HomeSelectionScreen(
 ) {
     val strings = LocalAppStrings.current
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        val heroSpacing = maxHeight * 0.022f
+
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(
-                space = maxHeight * 0.03f,
-                alignment = Alignment.CenterVertically
-            ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
-            Text(
-                text = strings.text("home.title"),
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = strings.text("home.subtitle"),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Button(
-                onClick = onOpenPve,
-                modifier = Modifier.fillMaxWidth(fraction = 0.62f)
+            SceneCard(
+                accentColor = Color.White.copy(alpha = 0.76f)
             ) {
-                Text(strings.text(pveMode.titleKey))
+                Text(
+                    text = strings.text("home.title"),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = strings.text("home.subtitle"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SceneSplitStatRow(
+                    leftLabel = strings.text("mode.pve.title"),
+                    leftValue = "${pveMode.config.codeLength} digits",
+                    rightLabel = strings.text("mode.pvp.title"),
+                    rightValue = "Bot duel"
+                )
             }
-            FilledTonalButton(
-                onClick = onOpenPvp,
-                modifier = Modifier.fillMaxWidth(fraction = 0.62f)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(strings.text(pvpMode.titleKey))
+                SceneActionTile(
+                    title = strings.text(pveMode.titleKey),
+                    subtitle = strings.text(pveMode.subtitleKey),
+                    modifier = Modifier.weight(1f),
+                    accentBrush = Brush.verticalGradient(listOf(Color(0xFF7BB9FF), Color(0xFF4C6FFF))),
+                    onClick = onOpenPve
+                )
+                SceneActionTile(
+                    title = strings.text(pvpMode.titleKey),
+                    subtitle = strings.text(pvpMode.subtitleKey),
+                    modifier = Modifier.weight(1f),
+                    accentBrush = Brush.verticalGradient(listOf(Color(0xFF8A8CFF), Color(0xFF5D4EFF))),
+                    onClick = onOpenPvp
+                )
             }
+
+            SceneCard(
+                accentColor = Color.White.copy(alpha = 0.72f)
+            ) {
+                Text(
+                    text = strings.text("section.company.short"),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Campaign, progress road and energy now live in the Company tab.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

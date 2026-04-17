@@ -32,14 +32,17 @@ fun AppBottomReserve(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp),
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 1.dp
+            shape = RoundedCornerShape(24.dp),
+            tonalElevation = 2.dp,
+            shadowElevation = 6.dp,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                    .padding(horizontal = horizontalPadding, vertical = 10.dp),
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f))
+                    .padding(horizontal = horizontalPadding, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (content == null) {

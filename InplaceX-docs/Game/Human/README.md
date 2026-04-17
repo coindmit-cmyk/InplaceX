@@ -10,14 +10,16 @@
 4. `Mode Matrix.md`
 5. `Duel Setup Flow.md`
 6. `PvP Bot and Campaign.md`
-7. `Platform Vision.md`
-8. `UX Flows and Screen Map.md`
-9. `Configs Localization Branding.md`
-10. `Integrations.md`
-11. `Auth Ads and Billing.md`
-12. `Provider Setup.md`
-13. `Roadmap.md`
-14. `ADR Index.md`
+7. `Bot Brain.md`
+8. `Server Bot Runtime.md`
+9. `Platform Vision.md`
+10. `UX Flows and Screen Map.md`
+11. `Configs Localization Branding.md`
+12. `Integrations.md`
+13. `Auth Ads and Billing.md`
+14. `Provider Setup.md`
+15. `Roadmap.md`
+16. `ADR Index.md`
 
 ## Purpose
 

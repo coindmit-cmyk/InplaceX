@@ -9,13 +9,15 @@
 3. `Match Domain Model.md`
 4. `Public Interfaces.md`
 5. `Bot and Campaign Systems.md`
-6. `Auth Ads Billing Contracts.md`
-7. `Provider Runtime Config.md`
-8. `Data Driven Model.md`
-9. `Add New Mode.md`
-10. `Add New Game.md`
-11. `Technical Debt.md`
-12. `ADR/`
+6. `Bot Brain.md`
+7. `Server Bot Runtime.md`
+8. `Auth Ads Billing Contracts.md`
+9. `Provider Runtime Config.md`
+10. `Data Driven Model.md`
+11. `Add New Mode.md`
+12. `Add New Game.md`
+13. `Technical Debt.md`
+14. `ADR/`
 
 ## Intent
 

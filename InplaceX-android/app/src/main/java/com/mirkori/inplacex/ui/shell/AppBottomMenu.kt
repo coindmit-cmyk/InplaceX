@@ -1,23 +1,25 @@
 package com.mirkori.inplacex.ui.shell
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -31,57 +33,78 @@ fun AppBottomMenu(
     onSectionChange: (AppSection) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val strings = LocalAppStrings.current
-
-    Box(
+    Surface(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.80f),
+        tonalElevation = 2.dp,
+        shadowElevation = 6.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.74f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppSection.entries.forEach { section ->
-                FilledTonalButton(
-                    onClick = { onSectionChange(section) },
+                BottomMenuItem(
+                    section = section,
+                    selected = section == currentSection,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Icon(
-                            imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
-                            contentDescription = AppSectionCatalog.title(section, strings)
-                        )
-                        Text(
-                            text = AppSectionCatalog.shortLabel(section, strings),
-                            textAlign = TextAlign.Center,
-                            style = if (section == currentSection) {
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
-                                    lineHeight = 10.sp
-                                )
-                            } else {
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 10.sp,
-                                    lineHeight = 10.sp
-                                )
-                            },
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
+                    onClick = { onSectionChange(section) }
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun BottomMenuItem(
+    section: AppSection,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    val title = AppSectionCatalog.shortLabel(section, strings)
+
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        color = if (selected) Color(0xFFD9E5FF) else Color.Transparent,
+        tonalElevation = 0.dp,
+        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF95AEFF)) else null
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
+                    contentDescription = title,
+                    tint = if (selected) Color(0xFF395CF8) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = title,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    lineHeight = 11.sp
+                ),
+                color = if (selected) Color(0xFF1D3CCF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
         }
     }
 }

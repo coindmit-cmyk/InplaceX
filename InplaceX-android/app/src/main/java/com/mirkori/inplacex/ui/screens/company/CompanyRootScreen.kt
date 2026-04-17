@@ -1,17 +1,30 @@
 package com.mirkori.inplacex.ui.screens.company
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -28,6 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,6 +57,7 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
+import com.mirkori.inplacex.ui.screens.shared.SceneBackdrop
 import kotlin.math.ceil
 
 @Composable
@@ -69,6 +86,7 @@ fun CompanyRootScreen(
     onRecordCompanyLoss: () -> Unit = {},
     onMatchStarted: () -> Unit = {},
 ) {
+    val strings = LocalAppStrings.current
     var activeLevelNumber by remember { mutableStateOf<Int?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
     var resultState by remember { mutableStateOf<CompanyMatchResult?>(null) }
@@ -136,7 +154,12 @@ fun CompanyRootScreen(
         )
     } else if (showHistory) {
         CampaignHistoryScreen(
+            strings = strings,
             progress = campaignProgress.filter { it.bestBackendRating > 0 }.sortedByDescending { it.levelNumber },
+            onSelectLevel = {
+                activeLevelNumber = it
+                showHistory = false
+            },
             onClose = { showHistory = false }
         )
     } else {
@@ -174,101 +197,27 @@ fun CompanyRootScreen(
             listState.scrollToItem((focusIndex - 2).coerceAtLeast(0))
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = 2.dp,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Company",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Current level: $focusLevel",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "Stars: $totalStars | Next block: $requiredStarsForNextBlock",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Energy: ${progressState.campaignEnergy}/${progressState.campaignEnergyMax} | refill ${progressState.campaignEnergyRefillMinutes} min",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    if (nextBlockLocked) {
-                        Text(
-                            text = "Need $requiredStarsForNextBlock stars to unlock levels ${accessibleMaxLevel + 1}-${accessibleMaxLevel + 10}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilledTonalButton(
-                            onClick = { showHistory = true },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("History")
-                        }
-                        FilledTonalButton(
-                            onClick = onBuyEnergy,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Buy energy")
-                        }
-                    }
-                }
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                itemsIndexed(levelItems) { _, item ->
-                    val levelNumber = item.definition.levelNumber
-                    val isCompleted = item.progress.bestBackendRating > 0
-                    val isCurrentFocus = levelNumber == focusLevel
-                    val isPlayable = levelNumber <= accessibleMaxLevel && levelNumber <= progressState.highestUnlockedCampaignLevel
-                    val isLocked = !isPlayable && !isCompleted
-                    val stars = starsForRating(item.progress.bestBackendRating)
-
-                    CampaignLevelCard(
-                        item = item,
-                        stars = stars,
-                        isCompleted = isCompleted,
-                        isCurrentFocus = isCurrentFocus,
-                        isPlayable = isPlayable,
-                        isLocked = isLocked,
-                        hasEnergy = progressState.campaignEnergy > 0,
-                        onPlay = { activeLevelNumber = levelNumber }
-                    )
-                }
-            }
-        }
+        CompanySceneScreen(
+            strings = strings,
+            progressState = progressState,
+            levelItems = levelItems,
+            focusLevel = focusLevel,
+            accessibleMaxLevel = accessibleMaxLevel,
+            totalStars = totalStars,
+            requiredStarsForNextBlock = requiredStarsForNextBlock,
+            nextBlockLocked = nextBlockLocked,
+            listState = listState,
+            onHistory = { showHistory = true },
+            onBuyEnergy = onBuyEnergy,
+            onPlay = { activeLevelNumber = it }
+        )
     }
 
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text("Exit campaign run?") },
-            text = { Text("Progress in the current attempt will be lost.") },
+            title = { Text(strings.text("company.dialog.exit_title")) },
+            text = { Text(strings.text("company.dialog.exit_text")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -277,12 +226,12 @@ fun CompanyRootScreen(
                         onDebugSecretChange(null)
                     }
                 ) {
-                    Text("Exit")
+                    Text(strings.text("company.dialog.exit_confirm"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("Stay")
+                    Text(strings.text("company.dialog.stay"))
                 }
             }
         )
@@ -291,12 +240,20 @@ fun CompanyRootScreen(
     resultState?.let { result ->
         AlertDialog(
             onDismissRequest = { resultState = null },
-            title = { Text(if (result.won) "Level complete" else "Level failed") },
+            title = {
+                Text(
+                    if (result.won) {
+                        strings.text("company.dialog.complete_title")
+                    } else {
+                        strings.text("company.dialog.failed_title")
+                    }
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Level ${result.levelNumber}")
-                    Text("Rating: ${result.backendRating}/10")
-                    Text("Stars: ${starsLabel(result.stars)}")
+                    Text(strings.text("company.dialog.level").replace("{value}", result.levelNumber.toString()))
+                    Text(strings.text("company.dialog.rating").replace("{value}", result.backendRating.toString()))
+                    Text(strings.text("company.dialog.stars").replace("{value}", starsLabel(result.stars)))
                 }
             },
             confirmButton = {
@@ -309,81 +266,202 @@ fun CompanyRootScreen(
 }
 
 @Composable
-private fun CampaignLevelCard(
-    item: CampaignLevelListItem,
-    stars: Int,
-    isCompleted: Boolean,
-    isCurrentFocus: Boolean,
-    isPlayable: Boolean,
-    isLocked: Boolean,
-    hasEnergy: Boolean,
-    onPlay: () -> Unit,
+private fun CompanySceneScreen(
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
+    progressState: GameProgressState,
+    levelItems: List<CampaignLevelListItem>,
+    focusLevel: Int,
+    accessibleMaxLevel: Int,
+    totalStars: Int,
+    requiredStarsForNextBlock: Int,
+    nextBlockLocked: Boolean,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onHistory: () -> Unit,
+    onBuyEnergy: () -> Unit,
+    onPlay: (Int) -> Unit,
 ) {
-    val borderColor = when {
-        isCurrentFocus -> MaterialTheme.colorScheme.primary
-        isLocked -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
-        else -> MaterialTheme.colorScheme.outlineVariant
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        border = androidx.compose.foundation.BorderStroke(
-            width = if (isCurrentFocus) 2.dp else 1.dp,
-            color = borderColor
-        )
+    val focusItem = levelItems.first { it.definition.levelNumber == focusLevel }
+    val focusPlayable = focusLevel <= accessibleMaxLevel && focusLevel <= progressState.highestUnlockedCampaignLevel
+    val hasEnergy = progressState.campaignEnergy > 0
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFFD7EEFF), Color(0xFFF7FBFF))
+                    )
+                )
         ) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .weight(0.22f)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFFDFF5B1), Color(0xFFC5E68A), Color(0xFFAFD86C))
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(0.56f)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFFF4E8C9), Color(0xFFE9D8B2))
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(0.22f)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFFDFF5B1), Color(0xFFC5E68A), Color(0xFFAFD86C))
+                            )
+                        )
+                )
+            }
+
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "Level ${item.definition.levelNumber}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White.copy(alpha = 0.82f),
+                    tonalElevation = 2.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = strings.text("company.title"),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = strings.text("company.scene.stars")
+                                .replace("{current}", totalStars.toString())
+                                .replace("{required}", requiredStarsForNextBlock.toString()),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = if (nextBlockLocked) {
+                                strings.text("company.scene.locked")
+                            } else {
+                                strings.text("company.scene.unlocked")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 8.dp, top = 30.dp, bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                SideSceneAction(
+                    title = strings.text("company.scene.history"),
+                    subtitle = strings.text("company.scene.history.subtitle"),
+                    onClick = onHistory
                 )
-                Text(
-                    text = "${item.definition.difficultyTier} | cn ${item.definition.config.codeLength} | ${item.definition.config.attemptLimit} moves",
-                    style = MaterialTheme.typography.bodySmall
+                SideSceneAction(
+                    title = strings.text("company.scene.energy"),
+                    subtitle = "${progressState.campaignEnergy}/${progressState.campaignEnergyMax}",
+                    onClick = onBuyEnergy
                 )
-                Text(
-                    text = "Best: ${item.progress.bestBackendRating}/10 | ${starsLabel(stars)}",
-                    style = MaterialTheme.typography.bodySmall
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 8.dp, top = 30.dp, bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                SideInfoBadge(
+                    title = strings.text("company.scene.current"),
+                    value = focusLevel.toString()
                 )
-                if (isCurrentFocus) {
-                    Text(
-                        text = if (isLocked) "Locked target level" else "Current target level",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                SideInfoBadge(
+                    title = strings.text("company.scene.best"),
+                    value = "${focusItem.progress.bestBackendRating}/10"
+                )
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxHeight(0.64f)
+                    .fillMaxWidth(0.42f),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                itemsIndexed(levelItems) { _, item ->
+                    val levelNumber = item.definition.levelNumber
+                    val isCompleted = item.progress.bestBackendRating > 0
+                    val isCurrentFocus = levelNumber == focusLevel
+                    val isPlayable = levelNumber <= accessibleMaxLevel && levelNumber <= progressState.highestUnlockedCampaignLevel
+                    val isLocked = !isPlayable && !isCompleted
+                    LevelStone(
+                        levelNumber = levelNumber,
+                        stars = starsForRating(item.progress.bestBackendRating),
+                        isCurrentFocus = isCurrentFocus,
+                        isLocked = isLocked,
+                        onClick = {
+                            if (isPlayable || isCompleted) {
+                                onPlay(levelNumber)
+                            }
+                        }
                     )
                 }
             }
 
-            when {
-                isCompleted -> {
-                    FilledTonalButton(onClick = onPlay, enabled = hasEnergy) {
-                        Text(if (hasEnergy) "Replay" else "No energy")
-                    }
-                }
-                isPlayable && hasEnergy -> {
-                    Button(onClick = onPlay) {
-                        Text("Play")
-                    }
-                }
-                isPlayable && !hasEnergy -> {
-                    FilledTonalButton(onClick = {}, enabled = false) {
-                        Text("No energy")
-                    }
-                }
-                else -> {
-                    FilledTonalButton(onClick = {}, enabled = false) {
-                        Text("Locked")
-                    }
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 18.dp)
+                    .heightIn(min = 60.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = if (focusPlayable && hasEnergy) Color(0xFF9BE54D) else Color(0xFFE0E3D8),
+                tonalElevation = 4.dp,
+                shadowElevation = 8.dp
+            ) {
+                Button(
+                    onClick = { onPlay(focusLevel) },
+                    enabled = focusPlayable && hasEnergy,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text(
+                        text = when {
+                            !hasEnergy -> strings.text("company.scene.no_energy")
+                            !focusPlayable -> strings.text("company.scene.locked_level")
+                            else -> strings.text("company.scene.level").replace("{value}", focusLevel.toString())
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -391,62 +469,178 @@ private fun CampaignLevelCard(
 }
 
 @Composable
-private fun CampaignHistoryScreen(
-    progress: List<CampaignLevelProgress>,
-    onClose: () -> Unit,
+private fun LevelStone(
+    levelNumber: Int,
+    stars: Int,
+    isCurrentFocus: Boolean,
+    isLocked: Boolean,
+    onClick: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    val size = if (isCurrentFocus) 82.dp else 64.dp
+    val bg = when {
+        isLocked -> Color(0xFFC8C6BE)
+        isCurrentFocus -> Color(0xFFF0D4A3)
+        else -> Color(0xFFE6C898)
+    }
+    Surface(
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        color = bg,
+        tonalElevation = if (isCurrentFocus) 8.dp else 3.dp,
+        shadowElevation = if (isCurrentFocus) 10.dp else 4.dp,
+        onClick = onClick,
+        enabled = true
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = if (isCurrentFocus) 3.dp else 1.dp,
+                    color = if (isCurrentFocus) Color(0xFF9F6A1F) else Color(0xFFB98F56),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "History",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            TextButton(onClick = onClose) {
-                Text("Close")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = levelNumber.toString(),
+                    style = if (isCurrentFocus) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6C5129)
+                )
+                if (stars > 0) {
+                    Text(
+                        text = starsLabel(stars),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF8A641C)
+                    )
+                }
             }
         }
+    }
+}
 
-        if (progress.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Completed levels will appear here.",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+@Composable
+private fun SideSceneAction(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+private fun SideInfoBadge(
+    title: String,
+    value: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White.copy(alpha = 0.86f),
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(title, style = MaterialTheme.typography.labelSmall)
+            Text(value, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun CampaignHistoryScreen(
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
+    progress: List<CampaignLevelProgress>,
+    onSelectLevel: (Int) -> Unit,
+    onClose: () -> Unit,
+) {
+    SceneBackdrop(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        topColor = Color(0xFFD7EEFF),
+        bottomColor = Color(0xFFF7FBFF),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                itemsIndexed(progress) { _, item ->
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        tonalElevation = 1.dp
-                    ) {
-                        Row(
+                Text(
+                    text = strings.text("company.history.title"),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                TextButton(onClick = onClose) {
+                    Text(strings.text("company.action.close"))
+                }
+            }
+
+            if (progress.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = strings.text("company.history.empty"),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 58.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(progress) { item ->
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .aspectRatio(1f)
+                                .clickable { onSelectLevel(item.levelNumber) },
+                            shape = RoundedCornerShape(18.dp),
+                            color = Color.White.copy(alpha = 0.88f),
+                            tonalElevation = 2.dp,
+                            shadowElevation = 4.dp
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("Level ${item.levelNumber}", fontWeight = FontWeight.SemiBold)
-                                Text("Rating: ${item.bestBackendRating}/10", style = MaterialTheme.typography.bodySmall)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(6.dp),
+                                verticalArrangement = Arrangement.SpaceBetween,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = item.levelNumber.toString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = starsLabel(starsForRating(item.bestBackendRating)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF8A641C)
+                                )
+                                Text(
+                                    text = "${item.bestBackendRating}/10",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                            Text(starsLabel(starsForRating(item.bestBackendRating)))
                         }
                     }
                 }

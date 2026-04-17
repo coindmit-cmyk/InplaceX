@@ -3,41 +3,40 @@ package com.mirkori.inplacex
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.BoostStockType
 import com.mirkori.inplacex.data.local.GameModeStatType
+import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
+import com.mirkori.inplacex.data.local.MonetizationProductType
+import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
-import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
 import com.mirkori.inplacex.platform.services.RewardedPlacement
+import com.mirkori.inplacex.ui.background.ScreenBackgroundPreset
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
-import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
+import com.mirkori.inplacex.ui.screens.developer.DeveloperRootScreen
+import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
-import com.mirkori.inplacex.ui.shell.AppTopBar
 import com.mirkori.inplacex.ui.shell.AppShell
+import com.mirkori.inplacex.ui.shell.AppTopBar
 import com.mirkori.inplacex.ui.shell.BottomLayerMode
+import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
@@ -46,8 +45,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        enableImmersiveFullscreen()
 
         setContent {
             InplaceXTheme {
@@ -61,14 +58,20 @@ class MainActivity : ComponentActivity() {
                 val adService = providerServices.adService
                 val billingService = providerServices.billingService
                 val authService = providerServices.authService
+
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+                var isDeveloperOpen by rememberSaveable { mutableStateOf(false) }
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
                 var currentDebugSecret by rememberSaveable { mutableStateOf<String?>(null) }
                 var progressState by remember { mutableStateOf(progressRepository.loadState()) }
-                val campaignProgress = remember(progressState.highestUnlockedCampaignLevel, progressState.totalCampaignRating) {
+
+                val campaignProgress = remember(
+                    progressState.highestUnlockedCampaignLevel,
+                    progressState.totalCampaignRating,
+                ) {
                     val campaignUpperBound = maxOf(40, progressState.highestUnlockedCampaignLevel + 20)
                     progressRepository.loadCampaignProgressRange(1, campaignUpperBound)
                 }
@@ -84,7 +87,15 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val isPremium = entitlements.adsDisabled
-
+                val isHomeLobby = currentSection == AppSection.HOME && !isInGame && !isDeveloperOpen
+                val appBackgroundStyle = if (isHomeLobby) {
+                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.SoftSky)
+                } else {
+                    ScreenBackgroundStyle.ImageAsset(
+                        assetPath = "image/background/app_bg.png",
+                        fallbackColor = androidx.compose.ui.graphics.Color(0xFF4C6FFF),
+                    )
+                }
                 val bottomMode = when {
                     isInGame -> if (isPremium) BottomLayerMode.NONE else BottomLayerMode.AD
                     else -> BottomLayerMode.MENU
@@ -96,30 +107,61 @@ class MainActivity : ComponentActivity() {
                         onSectionChange = { section ->
                             currentSection = section
                             isSettingsOpen = false
+                            isDeveloperOpen = false
                         },
                         bottomMode = bottomMode,
                         topMode = TopLayerMode.OVERLAY,
-                        backgroundStyle = ScreenBackgroundStyle.ImageAsset(
-                            assetPath = "image/background/app_bg.png",
-                            fallbackColor = Color(0xFF4C6FFF)
-                        ),
+                        centerMode = if (isHomeLobby) CenterLayerMode.TRANSPARENT else CenterLayerMode.SURFACE,
+                        backgroundStyle = appBackgroundStyle,
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
                                 coins = progressState.coins,
-                                showBack = isInGame,
-                                onBackClick = { requestExitGame = true },
-                                onSettingsClick = { isSettingsOpen = true }
+                                showBack = isInGame || isDeveloperOpen,
+                                onBackClick = {
+                                    when {
+                                        isDeveloperOpen -> isDeveloperOpen = false
+                                        else -> requestExitGame = true
+                                    }
+                                },
+                                onSettingsClick = { isSettingsOpen = true },
                             )
                         },
                         bottomAdContent = {
                             DebugSecretAdSlot(
                                 debugSecret = currentDebugSecret,
-                                adsDisabled = progressState.adsDisabled
+                                adsDisabled = progressState.adsDisabled,
                             )
-                        }
+                        },
                     ) {
                         when {
+                            isDeveloperOpen -> DeveloperRootScreen(
+                                progressState = progressState,
+                                onAddCoins = {
+                                    progressState = progressRepository.addCoins(100)
+                                },
+                                onAddHelpers = {
+                                    progressState = progressRepository.addAllHelpers(3)
+                                },
+                                onClearBoosts = {
+                                    progressState = progressRepository.clearBoosts()
+                                },
+                                onRefillEnergy = {
+                                    if (progressRepository.buyCampaignEnergy(costCoins = 0, amount = progressState.campaignEnergyMax)) {
+                                        progressState = progressRepository.loadState()
+                                    }
+                                },
+                                onEnableAdFree = {
+                                    progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
+                                },
+                                onEnablePro = {
+                                    progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
+                                },
+                                onEnableProPlus = {
+                                    progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
+                                },
+                            )
+
                             currentSection == AppSection.HOME -> HomeRootScreen(
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
@@ -182,10 +224,11 @@ class MainActivity : ComponentActivity() {
                                     if (adService.shouldShowPostGameInterstitial(progressState.matchesPlayed, entitlements)) {
                                         adService.showInterstitial(InterstitialPlacement.POST_MATCH)
                                     }
-                                }
+                                },
                             )
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen()
+
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
                                 progressState = progressState,
                                 campaignProgress = campaignProgress,
@@ -267,8 +310,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onMatchStarted = {
                                     progressState = progressRepository.recordMatchStarted()
-                                }
+                                },
                             )
+
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = progressState,
                                 onWatchRewardedCoins = {
@@ -308,20 +352,21 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onBuyRemoveAds = {
                                     if (billingService.purchase(BillingProductId.REMOVE_ADS)) {
-                                        progressState = progressRepository.activateProduct(com.mirkori.inplacex.data.local.MonetizationProductType.REMOVE_ADS)
+                                        progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
                                     }
                                 },
                                 onBuyPro = {
                                     if (billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)) {
-                                        progressState = progressRepository.activateProduct(com.mirkori.inplacex.data.local.MonetizationProductType.PRO_SUBSCRIPTION)
+                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
                                     }
                                 },
                                 onBuyProPlus = {
                                     if (billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)) {
-                                        progressState = progressRepository.activateProduct(com.mirkori.inplacex.data.local.MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
+                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
                                     }
-                                }
+                                },
                             )
+
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
                                 progressState = progressState,
                                 onGooglePlaySignIn = {
@@ -332,9 +377,6 @@ class MainActivity : ComponentActivity() {
                                     authService.signOut()
                                     progressState = progressRepository.signOutFromGooglePlay()
                                 },
-                                onAddDeveloperCoins = {
-                                    progressState = progressRepository.addCoins(100)
-                                }
                             )
                         }
 
@@ -344,30 +386,18 @@ class MainActivity : ComponentActivity() {
                                 onLanguageChange = { language ->
                                     currentLanguageName = language.name
                                 },
+                                onOpenDeveloper = {
+                                    isSettingsOpen = false
+                                    isDeveloperOpen = true
+                                },
                                 onClose = {
                                     isSettingsOpen = false
-                                }
+                                },
                             )
                         }
                     }
                 }
             }
-        }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            enableImmersiveFullscreen()
-        }
-    }
-
-    private fun enableImmersiveFullscreen() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 }

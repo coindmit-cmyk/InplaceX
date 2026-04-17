@@ -11,15 +11,17 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -44,65 +46,98 @@ fun AppTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (showBack) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = strings.text("top.back"),
-                    tint = appearance.backIcon.tintColor.takeOrElse(MaterialTheme.colorScheme.onSurface)
-                )
-            }
+            TopCircleAction(
+                icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = strings.text("top.back"),
+                tint = appearance.backIcon.tintColor.takeOrElse(MaterialTheme.colorScheme.onSurface),
+                onClick = onBackClick
+            )
         } else {
-            Box(modifier = Modifier.size(40.dp))
+            Box(modifier = Modifier.size(44.dp))
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatChip(
+            TopStatPill(
                 icon = Icons.Outlined.Bolt,
-                iconTint = appearance.energyIcon.tintColor.takeOrElse(Color(0xFF4C6FFF)),
+                iconTint = appearance.energyIcon.tintColor.takeOrElse(Color(0xFF4267FF)),
                 value = energy.toString(),
                 contentDescription = strings.text("top.energy")
             )
-            StatChip(
+            TopStatPill(
                 icon = Icons.Outlined.MonetizationOn,
-                iconTint = appearance.coinsIcon.tintColor.takeOrElse(Color(0xFFCC8A00)),
+                iconTint = appearance.coinsIcon.tintColor.takeOrElse(Color(0xFFE09A12)),
                 value = coins.toString(),
                 contentDescription = strings.text("top.coins")
             )
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = strings.text("top.settings"),
-                    tint = appearance.settingsIcon.tintColor.takeOrElse(MaterialTheme.colorScheme.onSurface)
-                )
-            }
+            TopCircleAction(
+                icon = Icons.Outlined.Settings,
+                contentDescription = strings.text("top.settings"),
+                tint = appearance.settingsIcon.tintColor.takeOrElse(MaterialTheme.colorScheme.onSurface),
+                onClick = onSettingsClick
+            )
         }
     }
 }
 
 @Composable
-private fun StatChip(
+private fun TopCircleAction(
+    icon: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.White.copy(alpha = 0.78f),
+        contentColor = tint,
+        tonalElevation = 2.dp,
+        shadowElevation = 6.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopStatPill(
     icon: ImageVector,
     iconTint: Color,
     value: String,
     contentDescription: String,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.White.copy(alpha = 0.80f),
+        tonalElevation = 2.dp,
+        shadowElevation = 6.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.74f))
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = iconTint
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = iconTint
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 
-private fun Color.takeOrElse(fallback: Color): Color = if (this == Color.Unspecified || this == Color.Transparent) fallback else this
+private fun Color.takeOrElse(fallback: Color): Color =
+    if (this == Color.Unspecified || this == Color.Transparent) fallback else this

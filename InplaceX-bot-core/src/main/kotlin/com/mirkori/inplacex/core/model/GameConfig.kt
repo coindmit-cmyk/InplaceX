@@ -5,6 +5,8 @@ data class GameConfig(
     val allowDuplicates: Boolean = true,
     val attemptLimit: Int = 12,
     val forbidAllSameDigitsGuess: Boolean = true,
+    val forbidAdjacentDuplicates: Boolean = false,
+    val forbidTripleDuplicates: Boolean = false,
     val turnTimeLimitSeconds: Int? = null,
     val seed: Long? = null,
 ) {

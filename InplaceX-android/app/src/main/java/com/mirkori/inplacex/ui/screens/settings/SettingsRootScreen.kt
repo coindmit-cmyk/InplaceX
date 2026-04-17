@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +30,7 @@ import com.mirkori.inplacex.platform.localization.LocalizationProvider
 fun SettingsRootScreen(
     currentLanguage: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
+    onOpenDeveloper: () -> Unit,
     onClose: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -68,7 +70,7 @@ fun SettingsRootScreen(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
 
@@ -91,6 +93,13 @@ fun SettingsRootScreen(
                             }
                         )
                     }
+                }
+
+                TextButton(
+                    onClick = onOpenDeveloper,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(strings.text("settings.developer"))
                 }
             }
         }

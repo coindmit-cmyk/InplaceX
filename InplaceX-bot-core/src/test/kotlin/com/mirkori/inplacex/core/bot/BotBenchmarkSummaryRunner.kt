@@ -1,0 +1,141 @@
+package com.mirkori.inplacex.core.bot
+
+import com.mirkori.inplacex.core.engine.SecretGenerator
+import com.mirkori.inplacex.core.model.GameConfig
+import java.io.File
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import kotlin.system.measureNanoTime
+
+private const val SUMMARY_RUN_TIMEOUT_MINUTES = 1L
+private const val DEFAULT_SUMMARY_SAMPLES_PER_BUCKET = 10
+
+private data class SummaryRun(
+    val difficulty: BotDifficulty,
+    val codeLength: Int,
+    val secret: String,
+    val won: Boolean,
+    val attempts: Int,
+    val elapsedMillis: Long,
+    val timedOut: Boolean,
+)
+
+private data class SummaryBucket(
+    val difficulty: BotDifficulty,
+    val codeLength: Int,
+    val runs: List<SummaryRun>,
+)
+
+fun main() {
+    val samplesPerBucket = (
+        System.getProperty("bot.summary.samples")
+            ?: System.getenv("BOT_SUMMARY_SAMPLES")
+        )
+        ?.toIntOrNull()
+        ?.coerceAtLeast(1)
+        ?: DEFAULT_SUMMARY_SAMPLES_PER_BUCKET
+    val difficulties = listOf(
+        BotDifficulty.EASY,
+        BotDifficulty.MEDIUM,
+        BotDifficulty.HARD,
+        BotDifficulty.EXPERT,
+    )
+    val codeLengths = listOf(4, 6, 8, 10)
+
+    var seedCursor = System.currentTimeMillis()
+    val buckets = mutableListOf<SummaryBucket>()
+
+    difficulties.forEach { difficulty ->
+        codeLengths.forEach { codeLength ->
+            val config = GameConfig(
+                codeLength = codeLength,
+                allowDuplicates = true,
+                attemptLimit = codeLength * 10,
+                forbidAllSameDigitsGuess = true,
+            )
+            val runs = (0 until samplesPerBucket).map {
+                val secretSeed = seedCursor++
+                val runSeed = seedCursor++
+                val secret = SecretGenerator.generate(config.copy(seed = secretSeed))
+                runSummaryBenchmark(
+                    difficulty = difficulty,
+                    config = config,
+                    secret = secret,
+                    runSeed = runSeed,
+                )
+            }
+            buckets += SummaryBucket(
+                difficulty = difficulty,
+                codeLength = codeLength,
+                runs = runs,
+            )
+        }
+    }
+
+    val lines = buckets.mapIndexed { index, bucket ->
+        val averageAttempts = bucket.runs.map { it.attempts }.average()
+        val averageN = bucket.runs.map { it.attempts.toDouble() / bucket.codeLength.toDouble() }.average()
+        val averageTimeMs = bucket.runs.map { it.elapsedMillis }.average()
+        val wins = bucket.runs.count { it.won }
+        val timeouts = bucket.runs.count { it.timedOut }
+
+        "${index + 1}. ${bucket.difficulty.name} | len=${bucket.codeLength} | wins=${wins}/${bucket.runs.size} | avgAttempts=${"%.2f".format(averageAttempts)} | avgN=${"%.2f".format(averageN)} | avgTimeMs=${"%.2f".format(averageTimeMs)} | timeouts=${timeouts}"
+    }
+
+    val reportDir = File("build/reports")
+    reportDir.mkdirs()
+    val reportFile = File(reportDir, "bot-benchmark-summary.txt")
+    reportFile.writeText(lines.joinToString(System.lineSeparator()))
+
+    lines.forEach(::println)
+    println("Report written to: ${reportFile.absolutePath}")
+}
+
+private fun runSummaryBenchmark(
+    difficulty: BotDifficulty,
+    config: GameConfig,
+    secret: String,
+    runSeed: Long,
+): SummaryRun {
+    val executor = Executors.newSingleThreadExecutor()
+    return try {
+        val future = executor.submit(Callable {
+            var result: BotSimulationRun? = null
+            val elapsedNanos = measureNanoTime {
+                result = BotSolver.solveSecret(
+                    secret = secret,
+                    config = config,
+                    difficulty = difficulty,
+                    seed = runSeed,
+                    maxMoves = config.codeLength * 10,
+                )
+            }
+            val run = checkNotNull(result)
+            SummaryRun(
+                difficulty = difficulty,
+                codeLength = config.codeLength,
+                secret = secret,
+                won = run.won,
+                attempts = run.moves,
+                elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
+                timedOut = false,
+            )
+        })
+
+        future.get(SUMMARY_RUN_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+    } catch (_: TimeoutException) {
+        SummaryRun(
+            difficulty = difficulty,
+            codeLength = config.codeLength,
+            secret = secret,
+            won = false,
+            attempts = config.codeLength * 10,
+            elapsedMillis = TimeUnit.MINUTES.toMillis(SUMMARY_RUN_TIMEOUT_MINUTES),
+            timedOut = true,
+        )
+    } finally {
+        executor.shutdownNow()
+    }
+}

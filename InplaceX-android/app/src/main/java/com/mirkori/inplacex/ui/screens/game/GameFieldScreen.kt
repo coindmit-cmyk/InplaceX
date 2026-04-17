@@ -142,7 +142,7 @@ fun GameFieldScreen(
     var currentGuess by remember { mutableStateOf("") }
     var selectedTool by remember { mutableStateOf(TableTool.NO) }
     var selectedHintMode by remember { mutableStateOf<HintMode?>(null) }
-    var autoExclude by remember { mutableStateOf(true) }
+    var autoExclude by remember(autoModeAvailable) { mutableStateOf(autoModeAvailable) }
     var elapsedSeconds by remember { mutableStateOf(0) }
     var turnElapsedSeconds by remember { mutableStateOf(0) }
     var bonusMoves by remember { mutableStateOf(0) }
@@ -157,6 +157,7 @@ fun GameFieldScreen(
     var extraMovesBoostUses by remember { mutableStateOf(0) }
     var extraTimeBoostUses by remember { mutableStateOf(0) }
     var completionReported by remember { mutableStateOf(false) }
+    val effectiveAutoExclude = autoModeAvailable && autoExclude
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -334,6 +335,7 @@ fun GameFieldScreen(
     }
 
     fun tryAutoSolve() {
+        if (!effectiveAutoExclude) return
         repeat(params.lenSecret) { position ->
             val possible = (0..9).filter { digit ->
                 board[digit][position] != CellMark.NO &&
@@ -510,7 +512,7 @@ fun GameFieldScreen(
             if (result == null) {
                 statusText = outcome.message ?: strings.text("game.status.hint_unavailable")
             } else {
-                if (result.count == 0 && autoExclude) {
+                if (result.count == 0 && effectiveAutoExclude) {
                     lockDigitAsImpossibleEverywhere(result.digit)
                 }
                 digitHintDialogText = tr(
@@ -595,17 +597,17 @@ fun GameFieldScreen(
 
         val lastAttempt = newSnapshot.attempts.last()
         onGuessResolved(guess, lastAttempt.score, lastAttempt.isWin)
-        if (lastAttempt.score == 0 && autoExclude) {
+        if (lastAttempt.score == 0 && effectiveAutoExclude) {
             guess.forEachIndexed { index, ch ->
                 lockNo(ch.digitToInt(), index)
             }
         }
 
-        if (autoExclude) {
+        if (effectiveAutoExclude) {
             inferFromLockedMatches(guess, lastAttempt.score)
         }
 
-        if (newSnapshot.attempts.size >= 2) {
+        if (effectiveAutoExclude && newSnapshot.attempts.size >= 2) {
             val prevAttempt = newSnapshot.attempts[newSnapshot.attempts.lastIndex - 1]
             inferFromSingleChange(
                 prevGuess = prevAttempt.guess,
@@ -656,9 +658,10 @@ fun GameFieldScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(22.dp),
                 tonalElevation = 2.dp,
-                color = Color.White.copy(alpha = 0.95f)
+                color = Color.White.copy(alpha = 0.82f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
             ) {
                 TopModule(
                     params = params,
@@ -686,9 +689,10 @@ fun GameFieldScreen(
                     modifier = Modifier
                         .weight(0.42f)
                         .fillMaxHeight(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(22.dp),
                     tonalElevation = 2.dp,
-                    color = Color.White.copy(alpha = 0.95f)
+                    color = Color.White.copy(alpha = 0.82f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
                 ) {
                     AttemptsModule(attempts = attemptLines)
                 }
@@ -697,9 +701,10 @@ fun GameFieldScreen(
                     modifier = Modifier
                         .weight(0.58f)
                         .fillMaxHeight(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(22.dp),
                     tonalElevation = 2.dp,
-                    color = Color.White.copy(alpha = 0.95f)
+                    color = Color.White.copy(alpha = 0.82f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
                 ) {
                     VariantsModule(
                         lenSecret = params.lenSecret,
@@ -714,9 +719,10 @@ fun GameFieldScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(46.dp),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(22.dp),
                     tonalElevation = 2.dp,
-                    color = Color.White.copy(alpha = 0.95f)
+                    color = Color.White.copy(alpha = 0.82f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
                 ) {
                     HelpersModule(
                         selectedHintMode = selectedHintMode,
@@ -741,13 +747,14 @@ fun GameFieldScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(42.dp),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(22.dp),
                 tonalElevation = 2.dp,
-                color = Color.White.copy(alpha = 0.95f)
+                color = Color.White.copy(alpha = 0.82f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
             ) {
                 ToolsModule(
                     selectedTool = selectedTool,
-                    autoExclude = autoExclude,
+                    autoExclude = effectiveAutoExclude,
                     autoModeAvailable = autoModeAvailable,
                     onToolSelect = { selectedTool = it },
                     onToggleAutoExclude = {
@@ -767,9 +774,10 @@ fun GameFieldScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(22.dp),
                 tonalElevation = 2.dp,
-                color = Color.White.copy(alpha = 0.95f)
+                color = Color.White.copy(alpha = 0.82f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.76f))
             ) {
                 InputComposerModule(
                     lenSecret = params.lenSecret,
@@ -884,9 +892,10 @@ private fun InfoChip(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         tonalElevation = 1.dp,
-        color = Color(0xFFF2F1FB)
+        color = Color.White.copy(alpha = 0.84f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.74f))
     ) {
         Column(
             modifier = Modifier
@@ -924,9 +933,10 @@ private fun AttemptsModule(attempts: List<String>) {
             ) {
                 items(attempts) { line ->
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(14.dp),
                         tonalElevation = 1.dp,
-                        color = Color(0xFFF7F7FD)
+                        color = Color.White.copy(alpha = 0.78f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
                     ) {
                         Text(
                             text = line,
@@ -1085,12 +1095,12 @@ private fun HintButton(
         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = if (selected) Color(0xFFCCE0FF) else Color(0xFFF0F1FF),
+            containerColor = if (selected) Color(0xFFD7E5FF) else Color.White.copy(alpha = 0.76f),
             contentColor = Color(0xFF23253A)
         ),
         border = androidx.compose.foundation.BorderStroke(
             width = if (selected) 2.dp else 1.dp,
-            color = if (selected) Color(0xFF4C6FFF) else Color(0xFFD8DBEA)
+            color = if (selected) Color(0xFF4C6FFF) else Color.White.copy(alpha = 0.72f)
         )
     ) {
         Row(
@@ -1129,9 +1139,10 @@ private fun BoostButton(
         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = Color(0xFFF0F1FF),
+            containerColor = Color.White.copy(alpha = 0.76f),
             contentColor = Color(0xFF23253A)
-        )
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -1171,8 +1182,12 @@ private fun AutoModeButton(
         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = if (autoExclude) Color(0xFFDDE4FF) else Color(0xFFF0F1F6),
+            containerColor = if (autoExclude) Color(0xFFD7E5FF) else Color.White.copy(alpha = 0.76f),
             contentColor = Color(0xFF23253A)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (autoExclude) 2.dp else 1.dp,
+            color = if (autoExclude) Color(0xFF4C6FFF) else Color.White.copy(alpha = 0.72f)
         )
     ) {
         Row(
@@ -1258,7 +1273,8 @@ private fun ToolButton(
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = if (selected) color else color.copy(alpha = 0.30f),
             contentColor = Color(0xFF22253B)
-        )
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
     ) {
         Text(
             text = title,

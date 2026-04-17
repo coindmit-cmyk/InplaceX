@@ -11,3 +11,8 @@ enum class TopLayerMode {
     OVERLAY,
     NONE,
 }
+
+enum class CenterLayerMode {
+    SURFACE,
+    TRANSPARENT,
+}

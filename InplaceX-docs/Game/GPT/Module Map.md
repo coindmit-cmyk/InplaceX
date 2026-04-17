@@ -51,9 +51,28 @@ Responsibilities:
 - user interaction
 - platform + game integration
 
+### backend/runtime
+
+Primary packages:
+
+- `backend.bot`
+- future `backend.match.*`
+- future `backend.transport.*`
+
+Responsibilities:
+
+- server-side bot player runtime
+- match participant adapters
+- room/session orchestration
+- backend-side PvP flow support
+
 ## Physical Status
 
 Current repo status:
 
-- all code still lives inside one Android app module
-- logical separation exists in package structure, not yet in Gradle modules
+- shared bot logic now lives in `InplaceX-bot-core`
+- server-side bot adapter now lives in `InplaceX-backend`
+- Android client lives in `InplaceX-android:app`
+- bot rules, bot agent, grid catalog, solver facade, score calculator, validator, secret generator, and `GameConfig` are now physically shared through the bot-core module
+- UI, platform services, and Android rendering remain inside the Android app module
+- backend matchmaking, persistence, and transport layers are still future work, but the bot participant contract is now started in the backend module

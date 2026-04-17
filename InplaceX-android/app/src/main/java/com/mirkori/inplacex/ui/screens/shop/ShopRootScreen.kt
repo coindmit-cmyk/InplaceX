@@ -2,20 +2,27 @@ package com.mirkori.inplacex.ui.screens.shop
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
+import com.mirkori.inplacex.ui.screens.shared.SceneBackdrop
+import com.mirkori.inplacex.ui.screens.shared.SceneCard
+import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 
 @Composable
 fun ShopRootScreen(
@@ -33,130 +40,152 @@ fun ShopRootScreen(
 ) {
     val strings = LocalAppStrings.current
 
-    Column(
+    SceneBackdrop(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(10.dp),
+        topColor = Color(0xFFE7D9FF),
+        bottomColor = Color(0xFFFDF9FF),
     ) {
-        Text(
-            text = strings.text("shop.title"),
-            style = MaterialTheme.typography.headlineSmall
-        )
-        Text(
-            text = "${strings.text("top.coins")}: ${progressState.coins}",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        SectionCard(strings.text("shop.rewarded.title"), strings.text("shop.rewarded.coins")) {
-            Button(onClick = onWatchRewardedCoins) {
-                Text(strings.text("shop.rewarded.watch"))
-            }
-        }
-
-        SectionCard(strings.text("shop.hints")) {
-            ShopItemCard(strings.text("shop.item.open_position"), "20 coins", onBuyOpenPositionHint)
-            ShopItemCard(strings.text("shop.item.check_digit"), "15 coins", onBuyCheckDigitHint)
-            ShopItemCard(strings.text("shop.item.check_position"), "25 coins", onBuyCheckPositionHint)
-            ShopItemCard(strings.text("shop.item.extra_moves"), "30 coins", onBuyExtraMovesBoost)
-            ShopItemCard(strings.text("shop.item.extra_time"), "30 coins", onBuyExtraTimeBoost)
-            ShopItemCard(strings.text("shop.item.energy"), "25 coins", onBuyEnergy)
-        }
-
-        SectionCard(strings.text("shop.premium")) {
-            PurchaseCard(
-                title = strings.text("shop.product.remove_ads"),
-                description = strings.text("shop.product.remove_ads.desc"),
-                actionLabel = if (progressState.adFreePurchased) strings.text("shop.owned") else strings.text("shop.buy"),
-                enabled = !progressState.adFreePurchased,
-                onAction = onBuyRemoveAds,
-            )
-            PurchaseCard(
-                title = strings.text("shop.product.pro"),
-                description = strings.text("shop.product.pro.desc"),
-                actionLabel = if (progressState.proSubscriptionActive) strings.text("shop.active") else strings.text("shop.subscribe"),
-                enabled = !progressState.proSubscriptionActive,
-                onAction = onBuyPro,
-            )
-            PurchaseCard(
-                title = strings.text("shop.product.pro_plus"),
-                description = strings.text("shop.product.pro_plus.desc"),
-                actionLabel = if (progressState.proPlusSubscriptionActive) strings.text("shop.active") else strings.text("shop.subscribe"),
-                enabled = !progressState.proPlusSubscriptionActive,
-                onAction = onBuyProPlus,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionCard(
-    title: String,
-    description: String? = null,
-    content: @Composable () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
-            if (description != null) {
-                Text(text = description, style = MaterialTheme.typography.bodyMedium)
+            SceneCard {
+                Text(
+                    text = strings.text("shop.title"),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = strings.text("shop.rewarded.coins"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SceneSplitStatRow(
+                    leftLabel = strings.text("top.coins"),
+                    leftValue = progressState.coins.toString(),
+                    rightLabel = strings.text("top.energy"),
+                    rightValue = "${progressState.campaignEnergy}/${progressState.campaignEnergyMax}",
+                )
+                Button(
+                    onClick = onWatchRewardedCoins,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(strings.text("shop.rewarded.watch"))
+                }
             }
-            content()
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SceneActionTile(
+                    title = strings.text("shop.hints"),
+                    subtitle = "5 helper types for matches and campaign runs",
+                    modifier = Modifier.weight(1f),
+                    accentBrush = Brush.verticalGradient(listOf(Color(0xFF80D5FF), Color(0xFF4C8FFF))),
+                    onClick = {}
+                )
+                SceneActionTile(
+                    title = strings.text("shop.premium"),
+                    subtitle = "Ad-free, Pro and Pro+ access",
+                    modifier = Modifier.weight(1f),
+                    accentBrush = Brush.verticalGradient(listOf(Color(0xFFFFD37A), Color(0xFFF19A2A))),
+                    onClick = {}
+                )
+            }
+
+            SceneCard {
+                Text(
+                    text = strings.text("shop.hints"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                ShopLine(strings.text("shop.item.open_position"), "20", onBuyOpenPositionHint)
+                ShopLine(strings.text("shop.item.check_digit"), "15", onBuyCheckDigitHint)
+                ShopLine(strings.text("shop.item.check_position"), "25", onBuyCheckPositionHint)
+                ShopLine(strings.text("shop.item.extra_moves"), "30", onBuyExtraMovesBoost)
+                ShopLine(strings.text("shop.item.extra_time"), "30", onBuyExtraTimeBoost)
+                ShopLine(strings.text("shop.item.energy"), "25", onBuyEnergy)
+            }
+
+            SceneCard {
+                Text(
+                    text = strings.text("shop.premium"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                PremiumLine(
+                    title = strings.text("shop.product.remove_ads"),
+                    active = progressState.adFreePurchased,
+                    actionLabel = strings.text(if (progressState.adFreePurchased) "shop.owned" else "shop.buy"),
+                    onAction = onBuyRemoveAds
+                )
+                PremiumLine(
+                    title = strings.text("shop.product.pro"),
+                    active = progressState.proSubscriptionActive,
+                    actionLabel = strings.text(if (progressState.proSubscriptionActive) "shop.active" else "shop.subscribe"),
+                    onAction = onBuyPro
+                )
+                PremiumLine(
+                    title = strings.text("shop.product.pro_plus"),
+                    active = progressState.proPlusSubscriptionActive,
+                    actionLabel = strings.text(if (progressState.proPlusSubscriptionActive) "shop.active" else "shop.subscribe"),
+                    onAction = onBuyProPlus
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ShopItemCard(
+private fun ShopLine(
     title: String,
     price: String,
     onBuy: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            Text(text = price, style = MaterialTheme.typography.bodyMedium)
-            Button(onClick = onBuy) {
-                Text("Buy")
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text("$price coins", style = MaterialTheme.typography.bodySmall)
+        }
+        Button(onClick = onBuy) {
+            Text("Buy")
         }
     }
 }
 
 @Composable
-private fun PurchaseCard(
+private fun PremiumLine(
     title: String,
-    description: String,
+    active: Boolean,
     actionLabel: String,
-    enabled: Boolean,
     onAction: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(
+                if (active) "Unlocked" else "Premium access",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Button(
+            onClick = onAction,
+            enabled = !active
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            Text(text = description, style = MaterialTheme.typography.bodyMedium)
-            Button(
-                onClick = onAction,
-                enabled = enabled,
-            ) {
-                Text(actionLabel)
-            }
+            Text(actionLabel)
         }
     }
 }

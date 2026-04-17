@@ -31,6 +31,7 @@ fun AppShell(
     onSectionChange: (AppSection) -> Unit,
     bottomMode: BottomLayerMode = BottomLayerMode.MENU,
     topMode: TopLayerMode = TopLayerMode.NONE,
+    centerMode: CenterLayerMode = CenterLayerMode.SURFACE,
     backgroundStyle: ScreenBackgroundStyle = ScreenBackgroundStyle.SolidColor(Color(0xFF4A73D9)),
     layoutConfig: UiLayoutConfig = UiLayoutConfigs.Default,
     topContent: (@Composable () -> Unit)? = null,
@@ -47,6 +48,7 @@ fun AppShell(
             onSectionChange = onSectionChange,
             bottomMode = bottomMode,
             topMode = topMode,
+            centerMode = centerMode,
             backgroundStyle = backgroundStyle,
             layoutConfig = layoutConfig,
             topContent = topContent,
@@ -63,6 +65,7 @@ private fun ShellBackground(
     onSectionChange: (AppSection) -> Unit,
     bottomMode: BottomLayerMode,
     topMode: TopLayerMode,
+    centerMode: CenterLayerMode,
     backgroundStyle: ScreenBackgroundStyle,
     layoutConfig: UiLayoutConfig,
     topContent: (@Composable () -> Unit)?,
@@ -71,6 +74,11 @@ private fun ShellBackground(
 ) {
     val navBar = WindowInsets.navigationBars.asPaddingValues()
     val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
+    val bottomSlotBottomPadding = when (bottomMode) {
+        BottomLayerMode.MENU -> 0.dp
+        BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
+        BottomLayerMode.NONE -> 0.dp
+    }
 
     ScreenBackground(
         style = backgroundStyle,
@@ -122,29 +130,48 @@ private fun ShellBackground(
                 }
             }
 
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontalPadding)
-                    .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
-                    .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp),
-                tonalElevation = 0.dp,
-                color = if (centerSurfaceColor != Color.Transparent) {
-                    centerSurfaceColor
-                } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            horizontal = innerHorizontalPadding,
-                            vertical = 4.dp
-                        )
+            val centerLayerModifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .padding(horizontal = horizontalPadding)
+                .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
+                .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
+
+            when (centerMode) {
+                CenterLayerMode.SURFACE -> Surface(
+                    modifier = centerLayerModifier,
+                    tonalElevation = 0.dp,
+                    color = if (centerSurfaceColor != Color.Transparent) {
+                        centerSurfaceColor
+                    } else {
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                    }
                 ) {
-                    content()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(
+                                horizontal = innerHorizontalPadding,
+                                vertical = 4.dp
+                            )
+                    ) {
+                        content()
+                    }
+                }
+
+                CenterLayerMode.TRANSPARENT -> Box(
+                    modifier = centerLayerModifier
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(
+                                horizontal = innerHorizontalPadding,
+                                vertical = 4.dp
+                            )
+                    ) {
+                        content()
+                    }
                 }
             }
 
@@ -154,7 +181,7 @@ private fun ShellBackground(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding)
-                        .padding(bottom = navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding)
+                        .padding(bottom = bottomSlotBottomPadding)
                         .height(bottomSlotHeight)
                 ) {
                     AppBottomSlot(

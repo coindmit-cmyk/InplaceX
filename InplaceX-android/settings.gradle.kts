@@ -23,4 +23,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "InplaceX"
+include(":InplaceX-bot-core")
 include(":app")
+project(":InplaceX-bot-core").projectDir = file("../InplaceX-bot-core")
