@@ -1,0 +1,667 @@
+openapi: 3.0.3
+info:
+  title: InplaceX Platform API
+  version: "v1"
+servers:
+  - url: https://api.example.com/api/v1
+paths:
+  /auth/guest:
+    post:
+      summary: Guest login or restore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthGuestRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/google:
+    post:
+      summary: Login with Google ID token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthGoogleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/link/google:
+    post:
+      summary: Link Google to current player
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthGoogleRequest'
+      responses:
+        '200':
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkProviderResponse'
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+  /me:
+    get:
+      summary: Current player profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+  /me/progress/inplacex:
+    get:
+      summary: Get cloud progress snapshot for InplaceX
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressResponse'
+    put:
+      summary: Update cloud progress snapshot for InplaceX
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressResponse'
+        '409':
+          description: Revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /config/app:
+    get:
+      summary: App config and feature flags
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfigResponse'
+  /ads/reward-sessions:
+    post:
+      summary: Create ad reward session
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRewardSessionRequest'
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardSessionResponse'
+  /ads/reward-sessions/{rewardSessionId}:
+    get:
+      summary: Reward session status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: rewardSessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current session state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardSessionStatusResponse'
+  /ads/reward-sessions/{rewardSessionId}/client-complete:
+    post:
+      summary: Mark client-side completion
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: rewardSessionId
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardSessionStatusResponse'
+  /games/inplacex/rooms:
+    post:
+      summary: Create room
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '200':
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+  /games/inplacex/rooms/{roomId}:
+    get:
+      summary: Room snapshot
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+  /games/inplacex/rooms/{roomId}/join:
+    post:
+      summary: Join room
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+  /games/inplacex/rooms/{roomId}/ready:
+    post:
+      summary: Mark current player ready
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+  /games/inplacex/rooms/{roomId}/leave:
+    post:
+      summary: Leave room
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Left
+  /games/inplacex/matches/{matchId}:
+    get:
+      summary: Match state
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Match state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+  /games/inplacex/matches/{matchId}/history:
+    get:
+      summary: Match history
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Turns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchHistoryResponse'
+  /games/inplacex/matches/{matchId}/turns:
+    post:
+      summary: Submit turn
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitTurnRequest'
+      responses:
+        '200':
+          description: Turn result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnResultResponse'
+  /system/ping:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Pong
+  /system/health:
+    get:
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Healthy
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthGuestRequest:
+      type: object
+      required: [installationId, platform]
+      properties:
+        installationId:
+          type: string
+        platform:
+          type: string
+          example: android
+        appVersion:
+          type: string
+        locale:
+          type: string
+        regionHint:
+          type: string
+
+    AuthGoogleRequest:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+        installationId:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        playerId:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresInSec:
+          type: integer
+        account:
+          type: object
+          properties:
+            providers:
+              type: array
+              items:
+                type: string
+
+    LinkProviderResponse:
+      type: object
+      properties:
+        linked:
+          type: boolean
+        providers:
+          type: array
+          items:
+            type: string
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    RefreshResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresInSec:
+          type: integer
+
+    MeResponse:
+      type: object
+      properties:
+        playerId:
+          type: string
+        displayName:
+          type: string
+        region:
+          type: string
+        providers:
+          type: array
+          items:
+            type: string
+
+    ProgressResponse:
+      type: object
+      properties:
+        gameSlug:
+          type: string
+        cloudRevision:
+          type: integer
+        state:
+          type: object
+          additionalProperties: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProgressUpdateRequest:
+      type: object
+      required: [baseRevision, state]
+      properties:
+        baseRevision:
+          type: integer
+        state:
+          type: object
+          additionalProperties: true
+
+    AppConfigResponse:
+      type: object
+      properties:
+        region:
+          type: string
+        wsUrl:
+          type: string
+        features:
+          type: object
+          additionalProperties: true
+        adsPolicy:
+          type: object
+          additionalProperties: true
+
+    CreateRewardSessionRequest:
+      type: object
+      required: [placement, rewardKind, rewardAmount]
+      properties:
+        placement:
+          type: string
+        rewardKind:
+          type: string
+        rewardAmount:
+          type: integer
+        providerHint:
+          type: string
+          nullable: true
+
+    RewardSessionResponse:
+      type: object
+      properties:
+        rewardSessionId:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        providerPayload:
+          type: object
+          additionalProperties: true
+
+    RewardSessionStatusResponse:
+      type: object
+      properties:
+        rewardSessionId:
+          type: string
+        status:
+          type: string
+        grant:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    CreateRoomRequest:
+      type: object
+      required: [roomType, config]
+      properties:
+        roomType:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+
+    RoomMember:
+      type: object
+      properties:
+        playerId:
+          type: string
+        displayName:
+          type: string
+        isReady:
+          type: boolean
+
+    RoomResponse:
+      type: object
+      properties:
+        roomId:
+          type: string
+        inviteCode:
+          type: string
+        gameSlug:
+          type: string
+        roomType:
+          type: string
+        status:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomMember'
+
+    MatchParticipant:
+      type: object
+      properties:
+        playerId:
+          type: string
+        status:
+          type: string
+        attemptsUsed:
+          type: integer
+        elapsedMs:
+          type: integer
+
+    MatchResponse:
+      type: object
+      properties:
+        matchId:
+          type: string
+        roomId:
+          type: string
+        mode:
+          type: string
+        status:
+          type: string
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchParticipant'
+
+    MatchTurn:
+      type: object
+      properties:
+        playerId:
+          type: string
+        turnIndex:
+          type: integer
+        guess:
+          type: string
+        score:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    MatchHistoryResponse:
+      type: object
+      properties:
+        matchId:
+          type: string
+        turns:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchTurn'
+
+    SubmitTurnRequest:
+      type: object
+      required: [clientTurnId, guess]
+      properties:
+        clientTurnId:
+          type: string
+        guess:
+          type: string
+
+    TurnResultResponse:
+      type: object
+      properties:
+        matchId:
+          type: string
+        turnIndex:
+          type: integer
+        score:
+          type: integer
+        isSolved:
+          type: boolean
+        matchStatus:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
