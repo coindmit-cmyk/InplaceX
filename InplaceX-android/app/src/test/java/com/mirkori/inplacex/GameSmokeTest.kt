@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ExampleUnitTest {
+class GameSmokeTest {
     @Test
     fun engineWinsOnExactGuess() {
         val engine = GameEngine(

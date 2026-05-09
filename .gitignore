@@ -1,16 +1,27 @@
+# IDE and local machine state
+.idea/
+.kotlin/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-**/build/
-/captures
-.externalNativeBuild
-.cxx
 local.properties
+.DS_Store
+
+# Build outputs
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local diagnostics and one-off debug captures
+*.hprof
+*.log
+/java_pid*.hprof
+/fresh-logcat.txt
+/temp-logcat.txt
+/post-start-log.txt
+/window_dump*.xml
+/blackscreen-check.png
+/emulator-screen.png
+/inplacex-*.png
+/MainActivity.debug-backup.kt
