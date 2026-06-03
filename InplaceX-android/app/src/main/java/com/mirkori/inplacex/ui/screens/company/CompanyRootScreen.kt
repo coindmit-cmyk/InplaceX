@@ -1,5 +1,4 @@
 package com.mirkori.inplacex.ui.screens.company
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,17 +53,20 @@ import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
-import com.mirkori.inplacex.ui.screens.shared.SceneBackdrop
+import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import kotlin.math.ceil
 
 @Composable
 fun CompanyRootScreen(
     progressState: GameProgressState,
     campaignProgress: List<CampaignLevelProgress>,
+    activeLevelNumber: Int?,
+    onActiveLevelNumberChange: (Int?) -> Unit,
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
@@ -86,31 +89,48 @@ fun CompanyRootScreen(
     onRecordCompanyLoss: () -> Unit = {},
     onMatchStarted: () -> Unit = {},
 ) {
+    val logTag = "CompanyRootScreen"
     val strings = LocalAppStrings.current
-    var activeLevelNumber by remember { mutableStateOf<Int?>(null) }
-    var showExitDialog by remember { mutableStateOf(false) }
+    var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var resultState by remember { mutableStateOf<CompanyMatchResult?>(null) }
-    var showHistory by remember { mutableStateOf(false) }
+    var showHistory by rememberSaveable { mutableStateOf(false) }
     val activeLevel = activeLevelNumber?.let(CampaignLevelGenerator::generate)
 
     LaunchedEffect(activeLevelNumber) {
+        AppLog.debug(
+            tag = logTag,
+            message = "campaign active level changed",
+            attributes = mapOf("level" to (activeLevelNumber?.toString() ?: "none")),
+        )
         onInGameChange(activeLevelNumber != null)
         if (activeLevelNumber == null) {
             onDebugSecretChange(null)
         }
     }
 
-    LaunchedEffect(requestExitGame) {
-        if (requestExitGame && activeLevelNumber != null) {
-            activeLevelNumber = null
-            showExitDialog = false
-            onDebugSecretChange(null)
-            onExitGameConsumed()
+    LaunchedEffect(requestExitGame, activeLevelNumber) {
+        if (!requestExitGame) return@LaunchedEffect
+
+        AppLog.debug(
+            tag = logTag,
+            message = "campaign exit request consumed",
+            attributes = mapOf("activeLevel" to (activeLevelNumber?.toString() ?: "none")),
+        )
+        if (activeLevelNumber != null) {
+            showExitDialog = true
         }
+        onExitGameConsumed()
     }
 
     BackHandler(enabled = showExitDialog) { showExitDialog = false }
     BackHandler(enabled = showHistory) { showHistory = false }
+    BackHandler(
+        enabled = activeLevelNumber != null &&
+            !showExitDialog &&
+            resultState == null
+    ) {
+        showExitDialog = true
+    }
 
     if (activeLevel != null) {
         GameFieldScreen(
@@ -133,6 +153,16 @@ fun CompanyRootScreen(
             onConsumeExtraTimeBoost = onConsumeExtraTimeBoost,
             onMatchStarted = onMatchStarted,
             onMatchFinished = { summary ->
+                AppLog.info(
+                    tag = logTag,
+                    message = "campaign match finished",
+                    attributes = mapOf(
+                        "level" to activeLevel.levelNumber.toString(),
+                        "won" to summary.won.toString(),
+                        "attempts" to summary.attemptsUsed.toString(),
+                        "elapsedSeconds" to summary.elapsedSeconds.toString(),
+                    ),
+                )
                 val rating = if (summary.won) rateCampaignMatch(activeLevel, summary) else 0
                 if (summary.won) {
                     onRecordCampaignCompletion(activeLevel.levelNumber, rating)
@@ -145,7 +175,7 @@ fun CompanyRootScreen(
                     backendRating = rating,
                     stars = starsForRating(rating),
                 )
-                activeLevelNumber = null
+                onActiveLevelNumberChange(null)
                 onDebugSecretChange(null)
             },
             autoRestartOnWin = false,
@@ -157,7 +187,7 @@ fun CompanyRootScreen(
             strings = strings,
             progress = campaignProgress.filter { it.bestBackendRating > 0 }.sortedByDescending { it.levelNumber },
             onSelectLevel = {
-                activeLevelNumber = it
+                onActiveLevelNumberChange(it)
                 showHistory = false
             },
             onClose = { showHistory = false }
@@ -209,7 +239,14 @@ fun CompanyRootScreen(
             listState = listState,
             onHistory = { showHistory = true },
             onBuyEnergy = onBuyEnergy,
-            onPlay = { activeLevelNumber = it }
+            onPlay = {
+                AppLog.info(
+                    tag = logTag,
+                    message = "campaign level selected",
+                    attributes = mapOf("level" to it.toString()),
+                )
+                onActiveLevelNumberChange(it)
+            }
         )
     }
 
@@ -222,7 +259,7 @@ fun CompanyRootScreen(
                 TextButton(
                     onClick = {
                         showExitDialog = false
-                        activeLevelNumber = null
+                        onActiveLevelNumberChange(null)
                         onDebugSecretChange(null)
                     }
                 ) {
@@ -287,51 +324,22 @@ private fun CompanySceneScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(28.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.72f), RoundedCornerShape(28.dp))
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color(0xFFD7EEFF), Color(0xFFF7FBFF))
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.74f),
+                            Color(0xFFEFF5FF).copy(alpha = 0.58f)
+                        )
                     )
                 )
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .weight(0.22f)
-                        .fillMaxHeight()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color(0xFFDFF5B1), Color(0xFFC5E68A), Color(0xFFAFD86C))
-                            )
-                        )
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(0.56f)
-                        .fillMaxHeight()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color(0xFFF4E8C9), Color(0xFFE9D8B2))
-                            )
-                        )
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(0.22f)
-                        .fillMaxHeight()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color(0xFFDFF5B1), Color(0xFFC5E68A), Color(0xFFAFD86C))
-                            )
-                        )
-                )
-            }
-
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -339,38 +347,27 @@ private fun CompanySceneScreen(
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.White.copy(alpha = 0.82f),
-                    tonalElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = strings.text("company.title"),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = strings.text("company.scene.stars")
-                                .replace("{current}", totalStars.toString())
-                                .replace("{required}", requiredStarsForNextBlock.toString()),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = if (nextBlockLocked) {
-                                strings.text("company.scene.locked")
-                            } else {
-                                strings.text("company.scene.unlocked")
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                SceneCard(accentColor = Color.White.copy(alpha = 0.80f)) {
+                    Text(
+                        text = strings.text("company.title"),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = strings.text("company.scene.stars")
+                            .replace("{current}", totalStars.toString())
+                            .replace("{required}", requiredStarsForNextBlock.toString()),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = if (nextBlockLocked) {
+                            strings.text("company.scene.locked")
+                        } else {
+                            strings.text("company.scene.unlocked")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
@@ -564,19 +561,13 @@ private fun CampaignHistoryScreen(
     onSelectLevel: (Int) -> Unit,
     onClose: () -> Unit,
 ) {
-    SceneBackdrop(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(10.dp),
-        topColor = Color(0xFFD7EEFF),
-        bottomColor = Color(0xFFF7FBFF),
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        SceneCard(accentColor = Color.White.copy(alpha = 0.76f)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -591,56 +582,63 @@ private fun CampaignHistoryScreen(
                     Text(strings.text("company.action.close"))
                 }
             }
+        }
 
-            if (progress.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = strings.text("company.history.empty"),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 58.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(progress) { item ->
-                        Surface(
+        if (progress.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = strings.text("company.history.empty"),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 58.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(progress) { item ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clickable { onSelectLevel(item.levelNumber) },
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color.White.copy(alpha = 0.88f),
+                        tonalElevation = 2.dp,
+                        shadowElevation = 4.dp
+                    ) {
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clickable { onSelectLevel(item.levelNumber) },
-                            shape = RoundedCornerShape(18.dp),
-                            color = Color.White.copy(alpha = 0.88f),
-                            tonalElevation = 2.dp,
-                            shadowElevation = 4.dp
+                                .fillMaxSize()
+                                .padding(6.dp),
+                            verticalArrangement = Arrangement.SpaceBetween,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(6.dp),
-                                verticalArrangement = Arrangement.SpaceBetween,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = item.levelNumber.toString(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = starsLabel(starsForRating(item.bestBackendRating)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF8A641C)
-                                )
-                                Text(
-                                    text = "${item.bestBackendRating}/10",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = item.levelNumber.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = starsLabel(starsForRating(item.bestBackendRating)),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF8A641C)
+                            )
+                            Text(
+                                text = "${item.bestBackendRating}/10",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

@@ -2,6 +2,9 @@ package com.mirkori.inplacex.core.bot
 
 import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.logging.InplaceXLogger
+import com.mirkori.inplacex.logging.LogLevel
+import com.mirkori.inplacex.testsupport.ConsoleLogSink
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -10,6 +13,7 @@ import java.util.concurrent.TimeoutException
 import kotlin.system.measureNanoTime
 
 private const val RUN_TIMEOUT_MINUTES = 1L
+private const val MATRIX_LOG_TAG = "BotBenchmarkMatrixRunner"
 
 private data class BenchmarkRow(
     val difficulty: BotDifficulty,
@@ -21,6 +25,10 @@ private data class BenchmarkRow(
 )
 
 fun main() {
+    val logger = InplaceXLogger(
+        sink = ConsoleLogSink(),
+        minLevel = LogLevel.INFO,
+    )
     val difficulties = listOf(
         BotDifficulty.EASY,
         BotDifficulty.MEDIUM,
@@ -64,8 +72,14 @@ fun main() {
     val reportFile = File(reportDir, "bot-benchmark-matrix.txt")
     reportFile.writeText(lines.joinToString(System.lineSeparator()))
 
-    lines.forEach(::println)
-    println("Report written to: ${reportFile.absolutePath}")
+    lines.forEach { line ->
+        logger.info(tag = MATRIX_LOG_TAG, message = line)
+    }
+    logger.info(
+        tag = MATRIX_LOG_TAG,
+        message = "report written",
+        attributes = mapOf("path" to reportFile.absolutePath),
+    )
 }
 
 private fun runTimedBenchmark(

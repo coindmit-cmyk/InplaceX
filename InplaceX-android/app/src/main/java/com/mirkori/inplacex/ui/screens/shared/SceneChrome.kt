@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -60,6 +64,29 @@ fun SceneBackdrop(
         )
         content()
     }
+}
+
+@Composable
+fun ScenePageColumn(
+    modifier: Modifier = Modifier,
+    scrollable: Boolean = false,
+    verticalSpacing: Dp = 14.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scrollModifier = if (scrollable) {
+        Modifier.verticalScroll(rememberScrollState())
+    } else {
+        Modifier
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .then(scrollModifier)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+        content = content
+    )
 }
 
 @Composable

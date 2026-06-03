@@ -3,12 +3,16 @@ package com.mirkori.inplacex.core.bot
 import com.mirkori.inplacex.core.engine.ScoreCalculator
 import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.logging.InplaceXLogger
+import com.mirkori.inplacex.logging.LogLevel
+import com.mirkori.inplacex.testsupport.ConsoleLogSink
 import java.io.File
 import kotlin.system.measureNanoTime
 
 private const val EASY_TRACE_CODE_LENGTH = 4
 private const val EASY_TRACE_MAX_MOVES = EASY_TRACE_CODE_LENGTH * 10
 private const val EASY_TRACE_SEARCH_LIMIT = 5_000
+private const val EASY_TRACE_LOG_TAG = "BotEasyFailureTraceRunner"
 
 private data class EasyTraceStep(
     val move: Int,
@@ -30,6 +34,10 @@ private data class EasyFailureTrace(
 )
 
 fun main() {
+    val logger = InplaceXLogger(
+        sink = ConsoleLogSink(),
+        minLevel = LogLevel.INFO,
+    )
     val config = GameConfig(
         codeLength = EASY_TRACE_CODE_LENGTH,
         allowDuplicates = true,
@@ -67,8 +75,14 @@ fun main() {
     val reportFile = File(reportDir, "bot-easy-failure-trace.txt")
     reportFile.writeText(lines.joinToString(System.lineSeparator()))
 
-    lines.forEach(::println)
-    println("Report written to: ${reportFile.absolutePath}")
+    lines.forEach { line ->
+        logger.info(tag = EASY_TRACE_LOG_TAG, message = line)
+    }
+    logger.info(
+        tag = EASY_TRACE_LOG_TAG,
+        message = "report written",
+        attributes = mapOf("path" to reportFile.absolutePath),
+    )
 }
 
 private fun findFirstFailure(config: GameConfig): EasyFailureTrace? {

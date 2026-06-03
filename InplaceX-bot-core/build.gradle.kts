@@ -17,6 +17,8 @@ kotlin {
 }
 
 dependencies {
+    testImplementation(project(":InplaceX-logging"))
+    testImplementation(project(":InplaceX-test-support"))
     testImplementation(libs.junit)
 }
 

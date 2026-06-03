@@ -76,6 +76,7 @@ android {
 
 dependencies {
     implementation(project(":InplaceX-bot-core"))
+    implementation(project(":InplaceX-logging"))
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.core.ktx)
@@ -91,6 +92,7 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(project(":InplaceX-test-support"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

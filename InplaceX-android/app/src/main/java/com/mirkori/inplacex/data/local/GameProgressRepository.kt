@@ -256,6 +256,16 @@ class GameProgressRepository(context: Context) {
         }
     }
 
+    fun deactivateProduct(type: MonetizationProductType): GameProgressState {
+        return mutate { row ->
+            when (type) {
+                MonetizationProductType.REMOVE_ADS -> row.copy(adFreePurchased = false)
+                MonetizationProductType.PRO_SUBSCRIPTION -> row.copy(proSubscriptionActive = false)
+                MonetizationProductType.PRO_PLUS_SUBSCRIPTION -> row.copy(proPlusSubscriptionActive = false)
+            }
+        }
+    }
+
     fun recordMatchStarted(): GameProgressState {
         return mutate { row -> row.copy(matchesPlayed = row.matchesPlayed + 1) }
     }

@@ -2,6 +2,9 @@ package com.mirkori.inplacex.core.bot
 
 import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.logging.InplaceXLogger
+import com.mirkori.inplacex.logging.LogLevel
+import com.mirkori.inplacex.testsupport.ConsoleLogSink
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -11,6 +14,7 @@ import kotlin.system.measureNanoTime
 
 private const val SUMMARY_RUN_TIMEOUT_MINUTES = 1L
 private const val DEFAULT_SUMMARY_SAMPLES_PER_BUCKET = 10
+private const val SUMMARY_LOG_TAG = "BotBenchmarkSummaryRunner"
 
 private data class SummaryRun(
     val difficulty: BotDifficulty,
@@ -29,6 +33,10 @@ private data class SummaryBucket(
 )
 
 fun main() {
+    val logger = InplaceXLogger(
+        sink = ConsoleLogSink(),
+        minLevel = LogLevel.INFO,
+    )
     val samplesPerBucket = (
         System.getProperty("bot.summary.samples")
             ?: System.getenv("BOT_SUMMARY_SAMPLES")
@@ -89,8 +97,14 @@ fun main() {
     val reportFile = File(reportDir, "bot-benchmark-summary.txt")
     reportFile.writeText(lines.joinToString(System.lineSeparator()))
 
-    lines.forEach(::println)
-    println("Report written to: ${reportFile.absolutePath}")
+    lines.forEach { line ->
+        logger.info(tag = SUMMARY_LOG_TAG, message = line)
+    }
+    logger.info(
+        tag = SUMMARY_LOG_TAG,
+        message = "report written",
+        attributes = mapOf("path" to reportFile.absolutePath),
+    )
 }
 
 private fun runSummaryBenchmark(

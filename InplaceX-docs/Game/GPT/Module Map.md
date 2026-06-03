@@ -71,8 +71,11 @@ Responsibilities:
 Current repo status:
 
 - shared bot logic now lives in `InplaceX-bot-core`
+- shared logging contract now lives in `InplaceX-logging`
+- shared test-only sinks and helpers now live in `InplaceX-test-support`
 - server-side bot adapter now lives in `InplaceX-backend`
 - Android client lives in `InplaceX-android:app`
 - bot rules, bot agent, grid catalog, solver facade, score calculator, validator, secret generator, and `GameConfig` are now physically shared through the bot-core module
+- test runners and test sinks should use the shared test-support module instead of ad-hoc local helpers
 - UI, platform services, and Android rendering remain inside the Android app module
 - backend matchmaking, persistence, and transport layers are still future work, but the bot participant contract is now started in the backend module

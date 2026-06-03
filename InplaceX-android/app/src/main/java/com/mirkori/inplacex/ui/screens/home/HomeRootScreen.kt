@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -52,6 +53,8 @@ private enum class DuelTurnOwner {
 
 @Composable
 fun HomeRootScreen(
+    screenState: HomeScreenState,
+    onScreenStateChange: (HomeScreenState) -> Unit,
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
@@ -69,22 +72,21 @@ fun HomeRootScreen(
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
 ) {
-    var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
-    var showExitDialog by remember { mutableStateOf(false) }
-    var showPreMatchDialog by remember { mutableStateOf(false) }
-    var showDuelResultDialog by remember { mutableStateOf(false) }
-    var duelResultText by remember { mutableStateOf("") }
-    var preMatchPhase by remember { mutableStateOf(PreMatchPhase.SECRET_SELECTION) }
-    var preMatchSecretInput by remember { mutableStateOf("") }
-    var preMatchTimeoutLeft by remember { mutableIntStateOf(60) }
-    var botWaitLeft by remember { mutableIntStateOf(5) }
-    var preMatchError by remember { mutableStateOf<String?>(null) }
-    var playerSecretForDuel by remember { mutableStateOf("") }
-    var botSecretForDuel by remember { mutableStateOf("") }
-    var duelTurnOwner by remember { mutableStateOf(DuelTurnOwner.PLAYER) }
-    var botLastScore by remember { mutableIntStateOf(-1) }
-    var botConfirmedPositions by remember { mutableIntStateOf(0) }
-    var duelSessionSeed by remember { mutableIntStateOf(1) }
+    var showExitDialog by rememberSaveable { mutableStateOf(false) }
+    var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
+    var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
+    var duelResultText by rememberSaveable { mutableStateOf("") }
+    var preMatchPhase by rememberSaveable { mutableStateOf(PreMatchPhase.SECRET_SELECTION) }
+    var preMatchSecretInput by rememberSaveable { mutableStateOf("") }
+    var preMatchTimeoutLeft by rememberSaveable { mutableIntStateOf(60) }
+    var botWaitLeft by rememberSaveable { mutableIntStateOf(5) }
+    var preMatchError by rememberSaveable { mutableStateOf<String?>(null) }
+    var playerSecretForDuel by rememberSaveable { mutableStateOf("") }
+    var botSecretForDuel by rememberSaveable { mutableStateOf("") }
+    var duelTurnOwner by rememberSaveable { mutableStateOf(DuelTurnOwner.PLAYER) }
+    var botLastScore by rememberSaveable { mutableIntStateOf(-1) }
+    var botConfirmedPositions by rememberSaveable { mutableIntStateOf(0) }
+    var duelSessionSeed by rememberSaveable { mutableIntStateOf(1) }
 
     val pveMode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
     val pvpMode = AppConfigCatalog.gameModes.first { it.id == "pvp_bot_duel" }
@@ -133,7 +135,7 @@ fun HomeRootScreen(
                     duelSessionSeed += 1
                     preMatchPhase = PreMatchPhase.READY_TO_START
                     showPreMatchDialog = false
-                    screenState = HomeScreenState.PVP_GAME
+                    onScreenStateChange(HomeScreenState.PVP_GAME)
                 }
             }
 
@@ -141,13 +143,13 @@ fun HomeRootScreen(
         }
     }
 
-    LaunchedEffect(requestExitGame) {
-        if (requestExitGame && screenState != HomeScreenState.ROOT) {
-            screenState = HomeScreenState.ROOT
-            showExitDialog = false
-            onExitGameConsumed()
-            onDebugSecretChange(null)
+    LaunchedEffect(requestExitGame, screenState) {
+        if (!requestExitGame) return@LaunchedEffect
+
+        if (screenState != HomeScreenState.ROOT) {
+            showExitDialog = true
         }
+        onExitGameConsumed()
     }
 
     BackHandler(enabled = showExitDialog || showPreMatchDialog || showDuelResultDialog) {
@@ -164,13 +166,21 @@ fun HomeRootScreen(
             }
         }
     }
+    BackHandler(
+        enabled = screenState != HomeScreenState.ROOT &&
+            !showExitDialog &&
+            !showPreMatchDialog &&
+            !showDuelResultDialog
+    ) {
+        showExitDialog = true
+    }
 
     when (screenState) {
         HomeScreenState.ROOT -> {
             HomeSelectionScreen(
                 pveMode = pveMode,
                 pvpMode = pvpMode,
-                onOpenPve = { screenState = HomeScreenState.PVE_GAME },
+                onOpenPve = { onScreenStateChange(HomeScreenState.PVE_GAME) },
                 onOpenPvp = {
                     preMatchPhase = PreMatchPhase.SECRET_SELECTION
                     preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
@@ -238,7 +248,7 @@ fun HomeRootScreen(
                     onRecordPvpResult(false)
                     duelResultText = "Opponent guessed your secret. Last bot score: ${botTurn.score}"
                     showDuelResultDialog = true
-                    screenState = HomeScreenState.ROOT
+                    onScreenStateChange(HomeScreenState.ROOT)
                     onDebugSecretChange(null)
                 } else {
                     duelTurnOwner = DuelTurnOwner.PLAYER
@@ -278,7 +288,7 @@ fun HomeRootScreen(
                         onRecordPvpResult(true)
                         duelResultText = "You guessed the opponent secret first."
                         showDuelResultDialog = true
-                        screenState = HomeScreenState.ROOT
+                        onScreenStateChange(HomeScreenState.ROOT)
                         onDebugSecretChange(null)
                     } else {
                         duelTurnOwner = DuelTurnOwner.BOT
@@ -298,7 +308,7 @@ fun HomeRootScreen(
                 TextButton(
                     onClick = {
                         showExitDialog = false
-                        screenState = HomeScreenState.ROOT
+                        onScreenStateChange(HomeScreenState.ROOT)
                         onDebugSecretChange(null)
                     }
                 ) {

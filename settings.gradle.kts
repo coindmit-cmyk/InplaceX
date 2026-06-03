@@ -27,8 +27,12 @@ dependencyResolutionManagement {
 rootProject.name = "InplaceX"
 
 include(":InplaceX-bot-core")
+include(":InplaceX-logging")
+include(":InplaceX-test-support")
 include(":InplaceX-backend")
 include(":app")
 project(":InplaceX-bot-core").projectDir = file("InplaceX-bot-core")
+project(":InplaceX-logging").projectDir = file("InplaceX-logging")
+project(":InplaceX-test-support").projectDir = file("InplaceX-test-support")
 project(":InplaceX-backend").projectDir = file("InplaceX-backend")
 project(":app").projectDir = file("InplaceX-android/app")

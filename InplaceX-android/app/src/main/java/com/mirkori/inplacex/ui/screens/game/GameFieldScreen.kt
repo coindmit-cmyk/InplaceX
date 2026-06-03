@@ -22,12 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Pin
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Tag
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -49,16 +44,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.annotation.DrawableRes
+import com.mirkori.inplacex.R
 import com.mirkori.inplacex.core.engine.GameEngine
 import com.mirkori.inplacex.core.match.MatchHintResult
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.logging.AppLog
 import kotlinx.coroutines.delay
 
 private enum class TableTool { NO, MAYBE, YES }
@@ -73,20 +71,20 @@ private enum class CellMark(val color: Color) {
 }
 
 private enum class HintMode(
-    val icon: ImageVector,
+    @param:DrawableRes val iconRes: Int,
     val contentDescription: String,
 ) {
-    OPEN_POSITION(Icons.Outlined.Visibility, "Open position"),
-    CHECK_DIGIT(Icons.Outlined.Tag, "Check digit"),
-    CHECK_POSITION(Icons.Outlined.Pin, "Check position"),
+    OPEN_POSITION(R.drawable.ic_hint_open_position, "Open position"),
+    CHECK_DIGIT(R.drawable.ic_hint_check_digit, "Check digit"),
+    CHECK_POSITION(R.drawable.ic_hint_check_position, "Check position"),
 }
 
 private enum class BoostMode(
-    val icon: ImageVector,
+    @param:DrawableRes val iconRes: Int,
     val contentDescription: String,
 ) {
-    EXTRA_MOVES(Icons.Outlined.Add, "Add moves"),
-    EXTRA_TIME(Icons.Outlined.Schedule, "Add time"),
+    EXTRA_MOVES(R.drawable.ic_boost_extra_moves, "Add moves"),
+    EXTRA_TIME(R.drawable.ic_boost_extra_time, "Add time"),
 }
 
 @Composable
@@ -122,6 +120,7 @@ fun GameFieldScreen(
     extraMovesPerBoost: Int = 0,
     extraTimeSecondsPerBoost: Int = 0,
 ) {
+    val logTag = "GameFieldScreen"
     val strings = LocalAppStrings.current
     val engine = remember(params.lenSecret, params.limitMoves) {
         GameEngine(
@@ -174,6 +173,16 @@ fun GameFieldScreen(
     }
 
     LaunchedEffect(engine) {
+        AppLog.info(
+            tag = logTag,
+            message = "match started",
+            attributes = mapOf(
+                "length" to params.lenSecret.toString(),
+                "limitMoves" to params.limitMoves.toString(),
+                "timeAllSeconds" to params.timeAll.toString(),
+                "fixedSecret" to (fixedSecret != null).toString(),
+            ),
+        )
         onMatchStarted()
     }
 
@@ -190,6 +199,16 @@ fun GameFieldScreen(
     fun reportMatchFinishedIfNeeded(won: Boolean) {
         if (completionReported) return
         completionReported = true
+        AppLog.info(
+            tag = logTag,
+            message = "match finished",
+            attributes = mapOf(
+                "won" to won.toString(),
+                "attempts" to snapshot.attempts.size.toString(),
+                "elapsedSeconds" to elapsedSeconds.toString(),
+                "phase" to snapshot.phase.name,
+            ),
+        )
         onMatchFinished(
             MatchSessionSummary(
                 won = won,
@@ -212,6 +231,14 @@ fun GameFieldScreen(
             snapshot.phase == MatchPhase.ACTIVE &&
             elapsedSeconds >= effectiveTotalTimeLimit
         ) {
+            AppLog.warn(
+                tag = logTag,
+                message = "match timed out",
+                attributes = mapOf(
+                    "elapsedSeconds" to elapsedSeconds.toString(),
+                    "limitSeconds" to effectiveTotalTimeLimit.toString(),
+                ),
+            )
             snapshot = engine.fail("Time is over")
             statusText = strings.text("game.status.time_over")
             reportMatchFinishedIfNeeded(won = false)
@@ -220,6 +247,11 @@ fun GameFieldScreen(
 
     LaunchedEffect(snapshot.phase) {
         if (snapshot.phase == MatchPhase.LOST) {
+            AppLog.warn(
+                tag = logTag,
+                message = "match phase became lost",
+                attributes = mapOf("attempts" to snapshot.attempts.size.toString()),
+            )
             reportMatchFinishedIfNeeded(won = false)
         }
     }
@@ -347,8 +379,19 @@ fun GameFieldScreen(
         }
     }
 
+    fun guessSlots(): String = currentGuess.padEnd(params.lenSecret, ' ').take(params.lenSecret)
+
+    fun completedGuessOrNull(): String? {
+        val guess = guessSlots()
+        return guess.takeIf { value -> value.all { it.isDigit() } }
+    }
+
+    fun isPositionLocked(position: Int): Boolean {
+        return (0..9).any { digit -> board[digit][position] == CellMark.LOCK_YES }
+    }
+
     fun addDigitLeftToRight(digit: Char) {
-        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
+        val chars = guessSlots().toCharArray()
         val index = chars.indexOfFirst { it == ' ' }
         if (index != -1) {
             chars[index] = digit
@@ -357,20 +400,25 @@ fun GameFieldScreen(
     }
 
     fun backspaceGuess() {
-        val chars = currentGuess.padEnd(params.lenSecret, ' ').toCharArray()
-        val index = chars.indexOfLast { it != ' ' }
-        if (index != -1) {
+        val chars = guessSlots().toCharArray()
+        val index = chars.indices
+            .reversed()
+            .firstOrNull { position -> chars[position] != ' ' && !isPositionLocked(position) }
+        if (index != null) {
             chars[index] = ' '
             currentGuess = String(chars)
         }
     }
 
-    fun normalizedGuess(): String = currentGuess.filter { it.isDigit() }
-
     fun hintCount(mode: HintMode): Int = when (mode) {
         HintMode.OPEN_POSITION -> openPositionHints
         HintMode.CHECK_DIGIT -> checkDigitHints
         HintMode.CHECK_POSITION -> checkPositionHints
+    }
+
+    fun visibleHintCount(mode: HintMode): Int {
+        val rewardedAllowance = if (rewardedHintAllowance == mode) 1 else 0
+        return hintCount(mode) + rewardedAllowance
     }
 
     fun hintStockType(mode: HintMode): HintStockType = when (mode) {
@@ -402,7 +450,7 @@ fun GameFieldScreen(
     }
 
     fun selectHintMode(mode: HintMode) {
-        if (!infiniteHintsEnabled && rewardedHintAllowance != mode && hintCount(mode) <= 0) {
+        if (!infiniteHintsEnabled && visibleHintCount(mode) <= 0) {
             pendingRewardedHintMode = mode
             statusText = strings.text("game.status.watch_ad_for_hint")
             return
@@ -526,7 +574,7 @@ fun GameFieldScreen(
             return
         }
 
-        if (normalizedGuess().length < params.lenSecret) {
+        if (guessSlots().any { it == ' ' }) {
             addDigitLeftToRight(digit)
         }
     }
@@ -580,8 +628,8 @@ fun GameFieldScreen(
             statusText = strings.text("game.status.wait_opponent")
             return
         }
-        val guess = normalizedGuess()
-        if (guess.length != params.lenSecret) {
+        val guess = completedGuessOrNull()
+        if (guess == null) {
             statusText = tr("game.status.enter_digits", "count" to params.lenSecret)
             return
         }
@@ -726,9 +774,9 @@ fun GameFieldScreen(
                 ) {
                     HelpersModule(
                         selectedHintMode = selectedHintMode,
-                        openPositionHints = openPositionHints,
-                        checkDigitHints = checkDigitHints,
-                        checkPositionHints = checkPositionHints,
+                        openPositionHints = visibleHintCount(HintMode.OPEN_POSITION),
+                        checkDigitHints = visibleHintCount(HintMode.CHECK_DIGIT),
+                        checkPositionHints = visibleHintCount(HintMode.CHECK_POSITION),
                         infiniteHintsEnabled = infiniteHintsEnabled,
                         extraMovesBoosts = extraMovesBoosts,
                         extraTimeBoosts = extraTimeBoosts,
@@ -790,7 +838,7 @@ fun GameFieldScreen(
                     onBackspace = ::backspaceGuess,
                     onCheck = ::submitGuess,
                     onReset = ::resetGame,
-                    canCheck = normalizedGuess().length == params.lenSecret
+                    canCheck = completedGuessOrNull() != null
                 )
             }
         }
@@ -1108,13 +1156,14 @@ private fun HintButton(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = hintMode.icon,
+                painter = painterResource(hintMode.iconRes),
                 contentDescription = when (hintMode) {
                     HintMode.OPEN_POSITION -> strings.text("game.hint.open_position")
                     HintMode.CHECK_DIGIT -> strings.text("game.hint.check_digit")
                     HintMode.CHECK_POSITION -> strings.text("game.hint.check_position")
                 },
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(18.dp),
+                tint = Color.Unspecified
             )
             Text(
                 text = count?.toString() ?: "∞",
@@ -1149,9 +1198,10 @@ private fun BoostButton(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = mode.icon,
+                painter = painterResource(mode.iconRes),
                 contentDescription = mode.contentDescription,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(18.dp),
+                tint = Color.Unspecified
             )
             Text(
                 text = label,

@@ -9,6 +9,8 @@ description = "Root Gradle build for the InplaceX repository."
 val verificationTasks = listOf(
     ":InplaceX-backend:test",
     ":InplaceX-bot-core:test",
+    ":InplaceX-logging:test",
+    ":InplaceX-test-support:test",
     ":app:testDebugUnitTest",
 )
 
@@ -20,13 +22,13 @@ tasks.register("assembleDebug") {
 
 tasks.register("verifyProject") {
     group = "verification"
-    description = "Runs backend, shared bot-core, and Android debug unit tests from the repository root."
+    description = "Runs backend, shared modules, and Android debug unit tests from the repository root."
     dependsOn(verificationTasks)
 }
 
 tasks.register("testDebugUnitTest") {
     group = "verification"
-    description = "Runs backend, shared bot-core, and Android debug unit tests from the repository root."
+    description = "Runs backend, shared modules, and Android debug unit tests from the repository root."
     dependsOn(verificationTasks)
 }
 
@@ -36,6 +38,8 @@ tasks.register<Delete>("clean") {
     delete(layout.buildDirectory)
     dependsOn(":InplaceX-backend:clean")
     dependsOn(":InplaceX-bot-core:clean")
+    dependsOn(":InplaceX-logging:clean")
+    dependsOn(":InplaceX-test-support:clean")
     dependsOn(":app:clean")
 }
 
