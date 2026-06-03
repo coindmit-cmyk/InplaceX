@@ -3,6 +3,10 @@
 .kotlin/
 *.iml
 local.properties
+.env
+.env.local
+.env.*.local
+.obsidian/
 .DS_Store
 
 # Build outputs

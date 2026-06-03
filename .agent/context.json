@@ -1,0 +1,51 @@
+{
+  "project": "InplaceX",
+  "primaryLanguage": "Kotlin",
+  "buildSystem": "Gradle Kotlin DSL",
+  "primaryTarget": "Android",
+  "modules": [
+    {
+      "gradlePath": ":app",
+      "path": "InplaceX-android/app",
+      "role": "Android client, Compose UI, shell, navigation, platform integration"
+    },
+    {
+      "gradlePath": ":InplaceX-bot-core",
+      "path": "InplaceX-bot-core",
+      "role": "Shared transport-agnostic bot and game logic"
+    },
+    {
+      "gradlePath": ":InplaceX-logging",
+      "path": "InplaceX-logging",
+      "role": "Shared logging contract, sinks, levels, and sanitization"
+    },
+    {
+      "gradlePath": ":InplaceX-test-support",
+      "path": "InplaceX-test-support",
+      "role": "Shared JVM test-only sinks and helper infrastructure"
+    },
+    {
+      "gradlePath": ":InplaceX-backend",
+      "path": "InplaceX-backend",
+      "role": "Backend-facing runtime contracts and server bot participant adapter"
+    },
+    {
+      "path": "InplaceX-docs",
+      "role": "Canonical human and machine documentation"
+    }
+  ],
+  "canonicalDocs": {
+    "humanIndex": "InplaceX-docs/Game/Human/README.md",
+    "machineIndex": "InplaceX-docs/Game/GPT/README.md",
+    "adrIndex": "InplaceX-docs/Game/GPT/ADR/"
+  },
+  "rootCommands": {
+    "verifyProject": ".\\gradlew.bat verifyProject",
+    "assembleDebug": ".\\gradlew.bat assembleDebug",
+    "cleanLocalDiagnostics": ".\\gradlew.bat cleanLocalDiagnostics"
+  },
+  "localConfig": {
+    "androidProviderExample": "InplaceX-android/provider-config.example.properties",
+    "ignoredLocalProperties": "local.properties"
+  }
+}
