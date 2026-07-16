@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-17
+
+### Added
+- Added machine-readable and human-readable Project Maps so agent work and Second Brain history can bind to the current InplaceX modules.
+
 ## 2026-06-03
 
 ### Added
