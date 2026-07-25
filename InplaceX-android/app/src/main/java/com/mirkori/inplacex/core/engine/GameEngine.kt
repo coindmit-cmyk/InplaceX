@@ -1,9 +1,12 @@
 package com.mirkori.inplacex.core.engine
 
 import com.mirkori.inplacex.core.match.MatchAttempt
+import com.mirkori.inplacex.core.match.MatchActionRejection
+import com.mirkori.inplacex.core.match.MatchCheckpoint
 import com.mirkori.inplacex.core.match.MatchEngine
 import com.mirkori.inplacex.core.match.MatchHintOutcome
 import com.mirkori.inplacex.core.match.MatchHintResult
+import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.core.match.MatchSnapshot
 import com.mirkori.inplacex.core.model.GameConfig
@@ -27,13 +30,19 @@ class GameEngine(
 
     override fun submit(rawGuess: String): MatchSnapshot {
         if (phase != MatchPhase.ACTIVE) {
-            return snapshot("Игра уже завершена")
+            return snapshot(
+                message = "Игра уже завершена",
+                feedback = MatchFeedback.MatchFinished(phase),
+            )
         }
 
         val guess = rawGuess.trim()
-        val error = GuessValidator.validateOrMessage(guess, config)
-        if (error != null) {
-            return snapshot(error)
+        val validationReason = GuessValidator.validateOrReason(guess, config)
+        if (validationReason != null) {
+            return snapshot(
+                message = GuessValidator.validateOrMessage(guess, config),
+                feedback = MatchFeedback.ValidationRejected(validationReason),
+            )
         }
 
         val score = ScoreCalculator.countExactMatches(secret, guess)
@@ -58,33 +67,76 @@ class GameEngine(
             else -> null
         }
 
-        return snapshot(message)
+        return snapshot(
+            message = message,
+            feedback = if (phase == MatchPhase.ACTIVE) {
+                null
+            } else {
+                MatchFeedback.MatchFinished(phase)
+            },
+        )
     }
 
     override fun snapshot(message: String?): MatchSnapshot {
+        return snapshot(message = message, feedback = null)
+    }
+
+    private fun snapshot(message: String?, feedback: MatchFeedback?): MatchSnapshot {
         return MatchSnapshot(
             phase = phase,
             attempts = history.toList(),
             attemptsLeft = (config.attemptLimit + extraAttemptBudget - history.size).coerceAtLeast(0),
             debugSecret = secret,
             message = message,
+            feedback = feedback,
         )
+    }
+
+    override fun checkpoint(): MatchCheckpoint {
+        return MatchCheckpoint(
+            secret = secret,
+            phase = phase,
+            attempts = history.toList(),
+            extraAttemptBudget = extraAttemptBudget,
+        )
+    }
+
+    override fun restoreCheckpoint(checkpoint: MatchCheckpoint): Boolean {
+        if (!isValidCheckpoint(checkpoint)) {
+            return false
+        }
+
+        secret = checkpoint.secret
+        history.clear()
+        history += checkpoint.attempts
+        phase = checkpoint.phase
+        extraAttemptBudget = checkpoint.extraAttemptBudget
+        return true
     }
 
     override fun grantExtraMoves(amount: Int): MatchSnapshot {
         require(amount > 0) { "amount must be > 0" }
         if (phase != MatchPhase.ACTIVE) {
-            return snapshot("Р‘СѓСЃС‚РµСЂ РЅРµРґРѕСЃС‚СѓРїРµРЅ РІРЅРµ Р°РєС‚РёРІРЅРѕР№ РёРіСЂС‹")
+            return snapshot(
+                message = "Бустер недоступен вне активной игры",
+                feedback = MatchFeedback.ActionRejected(MatchActionRejection.MATCH_NOT_ACTIVE),
+            )
         }
         extraAttemptBudget += amount
-        return snapshot("Р”РѕР±Р°РІР»РµРЅРѕ С…РѕРґРѕРІ: $amount")
+        return snapshot(
+            message = "Добавлено ходов: $amount",
+            feedback = MatchFeedback.ExtraMovesGranted(amount),
+        )
     }
 
     override fun fail(message: String): MatchSnapshot {
         if (phase == MatchPhase.ACTIVE) {
             phase = MatchPhase.LOST
         }
-        return snapshot(message)
+        return snapshot(
+            message = message,
+            feedback = MatchFeedback.MatchFinished(phase),
+        )
     }
 
     override fun checkPosition(digit: Int, position: Int): MatchHintOutcome {
@@ -158,5 +210,47 @@ class GameEngine(
                 count = secret.count { it.digitToInt() == digit },
             ),
         )
+    }
+
+    private fun isValidCheckpoint(checkpoint: MatchCheckpoint): Boolean {
+        if (checkpoint.extraAttemptBudget < 0) {
+            return false
+        }
+
+        if (checkpoint.phase == MatchPhase.NOT_STARTED) {
+            return checkpoint.secret.isEmpty() &&
+                checkpoint.attempts.isEmpty() &&
+                checkpoint.extraAttemptBudget == 0
+        }
+
+        if (checkpoint.secret.length != config.codeLength ||
+            checkpoint.secret.any { it !in '0'..'9' }
+        ) {
+            return false
+        }
+
+        val maximumAttempts = config.attemptLimit + checkpoint.extraAttemptBudget
+        if (checkpoint.attempts.size > maximumAttempts) {
+            return false
+        }
+
+        checkpoint.attempts.forEachIndexed { index, attempt ->
+            if (attempt.number != index + 1 ||
+                GuessValidator.validateOrReason(attempt.guess, config) != null ||
+                attempt.score !in 0..config.codeLength ||
+                attempt.score != ScoreCalculator.countExactMatches(checkpoint.secret, attempt.guess) ||
+                attempt.isWin != (attempt.score == config.codeLength)
+            ) {
+                return false
+            }
+        }
+
+        val hasWinningAttempt = checkpoint.attempts.any { it.isWin }
+        return when (checkpoint.phase) {
+            MatchPhase.ACTIVE -> checkpoint.attempts.size < maximumAttempts && !hasWinningAttempt
+            MatchPhase.WON -> checkpoint.attempts.lastOrNull()?.isWin == true
+            MatchPhase.LOST -> !hasWinningAttempt
+            MatchPhase.NOT_STARTED -> false
+        }
     }
 }

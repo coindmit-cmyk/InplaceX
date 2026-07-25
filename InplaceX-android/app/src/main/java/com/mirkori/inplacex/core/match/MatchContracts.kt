@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.core.match
 
+import com.mirkori.inplacex.core.engine.GuessValidationReason
 import com.mirkori.inplacex.core.model.GameConfig
 
 enum class MatchPhase {
@@ -16,12 +17,48 @@ data class MatchAttempt(
     val isWin: Boolean,
 )
 
+enum class MatchActionRejection {
+    MATCH_NOT_ACTIVE,
+    INVALID_HINT_DIGIT,
+    INVALID_HINT_POSITION,
+}
+
+sealed interface MatchFeedback {
+    data class ValidationRejected(
+        val reason: GuessValidationReason,
+    ) : MatchFeedback
+
+    data class MatchFinished(
+        val phase: MatchPhase,
+    ) : MatchFeedback
+
+    data class ExtraMovesGranted(
+        val amount: Int,
+    ) : MatchFeedback
+
+    data class ActionRejected(
+        val reason: MatchActionRejection,
+    ) : MatchFeedback
+}
+
 data class MatchSnapshot(
     val phase: MatchPhase,
     val attempts: List<MatchAttempt>,
     val attemptsLeft: Int,
     val debugSecret: String,
     val message: String? = null,
+    val feedback: MatchFeedback? = null,
+)
+
+/**
+ * Полный доменный снимок, необходимый для восстановления матча без генерации
+ * нового секрета. Секрет хранится только как часть состояния, не логируется.
+ */
+data class MatchCheckpoint(
+    val secret: String,
+    val phase: MatchPhase,
+    val attempts: List<MatchAttempt>,
+    val extraAttemptBudget: Int,
 )
 
 sealed interface MatchHintResult {
@@ -56,6 +93,10 @@ interface MatchEngine {
     fun submit(rawGuess: String): MatchSnapshot
 
     fun snapshot(message: String? = null): MatchSnapshot
+
+    fun checkpoint(): MatchCheckpoint
+
+    fun restoreCheckpoint(checkpoint: MatchCheckpoint): Boolean
 
     fun grantExtraMoves(amount: Int): MatchSnapshot
 
