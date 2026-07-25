@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:33:01Z",
+  "updated_at": "2026-07-25T23:40:04Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -702,6 +702,16 @@
       "released_at": "2026-07-25T23:39:12Z",
       "released_by": "Codex dispatcher path repair",
       "release_reason": "worker result 1ec7456 proved the packet targeted a non-existent localization/catalog/HomeCatalog.kt path"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization-retry-20260725T234004Z",
+      "at": "2026-07-25T23:40:04Z",
+      "expires_at": "2026-07-26T07:40:04Z",
+      "notes": "central runner claim"
     }
   ]
 }
