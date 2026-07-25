@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:42:56Z",
+  "updated_at": "2026-07-25T22:44:04Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -9851,7 +9851,7 @@
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
       "title": "Retry S25B secure actor binding without plaintext persistence",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9899,7 +9899,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10101,11 +10101,11 @@
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
-      "started_at": "2026-07-25T22:42:56Z",
-      "lock_expires_at": "2026-07-26T06:42:56Z",
+      "started_at": "2026-07-25T22:44:04Z",
+      "lock_expires_at": "2026-07-26T06:44:04Z",
       "retry_count": 1,
       "last_rejected_candidate": "b68c9f1bec5d1f86b301634b08aeae15e5d377c5",
-      "status_reason": "launch retry required a new leading branch slug because the preserved b68c9f1 branch contains unique rejected evidence"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
