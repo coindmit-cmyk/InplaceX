@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:52:12Z",
+  "updated_at": "2026-07-25T22:57:55Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5843,7 +5843,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
       "title": "Retry S19 variant provider config wiring and release fail-closed policy",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5904,7 +5904,7 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -6149,10 +6149,10 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-wiring-and-release-fa-retry-20260725T225212Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-wiring-and-release-fa-retry-20260725T225212Z",
-      "started_at": "2026-07-25T22:52:12Z",
-      "lock_expires_at": "2026-07-26T06:52:12Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-config-wiring-and-rel-retry-20260725T225755Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-config-wiring-and-rel-retry-20260725T225755Z",
+      "started_at": "2026-07-25T22:57:55Z",
+      "lock_expires_at": "2026-07-26T06:57:55Z",
       "retry_count": 2,
       "abandoned_claims": [
         {
@@ -6164,7 +6164,7 @@
           "reason": "second clean stopped attempt exposed shared defaultConfig test provider identifiers; preserve and force a fresh config-aware branch"
         }
       ],
-      "status_reason": "second clean attempt stopped before edits; packet now includes app/build.gradle.kts so test provider configuration cannot leak into release"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
