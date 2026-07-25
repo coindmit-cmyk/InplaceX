@@ -6,10 +6,12 @@ This file is the entry point for AI agents working in this repository.
 
 Before changing files, read:
 
-1. `.agent/general.md`
-2. `.agent/project.md`
-3. `.agent/modules.md`
-4. `.agent/workflows.md`
+1. `.agent/START_HERE.md`
+2. `.agent/CODEX_CHAT.md`
+3. `.agent/general.md`
+4. `.agent/project.md`
+5. `.agent/modules.md`
+6. `.agent/workflows.md`
 
 When the task touches architecture, public contracts, game modes, provider setup, or bot behavior, also read the matching canonical documents under `InplaceX-docs/Game/GPT/`.
 
