@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_at": null,
-  "project": null,
+  "updated_at": "2026-07-25T16:59:08Z",
+  "project": "inplacex",
   "processes": {
     "architect": {
       "state": "idle",
@@ -21,13 +21,13 @@
       "cooldown_until": null
     },
     "worker_pool": {
-      "state": "idle",
-      "reason": null,
+      "state": "completed",
+      "reason": "manual_workers_succeeded",
       "active_workers": 0,
       "max_workers": 3,
       "paused_reason": null,
       "last_started_at": null,
-      "last_finished_at": null,
+      "last_finished_at": "2026-07-25T16:59:08Z",
       "cooldown_until": null
     },
     "integrator": {
