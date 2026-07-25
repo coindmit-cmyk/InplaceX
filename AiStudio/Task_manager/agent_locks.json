@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:33:54Z",
+  "updated_at": "2026-07-25T21:34:35Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -471,6 +471,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
       "at": "2026-07-25T21:33:54Z",
       "expires_at": "2026-07-26T05:33:54Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
+      "at": "2026-07-25T21:34:35Z",
+      "expires_at": "2026-07-26T05:34:35Z",
       "notes": "central runner claim"
     }
   ]
