@@ -1606,7 +1606,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
       "title": "Typed localization catalogs and parity tests",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -1654,14 +1654,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
       "source_item_id": "INPX-LOC-101",
@@ -1854,11 +1854,31 @@
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
       "started_at": "2026-07-25T17:11:55Z",
       "lock_expires_at": "2026-07-26T01:11:55Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "13e370c3e743cbef1cc6139954d21ff59ec11689",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T17:21:00Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
+      "worker_result_commit": "1804253ab7d94ab9657e6ba9ee7548c03122f8fb",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09_20260725T171814Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T17:21:00Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
