@@ -3,6 +3,7 @@
 ## 2026-07-25
 
 ### Added
+- Added a transport-agnostic authoritative backend duel aggregate with ordered secret setup, turn and score ownership, terminal win handling, and secret-free public snapshots.
 - Added a stateless `GameScreen` presentation boundary with independent top, attempts, analysis, helpers, tools, input, and optional debug-slot components.
 - Added a GitHub Actions CI foundation with Java 21 Gradle launcher, Java 11 project toolchains, identified debug artifacts, and visible non-blocking instrumentation/release checks.
 - Added the InplaceX Design System v2 direction, Compose UI contract, and a visual concept for the Home and Race screens.
