@@ -437,13 +437,17 @@
     },
     {
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
       "at": "2026-07-25T21:02:20Z",
       "expires_at": "2026-07-26T05:02:20Z",
-      "notes": "central runner claim"
+      "notes": "4bc99f9 preserved but rejected; task returned for a narrower read-contract and bounded-codec retry",
+      "review_at": "2026-07-25T21:32:00Z",
+      "released_at": "2026-07-25T21:33:00Z",
+      "released_by": "Codex integrator independent security review",
+      "release_reason": "caller-authored outcomes, unproven actor binding, unbounded JSON recursion and immutable secret copy"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",

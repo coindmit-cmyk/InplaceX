@@ -9121,8 +9121,8 @@
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-      "title": "S25A authenticated public session contracts and security codec",
-      "status": "in_progress",
+      "title": "S25A public session read contracts and bounded security codec retry",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9137,7 +9137,7 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
       ],
-      "summary": "Rebuild only the useful public contract, codec and security boundary from ac4f9c0 as small reviewable components.",
+      "summary": "Rebuild only closed public read contracts, bounded codec, HMAC fingerprint and safe logging from rejected 4bc99f9; client commands and authenticated actor binding belong to child S25B.",
       "allowed_paths": [
         "InplaceX-backend/build.gradle.kts",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/contract/**",
@@ -9164,24 +9164,25 @@
         "**/*.keystore"
       ],
       "acceptance_criteria": [
-        "Public snapshot, event, result and intent are closed typed contracts with deterministic canonical encoding and the 64 KiB frame limit.",
-        "Actor identity is a server-established type that cannot be constructed from an arbitrary caller string at the persistence boundary.",
-        "Secret fingerprints use injected server-keyed HMAC/pepper; no secret or pepper is persisted, logged or included in public JSON.",
+        "Public snapshot, event and result are closed typed read contracts with deterministic canonical encoding and the exact 64 KiB frame limit.",
+        "This slice exposes no public client-intent or caller-authored outcome decoder, no authenticated-command wrapper and no raw actor factory; authoritative commands and actor binding belong to child S25B.",
+        "Secret fingerprints use injected server-keyed HMAC/pepper without constructing an immutable String from the secret; every temporary mutable buffer is zeroed in finally.",
         "Forbidden names and values are rejected across every known field, opaque id and nested payload; safe log attributes never contain raw actor, command, token or numeric-secret-shaped values.",
+        "JSON duplicate-key and security scanning has a hard bounded nesting policy or iterative implementation; deeply nested sub-64-KiB input fails with a controlled exception and never StackOverflowError.",
         "Contract, codec, fingerprint and redaction responsibilities are split into focused files; no new production file exceeds 400 lines.",
-        "Adversarial tests cover forbidden known-field values, oversize frames, malformed JSON, actor spoofing, HMAC separation and log sanitization."
+        "Adversarial tests cover forbidden known-field values, oversize frames, malformed and deeply nested JSON, duplicate Unicode-escaped keys, absence of caller-authored outcome APIs, HMAC separation and log sanitization."
       ],
       "checks": [
         "bash gradlew :InplaceX-backend:test",
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "Strict S25 review produced a bounded security-contract rebuild packet",
+      "dispatcher_decision_reason": "4bc99f9 was rejected and reduced to a bounded read-contract and security retry without caller-authored outcomes or actor construction",
       "next_owner": "worker_pool",
       "recommended_agent": "auto-worker-5.5max",
       "eligible_worker_profiles": [
@@ -9194,11 +9195,19 @@
       "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "repair_source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
-      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
-      "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
+      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
+      "source_head_sha": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
+      "clean_rebuild_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
+      "clean_rebuild_source_head_sha": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
+      "retry_count": 1,
+      "last_rejected_candidate": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
+      "integration_review": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md",
       "worker_instructions": [
-        "Read docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md and S25_REPAIR_SPEC_20260725.md completely before editing.",
-        "Use ac4f9c0 only as read-only salvage evidence; rebuild the allowed contract, codec and security components on current origin/develop.",
+        "Read docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md and S25_REPAIR_SPEC_20260725.md completely before editing.",
+        "Use 4bc99f9 only as read-only salvage evidence; rebuild the allowed read contract, bounded codec and security components on current origin/develop.",
+        "Delete the rejected PublicSessionIntent and AuthenticatedSessionActor design from the rebuilt result; do not expose caller-authored outcomes or actor construction in S25A.",
+        "Implement iterative or hard-depth-bounded JSON scanning and prove adversarial sub-64-KiB nesting returns a controlled exception.",
+        "Encode secret CharArray without String(secret) or another immutable raw-secret copy and zero mutable temporary buffers in finally.",
         "Do not copy persistence, migrations, repository SQL or the 740-line PublicSessionSchema monolith.",
         "Do not add secrets or pepper values to source, fixtures, reports, logs or artifacts.",
         "Run every required check and return needs_worker_fix on any unmet security or scope gate."
@@ -9213,9 +9222,13 @@
         "base_ref": "origin/develop",
         "code_refs": [
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
-          "ac4f9c0:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/PublicSessionSchema.kt"
+          "4bc99f9:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/**"
         ],
         "doc_refs": [
+          {
+            "path": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md",
+            "purpose": "mandatory retry blockers and reduced slice boundary"
+          },
           {
             "path": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
             "purpose": "authoritative rejection findings and split boundary"
@@ -9265,7 +9278,7 @@
           "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
           "InplaceX-docs/Backend/Online Contracts.md"
         ],
-        "worker_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z"
+        "worker_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-"
       },
       "output_contract": {
         "changed_paths_must_match_allowed_paths": true,
@@ -9312,8 +9325,11 @@
       ],
       "regression_guards": [
         "No raw actor id, command id, token-shaped value, short numeric secret or pepper may appear in logs, reports or public JSON.",
+        "No public API in S25A may accept score, exact matches, solved flag, phase, current actor, winner or another caller-authored transition outcome.",
+        "No sub-64-KiB JSON nesting pattern may produce StackOverflowError or another uncontrolled VM error.",
+        "No secret CharArray may be converted to immutable String.",
         "Do not edit persistence SQL, migrations, transport, Android or VPS files.",
-        "Reject arbitrary actor construction and deterministic unkeyed secret fingerprints."
+        "Do not introduce actor construction in S25A; child S25B owns verified auth/session-membership binding."
       ],
       "code_refs": [
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
@@ -9332,13 +9348,11 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "worker_id": "auto-worker-5.5max",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
-      "started_at": "2026-07-25T21:02:20Z",
-      "lock_expires_at": "2026-07-26T05:02:20Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "last_worker_id": "auto-worker-5.5max",
+      "last_machine_id": "aistudio-manual",
+      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
+      "reviewed_at": "2026-07-25T21:33:00Z",
+      "status_reason": "4bc99f9 rejected for caller-authored outcomes, unproven actor binding, unbounded JSON recursion and immutable secret copy; narrow retry is worker-ready"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
