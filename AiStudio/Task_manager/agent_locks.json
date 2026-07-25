@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:25:33Z",
+  "updated_at": "2026-07-25T19:26:50Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -335,6 +335,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch-retry-20260725T190800Z",
       "at": "2026-07-25T19:08:00Z",
       "expires_at": "2026-07-26T03:08:00Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect",
+      "at": "2026-07-25T19:26:50Z",
+      "expires_at": "2026-07-26T03:26:50Z",
       "notes": "central runner claim"
     }
   ]
