@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:18:02Z",
+  "updated_at": "2026-07-25T18:32:15Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3076,7 +3076,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
       "title": "SQLite schema and safe test seam",
-      "status": "needs_dispatcher_repair",
+      "status": "done",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -3127,7 +3127,7 @@
       "worker_ready": false,
       "packet_status": "needs_dispatcher_repair",
       "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "Dispatcher",
       "next_role": "auto_dispatcher",
@@ -3352,7 +3352,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam-retry-20260725T181640Z",
       "started_at": "2026-07-25T18:16:40Z",
       "lock_expires_at": "2026-07-26T02:16:40Z",
-      "integration_status": "needs_worker_fix",
+      "integration_status": "finalized",
       "requires_human_attention": false,
       "integration_repair_kind": "three_way_apply",
       "integration_repair_validation_paths": [],
@@ -3450,6 +3450,15 @@
           "reason": "candidate_diff_empty: task-scoped candidate delta could not be applied to current base",
           "event": "integration_routed",
           "next_owner": "dispatcher"
+        },
+        {
+          "at": "2026-07-25T18:32:15Z",
+          "by": "sync_worker_results",
+          "from": "needs_dispatcher_repair",
+          "to": "done",
+          "reason": "event log contains finalization_recorded; preserving integrated task state",
+          "event": "finalization_recorded",
+          "next_owner": "none"
         }
       ],
       "integration_repair_retry_count": 1,
@@ -3460,7 +3469,10 @@
       "status_reason": "central runner claimed task before isolated worker launch",
       "missing_packet_fields": [
         "repair_worker_packet"
-      ]
+      ],
+      "finalization_status": "recorded",
+      "finalized_by": "auto-integrator",
+      "finalized_at": "2026-07-25T18:32:15Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
