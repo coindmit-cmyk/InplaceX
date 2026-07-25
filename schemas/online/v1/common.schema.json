@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.inplacex.dev/online/v1/common.schema.json",
+  "title": "InplaceX Online Contract v1 common definitions",
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Opaque UUID used for a public contract identifier."
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp normalized to UTC."
+    },
+    "Revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "EventSequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "SchemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "IdempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._~-]+$"
+    },
+    "CommandId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "SessionPhase": {
+      "type": "string",
+      "enum": [
+        "SETUP_WAITING_FOR_PLAYERS",
+        "SETUP_SECRET_A",
+        "SETUP_SECRET_B",
+        "ACTIVE_TURN_A",
+        "ACTIVE_TURN_B",
+        "FINISHED",
+        "ABANDONED"
+      ]
+    },
+    "ParticipantSlot": {
+      "type": "string",
+      "enum": ["A", "B"]
+    },
+    "GameConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "codeLength", "attemptLimit"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "codeLength": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 20
+        },
+        "attemptLimit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "allowDuplicates": {
+          "type": "boolean"
+        },
+        "turnTimeLimitSec": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        }
+      }
+    },
+    "ParticipantView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "participantId",
+        "slot",
+        "secretSubmitted",
+        "connected"
+      ],
+      "properties": {
+        "participantId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "slot": {
+          "$ref": "#/$defs/ParticipantSlot"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "secretSubmitted": {
+          "type": "boolean"
+        },
+        "connected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "TurnView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "turnNumber",
+        "actorParticipantId",
+        "guess",
+        "exactMatches",
+        "solved",
+        "createdAt"
+      ],
+      "properties": {
+        "turnNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actorParticipantId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "guess": {
+          "type": "string",
+          "pattern": "^[0-9]{4,20}$"
+        },
+        "exactMatches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "solved": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/Instant"
+        }
+      }
+    },
+    "DuelSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionId",
+        "revision",
+        "eventSeq",
+        "phase",
+        "config",
+        "selfParticipantId",
+        "participants",
+        "turns",
+        "serverTime"
+      ],
+      "properties": {
+        "sessionId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "eventSeq": {
+          "$ref": "#/$defs/EventSequence"
+        },
+        "phase": {
+          "$ref": "#/$defs/SessionPhase"
+        },
+        "config": {
+          "$ref": "#/$defs/GameConfig"
+        },
+        "selfParticipantId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "currentTurnParticipantId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "participants": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/ParticipantView"
+          }
+        },
+        "turns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TurnView"
+          }
+        },
+        "winnerParticipantId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "serverTime": {
+          "$ref": "#/$defs/Instant"
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "requestId", "retryable"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "invalid_request",
+            "unauthorized",
+            "forbidden",
+            "not_found",
+            "rate_limited",
+            "revision_conflict",
+            "idempotency_key_reused",
+            "command_replayed",
+            "invalid_state",
+            "secret_already_submitted",
+            "secret_not_ready",
+            "not_your_turn",
+            "invalid_guess",
+            "session_finished",
+            "replay_gap",
+            "slow_consumer",
+            "server_unavailable"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

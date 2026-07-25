@@ -9,6 +9,7 @@ InplaceX — Kotlin/Gradle проект логической игры на уг�
 - `InplaceX-logging` — общий контракт логирования, уровни, sink-и и redaction чувствительных атрибутов.
 - `InplaceX-backend` — backend-facing JVM-модуль, включая server-side bot player adapter.
 - `InplaceX-docs` — каноническая документация продукта, архитектуры, ADR, UX и legacy notes.
+- `schemas/online` — versioned machine-readable REST/WebSocket/security contracts.
 - `docs` — короткие корневые справки по архитектуре, модулям, разработке и тестированию.
 - `.agent` и `AGENTS.md` — правила и контекст для AI-агентов.
 
@@ -55,6 +56,8 @@ InplaceX — Kotlin/Gradle проект логической игры на уг�
 
 - `InplaceX-docs/Game/Human/README.md`
 - `InplaceX-docs/Game/GPT/README.md`
+- `InplaceX-docs/Backend/Online Contracts.md`
+- `schemas/online/v1/README.md`
 
 Перед работой AI-агента:
 

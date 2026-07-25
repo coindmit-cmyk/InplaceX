@@ -6,6 +6,7 @@
 - Added the InplaceX Design System v2 direction, Compose UI contract, and a visual concept for the Home and Race screens.
 - Added a planning-only AiStudio handoff and dependency-aware finalization backlog covering preservation, UI migration, match-contract convergence, online backend, VPS staging, E2E, and release hardening.
 - Added a stable semantic color-token set for the Android client.
+- Added versioned online REST/WebSocket/security contracts with machine-readable v1 schemas for guest auth, cloud save, matchmaking, duel commands, snapshots, reconnect, idempotency, concurrency, redaction, and secret ownership.
 
 ### Changed
 - Replaced the default dynamic Material palette with stable InplaceX brand colors and shapes.

@@ -13,6 +13,12 @@ Build the server as an authoritative backend for:
 
 The current game docs already define the core product behavior. Backend should preserve those contracts and move authority for online state, purchases, and cross-device sync to the server.
 
+The normative v1 boundary for guest auth, cloud save, matchmaking, duel
+commands, snapshots, WebSocket events, concurrency, redaction, and security is
+[`Online Contracts v1`](Online%20Contracts.md). This architecture document
+defines module ownership and rollout; it must not introduce a second wire
+contract.
+
 ## Recommended Stack
 
 - `Kotlin`
@@ -280,7 +286,9 @@ Recommended session rules:
 
 ## API Shape
 
-Prefer `/api/v1`.
+Prefer `/api/v1`. Route payloads and error semantics are defined by
+[`Online Contracts v1`](Online%20Contracts.md); the list below is only the
+module-level route inventory.
 
 ### Auth
 
@@ -313,7 +321,6 @@ Prefer `/api/v1`.
 - `GET /api/v1/sessions/{sessionId}`
 - `POST /api/v1/sessions/{sessionId}/setup/secret`
 - `POST /api/v1/sessions/{sessionId}/turns`
-- `POST /api/v1/sessions/{sessionId}/turns/{turnNumber}/ack`
 - `POST /api/v1/sessions/{sessionId}/reconnect`
 
 ### Ranking
@@ -342,8 +349,12 @@ Do not leak Exposed table rows directly into routes.
 
 For the first stage:
 
-- use REST for bootstrap, profile, save, billing, matchmaking
-- use WebSocket only for live duel session updates
+- use REST for bootstrap, profile, save, billing, matchmaking, and the reliable
+  duel command/recovery path;
+- use the authenticated WebSocket for live duel session updates and the
+  versioned subscribe/resync protocol;
+- if duel commands are accepted over WebSocket, they must use the same
+  transport-neutral command schemas and idempotency/revision rules as REST;
 
 This keeps the server simpler:
 
@@ -375,6 +386,16 @@ Responsibilities:
 - never expose opponent secret in setup or active snapshots
 - hash and encrypt stored secrets
 - validate every turn against active session version and active actor
+- never put access or refresh tokens in URLs, WebSocket query parameters, logs,
+  snapshots, or error details
+- redact secrets, tokens, provider payloads, guesses, and raw request bodies at
+  the logging boundary
+- use bounded WebSocket queues and close slow consumers so a socket cannot
+  block the authoritative session
+
+See [`Online Contracts v1`](Online%20Contracts.md) for the required error
+codes, reconnect cursor, event ordering, backpressure, and contract-test
+invariants.
 
 ## Suggested Ktor Package Layout
 

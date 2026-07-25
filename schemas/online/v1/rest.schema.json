@@ -1,0 +1,443 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.inplacex.dev/online/v1/rest.schema.json",
+  "title": "InplaceX Online REST and transport-neutral domain contracts v1",
+  "$defs": {
+    "AuthBootstrapRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["installationId", "platform"],
+      "properties": {
+        "installationId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["android", "ios", "desktop", "unknown"]
+        },
+        "appVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        },
+        "regionHint": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        }
+      }
+    },
+    "AuthTokenResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "playerId",
+        "accessToken",
+        "refreshToken",
+        "tokenType",
+        "accessExpiresAt",
+        "accountKind"
+      ],
+      "properties": {
+        "playerId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "accessToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "refreshToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tokenType": {
+          "const": "Bearer"
+        },
+        "accessExpiresAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        },
+        "refreshExpiresAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        },
+        "accountKind": {
+          "type": "string",
+          "enum": ["guest", "linked"]
+        }
+      }
+    },
+    "RefreshRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["refreshToken"],
+      "properties": {
+        "refreshToken": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "RefreshResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accessToken",
+        "refreshToken",
+        "tokenType",
+        "accessExpiresAt"
+      ],
+      "properties": {
+        "accessToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "refreshToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tokenType": {
+          "const": "Bearer"
+        },
+        "accessExpiresAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        },
+        "refreshExpiresAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        }
+      }
+    },
+    "CloudSaveSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["saveSchemaVersion", "revision", "state", "updatedAt"],
+      "properties": {
+        "saveSchemaVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        }
+      }
+    },
+    "CloudSavePutCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "expectedRevision", "saveSchemaVersion", "state"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "expectedRevision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "saveSchemaVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "RevisionConflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "current", "expectedRevision"],
+      "properties": {
+        "error": {
+          "$ref": "common.schema.json#/$defs/Error"
+        },
+        "current": {
+          "$ref": "#/$defs/CloudSaveSnapshot"
+        },
+        "expectedRevision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        }
+      }
+    },
+    "MatchmakingCreateCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "mode"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "region": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        },
+        "maxWaitSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      }
+    },
+    "MatchmakingTicket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ticketId", "mode", "status", "createdAt", "expiresAt"],
+      "properties": {
+        "ticketId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "mode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "enum": ["queued", "matched", "cancelled", "expired"]
+        },
+        "sessionId": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        },
+        "expiresAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        }
+      }
+    },
+    "DuelSubmitSecretCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "sessionId", "expectedRevision", "secret"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "expectedRevision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "secret": {
+          "type": "string",
+          "pattern": "^[0-9]{4,20}$"
+        }
+      }
+    },
+    "DuelSecretReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "sessionId", "revision", "secretSubmitted"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "secretSubmitted": {
+          "const": true
+        }
+      }
+    },
+    "DuelSubmitGuessCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "sessionId", "expectedRevision", "guess"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "expectedRevision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "guess": {
+          "type": "string",
+          "pattern": "^[0-9]{4,20}$"
+        }
+      }
+    },
+    "DuelTurnResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "sessionId",
+        "revision",
+        "turnNumber",
+        "actorParticipantId",
+        "guess",
+        "exactMatches",
+        "solved",
+        "phase"
+      ],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "turnNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actorParticipantId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "guess": {
+          "type": "string",
+          "pattern": "^[0-9]{4,20}$"
+        },
+        "exactMatches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "solved": {
+          "type": "boolean"
+        },
+        "remainingAttempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "phase": {
+          "$ref": "common.schema.json#/$defs/SessionPhase"
+        }
+      }
+    },
+    "SessionSnapshotResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot"],
+      "properties": {
+        "snapshot": {
+          "$ref": "common.schema.json#/$defs/DuelSnapshot"
+        }
+      }
+    },
+    "ReconnectRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sessionId"],
+      "properties": {
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "lastSeenEventSeq": {
+          "$ref": "common.schema.json#/$defs/EventSequence"
+        }
+      }
+    },
+    "ReconnectResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot", "replayMode"],
+      "properties": {
+        "snapshot": {
+          "$ref": "common.schema.json#/$defs/DuelSnapshot"
+        },
+        "replayMode": {
+          "type": "string",
+          "enum": ["snapshot", "replay", "snapshot_then_replay"]
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "$ref": "common.schema.json#/$defs/Error"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/AuthBootstrapRequest"
+    },
+    {
+      "$ref": "#/$defs/AuthTokenResponse"
+    },
+    {
+      "$ref": "#/$defs/RefreshRequest"
+    },
+    {
+      "$ref": "#/$defs/RefreshResponse"
+    },
+    {
+      "$ref": "#/$defs/CloudSaveSnapshot"
+    },
+    {
+      "$ref": "#/$defs/CloudSavePutCommand"
+    },
+    {
+      "$ref": "#/$defs/RevisionConflict"
+    },
+    {
+      "$ref": "#/$defs/MatchmakingCreateCommand"
+    },
+    {
+      "$ref": "#/$defs/MatchmakingTicket"
+    },
+    {
+      "$ref": "#/$defs/DuelSubmitSecretCommand"
+    },
+    {
+      "$ref": "#/$defs/DuelSecretReceipt"
+    },
+    {
+      "$ref": "#/$defs/DuelSubmitGuessCommand"
+    },
+    {
+      "$ref": "#/$defs/DuelTurnResult"
+    },
+    {
+      "$ref": "#/$defs/SessionSnapshotResponse"
+    },
+    {
+      "$ref": "#/$defs/ReconnectRequest"
+    },
+    {
+      "$ref": "#/$defs/ReconnectResponse"
+    },
+    {
+      "$ref": "#/$defs/ErrorResponse"
+    }
+  ]
+}
