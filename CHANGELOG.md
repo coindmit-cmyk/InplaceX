@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added closed backend session read contracts with deterministic 64 KiB JSON
+  frames, strict bounded JSON scanning, server-keyed secret fingerprints, and
+  pseudonymous read-log attributes. Client intents, authenticated actor binding,
+  and caller-authored outcome decoding remain outside this slice.
 - Added a local Docker Compose backend/PostgreSQL stack with persistent storage,
   health checks, environment-only credentials, and an executable backup,
   restore, rollback, and migration verification runbook.
