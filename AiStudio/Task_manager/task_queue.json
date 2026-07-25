@@ -2128,7 +2128,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
       "title": "SQLite schema and safe test seam",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -2175,14 +2175,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
       "source_item_id": "INPX-DB-101",
@@ -2404,7 +2404,63 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam",
       "started_at": "2026-07-25T17:23:11Z",
       "lock_expires_at": "2026-07-26T01:23:11Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "needs_worker_fix",
+      "requires_human_attention": false,
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_validation_paths": [],
+      "integration_repair_lost_behavior": {
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/GameProgressRepository.kt": [
+          "GameProgressDbHelper",
+          "UNIQUE",
+          "createPlatformTables",
+          "onCreate",
+          "onUpgrade"
+        ],
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/PlatformLocalRepository.kt": [
+          "nowMs"
+        ]
+      },
+      "integration_repair_source_head_sha": "b255b2ceef74aedd02204134314852345960d931",
+      "integration_repair_retry_evidence": [
+        {
+          "at": "2026-07-25T17:36:38Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam",
+          "worker_result_commit": null,
+          "source_head_sha": "b255b2ceef74aedd02204134314852345960d931",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/GameProgressRepository.kt": [
+              "GameProgressDbHelper",
+              "UNIQUE",
+              "createPlatformTables",
+              "onCreate",
+              "onUpgrade"
+            ],
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/PlatformLocalRepository.kt": [
+              "nowMs"
+            ]
+          }
+        }
+      ],
+      "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "status_history": [
+        {
+          "at": "2026-07-25T17:36:38Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
@@ -3092,7 +3148,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
       "title": "Versioned online REST WebSocket and security contracts",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -3139,14 +3195,14 @@
       "checks": [
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
       "source_item_id": "INPX-API-401",
@@ -3339,11 +3395,31 @@
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
       "started_at": "2026-07-25T17:23:15Z",
       "lock_expires_at": "2026-07-26T01:23:15Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "e8de831cab1f66dcf03b4334e36981d388391a28",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T17:36:38Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
+      "worker_result_commit": "bea98760c95ce20e60c7626b4eaa00cf6f49cd4e",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20_20260725T173430Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T17:36:38Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",

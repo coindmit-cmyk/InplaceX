@@ -97,13 +97,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
       "at": "2026-07-25T17:23:15Z",
       "expires_at": "2026-07-26T01:23:15Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "previous_state": "in_progress",
+      "released_at": "2026-07-25T17:36:38Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
