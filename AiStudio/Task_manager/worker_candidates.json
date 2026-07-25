@@ -1,16 +1,34 @@
 {
-  "generated_at": "2026-07-25T17:01:04Z",
+  "generated_at": "2026-07-25T17:03:20Z",
   "summary": {
-    "candidate_count": 5,
+    "candidate_count": 6,
     "scheduling_class_counts": {
-      "primary_delivery": 5
+      "primary_delivery": 6
     },
     "integration_continuation_count": 0,
-    "primary_candidate_count": 5,
+    "primary_candidate_count": 6,
     "background_candidate_count": 0,
     "primary_slot_reservation_required": true
   },
   "candidates": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "title": "Characterize current gameplay behavior",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
       "title": "Typed match feedback and validated checkpoint",
@@ -25,7 +43,8 @@
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/core/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -44,7 +63,8 @@
         "docs/reports/**",
         "CHANGELOG.md",
         "apps/catalog/**",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -62,7 +82,8 @@
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -81,7 +102,8 @@
         "docs/automation/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -100,7 +122,8 @@
         "schemas/online/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"

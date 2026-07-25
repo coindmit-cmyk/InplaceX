@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:01:04Z",
+  "updated_at": "2026-07-25T17:03:20Z",
   "project": "inplacex",
   "processes": {
     "architect": {
@@ -13,11 +13,11 @@
     },
     "dispatcher": {
       "state": "completed",
-      "reason": "manual_dispatcher_succeeded",
+      "reason": "dispatcher_event_or_repair_state_pending",
       "queue_backlog": 0,
       "packet_defects_pending": 0,
-      "last_started_at": null,
-      "last_finished_at": "2026-07-25T17:01:04Z",
+      "last_started_at": "2026-07-25T17:03:20Z",
+      "last_finished_at": "2026-07-25T17:03:20Z",
       "cooldown_until": null
     },
     "worker_pool": {

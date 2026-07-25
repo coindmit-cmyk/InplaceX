@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:02:41Z",
+  "updated_at": "2026-07-25T17:03:20Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -162,7 +162,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "title": "Characterize current gameplay behavior",
-      "status": "needs_dispatcher_repair",
+      "status": "planned",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -187,7 +187,10 @@
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**"
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/**",
@@ -205,13 +208,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "needs_dispatcher_repair",
-      "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "source_item_id": "INPX-ARC-101",
@@ -402,8 +405,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
       "started_at": "2026-07-25T16:50:09Z",
       "lock_expires_at": "2026-07-26T00:50:09Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
-      "integration_status": "needs_worker_fix",
+      "integration_status": "returned_to_worker",
       "requires_human_attention": false,
       "integration_repair_kind": "behavior_preservation",
       "integration_repair_validation_paths": [],
@@ -426,14 +428,21 @@
               "autoModeLocksTheOnlyRemainingPossibleMatch"
             ]
           }
+        },
+        {
+          "at": "2026-07-25T17:03:11Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+          "worker_result_commit": null,
+          "worker_report": null,
+          "source_head_sha": "8f406db9582f5e983a47d6b82d901f2514bcca60",
+          "from_status": "needs_dispatcher_repair",
+          "from_integration_status": "needs_worker_fix"
         }
       ],
       "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
-      "missing_packet_fields": [
-        "repair_worker_packet"
-      ],
-      "repair_owner": "Dispatcher",
-      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "repair_owner": "Worker",
+      "next_action": "Worker must repair the recorded Integrator failure on the pinned source attempt without widening packet scope.",
       "status_history": [
         {
           "at": "2026-07-25T16:59:53Z",
@@ -443,8 +452,27 @@
           "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
           "event": "integration_routed",
           "next_owner": "dispatcher"
+        },
+        {
+          "at": "2026-07-25T17:03:11Z",
+          "by": "dispatcher_integration_repair",
+          "from": "needs_dispatcher_repair",
+          "to": "planned",
+          "event": "design_handoff_integration_retry",
+          "reason": "Dispatcher returned the same complete design-handoff packet for a bounded Worker retry."
         }
-      ]
+      ],
+      "integration_repair_retry_count": 1,
+      "dispatcher_repaired_at": "2026-07-25T17:03:11Z",
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
+      "repaired_packet_metadata_at": "2026-07-25T17:03:11Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "context_docs": [
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
@@ -1026,7 +1054,8 @@
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/core/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/**",
@@ -1049,7 +1078,7 @@
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -1078,7 +1107,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:01:04Z",
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1553,7 +1582,8 @@
         "docs/reports/**",
         "CHANGELOG.md",
         "apps/catalog/**",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/**",
@@ -1767,7 +1797,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:01:04Z",
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2046,7 +2076,8 @@
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -2285,7 +2316,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:01:04Z",
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2396,7 +2427,8 @@
         "docs/automation/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/**",
@@ -2627,7 +2659,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:01:04Z",
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2995,7 +3027,8 @@
         "schemas/online/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-android/**",
@@ -3208,7 +3241,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:01:04Z",
+      "packet_normalized_at": "2026-07-25T17:03:20Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -5008,5 +5041,10 @@
     "skipped_count": 0,
     "include_children": true,
     "dependency_updated_count": 0
+  },
+  "legacy_queue_normalization": {
+    "generated_at": "2026-07-25T17:03:11Z",
+    "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
+    "change_count": 0
   }
 }
