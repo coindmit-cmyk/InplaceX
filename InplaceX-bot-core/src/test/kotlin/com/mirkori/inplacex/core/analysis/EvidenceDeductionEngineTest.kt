@@ -24,6 +24,22 @@ class EvidenceDeductionEngineTest {
     }
 
     @Test
+    fun manualHypothesesConstrainCandidatesWithoutBecomingFacts() {
+        val result = EvidenceDeductionEngine(codeLength = 4).infer(
+            hypotheses = listOf(
+                ManualHypothesis(position = 0, symbol = '9', kind = HypothesisKind.POSSIBLE),
+                ManualHypothesis(position = 1, symbol = '8', kind = HypothesisKind.IMPOSSIBLE),
+            ),
+        )
+
+        assertEquals(setOf('9'), result.candidates[0])
+        assertFalse('8' in result.candidates[1])
+        assertFalse(result.provenFacts.contains(ProvenFact.exactMatch(position = 0, symbol = '9')))
+        assertFalse(result.provenFacts.contains(ProvenFact.notAtPosition(position = 1, symbol = '8')))
+        assertTrue(result.provenFacts.isEmpty())
+    }
+
+    @Test
     fun zeroGuessKnownFourAnd4060ProveSixInThirdPosition() {
         val result = EvidenceDeductionEngine(codeLength = 4).infer(
             acceptedAttempts = listOf(

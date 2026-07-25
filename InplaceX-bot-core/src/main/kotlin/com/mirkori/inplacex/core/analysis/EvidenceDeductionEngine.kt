@@ -23,6 +23,14 @@ class EvidenceDeductionEngine(
     }
 
     fun infer(input: EvidenceInput = EvidenceInput()): DeductionResult {
+        val constrained = inferInternal(input)
+        if (input.hypotheses.isEmpty()) return constrained
+
+        val authoritative = inferInternal(input.copy(hypotheses = emptyList()))
+        return constrained.copy(provenFacts = authoritative.provenFacts)
+    }
+
+    private fun inferInternal(input: EvidenceInput): DeductionResult {
         val domains = MutableList(codeLength) { orderedAlphabet.toMutableSet() }
         val contradictions = linkedSetOf<AnalysisContradiction>()
         val assertedFacts = linkedSetOf<ProvenFact>()
