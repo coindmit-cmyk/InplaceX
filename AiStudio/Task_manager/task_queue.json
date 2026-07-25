@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:16:00Z",
+  "updated_at": "2026-07-25T20:18:00Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3503,10 +3503,10 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
-      "complexity": "M",
-      "type": "design-handoff-intake",
+      "complexity": "L",
+      "type": "implementation",
       "phase": "Project Design",
       "recommended_agent": "Dispatcher",
       "labels": [
@@ -3560,13 +3560,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "fresh retry packet corrects GameCatalog path and adds AndroidTest, lint, RU/EN parity and preserved-behavior gates",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "Integrator review narrows the remaining work to typed debug feedback/phase, race accessibility and mandatory RU/EN tests",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "source_item_id": "INPX-LOC-104",
@@ -3593,10 +3593,12 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
-        "auto-worker-5.3"
+        "auto-worker-5.5"
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S12_INTEGRATOR_REVIEW_D34FD5C_20260725.md completely and close every blocking finding.",
+        "Do not copy d34fd5c wholesale; reproduce compatible localization additions in a fresh branch and add the missing tests.",
         "Read docs/reports/integration/S12_REPAIR_SPEC_20260725.md completely before editing.",
         "Start from current origin/develop in a fresh retry branch; the abandoned worktree is read-only salvage evidence and must not be reused.",
         "Set JAVA_HOME=/home/main/.local/jdk21 and use /home/main/.local/jdk11 as the Gradle Java 11 toolchain before running checks.",
@@ -3804,8 +3806,8 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "repaired_packet_at": "2026-07-25T19:58:00Z",
-      "repaired_packet_by": "Codex dispatcher independent review",
+      "repaired_packet_at": "2026-07-25T20:18:00Z",
+      "repaired_packet_by": "Codex dispatcher after integrator rejection",
       "started_at": "2026-07-25T20:04:14Z",
       "abandoned_claims": [
         {
@@ -3836,7 +3838,6 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "lock_expires_at": "2026-07-26T04:04:14Z",
-      "status_reason": "worker explicitly reported required checks as partial",
       "worker_result_commit": "d34fd5ce0b0b79bf0822ba432b103dfec1c97559",
       "worker_result_synced_at": "2026-07-25T20:15:18Z",
       "worker_changed_paths": [
@@ -3864,7 +3865,6 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as partial"
       },
-      "not_worker_ready_reason": "worker explicitly reported required checks as partial",
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "commits": [
         "d34fd5ce0b0b79bf0822ba432b103dfec1c97559"
@@ -3893,7 +3893,18 @@
           "83 scoped used keys resolve"
         ],
         "baseline_lint": "The same three UnusedBoxWithConstraintsScope errors exist on clean develop and worker branch; no new lint finding was introduced."
-      }
+      },
+      "worker_ready_promotion_history": [
+        {
+          "at": "2026-07-25T20:18:00Z",
+          "by": "Codex dispatcher after integrator rejection",
+          "previous_status": "needs_worker_fix",
+          "previous_integration_status": "needs_worker_fix",
+          "worker_result_commit": "d34fd5ce0b0b79bf0822ba432b103dfec1c97559",
+          "event": "worker_fix_requeued",
+          "reason": "remaining localization defects and exact missing tests are now documented for a stronger worker"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
@@ -6881,10 +6892,10 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
-      "complexity": "L",
-      "type": "design-handoff-intake",
+      "complexity": "XL",
+      "type": "critical-implementation",
       "phase": "Project Design",
       "recommended_agent": "Dispatcher",
       "labels": [
@@ -6950,13 +6961,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "Integrator rejected 229a9f5 because mandatory typed security, safe migration, consistent reconnect and PostgreSQL/concurrency gates are missing",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "XL repair packet is assigned to the strongest worker with exact rejected-result findings and non-negotiable PostgreSQL/security gates",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "source_item_id": "INPX-BE-414",
@@ -6985,10 +6996,13 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
-        "auto-worker-5.5"
+        "auto-worker-5.5max"
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S25_INTEGRATOR_REVIEW_229A9F5_20260725.md completely and close every blocking finding.",
+        "Do not copy 229a9f5 wholesale; preserve only its reviewed immutable-receipt and atomic-write intent while replacing the raw JSON, unsafe V3 and reconnect semantics.",
+        "Do not report passed unless every mandatory test in S25_REPAIR_SPEC_20260725.md exists and was actually executed, including PostgreSQL/Testcontainers and concurrency/security gates.",
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md completely and treat every mandatory test and evidence item as part of this retry.",
         "Use the current origin/develop as the code base; preserve rejected result c2f3146 only as evidence and replace its unintegrated candidate V3 rather than adding V4.",
         "Set JAVA_HOME=/home/main/.local/jdk21 and use /home/main/.local/jdk11 as the Gradle Java 11 toolchain before running checks.",
@@ -7204,8 +7218,8 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "repaired_packet_at": "2026-07-25T19:54:00Z",
-      "repaired_packet_by": "Codex dispatcher independent review",
+      "repaired_packet_at": "2026-07-25T20:18:00Z",
+      "repaired_packet_by": "Codex dispatcher after integrator rejection",
       "context_docs": [
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
@@ -7218,8 +7232,6 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
       "started_at": "2026-07-25T20:03:22Z",
       "lock_expires_at": "2026-07-26T04:03:22Z",
-      "status_reason": "Integrator rejected 229a9f5: raw JSON boundary, unsafe legacy migration/reconnect and mandatory PostgreSQL/concurrency/security gates remain",
-      "not_worker_ready_reason": "Integrator review requires a new narrower worker result before integration",
       "worker_result_commit": "229a9f59ab9033e4b75923fdc9ae447092b8eab6",
       "worker_result_synced_at": "2026-07-25T20:15:18Z",
       "worker_changed_paths": [
@@ -7281,6 +7293,15 @@
           "worker_result_commit": "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e",
           "event": "worker_fix_requeued",
           "reason": "fresh retry packet adds exact security, migration, PostgreSQL, concurrency, replay and immutable-result gates"
+        },
+        {
+          "at": "2026-07-25T20:18:00Z",
+          "by": "Codex dispatcher after integrator rejection",
+          "previous_status": "needs_worker_fix",
+          "previous_integration_status": "needs_worker_fix",
+          "worker_result_commit": "229a9f59ab9033e4b75923fdc9ae447092b8eab6",
+          "event": "worker_fix_requeued",
+          "reason": "XL repair is routed to auto-worker-5.5max after 229a9f5 omitted mandatory typed, PostgreSQL, concurrency and security gates"
         }
       ],
       "status_history": [
