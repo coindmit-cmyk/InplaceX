@@ -8,6 +8,8 @@ export INPLACEX_BACKEND_PORT=0
 compose=(docker compose --project-directory "$repository_root" -f "$repository_root/ops/compose.yaml")
 temporary_directory="$(mktemp -d)"
 backup_file="$temporary_directory/inplacex-local-stack.dump"
+expected_migrations="$temporary_directory/expected-migrations.txt"
+actual_migrations="$temporary_directory/actual-migrations.txt"
 
 cleanup() {
     "${compose[@]}" down --volumes --remove-orphans --rmi local >/dev/null 2>&1 || true
@@ -28,9 +30,14 @@ for attempt in {1..30}; do
     sleep 5
 done
 
+find "$repository_root/InplaceX-backend/src/main/resources/db/migration" \
+    -maxdepth 1 -type f -name 'V*__*.sql' -printf '%f\n' \
+    | sed -E 's/^V([^_]+)__.*/\1/' \
+    | sort -V > "$expected_migrations"
 "${compose[@]}" exec -T postgres sh -ec \
-    'PGPASSWORD="$POSTGRES_PASSWORD" psql --set=ON_ERROR_STOP=1 --tuples-only --no-align --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" -c "SELECT version FROM inplacex_schema_history ORDER BY version"' \
-    | diff -u <(printf '1\n2\n') -
+    'PGPASSWORD="$POSTGRES_PASSWORD" psql --set=ON_ERROR_STOP=1 --tuples-only --no-align --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" -c "SELECT version FROM inplacex_schema_history"' \
+    | sort -V > "$actual_migrations"
+diff -u "$expected_migrations" "$actual_migrations"
 
 "${compose[@]}" exec -T postgres sh -ec \
     'PGPASSWORD="$POSTGRES_PASSWORD" psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" -c "CREATE TABLE IF NOT EXISTS ops_restore_verification (value TEXT NOT NULL); TRUNCATE ops_restore_verification; INSERT INTO ops_restore_verification(value) VALUES ('\''before-restore'\'');"'
