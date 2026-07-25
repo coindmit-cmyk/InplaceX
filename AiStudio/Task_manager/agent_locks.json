@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:49:20Z",
+  "updated_at": "2026-07-25T19:52:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -352,6 +352,16 @@
       "released_at": "2026-07-25T19:49:20Z",
       "released_by": "sync_worker_results.py",
       "release_reason": "worker result synced and returned from worker lane"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence",
+      "at": "2026-07-25T19:52:00Z",
+      "expires_at": "2026-07-26T03:52:00Z",
+      "notes": "central runner claim"
     }
   ]
 }
