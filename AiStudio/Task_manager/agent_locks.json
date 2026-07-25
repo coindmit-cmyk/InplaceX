@@ -1,17 +1,20 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T16:50:18Z",
+  "updated_at": "2026-07-25T17:02:41Z",
   "default_ttl_hours": 8,
   "locks": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
       "at": "2026-07-25T16:50:09Z",
       "expires_at": "2026-07-26T00:50:09Z",
-      "notes": "central runner claim"
+      "notes": "terminal/free task row lock cleanup",
+      "released_at": "2026-07-25T17:02:41Z",
+      "released_by": "release_dead_worker_claims.py",
+      "release_reason": "terminal/free task row lock cleanup"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
