@@ -33,6 +33,8 @@ import com.mirkori.inplacex.core.bot.BotBenchmarkRequest
 import com.mirkori.inplacex.core.bot.BotBenchmarkRunner
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +43,7 @@ import kotlinx.coroutines.withContext
 fun BotLabScreen(
     onBack: () -> Unit,
 ) {
+    val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
     var secretInput by remember { mutableStateOf("") }
     var codeLengthInput by remember { mutableStateOf("6") }
@@ -65,11 +68,11 @@ fun BotLabScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Bot Lab",
+                text = strings.text("developer.bot_lab.title"),
                 style = MaterialTheme.typography.headlineSmall,
             )
             TextButton(onClick = onBack) {
-                Text("Back")
+                Text(strings.text("developer.bot_lab.back"))
             }
         }
 
@@ -81,7 +84,7 @@ fun BotLabScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Developer screen for bot checks. Fix one secret and compare how many turns each difficulty needs.",
+                    text = strings.text("developer.bot_lab.description"),
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
@@ -92,7 +95,7 @@ fun BotLabScreen(
                         errorText = null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Secret (empty = auto)") },
+                    label = { Text(strings.text("developer.bot_lab.secret")) },
                     singleLine = true,
                 )
 
@@ -104,7 +107,7 @@ fun BotLabScreen(
                             errorText = null
                         },
                         modifier = Modifier.weight(1f),
-                        label = { Text("Length") },
+                        label = { Text(strings.text("developer.bot_lab.length")) },
                         singleLine = true,
                     )
 
@@ -115,13 +118,13 @@ fun BotLabScreen(
                             errorText = null
                         },
                         modifier = Modifier.weight(1f),
-                        label = { Text("Runs") },
+                        label = { Text(strings.text("developer.bot_lab.runs")) },
                         singleLine = true,
                     )
                 }
 
                 SwitchRow(
-                    title = "Allow duplicate digits",
+                    title = strings.text("developer.bot_lab.allow_duplicates"),
                     checked = allowDuplicates,
                     onCheckedChange = {
                         allowDuplicates = it
@@ -130,7 +133,7 @@ fun BotLabScreen(
                 )
 
                 SwitchRow(
-                    title = "Forbid adjacent duplicates",
+                    title = strings.text("developer.bot_lab.forbid_adjacent"),
                     checked = forbidAdjacentDuplicates,
                     onCheckedChange = {
                         forbidAdjacentDuplicates = it
@@ -142,7 +145,7 @@ fun BotLabScreen(
                 )
 
                 SwitchRow(
-                    title = "Forbid triple duplicates",
+                    title = strings.text("developer.bot_lab.forbid_triple"),
                     checked = forbidTripleDuplicates,
                     onCheckedChange = {
                         forbidTripleDuplicates = it
@@ -151,7 +154,7 @@ fun BotLabScreen(
                 )
 
                 Text(
-                    text = "Behavior model",
+                    text = strings.text("developer.bot_lab.behavior"),
                     style = MaterialTheme.typography.titleMedium,
                 )
 
@@ -182,7 +185,7 @@ fun BotLabScreen(
                         val codeLength = codeLengthInput.toIntOrNull()
                         val samples = samplesInput.toIntOrNull() ?: 1
                         if (codeLength == null || codeLength !in 4..20) {
-                            errorText = "Code length must be between 4 and 20."
+                            errorText = strings.text("developer.bot_lab.error.code_length")
                             return@Button
                         }
 
@@ -196,11 +199,11 @@ fun BotLabScreen(
                         )
                         val secret = secretInput.takeIf { it.isNotBlank() }
                         if (secret != null && secret.length != codeLength) {
-                            errorText = "Secret must contain exactly $codeLength digits."
+                            errorText = strings.format("developer.bot_lab.error.secret_length", "value" to codeLength.toString())
                             return@Button
                         }
                         if (secret != null && !GuessValidator.validate(secret, config)) {
-                            errorText = "Secret does not match the active rules."
+                            errorText = strings.text("developer.bot_lab.error.secret_rules")
                             return@Button
                         }
 
@@ -222,7 +225,7 @@ fun BotLabScreen(
                     },
                     enabled = !isRunning,
                 ) {
-                    Text(if (isRunning) "Running..." else "Run benchmark")
+                    Text(if (isRunning) strings.text("developer.bot_lab.running") else strings.text("developer.bot_lab.run"))
                 }
             }
         }
@@ -245,14 +248,14 @@ fun BotLabScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = "Report",
+                        text = strings.text("developer.bot_lab.report"),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    Text("Code length: ${currentReport.config.codeLength}")
-                    Text("Allow duplicates: ${currentReport.config.allowDuplicates}")
-                    Text("Forbid adjacent duplicates: ${currentReport.config.forbidAdjacentDuplicates}")
-                    Text("Forbid triple duplicates: ${currentReport.config.forbidTripleDuplicates}")
-                    Text("Behavior: ${BotBehaviorProfiles.forModel(currentReport.behavior).title}")
+                    Text(strings.format("developer.bot_lab.report.code_length", "value" to currentReport.config.codeLength.toString()))
+                    Text(strings.format("developer.bot_lab.report.allow_duplicates", "value" to currentReport.config.allowDuplicates.toString()))
+                    Text(strings.format("developer.bot_lab.report.forbid_adjacent", "value" to currentReport.config.forbidAdjacentDuplicates.toString()))
+                    Text(strings.format("developer.bot_lab.report.forbid_triple", "value" to currentReport.config.forbidTripleDuplicates.toString()))
+                    Text(strings.format("developer.bot_lab.report.behavior", "value" to BotBehaviorProfiles.forModel(currentReport.behavior).title))
                 }
             }
 
@@ -272,11 +275,18 @@ fun BotLabScreen(
                                 text = entry.difficulty.name,
                                 style = MaterialTheme.typography.titleMedium,
                             )
-                            Text("Wins: ${entry.wins}/${entry.samples} (${(entry.winRate * 100).toInt()}%)")
-                            Text("Average turns: ${"%.2f".format(entry.averageMoves)}")
-                            Text("Best / worst: ${entry.bestMoves} / ${entry.worstMoves}")
-                            Text("Target pace: ${entry.targetMoves} turns")
-                            Text("Secrets: ${entry.secrets.joinToString()}")
+                            Text(
+                                strings.format(
+                                    "developer.bot_lab.report.wins",
+                                    "wins" to entry.wins.toString(),
+                                    "samples" to entry.samples.toString(),
+                                    "rate" to (entry.winRate * 100).toInt().toString(),
+                                )
+                            )
+                            Text(strings.format("developer.bot_lab.report.average_turns", "value" to "%.2f".format(entry.averageMoves)))
+                            Text(strings.format("developer.bot_lab.report.best_worst", "best" to entry.bestMoves.toString(), "worst" to entry.worstMoves.toString()))
+                            Text(strings.format("developer.bot_lab.report.target_pace", "value" to entry.targetMoves.toString()))
+                            Text(strings.format("developer.bot_lab.report.secrets", "value" to entry.secrets.joinToString()))
                         }
                     }
                 }
@@ -284,6 +294,9 @@ fun BotLabScreen(
         }
     }
 }
+
+private fun LocalizationProvider.format(key: String, vararg values: Pair<String, String>): String =
+    values.fold(text(key)) { formatted, (name, value) -> formatted.replace("{$name}", value) }
 
 @Composable
 private fun SwitchRow(

@@ -72,14 +72,14 @@ fun ShopRootScreen(
         ) {
             SceneActionTile(
                 title = strings.text("shop.hints"),
-                subtitle = "5 helper types for matches and campaign runs",
+                subtitle = strings.text("shop.hints.subtitle"),
                 modifier = Modifier.weight(1f),
                 accentBrush = Brush.verticalGradient(listOf(Color(0xFF80D5FF), Color(0xFF4C8FFF))),
                 onClick = {}
             )
             SceneActionTile(
                 title = strings.text("shop.premium"),
-                subtitle = "Ad-free, Pro and Pro+ access",
+                subtitle = strings.text("shop.premium.subtitle"),
                 modifier = Modifier.weight(1f),
                 accentBrush = Brush.verticalGradient(listOf(Color(0xFFFFD37A), Color(0xFFF19A2A))),
                 onClick = {}
@@ -92,12 +92,12 @@ fun ShopRootScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            ShopLine(strings.text("shop.item.open_position"), "20", onBuyOpenPositionHint)
-            ShopLine(strings.text("shop.item.check_digit"), "15", onBuyCheckDigitHint)
-            ShopLine(strings.text("shop.item.check_position"), "25", onBuyCheckPositionHint)
-            ShopLine(strings.text("shop.item.extra_moves"), "30", onBuyExtraMovesBoost)
-            ShopLine(strings.text("shop.item.extra_time"), "30", onBuyExtraTimeBoost)
-            ShopLine(strings.text("shop.item.energy"), "25", onBuyEnergy)
+            ShopLine(strings.text("shop.item.open_position"), "20", strings, onBuyOpenPositionHint)
+            ShopLine(strings.text("shop.item.check_digit"), "15", strings, onBuyCheckDigitHint)
+            ShopLine(strings.text("shop.item.check_position"), "25", strings, onBuyCheckPositionHint)
+            ShopLine(strings.text("shop.item.extra_moves"), "30", strings, onBuyExtraMovesBoost)
+            ShopLine(strings.text("shop.item.extra_time"), "30", strings, onBuyExtraTimeBoost)
+            ShopLine(strings.text("shop.item.energy"), "25", strings, onBuyEnergy)
         }
 
         SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
@@ -109,18 +109,21 @@ fun ShopRootScreen(
             PremiumLine(
                 title = strings.text("shop.product.remove_ads"),
                 active = progressState.adFreePurchased,
+                strings = strings,
                 actionLabel = strings.text(if (progressState.adFreePurchased) "shop.owned" else "shop.buy"),
                 onAction = onBuyRemoveAds
             )
             PremiumLine(
                 title = strings.text("shop.product.pro"),
                 active = progressState.proSubscriptionActive,
+                strings = strings,
                 actionLabel = strings.text(if (progressState.proSubscriptionActive) "shop.active" else "shop.subscribe"),
                 onAction = onBuyPro
             )
             PremiumLine(
                 title = strings.text("shop.product.pro_plus"),
                 active = progressState.proPlusSubscriptionActive,
+                strings = strings,
                 actionLabel = strings.text(if (progressState.proPlusSubscriptionActive) "shop.active" else "shop.subscribe"),
                 onAction = onBuyProPlus
             )
@@ -132,6 +135,7 @@ fun ShopRootScreen(
 private fun ShopLine(
     title: String,
     price: String,
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
     onBuy: () -> Unit,
 ) {
     Row(
@@ -140,10 +144,10 @@ private fun ShopLine(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, fontWeight = FontWeight.SemiBold)
-            Text("$price coins", style = MaterialTheme.typography.bodySmall)
+            Text(strings.text("shop.price").replace("{price}", price), style = MaterialTheme.typography.bodySmall)
         }
         Button(onClick = onBuy) {
-            Text("Buy")
+            Text(strings.text("shop.buy"))
         }
     }
 }
@@ -152,6 +156,7 @@ private fun ShopLine(
 private fun PremiumLine(
     title: String,
     active: Boolean,
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
     actionLabel: String,
     onAction: () -> Unit,
 ) {
@@ -162,7 +167,7 @@ private fun PremiumLine(
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, fontWeight = FontWeight.SemiBold)
             Text(
-                if (active) "Unlocked" else "Premium access",
+                if (active) strings.text("shop.premium.unlocked") else strings.text("shop.premium.access"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

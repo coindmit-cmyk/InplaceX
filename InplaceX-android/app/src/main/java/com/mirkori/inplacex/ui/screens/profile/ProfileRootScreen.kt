@@ -76,8 +76,12 @@ fun ProfileRootScreen(
                 onClick = {}
             )
             SceneActionTile(
-                title = "Google Play",
-                subtitle = if (progressState.googlePlaySignedIn) "Connected" else "Guest mode",
+                title = strings.text("profile.google_play.title"),
+                subtitle = if (progressState.googlePlaySignedIn) {
+                    strings.text("profile.google_play.connected")
+                } else {
+                    strings.text("profile.google_play.guest")
+                },
                 modifier = Modifier.weight(1f),
                 accentBrush = Brush.verticalGradient(listOf(Color(0xFF6FD8B5), Color(0xFF2FA77D))),
                 onClick = {}
@@ -90,9 +94,9 @@ fun ProfileRootScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            MembershipLine("Ads", progressState.adFreePurchased)
-            MembershipLine("Pro", progressState.proSubscriptionActive)
-            MembershipLine("Pro+", progressState.proPlusSubscriptionActive)
+            MembershipLine(strings.text("profile.membership.ads"), progressState.adFreePurchased, strings)
+            MembershipLine(strings.text("profile.membership.pro"), progressState.proSubscriptionActive, strings)
+            MembershipLine(strings.text("profile.membership.pro_plus"), progressState.proPlusSubscriptionActive, strings)
         }
 
         SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
@@ -115,13 +119,13 @@ fun ProfileRootScreen(
 
         SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
             Text(
-                text = "Match stats",
+                text = strings.text("profile.match_stats"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            MatchStatsRow("PvE", progressState.pveStats.wins, progressState.pveStats.losses)
-            MatchStatsRow("PvP", progressState.pvpStats.wins, progressState.pvpStats.losses)
-            MatchStatsRow(strings.text("section.company.short"), progressState.companyStats.wins, progressState.companyStats.losses)
+            MatchStatsRow(strings.text("profile.match_stats.pve"), progressState.pveStats.wins, progressState.pveStats.losses, strings)
+            MatchStatsRow(strings.text("profile.match_stats.pvp"), progressState.pvpStats.wins, progressState.pvpStats.losses, strings)
+            MatchStatsRow(strings.text("section.company.short"), progressState.companyStats.wins, progressState.companyStats.losses, strings)
         }
     }
 }
@@ -130,6 +134,7 @@ fun ProfileRootScreen(
 private fun MembershipLine(
     title: String,
     active: Boolean,
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -137,7 +142,7 @@ private fun MembershipLine(
     ) {
         Text(title)
         Text(
-            text = if (active) "Active" else "Locked",
+            text = if (active) strings.text("profile.membership.active") else strings.text("profile.membership.locked"),
             fontWeight = FontWeight.SemiBold,
             color = if (active) Color(0xFF2E7D32) else Color(0xFF8A93A8)
         )
@@ -149,12 +154,17 @@ private fun MatchStatsRow(
     title: String,
     wins: Int,
     losses: Int,
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(title, fontWeight = FontWeight.SemiBold)
-        Text("W $wins / L $losses")
+        Text(
+            strings.text("profile.match_stats.result")
+                .replace("{wins}", wins.toString())
+                .replace("{losses}", losses.toString())
+        )
     }
 }

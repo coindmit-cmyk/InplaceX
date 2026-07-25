@@ -145,13 +145,13 @@ fun DeveloperRootScreen(
                     onClick = onDisableAdFree,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Disable Ads")
+                    Text(strings.text("developer.action.disable_ads_free"))
                 }
                 Button(
                     onClick = onDisablePro,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Disable Pro")
+                    Text(strings.text("developer.action.disable_pro"))
                 }
             }
             Button(
@@ -164,12 +164,12 @@ fun DeveloperRootScreen(
                 onClick = onDisableProPlus,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Disable Pro+")
+                Text(strings.text("developer.action.disable_pro_plus"))
             }
             SceneSplitStatRow(
-                leftLabel = "Ads",
+                leftLabel = strings.text("developer.membership.ads"),
                 leftValue = if (progressState.adFreePurchased) "ON" else "OFF",
-                rightLabel = "Pro",
+                rightLabel = strings.text("developer.membership.pro"),
                 rightValue = when {
                     progressState.proPlusSubscriptionActive -> "PRO+"
                     progressState.proSubscriptionActive -> "PRO"
@@ -185,8 +185,8 @@ fun DeveloperRootScreen(
         )
 
         SceneActionTile(
-            title = "User Data",
-            subtitle = "Open the full local user snapshot and entitlement state.",
+            title = strings.text("developer.user_data.title"),
+            subtitle = strings.text("developer.user_data.subtitle"),
             onClick = { isUserDataOpen = true }
         )
     }
@@ -205,16 +205,17 @@ private fun UserDataDialog(
     onClose: () -> Unit,
 ) {
     val progress = snapshot.gameProgress
+    val strings = LocalAppStrings.current
 
     AlertDialog(
         onDismissRequest = onClose,
         confirmButton = {
             TextButton(onClick = onClose) {
-                Text("Close")
+                Text(strings.text("developer.user_data.close"))
             }
         },
         title = {
-            Text("User Data")
+            Text(strings.text("developer.user_data.title"))
         },
         text = {
             Column(
@@ -223,42 +224,53 @@ private fun UserDataDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                UserDataLine("Player", snapshot.playerProfile.displayName)
-                UserDataLine("Player ID", snapshot.playerProfile.playerId)
-                UserDataLine("Install ID", snapshot.playerProfile.installationId)
-                UserDataLine("Auth", snapshot.playerProfile.authProvider.name)
-                UserDataLine("Guest", snapshot.playerProfile.isGuest.toString())
-                UserDataLine("Online", snapshot.playerProfile.isOnline.toString())
-                UserDataLine("Locale", snapshot.playerProfile.locale)
-                UserDataLine("Region", snapshot.playerProfile.regionCode)
-                UserDataLine("Cloud Rev", snapshot.playerProfile.cloudRevision.toString())
-                UserDataLine("Google Play", progress.googlePlaySignedIn.toString())
-                UserDataLine("Coins", progress.coins.toString())
-                UserDataLine("Energy", "${progress.campaignEnergy}/${progress.campaignEnergyMax}")
-                UserDataLine("Energy Refill", "${progress.campaignEnergyRefillMinutes} min")
-                UserDataLine("Matches Played", progress.matchesPlayed.toString())
-                UserDataLine("Matches Won", progress.matchesWon.toString())
-                UserDataLine("Campaign Level", progress.highestUnlockedCampaignLevel.toString())
-                UserDataLine("Campaign Rating", progress.totalCampaignRating.toString())
-                UserDataLine("Hints", "${progress.openPositionHints}/${progress.checkDigitHints}/${progress.checkPositionHints}")
-                UserDataLine("Boosts", "${progress.extraMovesBoosts}/${progress.extraTimeBoosts}")
-                UserDataLine("Ads Disabled", progress.adsDisabled.toString())
-                UserDataLine("Ad Free", progress.adFreePurchased.toString())
-                UserDataLine("Pro", progress.proSubscriptionActive.toString())
-                UserDataLine("Pro+", progress.proPlusSubscriptionActive.toString())
-                UserDataLine("PVE", "W ${progress.pveStats.wins} / L ${progress.pveStats.losses}")
-                UserDataLine("PVP", "W ${progress.pvpStats.wins} / L ${progress.pvpStats.losses}")
-                UserDataLine("Company", "W ${progress.companyStats.wins} / L ${progress.companyStats.losses}")
-                UserDataLine("Campaign Rows", snapshot.campaignProgress.size.toString())
-                UserDataLine("Identity Links", snapshot.identityLinks.size.toString())
-                UserDataLine("Relationships", snapshot.relationships.size.toString())
-                UserDataLine("Rooms", snapshot.rooms.size.toString())
-                UserDataLine("Matches", snapshot.matches.size.toString())
-                UserDataLine("Sync Queue", snapshot.pendingSyncOperations.size.toString())
+                UserDataLine(strings.text("developer.user_data.player"), snapshot.playerProfile.displayName)
+                UserDataLine(strings.text("developer.user_data.player_id"), snapshot.playerProfile.playerId)
+                UserDataLine(strings.text("developer.user_data.install_id"), snapshot.playerProfile.installationId)
+                UserDataLine(strings.text("developer.user_data.auth"), snapshot.playerProfile.authProvider.name)
+                UserDataLine(strings.text("developer.user_data.guest"), snapshot.playerProfile.isGuest.toString())
+                UserDataLine(strings.text("developer.user_data.online"), snapshot.playerProfile.isOnline.toString())
+                UserDataLine(strings.text("developer.user_data.locale"), snapshot.playerProfile.locale)
+                UserDataLine(strings.text("developer.user_data.region"), snapshot.playerProfile.regionCode)
+                UserDataLine(strings.text("developer.user_data.cloud_revision"), snapshot.playerProfile.cloudRevision.toString())
+                UserDataLine(strings.text("developer.user_data.google_play"), progress.googlePlaySignedIn.toString())
+                UserDataLine(strings.text("developer.user_data.coins"), progress.coins.toString())
+                UserDataLine(strings.text("developer.user_data.energy"), "${progress.campaignEnergy}/${progress.campaignEnergyMax}")
+                UserDataLine(
+                    strings.text("developer.user_data.energy_refill"),
+                    strings.text("developer.user_data.minutes").replace("{value}", progress.campaignEnergyRefillMinutes.toString())
+                )
+                UserDataLine(strings.text("developer.user_data.matches_played"), progress.matchesPlayed.toString())
+                UserDataLine(strings.text("developer.user_data.matches_won"), progress.matchesWon.toString())
+                UserDataLine(strings.text("developer.user_data.campaign_level"), progress.highestUnlockedCampaignLevel.toString())
+                UserDataLine(strings.text("developer.user_data.campaign_rating"), progress.totalCampaignRating.toString())
+                UserDataLine(strings.text("developer.user_data.hints"), "${progress.openPositionHints}/${progress.checkDigitHints}/${progress.checkPositionHints}")
+                UserDataLine(strings.text("developer.user_data.boosts"), "${progress.extraMovesBoosts}/${progress.extraTimeBoosts}")
+                UserDataLine(strings.text("developer.user_data.ads_disabled"), progress.adsDisabled.toString())
+                UserDataLine(strings.text("developer.user_data.ad_free"), progress.adFreePurchased.toString())
+                UserDataLine(strings.text("developer.user_data.pro"), progress.proSubscriptionActive.toString())
+                UserDataLine(strings.text("developer.user_data.pro_plus"), progress.proPlusSubscriptionActive.toString())
+                UserDataLine(strings.text("developer.user_data.pve"), matchResult(strings, progress.pveStats.wins, progress.pveStats.losses))
+                UserDataLine(strings.text("developer.user_data.pvp"), matchResult(strings, progress.pvpStats.wins, progress.pvpStats.losses))
+                UserDataLine(strings.text("developer.user_data.company"), matchResult(strings, progress.companyStats.wins, progress.companyStats.losses))
+                UserDataLine(strings.text("developer.user_data.campaign_rows"), snapshot.campaignProgress.size.toString())
+                UserDataLine(strings.text("developer.user_data.identity_links"), snapshot.identityLinks.size.toString())
+                UserDataLine(strings.text("developer.user_data.relationships"), snapshot.relationships.size.toString())
+                UserDataLine(strings.text("developer.user_data.rooms"), snapshot.rooms.size.toString())
+                UserDataLine(strings.text("developer.user_data.matches"), snapshot.matches.size.toString())
+                UserDataLine(strings.text("developer.user_data.sync_queue"), snapshot.pendingSyncOperations.size.toString())
             }
         }
     )
 }
+
+private fun matchResult(
+    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
+    wins: Int,
+    losses: Int,
+): String = strings.text("developer.user_data.match_result")
+    .replace("{wins}", wins.toString())
+    .replace("{losses}", losses.toString())
 
 @Composable
 private fun UserDataLine(

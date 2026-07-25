@@ -11,6 +11,7 @@
 - Added versioned online REST/WebSocket/security contracts with machine-readable v1 schemas for guest auth, cloud save, matchmaking, duel commands, snapshots, reconnect, idempotency, concurrency, redaction, and secret ownership.
 
 ### Changed
+- Localized secondary, developer, and Bot Lab screen labels for Russian and English while retaining diagnostic identifiers and controls.
 - Replaced the default dynamic Material palette with stable InplaceX brand colors and shapes.
 - Updated the global background, top resources, bottom navigation, shared scene components, Home identity, and player-facing Race/Duel labels.
 - Restored visible game status and validation feedback after the UI redesign, including a localized explanation when every entered digit is identical.

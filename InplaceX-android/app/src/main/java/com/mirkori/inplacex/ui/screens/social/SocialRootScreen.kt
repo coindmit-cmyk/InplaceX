@@ -29,7 +29,7 @@ fun SocialRootScreen() {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "This section will handle friends, invites and online presence.",
+                text = strings.text("social.description"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -41,14 +41,14 @@ fun SocialRootScreen() {
         ) {
             SceneActionTile(
                 title = strings.text("social.friends"),
-                subtitle = "Invite players and manage your list",
+                subtitle = strings.text("social.friends.subtitle"),
                 modifier = Modifier.weight(1f),
                 accentBrush = Brush.verticalGradient(listOf(Color(0xFF7BCFFF), Color(0xFF4B8BFF))),
                 onClick = {}
             )
             SceneActionTile(
                 title = strings.text("social.online"),
-                subtitle = "Prepare online rooms and live activity",
+                subtitle = strings.text("social.online.subtitle"),
                 modifier = Modifier.weight(1f),
                 accentBrush = Brush.verticalGradient(listOf(Color(0xFF7ADDB2), Color(0xFF2BA67B))),
                 onClick = {}
@@ -57,13 +57,13 @@ fun SocialRootScreen() {
 
         SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
             Text(
-                text = "Next online steps",
+                text = strings.text("social.next_steps"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
-            Text("Google Play sign-in")
-            Text("Cloud progress sync")
-            Text("Friends, invites and PvP rooms")
+            Text(strings.text("social.next_steps.google_play"))
+            Text(strings.text("social.next_steps.cloud_sync"))
+            Text(strings.text("social.next_steps.friends_pvp"))
         }
     }
 }

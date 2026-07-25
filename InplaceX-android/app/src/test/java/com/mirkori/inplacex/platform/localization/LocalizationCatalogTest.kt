@@ -60,4 +60,28 @@ class LocalizationCatalogTest {
             StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("game.debug.secret"),
         )
     }
+
+    @Test
+    fun secondaryAndDeveloperScreenKeysResolveForBothLanguages() {
+        val keys = listOf(
+            "social.description",
+            "shop.hints.subtitle",
+            "profile.match_stats.result",
+            "developer.user_data.player_id",
+            "developer.bot_lab.error.secret_length",
+            "company.dialog.exit_title",
+        )
+
+        AppLanguage.values().forEach { language ->
+            val strings = StaticLocalizationProvider.forLanguage(language)
+            keys.forEach { key ->
+                assertEquals(false, strings.text(key) == key)
+            }
+        }
+
+        assertEquals("Звёзды: {current} / {required}", StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("company.scene.stars"))
+        assertEquals("Stars: {current} / {required}", StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("company.scene.stars"))
+        assertEquals("ID игрока", StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("developer.user_data.player_id"))
+        assertEquals("Player ID", StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("developer.user_data.player_id"))
+    }
 }

@@ -295,7 +295,7 @@ fun CompanyRootScreen(
             },
             confirmButton = {
                 TextButton(onClick = { resultState = null }) {
-                    Text("OK")
+                    Text(strings.text("company.action.close"))
                 }
             }
         )
