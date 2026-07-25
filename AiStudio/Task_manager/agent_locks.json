@@ -682,13 +682,16 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
       "at": "2026-07-25T23:26:12Z",
       "expires_at": "2026-07-26T07:26:12Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "released_at": "2026-07-25T23:43:51Z",
+      "released_by": "Codex strict JVM surface audit",
+      "release_reason": "candidate 30653e5 exposed public JVM issue(String) and default bridge that mint valid tokens for raw active-player ids"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
