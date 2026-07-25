@@ -6,6 +6,12 @@ plugins {
 
 description = "Root Gradle build for the InplaceX repository."
 
+subprojects {
+    tasks.withType<org.gradle.jvm.tasks.Jar>().configureEach {
+        from(layout.buildDirectory.dir("classes/kotlin/main"))
+    }
+}
+
 val verificationTasks = listOf(
     ":InplaceX-backend:test",
     ":InplaceX-bot-core:test",

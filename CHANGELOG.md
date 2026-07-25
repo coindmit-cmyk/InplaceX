@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added the modular Ktor backend foundation with environment-driven runtime
+  configuration and health/readiness endpoints.
+
 ## 2026-07-25
 
 ### Added
