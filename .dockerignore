@@ -1,0 +1,11 @@
+.git
+.gradle
+.env
+**/build
+**/local.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pfx
+local-diagnostics
+

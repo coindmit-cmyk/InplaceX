@@ -11,3 +11,4 @@ This section is reserved for backend-specific documentation:
 - cloud save
 - entitlement validation
 - [Ktor Architecture](Ktor%20Architecture.md)
+- [Локальные контейнеры и операции PostgreSQL](Local%20Containers%20Runbook.md)

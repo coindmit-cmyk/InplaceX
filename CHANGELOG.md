@@ -2,11 +2,17 @@
 
 ## Unreleased
 
+- Added a local Docker Compose backend/PostgreSQL stack with persistent storage,
+  health checks, environment-only credentials, and an executable backup,
+  restore, rollback, and migration verification runbook.
 - Added the modular Ktor backend foundation with environment-driven runtime
   configuration and health/readiness endpoints.
 - Added PostgreSQL-backed versioned persistence migrations for players, cloud-save
   revisions, matchmaking tickets, duel sessions, idempotent commands, and events.
   Database connection credentials remain external process configuration.
+- Added an isolated local Docker Compose backend/PostgreSQL stack with migration,
+  backup/restore, rollback verification, localhost-only port binding, and a
+  build-context secret exclusion policy.
 
 ## 2026-07-25
 

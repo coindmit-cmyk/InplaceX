@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${INPLACEX_POSTGRES_DB:-inplacex}
+      POSTGRES_USER: ${INPLACEX_POSTGRES_USER:-inplacex}
+      POSTGRES_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:-change-me-before-use}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: ops/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      INPLACEX_BACKEND_ENVIRONMENT: local
+      INPLACEX_BACKEND_HOST: 0.0.0.0
+      INPLACEX_BACKEND_PORT: 8080
+      INPLACEX_DATABASE_JDBC_URL: jdbc:postgresql://postgres:5432/${INPLACEX_POSTGRES_DB:-inplacex}
+      INPLACEX_DATABASE_USERNAME: ${INPLACEX_POSTGRES_USER:-inplacex}
+      INPLACEX_DATABASE_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:-change-me-before-use}
+    ports:
+      - "127.0.0.1:${INPLACEX_BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8080/ready >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  postgres-data:
+    name: ${INPLACEX_POSTGRES_VOLUME:-inplacex-postgres-data}
