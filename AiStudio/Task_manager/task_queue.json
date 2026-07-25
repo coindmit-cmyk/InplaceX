@@ -2836,7 +2836,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
       "title": "Home and shell localization",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -2865,7 +2865,7 @@
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
         "InplaceX-android/app/src/test/**",
         "docs/reports/workers/**"
       ],
@@ -2884,12 +2884,12 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "dispatcher_decision_reason": "retry packet repaired to target the existing HomeCatalog path proven by worker result 1ec7456",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -2969,7 +2969,7 @@
       "code_refs": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
         "InplaceX-android/app/src/test/**"
       ],
       "context_inventory": {
@@ -2977,7 +2977,7 @@
         "code_refs": [
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
           "InplaceX-android/app/src/test/**"
         ],
         "doc_refs": [
@@ -3021,7 +3021,7 @@
         "allowed_paths": [
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
           "InplaceX-android/app/src/test/**",
           "docs/reports/workers/**"
         ],
@@ -3087,15 +3087,19 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "repaired_packet_at": "2026-07-25T19:43:06Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_at": "2026-07-25T23:39:12Z",
+      "repaired_packet_by": "Codex dispatcher path repair",
+      "retry_count": 1,
+      "last_worker_result": "1ec74562bb166b3ab2113459e5738716800302fd",
+      "last_worker_result_status": "needs_dispatcher_repair",
+      "last_worker_result_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10_20260725T233618Z.md",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization",
       "started_at": "2026-07-25T23:33:01Z",
       "lock_expires_at": "2026-07-26T07:33:01Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "requeued after correcting the stale HomeCatalog allowed path; blocker reports preserved in develop and worker branch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",

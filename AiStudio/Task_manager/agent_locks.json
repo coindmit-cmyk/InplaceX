@@ -698,7 +698,10 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization",
       "at": "2026-07-25T23:33:01Z",
       "expires_at": "2026-07-26T07:33:01Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "released_at": "2026-07-25T23:39:12Z",
+      "released_by": "Codex dispatcher path repair",
+      "release_reason": "worker result 1ec7456 proved the packet targeted a non-existent localization/catalog/HomeCatalog.kt path"
     }
   ]
 }
