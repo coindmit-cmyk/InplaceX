@@ -708,13 +708,16 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization-retry-20260725T234004Z",
       "at": "2026-07-25T23:40:04Z",
       "expires_at": "2026-07-26T07:40:04Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "released_at": "2026-07-25T23:51:52Z",
+      "released_by": "Codex independent Android localization review",
+      "release_reason": "candidate 0d82b02 passed RU/EN parity, typed placeholder, unit, assemble and scope gates and was integrated as a1fa2b9"
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
