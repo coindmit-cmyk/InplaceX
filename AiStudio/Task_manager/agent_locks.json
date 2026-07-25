@@ -590,13 +590,17 @@
     },
     {
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
       "at": "2026-07-25T22:44:04Z",
       "expires_at": "2026-07-26T06:44:04Z",
-      "notes": "central runner claim"
+      "notes": "S25B launch rejected before worker start; task now records abandoned_claims to force a fresh retry branch",
+      "review_at": "2026-07-25T22:46:16Z",
+      "released_at": "2026-07-25T22:46:16Z",
+      "released_by": "Codex dispatcher launch audit",
+      "release_reason": "existing_task_branch reuse overrode the new title; abandoned_claims now forces retry_branch_for"
     }
   ]
 }

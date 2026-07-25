@@ -9851,7 +9851,7 @@
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
       "title": "Retry S25B secure actor binding without plaintext persistence",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9899,7 +9899,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10105,7 +10105,14 @@
       "lock_expires_at": "2026-07-26T06:44:04Z",
       "retry_count": 1,
       "last_rejected_candidate": "b68c9f1bec5d1f86b301634b08aeae15e5d377c5",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "abandoned_claims": [
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
+          "commit": "b68c9f1bec5d1f86b301634b08aeae15e5d377c5",
+          "reason": "rejected security draft preserved as local bundle; branch must never be reset or reused"
+        }
+      ],
+      "status_reason": "launch retry must use a fresh timestamped branch because the preserved b68c9f1 branch contains unique rejected evidence"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
