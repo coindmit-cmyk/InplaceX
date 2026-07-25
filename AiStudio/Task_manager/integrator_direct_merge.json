@@ -1,21 +1,32 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-25T17:45:12Z",
-  "status": "direct_merge_done",
+  "created_at": "2026-07-25T17:57:53Z",
+  "status": "no_ready_items",
   "input_source": "integration_batch",
   "batch_exists": true,
-  "base_sha": "3fe700053d2b6da42201ffa55b72378d187054e5",
-  "ready": [
-    "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15"
-  ],
+  "base_sha": "a24acdbe2ef8d81d7cc2dde003ee3b3c86e442e6",
+  "ready": [],
   "source_pr_close_retried": [],
-  "routed": [],
-  "pushed": true,
-  "commits": [
-    "3fe700053d2b6da42201ffa55b72378d187054e5"
+  "routed": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+      "next_owner": "dispatcher",
+      "route": "needs_worker_fix",
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_source_head_sha": "55a8da9a78f50ac804369cfc8cc61045f75d9533",
+      "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "lost_behavior": {
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt": [
+          "GameConfig"
+        ]
+      },
+      "lost_count": 1
+    }
   ],
+  "pushed": false,
+  "commits": [],
   "source_pr_closures": {},
-  "state_commit": "f1e93314c6f3578fe669f52960440d3012cd4821",
+  "state_commit": null,
   "command_results": [
     {
       "command": [
@@ -34,14 +45,14 @@
         "worktree",
         "add",
         "-B",
-        "integrator/direct/20260725T174511Z",
-        "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+        "integrator/direct/20260725T175753Z",
+        "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
         "origin/develop"
       ],
       "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
       "exit_code": 0,
-      "stdout": "branch 'integrator/direct/20260725T174511Z' set up to track 'origin/develop'.\nУказатель HEAD сейчас на коммите 3fe7000 fix(automation): recover retried integration tasks\n",
-      "stderr": "Preparing worktree (new branch 'integrator/direct/20260725T174511Z')\n"
+      "stdout": "branch 'integrator/direct/20260725T175753Z' set up to track 'origin/develop'.\nУказатель HEAD сейчас на коммите a24acdb chore(runner): claim INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11 for auto-worker-5.5\n",
+      "stderr": "Preparing worktree (new branch 'integrator/direct/20260725T175753Z')\n"
     },
     {
       "command": [
@@ -49,9 +60,9 @@
         "rev-parse",
         "HEAD"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
-      "stdout": "3fe700053d2b6da42201ffa55b72378d187054e5\n",
+      "stdout": "a24acdbe2ef8d81d7cc2dde003ee3b3c86e442e6\n",
       "stderr": ""
     },
     {
@@ -59,11 +70,11 @@
         "git",
         "rev-parse",
         "--verify",
-        "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity"
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
-      "stdout": "3254f3871ffd4c0182e94779e42f9233e0c7d6e0\n",
+      "stdout": "55a8da9a78f50ac804369cfc8cc61045f75d9533\n",
       "stderr": ""
     },
     {
@@ -72,13 +83,13 @@
         "ls-tree",
         "-r",
         "--name-only",
-        "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
         "--",
-        "CHANGELOG.md"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldSavedStateStore.kt"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
-      "stdout": "CHANGELOG.md\n",
+      "stdout": "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldSavedStateStore.kt\n",
       "stderr": ""
     },
     {
@@ -87,13 +98,73 @@
         "ls-tree",
         "-r",
         "--name-only",
-        "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
         "--",
-        "README.md"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
-      "stdout": "README.md\n",
+      "stdout": "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+        "--",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
+      "exit_code": 0,
+      "stdout": "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+        "--",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
+      "exit_code": 0,
+      "stdout": "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+        "--",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
+      "exit_code": 0,
+      "stdout": "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+        "--",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModelTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
+      "exit_code": 0,
+      "stdout": "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModelTest.kt\n",
       "stderr": ""
     },
     {
@@ -101,11 +172,11 @@
         "git",
         "merge-base",
         "origin/develop",
-        "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity"
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
-      "stdout": "42e7981e41b60b30a51aca484a526a7b8984ebb1\n",
+      "stdout": "526ae1bdea705cf1df868c3c3faad4d5570c5ece\n",
       "stderr": ""
     },
     {
@@ -114,17 +185,21 @@
         "diff",
         "--binary",
         "--full-index",
-        "42e7981e41b60b30a51aca484a526a7b8984ebb1",
-        "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity",
+        "526ae1bdea705cf1df868c3c3faad4d5570c5ece",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
         "--",
-        "CHANGELOG.md",
-        "README.md"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldSavedStateStore.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModelTest.kt"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
       "stdout": "",
       "stderr": "",
-      "patch_bytes": 1968
+      "patch_bytes": 35136
     },
     {
       "command": [
@@ -135,58 +210,28 @@
         "--whitespace=nowarn",
         "-"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
       "stdout": "",
-      "stderr": "Патч применен к «CHANGELOG.md» без ошибок.\nПатч применен к «README.md» без ошибок.\n"
+      "stderr": "Falling back to direct application...\nFalling back to direct application...\nFalling back to direct application...\nПатч применен к «InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt» без ошибок.\nFalling back to direct application...\nFalling back to direct application...\n"
     },
     {
       "command": [
         "git",
-        "add",
-        "-A",
+        "restore",
+        "--staged",
+        "--worktree",
         "--",
-        "CHANGELOG.md",
-        "README.md"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldSavedStateStore.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModelTest.kt"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
       "stdout": "",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "status",
-        "--porcelain",
-        "--",
-        "CHANGELOG.md",
-        "README.md"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "rev-parse",
-        "HEAD"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "3fe700053d2b6da42201ffa55b72378d187054e5\n",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "integrator",
-        "already-applied-task-delta"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
       "stderr": ""
     },
     {
@@ -194,104 +239,16 @@
         "git",
         "diff",
         "--check",
-        "3fe700053d2b6da42201ffa55b72378d187054e5..HEAD"
+        "a24acdbe2ef8d81d7cc2dde003ee3b3c86e442e6..HEAD"
       ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t175753z",
       "exit_code": 0,
       "stdout": "",
       "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "rev-parse",
-        "origin/develop"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-      "exit_code": 0,
-      "stdout": "3fe700053d2b6da42201ffa55b72378d187054e5\n",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "push",
-        "origin",
-        "HEAD:develop"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "",
-      "stderr": "Everything up-to-date\n"
-    },
-    {
-      "command": [
-        "git",
-        "add",
-        "-A",
-        "--",
-        "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/task_queue.json",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/integrator_direct_merge.json"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "status",
-        "--porcelain",
-        "--",
-        "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/task_queue.json",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/integrator_direct_merge.json"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "M  AiStudio/Task_manager/agent_events.jsonl\nM  AiStudio/Task_manager/agent_locks.json\nM  AiStudio/Task_manager/integrator_direct_merge.json\nM  AiStudio/Task_manager/task_queue.json\n",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "commit",
-        "-m",
-        "chore(integrator): record direct merge state"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "[integrator/direct/20260725T174511Z f1e9331] chore(integrator): record direct merge state\n 4 files changed, 83 insertions(+), 446 deletions(-)\n",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "rev-parse",
-        "HEAD"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "f1e93314c6f3578fe669f52960440d3012cd4821\n",
-      "stderr": ""
-    },
-    {
-      "command": [
-        "git",
-        "push",
-        "origin",
-        "HEAD:develop"
-      ],
-      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t174511z",
-      "exit_code": 0,
-      "stdout": "",
-      "stderr": "To https://github.com/coindmit-cmyk/InplaceX.git\n   3fe7000..f1e9331  HEAD -> develop\n"
     }
   ],
   "state_changed": true,
-  "changed_route_ids": []
+  "changed_route_ids": [
+    "intake-design-pd-inplacex-final-20260725-v002-s06"
+  ]
 }
