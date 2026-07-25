@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:41:51Z",
+  "updated_at": "2026-07-25T18:50:47Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -248,23 +248,29 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s14/sqlite-migrations-and-repository-tests",
       "at": "2026-07-25T18:36:02Z",
       "expires_at": "2026-07-26T02:36:02Z",
-      "notes": "central runner claim"
+      "notes": "task already finalized in event log",
+      "released_at": "2026-07-25T18:50:47Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "task already finalized in event log"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s22/postgresql-persistence-and-migrations",
       "at": "2026-07-25T18:41:51Z",
       "expires_at": "2026-07-26T02:41:51Z",
-      "notes": "central runner claim"
+      "notes": "task already finalized in event log",
+      "released_at": "2026-07-25T18:50:47Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "task already finalized in event log"
     }
   ]
 }
