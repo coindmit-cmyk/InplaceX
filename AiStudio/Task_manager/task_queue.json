@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:02:20Z",
+  "updated_at": "2026-07-25T21:05:53Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3503,7 +3503,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "implementation",
@@ -3559,13 +3559,13 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "Strict review preserves e6b9689 and narrows the remaining repair to INVALID_LENGTH placeholder substitution plus RU/EN regression tests",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
@@ -3842,8 +3842,8 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T204922Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T204922Z",
       "lock_expires_at": "2026-07-26T04:49:22Z",
-      "worker_result_commit": "e6b9689647e21f8efa368f562949f1ef1b9323b8",
-      "worker_result_synced_at": "2026-07-25T20:46:19Z",
+      "worker_result_commit": "7d952f2543a80255c2c1377a5bba3550db30a446",
+      "worker_result_synced_at": "2026-07-25T21:05:53Z",
       "worker_changed_paths": [
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt",
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameLocalizationSmokeTest.kt",
@@ -3853,8 +3853,8 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/GameLocalizationCatalogTest.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/GameLocalizationPresentationTest.kt",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203717Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210101Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md"
       ],
       "changed_paths": [
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt",
@@ -3865,14 +3865,16 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/GameLocalizationCatalogTest.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/GameLocalizationPresentationTest.kt",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203717Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210101Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203717Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210101Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md"
       ],
       "worker_check_evidence": {
         "ok": true,
@@ -3881,10 +3883,11 @@
         "integration_status": "pending",
         "reason": "immutable worker report explicitly records required checks as passed"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T201842Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T204922Z",
       "commits": [
         "d34fd5ce0b0b79bf0822ba432b103dfec1c97559",
-        "e6b9689647e21f8efa368f562949f1ef1b9323b8"
+        "e6b9689647e21f8efa368f562949f1ef1b9323b8",
+        "7d952f2543a80255c2c1377a5bba3550db30a446"
       ],
       "integration_status": "pending",
       "integration_review_status": "rejected",
@@ -3928,7 +3931,7 @@
           "reason": "remaining localization defects and exact missing tests are now documented for a stronger worker"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker branch contains product changes; central sync derived integration request"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
