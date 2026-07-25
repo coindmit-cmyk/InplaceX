@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:52:00Z",
+  "updated_at": "2026-07-25T19:55:51Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3503,7 +3503,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -3553,7 +3553,7 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -3761,13 +3761,20 @@
       ],
       "repaired_packet_at": "2026-07-25T19:43:06Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "worker_id": "auto-worker-5.3",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence",
       "started_at": "2026-07-25T19:52:00Z",
-      "lock_expires_at": "2026-07-26T03:52:00Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "S12 packet stopped before integration: incorrect localization path and missing Android UI/lint gates; preserve worker worktree for salvage",
+      "abandoned_claims": [
+        {
+          "released_at": "2026-07-25T19:55:51Z",
+          "reason": "S12 packet stopped before integration: incorrect localization path and missing Android UI/lint gates; preserve worker worktree for salvage",
+          "status": "in_progress",
+          "worker_id": "auto-worker-5.3",
+          "machine_id": "aistudio-manual",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence",
+          "lock_expires_at": "2026-07-26T03:52:00Z"
+        }
+      ],
+      "claim_released_at": "2026-07-25T19:55:51Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
