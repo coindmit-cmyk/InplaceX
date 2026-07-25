@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:04:14Z",
+  "updated_at": "2026-07-25T20:16:00Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3503,7 +3503,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -3559,14 +3559,14 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "fresh retry packet corrects GameCatalog path and adds AndroidTest, lint, RU/EN parity and preserved-behavior gates",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "source_item_id": "INPX-LOC-104",
@@ -3836,7 +3836,64 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "lock_expires_at": "2026-07-26T04:04:14Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker explicitly reported required checks as partial",
+      "worker_result_commit": "d34fd5ce0b0b79bf0822ba432b103dfec1c97559",
+      "worker_result_synced_at": "2026-07-25T20:15:18Z",
+      "worker_changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md"
+      ],
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": false,
+        "route": "needs_worker_fix",
+        "check_status": "partial",
+        "integration_status": "needs_worker_fix",
+        "reason": "worker explicitly reported required checks as partial"
+      },
+      "not_worker_ready_reason": "worker explicitly reported required checks as partial",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
+      "commits": [
+        "d34fd5ce0b0b79bf0822ba432b103dfec1c97559"
+      ],
+      "integration_status": "needs_worker_fix",
+      "integration_review_status": "rejected",
+      "integration_reviewed_at": "2026-07-25T20:16:00Z",
+      "integration_reviewed_by": "Codex integrator independent review",
+      "integration_review_report": "docs/reports/integration/S12_INTEGRATOR_REVIEW_D34FD5C_20260725.md",
+      "integration_review_findings": [
+        "debug UI still renders raw Russian domain message",
+        "debug phase still renders enum names",
+        "race glyph actions lack localized accessibility semantics",
+        "required RU/EN parity, all-keys, typed-mapping and EN 1111 tests were not added",
+        "worker result remains check_status partial"
+      ],
+      "external_check_evidence": {
+        "checked_at": "2026-07-25T20:09:00Z",
+        "passed": [
+          "bash gradlew :app:testDebugUnitTest",
+          "bash gradlew :app:assembleDebugAndroidTest",
+          "bash gradlew assembleDebug",
+          "git diff --check",
+          "RU/EN key parity 102/102",
+          "placeholder parity",
+          "83 scoped used keys resolve"
+        ],
+        "baseline_lint": "The same three UnusedBoxWithConstraintsScope errors exist on clean develop and worker branch; no new lint finding was introduced."
+      }
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
@@ -6824,7 +6881,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -6892,14 +6949,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "fresh retry packet incorporates independent test failures, security review and PostgreSQL/concurrency gates",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "dispatcher_decision": "needs_worker_fix",
+      "dispatcher_decision_reason": "Integrator rejected 229a9f5 because mandatory typed security, safe migration, consistent reconnect and PostgreSQL/concurrency gates are missing",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "source_item_id": "INPX-BE-414",
@@ -7161,42 +7218,59 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
       "started_at": "2026-07-25T20:03:22Z",
       "lock_expires_at": "2026-07-26T04:03:22Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
-      "worker_result_commit": "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e",
-      "worker_result_synced_at": "2026-07-25T19:49:20Z",
+      "status_reason": "Integrator rejected 229a9f5: raw JSON boundary, unsafe legacy migration/reconnect and mandatory PostgreSQL/concurrency/security gates remain",
+      "not_worker_ready_reason": "Integrator review requires a new narrower worker result before integration",
+      "worker_result_commit": "229a9f59ab9033e4b75923fdc9ae447092b8eab6",
+      "worker_result_synced_at": "2026-07-25T20:15:18Z",
       "worker_changed_paths": [
+        "CHANGELOG.md",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/JdbcDurableDuelSessionRepository.kt",
         "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/JdbcDurableDuelSessionRepositoryTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T200644Z.md"
       ],
       "changed_paths": [
+        "CHANGELOG.md",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/JdbcDurableDuelSessionRepository.kt",
         "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/JdbcDurableDuelSessionRepositoryTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T200644Z.md"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T200644Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T200644Z.md"
       ],
       "worker_check_evidence": {
-        "ok": false,
-        "route": "needs_worker_fix",
-        "check_status": "partial",
-        "integration_status": "needs_worker_fix",
-        "reason": "worker explicitly reported required checks as partial"
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
       "commits": [
-        "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e"
+        "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e",
+        "229a9f59ab9033e4b75923fdc9ae447092b8eab6"
       ],
       "integration_status": "needs_worker_fix",
+      "integration_review_status": "rejected",
+      "integration_reviewed_at": "2026-07-25T20:16:00Z",
+      "integration_reviewed_by": "Codex integrator independent review",
+      "integration_review_report": "docs/reports/integration/S25_INTEGRATOR_REVIEW_229A9F5_20260725.md",
+      "integration_review_findings": [
+        "raw JSON and caller-controlled event/fingerprint boundary remains",
+        "64 KiB and forbidden-data enforcement are absent",
+        "V3 fabricates legacy authoritative snapshot from config_json",
+        "legacy appendCommand remains a divergent write path",
+        "reconnect is unbounded and transactionally inconsistent",
+        "PostgreSQL/Testcontainers, concurrency, rollback and security corpus gates are absent"
+      ],
       "repair_spec": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
       "worker_ready_promotion_history": [
         {

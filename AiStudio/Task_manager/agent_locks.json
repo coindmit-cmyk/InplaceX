@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:04:14Z",
+  "updated_at": "2026-07-25T20:16:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -368,23 +368,30 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
       "at": "2026-07-25T20:03:22Z",
       "expires_at": "2026-07-26T04:03:22Z",
-      "notes": "central runner claim"
+      "notes": "Integrator rejected result and returned task for a narrower worker repair",
+      "review_at": "2026-07-25T20:15:18Z",
+      "released_at": "2026-07-25T20:16:00Z",
+      "released_by": "Codex integrator independent review",
+      "release_reason": "mandatory S25 repair contract remains incomplete"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T200414Z",
       "at": "2026-07-25T20:04:14Z",
       "expires_at": "2026-07-26T04:04:14Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced and returned from worker lane",
+      "released_at": "2026-07-25T20:15:18Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "worker result synced and returned from worker lane"
     }
   ]
 }
