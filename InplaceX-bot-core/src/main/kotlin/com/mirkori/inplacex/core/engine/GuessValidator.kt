@@ -17,28 +17,69 @@ object GuessValidator {
         return validateOrReason(guess, config) == null
     }
 
+    fun validate(guess: CharArray, config: GameConfig): Boolean {
+        return validateOrReason(guess, config) == null
+    }
+
     fun validateOrReason(guess: String, config: GameConfig): GuessValidationReason? {
-        if (guess.length != config.codeLength) {
+        return validateOrReason(guess.length, config) { index -> guess[index] }
+    }
+
+    fun validateOrReason(guess: CharArray, config: GameConfig): GuessValidationReason? {
+        return validateOrReason(guess.size, config) { index -> guess[index] }
+    }
+
+    private inline fun validateOrReason(
+        length: Int,
+        config: GameConfig,
+        digitAt: (Int) -> Char,
+    ): GuessValidationReason? {
+        if (length != config.codeLength) {
             return GuessValidationReason.INVALID_LENGTH
         }
 
-        if (!guess.all { it.isDigit() }) {
-            return GuessValidationReason.NON_DIGIT
+        val seenDigits = BooleanArray(10)
+        var distinctDigits = 0
+        var hasAdjacentDuplicates = false
+        var hasTripleDuplicates = false
+
+        for (index in 0 until length) {
+            val digit = digitAt(index)
+            if (digit !in '0'..'9') {
+                return GuessValidationReason.NON_DIGIT
+            }
+
+            val digitIndex = digit - '0'
+            if (!seenDigits[digitIndex]) {
+                seenDigits[digitIndex] = true
+                distinctDigits += 1
+            }
+
+            if (index > 0 && digitAt(index - 1) == digit) {
+                hasAdjacentDuplicates = true
+            }
+            if (
+                index > 1 &&
+                digitAt(index - 1) == digit &&
+                digitAt(index - 2) == digit
+            ) {
+                hasTripleDuplicates = true
+            }
         }
 
-        if (!config.allowDuplicates && guess.toSet().size != guess.length) {
+        if (!config.allowDuplicates && distinctDigits != length) {
             return GuessValidationReason.DUPLICATE_DIGITS
         }
 
-        if (config.forbidAllSameDigitsGuess && guess.toSet().size == 1) {
+        if (config.forbidAllSameDigitsGuess && distinctDigits == 1) {
             return GuessValidationReason.ALL_SAME_DIGITS
         }
 
-        if (config.forbidAdjacentDuplicates && hasAdjacentDuplicates(guess)) {
+        if (config.forbidAdjacentDuplicates && hasAdjacentDuplicates) {
             return GuessValidationReason.ADJACENT_DUPLICATES
         }
 
-        if (config.forbidTripleDuplicates && hasTripleDuplicates(guess)) {
+        if (config.forbidTripleDuplicates && hasTripleDuplicates) {
             return GuessValidationReason.TRIPLE_DUPLICATES
         }
 
@@ -59,14 +100,5 @@ object GuessValidator {
             GuessValidationReason.ADJACENT_DUPLICATES -> "Adjacent duplicates are forbidden"
             GuessValidationReason.TRIPLE_DUPLICATES -> "Triple duplicates are forbidden"
         }
-    }
-
-    private fun hasAdjacentDuplicates(value: String): Boolean {
-        return value.zipWithNext().any { (left, right) -> left == right }
-    }
-
-    private fun hasTripleDuplicates(value: String): Boolean {
-        return value.windowed(size = 3, step = 1, partialWindows = false)
-            .any { window -> window.toSet().size == 1 }
     }
 }

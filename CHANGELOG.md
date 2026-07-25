@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Hardened the authoritative duel engine with single-use mutable digit
+  commands, ASCII-only validation, viewer-neutral attempt snapshots, and
+  deterministic secret-buffer zeroization after finish, close, or failure.
 - Isolated sandbox provider stubs and test identifiers to the debug Android variant. Release provider wiring now fails closed until real Google Play, Billing, and AdMob SDK results are integrated.
 - Added closed backend session read contracts with deterministic 64 KiB JSON
   frames, strict bounded JSON scanning, server-keyed secret fingerprints, and

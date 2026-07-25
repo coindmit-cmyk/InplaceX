@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.domain.duel
 
+import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.engine.GuessValidationReason
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.engine.ScoreCalculator
@@ -40,7 +41,6 @@ class DuelCommandRejectedException(
 
 data class DuelAttempt(
     val attacker: DuelParticipant,
-    val guess: String,
     val exactMatches: Int,
     val number: Int,
 )
@@ -71,15 +71,25 @@ data class DuelSnapshot(
  */
 class DuelMatch private constructor(
     val config: GameConfig,
-) {
-    private val secrets = mutableMapOf<DuelParticipant, String>()
+) : AutoCloseable {
+    private val secrets = mutableMapOf<DuelParticipant, CharArray>()
+    private val configuredParticipants = mutableSetOf<DuelParticipant>()
     private val attempts = mutableListOf<DuelAttempt>()
     private var phase = DuelPhase.SETUP
     private var currentTurn: DuelParticipant? = null
     private var winner: DuelParticipant? = null
+    private var closed = false
 
-    fun setSecret(participant: DuelParticipant, secret: String): DuelSnapshot {
+    @Synchronized
+    fun setSecret(
+        participant: DuelParticipant,
+        command: MutableDuelCommand.Secret,
+    ): DuelSnapshot = consumeCommand(command) { secret ->
+        ensureOpen()
         rejectFinishedMatch()
+        if (phase != DuelPhase.SETUP) {
+            reject(DuelCommandRejection.SECRET_NOT_EXPECTED)
+        }
         val expectedParticipant = expectedSecretParticipant()
         if (participant != expectedParticipant) {
             reject(DuelCommandRejection.SECRET_NOT_EXPECTED)
@@ -90,15 +100,30 @@ class DuelMatch private constructor(
             reject(DuelCommandRejection.INVALID_SECRET, validationReason)
         }
 
-        secrets[participant] = secret
-        if (secrets.size == DuelParticipant.entries.size) {
-            phase = DuelPhase.ACTIVE
-            currentTurn = DuelParticipant.FIRST
+        val retainedSecret = secret.copyOf()
+        var retained = false
+        try {
+            secrets[participant] = retainedSecret
+            retained = true
+            configuredParticipants += participant
+            if (configuredParticipants.size == DuelParticipant.entries.size) {
+                phase = DuelPhase.ACTIVE
+                currentTurn = DuelParticipant.FIRST
+            }
+            snapshot()
+        } finally {
+            if (!retained) {
+                retainedSecret.fill(CLEARED_DIGIT)
+            }
         }
-        return snapshot()
     }
 
-    fun submitGuess(attacker: DuelParticipant, guess: String): DuelSnapshot {
+    @Synchronized
+    fun submitGuess(
+        attacker: DuelParticipant,
+        command: MutableDuelCommand.Guess,
+    ): DuelSnapshot = consumeCommand(command) { guess ->
+        ensureOpen()
         when (phase) {
             DuelPhase.SETUP -> reject(DuelCommandRejection.MATCH_NOT_ACTIVE)
             DuelPhase.FINISHED -> reject(DuelCommandRejection.MATCH_FINISHED)
@@ -119,7 +144,6 @@ class DuelMatch private constructor(
         )
         attempts += DuelAttempt(
             attacker = attacker,
-            guess = guess,
             exactMatches = exactMatches,
             number = attempts.size + 1,
         )
@@ -129,29 +153,50 @@ class DuelMatch private constructor(
             attemptsFor(attacker) >= config.attemptLimit -> finish(attacker.opponent())
             else -> currentTurn = attacker.opponent()
         }
-        return snapshot()
+        snapshot()
     }
 
-    fun snapshot(): DuelSnapshot = DuelSnapshot(
-        config = config,
-        phase = phase,
-        awaitingSecretFrom = if (phase == DuelPhase.SETUP) expectedSecretParticipant() else null,
-        currentTurn = currentTurn,
-        winner = winner,
-        attempts = attempts.toList(),
-        participants = DuelParticipant.entries.map { participant ->
-            val attemptsUsed = attemptsFor(participant)
-            DuelParticipantSnapshot(
-                participant = participant,
-                secretConfigured = participant in secrets,
-                attemptsUsed = attemptsUsed,
-                attemptsLeft = (config.attemptLimit - attemptsUsed).coerceAtLeast(0),
+    @Synchronized
+    fun snapshot(): DuelSnapshot {
+        ensureOpen()
+        return try {
+            DuelSnapshot(
+                config = config,
+                phase = phase,
+                awaitingSecretFrom = if (phase == DuelPhase.SETUP) expectedSecretParticipant() else null,
+                currentTurn = currentTurn,
+                winner = winner,
+                attempts = attempts.toList(),
+                participants = DuelParticipant.entries.map { participant ->
+                    val attemptsUsed = attemptsFor(participant)
+                    DuelParticipantSnapshot(
+                        participant = participant,
+                        secretConfigured = participant in configuredParticipants,
+                        attemptsUsed = attemptsUsed,
+                        attemptsLeft = (config.attemptLimit - attemptsUsed).coerceAtLeast(0),
+                    )
+                },
             )
-        },
-    )
+        } catch (failure: Throwable) {
+            failClosed()
+            throw failure
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        if (!closed) {
+            closed = true
+            wipeSecrets()
+        }
+    }
 
     private fun expectedSecretParticipant(): DuelParticipant {
-        return if (DuelParticipant.FIRST !in secrets) DuelParticipant.FIRST else DuelParticipant.SECOND
+        return if (DuelParticipant.FIRST !in configuredParticipants) {
+            DuelParticipant.FIRST
+        } else {
+            DuelParticipant.SECOND
+        }
     }
 
     private fun attemptsFor(participant: DuelParticipant): Int = attempts.count { it.attacker == participant }
@@ -160,12 +205,41 @@ class DuelMatch private constructor(
         phase = DuelPhase.FINISHED
         currentTurn = null
         winner = winningParticipant
+        wipeSecrets()
     }
 
     private fun rejectFinishedMatch() {
         if (phase == DuelPhase.FINISHED) {
             reject(DuelCommandRejection.MATCH_FINISHED)
         }
+    }
+
+    private fun ensureOpen() {
+        check(!closed) { "Duel match is closed" }
+    }
+
+    private fun <T> consumeCommand(
+        command: MutableDuelCommand,
+        operation: (CharArray) -> T,
+    ): T {
+        return try {
+            command.consume(operation)
+        } catch (rejection: DuelCommandRejectedException) {
+            throw rejection
+        } catch (failure: Throwable) {
+            failClosed()
+            throw failure
+        }
+    }
+
+    private fun failClosed() {
+        closed = true
+        wipeSecrets()
+    }
+
+    private fun wipeSecrets() {
+        secrets.values.forEach { secret -> secret.fill(CLEARED_DIGIT) }
+        secrets.clear()
     }
 
     private fun reject(
@@ -177,3 +251,5 @@ class DuelMatch private constructor(
         fun create(config: GameConfig): DuelMatch = DuelMatch(config)
     }
 }
+
+private const val CLEARED_DIGIT: Char = '\u0000'
