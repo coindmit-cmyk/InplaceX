@@ -240,7 +240,7 @@ class GameFieldStateHolderTest {
         val source = GameFieldStateHolder(
             SavedStateHandle(),
             parameters,
-            initialSecret = "123456",
+            initialSecret = "1234",
         )
         source.dispatch(
             GameFieldEvent.ManualMarkChanged(
@@ -249,10 +249,10 @@ class GameFieldStateHolderTest {
                 type = GameFieldManualMarkType.YES,
             ),
         )
-        "123456".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        "1234".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
         source.dispatch(GameFieldEvent.GuessSubmitted)
 
-        assertEquals("123456", source.state.value.match.attempts.single().guess)
+        assertEquals("1234", source.state.value.match.attempts.single().guess)
         assertEquals(MatchPhase.WON, source.state.value.match.phase)
         assertTrue(source.state.value.evidence.provenFacts.isEmpty())
     }
