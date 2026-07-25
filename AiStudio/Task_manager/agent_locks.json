@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:03:36Z",
+  "updated_at": "2026-07-25T18:03:41Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -171,6 +171,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization-retry-20260725T180336Z",
       "at": "2026-07-25T18:03:36Z",
       "expires_at": "2026-07-26T02:03:36Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s07/stateless-gamescreen-presentation-components",
+      "at": "2026-07-25T18:03:41Z",
+      "expires_at": "2026-07-26T02:03:41Z",
       "notes": "central runner claim"
     }
   ]
