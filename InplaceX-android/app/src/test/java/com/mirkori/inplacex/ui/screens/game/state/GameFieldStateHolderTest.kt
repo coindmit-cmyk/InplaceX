@@ -199,4 +199,61 @@ class GameFieldStateHolderTest {
         assertEquals('6', result.exactMatches[2])
         assertTrue(result.provenFacts.contains(ProvenFact.exactMatch(2, '6')))
     }
+
+    @Test
+    fun `public hint and guess events lock six at position three`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters.copy(attemptLimit = 12),
+            initialSecret = "4167",
+        )
+
+        source.dispatch(GameFieldEvent.DigitHintRequested(0))
+        source.dispatch(GameFieldEvent.OpenPositionHintRequested(0))
+        "060".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        val state = source.state.value
+        assertEquals(listOf("4060"), state.match.attempts.map { it.guess })
+        assertEquals('6', state.evidence.deduction.exactMatches[2])
+        assertTrue(state.evidence.deduction.provenFacts.contains(ProvenFact.exactMatch(2, '6')))
+        assertEquals(1, state.counters.openPositionHintUses)
+        assertEquals(1, state.counters.checkDigitHintUses)
+    }
+
+    @Test
+    fun `total timer limit finishes match through typed state`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters.copy(totalTimeLimitSeconds = 5),
+            initialSecret = "1234",
+        )
+
+        source.dispatch(GameFieldEvent.TimerTicked(seconds = 5))
+
+        assertEquals(MatchPhase.LOST, source.state.value.match.phase)
+        assertEquals(GameFieldStatus.TimedOut, source.state.value.status)
+    }
+
+    @Test
+    fun `manual yes does not become a fixed input fact`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters,
+            initialSecret = "123456",
+        )
+        source.dispatch(
+            GameFieldEvent.ManualMarkChanged(
+                position = 0,
+                symbol = '9',
+                type = GameFieldManualMarkType.YES,
+            ),
+        )
+        "123456".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals("123456", source.state.value.match.attempts.single().guess)
+        assertEquals(MatchPhase.WON, source.state.value.match.phase)
+        assertTrue(source.state.value.evidence.provenFacts.isEmpty())
+    }
 }

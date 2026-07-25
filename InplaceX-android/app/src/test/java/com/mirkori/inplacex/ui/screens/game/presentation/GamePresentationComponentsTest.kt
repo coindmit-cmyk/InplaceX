@@ -1,8 +1,14 @@
 package com.mirkori.inplacex.ui.screens.game.presentation
 
+import androidx.lifecycle.SavedStateHandle
+import com.mirkori.inplacex.core.engine.GuessValidationReason
+import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldEvent
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,5 +34,51 @@ class GamePresentationComponentsTest {
         assertTrue(isInputEnabled(MatchPhase.ACTIVE))
         assertFalse(isInputEnabled(MatchPhase.WON))
         assertFalse(isInputEnabled(MatchPhase.LOST))
+    }
+
+    @Test
+    fun `all same rejection keeps its localized catalog key`() {
+        val status = feedbackText(
+            MatchFeedback.ValidationRejected(GuessValidationReason.ALL_SAME_DIGITS),
+            text = { it },
+        )
+
+        assertEquals("game.validation.all_same_digits", status)
+    }
+
+    @Test
+    fun `active presentation fills exact matches inferred from hints and attempt`() {
+        val stateHolder = GameFieldStateHolder(
+            savedStateHandle = SavedStateHandle(),
+            parameters = GameFieldMatchParameters(codeLength = 4, attemptLimit = 12),
+            initialSecret = "4167",
+        )
+        stateHolder.dispatch(GameFieldEvent.DigitHintRequested(0))
+        stateHolder.dispatch(GameFieldEvent.OpenPositionHintRequested(0))
+        "060".forEach { stateHolder.dispatch(GameFieldEvent.DigitEntered(it)) }
+        stateHolder.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals(
+            listOf('4', null, '6', null),
+            displayedGuessSlots(stateHolder.state.value),
+        )
+    }
+
+    @Test
+    fun `manual yes remains a hypothesis and does not fill a guess slot`() {
+        val stateHolder = GameFieldStateHolder(
+            savedStateHandle = SavedStateHandle(),
+            parameters = GameFieldMatchParameters(codeLength = 4),
+            initialSecret = "1234",
+        )
+        stateHolder.dispatch(
+            GameFieldEvent.ManualMarkChanged(
+                position = 0,
+                symbol = '9',
+                type = GameFieldManualMarkType.YES,
+            ),
+        )
+
+        assertEquals(listOf(null, null, null, null), displayedGuessSlots(stateHolder.state.value))
     }
 }

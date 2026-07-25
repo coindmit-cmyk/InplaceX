@@ -104,6 +104,23 @@ data class GameFieldCounters(
     val bonusMoves: Int = 0,
 )
 
+data class GameFieldRouteUiState(
+    val modeLabel: String? = null,
+    val turnLabel: String? = null,
+    val secondaryStatusText: String? = null,
+    val inputEnabled: Boolean = true,
+    val configuredMoveLimit: Int? = null,
+    val openPositionHints: Int = 0,
+    val checkDigitHints: Int = 0,
+    val checkPositionHints: Int = 0,
+    val infiniteHintsEnabled: Boolean = false,
+    val extraMovesBoosts: Int = 0,
+    val extraTimeBoosts: Int = 0,
+    val extraMovesPerBoost: Int = 0,
+    val extraTimeSecondsPerBoost: Int = 0,
+    val pendingRewardedHint: GameFieldHintMode? = null,
+)
+
 data class GameFieldMatchState(
     val phase: MatchPhase,
     val attempts: List<MatchAttempt>,
@@ -118,6 +135,32 @@ data class GameFieldEvidenceState(
     val deduction: DeductionResult,
 )
 
+sealed interface GameFieldNotice {
+    object NoHints : GameFieldNotice
+
+    object WatchAdForHint : GameFieldNotice
+
+    object BonusHintReady : GameFieldNotice
+
+    object BonusNotGranted : GameFieldNotice
+
+    object HintUnavailable : GameFieldNotice
+
+    object NoMoveBoosts : GameFieldNotice
+
+    data class MovesAdded(val count: Int) : GameFieldNotice
+
+    object NoTimeBoosts : GameFieldNotice
+
+    data class TimeAdded(val seconds: Int) : GameFieldNotice
+
+    object NewSecret : GameFieldNotice
+
+    object AutoEnabled : GameFieldNotice
+
+    object AutoDisabled : GameFieldNotice
+}
+
 sealed interface GameFieldStatus {
     object Idle : GameFieldStatus
 
@@ -130,6 +173,28 @@ sealed interface GameFieldStatus {
     data class AttemptAccepted(
         val attempt: MatchAttempt,
     ) : GameFieldStatus
+
+    data class HintPositionChecked(
+        val digit: Int,
+        val position: Int,
+        val isMatch: Boolean,
+    ) : GameFieldStatus
+
+    data class HintPositionOpened(
+        val digit: Int,
+        val position: Int,
+    ) : GameFieldStatus
+
+    data class HintDigitCount(
+        val digit: Int,
+        val count: Int,
+    ) : GameFieldStatus
+
+    data class Notice(
+        val notice: GameFieldNotice,
+    ) : GameFieldStatus
+
+    object TimedOut : GameFieldStatus
 }
 
 data class GameFieldUiState(
@@ -142,6 +207,7 @@ data class GameFieldUiState(
     val tools: GameFieldToolsState,
     val counters: GameFieldCounters,
     val status: GameFieldStatus,
+    val route: GameFieldRouteUiState = GameFieldRouteUiState(),
 )
 
 sealed interface GameFieldEvent {
@@ -169,10 +235,25 @@ sealed interface GameFieldEvent {
 
     data class HintConsumed(val hint: GameFieldHintMode) : GameFieldEvent
 
+    data class PositionHintRequested(
+        val digit: Int,
+        val position: Int,
+    ) : GameFieldEvent
+
+    data class OpenPositionHintRequested(
+        val position: Int,
+    ) : GameFieldEvent
+
+    data class DigitHintRequested(
+        val digit: Int,
+    ) : GameFieldEvent
+
     data class BoostConsumed(
         val boost: GameFieldBoostMode,
         val amount: Int,
     ) : GameFieldEvent
 
     data class TimerTicked(val seconds: Int = 1) : GameFieldEvent
+
+    data class NoticeChanged(val notice: GameFieldNotice?) : GameFieldEvent
 }

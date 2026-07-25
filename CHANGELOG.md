@@ -13,6 +13,9 @@
 - Added an isolated local Docker Compose backend/PostgreSQL stack with migration,
   backup/restore, rollback verification, localhost-only port binding, and a
   build-context secret exclusion policy.
+- Activated the state-backed `GameFieldScreen → GameFieldViewModel → GameScreen`
+  route while keeping manual analysis marks non-authoritative and preserving
+  localized validation, hints, boosts, timers, attempt scrolling, and deduction.
 
 ## 2026-07-25
 
