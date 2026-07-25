@@ -5282,8 +5282,8 @@
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
-      "title": "Debug and release source-set isolation",
-      "status": "in_progress",
+      "title": "S18 expanded debug and release isolation retry",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -5349,7 +5349,7 @@
         "release APK DEX scan rejects developer/debug screen symbols, secret renderers and debug localization keys",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5619,7 +5619,7 @@
       "retry_count": 1,
       "last_worker_result_commit": "e11221c4a00f266e7be9774b2ca0d53056251147",
       "reviewed_at": "2026-07-25T21:45:00Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "status_reason": "retry branch collision preserved e11221c; expanded packet is released under a new branch slug",
       "integration_notes": [
         "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
@@ -5630,12 +5630,8 @@
       "last_worker_id": "auto-worker-5.5",
       "last_machine_id": "aistudio-manual",
       "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
-      "worker_id": "auto-worker-5.5",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
-      "started_at": "2026-07-25T21:46:55Z",
-      "lock_expires_at": "2026-07-26T05:46:55Z"
+      "launch_retry_count": 1,
+      "last_launch_failure": "existing worker branch e11221c could not be advanced without discarding the preserved blocker report"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",

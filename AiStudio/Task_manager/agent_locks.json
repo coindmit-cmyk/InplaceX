@@ -489,13 +489,16 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
       "at": "2026-07-25T21:46:55Z",
       "expires_at": "2026-07-26T05:46:55Z",
-      "notes": "central runner claim"
+      "notes": "launch failed safely because the preserved e11221c branch could not be fast-forwarded; retry will use a new branch slug",
+      "released_at": "2026-07-25T21:48:00Z",
+      "released_by": "Codex dispatcher launch repair",
+      "release_reason": "branch collision protection preserved the prior blocker report"
     }
   ]
 }
