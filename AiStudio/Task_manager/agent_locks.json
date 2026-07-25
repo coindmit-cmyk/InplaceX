@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:57:55Z",
+  "updated_at": "2026-07-25T23:11:37Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -653,6 +653,16 @@
       "released_at": "2026-07-25T23:12:17Z",
       "released_by": "Codex strict integrator",
       "release_reason": "debug and release unit tests, release assemble, diff check and independent release artifact isolation audit passed"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
+      "at": "2026-07-25T23:11:37Z",
+      "expires_at": "2026-07-26T07:11:37Z",
+      "notes": "central runner claim"
     }
   ]
 }
