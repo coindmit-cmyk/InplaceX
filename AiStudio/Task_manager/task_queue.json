@@ -3764,7 +3764,8 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
-        "auto-worker-5.5"
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
@@ -5257,7 +5258,8 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
-        "auto-worker-5.5"
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
