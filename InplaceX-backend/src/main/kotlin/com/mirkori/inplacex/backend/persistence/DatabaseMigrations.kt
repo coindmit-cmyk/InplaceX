@@ -17,6 +17,11 @@ object DatabaseMigrations {
             description = "create backend persistence",
             sql = readResource("db/migration/V1__create_backend_persistence.sql"),
         ),
+        SqlMigration(
+            version = "2",
+            description = "add identity profile and idempotent save storage",
+            sql = readResource("db/migration/V2__add_identity_profile_and_save_storage.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(

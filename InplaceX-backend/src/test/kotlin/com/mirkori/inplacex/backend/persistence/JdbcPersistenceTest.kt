@@ -42,7 +42,7 @@ class JdbcPersistenceTest {
                     )
                 },
             )
-            assertEquals(1, connection.createStatement().use { statement ->
+            assertEquals(2, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
@@ -56,7 +56,7 @@ class JdbcPersistenceTest {
         val dataSource = newDataSource()
         JdbcMigrationRunner().migrate(dataSource)
         val failingMigration = SqlMigration(
-            version = "2",
+            version = "3",
             description = "rollback test",
             sql = "INSERT INTO players(id, display_name) VALUES ('rolled-back', 'Rollback'); INSERT INTO absent_table VALUES (1)",
         )
@@ -67,7 +67,7 @@ class JdbcPersistenceTest {
 
         dataSource.connection.use { connection ->
             assertEquals(0, count(connection, "SELECT COUNT(*) FROM players WHERE id = 'rolled-back'"))
-            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '2'"))
+            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '3'"))
         }
     }
 
