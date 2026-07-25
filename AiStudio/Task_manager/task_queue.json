@@ -2922,6 +2922,10 @@
       "worker_instructions": [
         "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
+        "The previous clean S19 attempt stopped before edits because the real contracts, stubs, provider factory and activity wiring were outside its packet. This repaired packet intentionally includes PlatformServices.kt, ProviderAdapters.kt and MainActivity.kt.",
+        "Move fake or mock implementations and placeholder-success behavior behind a debug-only source-set seam. A release build must never select them, including when runtime mode is SANDBOX.",
+        "Do not claim real Google Play, AdMob or Billing SDK success unless the actual provider integration proves it. Until then release adapters must return explicit failure and must not mutate auth, entitlement, purchase or reward state.",
+        "Add variant-specific tests under testDebug and testRelease, update both canonical provider documents and CHANGELOG, and run every required debug and release check.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5842,8 +5846,8 @@
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
-      "title": "Release provider fail-closed policy",
-      "status": "in_progress",
+      "title": "Retry S19 variant provider wiring and release fail-closed policy",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5869,11 +5873,16 @@
       "allowed_paths": [
         "InplaceX-android/app/src/debug/**",
         "InplaceX-android/app/src/release/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/PlatformServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
         "InplaceX-android/app/src/test/**",
-        "docs/reports/workers/**"
+        "InplaceX-android/app/src/testDebug/**",
+        "InplaceX-android/app/src/testRelease/**",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/GPT/Provider Runtime Config.md",
+        "docs/reports/workers/**",
+        "CHANGELOG.md"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -5885,8 +5894,11 @@
         "**/*.pem"
       ],
       "acceptance_criteria": [
-        "Fake sign-in, mock purchases and test ads remain debug-only.",
-        "Release fails closed when a production provider is absent or misconfigured.",
+        "Stub sign-in, mock purchases, rewarded test ads and any provider success placeholder exist only in the debug source set and debug factory path.",
+        "Release never resolves a stub or placeholder-success adapter. When an actual provider SDK is absent or misconfigured, every release operation fails closed without authenticating a player, granting an entitlement, recording a purchase or granting an ad reward.",
+        "MainActivity resolves variant-specific provider wiring instead of allowing runtime SANDBOX mode to select debug stubs in a release artifact.",
+        "Debug and release variant tests prove both the positive debug-tool path and the negative release absence and fail-closed contract.",
+        "Canonical provider documents and CHANGELOG describe the shipped variant boundary and fail-closed behavior.",
         "No credential or personal endpoint enters source, logs or artifacts."
       ],
       "checks": [
@@ -5894,7 +5906,7 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5985,20 +5997,24 @@
       "code_refs": [
         "InplaceX-android/app/src/debug/**",
         "InplaceX-android/app/src/release/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/PlatformServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+        "InplaceX-android/app/src/test/**",
+        "InplaceX-android/app/src/testDebug/**",
+        "InplaceX-android/app/src/testRelease/**"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
         "code_refs": [
           "InplaceX-android/app/src/debug/**",
           "InplaceX-android/app/src/release/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/PlatformServices.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+          "InplaceX-android/app/src/test/**",
+          "InplaceX-android/app/src/testDebug/**",
+          "InplaceX-android/app/src/testRelease/**"
         ],
         "doc_refs": [
           {
@@ -6041,11 +6057,16 @@
         "allowed_paths": [
           "InplaceX-android/app/src/debug/**",
           "InplaceX-android/app/src/release/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/PlatformServices.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
           "InplaceX-android/app/src/test/**",
-          "docs/reports/workers/**"
+          "InplaceX-android/app/src/testDebug/**",
+          "InplaceX-android/app/src/testRelease/**",
+          "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+          "InplaceX-docs/Game/GPT/Provider Runtime Config.md",
+          "docs/reports/workers/**",
+          "CHANGELOG.md"
         ],
         "forbidden_paths": [
           ".git/**",
@@ -6056,7 +6077,10 @@
           "**/*.key",
           "**/*.pem"
         ],
-        "context_docs": [],
+        "context_docs": [
+          "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+          "InplaceX-docs/Game/GPT/Provider Runtime Config.md"
+        ],
         "source_file": null,
         "worker_source_branch": null
       },
@@ -6104,6 +6128,9 @@
         "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
       ],
       "regression_guards": [
+        "Reject any release source-set dependency on StubGooglePlayAuthService, StubBillingService, StubAdService or an equivalent fake-success implementation.",
+        "Reject any release provider path that reports success solely because provider identifiers or runtime configuration strings are present.",
+        "Verify failed release sign-in, billing and ad calls leave all player, entitlement, purchase and reward state unchanged.",
         "Compare changed code against current develop before finalizing.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
@@ -6120,7 +6147,14 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/release-provider-fail-closed-policy",
       "started_at": "2026-07-25T22:45:55Z",
       "lock_expires_at": "2026-07-26T06:45:55Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "retry_count": 1,
+      "abandoned_claims": [
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/release-provider-fail-closed-policy",
+          "reason": "clean stopped attempt had an incomplete allowed-path packet; preserve and force a fresh repaired retry branch"
+        }
+      ],
+      "status_reason": "clean first attempt stopped before edits; packet scope repaired for actual provider contracts, variant wiring, tests and canonical documentation"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
