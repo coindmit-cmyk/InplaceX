@@ -1192,10 +1192,19 @@ def replaced_test_behaviors(
 
 def detect_behavior_regression(before: dict[str, list[str]], after: dict[str, list[str]]) -> dict[str, Any]:
     lost: dict[str, list[str]] = {}
+    after_tokens_global = {
+        token
+        for tokens in after.values()
+        for token in tokens
+    }
     for rel_path, tokens in before.items():
         before_tokens = set(tokens)
         after_tokens = set(after.get(rel_path, []))
         missing_tokens = before_tokens - after_tokens
+        # Refactors may move a class or method to another changed file without
+        # removing its behavior. The snapshot only contains candidate paths, so
+        # a token found elsewhere in `after` is evidence of an in-scope move.
+        missing_tokens -= after_tokens_global
         missing_tokens -= replaced_test_behaviors(
             rel_path,
             missing_tokens,
