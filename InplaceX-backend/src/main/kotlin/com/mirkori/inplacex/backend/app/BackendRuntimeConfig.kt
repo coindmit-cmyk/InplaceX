@@ -4,6 +4,7 @@ data class BackendRuntimeConfig(
     val host: String,
     val port: Int,
     val environment: String,
+    val database: DatabaseRuntimeConfig? = null,
 ) {
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): BackendRuntimeConfig {
@@ -18,6 +19,7 @@ data class BackendRuntimeConfig(
                 environment = environment["INPLACEX_BACKEND_ENVIRONMENT"]
                     ?.takeIf(String::isNotBlank)
                     ?: DefaultEnvironment,
+                database = DatabaseRuntimeConfig.fromEnvironmentOrNull(environment),
             )
         }
 

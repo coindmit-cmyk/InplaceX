@@ -4,6 +4,9 @@
 
 - Added the modular Ktor backend foundation with environment-driven runtime
   configuration and health/readiness endpoints.
+- Added PostgreSQL-backed versioned persistence migrations for players, cloud-save
+  revisions, matchmaking tickets, duel sessions, idempotent commands, and events.
+  Database connection credentials remain external process configuration.
 
 ## 2026-07-25
 

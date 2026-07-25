@@ -1,6 +1,8 @@
 package com.mirkori.inplacex.backend.app
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class BackendRuntimeConfigTest {
@@ -29,6 +31,23 @@ class BackendRuntimeConfigTest {
         assertEquals(BackendRuntimeConfig.DefaultHost, defaults.host)
         assertEquals(BackendRuntimeConfig.DefaultPort, defaults.port)
         assertEquals(BackendRuntimeConfig.DefaultEnvironment, defaults.environment)
+    }
+
+    @Test
+    fun `database credentials are accepted only from the process environment and not rendered`() {
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+            ),
+        )
+
+        assertNotNull(config.database)
+        val database = requireNotNull(config.database)
+        assertEquals("jdbc:postgresql://db/inplacex", database.jdbcUrl)
+        assertEquals("inplacex", database.username)
+        assertFalse(database.toString().contains("test-password"))
     }
 
     @Test(expected = IllegalArgumentException::class)
