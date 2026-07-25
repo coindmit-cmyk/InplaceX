@@ -876,7 +876,8 @@ LINE_PRESERVATION_PATHS = {
 UNION_CONFLICT_PATHS = {"CHANGELOG.md"}
 
 GENERIC_METHOD_BEHAVIOR_PATTERN = re.compile(
-    r"^\s*(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z0-9_<>,.?\[\]\s]+\s+([A-Za-z_]\w*)\s*\("
+    r"^\s*(?:(?:public|private|protected|internal|static|final|open|override|abstract|suspend)\s+)*"
+    r"\S[A-Za-z0-9_<>,.?\[\]\s]*\s+([A-Za-z_]\w*)\s*\("
 )
 
 BEHAVIOR_PATTERNS = (
