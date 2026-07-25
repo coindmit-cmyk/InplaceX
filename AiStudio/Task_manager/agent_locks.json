@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:34:35Z",
+  "updated_at": "2026-07-25T21:46:55Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -486,6 +486,16 @@
       "released_at": "2026-07-25T21:45:00Z",
       "released_by": "Codex integrator and dispatcher repair",
       "release_reason": "original scope excluded confirmed developer routes, secret renderers, game debug slots and localization catalogs"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
+      "at": "2026-07-25T21:46:55Z",
+      "expires_at": "2026-07-26T05:46:55Z",
+      "notes": "central runner claim"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:34:35Z",
+  "updated_at": "2026-07-25T21:46:55Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5283,7 +5283,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
       "title": "Debug and release source-set isolation",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -5349,7 +5349,7 @@
         "release APK DEX scan rejects developer/debug screen symbols, secret renderers and debug localization keys",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5619,7 +5619,7 @@
       "retry_count": 1,
       "last_worker_result_commit": "e11221c4a00f266e7be9774b2ca0d53056251147",
       "reviewed_at": "2026-07-25T21:45:00Z",
-      "status_reason": "e11221c confirmed the original packet omitted release entry points, secret renderers, game debug slots and localization catalogs; expanded retry is worker-ready",
+      "status_reason": "central runner claimed task before isolated worker launch",
       "integration_notes": [
         "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
@@ -5629,7 +5629,13 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "last_worker_id": "auto-worker-5.5",
       "last_machine_id": "aistudio-manual",
-      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation"
+      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
+      "worker_id": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
+      "started_at": "2026-07-25T21:46:55Z",
+      "lock_expires_at": "2026-07-26T05:46:55Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
