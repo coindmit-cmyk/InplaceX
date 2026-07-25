@@ -3503,7 +3503,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "integration_requested",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "implementation",
@@ -3559,13 +3559,13 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "review",
-      "worker_ready": false,
+      "lock": "free",
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "Integrator review narrows the remaining work to typed debug feedback/phase, race accessibility and mandatory RU/EN tests",
-      "next_owner": "Integrator",
+      "dispatcher_decision_reason": "Strict review preserves e6b9689 and narrows the remaining repair to INVALID_LENGTH placeholder substitution plus RU/EN regression tests",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
@@ -3579,7 +3579,8 @@
       ],
       "input_docs": [
         "InplaceX-docs/Game/Human/Configs Localization Branding.md",
-        "docs/reports/integration/S12_REPAIR_SPEC_20260725.md"
+        "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
+        "docs/reports/integration/S12_INTEGRATOR_REVIEW_E6B9689_20260725.md"
       ],
       "provenance": [
         {
@@ -3597,6 +3598,9 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S12_INTEGRATOR_REVIEW_E6B9689_20260725.md completely and close its only blocking finding.",
+        "Start from current origin/develop, cherry-pick e6b9689647e21f8efa368f562949f1ef1b9323b8 as the preserved S12 candidate baseline, then make only the narrow INVALID_LENGTH placeholder repair and required tests.",
+        "Pass codeLength into debugFeedbackText and add unit plus RU/EN Android UI coverage for a short guess; do not parse translated strings.",
         "Read docs/reports/integration/S12_INTEGRATOR_REVIEW_D34FD5C_20260725.md completely and close every blocking finding.",
         "Do not copy d34fd5c wholesale; reproduce compatible localization additions in a fresh branch and add the missing tests.",
         "Read docs/reports/integration/S12_REPAIR_SPEC_20260725.md completely before editing.",
@@ -3886,13 +3890,10 @@
       "integration_review_status": "rejected",
       "integration_reviewed_at": "2026-07-25T20:16:00Z",
       "integration_reviewed_by": "Codex integrator independent review",
-      "integration_review_report": "docs/reports/integration/S12_INTEGRATOR_REVIEW_D34FD5C_20260725.md",
+      "integration_review_report": "docs/reports/integration/S12_INTEGRATOR_REVIEW_E6B9689_20260725.md",
       "integration_review_findings": [
-        "debug UI still renders raw Russian domain message",
-        "debug phase still renders enum names",
-        "race glyph actions lack localized accessibility semantics",
-        "required RU/EN parity, all-keys, typed-mapping and EN 1111 tests were not added",
-        "worker result remains check_status partial"
+        "debug INVALID_LENGTH feedback leaves the {count} placeholder visible in RU and EN",
+        "unit and Android UI tests cover ALL_SAME_DIGITS but do not cover short-input placeholder substitution"
       ],
       "external_check_evidence": {
         "checked_at": "2026-07-25T20:09:00Z",
@@ -3909,6 +3910,15 @@
       },
       "worker_ready_promotion_history": [
         {
+          "at": "2026-07-25T20:47:00Z",
+          "by": "Codex integrator independent review",
+          "previous_status": "integration_requested",
+          "previous_integration_status": "pending",
+          "worker_result_commit": "e6b9689647e21f8efa368f562949f1ef1b9323b8",
+          "event": "worker_fix_requeued",
+          "reason": "visible INVALID_LENGTH placeholder is the only remaining S12 blocker"
+        },
+        {
           "at": "2026-07-25T20:18:00Z",
           "by": "Codex dispatcher after integrator rejection",
           "previous_status": "needs_worker_fix",
@@ -3918,7 +3928,7 @@
           "reason": "remaining localization defects and exact missing tests are now documented for a stronger worker"
         }
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request"
+      "status_reason": "strict integrator review rejected e6b9689 until the reachable INVALID_LENGTH placeholder is replaced and covered in RU and EN"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
