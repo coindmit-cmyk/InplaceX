@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:48:10Z",
+  "updated_at": "2026-07-25T18:00:33Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -2262,7 +2262,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "title": "Secondary and developer screen localization",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -2314,14 +2314,14 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "source_item_id": "INPX-LOC-103",
@@ -2567,7 +2567,35 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
       "started_at": "2026-07-25T17:48:10Z",
       "lock_expires_at": "2026-07-26T01:48:10Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker explicitly reported required checks as blocked",
+      "worker_result_commit": "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8",
+      "worker_result_synced_at": "2026-07-25T18:00:33Z",
+      "worker_changed_paths": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T175143Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T1752Z.md"
+      ],
+      "changed_paths": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T175143Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T1752Z.md"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T1752Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T175143Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T1752Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": false,
+        "route": "needs_worker_fix",
+        "check_status": "blocked",
+        "integration_status": "needs_worker_fix",
+        "reason": "worker explicitly reported required checks as blocked"
+      },
+      "not_worker_ready_reason": "worker explicitly reported required checks as blocked",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
+      "commits": [
+        "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8"
+      ],
+      "integration_status": "needs_worker_fix"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
