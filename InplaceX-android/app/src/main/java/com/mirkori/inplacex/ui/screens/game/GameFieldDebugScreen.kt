@@ -24,6 +24,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.core.match.MatchFeedback
+import com.mirkori.inplacex.core.match.MatchPhase
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.ui.screens.game.presentation.feedbackText
 import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
 
 /**
@@ -34,6 +38,7 @@ import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
  */
 @Composable
 fun GameFieldDebugScreen() {
+    val strings = LocalAppStrings.current
     val vm = remember { GameFieldViewModel() }
     val state by vm.state.collectAsState()
     var input by rememberSaveable { mutableStateOf("") }
@@ -45,7 +50,7 @@ fun GameFieldDebugScreen() {
         verticalArrangement = Arrangement.Top,
     ) {
         Text(
-            text = "Тестовый экран игры",
+            text = strings.text("game.debug_screen.title"),
             style = MaterialTheme.typography.headlineSmall,
         )
 
@@ -57,16 +62,25 @@ fun GameFieldDebugScreen() {
         ) {
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Статус: ${state.phase}")
-                    Text("Осталось попыток: ${state.attemptsLeft}")
-                    Text("Попыток сделано: ${state.attempts.size}")
+                    Text(
+                        strings.text("game.debug_screen.status")
+                            .replace("{phase}", debugPhaseText(state.phase, strings::text)),
+                    )
+                    Text(
+                        strings.text("game.debug_screen.attempts_left")
+                            .replace("{count}", state.attemptsLeft.toString()),
+                    )
+                    Text(
+                        strings.text("game.debug_screen.attempts_made")
+                            .replace("{count}", state.attempts.size.toString()),
+                    )
                 }
             }
 
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("DEBUG")
-                    Text("Секрет: ${state.debugSecret}")
+                    Text(strings.text("game.debug_screen.debug"))
+                    Text(strings.text("game.debug.secret").replace("{value}", state.debugSecret))
                 }
             }
         }
@@ -79,7 +93,12 @@ fun GameFieldDebugScreen() {
                 input = value.filter { it.isDigit() }.take(6)
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Введите 6 цифр") },
+            label = {
+                Text(
+                    strings.text("game.debug_screen.enter_digits")
+                        .replace("{count}", "6"),
+                )
+            },
             singleLine = true,
         )
 
@@ -92,7 +111,7 @@ fun GameFieldDebugScreen() {
                     input = ""
                 }
             ) {
-                Text("Проверить")
+                Text(strings.text("game.debug_screen.action.check"))
             }
 
             Button(
@@ -101,14 +120,14 @@ fun GameFieldDebugScreen() {
                     input = ""
                 }
             ) {
-                Text("Новая игра")
+                Text(strings.text("game.debug_screen.action.restart"))
             }
         }
 
-        state.message?.let { message ->
+        state.feedback?.let { feedback ->
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = message,
+                text = debugFeedbackText(feedback, strings::text),
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
@@ -116,7 +135,7 @@ fun GameFieldDebugScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "История попыток",
+            text = strings.text("game.debug_screen.history_title"),
             style = MaterialTheme.typography.titleMedium,
         )
 
@@ -138,10 +157,28 @@ fun GameFieldDebugScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text("#${attempt.number}  ${attempt.guess}")
-                        Text("Совпадений: ${attempt.score}")
+                        Text(
+                            strings.text("game.debug_screen.matches")
+                                .replace("{count}", attempt.score.toString()),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+internal fun debugPhaseText(
+    phase: MatchPhase,
+    text: (String) -> String,
+): String = when (phase) {
+    MatchPhase.NOT_STARTED -> text("game.debug_screen.phase.not_started")
+    MatchPhase.ACTIVE -> text("game.debug_screen.phase.active")
+    MatchPhase.WON -> text("game.debug_screen.phase.won")
+    MatchPhase.LOST -> text("game.debug_screen.phase.lost")
+}
+
+internal fun debugFeedbackText(
+    feedback: MatchFeedback,
+    text: (String) -> String,
+): String = feedbackText(feedback, text)

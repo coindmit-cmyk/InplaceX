@@ -62,6 +62,36 @@ class GameFieldValidationTest {
     }
 
     @Test
+    fun allSameGuessShowsEnglishLocalizedValidationReason() {
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalAppStrings provides StaticLocalizationProvider.forLanguage(AppLanguage.EN)
+            ) {
+                InplaceXTheme {
+                    GameFieldScreen(
+                        params = GameFieldParams(
+                            typeGame = TypeGame.RaceMatch,
+                            useHints = false,
+                            lenSecret = 4,
+                        ),
+                        title = "",
+                        onBack = {},
+                    )
+                }
+            }
+        }
+
+        repeat(4) {
+            composeRule.onNodeWithTag("game-digit-1").performClick()
+        }
+        composeRule.onNodeWithText("Confirm").performClick()
+
+        composeRule
+            .onNodeWithTag("game-status")
+            .assertTextEquals("The combination cannot contain only one repeated digit")
+    }
+
+    @Test
     fun attemptListFollowsTheNewestResult() {
         composeRule.setContent {
             var attempts by remember { mutableStateOf(emptyList<String>()) }

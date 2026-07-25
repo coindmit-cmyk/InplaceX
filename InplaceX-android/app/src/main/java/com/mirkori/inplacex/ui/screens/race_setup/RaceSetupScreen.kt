@@ -25,8 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.common.BottomReserveMode
 import com.mirkori.inplacex.ui.common.ScreenBottomReserve
 
@@ -38,6 +41,7 @@ fun RaceSetupScreen(
     onBack: () -> Unit,
     onStartRace: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val navBar = WindowInsets.navigationBars.asPaddingValues()
 
@@ -77,7 +81,7 @@ fun RaceSetupScreen(
                         .padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text("Настройка гонки", style = MaterialTheme.typography.headlineSmall)
+                    Text(strings.text("game.race_setup.title"), style = MaterialTheme.typography.headlineSmall)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -87,22 +91,23 @@ fun RaceSetupScreen(
                             onClick = onBack,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Назад")
+                            Text(strings.text("top.back"))
                         }
 
                         Button(
                             onClick = onStartRace,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Старт")
+                            Text(strings.text("game.race_setup.action.start"))
                         }
                     }
 
                     SettingCard(
-                        title = "Длина кода",
+                        title = strings.text("game.race_setup.code_length"),
                         value = config.codeLength.toString()
                     ) {
                         StepperRow(
+                            settingLabel = strings.text("game.race_setup.code_length"),
                             onMinus = {
                                 onConfigChange(
                                     config.copy(codeLength = (config.codeLength - 1).coerceAtLeast(4))
@@ -119,10 +124,11 @@ fun RaceSetupScreen(
                     }
 
                     SettingCard(
-                        title = "Лимит попыток",
+                        title = strings.text("game.race_setup.attempt_limit"),
                         value = config.attemptLimit.toString()
                     ) {
                         StepperRow(
+                            settingLabel = strings.text("game.race_setup.attempt_limit"),
                             onMinus = {
                                 onConfigChange(
                                     config.copy(attemptLimit = (config.attemptLimit - 1).coerceAtLeast(config.codeLength))
@@ -149,9 +155,18 @@ fun RaceSetupScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Повторы цифр", style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    text = if (config.allowDuplicates) "Разрешены" else "Запрещены",
+                                    strings.text("game.race_setup.duplicate_digits"),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    text = strings.text(
+                                        if (config.allowDuplicates) {
+                                            "game.race_setup.duplicates_allowed"
+                                        } else {
+                                            "game.race_setup.duplicates_disallowed"
+                                        },
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -176,11 +191,14 @@ fun RaceSetupScreen(
                                 .padding(14.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Что заложено сразу", style = MaterialTheme.typography.titleMedium)
-                            Text("• отдельный главный экран")
-                            Text("• отдельный экран настройки")
-                            Text("• отдельный экран гонки")
-                            Text("• нижний резерв под меню / рекламу / premium")
+                            Text(
+                                strings.text("game.race_setup.info.title"),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(strings.text("game.race_setup.info.main_screen"))
+                            Text(strings.text("game.race_setup.info.settings_screen"))
+                            Text(strings.text("game.race_setup.info.race_screen"))
+                            Text(strings.text("game.race_setup.info.reserve"))
                         }
                     }
                 }
@@ -222,12 +240,30 @@ private fun SettingCard(
 
 @Composable
 private fun StepperRow(
+    settingLabel: String,
     onMinus: () -> Unit,
     onPlus: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = onMinus) { Text("-") }
-        FilledTonalButton(onClick = onPlus) { Text("+") }
+        FilledTonalButton(
+            onClick = onMinus,
+            modifier = Modifier.semantics {
+                contentDescription = strings.text("game.race_setup.action.decrement")
+                    .replace("{setting}", settingLabel)
+            },
+        ) {
+            Text("-")
+        }
+        FilledTonalButton(
+            onClick = onPlus,
+            modifier = Modifier.semantics {
+                contentDescription = strings.text("game.race_setup.action.increment")
+                    .replace("{setting}", settingLabel)
+            },
+        ) {
+            Text("+")
+        }
     }
 }
 
