@@ -1375,7 +1375,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
       "title": "GameField state holder and SavedState restoration",
-      "status": "needs_dispatcher_repair",
+      "status": "done",
       "priority": "P0",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -1430,10 +1430,10 @@
       "worker_ready": false,
       "packet_status": "needs_dispatcher_repair",
       "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
       "source_item_id": "INPX-ARC-105",
@@ -1674,12 +1674,12 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
       "started_at": "2026-07-25T17:48:06Z",
       "lock_expires_at": "2026-07-26T01:48:06Z",
       "status_reason": "central runner claimed task before isolated worker launch",
-      "integration_status": "needs_worker_fix",
+      "integration_status": "finalized",
       "requires_human_attention": false,
       "integration_repair_kind": "behavior_preservation",
       "integration_repair_validation_paths": [],
@@ -1709,7 +1709,6 @@
         "repair_worker_packet"
       ],
       "repair_owner": "Dispatcher",
-      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
       "status_history": [
         {
           "at": "2026-07-25T17:57:53Z",
@@ -1719,8 +1718,24 @@
           "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
           "event": "integration_routed",
           "next_owner": "dispatcher"
+        },
+        {
+          "at": "2026-07-25T18:00:01Z",
+          "by": "integrator_direct_merge",
+          "from": "needs_dispatcher_repair",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
         }
-      ]
+      ],
+      "merge_commit": "7c72dd089e8c7d047585641e5d3d3c995398c78d",
+      "finalization_status": "recorded",
+      "finalized_at": "2026-07-25T18:00:01Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+      "worker_result_commit": "55a8da9a78f50ac804369cfc8cc61045f75d9533",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06_20260725T175709Z.md"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
