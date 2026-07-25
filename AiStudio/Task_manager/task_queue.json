@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:43:06Z",
+  "updated_at": "2026-07-25T19:49:20Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -6748,7 +6748,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -6796,14 +6796,14 @@
         "bash gradlew :InplaceX-backend:test",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "source_item_id": "INPX-BE-414",
@@ -6995,7 +6995,43 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect",
       "started_at": "2026-07-25T19:26:50Z",
       "lock_expires_at": "2026-07-26T03:26:50Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker explicitly reported required checks as partial",
+      "worker_result_commit": "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e",
+      "worker_result_synced_at": "2026-07-25T19:49:20Z",
+      "worker_changed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+      ],
+      "changed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193031Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T193122Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": false,
+        "route": "needs_worker_fix",
+        "check_status": "partial",
+        "integration_status": "needs_worker_fix",
+        "reason": "worker explicitly reported required checks as partial"
+      },
+      "not_worker_ready_reason": "worker explicitly reported required checks as partial",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect",
+      "commits": [
+        "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e"
+      ],
+      "integration_status": "needs_worker_fix"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
