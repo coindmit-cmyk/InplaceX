@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:18:16Z",
+  "updated_at": "2026-07-25T20:18:42Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -401,6 +401,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
       "at": "2026-07-25T20:18:16Z",
       "expires_at": "2026-07-26T04:18:16Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T201842Z",
+      "at": "2026-07-25T20:18:42Z",
+      "expires_at": "2026-07-26T04:18:42Z",
       "notes": "central runner claim"
     }
   ]
