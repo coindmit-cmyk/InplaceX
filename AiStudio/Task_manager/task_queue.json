@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:55:51Z",
+  "updated_at": "2026-07-25T19:58:00Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -3528,14 +3528,16 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
       ],
-      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "summary": "Fresh retry packet localizes active game, debug, race and race setup surfaces without changing game behavior.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/GameCatalog.kt",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/test/**",
+        "InplaceX-android/app/src/androidTest/**",
+        "docs/reports/workers/**"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
@@ -3544,12 +3546,16 @@
         "local.properties"
       ],
       "acceptance_criteria": [
-        "Game text and content descriptions have complete RU/EN keys.",
+        "All visible game, debug, race and race-setup text and content descriptions have complete RU/EN keys with matching placeholders.",
         "Validation/status mapping uses typed reasons, not translated-string comparison.",
-        "Mojibake is absent and match behavior is unchanged."
+        "Submitting 1111 shows the localized all-same-digits explanation in RU and EN.",
+        "No scoped key falls back to its key name, mojibake is absent and match behavior is unchanged.",
+        "Existing S08 deduction, proven/manual evidence, auto-scroll, hint, boost, timer, fixed-secret and debug-secret behavior remains covered."
       ],
       "checks": [
         "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew :app:lintDebug",
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
@@ -3558,7 +3564,7 @@
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "dispatcher_decision_reason": "fresh retry packet corrects GameCatalog path and adds AndroidTest, lint, RU/EN parity and preserved-behavior gates",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -3568,10 +3574,12 @@
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
         "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
       ],
       "input_docs": [
-        "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "docs/reports/integration/S12_REPAIR_SPEC_20260725.md"
       ],
       "provenance": [
         {
@@ -3589,6 +3597,9 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S12_REPAIR_SPEC_20260725.md completely before editing.",
+        "Start from current origin/develop in a fresh retry branch; the abandoned worktree is read-only salvage evidence and must not be reused.",
+        "Set JAVA_HOME=/home/main/.local/jdk21 and use /home/main/.local/jdk11 as the Gradle Java 11 toolchain before running checks.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -3617,6 +3628,10 @@
       },
       "doc_refs": [
         {
+          "path": "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
+          "purpose": "mandatory fresh retry specification and preserved-behavior gates"
+        },
+        {
           "path": "InplaceX-docs/Game/Human/Configs Localization Branding.md",
           "purpose": "required context"
         },
@@ -3638,8 +3653,9 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/GameCatalog.kt",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/test/**",
+        "InplaceX-android/app/src/androidTest/**"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
@@ -3648,10 +3664,15 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/GameCatalog.kt",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+          "InplaceX-android/app/src/test/**",
+          "InplaceX-android/app/src/androidTest/**"
         ],
         "doc_refs": [
+          {
+            "path": "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
+            "purpose": "mandatory fresh retry specification and preserved-behavior gates"
+          },
           {
             "path": "InplaceX-docs/Game/Human/Configs Localization Branding.md",
             "purpose": "required context"
@@ -3694,8 +3715,10 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/GameCatalog.kt",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+          "InplaceX-android/app/src/test/**",
+          "InplaceX-android/app/src/androidTest/**",
+          "docs/reports/workers/**"
         ],
         "forbidden_paths": [
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
@@ -3703,7 +3726,10 @@
           ".env*",
           "local.properties"
         ],
-        "context_docs": [],
+        "context_docs": [
+          "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
+          "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+        ],
         "source_file": null,
         "worker_source_branch": null
       },
@@ -3711,6 +3737,8 @@
         "changed_paths_must_match_allowed_paths": true,
         "required_checks": [
           "bash gradlew :app:testDebugUnitTest",
+          "bash gradlew :app:assembleDebugAndroidTest",
+          "bash gradlew :app:lintDebug",
           "bash gradlew assembleDebug",
           "git diff --check"
         ],
@@ -3724,6 +3752,18 @@
       "script_actions": [
         {
           "command": "bash gradlew :app:testDebugUnitTest",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew :app:assembleDebugAndroidTest",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew :app:lintDebug",
           "required": true,
           "purpose": "worker validation evidence",
           "on_failure": "stop and return needs_worker_fix with command output"
@@ -3752,17 +3792,21 @@
       ],
       "regression_guards": [
         "Compare changed code against current develop before finalizing.",
+        "Do not change game rules, deduction, state ownership, lifecycle, navigation, route signatures or public callbacks.",
+        "Preserve the S08 validation reason, latest-attempt auto-scroll and authoritative deduction regression coverage.",
+        "Verify RU/EN key and placeholder parity and reject mojibake or unresolved key fallbacks.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
+        "The interrupted S12 worktree is preserved as read-only salvage evidence; create and publish a fresh retry branch from current origin/develop.",
+        "Integrator must run the existing game instrumented tests and RU/EN smoke on an emulator before finalization.",
         "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "repaired_packet_at": "2026-07-25T19:43:06Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_at": "2026-07-25T19:58:00Z",
+      "repaired_packet_by": "Codex dispatcher independent review",
       "started_at": "2026-07-25T19:52:00Z",
-      "status_reason": "S12 packet stopped before integration: incorrect localization path and missing Android UI/lint gates; preserve worker worktree for salvage",
       "abandoned_claims": [
         {
           "released_at": "2026-07-25T19:55:51Z",
@@ -3774,7 +3818,19 @@
           "lock_expires_at": "2026-07-26T03:52:00Z"
         }
       ],
-      "claim_released_at": "2026-07-25T19:55:51Z"
+      "claim_released_at": "2026-07-25T19:55:51Z",
+      "repair_spec": "docs/reports/integration/S12_REPAIR_SPEC_20260725.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T19:58:00Z",
+          "by": "Codex dispatcher independent review",
+          "from": "planned",
+          "to": "planned",
+          "event": "worker_fix_requeued",
+          "next_owner": "worker_pool",
+          "reason": "fresh retry packet corrects localization scope and adds AndroidTest, lint and RU/EN parity gates"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
