@@ -22,6 +22,11 @@ object DatabaseMigrations {
             description = "add identity profile and idempotent save storage",
             sql = readResource("db/migration/V2__add_identity_profile_and_save_storage.sql"),
         ),
+        SqlMigration(
+            version = "3",
+            description = "add durable duel session state",
+            sql = readResource("db/migration/V3__add_durable_duel_session_state.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(

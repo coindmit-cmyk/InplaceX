@@ -30,6 +30,9 @@ class JdbcPersistenceTest {
                     "DUEL_SESSIONS",
                     "DUEL_COMMANDS",
                     "DUEL_EVENTS",
+                    "DUEL_SESSION_STATES",
+                    "DUEL_SESSION_EVENTS",
+                    "DUEL_COMMAND_RECEIPTS",
                 ),
                 connection.metaData.getTables(null, null, "%", arrayOf("TABLE")).use { resultSet ->
                     buildSet {
@@ -37,12 +40,13 @@ class JdbcPersistenceTest {
                     }.intersect(
                         setOf(
                             "PLAYERS", "SAVE_HEADS", "SAVE_REVISIONS", "MATCHMAKING_TICKETS",
-                            "DUEL_SESSIONS", "DUEL_COMMANDS", "DUEL_EVENTS",
+                            "DUEL_SESSIONS", "DUEL_COMMANDS", "DUEL_EVENTS", "DUEL_SESSION_STATES",
+                            "DUEL_SESSION_EVENTS", "DUEL_COMMAND_RECEIPTS",
                         ),
                     )
                 },
             )
-            assertEquals(2, connection.createStatement().use { statement ->
+            assertEquals(3, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
@@ -56,7 +60,7 @@ class JdbcPersistenceTest {
         val dataSource = newDataSource()
         JdbcMigrationRunner().migrate(dataSource)
         val failingMigration = SqlMigration(
-            version = "3",
+            version = "4",
             description = "rollback test",
             sql = "INSERT INTO players(id, display_name) VALUES ('rolled-back', 'Rollback'); INSERT INTO absent_table VALUES (1)",
         )
@@ -67,7 +71,26 @@ class JdbcPersistenceTest {
 
         dataSource.connection.use { connection ->
             assertEquals(0, count(connection, "SELECT COUNT(*) FROM players WHERE id = 'rolled-back'"))
-            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '3'"))
+            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '4'"))
+        }
+    }
+
+    @Test
+    fun durableSessionMigrationBackfillsExistingSessions() {
+        val dataSource = newDataSource()
+        JdbcMigrationRunner(DatabaseMigrations.all.take(2)).migrate(dataSource)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeUpdate(
+                    "INSERT INTO duel_sessions(id, mode, status, config_json, version) VALUES ('legacy', 'duel', 'SETUP', '{}', 4)",
+                )
+            }
+        }
+
+        JdbcMigrationRunner().migrate(dataSource)
+
+        dataSource.connection.use { connection ->
+            assertEquals(1, count(connection, "SELECT COUNT(*) FROM duel_session_states WHERE session_id = 'legacy' AND version = 4"))
         }
     }
 

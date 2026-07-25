@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added durable duel-session snapshots, ordered event cursors, and persisted
+  command receipts so idempotent retries and reconnect replay survive process restarts.
 - Added a local Docker Compose backend/PostgreSQL stack with persistent storage,
   health checks, environment-only credentials, and an executable backup,
   restore, rollback, and migration verification runbook.
