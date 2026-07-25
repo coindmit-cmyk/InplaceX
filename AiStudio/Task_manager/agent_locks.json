@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:11:54Z",
+  "updated_at": "2026-07-25T23:26:12Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -675,6 +675,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
       "at": "2026-07-25T23:11:54Z",
       "expires_at": "2026-07-26T07:11:54Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
+      "at": "2026-07-25T23:26:12Z",
+      "expires_at": "2026-07-26T07:26:12Z",
       "notes": "central runner claim"
     }
   ]

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:11:54Z",
+  "updated_at": "2026-07-25T23:26:12Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -9907,7 +9907,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9962,7 +9962,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10130,10 +10130,10 @@
       "created_at": "2026-07-25T23:05:00Z",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
-      "started_at": "2026-07-25T23:11:37Z",
-      "lock_expires_at": "2026-07-26T07:11:37Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
+      "started_at": "2026-07-25T23:26:12Z",
+      "lock_expires_at": "2026-07-26T07:26:12Z",
       "retry_count": 1,
       "last_rejected_candidate": "407d563c5bb18881481b00e43b80a3b5a4abf081",
       "abandoned_claims": [
@@ -10143,7 +10143,7 @@
           "reason": "rejected and preserved: Kotlin private authority classes exposed forgeable public synthetic JVM constructors and tests filtered isSynthetic"
         }
       ],
-      "status_reason": "407d563 preserved but rejected before integration; fresh retry must prove no synthetic JVM constructor bypass"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
