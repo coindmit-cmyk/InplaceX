@@ -506,13 +506,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/s18-expanded-debug-and-release-isolation-retry",
       "at": "2026-07-25T21:48:14Z",
       "expires_at": "2026-07-26T05:48:14Z",
-      "notes": "central runner claim"
+      "notes": "S18 expanded source-set isolation independently verified and integrated",
+      "review_at": "2026-07-25T22:10:00Z",
+      "released_at": "2026-07-25T22:11:00Z",
+      "released_by": "Codex integrator independent review",
+      "release_reason": "verified S18 finalization recorded at develop commit 3823661"
     },
     {
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
