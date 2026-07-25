@@ -15,10 +15,27 @@ class GameLocalizationPresentationTest {
     fun `debug feedback selects localization by typed validation reason`() {
         val result = debugFeedbackText(
             feedback = MatchFeedback.ValidationRejected(GuessValidationReason.ALL_SAME_DIGITS),
+            codeLength = 6,
             text = ::translated,
         )
 
         assertEquals("localized<game.validation.all_same_digits>", result)
+    }
+
+    @Test
+    fun `debug invalid length feedback substitutes configured code length`() {
+        val result = debugFeedbackText(
+            feedback = MatchFeedback.ValidationRejected(GuessValidationReason.INVALID_LENGTH),
+            codeLength = 7,
+            text = { key ->
+                when (key) {
+                    "game.status.enter_digits" -> "localized<{count}>"
+                    else -> "unexpected<$key>"
+                }
+            },
+        )
+
+        assertEquals("localized<7>", result)
     }
 
     @Test

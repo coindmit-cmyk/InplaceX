@@ -23,12 +23,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.core.engine.GuessValidationReason
 import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.screens.game.presentation.feedbackText
 import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
+
+private const val DEBUG_CODE_LENGTH = 6
 
 /**
  * Версия без lifecycle-viewmodel-compose.
@@ -90,13 +94,15 @@ fun GameFieldDebugScreen() {
         OutlinedTextField(
             value = input,
             onValueChange = { value ->
-                input = value.filter { it.isDigit() }.take(6)
+                input = value.filter { it.isDigit() }.take(DEBUG_CODE_LENGTH)
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("game-debug-input"),
             label = {
                 Text(
                     strings.text("game.debug_screen.enter_digits")
-                        .replace("{count}", "6"),
+                        .replace("{count}", DEBUG_CODE_LENGTH.toString()),
                 )
             },
             singleLine = true,
@@ -127,7 +133,12 @@ fun GameFieldDebugScreen() {
         state.feedback?.let { feedback ->
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = debugFeedbackText(feedback, strings::text),
+                text = debugFeedbackText(
+                    feedback = feedback,
+                    codeLength = DEBUG_CODE_LENGTH,
+                    text = strings::text,
+                ),
+                modifier = Modifier.testTag("game-debug-feedback"),
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
@@ -180,5 +191,15 @@ internal fun debugPhaseText(
 
 internal fun debugFeedbackText(
     feedback: MatchFeedback,
+    codeLength: Int,
     text: (String) -> String,
-): String = feedbackText(feedback, text)
+): String = when (feedback) {
+    is MatchFeedback.ValidationRejected -> when (feedback.reason) {
+        GuessValidationReason.INVALID_LENGTH -> text("game.status.enter_digits")
+            .replace("{count}", codeLength.toString())
+
+        else -> feedbackText(feedback, text)
+    }
+
+    else -> feedbackText(feedback, text)
+}

@@ -4,8 +4,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.model.AnalysisBoardState
 import com.mirkori.inplacex.core.model.GameConfig
@@ -41,6 +45,28 @@ class GameLocalizationSmokeTest {
 
         composeRule.onNodeWithText("Game test screen").assertExists()
         composeRule.onNodeWithText("Status: Active").assertExists()
+    }
+
+    @Test
+    fun shortDebugGuessRendersRussianCodeLength() {
+        setLocalizedContent(AppLanguage.RU) {
+            GameFieldDebugScreen()
+        }
+
+        composeRule.onNodeWithTag("game-debug-input").performTextInput("12")
+        composeRule.onNodeWithText("Проверить").performClick()
+        composeRule.onNodeWithTag("game-debug-feedback").assertTextEquals("Введите 6 цифр")
+    }
+
+    @Test
+    fun shortDebugGuessRendersEnglishCodeLength() {
+        setLocalizedContent(AppLanguage.EN) {
+            GameFieldDebugScreen()
+        }
+
+        composeRule.onNodeWithTag("game-debug-input").performTextInput("12")
+        composeRule.onNodeWithText("Check").performClick()
+        composeRule.onNodeWithTag("game-debug-feedback").assertTextEquals("Enter 6 digits")
     }
 
     @Test
