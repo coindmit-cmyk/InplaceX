@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
 
 /**
@@ -34,6 +35,7 @@ import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
  */
 @Composable
 fun GameFieldDebugScreen() {
+    val strings = LocalAppStrings.current
     val vm = remember { GameFieldViewModel() }
     val state by vm.state.collectAsState()
     var input by rememberSaveable { mutableStateOf("") }
@@ -45,7 +47,7 @@ fun GameFieldDebugScreen() {
         verticalArrangement = Arrangement.Top,
     ) {
         Text(
-            text = "Тестовый экран игры",
+            text = strings.text("game.debug_screen.title"),
             style = MaterialTheme.typography.headlineSmall,
         )
 
@@ -57,16 +59,26 @@ fun GameFieldDebugScreen() {
         ) {
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Статус: ${state.phase}")
-                    Text("Осталось попыток: ${state.attemptsLeft}")
-                    Text("Попыток сделано: ${state.attempts.size}")
+                    Text(strings.text("game.debug_screen.status").replace("{phase}", state.phase.toString()))
+                    Text(
+                        strings.text("game.debug_screen.attempts_left").replace(
+                            "{count}",
+                            state.attemptsLeft.toString(),
+                        ),
+                    )
+                    Text(
+                        strings.text("game.debug_screen.attempts_made").replace(
+                            "{count}",
+                            state.attempts.size.toString(),
+                        ),
+                    )
                 }
             }
 
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("DEBUG")
-                    Text("Секрет: ${state.debugSecret}")
+                    Text(strings.text("game.debug_screen.debug"))
+                    Text(strings.text("game.debug.secret").replace("{value}", state.debugSecret))
                 }
             }
         }
@@ -79,7 +91,7 @@ fun GameFieldDebugScreen() {
                 input = value.filter { it.isDigit() }.take(6)
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Введите 6 цифр") },
+            label = { Text(strings.text("game.debug_screen.enter_digits").replace("{count}", "6")) },
             singleLine = true,
         )
 
@@ -92,7 +104,7 @@ fun GameFieldDebugScreen() {
                     input = ""
                 }
             ) {
-                Text("Проверить")
+                Text(strings.text("game.action.confirm"))
             }
 
             Button(
@@ -101,7 +113,7 @@ fun GameFieldDebugScreen() {
                     input = ""
                 }
             ) {
-                Text("Новая игра")
+                Text(strings.text("game.action.restart"))
             }
         }
 
@@ -116,7 +128,7 @@ fun GameFieldDebugScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "История попыток",
+            text = strings.text("game.debug_screen.history_title"),
             style = MaterialTheme.typography.titleMedium,
         )
 
@@ -138,7 +150,10 @@ fun GameFieldDebugScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text("#${attempt.number}  ${attempt.guess}")
-                        Text("Совпадений: ${attempt.score}")
+                        Text(
+                            strings.text("game.debug_screen.matches")
+                                .replace("{count}", attempt.score.toString()),
+                        )
                     }
                 }
             }

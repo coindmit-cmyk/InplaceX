@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.common.BottomReserveMode
 import com.mirkori.inplacex.ui.common.ScreenBottomReserve
 
@@ -38,6 +39,7 @@ fun RaceSetupScreen(
     onBack: () -> Unit,
     onStartRace: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val navBar = WindowInsets.navigationBars.asPaddingValues()
 
@@ -77,7 +79,7 @@ fun RaceSetupScreen(
                         .padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text("Настройка гонки", style = MaterialTheme.typography.headlineSmall)
+                    Text(strings.text("game.race_setup.title"), style = MaterialTheme.typography.headlineSmall)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -87,19 +89,19 @@ fun RaceSetupScreen(
                             onClick = onBack,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Назад")
+                            Text(strings.text("top.back"))
                         }
 
                         Button(
                             onClick = onStartRace,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Старт")
+                            Text(strings.text("game.action.start"))
                         }
                     }
 
                     SettingCard(
-                        title = "Длина кода",
+                        title = strings.text("game.race_setup.code_length"),
                         value = config.codeLength.toString()
                     ) {
                         StepperRow(
@@ -119,7 +121,7 @@ fun RaceSetupScreen(
                     }
 
                     SettingCard(
-                        title = "Лимит попыток",
+                        title = strings.text("game.race_setup.attempt_limit"),
                         value = config.attemptLimit.toString()
                     ) {
                         StepperRow(
@@ -149,9 +151,13 @@ fun RaceSetupScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Повторы цифр", style = MaterialTheme.typography.titleMedium)
+                                Text(strings.text("game.race_setup.duplicate_digits"), style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    text = if (config.allowDuplicates) "Разрешены" else "Запрещены",
+                                    text = if (config.allowDuplicates) {
+                                        strings.text("game.race_setup.duplicates_allowed")
+                                    } else {
+                                        strings.text("game.race_setup.duplicates_disallowed")
+                                    },
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -176,11 +182,11 @@ fun RaceSetupScreen(
                                 .padding(14.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Что заложено сразу", style = MaterialTheme.typography.titleMedium)
-                            Text("• отдельный главный экран")
-                            Text("• отдельный экран настройки")
-                            Text("• отдельный экран гонки")
-                            Text("• нижний резерв под меню / рекламу / premium")
+                            Text(strings.text("game.race_setup.info.title"), style = MaterialTheme.typography.titleMedium)
+                            Text(strings.text("game.race_setup.info.main_screen"))
+                            Text(strings.text("game.race_setup.info.settings_screen"))
+                            Text(strings.text("game.race_setup.info.race_screen"))
+                            Text(strings.text("game.race_setup.info.reserve"))
                         }
                     }
                 }

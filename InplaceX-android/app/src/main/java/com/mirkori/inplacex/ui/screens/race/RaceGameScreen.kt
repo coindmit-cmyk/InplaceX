@@ -42,6 +42,7 @@ import com.mirkori.inplacex.core.model.AnalysisCellState
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameStatus
 import com.mirkori.inplacex.core.model.MatchState
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.shell.AppBottomAd
 import com.mirkori.inplacex.ui.utils.buildKnownDigitsFromAnalysis
 import kotlinx.coroutines.delay
@@ -64,6 +65,7 @@ fun RaceGameScreen(
     onTick: () -> Unit,
     onRestart: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val navBar = WindowInsets.navigationBars.asPaddingValues()
     val knownDigits = buildKnownDigitsFromAnalysis(analysisBoard)
@@ -209,10 +211,16 @@ private fun RaceTopPanel(
     knownDigits: List<Char?>,
     onBack: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val statusText = when (matchState.status) {
-        GameStatus.IN_PROGRESS -> "Игра идёт"
-        GameStatus.WON -> "Победа"
-        GameStatus.LOST -> "Поражение"
+        GameStatus.IN_PROGRESS -> strings.text("game.race.status.in_progress")
+        GameStatus.WON -> strings.text("game.race.status.won")
+        GameStatus.LOST -> strings.text("game.race.status.lost")
+    }
+    val duplicates = if (config.allowDuplicates) {
+        strings.text("game.race.duplicates.enabled")
+    } else {
+        strings.text("game.race.duplicates.disabled")
     }
 
     Row(
@@ -223,20 +231,24 @@ private fun RaceTopPanel(
         verticalAlignment = Alignment.CenterVertically
     ) {
         FilledTonalButton(onClick = onBack) {
-            Text("Назад")
+            Text(strings.text("top.back"))
         }
 
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text("PvE • Race", style = MaterialTheme.typography.titleMedium)
+            Text(strings.text("game.race.title"), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Статус: $statusText • Повторы: ${if (config.allowDuplicates) "да" else "нет"}",
+                strings.text("game.race.status_line")
+                    .replace("{status}", statusText)
+                    .replace("{duplicates}", duplicates),
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
-                "Попытки ${matchState.attempts.size}/${config.attemptLimit} • Время ${formatElapsed(elapsedSeconds)}",
+                strings.text("game.race.stats_line")
+                    .replace("{attempts}", "${matchState.attempts.size}/${config.attemptLimit}")
+                    .replace("{time}", formatElapsed(elapsedSeconds)),
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -269,13 +281,14 @@ private fun RaceCurrentGuessPanel(
     codeLength: Int,
     currentGuess: String
 ) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Текущая попытка", style = MaterialTheme.typography.titleSmall)
+        Text(strings.text("game.race.current_attempt"), style = MaterialTheme.typography.titleSmall)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -309,12 +322,13 @@ private fun RaceCurrentGuessPanel(
 private fun RaceHistoryPanel(
     matchState: MatchState
 ) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(12.dp)
     ) {
-        Text("История", style = MaterialTheme.typography.titleMedium)
+        Text(strings.text("game.race.history"), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(8.dp))
@@ -324,7 +338,7 @@ private fun RaceHistoryPanel(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Ходов пока нет")
+                Text(strings.text("game.race.history_empty"))
             }
         } else {
             Column(
@@ -359,6 +373,7 @@ private fun RaceMatrixPanel(
     board: AnalysisBoardState,
     onAnalysisCellClick: (digit: Int, position: Int) -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val horizontalScroll = rememberScrollState()
     val verticalScroll = rememberScrollState()
 
@@ -367,7 +382,7 @@ private fun RaceMatrixPanel(
             .fillMaxSize()
             .padding(12.dp)
     ) {
-        Text("Матрица", style = MaterialTheme.typography.titleMedium)
+        Text(strings.text("game.race.matrix"), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider()
         Spacer(modifier = Modifier.height(8.dp))
@@ -436,6 +451,7 @@ private fun RaceActionPanel(
     onSubmitGuess: () -> Unit,
     onRestart: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -462,14 +478,14 @@ private fun RaceActionPanel(
             enabled = isSubmitEnabled,
             modifier = Modifier.weight(1.4f)
         ) {
-            Text("Проверить")
+            Text(strings.text("game.race.action.check"))
         }
 
         FilledTonalButton(
             onClick = onRestart,
             modifier = Modifier.weight(1.3f)
         ) {
-            Text("Новая")
+            Text(strings.text("game.race.action.restart"))
         }
 
         Surface(
