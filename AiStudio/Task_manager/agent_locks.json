@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:46:55Z",
+  "updated_at": "2026-07-25T21:48:14Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -499,6 +499,16 @@
       "released_at": "2026-07-25T21:48:00Z",
       "released_by": "Codex dispatcher launch repair",
       "release_reason": "branch collision protection preserved the prior blocker report"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/s18-expanded-debug-and-release-isolation-retry",
+      "at": "2026-07-25T21:48:14Z",
+      "expires_at": "2026-07-26T05:48:14Z",
+      "notes": "central runner claim"
     }
   ]
 }
