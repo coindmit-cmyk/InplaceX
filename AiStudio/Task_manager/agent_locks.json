@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:26:24Z",
+  "updated_at": "2026-07-25T22:31:32Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -555,6 +555,16 @@
       "released_at": "2026-07-25T22:29:57Z",
       "released_by": "Codex dispatcher packet audit",
       "release_reason": "required docs/reports/workers output was absent from allowed_paths"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
+      "at": "2026-07-25T22:31:32Z",
+      "expires_at": "2026-07-26T06:31:32Z",
+      "notes": "central runner claim"
     }
   ]
 }
