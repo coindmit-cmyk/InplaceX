@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:05:53Z",
+  "updated_at": "2026-07-25T21:10:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -443,6 +443,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
       "at": "2026-07-25T21:02:20Z",
       "expires_at": "2026-07-26T05:02:20Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
+      "at": "2026-07-25T21:10:00Z",
+      "expires_at": "2026-07-26T05:10:00Z",
       "notes": "central runner claim"
     }
   ]
