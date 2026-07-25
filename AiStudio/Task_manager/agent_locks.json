@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T16:50:14Z",
+  "updated_at": "2026-07-25T16:50:18Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -21,6 +21,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
       "at": "2026-07-25T16:50:14Z",
       "expires_at": "2026-07-26T00:50:14Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+      "at": "2026-07-25T16:50:18Z",
+      "expires_at": "2026-07-26T00:50:18Z",
       "notes": "central runner claim"
     }
   ]
