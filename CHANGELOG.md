@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-07-25
+
+### Added
+- Added the InplaceX Design System v2 direction, Compose UI contract, and a visual concept for the Home and Race screens.
+- Added a planning-only AiStudio handoff and dependency-aware finalization backlog covering preservation, UI migration, match-contract convergence, online backend, VPS staging, E2E, and release hardening.
+- Added a stable semantic color-token set for the Android client.
+
+### Changed
+- Replaced the default dynamic Material palette with stable InplaceX brand colors and shapes.
+- Updated the global background, top resources, bottom navigation, shared scene components, Home identity, and player-facing Race/Duel labels.
+
+### Safety
+- Redesign work starts from `baseline/pre-redesign-2026-07-25`.
+- The automation handoff remains planning-only and does not authorize Worker launch or VPS activation.
+
 ## 2026-07-17
 
 ### Added

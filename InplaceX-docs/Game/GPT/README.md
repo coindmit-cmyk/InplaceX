@@ -14,10 +14,11 @@
 8. `Auth Ads Billing Contracts.md`
 9. `Provider Runtime Config.md`
 10. `Data Driven Model.md`
-11. `Add New Mode.md`
-12. `Add New Game.md`
-13. `Technical Debt.md`
-14. `ADR/`
+11. `UI Design Contracts.md`
+12. `Add New Mode.md`
+13. `Add New Game.md`
+14. `Technical Debt.md`
+15. `ADR/`
 
 ## Intent
 

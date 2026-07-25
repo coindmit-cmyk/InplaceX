@@ -42,6 +42,7 @@ import com.mirkori.inplacex.ui.screens.game.TypeGame
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -460,11 +461,12 @@ private fun HomeSelectionScreen(
             verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
             SceneCard(
-                accentColor = Color.White.copy(alpha = 0.76f)
+                accentColor = InplaceXColors.Surface.copy(alpha = 0.96f)
             ) {
                 Text(
-                    text = strings.text("home.title"),
-                    style = MaterialTheme.typography.headlineSmall
+                    text = AppConfigCatalog.branding.appName,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = InplaceXColors.Ink,
                 )
                 Text(
                     text = strings.text("home.subtitle"),
@@ -473,9 +475,10 @@ private fun HomeSelectionScreen(
                 )
                 SceneSplitStatRow(
                     leftLabel = strings.text("mode.pve.title"),
-                    leftValue = "${pveMode.config.codeLength} digits",
+                    leftValue = strings.text("home.code_length")
+                        .replace("{count}", pveMode.config.codeLength.toString()),
                     rightLabel = strings.text("mode.pvp.title"),
-                    rightValue = "Bot duel"
+                    rightValue = strings.text("home.duel.kind")
                 )
             }
 
@@ -487,27 +490,31 @@ private fun HomeSelectionScreen(
                     title = strings.text(pveMode.titleKey),
                     subtitle = strings.text(pveMode.subtitleKey),
                     modifier = Modifier.weight(1f),
-                    accentBrush = Brush.verticalGradient(listOf(Color(0xFF7BB9FF), Color(0xFF4C6FFF))),
+                    accentBrush = Brush.verticalGradient(
+                        listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
+                    ),
                     onClick = onOpenPve
                 )
                 SceneActionTile(
                     title = strings.text(pvpMode.titleKey),
                     subtitle = strings.text(pvpMode.subtitleKey),
                     modifier = Modifier.weight(1f),
-                    accentBrush = Brush.verticalGradient(listOf(Color(0xFF8A8CFF), Color(0xFF5D4EFF))),
+                    accentBrush = Brush.verticalGradient(
+                        listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
+                    ),
                     onClick = onOpenPvp
                 )
             }
 
             SceneCard(
-                accentColor = Color.White.copy(alpha = 0.72f)
+                accentColor = InplaceXColors.Surface.copy(alpha = 0.94f)
             ) {
                 Text(
                     text = strings.text("section.company.short"),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Campaign, progress road and energy now live in the Company tab.",
+                    text = strings.text("home.company.teaser"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

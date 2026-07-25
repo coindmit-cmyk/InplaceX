@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.shared
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,12 +29,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
 fun SceneBackdrop(
     modifier: Modifier = Modifier,
-    topColor: Color = Color(0xFFD7EEFF),
-    bottomColor: Color = Color(0xFFF8FBFF),
+    topColor: Color = InplaceXColors.NavySurface,
+    bottomColor: Color = InplaceXColors.Midnight,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
@@ -52,7 +54,7 @@ fun SceneBackdrop(
                 .padding(top = 28.dp, end = 22.dp)
                 .size(124.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.18f))
+                .background(InplaceXColors.Cyan.copy(alpha = 0.10f))
         )
         Box(
             modifier = Modifier
@@ -60,7 +62,7 @@ fun SceneBackdrop(
                 .padding(start = 18.dp, bottom = 32.dp)
                 .size(156.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.12f))
+                .background(InplaceXColors.Indigo.copy(alpha = 0.12f))
         )
         content()
     }
@@ -92,15 +94,17 @@ fun ScenePageColumn(
 @Composable
 fun SceneCard(
     modifier: Modifier = Modifier,
-    accentColor: Color = Color.White.copy(alpha = 0.86f),
+    accentColor: Color = InplaceXColors.Surface.copy(alpha = 0.96f),
     content: @Composable () -> Unit,
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         color = accentColor,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 2.dp,
         shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.16f)),
     ) {
         Column(
             modifier = Modifier
@@ -122,9 +126,11 @@ fun SceneBadge(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.88f),
+        color = InplaceXColors.SurfaceMuted.copy(alpha = 0.96f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 1.dp,
         shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.12f)),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -151,7 +157,7 @@ fun SceneActionTile(
     subtitle: String,
     modifier: Modifier = Modifier,
     accentBrush: Brush = Brush.verticalGradient(
-        listOf(Color(0xFF7AA8FF), Color(0xFF4C6FFF))
+        listOf(InplaceXColors.Cobalt, InplaceXColors.Indigo)
     ),
     onClick: () -> Unit,
 ) {
@@ -161,6 +167,7 @@ fun SceneActionTile(
         color = Color.Transparent,
         tonalElevation = 0.dp,
         shadowElevation = 6.dp,
+        border = BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.36f)),
     ) {
         Column(
             modifier = Modifier

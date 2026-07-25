@@ -14,12 +14,13 @@
 8. `Server Bot Runtime.md`
 9. `Platform Vision.md`
 10. `UX Flows and Screen Map.md`
-11. `Configs Localization Branding.md`
-12. `Integrations.md`
-13. `Auth Ads and Billing.md`
-14. `Provider Setup.md`
-15. `Roadmap.md`
-16. `ADR Index.md`
+11. `Design System v2.md`
+12. `Configs Localization Branding.md`
+13. `Integrations.md`
+14. `Auth Ads and Billing.md`
+15. `Provider Setup.md`
+16. `Roadmap.md`
+17. `ADR Index.md`
 
 ## Purpose
 

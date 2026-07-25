@@ -26,6 +26,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.navigation.AppSectionCatalog
 import com.mirkori.inplacex.ui.navigation.AppSectionIconCatalog
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
 fun AppBottomMenu(
@@ -36,10 +37,13 @@ fun AppBottomMenu(
     Surface(
         modifier = modifier.fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.80f),
+        color = InplaceXColors.MidnightElevated.copy(alpha = 0.96f),
         tonalElevation = 2.dp,
         shadowElevation = 6.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.74f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            InplaceXColors.Cyan.copy(alpha = 0.18f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -75,9 +79,13 @@ private fun BottomMenuItem(
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        color = if (selected) Color(0xFFD9E5FF) else Color.Transparent,
+        color = if (selected) InplaceXColors.Cobalt.copy(alpha = 0.24f) else Color.Transparent,
         tonalElevation = 0.dp,
-        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF95AEFF)) else null
+        border = if (selected) {
+            androidx.compose.foundation.BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.72f))
+        } else {
+            null
+        }
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -92,7 +100,7 @@ private fun BottomMenuItem(
                 Icon(
                     imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
                     contentDescription = title,
-                    tint = if (selected) Color(0xFF395CF8) else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (selected) InplaceXColors.Cyan else InplaceXColors.SurfaceMuted
                 )
             }
             Text(
@@ -102,7 +110,7 @@ private fun BottomMenuItem(
                     fontSize = 10.sp,
                     lineHeight = 11.sp
                 ),
-                color = if (selected) Color(0xFF1D3CCF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (selected) InplaceXColors.White else InplaceXColors.SurfaceMuted,
                 maxLines = 1
             )
         }

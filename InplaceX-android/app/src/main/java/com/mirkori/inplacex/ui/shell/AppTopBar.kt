@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
 fun AppTopBar(
@@ -91,11 +92,14 @@ private fun TopCircleAction(
 ) {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = Color.White.copy(alpha = 0.78f),
+        color = InplaceXColors.Surface.copy(alpha = 0.94f),
         contentColor = tint,
         tonalElevation = 2.dp,
         shadowElevation = 6.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            InplaceXColors.Cobalt.copy(alpha = 0.22f)
+        )
     ) {
         IconButton(onClick = onClick) {
             Icon(
@@ -115,10 +119,14 @@ private fun TopStatPill(
 ) {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = Color.White.copy(alpha = 0.80f),
+        color = InplaceXColors.Surface.copy(alpha = 0.94f),
+        contentColor = InplaceXColors.Ink,
         tonalElevation = 2.dp,
         shadowElevation = 6.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.74f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            InplaceXColors.Cobalt.copy(alpha = 0.22f)
+        )
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),

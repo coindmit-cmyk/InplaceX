@@ -24,6 +24,7 @@ import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.layout.UiLayoutConfig
 import com.mirkori.inplacex.ui.layout.UiLayoutConfigs
 import com.mirkori.inplacex.ui.navigation.AppSection
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
 fun AppShell(
@@ -39,7 +40,7 @@ fun AppShell(
     content: @Composable () -> Unit
 ) {
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = InplaceXColors.Midnight,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         ShellBackground(

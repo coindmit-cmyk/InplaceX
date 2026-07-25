@@ -52,6 +52,7 @@ import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -113,11 +114,11 @@ class MainActivity : ComponentActivity() {
                 val useUnifiedSceneBackground = !isInGame
                 val shouldShowDebugAdSlot = isInGame && developerModeEnabled
                 val appBackgroundStyle = if (useUnifiedSceneBackground) {
-                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.SoftSky)
+                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.Dark)
                 } else {
                     ScreenBackgroundStyle.ImageAsset(
                         assetPath = "image/background/app_bg.png",
-                        fallbackColor = androidx.compose.ui.graphics.Color(0xFF4C6FFF),
+                        fallbackColor = InplaceXColors.Midnight,
                     )
                 }
                 val bottomMode = when {

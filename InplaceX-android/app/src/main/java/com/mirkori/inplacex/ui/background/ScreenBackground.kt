@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 sealed interface ScreenBackgroundStyle {
     data class Preset(
@@ -85,8 +86,8 @@ private fun backgroundBrush(
             Brush.verticalGradient(
                 colors = listOf(
                     Color(0xFFDCEBFF),
-                    Color(0xFFF3F8FF),
-                    Color(0xFFF9FBFF)
+                    InplaceXColors.SurfaceMuted,
+                    InplaceXColors.Surface
                 )
             )
         }
@@ -124,9 +125,9 @@ private fun backgroundBrush(
         ScreenBackgroundPreset.Dark -> {
             Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFF202433),
-                    Color(0xFF161A27),
-                    Color(0xFF0F1320)
+                    InplaceXColors.NavySurface,
+                    InplaceXColors.MidnightElevated,
+                    InplaceXColors.Midnight
                 )
             )
         }

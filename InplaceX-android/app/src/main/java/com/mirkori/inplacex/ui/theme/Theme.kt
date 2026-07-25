@@ -1,58 +1,74 @@
 package com.mirkori.inplacex.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val InplaceXDarkColorScheme = darkColorScheme(
+    primary = InplaceXColors.Cyan,
+    onPrimary = InplaceXColors.Midnight,
+    primaryContainer = InplaceXColors.Cobalt,
+    onPrimaryContainer = InplaceXColors.White,
+    secondary = InplaceXColors.Indigo,
+    onSecondary = InplaceXColors.White,
+    tertiary = InplaceXColors.Amber,
+    onTertiary = InplaceXColors.Midnight,
+    background = InplaceXColors.Midnight,
+    onBackground = InplaceXColors.White,
+    surface = InplaceXColors.MidnightElevated,
+    onSurface = InplaceXColors.White,
+    surfaceVariant = InplaceXColors.NavySurface,
+    onSurfaceVariant = InplaceXColors.SurfaceMuted,
+    outline = InplaceXColors.Outline.copy(alpha = 0.64f),
+    error = InplaceXColors.Coral,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val InplaceXLightColorScheme = lightColorScheme(
+    primary = InplaceXColors.Cobalt,
+    onPrimary = InplaceXColors.White,
+    primaryContainer = ColorTokens.CobaltContainer,
+    onPrimaryContainer = InplaceXColors.Ink,
+    secondary = InplaceXColors.Indigo,
+    onSecondary = InplaceXColors.White,
+    tertiary = InplaceXColors.Amber,
+    onTertiary = InplaceXColors.Ink,
+    background = InplaceXColors.Midnight,
+    onBackground = InplaceXColors.White,
+    surface = InplaceXColors.Surface,
+    onSurface = InplaceXColors.Ink,
+    surfaceVariant = InplaceXColors.SurfaceMuted,
+    onSurfaceVariant = InplaceXColors.InkMuted,
+    outline = InplaceXColors.Outline,
+    error = InplaceXColors.Coral,
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private object ColorTokens {
+    val CobaltContainer = androidx.compose.ui.graphics.Color(0xFFD8E7FF)
+}
+
+private val InplaceXShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 @Composable
 fun InplaceXTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) InplaceXDarkColorScheme else InplaceXLightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = InplaceXShapes,
         content = content
     )
 }
