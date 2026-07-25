@@ -2140,6 +2140,30 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         results.append(add)
         status = run(["git", "status", "--porcelain", "--", *checkout_paths], worktree)
         results.append(status)
+        if (
+            add["exit_code"] == 0
+            and status["exit_code"] == 0
+            and not str(status.get("stdout") or "").strip()
+        ):
+            # A successful three-way apply can legitimately produce no diff
+            # when the exact task delta was already published by a previous
+            # integration attempt whose state commit failed. Finalize the task
+            # against the current base instead of sending it back to a worker.
+            current_head = run(["git", "rev-parse", "HEAD"], worktree)
+            results.append(current_head)
+            current_head_sha = str(current_head.get("stdout") or "").strip()
+            if current_head["exit_code"] == 0 and current_head_sha:
+                ready.append(task_id)
+                commits.append(current_head_sha)
+                ready_metadata[task_id] = item
+                results.append({
+                    "command": ["integrator", "already-applied-task-delta"],
+                    "cwd": str(worktree),
+                    "exit_code": 0,
+                    "stdout": task_id,
+                    "stderr": "",
+                })
+                continue
         if add["exit_code"] != 0 or status["exit_code"] != 0 or not str(status.get("stdout") or "").strip():
             routed.append({"task_id": task_id, "next_owner": "worker", "reason": "no usable task-scoped diff"})
             continue
