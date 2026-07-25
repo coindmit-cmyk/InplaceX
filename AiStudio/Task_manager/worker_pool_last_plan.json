@@ -1,9 +1,13 @@
 {
-  "generated_at": "2026-07-25T17:10:09Z",
+  "generated_at": "2026-07-25T17:20:00Z",
   "apply": true,
-  "selected_count": 2,
-  "skipped_count": 2,
+  "selected_count": 1,
+  "skipped_count": 3,
   "skipped": [
+    {
+      "worker_id": "auto-worker-5.3",
+      "reason": "no_eligible_task"
+    },
     {
       "worker_id": "auto-worker-5.3",
       "reason": "no_eligible_task"
@@ -106,8 +110,8 @@
     "router_decision": {
       "status": "selected",
       "policy_version": "1.1",
-      "decided_at": "2026-07-25T17:03:53.381893Z",
-      "decision_id": "router:decision:f7be8de28c378870bf9a2c56",
+      "decided_at": "2026-07-25T17:11:46.347043Z",
+      "decision_id": "router:decision:f84c5c089f9b55a54244d061",
       "selected": {
         "capability_profile": "efficient",
         "model_id": "gpt-5.6-luna",
@@ -123,7 +127,7 @@
       },
       "limits_snapshot_ref": "runtime/codex-limits/latest.json",
       "delegation_authorized": false,
-      "router_decision_digest": "sha256:d35638eb191ed0265b9574efd278a560e358e588dbc8788ca555002bddaaf75a"
+      "router_decision_digest": "sha256:f34cdd67b4809e06df6ab1599d33c52a10ab105237b622b303460b9944bdca8b"
     },
     "recommended_route": null,
     "execution_evidence": {
@@ -150,11 +154,11 @@
   "launches": [
     {
       "worker_id": "auto-worker-5.3",
-      "planned_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "planned_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
       "max_tasks": 8,
       "command": [
         "/usr/bin/python3",
-        "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.328/scripts/agent_control/run_worker_cycle.py",
+        "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.329/scripts/agent_control/run_worker_cycle.py",
         "--project-root",
         "/mnt/d/agent-runtime/managed-checkouts/inplacex",
         "--base-ref",
@@ -185,14 +189,14 @@
         "develop",
         "--fetch",
         "--task-id",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
         "--max-tasks",
         "8"
       ],
       "started": true,
-      "pid": 382833,
-      "stdout_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T170353Z.stdout.log",
-      "stderr_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T170353Z.stdout.stderr.log",
+      "pid": 405369,
+      "stdout_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T171146Z.stdout.log",
+      "stderr_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T171146Z.stdout.stderr.log",
       "execution_lease": null,
       "model": "gpt-5.6-luna",
       "reasoning_effort": "high",
@@ -270,8 +274,8 @@
         "router_decision": {
           "status": "selected",
           "policy_version": "1.1",
-          "decided_at": "2026-07-25T17:03:53.394249Z",
-          "decision_id": "router:decision:01de6e7c5fb8cd4a3b00e668",
+          "decided_at": "2026-07-25T17:11:46.365661Z",
+          "decision_id": "router:decision:75caf2dd83a60f71b2b33f53",
           "selected": {
             "capability_profile": "balanced",
             "model_id": "gpt-5.6-luna",
@@ -287,7 +291,7 @@
           },
           "limits_snapshot_ref": "runtime/codex-limits/latest.json",
           "delegation_authorized": false,
-          "router_decision_digest": "sha256:a8049284b3266c40cfc21e610295521345c9ff07e95aad425dc84bb32f43f101"
+          "router_decision_digest": "sha256:8754e3d94df126f057174a953fe40b24ea4d006a4faefeda61720b7744da0e08"
         },
         "recommended_route": null,
         "execution_evidence": {
@@ -302,173 +306,7 @@
         "schema_version": "1.0",
         "router_lifecycle_version": "1.0",
         "role": "worker",
-        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-        "task_complexity": "M",
-        "limits_path": "/mnt/d/agent-runtime/codex-limits/latest.json",
-        "limits_fresh": true
-      },
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work",
-      "completed": true,
-      "timed_out": false,
-      "returncode": 1,
-      "duration_seconds": 9.079
-    },
-    {
-      "worker_id": "auto-worker-5.3",
-      "planned_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
-      "max_tasks": 8,
-      "command": [
-        "/usr/bin/python3",
-        "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.328/scripts/agent_control/run_worker_cycle.py",
-        "--project-root",
-        "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-        "--base-ref",
-        "origin/develop",
-        "--worker-id",
-        "auto-worker-5.3",
-        "--machine-id",
-        "aistudio-manual",
-        "--runtime-root",
-        "/home/main/agent-runtime",
-        "--claim-push-retries",
-        "5",
-        "--claim-push-retry-delay",
-        "1.0",
-        "--worker-timeout-seconds",
-        "7200.0",
-        "--codex-bin",
-        "codex",
-        "--model",
-        "gpt-5.6-luna",
-        "--reasoning-effort",
-        "high",
-        "--worker-base-ref",
-        "origin/develop",
-        "--worker-context-ref",
-        "origin/develop",
-        "--push-ref",
-        "develop",
-        "--fetch",
-        "--task-id",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
-        "--max-tasks",
-        "8"
-      ],
-      "started": true,
-      "pid": 382925,
-      "stdout_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T170354Z.stdout.log",
-      "stderr_log": "/home/main/agent-runtime/worker-lane-logs/inplacex/2026-07-25/auto-worker-5.3-20260725T170354Z.stdout.stderr.log",
-      "execution_lease": null,
-      "model": "gpt-5.6-luna",
-      "reasoning_effort": "high",
-      "routing": {
-        "status": "selected",
-        "reason": "limit_aware_role_and_task_routing",
-        "reason_code": "route_selected",
-        "model": "gpt-5.6-luna",
-        "reasoning_effort": "high",
-        "capability_profile": "balanced",
-        "delegation": "forbidden",
-        "parallel_lanes": 1,
-        "cost_class": "standard",
-        "delegation_authorized": false,
-        "risk": "normal",
-        "candidates": [
-          {
-            "model": "gpt-5.3-codex-spark",
-            "score": -799,
-            "usable": false,
-            "headroom": {
-              "short_remaining_percent": null,
-              "weekly_remaining_percent": 1,
-              "effective_remaining_percent": 1,
-              "short_reset_at": null,
-              "minutes_to_short_reset": null,
-              "source_available": true
-            }
-          },
-          {
-            "model": "gpt-5.6-luna",
-            "score": 253,
-            "usable": true,
-            "headroom": {
-              "short_remaining_percent": null,
-              "weekly_remaining_percent": 93,
-              "effective_remaining_percent": 93,
-              "short_reset_at": null,
-              "minutes_to_short_reset": null,
-              "source_available": true
-            }
-          },
-          {
-            "model": "gpt-5.6-terra",
-            "score": 213,
-            "usable": true,
-            "headroom": {
-              "short_remaining_percent": null,
-              "weekly_remaining_percent": 93,
-              "effective_remaining_percent": 93,
-              "short_reset_at": null,
-              "minutes_to_short_reset": null,
-              "source_available": true
-            }
-          }
-        ],
-        "headroom": {
-          "short_remaining_percent": null,
-          "weekly_remaining_percent": 93,
-          "effective_remaining_percent": 93,
-          "short_reset_at": null,
-          "minutes_to_short_reset": null,
-          "source_available": true
-        },
-        "selection_source": "legacy_role_complexity",
-        "lifecycle_status": "selected",
-        "fallback_from": null,
-        "override": {
-          "applied": false,
-          "direction": "none"
-        },
-        "recommended_max_workers": 10,
-        "capacity_tier": "maximum",
-        "effective_remaining_percent": 93,
-        "router_decision": {
-          "status": "selected",
-          "policy_version": "1.1",
-          "decided_at": "2026-07-25T17:03:53.396271Z",
-          "decision_id": "router:decision:2f5e17244002746d289de375",
-          "selected": {
-            "capability_profile": "balanced",
-            "model_id": "gpt-5.6-luna",
-            "reasoning_effort": "high",
-            "delegation": "forbidden",
-            "parallel_lanes": 1,
-            "cost_class": "standard",
-            "selected_route_digest": "sha256:861756c077a138504a71e7070dabb9cf1e1b7355d24a8c93c565ffebd70a8578"
-          },
-          "override": {
-            "applied": false,
-            "direction": "none"
-          },
-          "limits_snapshot_ref": "runtime/codex-limits/latest.json",
-          "delegation_authorized": false,
-          "router_decision_digest": "sha256:48e207fe5ff4ff97508089e5ba71fcece918e47c07447d54d164c4a21c56cd07"
-        },
-        "recommended_route": null,
-        "execution_evidence": {
-          "status": "not_started",
-          "reconciliation_status": "pending"
-        },
-        "execution_state": {
-          "authorization_status": "not_issued",
-          "launch_status": "not_started",
-          "actually_used": null
-        },
-        "schema_version": "1.0",
-        "router_lifecycle_version": "1.0",
-        "role": "worker",
-        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
         "task_complexity": "M",
         "limits_path": "/mnt/d/agent-runtime/codex-limits/latest.json",
         "limits_fresh": true
@@ -478,7 +316,7 @@
       "completed": true,
       "timed_out": false,
       "returncode": 0,
-      "duration_seconds": 373.974
+      "duration_seconds": 493.421
     }
   ],
   "fairness": {
@@ -498,19 +336,19 @@
     "slot_evidence": [
       {
         "worker_id": "auto-worker-5.3",
-        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-        "scheduling_class": "primary_delivery",
-        "scheduling_class_reason": "default_primary_work"
-      },
-      {
-        "worker_id": "auto-worker-5.3",
-        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
-        "scheduling_class": "primary_delivery",
-        "scheduling_class_reason": "default_primary_work"
-      },
-      {
-        "worker_id": "auto-worker-5.3",
         "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+        "scheduling_class": "primary_delivery",
+        "scheduling_class_reason": "default_primary_work"
+      },
+      {
+        "worker_id": "auto-worker-5.3",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+        "scheduling_class": "primary_delivery",
+        "scheduling_class_reason": "default_primary_work"
+      },
+      {
+        "worker_id": "auto-worker-5.3",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
         "scheduling_class": "primary_delivery",
         "scheduling_class_reason": "default_primary_work"
       },
@@ -522,7 +360,7 @@
       }
     ],
     "planned_class_counts": {
-      "primary_delivery": 2
+      "primary_delivery": 1
     }
   },
   "schema_version": 1
