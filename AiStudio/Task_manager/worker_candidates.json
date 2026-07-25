@@ -1,48 +1,30 @@
 {
-  "generated_at": "2026-07-25T18:02:47Z",
+  "generated_at": "2026-07-25T18:33:13Z",
   "summary": {
-    "candidate_count": 6,
+    "candidate_count": 3,
     "scheduling_class_counts": {
-      "primary_delivery": 6
+      "primary_delivery": 3
     },
     "integration_continuation_count": 0,
-    "primary_candidate_count": 6,
+    "primary_candidate_count": 3,
     "background_candidate_count": 0,
     "primary_slot_reservation_required": true
   },
   "candidates": [
     {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-      "title": "Characterize current gameplay behavior",
-      "priority": "P0",
-      "complexity": "M",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3"
-      ],
-      "allowed_paths": [
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
-      "title": "Stateless GameScreen presentation components",
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "title": "Thin GameField route and active UI switch",
       "priority": "P0",
       "complexity": "L",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
       ],
       "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
         "docs/reports/**",
         "CHANGELOG.md",
         "README.md"
@@ -51,53 +33,26 @@
       "scheduling_class_reason": "default_primary_work"
     },
     {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
-      "title": "Secondary and developer screen localization",
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
+      "title": "SQLite migrations and repository tests",
       "priority": "P1",
       "complexity": "L",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
       ],
       "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/test/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
-      "title": "SQLite schema and safe test seam",
-      "priority": "P0",
-      "complexity": "M",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3"
-      ],
-      "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/data/local/**",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
+        "README.md"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
     },
     {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
-      "title": "Modular Ktor backend and health contract",
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+      "title": "PostgreSQL persistence and migrations",
       "priority": "P1",
       "complexity": "L",
       "eligible_worker_profiles": [
@@ -105,34 +60,9 @@
       ],
       "allowed_paths": [
         "InplaceX-backend/**",
-        "InplaceX-logging/**",
-        "build.gradle.kts",
-        "settings.gradle.kts",
-        "gradle/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-      "title": "Authoritative duel aggregate",
-      "priority": "P1",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-backend/src/main/kotlin/**/domain/**",
-        "InplaceX-backend/src/test/kotlin/**/domain/**",
-        "InplaceX-bot-core/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
+        "README.md"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
