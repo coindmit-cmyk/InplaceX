@@ -2262,7 +2262,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "title": "Secondary and developer screen localization",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -2293,7 +2293,7 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
         "InplaceX-android/app/src/test/**",
         "docs/reports/**",
         "CHANGELOG.md",
@@ -2315,13 +2315,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "allowed_paths repaired from worker evidence; active SecondaryCatalog path verified",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "source_item_id": "INPX-LOC-103",
@@ -2416,7 +2416,7 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
         "InplaceX-android/app/src/test/**",
         "docs/reports/**",
         "CHANGELOG.md",
@@ -2432,7 +2432,7 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
           "InplaceX-android/app/src/test/**",
           "docs/reports/**",
           "CHANGELOG.md",
@@ -2488,7 +2488,7 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
           "InplaceX-android/app/src/test/**",
           "docs/reports/**",
           "CHANGELOG.md",
@@ -2567,7 +2567,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
       "started_at": "2026-07-25T17:48:10Z",
       "lock_expires_at": "2026-07-26T01:48:10Z",
-      "status_reason": "worker explicitly reported required checks as blocked",
+      "status_reason": "dispatcher repaired S11 localization catalog scope",
       "worker_result_commit": "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8",
       "worker_result_synced_at": "2026-07-25T18:00:33Z",
       "worker_changed_paths": [
@@ -2590,12 +2590,11 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as blocked"
       },
-      "not_worker_ready_reason": "worker explicitly reported required checks as blocked",
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
       "commits": [
         "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8"
       ],
-      "integration_status": "needs_worker_fix"
+      "integration_status": "returned_to_worker"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",

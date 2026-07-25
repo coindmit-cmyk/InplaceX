@@ -574,7 +574,7 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
         "InplaceX-android/app/src/test/**"
       ],
       "forbidden_paths": [
