@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:08:00Z",
+  "updated_at": "2026-07-25T19:09:21Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5610,7 +5610,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
       "title": "Guest identity profile and versioned cloud save",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -5655,11 +5655,11 @@
         "bash gradlew :InplaceX-backend:test",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
@@ -5860,7 +5860,22 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s23/guest-identity-profile-and-versioned-cloud-save",
       "started_at": "2026-07-25T18:54:56Z",
       "lock_expires_at": "2026-07-26T02:54:56Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "finalized_by": "auto-integrator",
+      "finalized_at": "2026-07-25T19:09:20Z",
+      "status_history": [
+        {
+          "at": "2026-07-25T19:09:20Z",
+          "by": "sync_worker_results",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "event log contains finalization_recorded; preserving integrated task state",
+          "event": "finalization_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
