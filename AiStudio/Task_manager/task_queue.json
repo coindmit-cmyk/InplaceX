@@ -2135,7 +2135,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
       "title": "Thin GameField route and active UI switch",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -2188,14 +2188,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
       "source_item_id": "INPX-ARC-107",
@@ -2418,7 +2418,105 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch",
       "started_at": "2026-07-25T18:34:13Z",
       "lock_expires_at": "2026-07-26T02:34:13Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "needs_worker_fix",
+      "requires_human_attention": false,
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_validation_paths": [],
+      "integration_repair_lost_behavior": {
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt": [
+          "attemptListFollowsTheNewestResult",
+          "autoModeLocksTheOnlyRemainingPossibleMatch"
+        ],
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt": [
+          "AttemptsModule",
+          "AutoModeButton",
+          "BoostButton",
+          "BoostMode",
+          "CellMark",
+          "DigitPadRow",
+          "GameDebugAdSlot",
+          "GuessDisplayRow",
+          "HelpersModule",
+          "HintButton",
+          "HintMode",
+          "InfoChip",
+          "InputComposerModule",
+          "ToolButton",
+          "ToolsModule",
+          "TopModule",
+          "VariantsModule",
+          "addDigitLeftToRight",
+          "applyManualMark",
+          "backspaceGuess",
+          "clearBoard",
+          "completedGuessOrNull",
+          "consumeHintOrShowMessage",
+          "guessSlots",
+          "handleBoostUse"
+        ]
+      },
+      "integration_repair_source_head_sha": "a3b2757a741069c13f5b92ccedb20dc261a2fa1b",
+      "integration_repair_retry_evidence": [
+        {
+          "at": "2026-07-25T18:42:35Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch",
+          "worker_result_commit": null,
+          "source_head_sha": "a3b2757a741069c13f5b92ccedb20dc261a2fa1b",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt": [
+              "attemptListFollowsTheNewestResult",
+              "autoModeLocksTheOnlyRemainingPossibleMatch"
+            ],
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt": [
+              "AttemptsModule",
+              "AutoModeButton",
+              "BoostButton",
+              "BoostMode",
+              "CellMark",
+              "DigitPadRow",
+              "GameDebugAdSlot",
+              "GuessDisplayRow",
+              "HelpersModule",
+              "HintButton",
+              "HintMode",
+              "InfoChip",
+              "InputComposerModule",
+              "ToolButton",
+              "ToolsModule",
+              "TopModule",
+              "VariantsModule",
+              "addDigitLeftToRight",
+              "applyManualMark",
+              "backspaceGuess",
+              "clearBoard",
+              "completedGuessOrNull",
+              "consumeHintOrShowMessage",
+              "guessSlots",
+              "handleBoostUse"
+            ]
+          }
+        }
+      ],
+      "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "status_history": [
+        {
+          "at": "2026-07-25T18:42:35Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
