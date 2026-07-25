@@ -43,5 +43,26 @@ class GameSmokeTest {
 
         assertEquals("Главная", ruStrings.text("section.home.title"))
         assertEquals("Home", enStrings.text("section.home.title"))
+        assertEquals(
+            "Нельзя вводить комбинацию из одинаковых цифр",
+            ruStrings.text("game.validation.all_same_digits"),
+        )
+    }
+
+    @Test
+    fun allSameGuessIsRejectedWithActionableReason() {
+        val engine = GameEngine(
+            GameConfig(
+                codeLength = 4,
+                allowDuplicates = true,
+                attemptLimit = 3,
+            )
+        )
+
+        engine.start(secretOverride = "1234")
+        val result = engine.submit("1111")
+
+        assertEquals("All digits cannot be the same", result.message)
+        assertTrue(result.attempts.isEmpty())
     }
 }

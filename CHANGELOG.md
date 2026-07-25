@@ -10,6 +10,9 @@
 ### Changed
 - Replaced the default dynamic Material palette with stable InplaceX brand colors and shapes.
 - Updated the global background, top resources, bottom navigation, shared scene components, Home identity, and player-facing Race/Duel labels.
+- Restored visible game status and validation feedback after the UI redesign, including a localized explanation when every entered digit is identical.
+- Made the in-match attempt history automatically follow the newest accepted result.
+- Extended auto-mode deduction so every remaining possible position is locked when the score proves that all of them are exact matches.
 
 ### Safety
 - Redesign work starts from `baseline/pre-redesign-2026-07-25`.

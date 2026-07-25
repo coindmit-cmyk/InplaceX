@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -44,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -299,6 +301,10 @@ fun GameFieldScreen(
         rebuildGuessFromBoard()
     }
 
+    fun isPositionLocked(position: Int): Boolean {
+        return (0..9).any { digit -> board[digit][position] == CellMark.LOCK_YES }
+    }
+
     fun inferFromSingleChange(prevGuess: String, prevScore: Int, newGuess: String, newScore: Int) {
         val changedPositions = prevGuess.indices.filter { prevGuess[it] != newGuess[it] }
         if (changedPositions.size != 1) return
@@ -351,17 +357,36 @@ fun GameFieldScreen(
         rebuildGuessFromBoard()
     }
 
-    fun inferFromLockedMatches(guess: String, score: Int) {
-        val lockedMatches = guess.indices.count { position ->
+    fun inferFromAttemptConstraints(guess: String, score: Int) {
+        val lockedMatches = guess.indices.filter { position ->
             val digit = guess[position].digitToInt()
             board[digit][position] == CellMark.LOCK_YES
         }
-        if (score != lockedMatches) return
+        val hasConflictingLockedPosition = guess.indices.any { position ->
+            isPositionLocked(position) && position !in lockedMatches
+        }
+        if (hasConflictingLockedPosition) return
 
-        guess.forEachIndexed { position, char ->
-            val digit = char.digitToInt()
-            if (board[digit][position] != CellMark.LOCK_YES) {
-                lockNo(digit, position)
+        val unresolvedCandidates = guess.indices.filter { position ->
+            val mark = board[guess[position].digitToInt()][position]
+            !isPositionLocked(position) &&
+                mark != CellMark.NO &&
+                mark != CellMark.AUTO_NO
+        }
+        val unresolvedMatchCount = score - lockedMatches.size
+        if (unresolvedMatchCount !in 0..unresolvedCandidates.size) return
+
+        when {
+            unresolvedMatchCount == 0 -> {
+                unresolvedCandidates.forEach { position ->
+                    lockNo(guess[position].digitToInt(), position)
+                }
+            }
+
+            unresolvedMatchCount == unresolvedCandidates.size -> {
+                unresolvedCandidates.forEach { position ->
+                    setLockedYes(guess[position].digitToInt(), position)
+                }
             }
         }
     }
@@ -384,10 +409,6 @@ fun GameFieldScreen(
     fun completedGuessOrNull(): String? {
         val guess = guessSlots()
         return guess.takeIf { value -> value.all { it.isDigit() } }
-    }
-
-    fun isPositionLocked(position: Int): Boolean {
-        return (0..9).any { digit -> board[digit][position] == CellMark.LOCK_YES }
     }
 
     fun addDigitLeftToRight(digit: Char) {
@@ -639,7 +660,14 @@ fun GameFieldScreen(
         snapshot = newSnapshot
 
         if (newSnapshot.attempts.size == previousAttempts.size) {
-            statusText = newSnapshot.message ?: strings.text("game.status.attempt_not_accepted")
+            statusText = when (newSnapshot.message) {
+                "All digits cannot be the same" -> strings.text("game.validation.all_same_digits")
+                "Duplicate digits are forbidden" -> strings.text("game.validation.duplicate_digits")
+                "Adjacent duplicates are forbidden" -> strings.text("game.validation.adjacent_duplicates")
+                "Triple duplicates are forbidden" -> strings.text("game.validation.triple_duplicates")
+                "Only digits are allowed" -> strings.text("game.validation.only_digits")
+                else -> newSnapshot.message ?: strings.text("game.status.attempt_not_accepted")
+            }
             return
         }
 
@@ -652,7 +680,7 @@ fun GameFieldScreen(
         }
 
         if (effectiveAutoExclude) {
-            inferFromLockedMatches(guess, lastAttempt.score)
+            inferFromAttemptConstraints(guess, lastAttempt.score)
         }
 
         if (effectiveAutoExclude && newSnapshot.attempts.size >= 2) {
@@ -696,6 +724,13 @@ fun GameFieldScreen(
     }
 
     val attemptLines = snapshot.attempts.map { "${it.guess} -> ${it.score}" }
+    val statusIsError = statusText in setOf(
+        strings.text("game.validation.all_same_digits"),
+        strings.text("game.validation.duplicate_digits"),
+        strings.text("game.validation.adjacent_duplicates"),
+        strings.text("game.validation.triple_duplicates"),
+        strings.text("game.validation.only_digits"),
+    )
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -723,7 +758,8 @@ fun GameFieldScreen(
                     elapsedSeconds = elapsedSeconds,
                     turnElapsedSeconds = turnElapsedSeconds,
                     totalTimeLimitSeconds = effectiveTotalTimeLimit,
-                    statusText = statusText
+                    statusText = statusText,
+                    statusIsError = statusIsError,
                 )
             }
 
@@ -904,7 +940,8 @@ private fun TopModule(
     elapsedSeconds: Int,
     turnElapsedSeconds: Int,
     totalTimeLimitSeconds: Int,
-    statusText: String
+    statusText: String,
+    statusIsError: Boolean,
 ) {
     val strings = LocalAppStrings.current
     Column(
@@ -929,6 +966,22 @@ private fun TopModule(
             InfoChip(strings.text("game.top.total"), timerValue(elapsedSeconds, totalTimeLimitSeconds), Modifier.weight(1f))
             InfoChip(strings.text("game.top.turn"), timerValue(turnElapsedSeconds, params.timeMove), Modifier.weight(1f))
         }
+
+        Text(
+            text = statusText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("game-status"),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (statusIsError) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            fontWeight = if (statusIsError) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 2,
+        )
+
     }
 }
 
@@ -959,10 +1012,21 @@ private fun InfoChip(
 }
 
 @Composable
-private fun AttemptsModule(attempts: List<String>) {
+internal fun AttemptsModule(
+    attempts: List<String>,
+    modifier: Modifier = Modifier,
+) {
     val strings = LocalAppStrings.current
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(attempts.size) {
+        if (attempts.isNotEmpty()) {
+            listState.animateScrollToItem(attempts.lastIndex)
+        }
+    }
+
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(8.dp)
     ) {
@@ -977,10 +1041,12 @@ private fun AttemptsModule(attempts: List<String>) {
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(attempts) { line ->
+                itemsIndexed(attempts) { index, line ->
                     Surface(
+                        modifier = Modifier.testTag("game-attempt-${index + 1}"),
                         shape = RoundedCornerShape(14.dp),
                         tonalElevation = 1.dp,
                         color = Color.White.copy(alpha = 0.78f),
@@ -1420,11 +1486,13 @@ private fun GuessDisplayRow(
                         color = if (hintOpenPositionSelected) Color(0xFF4C6FFF) else MaterialTheme.colorScheme.outline,
                         shape = RoundedCornerShape(10.dp)
                     )
+                    .testTag("game-guess-slot-${index + 1}")
                     .clickable(enabled = hintOpenPositionSelected && inputEnabled) { onSlotClick(index) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = if (value.isBlank()) " " else value,
+                    modifier = Modifier.testTag("game-guess-value-${index + 1}"),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -1458,7 +1526,8 @@ private fun DigitPadRow(
                 enabled = inputEnabled,
                 modifier = Modifier
                     .weight(1f)
-                    .height(38.dp),
+                    .height(38.dp)
+                    .testTag("game-digit-$digit"),
                 contentPadding = PaddingValues(0.dp),
                 shape = RoundedCornerShape(14.dp)
             ) {
