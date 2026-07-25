@@ -162,7 +162,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "title": "Characterize current gameplay behavior",
-      "status": "in_progress",
+      "status": "needs_human",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -208,14 +208,14 @@
         "bash gradlew :app:assembleDebugAndroidTest",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_integrator_review",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "human",
+      "next_role": "human",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "source_item_id": "INPX-ARC-101",
@@ -406,8 +406,8 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior-retry-20260725T180333Z",
       "started_at": "2026-07-25T18:03:33Z",
       "lock_expires_at": "2026-07-26T02:03:33Z",
-      "integration_status": "returned_to_worker",
-      "requires_human_attention": false,
+      "integration_status": "needs_integrator_review",
+      "requires_human_attention": true,
       "integration_repair_kind": "behavior_preservation",
       "integration_repair_validation_paths": [],
       "integration_repair_lost_behavior": {
@@ -465,8 +465,8 @@
         }
       ],
       "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
-      "repair_owner": "Worker",
-      "next_action": "Worker must repair the recorded Integrator failure on the pinned source attempt without widening packet scope.",
+      "repair_owner": "Integrator",
+      "next_action": "Integrator must manually preserve current target-branch behavior and add only useful candidate changes.",
       "status_history": [
         {
           "at": "2026-07-25T16:59:53Z",
@@ -501,6 +501,15 @@
           "to": "planned",
           "event": "design_handoff_integration_retry",
           "reason": "Dispatcher returned the same complete design-handoff packet for a bounded Worker retry."
+        },
+        {
+          "at": "2026-07-25T18:11:30Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_human",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "integrator"
         }
       ],
       "integration_repair_retry_count": 2,
@@ -514,7 +523,10 @@
       ],
       "packet_normalized_at": "2026-07-25T17:45:35Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "missing_packet_fields": [
+        "behavior_preservation"
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
@@ -1742,7 +1754,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
       "title": "Stateless GameScreen presentation components",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -1790,14 +1802,14 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
       "source_item_id": "INPX-ARC-106",
@@ -2028,7 +2040,65 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s07/stateless-gamescreen-presentation-components",
       "started_at": "2026-07-25T18:03:41Z",
       "lock_expires_at": "2026-07-26T02:03:41Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "needs_worker_fix",
+      "requires_human_attention": false,
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_validation_paths": [],
+      "integration_repair_lost_behavior": {
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt": [
+          "AnalysisBlock",
+          "BottomNavBar",
+          "DEBUG SECRET: $debugSecret",
+          "DebugBlock",
+          "HistoryBlock",
+          "InputBlock",
+          "KnownDigitsRow",
+          "MatchInfoRow",
+          "cellColor"
+        ]
+      },
+      "integration_repair_source_head_sha": "c77fe3103f1394b977f60a512180e12ad00160f7",
+      "integration_repair_retry_evidence": [
+        {
+          "at": "2026-07-25T18:11:30Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s07/stateless-gamescreen-presentation-components",
+          "worker_result_commit": null,
+          "source_head_sha": "c77fe3103f1394b977f60a512180e12ad00160f7",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt": [
+              "AnalysisBlock",
+              "BottomNavBar",
+              "DEBUG SECRET: $debugSecret",
+              "DebugBlock",
+              "HistoryBlock",
+              "InputBlock",
+              "KnownDigitsRow",
+              "MatchInfoRow",
+              "cellColor"
+            ]
+          }
+        }
+      ],
+      "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "status_history": [
+        {
+          "at": "2026-07-25T18:11:30Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
@@ -2477,7 +2547,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "title": "Secondary and developer screen localization",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -2530,14 +2600,14 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "source_item_id": "INPX-LOC-103",
@@ -2809,10 +2879,71 @@
       "commits": [
         "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8"
       ],
-      "integration_status": "returned_to_worker",
+      "integration_status": "needs_worker_fix",
       "repaired_packet_metadata_at": "2026-07-25T18:02:47Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "requires_human_attention": false,
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_validation_paths": [],
+      "integration_repair_lost_behavior": {
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/BotLabScreen.kt": [
+          "Behavior model",
+          "Bot Lab",
+          "Developer screen for bot checks. Fix one secret and compare how many turns each difficulty needs.",
+          "Report"
+        ],
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt": [
+          "Match stats"
+        ],
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt": [
+          "Next online steps",
+          "This section will handle friends, invites and online presence."
+        ]
+      },
+      "integration_repair_source_head_sha": "8ebd4d4ae3293bdb730adc6894153e7f16cbb650",
+      "integration_repair_retry_evidence": [
+        {
+          "at": "2026-07-25T18:11:30Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization-retry-20260725T180336Z",
+          "worker_result_commit": "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8",
+          "source_head_sha": "8ebd4d4ae3293bdb730adc6894153e7f16cbb650",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/BotLabScreen.kt": [
+              "Behavior model",
+              "Bot Lab",
+              "Developer screen for bot checks. Fix one secret and compare how many turns each difficulty needs.",
+              "Report"
+            ],
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt": [
+              "Match stats"
+            ],
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt": [
+              "Next online steps",
+              "This section will handle friends, invites and online presence."
+            ]
+          }
+        }
+      ],
+      "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "status_history": [
+        {
+          "at": "2026-07-25T18:11:30Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
