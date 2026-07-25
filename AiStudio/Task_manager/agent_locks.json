@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:55:51Z",
+  "updated_at": "2026-07-25T20:03:22Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -365,6 +365,16 @@
       "released_at": "2026-07-25T19:55:51Z",
       "released_by": "release_dead_worker_claims.py",
       "release_reason": "S12 packet stopped before integration: incorrect localization path and missing Android UI/lint gates; preserve worker worktree for salvage"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
+      "at": "2026-07-25T20:03:22Z",
+      "expires_at": "2026-07-26T04:03:22Z",
+      "notes": "central runner claim"
     }
   ]
 }
