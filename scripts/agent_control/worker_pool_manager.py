@@ -33,6 +33,7 @@ DEFAULT_MODEL_FALLBACKS: dict[str, str | None] = {}
 SHARED_RECONCILIATION_PATHS = {
     "CHANGELOG.md",
     "README.md",
+    "AiStudio/Task_manager/task_queue.json",
     "AiStudio/Task_manager/clean_rebuild_plan.json",
     "docs/plans/allowed_paths_repair_plan.json",
 }
