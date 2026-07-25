@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:40:04Z",
+  "updated_at": "2026-07-25T23:43:43Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -714,6 +714,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization-retry-20260725T234004Z",
       "at": "2026-07-25T23:40:04Z",
       "expires_at": "2026-07-26T07:40:04Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
+      "at": "2026-07-25T23:43:43Z",
+      "expires_at": "2026-07-26T07:43:43Z",
       "notes": "central runner claim"
     }
   ]
