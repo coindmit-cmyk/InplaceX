@@ -207,23 +207,31 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
       "at": "2026-07-25T18:17:30Z",
       "expires_at": "2026-07-26T02:17:30Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "previous_state": "in_progress",
+      "released_at": "2026-07-25T18:27:36Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
       "at": "2026-07-25T18:18:02Z",
       "expires_at": "2026-07-26T02:18:02Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "previous_state": "in_progress",
+      "released_at": "2026-07-25T18:27:36Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     }
   ]
 }

@@ -3076,7 +3076,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
       "title": "SQLite schema and safe test seam",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -3123,14 +3123,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
       "source_item_id": "INPX-DB-101",
@@ -3352,23 +3352,16 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam-retry-20260725T181640Z",
       "started_at": "2026-07-25T18:16:40Z",
       "lock_expires_at": "2026-07-26T02:16:40Z",
-      "integration_status": "returned_to_worker",
+      "integration_status": "needs_worker_fix",
       "requires_human_attention": false,
       "integration_repair_kind": "behavior_preservation",
       "integration_repair_validation_paths": [],
       "integration_repair_lost_behavior": {
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/GameProgressRepository.kt": [
-          "GameProgressDbHelper",
-          "UNIQUE",
-          "createPlatformTables",
-          "onCreate",
-          "onUpgrade"
-        ],
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/PlatformLocalRepository.kt": [
           "nowMs"
         ]
       },
-      "integration_repair_source_head_sha": "b255b2ceef74aedd02204134314852345960d931",
+      "integration_repair_source_head_sha": "cc8fdbfc09dce12b6b4d596b28eff32825415a94",
       "integration_repair_retry_evidence": [
         {
           "at": "2026-07-25T17:36:38Z",
@@ -3399,11 +3392,24 @@
           "source_head_sha": "b255b2ceef74aedd02204134314852345960d931",
           "from_status": "needs_dispatcher_repair",
           "from_integration_status": "needs_worker_fix"
+        },
+        {
+          "at": "2026-07-25T18:27:36Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam-retry-20260725T181640Z",
+          "worker_result_commit": null,
+          "source_head_sha": "cc8fdbfc09dce12b6b4d596b28eff32825415a94",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/PlatformLocalRepository.kt": [
+              "nowMs"
+            ]
+          }
         }
       ],
       "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
-      "repair_owner": "Worker",
-      "next_action": "Worker must repair the recorded Integrator failure on the pinned source attempt without widening packet scope.",
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
       "status_history": [
         {
           "at": "2026-07-25T17:36:38Z",
@@ -3421,6 +3427,15 @@
           "to": "planned",
           "event": "design_handoff_integration_retry",
           "reason": "Dispatcher returned the same complete design-handoff packet for a bounded Worker retry."
+        },
+        {
+          "at": "2026-07-25T18:27:36Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
         }
       ],
       "integration_repair_retry_count": 1,
@@ -3428,7 +3443,10 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "repaired_packet_metadata_at": "2026-07-25T18:02:47Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
@@ -4414,7 +4432,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
       "title": "Modular Ktor backend and health contract",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -4465,14 +4483,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
       "source_item_id": "INPX-BE-410",
@@ -4703,11 +4721,31 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
       "started_at": "2026-07-25T18:17:30Z",
       "lock_expires_at": "2026-07-26T02:17:30Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "ec76a84e8d38f69e277d8a54871baacd77618547",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T18:27:36Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
+      "worker_result_commit": "2e9c7e8cec2785be6aad09f73eeed25c5667c6d6",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21_20260725T182547Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T18:27:36Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
@@ -4864,7 +4902,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
       "title": "Authoritative duel aggregate",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -4915,14 +4953,14 @@
         "bash gradlew :InplaceX-bot-core:test",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
       "source_item_id": "INPX-BE-413",
@@ -5160,11 +5198,31 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
       "started_at": "2026-07-25T18:18:02Z",
       "lock_expires_at": "2026-07-26T02:18:02Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "a903afb2e7ab1e1c023830d3379e742a0de0dc8d",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T18:27:36Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
+      "worker_result_commit": "ac2255f5cc9f09816c151eb3ae59fdb8040dfa89",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24_20260725T182231Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T18:27:36Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
