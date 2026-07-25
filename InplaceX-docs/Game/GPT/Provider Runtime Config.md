@@ -2,9 +2,12 @@
 
 ## Source of Provider IDs
 
-- provider ids are resolved from `local.properties` during Android build
-- `app/build.gradle.kts` exports them as `BuildConfig` string fields
-- ads app id also flows into `AndroidManifest.xml` via `manifestPlaceholders`
+- provider ids are resolved from `local.properties` during Android build and are scoped to a build variant
+- debug reads `provider.debug.*` keys and supplies Google test ad ids plus sandbox product defaults when those keys are absent
+- release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
+- `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields
+- the ads app id also flows into `AndroidManifest.xml` via variant-specific `manifestPlaceholders`
+- shared `defaultConfig` contains no sandbox provider mode, test ad id, or mock billing product default
 
 ## Canonical BuildConfig Fields
 
@@ -38,10 +41,9 @@
 ## Runtime Adapter Layer
 
 - `ProviderServicesFactory.create(...)` is the canonical entry point
-- `SANDBOX` environment returns stub services
-- `LIVE` environment returns SDK-ready adapters:
-  - `GooglePlayAuthService`
-  - `AdMobService`
-  - `GooglePlayBillingService`
+- the factory is selected by the compile-time Android variant, not by the runtime environment string
+- debug returns stub services for local test flows
+- release returns `GooglePlayAuthService`, `AdMobService`, and `GooglePlayBillingService`; before their SDK integrations exist, they fail closed and do not turn configured strings into provider success
+- a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
-These adapters are intentionally scaffolds right now. Later implementation should fill in SDK calls without changing the app-facing interfaces.
+Later implementation should fill in SDK calls without changing the app-facing interfaces and must preserve the fail-closed behavior for absent or failed provider responses.

@@ -54,5 +54,7 @@ This is intentionally separate from permanent hint inventory.
 ## Integration Rule
 
 - game code uses platform contracts only
-- current implementation uses `StubGooglePlayAuthService`, `StubAdService`, and `StubBillingService`
-- later SDK integration must preserve these interfaces
+- debug builds use `StubGooglePlayAuthService`, `StubAdService`, and `StubBillingService`
+- release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
+- until the actual provider SDK integration is complete, release adapters fail closed: sign-in stays signed out, purchases return `false`, and ad methods return `false`; caller state must change only after a successful contract result
+- later SDK integration must preserve these interfaces and may enable release operations only after the SDK proves the provider result

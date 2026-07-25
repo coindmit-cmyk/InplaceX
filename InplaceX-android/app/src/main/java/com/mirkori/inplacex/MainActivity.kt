@@ -373,7 +373,9 @@ class MainActivity : ComponentActivity() {
                                 progressState = progressState,
                                 onGooglePlaySignIn = {
                                     val session = authService.signInWithGooglePlay()
-                                    progressState = progressRepository.signInWithGooglePlay(session.playerName)
+                                    if (session.isSignedIn) {
+                                        progressState = progressRepository.signInWithGooglePlay(session.playerName)
+                                    }
                                 },
                                 onGooglePlaySignOut = {
                                     authService.signOut()

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Isolated sandbox provider stubs and test identifiers to the debug Android variant. Release provider wiring now fails closed until real Google Play, Billing, and AdMob SDK results are integrated.
 - Added closed backend session read contracts with deterministic 64 KiB JSON
   frames, strict bounded JSON scanning, server-keyed secret fingerprints, and
   pseudonymous read-log attributes. Client intents, authenticated actor binding,

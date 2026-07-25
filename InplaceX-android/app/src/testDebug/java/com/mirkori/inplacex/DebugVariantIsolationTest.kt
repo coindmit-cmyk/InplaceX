@@ -32,6 +32,9 @@ class DebugVariantIsolationTest {
             "com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreenKt.class",
             "com/mirkori/inplacex/ui/screens/game/GameDebugAdSlotKt.class",
             "com/mirkori/inplacex/ui/screens/game/presentation/GameDebugAdSlotContentKt.class",
+            "com/mirkori/inplacex/platform/services/StubGooglePlayAuthService.class",
+            "com/mirkori/inplacex/platform/services/StubAdService.class",
+            "com/mirkori/inplacex/platform/services/StubBillingService.class",
         )
     }
 }

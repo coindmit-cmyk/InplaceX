@@ -41,27 +41,40 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"${localProp("provider.environment", "sandbox")}\"")
-        buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.googlePlay.webClientId", "")}\"")
-        buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.googlePlay.gamesProjectId", "")}\"")
-        buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.googlePlay.serverClientId", "")}\"")
-        buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.ads.admobAppId", "ca-app-pub-3940256099942544~3347511713")}\"")
-        buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.ads.banner.game", "ca-app-pub-3940256099942544/6300978111")}\"")
-        buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.ads.rewarded.general", "ca-app-pub-3940256099942544/5224354917")}\"")
-        buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.ads.interstitial.postMatch", "ca-app-pub-3940256099942544/1033173712")}\"")
-        buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.billing.removeAdsProductId", "remove_ads")}\"")
-        buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.billing.proSubscriptionId", "pro_subscription")}\"")
-        buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
-
-        manifestPlaceholders["admobAppId"] = localProp(
-            "provider.ads.admobAppId",
-            "ca-app-pub-3940256099942544~3347511713"
-        )
     }
 
     buildTypes {
+        getByName("debug") {
+            buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
+            buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.serverClientId", "")}\"")
+            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.debug.ads.admobAppId", "ca-app-pub-3940256099942544~3347511713")}\"")
+            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.banner.game", "ca-app-pub-3940256099942544/6300978111")}\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.rewarded.general", "ca-app-pub-3940256099942544/5224354917")}\"")
+            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.interstitial.postMatch", "ca-app-pub-3940256099942544/1033173712")}\"")
+            buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.debug.billing.removeAdsProductId", "remove_ads")}\"")
+            buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proSubscriptionId", "pro_subscription")}\"")
+            buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
+            manifestPlaceholders["admobAppId"] = localProp(
+                "provider.debug.ads.admobAppId",
+                "ca-app-pub-3940256099942544~3347511713",
+            )
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"live\"")
+            buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.release.googlePlay.serverClientId", "")}\"")
+            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.release.ads.admobAppId", "")}\"")
+            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.banner.game", "")}\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.rewarded.general", "")}\"")
+            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
+            buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
+            buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proPlusSubscriptionId", "")}\"")
+            manifestPlaceholders["admobAppId"] = localProp("provider.release.ads.admobAppId", "")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
