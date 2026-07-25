@@ -5202,8 +5202,8 @@
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
-      "title": "Lint cleanup and blocking quality gate",
-      "status": "in_progress",
+      "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5243,7 +5243,8 @@
       "acceptance_criteria": [
         "Current lint errors are fixed without blanket suppression.",
         "Unit, lint, UI smoke and release assemble become blocking CI checks.",
-        "Artifact version and signing status are explicitly reported."
+        "Artifact version and signing status are explicitly reported.",
+        "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label."
       ],
       "checks": [
         "bash gradlew verifyProject",
@@ -5251,7 +5252,7 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5287,6 +5288,10 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
+        "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
+        "Run verifyProject, lint and assembleRelease yourself in that environment; do not leave mandatory checks to the Integrator.",
+        "Derive APK signing state with apksigner or an equivalent Android signing verifier. Do not trust a --signing-status argument or static workflow label.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5464,7 +5469,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
       "started_at": "2026-07-25T22:31:32Z",
       "lock_expires_at": "2026-07-26T06:31:32Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "retry_count": 2,
+      "last_rejected_candidate": "56dba7020bfc2a37a2b73f269f328a69146c2e59",
+      "status_reason": "56dba70 preserved but rejected: required Gradle gates were not run in the installed AiStudio SDK environment and signing status was caller-supplied"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
@@ -9835,8 +9842,8 @@
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
-      "title": "S25B authoritative command transition application",
-      "status": "in_progress",
+      "title": "S25B secure authoritative transition and actor-binding retry",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9873,6 +9880,9 @@
         "External commands contain only typed intent and never caller-authored snapshot, event, score, phase, winner or result.",
         "The application service binds a trusted actor to a session participant, loads current state, enforces phase and turn ownership, and computes the transition with the authoritative duel aggregate.",
         "Only an internally constructed validated transition can cross into persistence.",
+        "The repository port and validated transition contain no plaintext secret, raw guess, SensitiveDuelDigits or replayable raw aggregate history; only validated viewer-neutral public state, ordered event, result, revision and server-derived fingerprint may cross the persistence boundary.",
+        "No raw String or UUID factory can mint a trusted actor. Actor binding must consume an authentication-bound principal capability and verify current session membership; if current auth contracts cannot prove that boundary, stop with needs_worker_fix instead of inventing trust.",
+        "Secret and guess command values are never copied into additional immutable Strings, logs, snapshots, events, results or persistence records; mutable temporary buffers are zeroed in finally.",
         "Adversarial tests reject spoofed actors, stale revisions, out-of-turn moves, forged outcomes, config/history mutation and commands after terminal phase.",
         "Domain and application responsibilities remain in focused files and no new production file exceeds 400 lines."
       ],
@@ -9881,7 +9891,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -9913,6 +9923,12 @@
       "dependency_reconciled_at": "2026-07-25T22:25:48Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
+        "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
+        "Treat local-only rejected WIP b68c9f1 as negative evidence only; do not reuse its plaintext state, String(digits) conversions or TrustedSessionActor.established(String) factory.",
+        "Keep every persistence-facing value free of plaintext secrets and guesses. The authoritative transition may expose only validated public state/event/result, revision and canonical server-derived fingerprint.",
+        "Do not add a raw actor-id constructor or factory. Bind the actor through an authentication-proven principal plus session-membership resolver, and add hostile tests proving arbitrary UUID strings cannot mint authority.",
+        "If existing S24 DuelMatch or current auth contracts make the no-plaintext or proven-principal boundary impossible inside allowed_paths, stop and return needs_worker_fix with the exact missing contract instead of duplicating the engine or weakening security.",
+        "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21 and JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -10059,6 +10075,9 @@
         "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
       ],
       "regression_guards": [
+        "Reject any repository state or validated transition that contains SensitiveDuelDigits, secret plaintext, raw guess text or full private aggregate history.",
+        "Reject any TrustedSessionActor or equivalent factory callable with only String, UUID or caller-controlled payload data.",
+        "Reject any new immutable secret copy such as String(charArray) and any mutable secret buffer not zeroed in finally.",
         "Compare changed code against current develop before finalizing.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
@@ -10076,7 +10095,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
       "started_at": "2026-07-25T22:25:47Z",
       "lock_expires_at": "2026-07-26T06:25:47Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "retry_count": 1,
+      "last_rejected_candidate": "b68c9f1bec5d1f86b301634b08aeae15e5d377c5",
+      "status_reason": "b68c9f1 preserved but rejected for plaintext repository state, immutable secret copies and a forgeable raw actor factory"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
