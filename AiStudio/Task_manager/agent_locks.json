@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:11:27Z",
+  "updated_at": "2026-07-25T17:11:55Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -70,6 +70,16 @@
       "released_at": "2026-07-25T17:10:45Z",
       "released_by": "auto-integrator",
       "release_reason": "direct integration finalized"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
+      "at": "2026-07-25T17:11:55Z",
+      "expires_at": "2026-07-26T01:11:55Z",
+      "notes": "central runner claim"
     }
   ]
 }
