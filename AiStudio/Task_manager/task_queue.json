@@ -6762,7 +6762,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -6789,35 +6789,55 @@
       ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
-        "InplaceX-backend/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md"
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+        "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+        "docs/reports/workers/**",
+        "CHANGELOG.md"
       ],
       "forbidden_paths": [
+        "InplaceX-backend/src/main/resources/db/migration/V1__create_backend_persistence.sql",
+        "InplaceX-backend/src/main/resources/db/migration/V2__add_identity_profile_and_save_storage.sql",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "schemas/online/v1/**",
+        "InplaceX-android/**",
+        "ops/**",
         ".git/**",
         ".env*",
         "local.properties",
         "**/*.key",
-        "**/*.pem"
+        "**/*.pem",
+        "**/*.jks",
+        "**/*.keystore"
       ],
       "acceptance_criteria": [
         "Duplicate command ids are safe and version conflicts are explicit.",
         "Committed state and ordered events survive process restart.",
-        "Reconnect returns a bounded authoritative snapshot without secret leakage."
+        "Reconnect returns one transactionally consistent bounded result: contiguous replay, snapshot plus strictly later events, or an explicit replay gap.",
+        "Public snapshots and events use a closed validated schema, enforce the 64 KiB frame limit and never contain contract-forbidden data.",
+        "A duplicate command returns its original immutable result after later session changes and actor-scoped idempotency conflicts are explicit.",
+        "The replacement V3 migration and concurrency behavior are proven against PostgreSQL, not only H2.",
+        "Public reconnect durability is not described as full active-match recovery unless encrypted secret persistence and aggregate rehydration are also proven."
       ],
       "checks": [
         "bash gradlew :InplaceX-backend:test",
+        "bash gradlew verifyProject",
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "fresh retry packet incorporates independent test failures, security review and PostgreSQL/concurrency gates",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "source_item_id": "INPX-BE-414",
@@ -6825,10 +6845,14 @@
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
         "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
         "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
       ],
       "input_docs": [
-        "InplaceX-docs/Backend/Ktor Architecture.md"
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "docs/reports/integration/S25_REPAIR_SPEC_20260725.md"
       ],
       "provenance": [
         {
@@ -6846,6 +6870,9 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md completely and treat every mandatory test and evidence item as part of this retry.",
+        "Use the current origin/develop as the code base; preserve rejected result c2f3146 only as evidence and replace its unintegrated candidate V3 rather than adding V4.",
+        "Set JAVA_HOME=/home/main/.local/jdk21 and use /home/main/.local/jdk11 as the Gradle Java 11 toolchain before running checks.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -6874,6 +6901,14 @@
       },
       "doc_refs": [
         {
+          "path": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
+          "purpose": "mandatory fresh retry specification and independent review findings"
+        },
+        {
+          "path": "InplaceX-docs/Backend/Online Contracts.md",
+          "purpose": "authoritative idempotency, reconnect, redaction and frame-size contract"
+        },
+        {
           "path": "InplaceX-docs/Backend/Ktor Architecture.md",
           "purpose": "required context"
         },
@@ -6891,14 +6926,34 @@
         }
       ],
       "code_refs": [
-        "InplaceX-backend/**"
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+        "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/**"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
         "code_refs": [
-          "InplaceX-backend/**"
+          "InplaceX-backend/build.gradle.kts",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+          "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/**"
         ],
         "doc_refs": [
+          {
+            "path": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
+            "purpose": "mandatory fresh retry specification and independent review findings"
+          },
+          {
+            "path": "InplaceX-docs/Backend/Online Contracts.md",
+            "purpose": "authoritative idempotency, reconnect, redaction and frame-size contract"
+          },
           {
             "path": "InplaceX-docs/Backend/Ktor Architecture.md",
             "purpose": "required context"
@@ -6937,16 +6992,38 @@
         "base_branch": "develop",
         "base_ref": "origin/develop",
         "allowed_paths": [
-          "InplaceX-backend/**"
+          "InplaceX-backend/build.gradle.kts",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+          "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+          "docs/reports/workers/**",
+          "CHANGELOG.md"
         ],
         "forbidden_paths": [
+          "InplaceX-backend/src/main/resources/db/migration/V1__create_backend_persistence.sql",
+          "InplaceX-backend/src/main/resources/db/migration/V2__add_identity_profile_and_save_storage.sql",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "schemas/online/v1/**",
+          "InplaceX-android/**",
+          "ops/**",
           ".git/**",
           ".env*",
           "local.properties",
           "**/*.key",
-          "**/*.pem"
+          "**/*.pem",
+          "**/*.jks",
+          "**/*.keystore"
         ],
-        "context_docs": [],
+        "context_docs": [
+          "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "InplaceX-docs/Backend/Ktor Architecture.md"
+        ],
         "source_file": null,
         "worker_source_branch": null
       },
@@ -6954,6 +7031,7 @@
         "changed_paths_must_match_allowed_paths": true,
         "required_checks": [
           "bash gradlew :InplaceX-backend:test",
+          "bash gradlew verifyProject",
           "git diff --check"
         ],
         "worker_report_required": true,
@@ -6966,6 +7044,12 @@
       "script_actions": [
         {
           "command": "bash gradlew :InplaceX-backend:test",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew verifyProject",
           "required": true,
           "purpose": "worker validation evidence",
           "on_failure": "stop and return needs_worker_fix with command output"
@@ -6988,15 +7072,21 @@
       ],
       "regression_guards": [
         "Compare changed code against current develop before finalizing.",
+        "Do not weaken or delete legacy JdbcPersistence tests; make every existing and new backend test pass.",
+        "Do not persist or replay arbitrary JSON, plaintext secrets, tokens, provider payloads, guesses or raw request bodies.",
+        "Prove migration behavior against PostgreSQL/Testcontainers and prove concurrent commit and reconnect behavior.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
+        "Rejected worker result c2f3146 is preserved evidence only and must not be integrated wholesale.",
+        "Integrator must run the PostgreSQL migration, concurrency, original-result retry and redaction corpus gates from the repair specification.",
+        "If encrypted secret persistence and match aggregate rehydration are not in scope, describe the delivered boundary as durable public reconnect state and create a separate blocking design task for full active-match recovery.",
         "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "repaired_packet_at": "2026-07-25T18:50:57Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_at": "2026-07-25T19:54:00Z",
+      "repaired_packet_by": "Codex dispatcher independent review",
       "context_docs": [
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
@@ -7040,12 +7130,34 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as partial"
       },
-      "not_worker_ready_reason": "worker explicitly reported required checks as partial",
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect",
       "commits": [
         "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e"
       ],
-      "integration_status": "needs_worker_fix"
+      "integration_status": "needs_worker_fix",
+      "repair_spec": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
+      "worker_ready_promotion_history": [
+        {
+          "at": "2026-07-25T19:54:00Z",
+          "by": "Codex dispatcher independent review",
+          "previous_status": "needs_worker_fix",
+          "previous_integration_status": "needs_worker_fix",
+          "worker_result_commit": "c2f3146b9397bfab9a8ee049bedd94d8bc16ee1e",
+          "event": "worker_fix_requeued",
+          "reason": "fresh retry packet adds exact security, migration, PostgreSQL, concurrency, replay and immutable-result gates"
+        }
+      ],
+      "status_history": [
+        {
+          "at": "2026-07-25T19:54:00Z",
+          "by": "Codex dispatcher independent review",
+          "from": "needs_worker_fix",
+          "to": "planned",
+          "event": "worker_fix_requeued",
+          "next_owner": "worker_pool",
+          "reason": "independently reviewed fresh retry packet is worker ready"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
