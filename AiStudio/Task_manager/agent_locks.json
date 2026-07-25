@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:00:33Z",
+  "updated_at": "2026-07-25T18:03:33Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -152,6 +152,16 @@
       "released_at": "2026-07-25T18:00:33Z",
       "released_by": "sync_worker_results.py",
       "release_reason": "worker result synced and returned from worker lane"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior-retry-20260725T180333Z",
+      "at": "2026-07-25T18:03:33Z",
+      "expires_at": "2026-07-26T02:03:33Z",
+      "notes": "central runner claim"
     }
   ]
 }
