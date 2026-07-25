@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:02:41Z",
+  "updated_at": "2026-07-25T17:04:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -43,6 +43,16 @@
       "released_at": "2026-07-25T16:59:53Z",
       "released_by": "auto-integrator",
       "release_reason": "direct integration finalized"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+      "at": "2026-07-25T17:04:00Z",
+      "expires_at": "2026-07-26T01:04:00Z",
+      "notes": "central runner claim"
     }
   ]
 }
