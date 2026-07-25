@@ -3,6 +3,7 @@
 ## 2026-07-25
 
 ### Added
+- Added a GitHub Actions CI foundation with Java 21 Gradle launcher, Java 11 project toolchains, identified debug artifacts, and visible non-blocking instrumentation/release checks.
 - Added the InplaceX Design System v2 direction, Compose UI contract, and a visual concept for the Home and Race screens.
 - Added a planning-only AiStudio handoff and dependency-aware finalization backlog covering preservation, UI migration, match-contract convergence, online backend, VPS staging, E2E, and release hardening.
 - Added a stable semantic color-token set for the Android client.

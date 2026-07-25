@@ -1,0 +1,128 @@
+name: InplaceX CI
+
+on:
+  push:
+    branches:
+      - develop
+      - production
+      - "release/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inplacex-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: >-
+    -Dorg.gradle.java.installations.auto-detect=true
+    -Dorg.gradle.java.installations.auto-download=true
+    -Dfile.encoding=UTF-8
+
+jobs:
+  verify:
+    name: Unit verification and debug artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21 launcher
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: sdkmanager --install "platform-tools" "platforms;android-36"
+
+      - name: Verify JVM launcher and toolchains
+        run: |
+          java -version
+          ./gradlew --version
+          ./gradlew -q javaToolchains
+
+      - name: Run unit verification
+        run: ./gradlew verifyProject
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Write artifact identity
+        id: artifact_identity
+        run: |
+          bash scripts/ci/artifact_identity.sh \
+            --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk \
+            --output-dir build/ci-artifacts
+
+      - name: Upload identified debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inplacex-debug-artifact
+          path: build/ci-artifacts
+          if-no-files-found: error
+          retention-days: 14
+
+  instrumentation:
+    name: Instrumentation checks (non-blocking)
+    if: ${{ always() }}
+    needs: verify
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 launcher
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: sdkmanager --install "platform-tools" "platforms;android-36"
+
+      - name: Build and run instrumentation checks
+        run: ./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest
+
+  release:
+    name: Release checks (non-blocking)
+    if: ${{ always() }}
+    needs: verify
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 launcher
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: sdkmanager --install "platform-tools" "platforms;android-36"
+
+      - name: Assemble unsigned release candidate
+        run: ./gradlew :app:assembleRelease

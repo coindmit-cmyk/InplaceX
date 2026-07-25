@@ -34,6 +34,16 @@ InplaceX — Kotlin/Gradle проект логической игры на уг�
 
 `verifyProject` запускает backend, bot-core, logging и Android debug unit tests. `assembleDebug` собирает Android debug APK. `cleanLocalDiagnostics` удаляет локальные logcat dumps, heap dumps и screenshot captures.
 
+## CI и артефакты
+
+GitHub Actions запускает blocking-проверки `verifyProject` и `assembleDebug` с
+Java 21 launcher и Java 11 project toolchains. Debug APK сопровождается
+манифестом версии, полного commit SHA и SHA-256; детали описаны в
+[`docs/automation/CI_FOUNDATION.md`](docs/automation/CI_FOUNDATION.md).
+
+Instrumentation и release checks пока отображаются как non-blocking jobs до
+завершения выделенных задач.
+
 ## Рабочее разделение
 
 - Gameplay, UI, mobile integration: `InplaceX-android`.
