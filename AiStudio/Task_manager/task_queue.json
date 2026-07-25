@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:45:55Z",
+  "updated_at": "2026-07-25T22:52:12Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5847,7 +5847,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
       "title": "Retry S19 variant provider wiring and release fail-closed policy",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5906,7 +5906,7 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -6143,10 +6143,10 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/release-provider-fail-closed-policy",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/release-provider-fail-closed-policy",
-      "started_at": "2026-07-25T22:45:55Z",
-      "lock_expires_at": "2026-07-26T06:45:55Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-wiring-and-release-fa-retry-20260725T225212Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-wiring-and-release-fa-retry-20260725T225212Z",
+      "started_at": "2026-07-25T22:52:12Z",
+      "lock_expires_at": "2026-07-26T06:52:12Z",
       "retry_count": 1,
       "abandoned_claims": [
         {
@@ -6154,7 +6154,7 @@
           "reason": "clean stopped attempt had an incomplete allowed-path packet; preserve and force a fresh repaired retry branch"
         }
       ],
-      "status_reason": "clean first attempt stopped before edits; packet scope repaired for actual provider contracts, variant wiring, tests and canonical documentation"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
