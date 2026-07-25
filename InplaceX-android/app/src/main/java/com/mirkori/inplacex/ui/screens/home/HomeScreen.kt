@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.common.BottomReserveMode
 import com.mirkori.inplacex.ui.common.ScreenBottomReserve
 
@@ -34,6 +35,7 @@ fun HomeScreen(
     paddingValues: PaddingValues,
     onOpenRaceSetup: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val navBar = WindowInsets.navigationBars.asPaddingValues()
 
@@ -90,14 +92,14 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.size(18.dp))
 
                     Text(
-                        text = "InplaceX",
+                        text = strings.text("home.title"),
                         style = MaterialTheme.typography.headlineMedium
                     )
 
                     Spacer(modifier = Modifier.size(8.dp))
 
                     Text(
-                        text = "Главный экран. Отсюда идём в настройку матча и дальше в экран гонки.",
+                        text = strings.text("home.description"),
                         style = MaterialTheme.typography.bodyLarge
                     )
 
@@ -107,7 +109,7 @@ fun HomeScreen(
                         onClick = onOpenRaceSetup,
                         modifier = Modifier.widthIn(min = 220.dp)
                     ) {
-                        Text("Гонка")
+                        Text(strings.text("mode.pve.title"))
                     }
                 }
             }

@@ -12,11 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun PvpModesScreen(
     onBack: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -29,12 +31,12 @@ fun PvpModesScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "PvP режимы",
+                text = strings.text("home.pvp.screen.title"),
                 style = MaterialTheme.typography.headlineSmall
             )
 
             Text(
-                text = "Здесь потом будут режимы с друзьями и онлайн.",
+                text = strings.text("home.pvp.screen.description"),
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -42,21 +44,21 @@ fun PvpModesScreen(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text("Играть с другом")
+                Text(strings.text("home.pvp.friend"))
             }
 
             FilledTonalButton(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text("Онлайн матч")
+                Text(strings.text("home.pvp.online"))
             }
 
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.fillMaxWidth(fraction = 0.42f)
             ) {
-                Text("Назад")
+                Text(strings.text("top.back"))
             }
         }
     }

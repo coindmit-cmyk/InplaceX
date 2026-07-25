@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 enum class BottomReserveMode {
     MENU,
@@ -33,6 +34,7 @@ fun ScreenBottomReserve(
     onMenuPlayClick: (() -> Unit)? = null,
     onMenuProfileClick: (() -> Unit)? = null
 ) {
+    val strings = LocalAppStrings.current
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -53,19 +55,19 @@ fun ScreenBottomReserve(
                         onClick = { onMenuHomeClick?.invoke() },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Главная")
+                        Text(strings.text("section.home.short"))
                     }
                     FilledTonalButton(
                         onClick = { onMenuPlayClick?.invoke() },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Играть")
+                        Text(strings.text("mode.pve.title"))
                     }
                     FilledTonalButton(
                         onClick = { onMenuProfileClick?.invoke() },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Профиль")
+                        Text(strings.text("section.profile.short"))
                     }
                 }
             }
@@ -79,7 +81,7 @@ fun ScreenBottomReserve(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Нижний резерв экрана\nпод рекламу / системный блок",
+                        text = strings.text("home.reserve.ad"),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -95,7 +97,7 @@ fun ScreenBottomReserve(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Premium-заглушка\nздесь может быть чистый нижний блок",
+                        text = strings.text("home.reserve.premium"),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyMedium
                     )

@@ -12,11 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun PveModesScreen(
     onBack: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -29,12 +31,12 @@ fun PveModesScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "PvE режимы",
+                text = strings.text("home.pve.screen.title"),
                 style = MaterialTheme.typography.headlineSmall
             )
 
             Text(
-                text = "Здесь потом будут режимы против бота и одиночные режимы.",
+                text = strings.text("home.pve.screen.description"),
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -42,21 +44,21 @@ fun PveModesScreen(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text("Гонка с ботом")
+                Text(strings.text("home.pve.race"))
             }
 
             FilledTonalButton(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text("Кампания")
+                Text(strings.text("home.pve.campaign"))
             }
 
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.fillMaxWidth(fraction = 0.42f)
             ) {
-                Text("Назад")
+                Text(strings.text("top.back"))
             }
         }
     }

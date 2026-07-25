@@ -247,7 +247,7 @@ fun HomeRootScreen(
 
                 if (botTurn.score == pvpMode.config.codeLength) {
                     onRecordPvpResult(false)
-                    duelResultText = "Opponent guessed your secret. Last bot score: ${botTurn.score}"
+                    duelResultText = strings.homeDuelResultBotWin(botTurn.score)
                     showDuelResultDialog = true
                     onScreenStateChange(HomeScreenState.ROOT)
                     onDebugSecretChange(null)
@@ -259,14 +259,15 @@ fun HomeRootScreen(
             GameFieldScreen(
                 title = "",
                 modeLabel = "",
-                turnLabel = if (duelTurnOwner == DuelTurnOwner.PLAYER) "Player turn" else "Opponent turn",
-                secondaryStatusText = buildString {
-                    if (botLastScore >= 0) {
-                        append("Opponent last score: $botLastScore")
-                    } else {
-                        append("Opponent has not moved yet")
-                    }
-                    append(" | Confirmed: $botConfirmedPositions/${pvpMode.config.codeLength}")
+                turnLabel = if (duelTurnOwner == DuelTurnOwner.PLAYER) {
+                    strings.text("home.duel.turn.player")
+                } else {
+                    strings.text("home.duel.turn.opponent")
+                },
+                secondaryStatusText = if (botLastScore >= 0) {
+                    strings.homeDuelStatus(botLastScore, botConfirmedPositions, pvpMode.config.codeLength)
+                } else {
+                    strings.homeDuelWaiting(botConfirmedPositions, pvpMode.config.codeLength)
                 },
                 params = pvpMode.toFieldParams(TypeGame.DuelMatch),
                 onBack = { showExitDialog = true },
@@ -287,7 +288,7 @@ fun HomeRootScreen(
                     if (duelTurnOwner != DuelTurnOwner.PLAYER) return@GameFieldScreen
                     if (isWin) {
                         onRecordPvpResult(true)
-                        duelResultText = "You guessed the opponent secret first."
+                        duelResultText = strings.text("home.duel.result.player_win")
                         showDuelResultDialog = true
                         onScreenStateChange(HomeScreenState.ROOT)
                         onDebugSecretChange(null)
@@ -303,8 +304,8 @@ fun HomeRootScreen(
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text("Exit current game?") },
-            text = { Text("The current match will be closed and you will return to the home screen.") },
+            title = { Text(strings.text("home.dialog.exit.title")) },
+            text = { Text(strings.text("home.dialog.exit.text")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -313,12 +314,12 @@ fun HomeRootScreen(
                         onDebugSecretChange(null)
                     }
                 ) {
-                    Text("Exit")
+                    Text(strings.text("home.dialog.exit.confirm"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("Stay")
+                    Text(strings.text("home.dialog.exit.stay"))
                 }
             }
         )
@@ -327,11 +328,11 @@ fun HomeRootScreen(
     if (showDuelResultDialog) {
         AlertDialog(
             onDismissRequest = { showDuelResultDialog = false },
-            title = { Text("Duel result") },
+            title = { Text(strings.text("home.dialog.result.title")) },
             text = { Text(duelResultText) },
             confirmButton = {
                 TextButton(onClick = { showDuelResultDialog = false }) {
-                    Text("OK")
+                    Text(strings.text("home.dialog.result.ok"))
                 }
             }
         )
@@ -343,12 +344,12 @@ fun HomeRootScreen(
                 showPreMatchDialog = false
                 preMatchPhase = PreMatchPhase.SECRET_SELECTION
             },
-            title = { Text("Secret setup") },
+            title = { Text(strings.text("home.dialog.setup.title")) },
             text = {
                 when (preMatchPhase) {
                     PreMatchPhase.SECRET_SELECTION -> {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("Set your secret before the duel starts.")
+                            Text(strings.text("home.dialog.setup.secret_prompt"))
                             OutlinedTextField(
                                 value = preMatchSecretInput,
                                 onValueChange = { value ->
@@ -356,26 +357,26 @@ fun HomeRootScreen(
                                     preMatchError = null
                                 },
                                 singleLine = true,
-                                label = { Text("Secret (${pvpMode.config.codeLength} digits)") }
+                                label = { Text(strings.homeSecretLabel(pvpMode.config.codeLength)) }
                             )
-                            Text("Time left: ${preMatchTimeoutLeft}s")
+                            Text(strings.homeTimeLeft(preMatchTimeoutLeft))
                             preMatchError?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
                         }
                     }
 
                     PreMatchPhase.WAITING_OPPONENT_SECRET -> {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("Waiting for opponent secret...")
-                            Text("Bot will be ready in ${botWaitLeft}s")
+                            Text(strings.text("home.dialog.setup.wait_opponent"))
+                            Text(strings.homeBotReady(botWaitLeft))
                         }
                     }
 
                     PreMatchPhase.CANCELLED_TIMEOUT -> {
-                        Text("Secret selection timed out. Match was cancelled.")
+                        Text(strings.text("home.dialog.setup.timeout"))
                     }
 
                     else -> {
-                        Text("Preparing match...")
+                        Text(strings.text("home.dialog.setup.preparing"))
                     }
                 }
             },
@@ -391,15 +392,15 @@ fun HomeRootScreen(
                                     forbidAllSameDigitsGuess = true,
                                 )
                                 if (preMatchSecretInput.length != pvpMode.config.codeLength) {
-                                    preMatchError = "Enter ${pvpMode.config.codeLength} digits"
+                                    preMatchError = strings.homeEnterDigits(pvpMode.config.codeLength)
                                 } else if (!GuessValidator.validate(preMatchSecretInput, preMatchConfig)) {
-                                    preMatchError = "Secret does not match duel rules"
+                                    preMatchError = strings.text("home.dialog.setup.invalid_secret")
                                 } else {
                                     preMatchPhase = PreMatchPhase.WAITING_OPPONENT_SECRET
                                 }
                             }
                         ) {
-                            Text("Confirm")
+                            Text(strings.text("home.dialog.setup.confirm"))
                         }
                     }
 
@@ -410,7 +411,7 @@ fun HomeRootScreen(
                                 preMatchPhase = PreMatchPhase.SECRET_SELECTION
                             }
                         ) {
-                            Text("Close")
+                            Text(strings.text("home.dialog.setup.close"))
                         }
                     }
 
@@ -426,7 +427,7 @@ fun HomeRootScreen(
                         botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
                     }
                 ) {
-                    Text("Cancel")
+                    Text(strings.text("home.dialog.setup.cancel"))
                 }
             }
         )
@@ -475,8 +476,7 @@ private fun HomeSelectionScreen(
                 )
                 SceneSplitStatRow(
                     leftLabel = strings.text("mode.pve.title"),
-                    leftValue = strings.text("home.code_length")
-                        .replace("{count}", pveMode.config.codeLength.toString()),
+                    leftValue = strings.homeCodeLength(pveMode.config.codeLength),
                     rightLabel = strings.text("mode.pvp.title"),
                     rightValue = strings.text("home.duel.kind")
                 )
