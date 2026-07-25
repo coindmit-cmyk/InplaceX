@@ -82,7 +82,7 @@ def candidate_paths(project_root: Path, allowed_paths: list[Any], forbidden_path
             if not path.is_file():
                 continue
             relative = path.relative_to(project_root).as_posix()
-            if any(relative == item or relative.startswith(item[:-3]) for item in forbidden if item.endswith("/**")):
+            if any(relative == item or relative.startswith(item[:-2]) for item in forbidden if item.endswith("/**")):
                 continue
             if relative not in seen:
                 found.append(relative)
