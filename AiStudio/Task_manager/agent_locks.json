@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:32:15Z",
+  "updated_at": "2026-07-25T18:34:13Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -235,6 +235,16 @@
       "released_at": "2026-07-25T18:27:36Z",
       "released_by": "auto-integrator",
       "release_reason": "direct integration finalized"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch",
+      "at": "2026-07-25T18:34:13Z",
+      "expires_at": "2026-07-26T02:34:13Z",
+      "notes": "central runner claim"
     }
   ]
 }
