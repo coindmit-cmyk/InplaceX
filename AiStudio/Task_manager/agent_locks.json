@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:23:11Z",
+  "updated_at": "2026-07-25T17:23:15Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -93,6 +93,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam",
       "at": "2026-07-25T17:23:11Z",
       "expires_at": "2026-07-26T01:23:11Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
+      "at": "2026-07-25T17:23:15Z",
+      "expires_at": "2026-07-26T01:23:15Z",
       "notes": "central runner claim"
     }
   ]
