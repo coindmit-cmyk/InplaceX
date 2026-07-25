@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:03:33Z",
+  "updated_at": "2026-07-25T18:03:36Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -2470,7 +2470,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "title": "Secondary and developer screen localization",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -2523,7 +2523,7 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -2772,10 +2772,10 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization",
-      "started_at": "2026-07-25T17:48:10Z",
-      "lock_expires_at": "2026-07-26T01:48:10Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization-retry-20260725T180336Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization-retry-20260725T180336Z",
+      "started_at": "2026-07-25T18:03:36Z",
+      "lock_expires_at": "2026-07-26T02:03:36Z",
       "worker_result_commit": "8f230f0bd9d4bb03ae623ce3e23db9a6670895e8",
       "worker_result_synced_at": "2026-07-25T18:00:33Z",
       "worker_changed_paths": [
@@ -2804,7 +2804,8 @@
       ],
       "integration_status": "returned_to_worker",
       "repaired_packet_metadata_at": "2026-07-25T18:02:47Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
