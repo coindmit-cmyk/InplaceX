@@ -4,7 +4,7 @@ from __future__ import annotations
 import unittest
 
 from claim_next_task import needs_fresh_retry_branch
-from integrator_direct_merge import detect_behavior_regression
+from integrator_direct_merge import behavior_tokens, detect_behavior_regression
 from pr_readiness_classifier import scope_issues
 
 
@@ -33,6 +33,11 @@ class PathScopeRegressionTests(unittest.TestCase):
 
 
 class BehaviorMoveRegressionTests(unittest.TestCase):
+    def test_constructor_call_is_not_a_method_declaration(self) -> None:
+        self.assertEqual(set(), behavior_tokens("        GameConfig(", "Example.kt"))
+        self.assertEqual({"submit"}, behavior_tokens("    fun submit(guess: String) {", "Example.kt"))
+        self.assertEqual({"submit"}, behavior_tokens("    public void submit(String guess) {", "Example.java"))
+
     def test_symbol_moved_to_another_changed_file_is_preserved(self) -> None:
         before = {
             "GameProgressRepository.kt": [
