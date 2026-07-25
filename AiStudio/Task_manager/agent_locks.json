@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:47:14Z",
+  "updated_at": "2026-07-25T17:48:06Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -125,6 +125,16 @@
       "released_at": "2026-07-25T17:45:12Z",
       "released_by": "auto-integrator",
       "release_reason": "direct integration finalized"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
+      "at": "2026-07-25T17:48:06Z",
+      "expires_at": "2026-07-26T01:48:06Z",
+      "notes": "central runner claim"
     }
   ]
 }
