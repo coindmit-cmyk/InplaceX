@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:09:21Z",
+  "updated_at": "2026-07-25T19:25:45Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -6549,11 +6549,12 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
-      "resolved_dependencies": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23"
+      ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/**",
@@ -6606,7 +6607,9 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T19:25:45Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
@@ -6720,10 +6723,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23"
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
       ],
       "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
       ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
@@ -6777,7 +6780,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T18:50:57Z",
+      "dependency_reconciled_at": "2026-07-25T19:25:45Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -6868,7 +6871,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
       "title": "Local containers migrations and operations runbook",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -6917,11 +6920,11 @@
         "bash gradlew :InplaceX-backend:test",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
@@ -7146,7 +7149,22 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s31/local-containers-migrations-and-operations-runbo",
       "started_at": "2026-07-25T18:54:16Z",
       "lock_expires_at": "2026-07-26T02:54:16Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "finalized_by": "auto-integrator",
+      "finalized_at": "2026-07-25T19:25:33Z",
+      "status_history": [
+        {
+          "at": "2026-07-25T19:25:33Z",
+          "by": "sync_worker_results",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "event log contains finalization_recorded; preserving integrated task state",
+          "event": "finalization_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
@@ -7172,10 +7190,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27"
+      ],
+      "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
-      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "ops/**",
@@ -7226,7 +7245,9 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T19:25:45Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
