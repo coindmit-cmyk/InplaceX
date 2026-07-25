@@ -9906,8 +9906,8 @@
     },
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "title": "S25 prerequisite A verified auth principal and session membership",
-      "status": "in_progress",
+      "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9951,7 +9951,8 @@
       ],
       "acceptance_criteria": [
         "Only verification of signature, HS256 algorithm, issuer, audience, expiry, not-before or issued-at policy, token id, canonical subject and active-account status can create the opaque authenticated principal.",
-        "No public or internal String, UUID, player-id or participant-id constructor or factory can mint the principal or session-bound participant capability.",
+        "No public, internal or synthetic JVM constructor or factory can mint the principal, verified claims, verified membership or session-bound participant capability from String, UUID, player-id, participant-id or Kotlin DefaultConstructorMarker reflection.",
+        "Hostile tests enumerate every declared constructor including synthetic constructors and must actively invoke every accessible raw-value path; tests must never filter isSynthetic.",
         "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
         "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
         "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
@@ -9961,7 +9962,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -9986,6 +9987,8 @@
       "worker_instructions": [
         "Read the S25B blocker report at source_head_sha and both backend canonical documents before editing.",
         "Use current origin/develop as the implementation baseline; the report branch is evidence only.",
+        "Treat rejected WIP 407d563 as negative evidence only. Its Kotlin private constructors compile to public synthetic JVM constructors and its tests incorrectly filter isSynthetic; do not cherry-pick or repeat that design.",
+        "Prefer public authority interfaces implemented by private top-level implementation classes or another JVM shape whose declared constructor surface cannot be invoked with raw values or DefaultConstructorMarker. Verify compiled bytecode with javap and hostile reflection.",
         "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
         "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
         "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
@@ -10114,6 +10117,7 @@
       ],
       "regression_guards": [
         "Reject any principal or participant capability constructible from String, UUID or public value objects.",
+        "Reject any test that filters synthetic constructors, and reject every public synthetic constructor accepting raw identity values directly or through DefaultConstructorMarker.",
         "Reject token or subject values in logs, exceptions, toString or reports.",
         "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
       ],
@@ -10130,7 +10134,16 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
       "started_at": "2026-07-25T23:11:37Z",
       "lock_expires_at": "2026-07-26T07:11:37Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "retry_count": 1,
+      "last_rejected_candidate": "407d563c5bb18881481b00e43b80a3b5a4abf081",
+      "abandoned_claims": [
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
+          "commit": "407d563c5bb18881481b00e43b80a3b5a4abf081",
+          "reason": "rejected and preserved: Kotlin private authority classes exposed forgeable public synthetic JVM constructors and tests filtered isSynthetic"
+        }
+      ],
+      "status_reason": "407d563 preserved but rejected before integration; fresh retry must prove no synthetic JVM constructor bypass"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
