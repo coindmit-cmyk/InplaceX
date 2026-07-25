@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import unittest
 
+from claim_next_task import needs_fresh_retry_branch
 from integrator_direct_merge import detect_behavior_regression
 from pr_readiness_classifier import scope_issues
 
@@ -72,6 +73,21 @@ class BehaviorMoveRegressionTests(unittest.TestCase):
             },
             detect_behavior_regression(before, after),
         )
+
+
+class RetryBranchRegressionTests(unittest.TestCase):
+    def test_design_handoff_integration_retry_gets_fresh_branch(self) -> None:
+        task = {
+            "branch": "AiStudio/Agent/worker/machine/worker/task/original",
+            "status_history": [
+                {
+                    "event": "design_handoff_integration_retry",
+                    "next_owner": "worker_pool",
+                },
+            ],
+        }
+
+        self.assertTrue(needs_fresh_retry_branch(task))
 
 
 if __name__ == "__main__":

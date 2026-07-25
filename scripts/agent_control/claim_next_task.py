@@ -198,6 +198,7 @@ def needs_fresh_retry_branch(task: dict[str, Any]) -> bool:
     status_history = task.get("status_history")
     if isinstance(status_history, list):
         retry_events = {
+            "design_handoff_integration_retry",
             "worker_finalize_failed_routed",
             "worker_finalize_failed_requeued",
             "worker_launch_failed_requeued",
