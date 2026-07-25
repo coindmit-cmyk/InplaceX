@@ -74,6 +74,12 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+        (variantBuilder as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
+    }
+}
+
 dependencies {
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))

@@ -24,13 +24,14 @@ import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
+import com.mirkori.inplacex.VariantSettingsToolsAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsRootScreen(
     currentLanguage: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
-    onOpenDeveloper: () -> Unit,
+    onOpenInternalTools: () -> Unit,
     onClose: () -> Unit
 ) {
     val strings = LocalAppStrings.current
@@ -95,12 +96,7 @@ fun SettingsRootScreen(
                     }
                 }
 
-                TextButton(
-                    onClick = onOpenDeveloper,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(strings.text("settings.developer"))
-                }
+                VariantSettingsToolsAction(onOpen = onOpenInternalTools)
             }
         }
     )

@@ -12,7 +12,6 @@ import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.GameScreen
 import com.mirkori.inplacex.ui.screens.game.presentation.GameAttemptList
-import com.mirkori.inplacex.ui.screens.game.presentation.GameDebugAdSlotContent
 import com.mirkori.inplacex.ui.screens.game.presentation.GamePresentationCallbacks
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldBoostMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldEvent
@@ -207,27 +206,6 @@ internal fun AttemptsModule(
     modifier: Modifier = Modifier,
 ) {
     GameAttemptList(attempts = attempts, modifier = modifier)
-}
-
-@Composable
-fun GameDebugAdSlot(
-    debugSecret: String,
-    openPositionHints: Int,
-    checkDigitHints: Int,
-    checkPositionHints: Int,
-    extraMovesBoosts: Int,
-    extraTimeBoosts: Int,
-    onAddHintsClick: () -> Unit,
-) {
-    GameDebugAdSlotContent(
-        debugSecret = debugSecret,
-        openPositionHints = openPositionHints,
-        checkDigitHints = checkDigitHints,
-        checkPositionHints = checkPositionHints,
-        extraMovesBoosts = extraMovesBoosts,
-        extraTimeBoosts = extraTimeBoosts,
-        onAddHintsClick = onAddHintsClick,
-    )
 }
 
 private fun GameFieldParams.toMatchParameters(autoModeAvailable: Boolean): GameFieldMatchParameters =

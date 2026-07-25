@@ -111,7 +111,6 @@ class GameLocalizationCatalogTest {
     private companion object {
         val scopedSourcePaths = listOf(
             "com/mirkori/inplacex/ui/GameScreen.kt",
-            "com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
             "com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
             "com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
             "com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",

@@ -12,18 +12,18 @@ object StaticLocalizationProvider {
     }
 
     internal fun catalogFor(language: AppLanguage): LocalizationCatalog {
-        val localeCatalogs = when (language) {
-            AppLanguage.RU -> listOf(HomeCatalog.ru, SecondaryCatalog.ru, GameCatalog.ru)
-            AppLanguage.EN -> listOf(HomeCatalog.en, SecondaryCatalog.en, GameCatalog.en)
-        }
-        return aggregateLocalizationCatalogs("${language.name.lowercase()}.all", localeCatalogs)
+        return aggregateLocalizationCatalogs(
+            "${language.name.lowercase()}.all",
+            featureCatalogs(language),
+        )
     }
 
     internal fun featureCatalogs(language: AppLanguage): List<LocalizationCatalog> {
-        return when (language) {
+        val commonCatalogs = when (language) {
             AppLanguage.RU -> listOf(HomeCatalog.ru, SecondaryCatalog.ru, GameCatalog.ru)
             AppLanguage.EN -> listOf(HomeCatalog.en, SecondaryCatalog.en, GameCatalog.en)
         }
+        return commonCatalogs + variantLocalizationCatalogs(language)
     }
 }
 

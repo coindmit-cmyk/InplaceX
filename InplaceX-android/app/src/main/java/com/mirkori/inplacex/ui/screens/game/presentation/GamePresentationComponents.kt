@@ -739,46 +739,6 @@ private fun GameDialogs(
     }
 }
 
-@Composable
-internal fun GameDebugAdSlotContent(
-    debugSecret: String,
-    openPositionHints: Int,
-    checkDigitHints: Int,
-    checkPositionHints: Int,
-    extraMovesBoosts: Int,
-    extraTimeBoosts: Int,
-    onAddHintsClick: () -> Unit,
-) {
-    val strings = LocalAppStrings.current
-    Column(
-        modifier = Modifier.fillMaxSize().padding(8.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(strings.text("game.ad_slot"), textAlign = TextAlign.Center)
-        Text(
-            strings.text("game.debug.secret").replace("{value}", debugSecret),
-            style = MaterialTheme.typography.labelSmall,
-        )
-        Text(
-            strings.text("game.debug.hints")
-                .replace("{open}", openPositionHints.toString())
-                .replace("{digit}", checkDigitHints.toString())
-                .replace("{position}", checkPositionHints.toString()),
-            style = MaterialTheme.typography.labelSmall,
-        )
-        Text(
-            strings.text("game.debug.boosts")
-                .replace("{moves}", extraMovesBoosts.toString())
-                .replace("{time}", extraTimeBoosts.toString()),
-            style = MaterialTheme.typography.labelSmall,
-        )
-        FilledTonalButton(onClick = onAddHintsClick) {
-            Text(strings.text("game.debug.add_hints"))
-        }
-    }
-}
-
 internal fun analysisMarkFor(
     marks: List<GameFieldManualMark>,
     symbol: Char,

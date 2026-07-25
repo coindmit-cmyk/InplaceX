@@ -6,7 +6,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -38,7 +37,6 @@ import com.mirkori.inplacex.ui.background.ScreenBackgroundPreset
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
-import com.mirkori.inplacex.ui.screens.developer.DeveloperRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
@@ -48,7 +46,6 @@ import com.mirkori.inplacex.ui.shell.AppShell
 import com.mirkori.inplacex.ui.shell.AppTopBar
 import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
-import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
@@ -80,10 +77,10 @@ class MainActivity : ComponentActivity() {
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
-                var isDeveloperOpen by rememberSaveable { mutableStateOf(false) }
-                var developerModeEnabled by rememberSaveable { mutableStateOf(false) }
+                var isVariantToolsOpen by rememberSaveable { mutableStateOf(false) }
+                var variantToolsEnabled by rememberSaveable { mutableStateOf(false) }
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
-                var currentDebugSecret by rememberSaveable { mutableStateOf<String?>(null) }
+                var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 var progressState by remember { mutableStateOf(progressRepository.loadState()) }
@@ -112,7 +109,8 @@ class MainActivity : ComponentActivity() {
                 }
                 val isPremium = entitlements.adsDisabled
                 val useUnifiedSceneBackground = !isInGame
-                val shouldShowDebugAdSlot = isInGame && developerModeEnabled
+                val shouldShowVariantBottomSlot =
+                    isInGame && variantToolsBottomSlotEnabled(variantToolsEnabled)
                 val appBackgroundStyle = if (useUnifiedSceneBackground) {
                     ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.Dark)
                 } else {
@@ -122,7 +120,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val bottomMode = when {
-                    isInGame -> if (isPremium && !shouldShowDebugAdSlot) BottomLayerMode.NONE else BottomLayerMode.AD
+                    isInGame -> if (isPremium && !shouldShowVariantBottomSlot) BottomLayerMode.NONE else BottomLayerMode.AD
                     else -> BottomLayerMode.MENU
                 }
 
@@ -132,7 +130,7 @@ class MainActivity : ComponentActivity() {
                         onSectionChange = { section ->
                             currentSection = section
                             isSettingsOpen = false
-                            isDeveloperOpen = false
+                            isVariantToolsOpen = false
                         },
                         bottomMode = bottomMode,
                         topMode = TopLayerMode.OVERLAY,
@@ -142,10 +140,10 @@ class MainActivity : ComponentActivity() {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
                                 coins = progressState.coins,
-                                showBack = isInGame || isDeveloperOpen,
+                                showBack = isInGame || isVariantToolsOpen,
                                 onBackClick = {
                                     when {
-                                        isDeveloperOpen -> isDeveloperOpen = false
+                                        isVariantToolsOpen -> isVariantToolsOpen = false
                                         else -> requestExitGame = true
                                     }
                                 },
@@ -153,10 +151,10 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomAdContent = {
-                            DebugSecretAdSlot(
-                                debugSecret = currentDebugSecret,
+                            VariantBottomAdContent(
+                                inspectionValue = currentInspectionValue,
                                 adsDisabled = progressState.adsDisabled,
-                                developerModeEnabled = developerModeEnabled,
+                                toolsEnabled = variantToolsEnabled,
                             )
                         },
                     ) {
@@ -168,7 +166,7 @@ class MainActivity : ComponentActivity() {
                                     requestExitGame = requestExitGame,
                                     onExitGameConsumed = { requestExitGame = false },
                                     onInGameChange = { inGame -> isInGame = inGame },
-                                    onDebugSecretChange = { currentDebugSecret = it },
+                                    onDebugSecretChange = { currentInspectionValue = it },
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
                                     checkPositionHints = progressState.checkPositionHints,
@@ -239,7 +237,7 @@ class MainActivity : ComponentActivity() {
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },
-                                onDebugSecretChange = { currentDebugSecret = it },
+                                onDebugSecretChange = { currentInspectionValue = it },
                                 openPositionHints = progressState.openPositionHints,
                                 checkDigitHints = progressState.checkDigitHints,
                                 checkPositionHints = progressState.checkPositionHints,
@@ -384,49 +382,14 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        if (isDeveloperOpen) {
-                            Surface(modifier = Modifier.fillMaxSize()) {
-                                DeveloperRootScreen(
-                                    progressState = progressState,
-                                    platformSnapshot = platformLocalRepository.loadPlatformSnapshot(),
-                                    onAddCoins = {
-                                        progressState = progressRepository.addCoins(100)
-                                    },
-                                    onAddHelpers = {
-                                        progressState = progressRepository.addAllHelpers(3)
-                                    },
-                                    onClearBoosts = {
-                                        progressState = progressRepository.clearBoosts()
-                                    },
-                                    onRefillEnergy = {
-                                        if (progressRepository.buyCampaignEnergy(costCoins = 0, amount = progressState.campaignEnergyMax)) {
-                                            progressState = progressRepository.loadState()
-                                        }
-                                    },
-                                    onEnableAdFree = {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
-                                    },
-                                    onDisableAdFree = {
-                                        progressState = progressRepository.deactivateProduct(MonetizationProductType.REMOVE_ADS)
-                                    },
-                                    onEnablePro = {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
-                                    },
-                                    onDisablePro = {
-                                        progressState = progressRepository.deactivateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
-                                    },
-                                    onEnableProPlus = {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
-                                    },
-                                    onDisableProPlus = {
-                                        progressState = progressRepository.deactivateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
-                                    },
-                                )
-                            }
-                            BackHandler(enabled = isDeveloperOpen) {
-                                isDeveloperOpen = false
-                            }
-                        }
+                        VariantToolsSurface(
+                            isOpen = isVariantToolsOpen,
+                            progressState = progressState,
+                            progressRepository = progressRepository,
+                            platformLocalRepository = platformLocalRepository,
+                            onProgressStateChange = { progressState = it },
+                            onClose = { isVariantToolsOpen = false },
+                        )
 
                         if (isSettingsOpen) {
                             SettingsRootScreen(
@@ -434,10 +397,10 @@ class MainActivity : ComponentActivity() {
                                 onLanguageChange = { language ->
                                     currentLanguageName = language.name
                                 },
-                                onOpenDeveloper = {
+                                onOpenInternalTools = {
                                     isSettingsOpen = false
-                                    developerModeEnabled = true
-                                    isDeveloperOpen = true
+                                    variantToolsEnabled = true
+                                    isVariantToolsOpen = true
                                 },
                                 onClose = {
                                     isSettingsOpen = false
