@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:18:00Z",
+  "updated_at": "2026-07-25T20:18:16Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -6892,7 +6892,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "XL",
       "type": "critical-implementation",
@@ -6960,7 +6960,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -7226,12 +7226,12 @@
       ],
       "packet_normalized_at": "2026-07-25T18:51:18Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "worker_id": "auto-worker-5.5",
+      "worker_id": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T200322Z",
-      "started_at": "2026-07-25T20:03:22Z",
-      "lock_expires_at": "2026-07-26T04:03:22Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
+      "started_at": "2026-07-25T20:18:16Z",
+      "lock_expires_at": "2026-07-26T04:18:16Z",
       "worker_result_commit": "229a9f59ab9033e4b75923fdc9ae447092b8eab6",
       "worker_result_synced_at": "2026-07-25T20:15:18Z",
       "worker_changed_paths": [
@@ -7314,7 +7314,8 @@
           "next_owner": "worker_pool",
           "reason": "independently reviewed fresh retry packet is worker ready"
         }
-      ]
+      ],
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T20:16:00Z",
+  "updated_at": "2026-07-25T20:18:16Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -392,6 +392,16 @@
       "released_at": "2026-07-25T20:15:18Z",
       "released_by": "sync_worker_results.py",
       "release_reason": "worker result synced and returned from worker lane"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "state": "in_progress",
+      "by": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
+      "at": "2026-07-25T20:18:16Z",
+      "expires_at": "2026-07-26T04:18:16Z",
+      "notes": "central runner claim"
     }
   ]
 }
