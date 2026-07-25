@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "updated_at": null,
+  "phase2_reference": true,
+  "phase2_active": true,
+  "phase2_activation_approval": {
+    "approved_by": "ai-project-agent-default-policy",
+    "approved_at": "2026-06-09T00:00:00Z",
+    "approval_source": "AGENT-UPD-001 active-by-default adoption",
+    "dry_run_report": null
+  },
+  "phase2_activation_requires": [
+    "owner approval",
+    "valid queue",
+    "valid locks",
+    "worker profiles",
+    "runner config",
+    "remote automation host policy",
+    "remote PC execution host for workers/integrator/finalizer/local LLM",
+    "dry-run report"
+  ],
+  "directives": []
+}

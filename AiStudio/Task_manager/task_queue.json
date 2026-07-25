@@ -1,0 +1,3457 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-07-25T16:21:21Z",
+  "base_branch": "develop",
+  "queue_model": "shared",
+  "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
+  "tasks": [
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+      "title": "PD-INPLACEX-FINAL-20260725-v002",
+      "status": "planned",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": null,
+      "source_depends_on": [],
+      "depends_on": [],
+      "blocked_by": [],
+      "resolved_dependencies": [],
+      "summary": "Parent intake row for a Project Design handoff package. Dispatcher must review children and create complete Worker Packet v2 tasks.",
+      "allowed_paths": [
+        "docs/**",
+        "scripts/**",
+        "schemas/**",
+        "templates/**",
+        "tests/**"
+      ],
+      "forbidden_paths": [
+        "restricted/**"
+      ],
+      "acceptance_criteria": [
+        "Dispatcher reviewed the design handoff and routed/imported/split child task candidates."
+      ],
+      "checks": [
+        "python -m json.tool AiStudio/Task_manager/task_queue.json",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_review",
+      "normalization_status": "candidate_imported",
+      "dispatcher_decision": "needs_dispatcher_review",
+      "dispatcher_decision_reason": "Project Design handoff candidate imported from read-only planner; Dispatcher must review before worker-ready.",
+      "not_worker_ready_reason": "dispatcher review required after design handoff planning",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+      "source_item_id": null,
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01",
+      "title": "Remote managed checkout and Android toolchain",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "delivery.remote-host",
+      "source_depends_on": [],
+      "depends_on": [],
+      "blocked_by": [],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        ".agent/**",
+        "docs/automation/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Remote registry points at an isolated managed checkout of origin/develop.",
+        "Java 21 launches Gradle while modules compile with the Java 11 toolchain.",
+        "Android SDK is explicit and verifyProject plus assembleDebug pass remotely."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_review",
+      "normalization_status": "candidate_imported",
+      "dispatcher_decision": "needs_dispatcher_review",
+      "dispatcher_decision_reason": "Project Design handoff candidate imported from read-only planner; Dispatcher must review before worker-ready.",
+      "not_worker_ready_reason": "dispatcher review required after design handoff planning",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01",
+      "source_item_id": "INPX-HOST-002",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "title": "Characterize current gameplay behavior",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.game-tests",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Tests lock validation feedback, latest-attempt scrolling and the 0000/4060 deduction scenario.",
+        "Hints, boosts, reset, win/loss and manual marks are characterized without testing private functions."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "source_item_id": "INPX-ARC-101",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Game Modes and Rules.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Game Modes and Rules.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
+      "title": "Typed guess validation contract",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "game.validation",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/**",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Validation returns typed reasons and never depends on English message comparison.",
+        "Length, digit, duplicate, all-same, adjacency and triple rules have unit tests.",
+        "A temporary compatible bridge preserves callers until route integration."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-bot-core:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
+      "source_item_id": "INPX-ARC-102",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Match Domain Model.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Match Domain Model.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+      "title": "Pure evidence and deduction engine",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "game.analysis",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/**",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Manual hypotheses, accepted-attempt evidence and proven facts are separate types.",
+        "Inference reaches a deterministic fixpoint and reports typed contradictions.",
+        "The 0000 plus known 4 plus 4060 scenario proves 6 in position three."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-bot-core:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+      "source_item_id": "INPX-ARC-103",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Match Domain Model.md",
+        "InplaceX-docs/Game/Human/Game Modes and Rules.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Match Domain Model.md",
+        "InplaceX-docs/Game/Human/Game Modes and Rules.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+      "title": "Typed match feedback and validated checkpoint",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.match-engine",
+      "source_depends_on": [
+        "INPX-ARC-102"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/engine/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/match/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/core/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Snapshot feedback is typed and corrupted boost text is repaired.",
+        "A validated checkpoint restores secret, phase, attempts and extra moves without regeneration.",
+        "Invalid checkpoints fail closed and secrets never enter logs."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+      "source_item_id": "INPX-ARC-104",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Layer Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Layer Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+      "title": "GameField state holder and SavedState restoration",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.game-state",
+      "source_depends_on": [
+        "INPX-ARC-103",
+        "INPX-ARC-104"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Typed state and events own match parameters, input, evidence, manual marks, timers, tools and counters.",
+        "SavedStateHandle restores the checkpoint without replaying one-shot rewards or callbacks.",
+        "State code contains no localized strings or Compose types."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+      "source_item_id": "INPX-ARC-105",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Layer Contracts.md",
+        "InplaceX-docs/Game/GPT/Module Map.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Layer Contracts.md",
+        "InplaceX-docs/Game/GPT/Module Map.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
+      "title": "Stateless GameScreen presentation components",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.game-presentation",
+      "source_depends_on": [
+        "INPX-ARC-105"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "GameScreen is the stateless renderer of GameFieldUiState and callbacks.",
+        "Top, attempts, analysis, helpers, tools and input are separate presentation components.",
+        "Debug secret remains an optional debug slot for current owner testing."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
+      "source_item_id": "INPX-ARC-106",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "title": "Thin GameField route and active UI switch",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.game-route",
+      "source_depends_on": [
+        "INPX-ARC-101",
+        "INPX-ARC-106"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "GameFieldScreen becomes a route adapter targeting about 250 lines and binds the ViewModel to GameScreen.",
+        "Duplicate engine, inference, timer and mutable-board ownership is removed.",
+        "Current debug testing contour and all characterized behavior remain available."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew assembleDebug",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "source_item_id": "INPX-ARC-107",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+      "title": "Typed localization catalogs and parity tests",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.localization",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "RU and EN are decomposed into feature catalogs aggregated by StaticLocalizationProvider.",
+        "Tests fail on duplicate keys or unequal locale key sets.",
+        "Unknown-key fallback is explicit and current visible strings do not change."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+      "source_item_id": "INPX-LOC-101",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
+      "title": "Home and shell localization",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.localization-home",
+      "source_depends_on": [
+        "INPX-LOC-101",
+        "INPX-ARC-107"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Home, dialogs, setup and navigation have complete RU/EN keys.",
+        "No mixed English remains under RU and typed placeholders replace concatenation."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
+      "source_item_id": "INPX-LOC-102",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+      "title": "Secondary and developer screen localization",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.localization-secondary",
+      "source_depends_on": [
+        "INPX-LOC-101"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "User and developer labels have RU/EN coverage without hiding technical identifiers.",
+        "Current developer controls remain available and behavior is unchanged."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+      "source_item_id": "INPX-LOC-103",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+      "title": "Game localization convergence",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.localization-game",
+      "source_depends_on": [
+        "INPX-ARC-107",
+        "INPX-LOC-101"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/GameCatalog.kt",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Game text and content descriptions have complete RU/EN keys.",
+        "Validation/status mapping uses typed reasons, not translated-string comparison.",
+        "Mojibake is absent and match behavior is unchanged."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+      "source_item_id": "INPX-LOC-104",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Configs Localization Branding.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+      "title": "SQLite schema and safe test seam",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.local-data",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Schema/create/migrate are separated from repository CRUD without changing production defaults.",
+        "Tests use unique database names and injected time, never the user database.",
+        "No destructive migration is introduced."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleDebug",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+      "source_item_id": "INPX-DB-101",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Layer Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Layer Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
+      "title": "SQLite migrations and repository tests",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.local-data-tests",
+      "source_depends_on": [
+        "INPX-DB-101"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/data/local/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Fresh v6 and every v1-v5 to v6 migration preserve sentinel data.",
+        "Progress, entitlement, inventory, energy, identity, room, turn and sync queue round trips are covered.",
+        "Tests create and remove only their own unique databases."
+      ],
+      "checks": [
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew :app:connectedDebugAndroidTest",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
+      "source_item_id": "INPX-DB-102",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "docs/testing.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/testing.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
+      "title": "CI foundation and artifact identity",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "delivery.ci",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        ".github/workflows/**",
+        "scripts/ci/**",
+        "docs/automation/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "CI uses Java 21 launcher and Java 11 toolchain and runs unit verification plus debug assemble.",
+        "Artifacts include version, commit and SHA-256 identity.",
+        "Instrumentation and release checks are visible but non-blocking until their dedicated tasks pass."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
+      "source_item_id": "INPX-CI-301",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "docs/testing.md",
+        "docs/development.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/testing.md",
+        "docs/development.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
+      "title": "Recreation contradiction and regression suite",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "quality.android-regression",
+      "source_depends_on": [
+        "INPX-ARC-107",
+        "INPX-LOC-104",
+        "INPX-DB-102"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/test/**",
+        "InplaceX-android/app/src/androidTest/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Activity recreation and SavedState restoration preserve secret, attempts, input and analysis.",
+        "Manual contradictions never become facts and confirmed hints cannot create impossible boards.",
+        "All three owner-reported defects remain closed."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew :app:connectedDebugAndroidTest",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
+      "source_item_id": "INPX-QA-302",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "docs/testing.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/testing.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "title": "Lint cleanup and blocking quality gate",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "quality.lint",
+      "source_depends_on": [
+        "INPX-QA-302"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/**",
+        ".github/workflows/**",
+        "scripts/ci/**",
+        "docs/automation/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "Current lint errors are fixed without blanket suppression.",
+        "Unit, lint, UI smoke and release assemble become blocking CI checks.",
+        "Artifact version and signing status are explicitly reported."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew lint",
+        "bash gradlew assembleRelease",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "source_item_id": "INPX-QA-303",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "docs/testing.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/testing.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+      "title": "Debug and release source-set isolation",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "release.debug-isolation",
+      "source_depends_on": [
+        "INPX-ARC-107",
+        "INPX-LOC-103"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/debug/**",
+        "InplaceX-android/app/src/release/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "Owner debug tools remain available in debug builds.",
+        "Release cannot render secret/debug controls or include debug fixtures.",
+        "Release behavior is verified by variant-aware tests."
+      ],
+      "checks": [
+        "bash gradlew assembleDebug",
+        "bash gradlew assembleRelease",
+        "bash gradlew :app:testDebugUnitTest",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+      "source_item_id": "INPX-REL-310",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Provider Runtime Config.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Provider Runtime Config.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
+      "title": "Release provider fail-closed policy",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "release.provider-safety",
+      "source_depends_on": [
+        "INPX-REL-310"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/debug/**",
+        "InplaceX-android/app/src/release/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Fake sign-in, mock purchases and test ads remain debug-only.",
+        "Release fails closed when a production provider is absent or misconfigured.",
+        "No credential or personal endpoint enters source, logs or artifacts."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew assembleRelease",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
+      "source_item_id": "INPX-REL-311",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/GPT/Provider Runtime Config.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/GPT/Provider Runtime Config.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+      "title": "Versioned online REST WebSocket and security contracts",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "online.contracts",
+      "source_depends_on": [
+        "INPX-HOST-002"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-docs/Backend/**",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "schemas/online/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/**",
+        "InplaceX-backend/src/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Versioned guest auth, cloud save, matchmaking, duel commands, snapshots and WS events are specified.",
+        "Idempotency, optimistic concurrency, reconnect, redaction and secret ownership are explicit.",
+        "Contracts are transport-neutral and testable."
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+      "source_item_id": "INPX-API-401",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+      "title": "Modular Ktor backend and health contract",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.foundation",
+      "source_depends_on": [
+        "INPX-API-401"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**",
+        "InplaceX-logging/**",
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "gradle/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Backend starts as modular Ktor with tested health and readiness endpoints.",
+        "Configuration is environment-driven and sanitized logging is used.",
+        "No production secret is required by tests."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+      "source_item_id": "INPX-BE-410",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+      "title": "PostgreSQL persistence and migrations",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.database",
+      "source_depends_on": [
+        "INPX-BE-410"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Versioned migrations create player, save, ticket, session, command and event storage.",
+        "Repository tests cover rollback, constraints and concurrent revisions.",
+        "Migration and application credentials stay external."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+      "source_item_id": "INPX-BE-411",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+      "title": "Guest identity profile and versioned cloud save",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.identity-save",
+      "source_depends_on": [
+        "INPX-BE-411"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Guest bootstrap creates stable player identity and bounded renewable credentials.",
+        "Profile and cloud save use optimistic revisions with explicit conflict responses.",
+        "Tests cover replay, expiry, retry and redacted logs."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+      "source_item_id": "INPX-BE-412",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+      "title": "Authoritative duel aggregate",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.duel-domain",
+      "source_depends_on": [
+        "INPX-API-401",
+        "INPX-ARC-104"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/src/main/kotlin/**/domain/**",
+        "InplaceX-backend/src/test/kotlin/**/domain/**",
+        "InplaceX-bot-core/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/kotlin/**/transport/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Pure aggregate owns setup, turn order, scoring, win state and public snapshot.",
+        "Opponent secret never enters public state.",
+        "Commands and invariant failures have deterministic unit tests."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew :InplaceX-bot-core:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+      "source_item_id": "INPX-BE-413",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Match Domain Model.md",
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Match Domain Model.md",
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "title": "Idempotent session persistence and reconnect",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.session-persistence",
+      "source_depends_on": [
+        "INPX-BE-411",
+        "INPX-BE-413"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Duplicate command ids are safe and version conflicts are explicit.",
+        "Committed state and ordered events survive process restart.",
+        "Reconnect returns a bounded authoritative snapshot without secret leakage."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_item_id": "INPX-BE-414",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
+      "title": "Matchmaking and server bot fallback",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.matchmaking",
+      "source_depends_on": [
+        "INPX-BE-414"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**",
+        "InplaceX-bot-core/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Ticket lifecycle and cancellation are explicit and idempotent.",
+        "Bot fallback orchestrates the shared bot core rather than creating a second engine.",
+        "Pending bot turns recover safely after restart."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew :InplaceX-bot-core:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
+      "source_item_id": "INPX-BE-415",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Server Bot Runtime.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Server Bot Runtime.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+      "title": "Backend REST and WebSocket routes",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "backend.transport",
+      "source_depends_on": [
+        "INPX-BE-412",
+        "INPX-BE-414",
+        "INPX-BE-415"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-backend/**",
+        "InplaceX-logging/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "REST bootstrap/save/matchmaking and authenticated WS session routes implement the versioned contract.",
+        "Heartbeat, backpressure, reconnect and protocol errors have integration tests.",
+        "Tokens, secrets and personal data are sanitized in logs."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+      "source_item_id": "INPX-BE-416",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "title": "Android online transport foundation",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.online-foundation",
+      "source_depends_on": [
+        "INPX-API-401",
+        "INPX-REL-311"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/**",
+        "InplaceX-logging/**",
+        "InplaceX-android/app/build.gradle.kts"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "REST and WebSocket clients sit behind existing app boundaries.",
+        "Timeout, retry, connectivity and token refresh are deterministic and tested.",
+        "Offline local play stays available."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "source_item_id": "INPX-AND-420",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "InplaceX-docs/Game/GPT/Layer Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "InplaceX-docs/Game/GPT/Layer Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+      "title": "Android guest auth and cloud-save adapter",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.online-save",
+      "source_depends_on": [
+        "INPX-AND-420",
+        "INPX-BE-412",
+        "INPX-DB-102"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/**",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Guest identity is persisted securely and cloud save uses explicit revision conflicts.",
+        "Offline changes queue and reconcile without silent loss.",
+        "Tests cover retry, conflict and token expiry."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+      "source_item_id": "INPX-AND-421",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
+      "title": "Android duel WebSocket and reconnect flow",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.online-duel",
+      "source_depends_on": [
+        "INPX-AND-421",
+        "INPX-BE-416",
+        "INPX-ARC-107"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/**",
+        "InplaceX-android/app/src/test/**",
+        "InplaceX-android/app/src/androidTest/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Authoritative turn, timeout, reconnect and result states render from server snapshots.",
+        "Duplicate events and reconnect do not duplicate turns or rewards.",
+        "Opponent secret never appears in the normal UI or logs."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
+      "source_item_id": "INPX-AND-422",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
+      "title": "Local containers migrations and operations runbook",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "ops.local-staging",
+      "source_depends_on": [
+        "INPX-BE-411"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "ops/**",
+        ".env.example",
+        "InplaceX-docs/Backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env",
+        ".env.*.local",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Backend and PostgreSQL start locally with persistent data and health checks.",
+        "Migration, backup, restore and rollback commands are documented and tested.",
+        "Only placeholders are stored in repository configuration."
+      ],
+      "checks": [
+        "docker compose config",
+        "bash gradlew :InplaceX-backend:test",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
+      "source_item_id": "INPX-OPS-501",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
+      "title": "Owner-gated staging VPS activation",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "ops.vps-staging",
+      "source_depends_on": [
+        "INPX-BE-416",
+        "INPX-OPS-501"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "ops/**",
+        "InplaceX-docs/Backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env",
+        ".env.*.local",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Exact VPS target, ports, domain, artifact and rollback path are recorded before mutation.",
+        "Staging is deployed from an identified artifact with persistent PostgreSQL.",
+        "Deployment remains reversible and does not change unrelated services."
+      ],
+      "checks": [
+        "manual exact-target evidence",
+        "manual staging health evidence",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
+      "source_item_id": "INPX-OPS-502",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
+      "title": "TLS firewall backup and rollback verification",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "ops.vps-hardening",
+      "source_depends_on": [
+        "INPX-OPS-502"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "ops/**",
+        "InplaceX-docs/Backend/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env",
+        ".env.*.local",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "TLS, least-open firewall, health checks and log redaction are verified.",
+        "Backup restore and application rollback are exercised with evidence.",
+        "Secrets remain only in the target secret store."
+      ],
+      "checks": [
+        "manual TLS and firewall evidence",
+        "manual backup restore evidence",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
+      "source_item_id": "INPX-OPS-503",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
+      "title": "Two-client online E2E and failure recovery",
+      "status": "blocked_by_dependency",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "quality.online-e2e",
+      "source_depends_on": [
+        "INPX-AND-422",
+        "INPX-OPS-503"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/androidTest/**",
+        "InplaceX-backend/src/test/**",
+        "tests/online/**",
+        "docs/testing.md"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Two clients complete an authoritative duel against staging.",
+        "Reconnect, duplicate command, timeout, restart and bot fallback pass.",
+        "Logs contain no secret, token or direct personal data."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "manual staging E2E evidence",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
+      "source_item_id": "INPX-QA-510",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+      "title": "Post-core UX contract and screen inventory",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "design.ux-contract",
+      "source_depends_on": [
+        "INPX-ARC-107",
+        "INPX-LOC-104",
+        "INPX-QA-303"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-docs/Game/Human/**",
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
+        "docs/00_dispatch/design-sessions/inplacex-ux-v2/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Race, Duel, Company and secondary-screen journeys have explicit state contracts.",
+        "Compact/tall phone, accessibility and localization constraints are defined.",
+        "No design task changes gameplay rules."
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+      "source_item_id": "INPX-UX-701",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Design System v2.md",
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Design System v2.md",
+        "InplaceX-docs/Game/GPT/UI Design Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
+      "title": "Race vertical UX UI slice",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.race-ui",
+      "source_depends_on": [
+        "INPX-UX-701"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/androidTest/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-bot-core/**",
+        "InplaceX-backend/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Race field follows the approved contract without losing attempts, analysis, hints, tools or timer.",
+        "State is not conveyed by color alone and compact/tall phones pass visual acceptance."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
+      "source_item_id": "INPX-UI-702",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Design System v2.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Design System v2.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
+      "title": "Duel and Company vertical UX UI slice",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.duel-ui",
+      "source_depends_on": [
+        "INPX-UX-701",
+        "INPX-AND-422"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/androidTest/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-bot-core/**",
+        "InplaceX-backend/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Setup, waiting, turn, timeout, reconnect and result states are explicit.",
+        "Remote opponent and server bot share presentation states.",
+        "Opponent secret never appears in normal UI."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
+      "source_item_id": "INPX-UI-703",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+        "InplaceX-docs/Game/Human/Design System v2.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+        "InplaceX-docs/Game/Human/Design System v2.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38",
+      "title": "Secondary screens UX UI slice",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "android.secondary-ui",
+      "source_depends_on": [
+        "INPX-UX-701",
+        "INPX-LOC-103"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+        "InplaceX-android/app/src/androidTest/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-bot-core/**",
+        "InplaceX-backend/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Secondary screens share semantic tokens and preserve all current actions.",
+        "RU/EN, accessibility, compact and tall layouts have acceptance evidence."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "bash gradlew assembleDebug",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38",
+      "source_item_id": "INPX-UI-704",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Design System v2.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Design System v2.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S39",
+      "title": "Real Google auth provider",
+      "status": "blocked_by_dependency",
+      "priority": "P3",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "provider.auth",
+      "source_depends_on": [
+        "INPX-QA-510"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
+        "InplaceX-android/app/src/release/**",
+        "InplaceX-backend/**",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Production Google auth is real, server-verified and replaceable behind the provider contract.",
+        "Debug fake sign-in remains available only in debug.",
+        "Credentials remain outside Git."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "manual provider-console evidence",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S39",
+      "source_item_id": "INPX-PROV-801",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S39",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S40",
+      "title": "Real billing receipt verification and ads provider",
+      "status": "blocked_by_dependency",
+      "priority": "P3",
+      "complexity": "L",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "provider.commerce",
+      "source_depends_on": [
+        "INPX-QA-510"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
+        "InplaceX-android/app/src/release/**",
+        "InplaceX-backend/**",
+        "InplaceX-android/app/src/test/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Release billing uses server receipt verification and idempotent entitlement grants.",
+        "Release ads use the production provider with consent and failure fallback.",
+        "Mock purchase and test ads remain debug-only."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "manual provider-console evidence",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S40",
+      "source_item_id": "INPX-PROV-802",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S40",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
+      "title": "Canonical architecture testing and operations documentation",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "M",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "documentation.integration",
+      "source_depends_on": [
+        "INPX-QA-303",
+        "INPX-QA-510",
+        "INPX-UI-702",
+        "INPX-UI-703",
+        "INPX-UI-704"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
+      "allowed_paths": [
+        "InplaceX-docs/**",
+        "docs/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/**",
+        "InplaceX-backend/**",
+        "InplaceX-bot-core/**",
+        ".git/**",
+        ".env*",
+        "local.properties"
+      ],
+      "acceptance_criteria": [
+        "Docs describe actual route to ViewModel to GameScreen boundaries and evidence semantics.",
+        "Testing, migrations, online operations and rollback commands match the implemented system.",
+        "Technical debt and changelog reflect verified reality."
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
+      "source_item_id": "INPX-DOC-901",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/GPT/Technical Debt.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/GPT/Technical Debt.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    },
+    {
+      "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
+      "title": "Final integration release artifact and acceptance",
+      "status": "blocked_by_dependency",
+      "priority": "P2",
+      "complexity": "XL",
+      "type": "design-handoff-intake",
+      "phase": "Project Design",
+      "recommended_agent": "Dispatcher",
+      "labels": [
+        "project-design",
+        "design-handoff",
+        "dispatcher-intake"
+      ],
+      "module_id": "release.finalization",
+      "source_depends_on": [
+        "INPX-DOC-901",
+        "INPX-REL-311"
+      ],
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
+      ],
+      "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Integrator-only container. Dispatcher must split implementation fixes before any Worker claim.",
+      "allowed_paths": [
+        "InplaceX-android/**",
+        "InplaceX-backend/**",
+        "InplaceX-bot-core/**",
+        "InplaceX-logging/**",
+        "InplaceX-docs/**",
+        "docs/**",
+        "CHANGELOG.md"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.jks",
+        "**/*.keystore",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Offline, bot, campaign and online flows pass complete acceptance.",
+        "Signed APK/AAB identity, version, commit and SHA-256 are recorded without exposing signing material.",
+        "A physical-phone acceptance run passes and rollback is documented."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew lint",
+        "bash gradlew assembleRelease",
+        "manual signed artifact identity",
+        "manual physical-phone acceptance",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
+      "not_worker_ready_reason": "waiting for finalized dependency tasks",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
+      "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
+      "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
+      "source_item_id": "INPX-REL-910",
+      "source_refs": [
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+        "InplaceX-docs/Game/Human/Roadmap.md",
+        "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json"
+      ],
+      "input_docs": [
+        "InplaceX-docs/Game/Human/Roadmap.md",
+        "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "project_design_handoff",
+          "source_file": "D:/Work/DevOps/MobileGame/InplaceX-worktrees/automation-adoption-20260725/docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
+          "captured_at": "2026-07-25T16:21:21Z"
+        }
+      ]
+    }
+  ],
+  "design_handoff_intake_import": {
+    "updated_at": "2026-07-25T16:21:21Z",
+    "candidate_count": 43,
+    "imported_count": 43,
+    "skipped_count": 0,
+    "include_children": true,
+    "dependency_updated_count": 0
+  }
+}

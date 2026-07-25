@@ -29,11 +29,3 @@ captures/
 /emulator-screen.png
 /inplacex-*.png
 /MainActivity.debug-backup.kt
-
-# AiStudio generated runtime reports and local repair backups.
-AiStudio/Task_manager/process-logs/
-AiStudio/Task_manager/reports/
-AiStudio/Task_manager/backups/
-
-# Local, disposable Gradle toolchain extraction used by validation.
-.toolchains/

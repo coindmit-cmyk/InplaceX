@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "coverage": {
+    "include": [
+      ".agent/**",
+      "agent-core/.agent/**",
+      "docs/agent/**",
+      "docs/automation/**",
+      "agent-core/docs/automation/**",
+      "docs/reports/**",
+      "scripts/agent_control/**",
+      "schemas/**",
+      "templates/**",
+      "AiStudio/Task_manager/**",
+      "src/**",
+      "app/**",
+      "packages/**",
+      "services/**",
+      "modules/**",
+      "lib/**",
+      "api/**",
+      "backend/**",
+      "frontend/**",
+      "web/**",
+      "ui/**",
+      "tests/**"
+    ],
+    "ignore": [
+      ".git/**",
+      "node_modules/**",
+      ".venv/**",
+      "__pycache__/**",
+      "runtime/**",
+      "agent-runtime/**"
+    ]
+  },
+  "policy": {
+    "new_significant_artifact_blocks": true,
+    "legacy_unrelated_blocks": false,
+    "cleanup_auto_delete": false,
+    "router_apply_allowed": true
+  }
+}

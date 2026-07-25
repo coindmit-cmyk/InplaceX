@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aistudio.local/schemas/agent-control/artifact_discovery_report.schema.json",
+  "title": "Artifact Discovery Report",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "project_root", "summary", "inventory", "findings", "routes"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "project_root": {"type": "string"},
+    "mode": {"type": "string"},
+    "summary": {"type": "object"},
+    "inventory": {"type": "array", "items": {"type": "object"}},
+    "findings": {"type": "array", "items": {"type": "object"}},
+    "routes": {"type": "array", "items": {"type": "object"}},
+    "task_candidates": {"type": "array", "items": {"type": "object"}},
+    "checks": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

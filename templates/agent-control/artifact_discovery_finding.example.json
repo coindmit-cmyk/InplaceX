@@ -1,0 +1,18 @@
+{
+  "id": "finding-example-001",
+  "detected_at": "2026-06-30T00:00:00Z",
+  "detector": "artifact_discovery_scanner",
+  "path": "scripts/agent_control/example.py",
+  "artifact_type": "automation_script",
+  "category": "missing_project_map_coverage",
+  "severity": "warning",
+  "confidence": "medium",
+  "current_scope": false,
+  "evidence": ["file exists", "no PROJECT_MAP entity found"],
+  "related_refs": [],
+  "suggested_owner": "Dispatcher",
+  "suggested_task_type": "reality_map_backfill",
+  "suggested_action": "create backfill task for ProjectMapPlanner",
+  "blocking_gate": "none",
+  "auto_task_allowed": true
+}

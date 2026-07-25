@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "updated_at": null,
+  "purpose": "Phase 2.1 scheduler freshness state. This is not a task queue; it records role inputs, outputs and skip reasons so scheduled agents run only when upstream state changed.",
+  "last_inputs": {
+    "director": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "manual": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "architect": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "dispatcher": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "worker": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "integrator": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    },
+    "finalizer": {
+      "updated_at": null,
+      "source": null,
+      "summary": null
+    }
+  },
+  "role_activity": {
+    "auto_architect": {
+      "last_started_at": null,
+      "last_finished_at": null,
+      "last_input_seen_at": null,
+      "last_result": null,
+      "last_skip_reason": null
+    },
+    "auto_dispatcher": {
+      "last_started_at": null,
+      "last_finished_at": null,
+      "last_input_seen_at": null,
+      "last_result": null,
+      "last_skip_reason": null
+    },
+    "auto_workers": {
+      "last_started_at": null,
+      "last_finished_at": null,
+      "last_input_seen_at": null,
+      "last_result": null,
+      "last_skip_reason": null
+    },
+    "auto_integrator": {
+      "last_started_at": null,
+      "last_finished_at": null,
+      "last_input_seen_at": null,
+      "last_result": null,
+      "last_skip_reason": null
+    },
+    "auto_finalizer": {
+      "last_started_at": null,
+      "last_finished_at": null,
+      "last_input_seen_at": null,
+      "last_result": null,
+      "last_skip_reason": null
+    }
+  },
+  "cleanup_candidates": [],
+  "event_stream": {
+    "path": "AiStudio/Task_manager/agent_events.jsonl",
+    "primary_trigger_source": true,
+    "timers_are_fallback": true,
+    "last_event_seen_at": null,
+    "last_event_id_seen": null
+  },
+  "pending_signals": []
+}

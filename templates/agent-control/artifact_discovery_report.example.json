@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-30T00:00:00Z",
+  "project_root": ".",
+  "mode": "example",
+  "summary": {
+    "inventory_count": 1,
+    "finding_count": 1,
+    "blocking_count": 0,
+    "task_candidate_count": 1
+  },
+  "inventory": [
+    {
+      "path": "scripts/agent_control/example.py",
+      "artifact_type": "automation_script",
+      "significant": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "finding-example-001",
+      "detected_at": "2026-06-30T00:00:00Z",
+      "detector": "artifact_discovery_scanner",
+      "path": "scripts/agent_control/example.py",
+      "artifact_type": "automation_script",
+      "category": "missing_project_map_coverage",
+      "severity": "warning",
+      "confidence": "medium",
+      "current_scope": false,
+      "evidence": ["file exists", "no PROJECT_MAP entity found"],
+      "suggested_owner": "Dispatcher",
+      "suggested_task_type": "reality_map_backfill",
+      "suggested_action": "create backfill task for ProjectMapPlanner",
+      "blocking_gate": "none",
+      "auto_task_allowed": true
+    }
+  ],
+  "routes": [],
+  "task_candidates": []
+}

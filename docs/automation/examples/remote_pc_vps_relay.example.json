@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "relay_id": "remote-pc-vps-relay",
+  "description": "Example reverse SSH relay from remote automation PC to VPS. Do not store secrets here.",
+  "vps": {
+    "host_alias": "aistudio-vps",
+    "ssh_user": "root",
+    "secret_ref": "secret://ssh/vps-main-02/admin"
+  },
+  "relay": {
+    "vps_bind_host": "127.0.0.1",
+    "vps_bind_port": 22220,
+    "relay_user": "relay",
+    "remote_pc_ssh_host": "127.0.0.1",
+    "remote_pc_ssh_port": 22
+  },
+  "remote_pc": {
+    "ssh_user": "agent",
+    "host_id": "remote-automation-pc",
+    "workspace_root": "/srv/agent-projects/automation-worktrees",
+    "secret_ref": "secret://ssh/remote-pc/agent"
+  },
+  "checks": {
+    "default_command": "hostname; pwd",
+    "script_smoke_command": "python3 --version"
+  },
+  "secret_values_reported": false
+}

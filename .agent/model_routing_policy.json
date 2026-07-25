@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.1",
+  "limits_max_age_minutes": 60,
+  "manual_reserve_percent": 10,
+  "model_registry": {
+    "spark": {
+      "model_id": "gpt-5.3-codex-spark",
+      "enabled": true
+    },
+    "luna": {
+      "model_id": "gpt-5.6-luna",
+      "enabled": true
+    },
+    "terra": {
+      "model_id": "gpt-5.6-terra",
+      "enabled": true
+    },
+    "sol": {
+      "model_id": "gpt-5.6-sol",
+      "enabled": true
+    }
+  },
+  "reasoning_effort_policy": {
+    "canonical_values": [
+      "low",
+      "medium",
+      "high",
+      "extra_high",
+      "max",
+      "ultra"
+    ],
+    "read_aliases": {
+      "xhigh": "extra_high",
+      "very_high": "extra_high"
+    },
+    "write_policy": "canonical_only",
+    "ultra": {
+      "requires_capability_profile": "delegated_deep",
+      "requires_delegation": [
+        "allowed",
+        "required"
+      ],
+      "minimum_independent_work_units": 2,
+      "documentation_label_is_sufficient": false
+    }
+  },
+  "capability_profiles": {
+    "efficient": {
+      "description": "Bounded low-cost work with one coherent lane.",
+      "model_preferences": [
+        "spark",
+        "luna"
+      ],
+      "default_reasoning_effort": "medium",
+      "delegation": "forbidden",
+      "context_coherence": "bounded",
+      "cost_class": "low",
+      "requires_independent_work_units": false
+    },
+    "balanced": {
+      "description": "Ordinary discussion, clarification and implementation with balanced capability.",
+      "model_preferences": [
+        "luna",
+        "terra",
+        "spark"
+      ],
+      "default_reasoning_effort": "high",
+      "delegation": "forbidden",
+      "context_coherence": "normal",
+      "cost_class": "standard",
+      "requires_independent_work_units": false
+    },
+    "deep": {
+      "description": "Repository analysis, delta work and project mapping that benefit from deeper reasoning.",
+      "model_preferences": [
+        "terra",
+        "sol",
+        "luna"
+      ],
+      "default_reasoning_effort": "extra_high",
+      "delegation": "forbidden",
+      "context_coherence": "high",
+      "cost_class": "premium",
+      "requires_independent_work_units": false
+    },
+    "maximum_coherent": {
+      "description": "One context-coherent specification, architecture or decision pass.",
+      "model_preferences": [
+        "sol",
+        "terra"
+      ],
+      "default_reasoning_effort": "max",
+      "delegation": "forbidden",
+      "context_coherence": "maximum",
+      "cost_class": "scarce",
+      "requires_independent_work_units": false
+    },
+    "delegated_deep": {
+      "description": "Several genuinely independent analytical roles or lenses with later synthesis.",
+      "model_preferences": [
+        "sol",
+        "terra",
+        "luna"
+      ],
+      "default_reasoning_effort": "ultra",
+      "delegation": "allowed",
+      "context_coherence": "high",
+      "cost_class": "scarce",
+      "requires_independent_work_units": true
+    }
+  },
+  "capacity": {
+    "minimum_workers": 2,
+    "normal_workers": 4,
+    "high_workers": 6,
+    "maximum_workers": 10,
+    "high_remaining_percent": 60,
+    "maximum_remaining_percent": 80
+  },
+  "roles": {
+    "scanner": {"models": ["gpt-5.6-luna", "gpt-5.3-codex-spark"], "effort": "low"},
+    "normalizer": {"models": ["gpt-5.3-codex-spark", "gpt-5.6-luna"], "effort": "medium"},
+    "worker": {"models": ["gpt-5.3-codex-spark", "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"], "effort": "medium"},
+    "dispatcher": {"models": ["gpt-5.6-terra", "gpt-5.6-sol"], "effort": "high"},
+    "architect": {"models": ["gpt-5.6-sol", "gpt-5.6-terra"], "effort": "high"},
+    "integrator": {"models": ["gpt-5.6-terra", "gpt-5.6-sol"], "effort": "high"},
+    "finalizer": {"models": ["gpt-5.6-terra", "gpt-5.6-sol"], "effort": "medium"},
+    "doctor": {"models": ["gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.3-codex-spark"], "effort": "high"}
+  },
+  "complexity": {
+    "S": {"models": ["gpt-5.3-codex-spark", "gpt-5.6-luna"], "effort": "medium"},
+    "M": {"models": ["gpt-5.3-codex-spark", "gpt-5.6-luna", "gpt-5.6-terra"], "effort": "high"},
+    "L": {"models": ["gpt-5.6-terra", "gpt-5.6-sol"], "effort": "high"},
+    "XL": {"models": ["gpt-5.6-sol", "gpt-5.6-terra"], "effort": "xhigh"}
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "updated_at": null,
+  "default_ttl_hours": 8,
+  "locks": []
+}

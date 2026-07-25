@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aistudio.local/schemas/agent-control/artifact_discovery_config.schema.json",
+  "title": "Artifact Discovery Config",
+  "type": "object",
+  "properties": {
+    "schema_version": {"type": "string"},
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "include": {"type": "array", "items": {"type": "string"}},
+        "ignore": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "policy": {"type": "object"}
+  },
+  "additionalProperties": true
+}

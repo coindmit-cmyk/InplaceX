@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "agent_repository": "coindmit-cmyk/ai-project-agent",
+  "agent_version": "v0.4.22.327",
+  "agent_commit": "7023d024b25a0f4eb01d8df88147e502f2877c4b",
+  "adopted_at": "2026-07-25T16:08:02Z",
+  "updated_at": "2026-07-25T16:08:02Z",
+  "update_source": "ai-project-agent",
+  "agent_source_branch": "release/main",
+  "update_mode": "pr_based",
+  "phase": "Phase 2.1 active coordination",
+  "phase2_reference": true,
+  "phase2_active": true,
+  "phase2_1_policy": true,
+  "phase2_reference_package": "AGENT-UPD-001",
+  "phase2_activation_approval": {
+    "approved_by": "ai-project-agent-default-policy",
+    "approved_at": "2026-07-25T16:08:02Z",
+    "approval_source": "AGENT-UPD-001 active-by-default adoption",
+    "dry_run_report": null
+  },
+  "phase2_activation_requires": [
+    "owner approval",
+    "valid queue",
+    "valid locks",
+    "worker profiles",
+    "runner config",
+    "remote automation host policy",
+    "dry-run report"
+  ],
+  "protected_project_files": [
+    ".agent/project.md",
+    ".agent/modules.md",
+    ".agent/workflows.md",
+    ".agent/context.json",
+    ".agent/worker_profiles.json",
+    ".agent/model_routing_policy.json",
+    "AiStudio/Task_manager/task_queue.json",
+    "AiStudio/Task_manager/agent_locks.json",
+    "AiStudio/Task_manager/owner_directives.json",
+    "AiStudio/Task_manager/agent_runner_state.json",
+    "AiStudio/Task_manager/tasks/**",
+    "application code",
+    "migrations",
+    ".env",
+    ".env.*",
+    "production config",
+    "secrets"
+  ],
+  "upstream_snapshot": "origin/release/main@7023d024b25a0f4eb01d8df88147e502f2877c4b"
+}

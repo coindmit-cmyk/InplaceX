@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "updated_at": null,
+  "project": null,
+  "processes": {
+    "architect": {
+      "state": "idle",
+      "reason": null,
+      "current_task": null,
+      "last_started_at": null,
+      "last_finished_at": null,
+      "cooldown_until": null
+    },
+    "dispatcher": {
+      "state": "idle",
+      "reason": null,
+      "queue_backlog": 0,
+      "packet_defects_pending": 0,
+      "last_started_at": null,
+      "last_finished_at": null,
+      "cooldown_until": null
+    },
+    "worker_pool": {
+      "state": "idle",
+      "reason": null,
+      "active_workers": 0,
+      "max_workers": 3,
+      "paused_reason": null,
+      "last_started_at": null,
+      "last_finished_at": null,
+      "cooldown_until": null
+    },
+    "integrator": {
+      "state": "idle",
+      "reason": null,
+      "integration_ready_count": 0,
+      "open_pr_stack": 0,
+      "last_started_at": null,
+      "last_finished_at": null,
+      "cooldown_until": null
+    },
+    "finalizer": {
+      "state": "idle",
+      "reason": null,
+      "handoff_ready_count": 0,
+      "last_started_at": null,
+      "last_finished_at": null,
+      "cooldown_until": null
+    },
+    "budget_guard": {
+      "state": "ok",
+      "strong_model_paused": false,
+      "pause_until": null
+    }
+  }
+}

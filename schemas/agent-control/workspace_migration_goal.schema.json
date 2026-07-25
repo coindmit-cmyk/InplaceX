@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AiStudio Workspace Migration Goal",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "mode",
+    "goal_version",
+    "contract_version",
+    "artifact_version",
+    "project_id",
+    "generated_at",
+    "decision",
+    "can_apply",
+    "next_owner",
+    "artifacts",
+    "validation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "workspace_goal_status",
+        "workspace_goal_decision"
+      ]
+    },
+    "goal_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "needed",
+        "not_needed",
+        "owner_review",
+        "architect_review",
+        "integrator_review",
+        "dispatcher_review",
+        "ready_to_apply",
+        "applied",
+        "stale",
+        "unsafe"
+      ]
+    },
+    "can_apply": {
+      "type": "boolean"
+    },
+    "next_owner": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "stale_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path",
+          "exists"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "generated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "route_tasks": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "route_decisions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "decisions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

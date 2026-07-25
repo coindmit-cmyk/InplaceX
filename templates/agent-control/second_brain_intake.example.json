@@ -1,0 +1,22 @@
+{
+  "tenant_id": "customer-acme",
+  "project_id": "eshop-storefront",
+  "memory_type": "customer_idea",
+  "access_level": "project",
+  "summary": "Offer reusable delivery presets for repeat business orders.",
+  "facts": [
+    "Repeat orders often use the same destination and time window."
+  ],
+  "decisions": [],
+  "rejected_ideas": [],
+  "tags": ["delivery", "repeat-order", "customer-idea"],
+  "source_refs": ["eshop-chat://conversation-123/message-17"],
+  "evidence_refs": ["eshop-analytics://repeat-order-review-2026-07"],
+  "consent_state": "granted",
+  "confidence": 0.75,
+  "freshness_state": "current",
+  "freshness_reason": "Captured from the current customer conversation.",
+  "next_review_at": "2026-10-16T00:00:00Z",
+  "retention_until": "2027-07-16T00:00:00Z",
+  "idempotency_key": "eshop-conversation-123-message-17"
+}

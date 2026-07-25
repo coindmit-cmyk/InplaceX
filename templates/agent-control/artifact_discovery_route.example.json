@@ -1,0 +1,16 @@
+{
+  "source_finding_id": "finding-example-001",
+  "owner": "Dispatcher",
+  "action": "create_task_candidate",
+  "task_type": "reality_map_backfill",
+  "blocking": false,
+  "reason": "legacy artifact requires map backfill",
+  "task_candidate": {
+    "id": "MAP-BACKFILL-example",
+    "type": "reality_map_backfill",
+    "status": "planned",
+    "title": "Add example.py to PROJECT_MAP",
+    "entity_path": "scripts/agent_control/example.py",
+    "next_owner": "ProjectMapPlanner"
+  }
+}
