@@ -9207,8 +9207,8 @@
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-      "title": "S25A public session read contracts and bounded security codec retry",
-      "status": "in_progress",
+      "title": "S25A strict lexical JSON codec retry",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9255,6 +9255,7 @@
         "Secret fingerprints use injected server-keyed HMAC/pepper without constructing an immutable String from the secret; every temporary mutable buffer is zeroed in finally.",
         "Forbidden names and values are rejected across every known field, opaque id and nested payload; safe log attributes never contain raw actor, command, token or numeric-secret-shaped values.",
         "JSON duplicate-key and security scanning has a hard bounded nesting policy or iterative implementation; deeply nested sub-64-KiB input fails with a controlled exception and never StackOverflowError.",
+        "JSON primitive scanning accepts only exact true, false and null literals plus RFC-compatible JSON number grammar; lexical-invalid tokens are rejected before typed normalization.",
         "Contract, codec, fingerprint and redaction responsibilities are split into focused files; no new production file exceeds 400 lines.",
         "Adversarial tests cover forbidden known-field values, oversize frames, malformed and deeply nested JSON, duplicate Unicode-escaped keys, absence of caller-authored outcome APIs, HMAC separation and log sanitization."
       ],
@@ -9263,12 +9264,12 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "4bc99f9 was rejected and reduced to a bounded read-contract and security retry without caller-authored outcomes or actor construction",
+      "dispatcher_decision_reason": "e0232bf closed the prior architecture and secret blockers but hostile review found permissive primitive lexing; retry is limited to strict JSON grammar and adversarial tests",
       "next_owner": "worker_pool",
       "recommended_agent": "auto-worker-5.5max",
       "eligible_worker_profiles": [
@@ -9281,16 +9282,18 @@
       "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "repair_source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
-      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
-      "source_head_sha": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
-      "clean_rebuild_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
-      "clean_rebuild_source_head_sha": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
-      "retry_count": 1,
-      "last_rejected_candidate": "4bc99f9ec9b4703cf3ba7b7bc66bdcd3011deec0",
-      "integration_review": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md",
+      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "source_head_sha": "e0232bfad44ce555b8725cc87f056fc7ab3e5444",
+      "clean_rebuild_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "clean_rebuild_source_head_sha": "e0232bfad44ce555b8725cc87f056fc7ab3e5444",
+      "retry_count": 2,
+      "last_rejected_candidate": "e0232bfad44ce555b8725cc87f056fc7ab3e5444",
+      "integration_review": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_E0232BF_20260725.md",
       "worker_instructions": [
-        "Read docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md and S25_REPAIR_SPEC_20260725.md completely before editing.",
-        "Use 4bc99f9 only as read-only salvage evidence; rebuild the allowed read contract, bounded codec and security components on current origin/develop.",
+        "Read docs/reports/integration/S25A_INTEGRATOR_REVIEW_E0232BF_20260725.md and S25_REPAIR_SPEC_20260725.md completely before editing.",
+        "Use e0232bf only as read-only salvage evidence; rebuild its verified read contract and security behavior on current origin/develop.",
+        "Make primitive lexing fail closed: accept only exact true, false, null and valid JSON numbers; do not rely on later booleanOrNull or intOrNull normalization.",
+        "Add public decoder tests rejecting truE, FALSE, 01, 00, 1. and +1 and accepting valid negative, fraction and exponent forms where the typed field permits them.",
         "Delete the rejected PublicSessionIntent and AuthenticatedSessionActor design from the rebuilt result; do not expose caller-authored outcomes or actor construction in S25A.",
         "Implement iterative or hard-depth-bounded JSON scanning and prove adversarial sub-64-KiB nesting returns a controlled exception.",
         "Encode secret CharArray without String(secret) or another immutable raw-secret copy and zero mutable temporary buffers in finally.",
@@ -9308,9 +9311,13 @@
         "base_ref": "origin/develop",
         "code_refs": [
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
-          "4bc99f9:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/**"
+          "e0232bf:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/**"
         ],
         "doc_refs": [
+          {
+            "path": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_E0232BF_20260725.md",
+            "purpose": "mandatory lexical parser rejection and retry contract"
+          },
           {
             "path": "docs/reports/integration/S25A_INTEGRATOR_REVIEW_4BC99F9_20260725.md",
             "purpose": "mandatory retry blockers and reduced slice boundary"
@@ -9436,15 +9443,9 @@
       "requires_strong_review": true,
       "last_worker_id": "auto-worker-5.5max",
       "last_machine_id": "aistudio-manual",
-      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
-      "reviewed_at": "2026-07-25T21:33:00Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
-      "worker_id": "auto-worker-5.5max",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
-      "started_at": "2026-07-25T21:33:54Z",
-      "lock_expires_at": "2026-07-26T05:33:54Z"
+      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "reviewed_at": "2026-07-25T21:57:00Z",
+      "status_reason": "e0232bf rejected only for permissive JSON primitive lexing; strict lexical retry is worker-ready"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
