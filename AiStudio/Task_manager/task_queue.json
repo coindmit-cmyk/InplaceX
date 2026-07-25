@@ -2866,7 +2866,8 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/workers/**"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
@@ -2919,6 +2920,8 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
+        "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -3019,7 +3022,8 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/HomeCatalog.kt",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/workers/**"
         ],
         "forbidden_paths": [
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
@@ -5868,7 +5872,8 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/workers/**"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -5927,6 +5932,8 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
+        "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -6037,7 +6044,8 @@
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/auth/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/billing/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/ads/**",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/workers/**"
         ],
         "forbidden_paths": [
           ".git/**",
