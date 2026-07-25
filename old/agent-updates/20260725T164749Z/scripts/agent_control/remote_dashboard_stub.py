@@ -32,7 +32,6 @@ import command_bus
 import remote_chat_bus
 import remote_chat_server
 import automation_worktree_planner
-import collect_codex_session_usage
 import collect_remote_automation_status
 import project_registry
 import project_doctor
@@ -8408,9 +8407,6 @@ def build_snapshot(
     codex_limits = scan_codex_limits(runtime_root)
     codex_limit_estimates = scan_codex_limit_estimates(runtime_root)
     codex_limit_consensus = build_codex_limit_consensus(codex_limits, codex_limit_max_age_minutes)
-    codex_usage = load_json(runtime_root / "codex-usage" / "latest.json")[0]
-    if not isinstance(codex_usage, dict):
-        codex_usage = {}
     automation_status = scan_automation_status(runtime_root)
     automation_controller = scan_automation_controller_reports(runtime_root)
     controller_summary = automation_controller_summary(automation_controller)
@@ -8719,7 +8715,6 @@ def build_snapshot(
                 [item.get("consensus_percent") for item in codex_limit_consensus if item.get("consensus_percent") is not None],
                 default=None,
             ),
-            "codex_usage": collect_codex_session_usage.compact_summary(codex_usage),
             "projects_need_human": projects_need_human,
         },
         "projects": project_reports,
@@ -8729,7 +8724,6 @@ def build_snapshot(
         "codex_limits": codex_limits,
         "codex_limit_consensus": codex_limit_consensus,
         "codex_limit_estimates": codex_limit_estimates,
-        "codex_usage": codex_usage,
         "model_cost_analytics": model_cost_analytics(project_reports, limit_estimates=codex_limit_estimates),
         "task_size_analytics": build_task_size_analytics(project_reports),
         "automation_status": automation_status,
@@ -9502,18 +9496,6 @@ def css() -> str:
     .project-empty { margin-top: 16px; padding: 16px; border: 1px dashed #cad6de; border-radius: 12px; color: var(--muted); background: #f8fafb; font-size: 12px; }
     .project-blocker { margin-top: 14px; padding: 12px 14px; border-radius: 12px; color: #76520f; background: #fff5dc; font-size: 12px; line-height: 1.45; }
     .project-task-link { min-height: 40px; display: inline-flex; align-items: center; color: inherit; text-decoration: none; }
-    .usage-page { display: grid; gap: 16px; }
-    .usage-method { padding: 14px 16px; border: 1px solid #dbc98e; border-radius: 12px; background: #fff9e8; color: #65521d; font-size: 13px; line-height: 1.5; }
-    .usage-method span { text-decoration: underline dotted; cursor: help; }
-    .usage-rank { display: grid; gap: 9px; margin-top: 16px; }
-    .usage-rank-row { display: grid; grid-template-columns: minmax(180px, 1.5fr) minmax(220px, 4fr) 90px; gap: 12px; align-items: center; }
-    .usage-rank-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-    .usage-rank-track { height: 16px; overflow: hidden; border: 1px solid #cbd6df; border-radius: 4px; background: #edf2f5; }
-    .usage-rank-fill { height: 100%; background: #2a756d; border-right: 1px solid #174f49; }
-    .usage-rank-row strong { text-align: right; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-    .usage-filter { width: min(100%, 430px); min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
-    .usage-table td, .usage-table th { white-space: nowrap; }
-    .usage-table td:first-child { max-width: 360px; white-space: normal; overflow-wrap: anywhere; }
     body[data-visual-variant="variant-02-compact"] { --dashboard-width: min(100%, 1480px); }
     body[data-visual-variant="variant-02-compact"] main { padding-top: 14px; }
     body[data-visual-variant="variant-02-compact"] .statistics-page,
@@ -9556,8 +9538,6 @@ def css() -> str:
       .project-state { align-self: flex-start; }
       .project-kpi-grid, .project-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .project-hero-meta { min-width: 0; }
-      .usage-rank-row { grid-template-columns: 1fr; gap: 5px; }
-      .usage-rank-row strong { text-align: left; }
     }
     """
 
@@ -9797,7 +9777,6 @@ def compact_metrics_script() -> str:
 def nav(snapshot: dict[str, Any]) -> str:
     links = [
         '<a class="navlink primary" href="/">Статистика</a>',
-        '<a class="navlink" href="/usage">Расход лимитов</a>',
         '<a class="navlink" href="/infrastructure">VPS</a>',
         '<a class="navlink" href="/old">Old version</a>',
         '<a class="navlink primary" href="/chat">Чат задач</a>',
@@ -10660,230 +10639,6 @@ def model_cost_analytics_table(items: list[dict[str, Any]]) -> str:
     )
 
 
-def format_token_count(value: Any) -> str:
-    return f"{safe_int(value):,}".replace(",", " ")
-
-
-def compact_token_count(value: Any) -> str:
-    count = safe_int(value)
-    if count >= 1_000_000_000:
-        return f"{count / 1_000_000_000:.2f} млрд"
-    if count >= 1_000_000:
-        return f"{count / 1_000_000:.2f} млн"
-    if count >= 1_000:
-        return f"{count / 1_000:.1f} тыс."
-    return str(count)
-
-
-def usage_percent(value: Any, digits: int = 2) -> str:
-    parsed = safe_float(value)
-    return "—" if parsed is None else f"{parsed:.{digits}f}%"
-
-
-def codex_usage_summary_panel(usage: dict[str, Any] | None) -> str:
-    usage = usage if isinstance(usage, dict) else {}
-    pools = usage.get("weekly_pools") if isinstance(usage.get("weekly_pools"), list) else []
-    last_24h = usage.get("last_24h") if isinstance(usage.get("last_24h"), dict) else {}
-    coverage = usage.get("coverage") if isinstance(usage.get("coverage"), dict) else {}
-    pool_cards = []
-    for pool in pools:
-        if not isinstance(pool, dict):
-            continue
-        pool_cards.append(
-            '<div class="statistics-limit-card">'
-            f'<span>{html.escape(str(pool.get("label") or pool.get("pool_id") or "Недельный пул"))}</span>'
-            f'<strong>{usage_percent(pool.get("used_percent"), 0)} использовано</strong>'
-            f'<small>Осталось {usage_percent(pool.get("remaining_percent"), 0)} · '
-            f'сброс {html.escape(short_datetime(pool.get("reset_at")) or "—")}</small>'
-            '</div>'
-        )
-    if not pool_cards:
-        pool_cards.append(
-            '<div class="statistics-limit-card"><span>Детальный расход</span>'
-            '<strong>Собираем данные</strong><small>Ожидается первый token_count</small></div>'
-        )
-    pool_cards.extend([
-        '<div class="statistics-limit-card">'
-        '<span>Токены за 24 часа</span>'
-        f'<strong title="{html.escape(format_token_count(last_24h.get("total_tokens")))}">'
-        f'{html.escape(compact_token_count(last_24h.get("total_tokens")))}</strong>'
-        f'<small>{safe_int(last_24h.get("session_count"))} сессий</small>'
-        '</div>',
-        '<div class="statistics-limit-card">'
-        '<span>Привязано к задачам</span>'
-        f'<strong>{usage_percent(coverage.get("current_pool_task_token_attribution_percent"), 1)}</strong>'
-        f'<small>{safe_int(coverage.get("sessions_with_tokens"))} сессий с точными токенами</small>'
-        '</div>',
-    ])
-    generated = short_datetime(usage.get("generated_at")) or "нет данных"
-    return (
-        '<section class="statistics-host-panel">'
-        '<div class="statistics-section-head"><div>'
-        '<div class="statistics-eyebrow">Расход Codex</div>'
-        '<h2>Куда уходят недельные лимиты</h2>'
-        '<p>Точные токены по сессиям и оценочная атрибуция процентов по задачам, агентам и проектам.</p>'
-        '</div><div class="statistics-section-action">'
-        f'<span>Обновлено {html.escape(generated)}</span>'
-        '<a class="button" href="/usage">Детальный отчёт</a>'
-        '</div></div>'
-        f'<div class="statistics-limit-grid">{"".join(pool_cards)}</div>'
-        '</section>'
-    )
-
-
-def usage_rank_chart(rows: list[dict[str, Any]], limit: int = 8) -> str:
-    visible = [row for row in rows if isinstance(row, dict) and safe_int(row.get("total_tokens")) > 0][:limit]
-    maximum = max((safe_int(row.get("total_tokens")) for row in visible), default=0)
-    items = []
-    for row in visible:
-        tokens = safe_int(row.get("total_tokens"))
-        width = max(2.0, tokens * 100.0 / maximum) if maximum else 0
-        label = str(row.get("task_id") or row.get("label") or row.get("id") or "—")
-        project = str(row.get("project_id") or "")
-        display = f"{project} · {label}" if project else label
-        items.append(
-            '<div class="usage-rank-row">'
-            f'<div class="usage-rank-label" title="{html.escape(display)}">{html.escape(display)}</div>'
-            '<div class="usage-rank-track">'
-            f'<div class="usage-rank-fill" style="width:{width:.2f}%"></div>'
-            '</div>'
-            f'<strong title="{html.escape(format_token_count(tokens))}">{html.escape(compact_token_count(tokens))}</strong>'
-            '</div>'
-        )
-    return "".join(items) or '<div class="project-empty">Токенов в текущих недельных окнах пока нет.</div>'
-
-
-def usage_aggregate_table(rows: list[dict[str, Any]], dimension: str) -> str:
-    rendered = []
-    for row in rows[:250]:
-        if not isinstance(row, dict):
-            continue
-        if dimension == "task":
-            identity = (
-                f'<code>{html.escape(str(row.get("task_id") or row.get("label") or "—"))}</code>'
-                f'<div class="muted">{html.escape(str(row.get("project_id") or "—"))}</div>'
-            )
-        else:
-            identity = html.escape(str(row.get("label") or row.get("id") or "—"))
-        rendered.append(
-            '<tr data-usage-row>'
-            f'<td>{identity}</td>'
-            f'<td>{safe_int(row.get("session_count"))}</td>'
-            f'<td title="{html.escape(format_token_count(row.get("total_tokens")))}">{html.escape(compact_token_count(row.get("total_tokens")))}</td>'
-            f'<td>{html.escape(format_token_count(row.get("cached_input_tokens")))}</td>'
-            f'<td>{html.escape(format_token_count(row.get("output_tokens")))}</td>'
-            f'<td>{usage_percent(row.get("estimated_general_limit_percent"))}</td>'
-            f'<td>{usage_percent(row.get("estimated_spark_limit_percent"))}</td>'
-            f'<td>{html.escape(compact_token_count(row.get("tokens_last_24h")))}</td>'
-            f'<td>{html.escape(short_datetime(row.get("last_at")) or "—")}</td>'
-            '</tr>'
-        )
-    return (
-        '<div class="scroll-panel"><table class="usage-table"><thead><tr>'
-        f'<th>{html.escape(dimension.title())}</th><th>Сессий</th><th>Токены</th>'
-        '<th>Cached input</th><th>Output</th><th>~общий лимит</th><th>~Spark лимит</th>'
-        '<th>Токены 24ч</th><th>Последняя</th>'
-        '</tr></thead>'
-        f'<tbody>{"".join(rendered) or "<tr><td colspan=9>Данных пока нет</td></tr>"}</tbody></table></div>'
-    )
-
-
-def usage_sessions_table(rows: list[dict[str, Any]]) -> str:
-    rendered = []
-    for row in rows[:500]:
-        if not isinstance(row, dict):
-            continue
-        task = str(row.get("task_id") or "без task id")
-        attribution = str(row.get("attribution_source") or "unattributed")
-        rendered.append(
-            '<tr data-usage-row>'
-            f'<td><code>{html.escape(task)}</code><div class="muted">{html.escape(str(row.get("run_id") or row.get("session_id") or ""))}</div></td>'
-            f'<td>{html.escape(str(row.get("project_id") or "—"))}</td>'
-            f'<td>{html.escape(str(row.get("agent_id") or "—"))}<div class="muted">{html.escape(str(row.get("agent_role") or ""))}</div></td>'
-            f'<td>{html.escape(str(row.get("model") or "—"))}<div class="muted">{html.escape(str(row.get("reasoning_effort") or ""))}</div></td>'
-            f'<td>{html.escape(short_datetime(row.get("started_at")) or "—")}</td>'
-            f'<td>{safe_int(row.get("duration_seconds"))}с</td>'
-            f'<td title="{html.escape(format_token_count(row.get("total_tokens")))}">{html.escape(compact_token_count(row.get("total_tokens")))}</td>'
-            f'<td>{html.escape(format_token_count(row.get("cached_input_tokens")))}</td>'
-            f'<td>{html.escape(format_token_count(row.get("output_tokens")))}</td>'
-            f'<td title="Не суммируется при параллельных сессиях">{usage_percent(row.get("observed_limit_delta_percent"))}</td>'
-            f'<td>{usage_percent(row.get("estimated_general_limit_percent"))}</td>'
-            f'<td>{usage_percent(row.get("estimated_spark_limit_percent"))}</td>'
-            f'<td>{html.escape(attribution)}</td>'
-            '</tr>'
-        )
-    return (
-        '<div class="scroll-panel"><table class="usage-table"><thead><tr>'
-        '<th>Задача / Run</th><th>Проект</th><th>Агент</th><th>Модель</th><th>Старт</th><th>Время</th>'
-        '<th>Токены</th><th>Cached</th><th>Output</th><th>Набл. Δ</th><th>~общий</th><th>~Spark</th><th>Атрибуция</th>'
-        '</tr></thead>'
-        f'<tbody>{"".join(rendered) or "<tr><td colspan=13>Сессий пока нет</td></tr>"}</tbody></table></div>'
-    )
-
-
-def render_usage(snapshot: dict[str, Any]) -> str:
-    usage = snapshot.get("codex_usage") if isinstance(snapshot.get("codex_usage"), dict) else {}
-    pools = usage.get("weekly_pools") if isinstance(usage.get("weekly_pools"), list) else []
-    coverage = usage.get("coverage") if isinstance(usage.get("coverage"), dict) else {}
-    last_24h = usage.get("last_24h") if isinstance(usage.get("last_24h"), dict) else {}
-    by_task = usage.get("by_task") if isinstance(usage.get("by_task"), list) else []
-    by_agent = usage.get("by_agent") if isinstance(usage.get("by_agent"), list) else []
-    by_project = usage.get("by_project") if isinstance(usage.get("by_project"), list) else []
-    by_model = usage.get("by_model") if isinstance(usage.get("by_model"), list) else []
-    sessions = usage.get("sessions") if isinstance(usage.get("sessions"), list) else []
-    pool_metrics = "".join(
-        metric(
-            str(pool.get("label") or pool.get("pool_id") or "Недельный"),
-            f'{usage_percent(pool.get("used_percent"), 0)} / осталось {usage_percent(pool.get("remaining_percent"), 0)}',
-            "human" if (safe_float(pool.get("remaining_percent")) or 100) <= 10 else "",
-        )
-        for pool in pools
-        if isinstance(pool, dict)
-    )
-    definitions = usage.get("metric_definitions") if isinstance(usage.get("metric_definitions"), dict) else {}
-    body = (
-        '<div class="usage-page">'
-        '<div class="topline"><div><div class="statistics-eyebrow">Codex usage attribution</div>'
-        '<h1>Детальный расход лимитов</h1>'
-        f'<div class="muted">Обновлено: {html.escape(short_datetime(usage.get("generated_at")) or "нет данных")} · '
-        f'источник: {html.escape(str(usage.get("source") or "не подключён"))}</div></div>'
-        '<a class="button" href="/api/codex-usage.json">JSON отчёта</a></div>'
-        '<section class="summary-panel"><h2>Текущие недельные окна</h2>'
-        f'<div class="metrics wide">{pool_metrics}'
-        f'{metric("Токены 24ч", compact_token_count(last_24h.get("total_tokens")))}'
-        f'{metric("Сессии 24ч", safe_int(last_24h.get("session_count")))}'
-        f'{metric("Покрытие task id", usage_percent(coverage.get("current_pool_task_token_attribution_percent"), 1))}'
-        f'{metric("Сессии с токенами", safe_int(coverage.get("sessions_with_tokens")))}'
-        '</div></section>'
-        '<section class="usage-method"><strong>Как читать проценты.</strong> '
-        'Токены точные. «Набл. Δ» — движение общего пула во время одной сессии и не складывается при параллельной работе. '
-        'Колонки «~общий» и «~Spark» — аддитивная оценка: наблюдаемое движение пула распределено по доле точных токенов. '
-        f'Нераспределённая часть остаётся видимой в карточках пулов. '
-        f'<span title="{html.escape(str(definitions))}">Определения метрик</span>.</section>'
-        '<section class="project-panel"><h2>Крупнейшие задачи по токенам</h2>'
-        '<p class="project-panel-lead">Текущие недельные окна; горизонтальная шкала начинается с нуля.</p>'
-        f'<div class="usage-rank">{usage_rank_chart(by_task)}</div></section>'
-        '<section class="project-panel"><div class="statistics-section-head"><div><h2>Фильтр отчёта</h2>'
-        '<p>Ищет одновременно по задаче, проекту, агенту, модели и run id.</p></div>'
-        '<input class="usage-filter" id="usage-filter" type="search" placeholder="Например: myvpn или auto-worker-5.3"></div></section>'
-        '<section class="project-panel"><h2>По задачам</h2>'
-        f'{usage_aggregate_table(by_task, "task")}</section>'
-        '<section class="project-panel"><h2>По агентам</h2>'
-        f'{usage_aggregate_table(by_agent, "agent")}</section>'
-        '<section class="project-panel"><h2>По проектам</h2>'
-        f'{usage_aggregate_table(by_project, "project")}</section>'
-        '<section class="project-panel"><h2>По моделям</h2>'
-        f'{usage_aggregate_table(by_model, "model")}</section>'
-        '<section class="project-panel"><h2>Отдельные сессии</h2>'
-        f'{usage_sessions_table(sessions)}</section>'
-        '</div>'
-        '<script>(()=>{const input=document.getElementById("usage-filter");'
-        'input?.addEventListener("input",()=>{const q=input.value.trim().toLowerCase();'
-        'document.querySelectorAll("[data-usage-row]").forEach(row=>{row.hidden=!!q&&!row.textContent.toLowerCase().includes(q);});});})();</script>'
-    )
-    return layout("Расход лимитов Codex", snapshot, body)
-
-
 def progress_text(item: dict[str, Any] | None) -> str:
     if not item:
         return ""
@@ -11313,7 +11068,6 @@ def render_statistics_index(snapshot: dict[str, Any]) -> str:
         f'{remote_pc_load_statistics_panel(summary.get("resource_load"), summary.get("resource_activity"))}'
         f'{vps_fleet_statistics_panel(snapshot.get("vps_fleet"))}'
         f'{weekly_codex_limits_statistics_panel(snapshot.get("codex_limit_consensus"))}'
-        f'{codex_usage_summary_panel(snapshot.get("codex_usage"))}'
         '<section class="statistics-coming">'
         '<div class="statistics-eyebrow">Заполняем постепенно</div>'
         "<h2>Следующие статистические блоки появятся здесь</h2>"
@@ -12141,9 +11895,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if path in {"/infrastructure", "/infrastructure/", "/vps", "/vps/"}:
             self.send_text(HTTPStatus.OK, "text/html", render_infrastructure_index(snapshot))
             return
-        if path in {"/usage", "/usage/", "/limits", "/limits/", "/codex-usage", "/codex-usage/"}:
-            self.send_text(HTTPStatus.OK, "text/html", render_usage(snapshot))
-            return
         if path == "/latest.json":
             self.send_json(HTTPStatus.OK, snapshot)
             return
@@ -12171,9 +11922,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/codex-limit-consensus.json":
             self.send_json(HTTPStatus.OK, snapshot.get("codex_limit_consensus", []))
-            return
-        if path == "/api/codex-usage.json":
-            self.send_json(HTTPStatus.OK, snapshot.get("codex_usage", {}))
             return
         if path == "/api/model-cost-analytics.json":
             self.send_json(HTTPStatus.OK, snapshot.get("model_cost_analytics", []))
