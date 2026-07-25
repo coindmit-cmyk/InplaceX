@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:23:20Z",
+  "updated_at": "2026-07-25T17:47:14Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -87,13 +87,16 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam",
       "at": "2026-07-25T17:23:11Z",
       "expires_at": "2026-07-26T01:23:11Z",
-      "notes": "central runner claim"
+      "notes": "terminal/free task row lock cleanup",
+      "released_at": "2026-07-25T17:47:14Z",
+      "released_by": "release_dead_worker_claims.py",
+      "release_reason": "terminal/free task row lock cleanup"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
