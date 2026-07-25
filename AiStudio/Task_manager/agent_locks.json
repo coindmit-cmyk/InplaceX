@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:03:32Z",
+  "updated_at": "2026-07-25T19:07:08Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -306,6 +306,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s23/guest-identity-profile-and-versioned-cloud-save",
       "at": "2026-07-25T18:54:56Z",
       "expires_at": "2026-07-26T02:54:56Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "state": "in_progress",
+      "by": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch",
+      "at": "2026-07-25T19:07:08Z",
+      "expires_at": "2026-07-26T03:07:08Z",
       "notes": "central runner claim"
     }
   ]
