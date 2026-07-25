@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-07-25T17:01:04Z",
+  "summary": {
+    "candidate_count": 5,
+    "scheduling_class_counts": {
+      "primary_delivery": 5
+    },
+    "integration_continuation_count": 0,
+    "primary_candidate_count": 5,
+    "background_candidate_count": 0,
+    "primary_slot_reservation_required": true
+  },
+  "candidates": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+      "title": "Typed match feedback and validated checkpoint",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/engine/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/match/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/core/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+      "title": "Typed localization catalogs and parity tests",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "apps/catalog/**",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+      "title": "SQLite schema and safe test seam",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
+      "title": "CI foundation and artifact identity",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        ".github/workflows/**",
+        "scripts/ci/**",
+        "docs/automation/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+      "title": "Versioned online REST WebSocket and security contracts",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-docs/Backend/**",
+        "InplaceX-docs/Game/GPT/Public Interfaces.md",
+        "schemas/online/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    }
+  ]
+}
