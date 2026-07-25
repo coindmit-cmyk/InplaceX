@@ -534,13 +534,17 @@
     },
     {
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
       "at": "2026-07-25T22:25:47Z",
       "expires_at": "2026-07-26T06:25:47Z",
-      "notes": "central runner claim"
+      "notes": "S17 launch stopped before edits for worker-report scope repair",
+      "review_at": "2026-07-25T22:29:57Z",
+      "released_at": "2026-07-25T22:29:57Z",
+      "released_by": "Codex dispatcher packet audit",
+      "release_reason": "required docs/reports/workers output was absent from allowed_paths"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",

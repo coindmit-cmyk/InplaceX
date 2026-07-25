@@ -5203,7 +5203,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "Lint cleanup and blocking quality gate",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5230,7 +5230,8 @@
         "InplaceX-android/**",
         ".github/workflows/**",
         "scripts/ci/**",
-        "docs/automation/**"
+        "docs/automation/**",
+        "docs/reports/workers/**"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -5250,7 +5251,7 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5382,7 +5383,8 @@
           "InplaceX-android/**",
           ".github/workflows/**",
           "scripts/ci/**",
-          "docs/automation/**"
+          "docs/automation/**",
+          "docs/reports/workers/**"
         ],
         "forbidden_paths": [
           ".git/**",
@@ -5462,7 +5464,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
       "started_at": "2026-07-25T22:26:24Z",
       "lock_expires_at": "2026-07-26T06:26:24Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "aborted cleanly before edits because the required worker report path was missing from allowed_paths; packet repaired for retry"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
