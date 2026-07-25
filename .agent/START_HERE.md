@@ -2,6 +2,89 @@
 
 Universal router for GPT chats, Codex sessions, automation runners and external reviewers.
 
+## Identity
+
+- Project id: `inplacex`.
+- Owner-controlled repository: `coindmit-cmyk/InplaceX`.
+- Comparison-only upstream: `GoodEvil11/InplaceX`.
+- Canonical integration branch: `develop`.
+- Canonical unattended writer host: `remote_aistudio_pc`.
+- Canonical remote checkout: `/home/main/agent-runtime/managed-checkouts/inplacex`.
+
+## First Steps
+
+1. Read `AGENTS.md`, `.agent/general.md`, `.agent/project.md`,
+   `.agent/modules.md`, and `.agent/workflows.md`.
+2. Fetch the owner-controlled remote and prove the checkout is clean and exact
+   at `origin/develop`.
+3. Read `.agent/agent_version.json`, this file, the project Registry entry,
+   `AiStudio/Task_manager/task_queue.json`, locks, and owner directives.
+4. Read the canonical architecture or game-mode documents required by the task.
+5. If any required orientation source is missing, stale, contradictory, or
+   unsafe to refresh, stop with `orientation_blocked`.
+
+## Branch Model
+
+`develop` is the only normal integration branch. Workers use separate clean
+worktrees and task branches created from the exact current base. The
+owner-controlled fork is the write remote; upstream is never force-pushed.
+Release and production refs are created only by their explicit gates.
+
+## Version Contract
+
+`PROJECT_VERSION.json` is the future single project release identity and must
+carry `component_versions` once introduced by the release/CI task. Until that
+file exists, use `.agent/agent_version.json` for Agent Core identity and the
+Android/backend build files for component versions. Never infer a shipped
+version from a branch name, chat history, or an unsigned artifact.
+
+## Navigation
+
+- Android runtime: `InplaceX-android/app`.
+- Shared game and bot domain: `InplaceX-bot-core`.
+- Backend runtime: `InplaceX-backend`.
+- Logging contract: `InplaceX-logging`.
+- Canonical product and architecture docs: `InplaceX-docs`.
+- Finalization handoff: `docs/00_dispatch/design-sessions/inplacex-finalization/v002`.
+
+## Tasks And State
+
+The project-local authority is `AiStudio/Task_manager/`. Queue rows are not
+claimable merely because they are visible. Dispatcher must prove dependencies,
+Worker Packet v2, allowed paths, checks, freshness, locks, and model routing.
+The remote Registry is inventory and host authority; it does not replace the
+project queue.
+
+## Architecture And Specs
+
+Architecture, public contracts, game modes, providers, bot behavior, and online
+work must follow the matching canonical documents under
+`InplaceX-docs/Game/GPT/`, `InplaceX-docs/Game/Human/`, and
+`InplaceX-docs/Backend/`. `GameFieldScreen` is a route target, the ViewModel and
+domain own state/rules, and `GameScreen` is the stateless presentation boundary.
+
+## Local-Only Access
+
+Machine paths, SSH aliases, device serials, tokens, signing material, provider
+credentials, and VPS details stay in local-only configuration or an approved
+secret store. The runtime Registry path is local-only. Never copy its access
+material into Git, task packets, logs, screenshots, or reports.
+
+## Work Protocol
+
+Protect owner changes, use clean worktrees, stay inside `allowed_paths`, add
+tests and sanitized logging at behavior boundaries, and return a worker report
+with exact checks and `integration_requested`. Failed checks route back to
+`needs_worker_fix`; they are not partially integrated.
+
+## Approval Gates
+
+Explicit approval or owner/integrator evidence is required for production/VPS
+activation, DNS/TLS/firewall changes, signing, provider-console credentials,
+physical-phone use, destructive migrations, cleanup, branch deletion, and
+release publication. Current developer/debug tools remain available for owner
+testing until their later release-isolation tasks.
+
 ## Start Rule
 
 Do not work from chat memory alone. Refresh GitHub and repository documentation before planning, assigning, reviewing or implementing work.
@@ -13,7 +96,7 @@ Use this file only to identify the role and the files to read next. Role-specifi
 Before using local project files as source of truth, run or require the GitHub freshness guard:
 
 ```text
-python scripts/agent_control/github_freshness_guard.py --project-root <project> --base-ref origin/develop --fetch --json
+python scripts/agent_control/github_freshness_guard.py --project-root . --base-ref origin/develop --fetch --json
 ```
 
 If the checkout is behind GitHub or cannot be refreshed safely, stop normal work and report `sync_blocked`.
