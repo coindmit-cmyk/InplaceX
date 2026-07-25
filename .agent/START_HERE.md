@@ -2,6 +2,8 @@
 
 Universal router for GPT chats, Codex sessions, automation runners and external reviewers.
 
+Codex Chat must read `.agent/CODEX_CHAT.md` after this entry point and before editing.
+
 ## Identity
 
 - Project id: `inplacex`.
