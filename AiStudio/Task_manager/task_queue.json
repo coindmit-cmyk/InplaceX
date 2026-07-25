@@ -6916,7 +6916,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "title": "Idempotent session persistence and reconnect",
-      "status": "integration_requested",
+      "status": "blocked_by_dependency",
       "priority": "P1",
       "complexity": "XL",
       "type": "critical-implementation",
@@ -6934,13 +6934,32 @@
       ],
       "depends_on": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
       ],
-      "blocked_by": [],
+      "blocked_by": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
+      ],
       "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
       ],
+      "split_into": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
+      ],
+      "integration_repair_child_ids": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
+      ],
+      "synthesis_required": true,
+      "split_reason": "ac4f9c0 contains useful PostgreSQL persistence but still combines contract security, authoritative transition and JDBC concerns; strict review requires three independently gated repairs",
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/build.gradle.kts",
@@ -6984,13 +7003,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "review",
+      "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "XL repair packet is assigned to the strongest worker with exact rejected-result findings and non-negotiable PostgreSQL/security gates",
-      "next_owner": "Integrator",
+      "packet_status": "split_into_children",
+      "normalization_status": "integration_repair_split",
+      "dispatcher_decision": "split_into_children",
+      "dispatcher_decision_reason": "Strict review split the rejected monolith into security contracts, authoritative transition and JDBC/reconnect children",
+      "next_owner": "Dispatcher",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
@@ -7311,18 +7330,17 @@
         "229a9f59ab9033e4b75923fdc9ae447092b8eab6",
         "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078"
       ],
-      "integration_status": "pending",
+      "integration_status": "repair_in_progress",
       "integration_review_status": "rejected",
-      "integration_reviewed_at": "2026-07-25T20:16:00Z",
+      "integration_reviewed_at": "2026-07-25T20:52:00Z",
       "integration_reviewed_by": "Codex integrator independent review",
-      "integration_review_report": "docs/reports/integration/S25_INTEGRATOR_REVIEW_229A9F5_20260725.md",
+      "integration_review_report": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
       "integration_review_findings": [
-        "raw JSON and caller-controlled event/fingerprint boundary remains",
-        "64 KiB and forbidden-data enforcement are absent",
-        "V3 fabricates legacy authoritative snapshot from config_json",
-        "legacy appendCommand remains a divergent write path",
-        "reconnect is unbounded and transactionally inconsistent",
-        "PostgreSQL/Testcontainers, concurrency, rollback and security corpus gates are absent"
+        "actorId is caller-controlled and not bound to an authenticated principal or participant",
+        "caller supplies resultingSnapshot, event and result instead of a server-authoritative transition",
+        "value redaction and command log sanitization remain incomplete",
+        "short numeric secrets use a deterministic unkeyed fingerprint",
+        "PublicSessionSchema and JdbcDurableDuelSessionRepository remain 740 and 856 line monoliths"
       ],
       "repair_spec": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
       "worker_ready_promotion_history": [
@@ -7356,7 +7374,7 @@
           "reason": "independently reviewed fresh retry packet is worker ready"
         }
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request"
+      "status_reason": "ac4f9c0 is preserved as salvage evidence; parent remains blocked until all three strict repair children are integrated and synthesized"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
@@ -8903,6 +8921,384 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ]
+    },
+    {
+      "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+      "title": "S25A authenticated public session contracts and security codec",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "phase": "Integration Repair",
+      "module_id": "backend.session-contract-security",
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
+      ],
+      "blocked_by": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
+      ],
+      "summary": "Rebuild only the useful public contract, codec and security boundary from ac4f9c0 as small reviewable components.",
+      "allowed_paths": [
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/contract/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/codec/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/security/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/contract/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/codec/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/security/**",
+        "docs/reports/workers/**",
+        "CHANGELOG.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+        "InplaceX-backend/src/main/resources/db/migration/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+        "InplaceX-android/**",
+        "ops/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "Public snapshot, event, result and intent are closed typed contracts with deterministic canonical encoding and the 64 KiB frame limit.",
+        "Actor identity is a server-established type that cannot be constructed from an arbitrary caller string at the persistence boundary.",
+        "Secret fingerprints use injected server-keyed HMAC/pepper; no secret or pepper is persisted, logged or included in public JSON.",
+        "Forbidden names and values are rejected across every known field, opaque id and nested payload; safe log attributes never contain raw actor, command, token or numeric-secret-shaped values.",
+        "Contract, codec, fingerprint and redaction responsibilities are split into focused files; no new production file exceeds 400 lines.",
+        "Adversarial tests cover forbidden known-field values, oversize frames, malformed JSON, actor spoofing, HMAC separation and log sanitization."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "Strict S25 review produced a bounded security-contract rebuild packet",
+      "next_owner": "worker_pool",
+      "recommended_agent": "auto-worker-5.5max",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5max",
+        "auto-worker-5.5"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "parent_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "repair_source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
+      "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
+      "worker_instructions": [
+        "Read docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md and S25_REPAIR_SPEC_20260725.md completely before editing.",
+        "Use ac4f9c0 only as read-only salvage evidence; rebuild the allowed contract, codec and security components on current origin/develop.",
+        "Do not copy persistence, migrations, repository SQL or the 740-line PublicSessionSchema monolith.",
+        "Do not add secrets or pepper values to source, fixtures, reports, logs or artifacts.",
+        "Run every required check and return needs_worker_fix on any unmet security or scope gate."
+      ],
+      "traceability": {
+        "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "canonical_task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "derived_from": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+        "source_commit": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078"
+      },
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+          "ac4f9c0:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/PublicSessionSchema.kt"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+            "purpose": "authoritative rejection findings and split boundary"
+          },
+          {
+            "path": "InplaceX-docs/Backend/Online Contracts.md",
+            "purpose": "canonical authoritative server contract"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+            "purpose": "integration repair parent"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Rebuild compatible additions on current develop and integrate only the bounded security-contract slice."
+      },
+      "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+          "purpose": "mandatory strict review"
+        },
+        {
+          "path": "docs/reports/integration/S25_REPAIR_SPEC_20260725.md",
+          "purpose": "mandatory security and persistence gates"
+        },
+        {
+          "path": "InplaceX-docs/Backend/Online Contracts.md",
+          "purpose": "canonical online contract"
+        }
+      ],
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-backend/build.gradle.kts",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/contract/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/codec/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/security/**",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/**",
+          "docs/reports/workers/**",
+          "CHANGELOG.md"
+        ],
+        "changed_paths": [],
+        "context_docs": [
+          "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+          "InplaceX-docs/Backend/Online Contracts.md"
+        ],
+        "worker_source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z"
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :InplaceX-backend:test",
+          "bash gradlew verifyProject",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-S25-CODEC_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :InplaceX-backend:test",
+          "required": true,
+          "purpose": "security contract and codec regression suite",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew verifyProject",
+          "required": true,
+          "purpose": "cross-module compatibility",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "patch hygiene",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "S22 identity/profile and save storage contracts remain unchanged.",
+        "S24 authoritative duel aggregate remains the source of game rules.",
+        "ac4f9c0 is salvage evidence and is not an integration baseline."
+      ],
+      "preserve_contract": [
+        "Do not weaken public frame size, redaction, authentication or secret-handling requirements.",
+        "Extend current develop with focused components; do not replace more complete target behavior."
+      ],
+      "regression_guards": [
+        "No raw actor id, command id, token-shaped value, short numeric secret or pepper may appear in logs, reports or public JSON.",
+        "Do not edit persistence SQL, migrations, transport, Android or VPS files.",
+        "Reject arbitrary actor construction and deterministic unkeyed secret fingerprints."
+      ],
+      "code_refs": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/domain/duel/**"
+      ],
+      "integration_notes": [
+        "This is child A of a three-stage S25 repair and must be independently reviewed before child B is promoted.",
+        "Direct merge is not authorized; Integrator must inspect security tests and file boundaries."
+      ],
+      "provenance": {
+        "source": "Codex strict integrator review",
+        "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+        "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
+        "review_report": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+        "created_at": "2026-07-25T20:53:00Z"
+      },
+      "direct_merge_authorized": false,
+      "requires_strong_review": true
+    },
+    {
+      "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+      "title": "S25B authoritative command transition application",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "phase": "Integration Repair",
+      "module_id": "backend.session-authority",
+      "depends_on": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "blocked_by": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Introduce the server-authoritative application boundary after the security contracts are integrated.",
+      "allowed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "docs/reports/workers/**",
+        "CHANGELOG.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+        "InplaceX-backend/src/main/resources/db/migration/**",
+        "InplaceX-android/**",
+        "ops/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "External commands contain only typed intent and never caller-authored snapshot, event, score, phase, winner or result.",
+        "The application service binds a trusted actor to a session participant, loads current state, enforces phase and turn ownership, and computes the transition with the authoritative duel aggregate.",
+        "Only an internally constructed validated transition can cross into persistence.",
+        "Adversarial tests reject spoofed actors, stale revisions, out-of-turn moves, forged outcomes, config/history mutation and commands after terminal phase.",
+        "Domain and application responsibilities remain in focused files and no new production file exceeds 400 lines."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "Wait for the authenticated contract and security codec child",
+      "not_worker_ready_reason": "S25A security contract child is not finalized",
+      "next_owner": "Dispatcher",
+      "recommended_agent": "auto-worker-5.5max",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5max",
+        "auto-worker-5.5"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "parent_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "repair_source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
+      "context_docs": [
+        "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+        "InplaceX-docs/Backend/Online Contracts.md"
+      ],
+      "provenance": {
+        "source": "Codex strict integrator review",
+        "created_at": "2026-07-25T20:53:00Z"
+      },
+      "direct_merge_authorized": false,
+      "requires_strong_review": true
+    },
+    {
+      "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
+      "title": "S25C split JDBC persistence reconnect and PostgreSQL gate",
+      "status": "blocked_by_dependency",
+      "priority": "P0",
+      "complexity": "XL",
+      "type": "clean-rebuild",
+      "phase": "Integration Repair",
+      "module_id": "backend.session-jdbc",
+      "depends_on": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
+      ],
+      "blocked_by": [
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
+      ],
+      "resolved_dependencies": [],
+      "summary": "Rebuild the useful ac4f9c0 transaction, V3 and reconnect behavior behind the validated transition boundary and split the JDBC monolith.",
+      "allowed_paths": [
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/DatabaseMigrations.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/JdbcRepositories.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+        "InplaceX-backend/src/main/resources/db/migration/V3__add_durable_duel_session_state.sql",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/JdbcPersistenceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/persistence/session/**",
+        "docs/reports/workers/**",
+        "CHANGELOG.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/resources/db/migration/V1__create_backend_persistence.sql",
+        "InplaceX-backend/src/main/resources/db/migration/V2__add_identity_profile_and_save_storage.sql",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+        "InplaceX-android/**",
+        "ops/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "JDBC accepts only the internally validated transition produced by S25B and atomically stores receipt, revision, snapshot and event.",
+        "Replacement V3 preserves legacy sessions without treating config_json as a public snapshot and exposes an explicit replay gap until public state exists.",
+        "Reconnect captures one upper cursor and returns a bounded coherent page with explicit retention-gap semantics.",
+        "Command write, receipt read, reconnect, retention, SQL mapping and safe logging are separate focused components; no touched production file exceeds 400 lines.",
+        "Real PostgreSQL/Testcontainers tests cover concurrent duplicate commands, actor conflicts, rollback, restart, retention and bounded reconnect.",
+        "The legacy appendCommand path cannot diverge from the validated online write path."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test",
+        "bash gradlew :InplaceX-backend:test --tests '*Postgres*'",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "Wait for the server-authoritative transition child",
+      "not_worker_ready_reason": "S25B authoritative transition child is not finalized",
+      "next_owner": "Dispatcher",
+      "recommended_agent": "auto-worker-5.5max",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5max"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "parent_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "repair_source_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
+      "source_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
+      "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
+      "context_docs": [
+        "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
+        "docs/reports/integration/S25_REPAIR_SPEC_20260725.md"
+      ],
+      "provenance": {
+        "source": "Codex strict integrator review",
+        "created_at": "2026-07-25T20:53:00Z"
+      },
+      "direct_merge_authorized": false,
+      "requires_strong_review": true
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",

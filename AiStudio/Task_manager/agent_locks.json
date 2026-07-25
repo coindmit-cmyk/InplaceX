@@ -395,14 +395,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s25/idempotent-session-persistence-and-reconnect-retry-20260725T201816Z",
       "at": "2026-07-25T20:18:16Z",
       "expires_at": "2026-07-26T04:18:16Z",
-      "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-25T20:51:44Z"
+      "notes": "strict integrator review split the useful persistence salvage into three bounded repair children",
+      "review_at": "2026-07-25T20:51:44Z",
+      "released_at": "2026-07-25T20:53:30Z",
+      "released_by": "Codex integrator independent review",
+      "release_reason": "S25 ac4f9c0 rejected for actor binding, authoritative transition, value redaction, secret fingerprint and architecture blockers"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
