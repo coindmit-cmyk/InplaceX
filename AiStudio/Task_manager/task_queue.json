@@ -5283,7 +5283,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
       "title": "Debug and release source-set isolation",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -5312,10 +5312,22 @@
       "allowed_paths": [
         "InplaceX-android/app/src/debug/**",
         "InplaceX-android/app/src/release/**",
+        "InplaceX-android/app/src/testDebug/**",
+        "InplaceX-android/app/src/testRelease/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/SettingsRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/DebugSecretAdSlot.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
         "InplaceX-android/app/build.gradle.kts",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/workers/**"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -5326,21 +5338,23 @@
       ],
       "acceptance_criteria": [
         "Owner debug tools remain available in debug builds.",
-        "Release cannot render secret/debug controls or include debug fixtures.",
-        "Release behavior is verified by variant-aware tests."
+        "Release cannot render secret/debug controls or include debug screens, secret renderers, fixtures or debug localization keys.",
+        "Release behavior is verified by separate debug/release variant tests and a forbidden-symbol scan of the assembled release APK."
       ],
       "checks": [
         "bash gradlew assembleDebug",
         "bash gradlew assembleRelease",
         "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:testReleaseUnitTest",
+        "release APK DEX scan rejects developer/debug screen symbols, secret renderers and debug localization keys",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "dispatcher_decision_reason": "e11221c proved the original scope could not remove release debug entry points; retry scope now covers every confirmed route, renderer, catalog and variant test",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -5371,6 +5385,10 @@
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
+        "Read docs/reports/integration/S18_INTEGRATOR_REVIEW_E11221C_20260725.md before editing and use e11221c only as blocker evidence.",
+        "Physically isolate debug screens, developer navigation, secret renderers and debug localization entries from the release variant; runtime hiding alone is insufficient.",
+        "Preserve all current owner debug tools and debug localization in the debug variant.",
+        "Inspect release DEX contents after assembleRelease and fail if any forbidden debug symbol or key remains.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5399,6 +5417,10 @@
       },
       "doc_refs": [
         {
+          "path": "docs/reports/integration/S18_INTEGRATOR_REVIEW_E11221C_20260725.md",
+          "purpose": "mandatory packet blocker evidence and retry contract"
+        },
+        {
           "path": "InplaceX-docs/Game/GPT/Provider Runtime Config.md",
           "purpose": "required context"
         },
@@ -5418,20 +5440,44 @@
       "code_refs": [
         "InplaceX-android/app/src/debug/**",
         "InplaceX-android/app/src/release/**",
+        "InplaceX-android/app/src/testDebug/**",
+        "InplaceX-android/app/src/testRelease/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/SettingsRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/DebugSecretAdSlot.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
         "InplaceX-android/app/build.gradle.kts",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/workers/**"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
         "code_refs": [
           "InplaceX-android/app/src/debug/**",
           "InplaceX-android/app/src/release/**",
+          "InplaceX-android/app/src/testDebug/**",
+          "InplaceX-android/app/src/testRelease/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/SettingsRootScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/DebugSecretAdSlot.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
           "InplaceX-android/app/build.gradle.kts",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/workers/**"
         ],
         "doc_refs": [
           {
@@ -5474,10 +5520,22 @@
         "allowed_paths": [
           "InplaceX-android/app/src/debug/**",
           "InplaceX-android/app/src/release/**",
+          "InplaceX-android/app/src/testDebug/**",
+          "InplaceX-android/app/src/testRelease/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
           "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/SettingsRootScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/DebugSecretAdSlot.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldDebugScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
           "InplaceX-android/app/build.gradle.kts",
-          "InplaceX-android/app/src/test/**"
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/workers/**"
         ],
         "forbidden_paths": [
           ".git/**",
@@ -5496,6 +5554,8 @@
           "bash gradlew assembleDebug",
           "bash gradlew assembleRelease",
           "bash gradlew :app:testDebugUnitTest",
+          "bash gradlew :app:testReleaseUnitTest",
+          "release APK DEX scan rejects developer/debug screen symbols, secret renderers and debug localization keys",
           "git diff --check"
         ],
         "worker_report_required": true,
@@ -5525,6 +5585,18 @@
           "on_failure": "stop and return needs_worker_fix with command output"
         },
         {
+          "command": "bash gradlew :app:testReleaseUnitTest",
+          "required": true,
+          "purpose": "release-variant behavior and source-set isolation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash -lc 'apk=InplaceX-android/app/build/outputs/apk/release/app-release-unsigned.apk; test -f \"$apk\"; ! for dex in $(unzip -Z1 \"$apk\" | grep -E \"^classes[0-9]*\\\\.dex$\"); do unzip -p \"$apk\" \"$dex\"; done | strings | grep -E \"DeveloperRootScreen|BotLabScreen|DebugSecretAdSlot|GameFieldDebugScreen|GameDebugAdSlot|game\\\\.debug\\\\.|developer\\\\.action\\\\.\"'",
+          "required": true,
+          "purpose": "prove forbidden debug symbols, secret renderers and keys are physically absent from release DEX",
+          "on_failure": "stop and return needs_worker_fix with exact matched symbols"
+        },
+        {
           "command": "git diff --check",
           "required": true,
           "purpose": "worker validation evidence",
@@ -5544,6 +5616,10 @@
         "Compare changed code against current develop before finalizing.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
+      "retry_count": 1,
+      "last_worker_result_commit": "e11221c4a00f266e7be9774b2ca0d53056251147",
+      "reviewed_at": "2026-07-25T21:45:00Z",
+      "status_reason": "e11221c confirmed the original packet omitted release entry points, secret renderers, game debug slots and localization catalogs; expanded retry is worker-ready",
       "integration_notes": [
         "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
@@ -5551,13 +5627,9 @@
       ],
       "repaired_packet_at": "2026-07-25T19:43:06Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "worker_id": "auto-worker-5.5",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation",
-      "started_at": "2026-07-25T21:34:35Z",
-      "lock_expires_at": "2026-07-26T05:34:35Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "last_worker_id": "auto-worker-5.5",
+      "last_machine_id": "aistudio-manual",
+      "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/debug-and-release-source-set-isolation"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
