@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-25T17:45:35Z",
+  "generated_at": "2026-07-25T18:02:47Z",
   "summary": {
-    "candidate_count": 5,
+    "candidate_count": 6,
     "scheduling_class_counts": {
-      "primary_delivery": 5
+      "primary_delivery": 6
     },
     "integration_continuation_count": 0,
-    "primary_candidate_count": 5,
+    "primary_candidate_count": 6,
     "background_candidate_count": 0,
     "primary_slot_reservation_required": true
   },
@@ -31,18 +31,18 @@
       "scheduling_class_reason": "default_primary_work"
     },
     {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
-      "title": "GameField state holder and SavedState restoration",
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
+      "title": "Stateless GameScreen presentation components",
       "priority": "P0",
       "complexity": "L",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
       ],
       "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race/RaceGameScreen.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
         "docs/reports/**",
         "CHANGELOG.md",
         "README.md"
@@ -66,11 +66,31 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
         "InplaceX-android/app/src/test/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "scheduling_class": "primary_delivery",
+      "scheduling_class_reason": "default_primary_work"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
+      "title": "SQLite schema and safe test seam",
+      "priority": "P0",
+      "complexity": "M",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/local/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -91,7 +111,8 @@
         "gradle/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
@@ -110,7 +131,8 @@
         "InplaceX-bot-core/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
