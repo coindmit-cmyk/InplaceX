@@ -675,7 +675,10 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
       "at": "2026-07-25T23:11:54Z",
       "expires_at": "2026-07-26T07:11:54Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "released_at": "2026-07-25T23:32:13Z",
+      "released_by": "Codex strict independent review",
+      "release_reason": "candidate 81262aff passed bot-core, backend, verifyProject and diff gates and was integrated as ba65b01"
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",

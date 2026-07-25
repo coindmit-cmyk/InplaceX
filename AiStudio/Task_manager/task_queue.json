@@ -10148,7 +10148,7 @@
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
       "title": "S25 prerequisite B mutable duel digits and zeroization",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10205,14 +10205,19 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "S25B blocker report 192e419 proves the canonical duel String API prevents a no-plaintext authoritative transition; packet has exact cross-module scope and zeroization gates",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "done",
+      "normalization_status": "done",
+      "dispatcher_decision": "done",
+      "dispatcher_decision_reason": "strict independent review passed mutable-buffer ownership, zeroization, no-plaintext, bot-core, backend and full-project gates",
+      "next_owner": "none",
+      "next_role": null,
+      "integration_status": "finalized",
+      "finalized_at": "2026-07-25T23:32:13Z",
+      "worker_result_commit": "81262aff004985f96a94859bfb1c4651b7fe62e3",
+      "merge_commit": "ba65b016f248cecf7fcee2d737ed462e1f0cc66a",
+      "reviewed_at": "2026-07-25T23:32:13Z",
       "recommended_agent": "auto-worker-5.5max",
       "eligible_worker_profiles": [
         "auto-worker-5.5max"
@@ -10384,7 +10389,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
       "started_at": "2026-07-25T23:11:54Z",
       "lock_expires_at": "2026-07-26T07:11:54Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "mutable duel digits and zeroization independently verified and integrated into automation/develop"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
