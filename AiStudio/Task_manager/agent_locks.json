@@ -111,13 +111,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity",
       "at": "2026-07-25T17:23:20Z",
       "expires_at": "2026-07-26T01:23:20Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "previous_state": "in_progress",
+      "released_at": "2026-07-25T17:45:12Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     }
   ]
 }
