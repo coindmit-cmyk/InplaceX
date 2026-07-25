@@ -10,6 +10,11 @@
 - Added PostgreSQL-backed versioned persistence migrations for players, cloud-save
   revisions, matchmaking tickets, duel sessions, idempotent commands, and events.
   Database connection credentials remain external process configuration.
+- Added durable public duel reconnect state with closed redacted snapshot/event
+  schemas, actor-scoped immutable command receipts, optimistic atomic commits,
+  bounded replay retention, and PostgreSQL/Testcontainers concurrency coverage.
+  This persists public recovery state only; full active-match restart recovery
+  still requires encrypted secret rehydration.
 - Added an isolated local Docker Compose backend/PostgreSQL stack with migration,
   backup/restore, rollback verification, localhost-only port binding, and a
   build-context secret exclusion policy.

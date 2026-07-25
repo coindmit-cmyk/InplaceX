@@ -1,5 +1,17 @@
 package com.mirkori.inplacex.backend.persistence
 
+import com.mirkori.inplacex.backend.persistence.session.DurableDuelCommandContent
+import com.mirkori.inplacex.backend.persistence.session.DurableDuelSessionCommand
+import com.mirkori.inplacex.backend.persistence.session.JdbcDurableDuelSessionRepository
+import com.mirkori.inplacex.backend.persistence.session.PublicDuelCommandResult
+import com.mirkori.inplacex.backend.persistence.session.PublicDuelParticipant
+import com.mirkori.inplacex.backend.persistence.session.PublicDuelPhase
+import com.mirkori.inplacex.backend.persistence.session.PublicDuelSessionEvent
+import com.mirkori.inplacex.backend.persistence.session.PublicDuelSessionSnapshot
+import com.mirkori.inplacex.backend.persistence.session.PublicGameConfig
+import com.mirkori.inplacex.backend.persistence.session.PublicParticipantSlot
+import com.mirkori.inplacex.backend.persistence.session.PublicParticipantType
+import com.mirkori.inplacex.backend.persistence.session.PublicSessionJson
 import java.sql.Connection
 import java.time.Instant
 import javax.sql.DataSource
@@ -228,77 +240,80 @@ class JdbcTicketRepository(private val dataSource: DataSource) {
     }
 }
 
-class JdbcSessionRepository(private val dataSource: DataSource) {
-    fun createSession(sessionId: String, mode: String, configJson: String) = dataSource.transaction { connection ->
-        connection.prepareStatement(
-            "INSERT INTO duel_sessions(id, mode, status, config_json, version) VALUES (?, ?, 'SETUP', ?, 0)",
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.setString(2, mode)
-            statement.setString(3, configJson)
-            statement.executeUpdate()
-        }
+class JdbcSessionRepository(dataSource: DataSource) {
+    private val durable = JdbcDurableDuelSessionRepository(dataSource)
+
+    fun createSession(sessionId: String, mode: String, configJson: String) {
+        val config: PublicGameConfig = PublicSessionJson.decodeConfig(configJson)
+        durable.createSession(
+            sessionId = sessionId,
+            mode = mode,
+            initialSnapshot = PublicDuelSessionSnapshot(
+                sessionId = sessionId,
+                revision = 0,
+                eventSequence = 0,
+                phase = PublicDuelPhase.SETUP_WAITING_FOR_PLAYERS,
+                config = config,
+                participants = listOf(
+                    PublicDuelParticipant(
+                        participantId = LEGACY_ACTOR_ID,
+                        slot = PublicParticipantSlot.A,
+                        participantType = PublicParticipantType.HUMAN,
+                        secretSubmitted = false,
+                        connected = true,
+                    ),
+                ),
+            ),
+        )
     }
 
+    @Deprecated("Use JdbcDurableDuelSessionRepository with typed command content")
     fun appendCommand(
         sessionId: String,
         clientCommandId: String,
         expectedVersion: Long,
         commandType: String,
         payloadJson: String,
-    ): StoredSessionCommand = dataSource.transaction { connection ->
-        existingCommand(connection, sessionId, clientCommandId)?.let { version ->
-            return@transaction StoredSessionCommand(sessionId, clientCommandId, version, replayed = true)
+    ): StoredSessionCommand {
+        require(commandType == "SET_SECRET") {
+            "Legacy session commands are restricted to the closed SET_SECRET compatibility path"
         }
-        val nextVersion = expectedVersion + 1
-        val updated = connection.prepareStatement(
-            "UPDATE duel_sessions SET version = ? WHERE id = ? AND version = ?",
-        ).use { statement ->
-            statement.setLong(1, nextVersion)
-            statement.setString(2, sessionId)
-            statement.setLong(3, expectedVersion)
-            statement.executeUpdate()
-        }
-        if (updated != 1) {
-            existingCommand(connection, sessionId, clientCommandId)?.let { version ->
-                return@transaction StoredSessionCommand(sessionId, clientCommandId, version, replayed = true)
+        val current = durable.readCurrentSnapshot(sessionId)
+        val event = PublicSessionJson.decodeLegacySecretStatus(payloadJson, LEGACY_ACTOR_ID)
+        val participants = current.participants.map { participant ->
+            if (participant.participantId == event.participantId) {
+                participant.copy(secretSubmitted = true)
+            } else {
+                participant
             }
-            throw RevisionConflictException(sessionId, expectedVersion)
         }
-        connection.prepareStatement(
-            """
-            INSERT INTO duel_commands(session_id, client_command_id, version, command_type, payload_json)
-            VALUES (?, ?, ?, ?, ?)
-            """.trimIndent(),
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.setString(2, clientCommandId)
-            statement.setLong(3, nextVersion)
-            statement.setString(4, commandType)
-            statement.setString(5, payloadJson)
-            statement.executeUpdate()
-        }
-        connection.prepareStatement(
-            "INSERT INTO duel_events(session_id, event_type, payload_json) VALUES (?, ?, ?)",
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.setString(2, commandType)
-            statement.setString(3, payloadJson)
-            statement.executeUpdate()
-        }
-        StoredSessionCommand(sessionId, clientCommandId, nextVersion, replayed = false)
+        val commit = durable.apply(
+            DurableDuelSessionCommand(
+                sessionId = sessionId,
+                actorId = event.participantId,
+                clientCommandId = clientCommandId,
+                expectedRevision = expectedVersion,
+                content = DurableDuelCommandContent.RecordSecretStatus,
+                resultingSnapshot = current.copy(
+                    revision = expectedVersion + 1,
+                    eventSequence = current.eventSequence + 1,
+                    participants = participants,
+                ),
+                event = event,
+                result = PublicDuelCommandResult.SecretAccepted(event.participantId),
+            ),
+        )
+        return StoredSessionCommand(
+            sessionId = sessionId,
+            clientCommandId = clientCommandId,
+            version = commit.receipt.revision,
+            replayed = commit.replayed,
+        )
     }
 
-    private fun existingCommand(connection: Connection, sessionId: String, clientCommandId: String): Long? =
-        connection.prepareStatement(
-            "SELECT version FROM duel_commands WHERE session_id = ? AND client_command_id = ?",
-        ).use { statement ->
-            statement.setString(1, sessionId)
-            statement.setString(2, clientCommandId)
-            statement.executeQuery().use { resultSet ->
-                if (resultSet.next()) resultSet.getLong("version") else null
-            }
-        }
+    companion object {
+        private const val LEGACY_ACTOR_ID = "legacy-actor"
+    }
 }
 
 internal inline fun <T> DataSource.transaction(block: (Connection) -> T): T = connection.use { connection ->
