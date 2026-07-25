@@ -213,9 +213,12 @@ data class LocalPlatformSnapshot(
     val pendingSyncOperations: List<PendingSyncOperation>,
 )
 
-class PlatformLocalRepository(context: Context) {
-    private val helper = GameProgressDbHelper(context.applicationContext)
-    private val gameProgressRepository = GameProgressRepository(context.applicationContext)
+class PlatformLocalRepository(
+    context: Context,
+    private val databaseConfig: LocalDatabaseConfig = LocalDatabaseConfig(),
+) {
+    private val helper = GameProgressDbHelper(context.applicationContext, databaseConfig)
+    private val gameProgressRepository = GameProgressRepository(context.applicationContext, databaseConfig)
 
     fun loadPlatformSnapshot(
         gameSlug: String = DEFAULT_GAME_SLUG,
@@ -244,7 +247,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun upsertPlayerProfile(profile: LocalPlayerProfile): LocalPlayerProfile {
         val db = helper.writableDatabase
-        val normalized = profile.normalizeTimestamps(nowMs())
+        val normalized = profile.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PLAYER_PROFILE,
             null,
@@ -271,7 +274,7 @@ class PlatformLocalRepository(context: Context) {
                 db.insertWithOnConflict(
                     GameProgressDbHelper.TABLE_IDENTITY_LINKS,
                     null,
-                    link.normalizeTimestamps(nowMs()).toContentValues(),
+                    link.normalizeTimestamps(databaseConfig.nowMs()).toContentValues(),
                     SQLiteDatabase.CONFLICT_REPLACE,
                 )
             }
@@ -283,7 +286,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun upsertRelationship(relationship: LocalSocialRelationship): LocalSocialRelationship {
         val db = helper.writableDatabase
-        val normalized = relationship.normalizeTimestamps(nowMs())
+        val normalized = relationship.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_SOCIAL_RELATIONSHIPS,
             null,
@@ -301,7 +304,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun upsertRoom(room: LocalOnlineRoom): LocalOnlineRoom {
         val db = helper.writableDatabase
-        val normalized = room.normalizeTimestamps(nowMs())
+        val normalized = room.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_ONLINE_ROOMS,
             null,
@@ -324,7 +327,7 @@ class PlatformLocalRepository(context: Context) {
                 db.insertWithOnConflict(
                     GameProgressDbHelper.TABLE_ONLINE_ROOM_MEMBERS,
                     null,
-                    member.normalizeTimestamps(nowMs()).toContentValues(),
+                    member.normalizeTimestamps(databaseConfig.nowMs()).toContentValues(),
                     SQLiteDatabase.CONFLICT_REPLACE,
                 )
             }
@@ -354,7 +357,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun upsertMatch(match: LocalMatchRecord): LocalMatchRecord {
         val db = helper.writableDatabase
-        val normalized = match.normalizeTimestamps(nowMs())
+        val normalized = match.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_ONLINE_MATCHES,
             null,
@@ -372,7 +375,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun recordMatchTurn(turn: LocalMatchTurn): LocalMatchTurn {
         val db = helper.writableDatabase
-        val normalized = turn.normalizeTimestamps(nowMs())
+        val normalized = turn.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_ONLINE_MATCH_TURNS,
             null,
@@ -398,7 +401,7 @@ class PlatformLocalRepository(context: Context) {
 
     fun enqueueSyncOperation(operation: PendingSyncOperation): PendingSyncOperation {
         val db = helper.writableDatabase
-        val normalized = operation.normalizeTimestamps(nowMs())
+        val normalized = operation.normalizeTimestamps(databaseConfig.nowMs())
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_SYNC_QUEUE,
             null,
@@ -424,7 +427,7 @@ class PlatformLocalRepository(context: Context) {
         val values = ContentValues().apply {
             put(COL_STATUS, status.name)
             put(COL_LAST_ERROR, lastError)
-            put(COL_UPDATED_AT, nowMs())
+            put(COL_UPDATED_AT, databaseConfig.nowMs())
             if (incrementRetryCount) {
                 put(COL_RETRY_COUNT, current.retryCount + 1)
             }
@@ -464,9 +467,9 @@ class PlatformLocalRepository(context: Context) {
             authProvider = if (progressState.googlePlaySignedIn) LocalAuthProvider.GOOGLE_PLAY else LocalAuthProvider.GUEST,
             isGuest = !progressState.googlePlaySignedIn,
             isOnline = false,
-            lastSeenAt = nowMs(),
-            createdAt = nowMs(),
-            updatedAt = nowMs(),
+            lastSeenAt = databaseConfig.nowMs(),
+            createdAt = databaseConfig.nowMs(),
+            updatedAt = databaseConfig.nowMs(),
         )
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PLAYER_PROFILE,
@@ -495,7 +498,7 @@ class PlatformLocalRepository(context: Context) {
             displayName = progressState.playerDisplayName,
             authProvider = expectedProvider,
             isGuest = !progressState.googlePlaySignedIn,
-            updatedAt = nowMs(),
+            updatedAt = databaseConfig.nowMs(),
         )
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PLAYER_PROFILE,
@@ -961,8 +964,6 @@ private inline fun <reified T : Enum<T>> android.database.Cursor.getEnum(
 }
 
 private fun Boolean.toDbInt(): Int = if (this) 1 else 0
-
-private fun nowMs(): Long = System.currentTimeMillis()
 
 private const val DEFAULT_GAME_SLUG = "inplacex"
 
