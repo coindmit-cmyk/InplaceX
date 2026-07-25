@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:04:00Z",
+  "updated_at": "2026-07-25T17:04:05Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -52,6 +52,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
       "at": "2026-07-25T17:04:00Z",
       "expires_at": "2026-07-26T01:04:00Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s05/typed-match-feedback-and-validated-checkpoint",
+      "at": "2026-07-25T17:04:05Z",
+      "expires_at": "2026-07-26T01:04:05Z",
       "notes": "central runner claim"
     }
   ]
