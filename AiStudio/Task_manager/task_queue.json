@@ -5843,7 +5843,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
       "title": "Retry S19 variant provider config wiring and release fail-closed policy",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5904,14 +5904,14 @@
         "bash gradlew assembleRelease",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "done",
+      "normalization_status": "done",
+      "dispatcher_decision": "done",
+      "dispatcher_decision_reason": "candidate 10ec48d independently reviewed, integrated as 5f7b5cd and verified on exact integrated develop with debug/release unit tests and release assemble",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
       "source_item_id": "INPX-REL-311",
@@ -6164,7 +6164,12 @@
           "reason": "second clean stopped attempt exposed shared defaultConfig test provider identifiers; preserve and force a fresh config-aware branch"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "candidate_commit": "10ec48d69d1f37b49a51e084d5267b9d88b482f8",
+      "integrated_commit": "5f7b5cdc7b5264294dad10e4512a4521b3d24aff",
+      "integration_status": "finalized",
+      "check_status": "passed",
+      "reviewed_at": "2026-07-25T23:12:00Z",
+      "status_reason": "debug mocks remain available only in debug; release contains live empty provider config and fail-closed adapters with no stub classes"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",

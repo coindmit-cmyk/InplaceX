@@ -643,13 +643,16 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-config-wiring-and-rel-retry-20260725T225755Z",
       "at": "2026-07-25T22:57:55Z",
       "expires_at": "2026-07-26T06:57:55Z",
-      "notes": "central runner claim"
+      "notes": "candidate 10ec48d integrated as 5f7b5cd and exact integrated develop verification passed",
+      "released_at": "2026-07-25T23:12:17Z",
+      "released_by": "Codex strict integrator",
+      "release_reason": "debug and release unit tests, release assemble, diff check and independent release artifact isolation audit passed"
     }
   ]
 }
