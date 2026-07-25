@@ -9900,18 +9900,478 @@
       "lock_expires_at": "2026-07-26T06:00:29Z"
     },
     {
+      "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "title": "S25 prerequisite A verified auth principal and session membership",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "phase": "Integration Repair",
+      "module_id": "backend.auth-principal",
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "blocked_by": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "summary": "Create the auth-owned, non-forgeable principal and session-membership capability required before authoritative online commands can accept an actor.",
+      "allowed_paths": [
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "InplaceX-backend/src/main/resources/db/migration/**",
+        "InplaceX-android/**",
+        "ops/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "Only verification of signature, HS256 algorithm, issuer, audience, expiry, not-before or issued-at policy, token id, canonical subject and active-account status can create the opaque authenticated principal.",
+        "No public or internal String, UUID, player-id or participant-id constructor or factory can mint the principal or session-bound participant capability.",
+        "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
+        "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
+        "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-backend:test --rerun-tasks",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "S25B blocker report 192e419 proves the missing auth-owned principal and membership boundary; packet has exact disjoint scope and hostile checks",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "recommended_agent": "auto-worker-5.5",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "parent_task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+      "source_task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+      "source_head_sha": "192e41910a108dfb68d15f7df16329321c296e2b",
+      "source_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/retry-s25b-secure-actor-binding-without-plaintex-retry-20260725T224529Z",
+      "provenance": {
+        "source": "S25B fail-closed worker report and Codex architecture audit",
+        "created_at": "2026-07-25T23:05:00Z"
+      },
+      "worker_instructions": [
+        "Read the S25B blocker report at source_head_sha and both backend canonical documents before editing.",
+        "Use current origin/develop as the implementation baseline; the report branch is evidence only.",
+        "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
+        "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
+        "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
+        "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
+        "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
+      ],
+      "traceability": {
+        "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+        "canonical_task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
+      },
+      "doc_refs": [
+        {
+          "path": "InplaceX-docs/Backend/Online Contracts.md",
+          "purpose": "authoritative authentication and actor-bound command contract"
+        },
+        {
+          "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+          "purpose": "backend boundary and package ownership"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**"
+        ],
+        "doc_refs": [
+          {
+            "path": "InplaceX-docs/Backend/Online Contracts.md",
+            "purpose": "auth and actor contract"
+          },
+          {
+            "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+            "purpose": "architecture"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+            "purpose": "current prerequisite"
+          },
+          {
+            "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+            "purpose": "blocked consumer"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json"
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-backend/build.gradle.kts",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md"
+        ],
+        "forbidden_paths": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+          "InplaceX-android/**",
+          "ops/**",
+          ".env*"
+        ],
+        "context_docs": [
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "InplaceX-docs/Backend/Ktor Architecture.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/retry-s25b-secure-actor-binding-without-plaintex-retry-20260725T224529Z"
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :InplaceX-backend:test --rerun-tasks",
+          "bash gradlew verifyProject",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :InplaceX-backend:test --rerun-tasks",
+          "required": true,
+          "purpose": "hostile auth and membership tests plus backend regression"
+        },
+        {
+          "command": "bash gradlew verifyProject",
+          "required": true,
+          "purpose": "repository verification"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "patch hygiene"
+        }
+      ],
+      "existing_behavior": [
+        "Guest bootstrap and refresh behavior remain compatible.",
+        "S25A typed public contract remains unchanged."
+      ],
+      "preserve_contract": [
+        "Do not expose credentials, signing material, raw subjects or provider payloads.",
+        "Do not add transport routes, persistence implementations or caller-controlled authority factories."
+      ],
+      "regression_guards": [
+        "Reject any principal or participant capability constructible from String, UUID or public value objects.",
+        "Reject token or subject values in logs, exceptions, toString or reports.",
+        "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
+      ],
+      "integration_notes": [
+        "Independent strong review must inspect constructors and reflection surface, not only happy-path token verification.",
+        "Direct merge is not authorized; S25B remains blocked until this commit is integrated."
+      ],
+      "requires_strong_review": true,
+      "direct_merge_authorized": false,
+      "created_at": "2026-07-25T23:05:00Z"
+    },
+    {
+      "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
+      "title": "S25 prerequisite B mutable duel digits and zeroization",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "phase": "Integration Repair",
+      "module_id": "backend.secure-duel",
+      "depends_on": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "blocked_by": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+      ],
+      "summary": "Refactor the canonical duel validator, scorer and aggregate to consume single-use mutable digit buffers without immutable plaintext copies or raw guesses in snapshots.",
+      "allowed_paths": [
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculator.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculatorTest.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommand.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatchTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommandTest.kt",
+        "CHANGELOG.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS_*.md"
+      ],
+      "forbidden_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
+        "InplaceX-backend/src/main/resources/db/migration/**",
+        "InplaceX-android/**",
+        "ops/**",
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "acceptance_criteria": [
+        "GuessValidator and ScoreCalculator provide CharArray paths with semantic parity and no String, concatToString or equivalent immutable conversion.",
+        "Secret and guess commands own single-use mutable buffers, expose no String factory or getter, reject double consumption and zero temporary buffers in finally.",
+        "DuelMatch has no String setSecret or submitGuess overload, stores only private mutable secret buffers, never stores a raw guess and wipes secrets on finish, close and exceptional failure.",
+        "DuelAttempt and DuelSnapshot contain only viewer-neutral score and outcome data; secret, raw guess and private history never cross their boundary.",
+        "S24 phase, turn, validation, attempt-limit and winner semantics remain unchanged, including rejected-command atomicity."
+      ],
+      "checks": [
+        "bash gradlew :InplaceX-bot-core:test --rerun-tasks",
+        "bash gradlew :InplaceX-backend:test --rerun-tasks",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "S25B blocker report 192e419 proves the canonical duel String API prevents a no-plaintext authoritative transition; packet has exact cross-module scope and zeroization gates",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "recommended_agent": "auto-worker-5.5max",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5max"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "parent_task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+      "source_task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+      "source_head_sha": "192e41910a108dfb68d15f7df16329321c296e2b",
+      "source_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/retry-s25b-secure-actor-binding-without-plaintex-retry-20260725T224529Z",
+      "provenance": {
+        "source": "S25B fail-closed worker report and Codex architecture audit",
+        "created_at": "2026-07-25T23:05:00Z"
+      },
+      "worker_instructions": [
+        "Read the S25B blocker report at source_head_sha, Online Contracts.md and the current S24 DuelMatch completely before editing.",
+        "Use current origin/develop as baseline and extend canonical GuessValidator and ScoreCalculator instead of duplicating the engine in session code.",
+        "Use ASCII digits only. Mutable buffers must be single-use, scoped, zeroed in finally and absent from logs, snapshots, events, results and persistence-facing values.",
+        "Preserve phase, turn, validation, attempt-limit and winner behavior while removing raw guess retention.",
+        "Add hostile tests for caller and owned buffer zeroization on success, rejection, exception, finish and close; double consumption; reflection and bytecode String-conversion guards; non-ASCII digits; config parity; and state atomicity.",
+        "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
+        "Modify only allowed_paths, run every script_action, update CHANGELOG and emit integration_requested only after all checks pass."
+      ],
+      "traceability": {
+        "task_id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
+        "canonical_task_id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
+      },
+      "doc_refs": [
+        {
+          "path": "InplaceX-docs/Backend/Online Contracts.md",
+          "purpose": "no-plaintext public and persistence boundary"
+        },
+        {
+          "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+          "purpose": "backend domain ownership"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculator.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommand.kt"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculator.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommand.kt"
+        ],
+        "doc_refs": [
+          {
+            "path": "InplaceX-docs/Backend/Online Contracts.md",
+            "purpose": "security boundary"
+          },
+          {
+            "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+            "purpose": "architecture"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
+            "purpose": "current prerequisite"
+          },
+          {
+            "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
+            "purpose": "blocked consumer"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json"
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculator.kt",
+          "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
+          "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/ScoreCalculatorTest.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommand.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatchTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/MutableDuelCommandTest.kt",
+          "CHANGELOG.md",
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS_*.md"
+        ],
+        "forbidden_paths": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
+          "InplaceX-android/**",
+          "ops/**",
+          ".env*"
+        ],
+        "context_docs": [
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "InplaceX-docs/Backend/Ktor Architecture.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/retry-s25b-secure-actor-binding-without-plaintex-retry-20260725T224529Z"
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :InplaceX-bot-core:test --rerun-tasks",
+          "bash gradlew :InplaceX-backend:test --rerun-tasks",
+          "bash gradlew verifyProject",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :InplaceX-bot-core:test --rerun-tasks",
+          "required": true,
+          "purpose": "validator and scorer parity plus conversion guards"
+        },
+        {
+          "command": "bash gradlew :InplaceX-backend:test --rerun-tasks",
+          "required": true,
+          "purpose": "duel semantics and zeroization regression"
+        },
+        {
+          "command": "bash gradlew verifyProject",
+          "required": true,
+          "purpose": "repository verification"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "patch hygiene"
+        }
+      ],
+      "existing_behavior": [
+        "S24 duel phase, turn, validation, attempt-limit and winner behavior remains authoritative.",
+        "Existing String validator and scorer APIs may remain only as compatibility paths outside sensitive duel commands."
+      ],
+      "preserve_contract": [
+        "Do not duplicate scoring or validation logic in backend session code.",
+        "Do not expose secrets, raw guesses or mutable buffers through snapshots, events, results, logs or toString."
+      ],
+      "regression_guards": [
+        "Reject String(charArray), concatToString, raw-guess fields and mutable buffers that are not zeroed in finally.",
+        "Reject any DuelMatch String setSecret or submitGuess overload.",
+        "Verify rejected commands leave authoritative state unchanged."
+      ],
+      "integration_notes": [
+        "Independent strong review must inspect bytecode or source for immutable digit copies and exercise every cleanup path.",
+        "Direct merge is not authorized; S25B remains blocked until this commit is integrated."
+      ],
+      "requires_strong_review": true,
+      "direct_merge_authorized": false,
+      "created_at": "2026-07-25T23:05:00Z"
+    },
+    {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
-      "title": "Retry S25B secure actor binding without plaintext persistence",
-      "status": "in_progress",
+      "title": "S25B authoritative transition after auth and mutable-digit prerequisites",
+      "status": "blocked_by_dependency",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
       "phase": "Integration Repair",
       "module_id": "backend.session-authority",
       "depends_on": [
-        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+        "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+        "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS"
       ],
-      "blocked_by": [],
+      "blocked_by": [
+        "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+        "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS"
+      ],
       "resolved_dependencies": [
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
       ],
@@ -9950,13 +10410,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "blocked_by_dependency",
+      "normalization_status": "blocked_by_dependency",
+      "dispatcher_decision": "blocked_by_dependency",
+      "dispatcher_decision_reason": "192e419 fail-closed review proved that auth-owned principal membership and mutable no-plaintext duel APIs must be integrated before S25B can run safely",
+      "next_owner": "Dispatcher",
       "recommended_agent": "auto-worker-5.5max",
       "eligible_worker_profiles": [
         "auto-worker-5.5max",
@@ -10145,7 +10605,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_role": "auto_workers",
+      "next_role": "auto_dispatcher",
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.5max",
@@ -10163,7 +10623,10 @@
           "reason": "rejected security draft preserved as local bundle; branch must never be reset or reused"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "last_worker_result_commit": "192e41910a108dfb68d15f7df16329321c296e2b",
+      "last_worker_result_status": "needs_worker_fix",
+      "last_worker_result_checks": "passed",
+      "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
