@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T19:07:41Z",
+  "updated_at": "2026-07-25T19:08:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -320,6 +320,16 @@
       "released_at": "2026-07-25T19:07:41Z",
       "released_by": "runner-recovery",
       "release_reason": "launch refused existing unique worker branch; fresh retry metadata prepared"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+      "state": "in_progress",
+      "by": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch-retry-20260725T190800Z",
+      "at": "2026-07-25T19:08:00Z",
+      "expires_at": "2026-07-26T03:08:00Z",
+      "notes": "central runner claim"
     }
   ]
 }
