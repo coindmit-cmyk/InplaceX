@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:11:37Z",
+  "updated_at": "2026-07-25T23:11:54Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10135,7 +10135,7 @@
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
       "title": "S25 prerequisite B mutable duel digits and zeroization",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10192,7 +10192,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10364,7 +10364,14 @@
       ],
       "requires_strong_review": true,
       "direct_merge_authorized": false,
-      "created_at": "2026-07-25T23:05:00Z"
+      "created_at": "2026-07-25T23:05:00Z",
+      "worker_id": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
+      "started_at": "2026-07-25T23:11:54Z",
+      "lock_expires_at": "2026-07-26T07:11:54Z",
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
