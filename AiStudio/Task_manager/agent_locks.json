@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T22:25:47Z",
+  "updated_at": "2026-07-25T22:26:24Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -540,6 +540,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-transition/s25b-authoritative-command-transition-applicatio",
       "at": "2026-07-25T22:25:47Z",
       "expires_at": "2026-07-26T06:25:47Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
+      "at": "2026-07-25T22:26:24Z",
+      "expires_at": "2026-07-26T06:26:24Z",
       "notes": "central runner claim"
     }
   ]
