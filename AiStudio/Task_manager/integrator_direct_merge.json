@@ -1,0 +1,490 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-25T16:59:53Z",
+  "status": "direct_merge_done",
+  "input_source": "integration_batch",
+  "batch_exists": true,
+  "base_sha": "337585b678d7c310c3852691b7812ff7f39d2101",
+  "ready": [
+    "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
+    "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04"
+  ],
+  "source_pr_close_retried": [],
+  "routed": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
+      "next_owner": "dispatcher",
+      "route": "needs_worker_fix",
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_source_head_sha": "8f406db9582f5e983a47d6b82d901f2514bcca60",
+      "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "lost_behavior": {
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt": [
+          "autoModeLocksTheOnlyRemainingPossibleMatch"
+        ]
+      },
+      "lost_count": 1
+    }
+  ],
+  "pushed": true,
+  "commits": [
+    "8f80b3dae0bab9bc8179817bdd959eea2f49c3e6",
+    "937256aa795269cd793058080e7709caddfe5f52"
+  ],
+  "source_pr_closures": {},
+  "state_commit": null,
+  "command_results": [
+    {
+      "command": [
+        "git",
+        "worktree",
+        "prune"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "worktree",
+        "add",
+        "-B",
+        "integrator/direct/20260725T165951Z",
+        "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+        "origin/develop"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "exit_code": 0,
+      "stdout": "branch 'integrator/direct/20260725T165951Z' set up to track 'origin/develop'.\nУказатель HEAD сейчас на коммите 337585b chore(agent): record manual workers state\n",
+      "stderr": "Preparing worktree (new branch 'integrator/direct/20260725T165951Z')\n"
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "337585b678d7c310c3852691b7812ff7f39d2101\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "--verify",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "36884f55ba86a58b702de131e94d7e4b6f190993\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+        "--",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "origin/develop",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "c2364a3146d6abb623f9f4e318ca0035ed9c9999\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--binary",
+        "--full-index",
+        "c2364a3146d6abb623f9f4e318ca0035ed9c9999",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "patch_bytes": 6752
+    },
+    {
+      "command": [
+        "git",
+        "apply",
+        "--3way",
+        "--index",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Патч применен к «InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt» без ошибок.\nFalling back to direct application...\n"
+    },
+    {
+      "command": [
+        "git",
+        "add",
+        "-A",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--porcelain",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "M  InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt\nA  InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "chore(integrator): integrate INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "[integrator/direct/20260725T165951Z 8f80b3d] chore(integrator): integrate INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03\n 2 files changed, 129 insertions(+), 8 deletions(-)\n create mode 100644 InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "8f80b3dae0bab9bc8179817bdd959eea2f49c3e6\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "--verify",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "ce37ed42fe86252c60d08a1b625b1fb31358b095\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+        "--",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "origin/develop",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "3aea25f2410fd524ec142fbebcce1a7a3f5138d2\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--binary",
+        "--full-index",
+        "3aea25f2410fd524ec142fbebcce1a7a3f5138d2",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "patch_bytes": 20537
+    },
+    {
+      "command": [
+        "git",
+        "apply",
+        "--3way",
+        "--index",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Falling back to direct application...\nFalling back to direct application...\nFalling back to direct application...\n"
+    },
+    {
+      "command": [
+        "git",
+        "add",
+        "-A",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--porcelain",
+        "--",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt",
+        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt",
+        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "A  InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt\nA  InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt\nA  InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "chore(integrator): integrate INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "[integrator/direct/20260725T165951Z 937256a] chore(integrator): integrate INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04\n 3 files changed, 494 insertions(+)\n create mode 100644 InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceContracts.kt\n create mode 100644 InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngine.kt\n create mode 100644 InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/analysis/EvidenceDeductionEngineTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "937256aa795269cd793058080e7709caddfe5f52\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "--verify",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "8f406db9582f5e983a47d6b82d901f2514bcca60\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+        "--",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "origin/develop",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "c00bf2592342cbe21e39e6e8bbe8c07ec62b84fb\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--binary",
+        "--full-index",
+        "c00bf2592342cbe21e39e6e8bbe8c07ec62b84fb",
+        "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+        "--",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "patch_bytes": 10715
+    },
+    {
+      "command": [
+        "git",
+        "apply",
+        "--3way",
+        "--index",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Патч применен к «InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt» без ошибок.\n"
+    },
+    {
+      "command": [
+        "git",
+        "restore",
+        "--staged",
+        "--worktree",
+        "--",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "337585b678d7c310c3852691b7812ff7f39d2101..HEAD"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/develop"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "exit_code": 0,
+      "stdout": "337585b678d7c310c3852691b7812ff7f39d2101\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "push",
+        "origin",
+        "HEAD:develop"
+      ],
+      "cwd": "/mnt/d/agent-runtime/managed-checkouts/.agent-worktrees/inplacex/integrator/direct-20260725t165951z",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "To https://github.com/coindmit-cmyk/InplaceX.git\n   337585b..937256a  HEAD -> develop\n"
+    }
+  ],
+  "state_changed": true,
+  "changed_route_ids": [
+    "intake-design-pd-inplacex-final-20260725-v002-s02"
+  ]
+}

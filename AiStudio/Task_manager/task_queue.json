@@ -158,7 +158,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "title": "Characterize current gameplay behavior",
-      "status": "in_progress",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -200,14 +200,14 @@
         "bash gradlew :app:assembleDebugAndroidTest",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "lock": "free",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "source_item_id": "INPX-ARC-101",
@@ -398,12 +398,54 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
       "started_at": "2026-07-25T16:50:09Z",
       "lock_expires_at": "2026-07-26T00:50:09Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "integration_status": "needs_worker_fix",
+      "requires_human_attention": false,
+      "integration_repair_kind": "behavior_preservation",
+      "integration_repair_validation_paths": [],
+      "integration_repair_lost_behavior": {
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt": [
+          "autoModeLocksTheOnlyRemainingPossibleMatch"
+        ]
+      },
+      "integration_repair_source_head_sha": "8f406db9582f5e983a47d6b82d901f2514bcca60",
+      "integration_repair_retry_evidence": [
+        {
+          "at": "2026-07-25T16:59:53Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+          "worker_result_commit": null,
+          "source_head_sha": "8f406db9582f5e983a47d6b82d901f2514bcca60",
+          "validation_paths": [],
+          "lost_behavior": {
+            "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/GameFieldValidationTest.kt": [
+              "autoModeLocksTheOnlyRemainingPossibleMatch"
+            ]
+          }
+        }
+      ],
+      "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+      "missing_packet_fields": [
+        "repair_worker_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "status_history": [
+        {
+          "at": "2026-07-25T16:59:53Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "needs_dispatcher_repair",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
       "title": "Typed guess validation contract",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -446,14 +488,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
       "source_item_id": "INPX-ARC-102",
@@ -640,16 +682,36 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
       "started_at": "2026-07-25T16:50:14Z",
       "lock_expires_at": "2026-07-26T00:50:14Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "8f80b3dae0bab9bc8179817bdd959eea2f49c3e6",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T16:59:53Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
+      "worker_result_commit": "36884f55ba86a58b702de131e94d7e4b6f190993",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03_20260725T165516Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T16:59:53Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
       "title": "Pure evidence and deduction engine",
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -692,14 +754,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
       "source_item_id": "INPX-ARC-103",
@@ -896,11 +958,31 @@
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+      "github_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
       "started_at": "2026-07-25T16:50:18Z",
       "lock_expires_at": "2026-07-26T00:50:18Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "merge_commit": "937256aa795269cd793058080e7709caddfe5f52",
+      "integration_status": "finalized",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-25T16:59:53Z",
+      "finalized_by": "auto-integrator",
+      "synced_from_worker_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
+      "worker_result_commit": "ce37ed42fe86252c60d08a1b625b1fb31358b095",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04_20260725T165906Z.md",
+      "status_history": [
+        {
+          "at": "2026-07-25T16:59:53Z",
+          "by": "integrator_direct_merge",
+          "from": "in_progress",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
