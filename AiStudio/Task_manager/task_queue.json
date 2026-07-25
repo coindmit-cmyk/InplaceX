@@ -3503,7 +3503,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
       "title": "Game localization convergence",
-      "status": "integration_requested",
+      "status": "done",
       "priority": "P1",
       "complexity": "L",
       "type": "implementation",
@@ -3559,13 +3559,13 @@
         "bash gradlew assembleDebug",
         "git diff --check"
       ],
-      "lock": "review",
+      "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "Strict review preserves e6b9689 and narrows the remaining repair to INVALID_LENGTH placeholder substitution plus RU/EN regression tests",
-      "next_owner": "Integrator",
+      "next_owner": "none",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
@@ -3889,14 +3889,14 @@
         "e6b9689647e21f8efa368f562949f1ef1b9323b8",
         "7d952f2543a80255c2c1377a5bba3550db30a446"
       ],
-      "integration_status": "pending",
-      "integration_review_status": "rejected",
-      "integration_reviewed_at": "2026-07-25T20:16:00Z",
+      "integration_status": "finalized",
+      "integration_review_status": "passed",
+      "integration_reviewed_at": "2026-07-25T21:07:00Z",
       "integration_reviewed_by": "Codex integrator independent review",
-      "integration_review_report": "docs/reports/integration/S12_INTEGRATOR_REVIEW_E6B9689_20260725.md",
+      "integration_review_report": "docs/reports/integration/S12_INTEGRATOR_REVIEW_7D952F2_20260725.md",
       "integration_review_findings": [
-        "debug INVALID_LENGTH feedback leaves the {count} placeholder visible in RU and EN",
-        "unit and Android UI tests cover ALL_SAME_DIGITS but do not cover short-input placeholder substitution"
+        "no blocking findings remain",
+        "three baseline UnusedBoxWithConstraintsScope lint errors are unchanged and deferred to the quality-debt task"
       ],
       "external_check_evidence": {
         "checked_at": "2026-07-25T20:09:00Z",
@@ -3931,7 +3931,15 @@
           "reason": "remaining localization defects and exact missing tests are now documented for a stronger worker"
         }
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request"
+      "merge_commit": "671de0d",
+      "integration_commits": [
+        "3bd894f",
+        "671de0d"
+      ],
+      "finalization_status": "recorded",
+      "finalized_at": "2026-07-25T21:07:00Z",
+      "finalized_by": "Codex integrator independent review",
+      "status_reason": "S12 localization and typed placeholder repair passed unit, build, lint-delta and emulator 12/12 gates"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",

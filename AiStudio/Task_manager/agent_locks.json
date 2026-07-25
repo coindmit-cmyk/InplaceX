@@ -423,14 +423,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T204922Z",
       "at": "2026-07-25T20:49:22Z",
       "expires_at": "2026-07-26T04:49:22Z",
-      "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-25T21:05:53Z"
+      "notes": "S12 localization and placeholder repair independently verified and integrated",
+      "review_at": "2026-07-25T21:05:53Z",
+      "released_at": "2026-07-25T21:07:00Z",
+      "released_by": "Codex integrator independent review",
+      "release_reason": "verified S12 finalization recorded at develop commit 671de0d"
     },
     {
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
