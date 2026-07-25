@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:10:00Z",
+  "updated_at": "2026-07-25T21:33:54Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -462,6 +462,16 @@
       "released_at": "2026-07-25T21:31:00Z",
       "released_by": "Codex integrator independent review",
       "release_reason": "verified S16 finalization recorded at develop commit 66844c7"
+    },
+    {
+      "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
+      "state": "in_progress",
+      "by": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "at": "2026-07-25T21:33:54Z",
+      "expires_at": "2026-07-26T05:33:54Z",
+      "notes": "central runner claim"
     }
   ]
 }

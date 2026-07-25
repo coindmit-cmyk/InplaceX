@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T21:10:00Z",
+  "updated_at": "2026-07-25T21:33:54Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -4993,7 +4993,7 @@
       "integration_status": "finalized",
       "finalized_at": "2026-07-25T21:31:00Z",
       "worker_result_commit": "66844c7769c10ef99634af643531d40f58804ea6",
-      "status_reason": "S16 test-only result passed verifyProject, targeted JVM tests, assembleDebugAndroidTest, full emulator 22/22 and independent scope review",
+      "status_reason": "central runner claimed task before isolated worker launch",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
       "source_item_id": "INPX-QA-302",
@@ -5198,8 +5198,7 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
       "started_at": "2026-07-25T21:10:00Z",
-      "lock_expires_at": "2026-07-26T05:10:00Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "lock_expires_at": "2026-07-26T05:10:00Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
@@ -9122,7 +9121,7 @@
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
       "title": "S25A public session read contracts and bounded security codec retry",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9177,7 +9176,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -9352,7 +9351,13 @@
       "last_machine_id": "aistudio-manual",
       "last_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-authenticated-public-session-contracts-and-",
       "reviewed_at": "2026-07-25T21:33:00Z",
-      "status_reason": "4bc99f9 rejected for caller-authored outcomes, unproven actor binding, unbounded JSON recursion and immutable secret copy; narrow retry is worker-ready"
+      "status_reason": "central runner claimed task before isolated worker launch",
+      "worker_id": "auto-worker-5.5max",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-public-session-read-contracts-and-bounded-s",
+      "started_at": "2026-07-25T21:33:54Z",
+      "lock_expires_at": "2026-07-26T05:33:54Z"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
