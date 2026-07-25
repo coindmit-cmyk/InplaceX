@@ -6,6 +6,8 @@ local.properties
 .env
 .env.local
 .env.*.local
+*.dump
+backups/
 .obsidian/
 .DS_Store
 

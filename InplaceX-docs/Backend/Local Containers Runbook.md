@@ -3,8 +3,9 @@
 ## Назначение
 
 `ops/compose.yaml` поднимает локальный backend и PostgreSQL. Данные PostgreSQL
-сохраняются в именованном Docker volume `inplacex-postgres-data` (или в имени из
-`INPLACEX_POSTGRES_VOLUME`), поэтому `docker compose down` не удаляет их.
+сохраняются в Compose-scoped volume `postgres-data`, поэтому разные project name
+и worktree не используют одну БД. Обычный `docker compose down` не удаляет
+данные.
 Backend запускает versioned JDBC-миграции при старте. Прогресс можно проверить в
 `inplacex_schema_history`; актуальная последовательность содержит версии `1` и
 `2`.
@@ -23,8 +24,8 @@ cp .env.example .env
 ```
 
 В `.env` обязательно замените `INPLACEX_POSTGRES_PASSWORD` на локальный
-секрет. Не добавляйте `.env` в Git. В `.env.example` допустимы только
-плейсхолдеры; значения базы, пользователя, volume и порта можно менять для
+секрет: без этой переменной Compose завершится ошибкой. Не добавляйте `.env` в Git. В `.env.example` допустимы только
+плейсхолдеры; значения базы, пользователя и порта можно менять для
 изолированного локального запуска.
 
 ## Запуск и проверка
@@ -50,11 +51,12 @@ curl --fail --silent --show-error http://localhost:8080/ready
 docker compose --project-directory "$PWD" -f ops/compose.yaml down
 ```
 
-Удаление named volume необратимо и выполняется только при осознанном сбросе
-локальной среды:
+Удаление volume необратимо и выполняется только для точно выбранного Compose
+project после проверки `docker compose ps`:
 
 ```bash
-docker volume rm "${INPLACEX_POSTGRES_VOLUME:-inplacex-postgres-data}"
+docker compose --project-directory "$PWD" -f ops/compose.yaml ps
+docker compose --project-directory "$PWD" -f ops/compose.yaml down --volumes
 ```
 
 ## Миграции
@@ -76,30 +78,38 @@ docker compose --project-directory "$PWD" -f ops/compose.yaml exec postgres sh -
 
 ## Backup, restore и rollback
 
-Создайте custom-format dump вне репозитория или в игнорируемой папке:
+Создайте custom-format dump вне репозитория или в игнорируемой папке. Скрипт
+создаёт файл с приватными правами, валидирует dump и не перезаписывает уже
+существующий backup:
 
 ```bash
 mkdir -p "$HOME/inplacex-backups"
 ./ops/backup-postgres.sh "$HOME/inplacex-backups/inplacex-$(date +%Y%m%d-%H%M%S).dump"
 ```
 
-Перед restore остановите запись в локальный стек. Скрипт сам останавливает
-backend, выполняет `pg_restore --clean --if-exists`, а затем запускает backend.
+Перед restore остановите запись в локальный стек. Скрипт валидирует dump, сам
+останавливает backend и выполняет атомарный `pg_restore`. При ошибке изменения
+откатываются транзакцией, а backend остаётся остановленным.
 
 ```bash
 ./ops/restore-postgres.sh "$HOME/inplacex-backups/inplacex-20260725-120000.dump"
 curl --fail --silent --show-error http://localhost:8080/ready
 ```
 
-`rollback-postgres.sh` — явный алиас restore: он возвращает базу к снимку,
-созданному до нежелательной миграции или операции.
+Для отката миграции одного восстановления БД недостаточно: текущий backend снова
+применит forward-only миграции. Поэтому `rollback-postgres.sh` требует и
+pre-migration dump, и точный предыдущий backend image, уже доступный локально.
 
 ```bash
-./ops/rollback-postgres.sh "$HOME/inplacex-backups/pre-migration.dump"
+./ops/rollback-postgres.sh \
+  "$HOME/inplacex-backups/pre-migration.dump" \
+  "registry.example/inplacex-backend:previous-tested-version"
 ```
 
 Restore и rollback перезаписывают текущие локальные данные. Перед ними всегда
-сначала создайте новый backup.
+сначала создайте новый backup. Скрипт rollback сначала проверяет наличие image,
+атомарно восстанавливает dump и только затем запускает предыдущий backend без
+пересборки.
 
 ## Проверка полного цикла
 
@@ -113,5 +123,6 @@ Restore и rollback перезаписывают текущие локальны
 
 Команда предназначена для изолированной локальной БД: она останавливает и
 запускает backend и восстанавливает весь database dump. Скрипт использует
-уникальные Compose project и volume, а при завершении удаляет только созданные
-им контейнеры, сеть, локальный image и volume.
+уникальный Compose project, а при завершении удаляет только созданные им
+контейнеры, сеть, локальный image и scoped volume. Проверка действительно
+вызывает rollback-скрипт с только что собранным совместимым локальным image.

@@ -16,11 +16,15 @@ FROM eclipse-temurin:11-jre-jammy
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system inplacex \
+    && useradd --system --gid inplacex --home-dir /app --shell /usr/sbin/nologin inplacex
 
 WORKDIR /app
 
-COPY --from=build /workspace/InplaceX-backend/build/install/InplaceX-backend/ ./
+COPY --from=build --chown=inplacex:inplacex /workspace/InplaceX-backend/build/install/InplaceX-backend/ ./
+
+USER inplacex
 
 EXPOSE 8080
 

@@ -3,7 +3,6 @@ set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export COMPOSE_PROJECT_NAME="inplacex-verify-$(date +%s)-$$"
-export INPLACEX_POSTGRES_VOLUME="${COMPOSE_PROJECT_NAME}-postgres-data"
 export INPLACEX_POSTGRES_PASSWORD="${INPLACEX_POSTGRES_PASSWORD:-local-verification-only}"
 export INPLACEX_BACKEND_PORT=0
 compose=(docker compose --project-directory "$repository_root" -f "$repository_root/ops/compose.yaml")
@@ -41,7 +40,7 @@ done
 "${compose[@]}" exec -T postgres sh -ec \
     'PGPASSWORD="$POSTGRES_PASSWORD" psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" -c "UPDATE ops_restore_verification SET value = '\''after-backup'\'';"'
 
-"$repository_root/ops/restore-postgres.sh" "$backup_file"
+"$repository_root/ops/rollback-postgres.sh" "$backup_file" "${INPLACEX_BACKEND_IMAGE:-inplacex-backend:local}"
 
 for attempt in {1..30}; do
     if "${compose[@]}" exec -T backend curl --fail --silent --show-error http://localhost:8080/ready >/dev/null; then

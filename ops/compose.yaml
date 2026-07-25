@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${INPLACEX_POSTGRES_DB:-inplacex}
       POSTGRES_USER: ${INPLACEX_POSTGRES_USER:-inplacex}
-      POSTGRES_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:-change-me-before-use}
+      POSTGRES_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:?Set INPLACEX_POSTGRES_PASSWORD in a private .env file}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +15,7 @@ services:
       start_period: 5s
 
   backend:
+    image: ${INPLACEX_BACKEND_IMAGE:-inplacex-backend:local}
     build:
       context: .
       dockerfile: ops/Dockerfile
@@ -27,7 +28,7 @@ services:
       INPLACEX_BACKEND_PORT: 8080
       INPLACEX_DATABASE_JDBC_URL: jdbc:postgresql://postgres:5432/${INPLACEX_POSTGRES_DB:-inplacex}
       INPLACEX_DATABASE_USERNAME: ${INPLACEX_POSTGRES_USER:-inplacex}
-      INPLACEX_DATABASE_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:-change-me-before-use}
+      INPLACEX_DATABASE_PASSWORD: ${INPLACEX_POSTGRES_PASSWORD:?Set INPLACEX_POSTGRES_PASSWORD in a private .env file}
     ports:
       - "127.0.0.1:${INPLACEX_BACKEND_PORT:-8080}:8080"
     healthcheck:
@@ -39,4 +40,3 @@ services:
 
 volumes:
   postgres-data:
-    name: ${INPLACEX_POSTGRES_VOLUME:-inplacex-postgres-data}
