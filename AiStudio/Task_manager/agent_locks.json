@@ -447,13 +447,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
       "at": "2026-07-25T21:10:00Z",
       "expires_at": "2026-07-26T05:10:00Z",
-      "notes": "central runner claim"
+      "notes": "S16 recreation and contradiction suite independently verified and integrated",
+      "review_at": "2026-07-25T21:29:00Z",
+      "released_at": "2026-07-25T21:31:00Z",
+      "released_by": "Codex integrator independent review",
+      "release_reason": "verified S16 finalization recorded at develop commit 66844c7"
     }
   ]
 }
