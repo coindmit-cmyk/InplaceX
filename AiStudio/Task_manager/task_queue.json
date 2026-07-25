@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T17:23:20Z",
+  "updated_at": "2026-07-25T17:45:35Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -162,7 +162,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "title": "Characterize current gameplay behavior",
-      "status": "needs_dispatcher_repair",
+      "status": "planned",
       "priority": "P0",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -190,7 +190,8 @@
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/**",
@@ -208,13 +209,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "needs_dispatcher_repair",
-      "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
       "source_item_id": "INPX-ARC-101",
@@ -405,7 +406,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
       "started_at": "2026-07-25T17:04:00Z",
       "lock_expires_at": "2026-07-26T01:04:00Z",
-      "integration_status": "needs_worker_fix",
+      "integration_status": "returned_to_worker",
       "requires_human_attention": false,
       "integration_repair_kind": "behavior_preservation",
       "integration_repair_validation_paths": [],
@@ -451,11 +452,21 @@
               "autoModeLocksTheOnlyRemainingPossibleMatch"
             ]
           }
+        },
+        {
+          "at": "2026-07-25T17:45:35Z",
+          "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior",
+          "worker_result_commit": null,
+          "worker_report": null,
+          "source_head_sha": "8f406db9582f5e983a47d6b82d901f2514bcca60",
+          "from_status": "needs_dispatcher_repair",
+          "from_integration_status": "needs_worker_fix"
         }
       ],
       "repair_request": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
-      "repair_owner": "Dispatcher",
-      "next_action": "Dispatcher must create an idempotent Worker Packet v2 that rebuilds the PR intent on current develop and resolves the recorded Integrator blocker.",
+      "repair_owner": "Worker",
+      "next_action": "Worker must repair the recorded Integrator failure on the pinned source attempt without widening packet scope.",
       "status_history": [
         {
           "at": "2026-07-25T16:59:53Z",
@@ -482,23 +493,27 @@
           "reason": "semantic_regression_detected: candidate removes existing target-branch behavior and has no safe automatic additions to integrate",
           "event": "integration_routed",
           "next_owner": "dispatcher"
+        },
+        {
+          "at": "2026-07-25T17:45:35Z",
+          "by": "dispatcher_integration_repair",
+          "from": "needs_dispatcher_repair",
+          "to": "planned",
+          "event": "design_handoff_integration_retry",
+          "reason": "Dispatcher returned the same complete design-handoff packet for a bounded Worker retry."
         }
       ],
-      "integration_repair_retry_count": 1,
-      "dispatcher_repaired_at": "2026-07-25T17:03:11Z",
+      "integration_repair_retry_count": 2,
+      "dispatcher_repaired_at": "2026-07-25T17:45:35Z",
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
-      "repaired_packet_metadata_at": "2026-07-25T17:03:11Z",
+      "repaired_packet_metadata_at": "2026-07-25T17:45:35Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "context_docs": [
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:03:20Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "status_reason": "central runner claimed task before isolated worker launch",
-      "missing_packet_fields": [
-        "repair_worker_packet"
-      ]
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
@@ -1101,8 +1116,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "none",
@@ -1133,7 +1148,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:03:20Z",
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1354,12 +1369,13 @@
           "event": "direct_merge_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
       "title": "GameField state holder and SavedState restoration",
-      "status": "blocked_by_dependency",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -1379,18 +1395,20 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
       ],
-      "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
-      ],
+      "blocked_by": [],
       "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04"
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
       ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**"
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
@@ -1409,14 +1427,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
-      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
-      "not_worker_ready_reason": "waiting for finalized dependency tasks",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
       "source_item_id": "INPX-ARC-105",
@@ -1439,8 +1456,222 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T17:01:04Z",
-      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
+      "context_docs": [
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "base_branch": "develop",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5"
+      ],
+      "packet_schema_version": 2,
+      "worker_instructions": [
+        "Read doc_refs and input_refs before editing.",
+        "Inspect code_refs and current target-branch code before changing behavior.",
+        "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
+        "Modify only allowed_paths and never touch forbidden_paths without explicit dispatcher repair.",
+        "Run every required script_action and capture evidence.",
+        "If a required check cannot run or fails, stop and return needs_worker_fix with the exact blocker.",
+        "Write/update the worker report and emit integration_requested only when output_contract is satisfied."
+      ],
+      "traceability": {
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+        "canonical_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+        "canonical_target_id": null,
+        "source_lane": null,
+        "source_file": null,
+        "provenance": [
+          {
+            "source_type": "project_design_handoff",
+            "source_file": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+            "captured_at": "2026-07-25T16:21:21Z"
+          }
+        ],
+        "derived_from": null,
+        "repaired_at": "2026-07-25T17:45:35Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "README.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Game/GPT/Layer Contracts.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Game/GPT/Module Map.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "README.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Game/GPT/Layer Contracts.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Game/GPT/Module Map.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/GameFieldViewModel.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/**",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/viewmodel/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "forbidden_paths": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+          ".git/**",
+          ".env*",
+          "local.properties"
+        ],
+        "context_docs": [
+          "README.md",
+          "AiStudio/Task_manager/task_queue.json"
+        ],
+        "source_file": null,
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :app:testDebugUnitTest",
+          "bash gradlew verifyProject",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :app:testDebugUnitTest",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew verifyProject",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "Dispatcher must inspect current target-branch implementation for the touched code_refs before worker claim.",
+        "Worker must treat current develop behavior as the baseline to preserve, not as disposable scaffolding."
+      ],
+      "preserve_contract": [
+        "Do not remove existing commands, callbacks, routes, handlers, public functions, config fields, diagnostics, links, or UI controls unless explicitly requested.",
+        "If current target code is more complete than the task draft, extend the current code instead of replacing it with a simpler implementation.",
+        "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "repaired_packet_at": "2026-07-25T17:45:35Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
@@ -1656,8 +1887,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "none",
@@ -1850,7 +2081,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:03:20Z",
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
@@ -1878,7 +2109,8 @@
           "event": "direct_merge_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
@@ -1904,10 +2136,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
       ],
-      "resolved_dependencies": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
+      ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
@@ -1958,12 +2191,14 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "title": "Secondary and developer screen localization",
-      "status": "blocked_by_dependency",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -1981,10 +2216,10 @@
       "depends_on": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
       ],
-      "blocked_by": [
+      "blocked_by": [],
+      "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
       ],
-      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
@@ -1995,7 +2230,10 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/test/**"
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "forbidden_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
@@ -2013,14 +2251,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
-      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
-      "not_worker_ready_reason": "waiting for finalized dependency tasks",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
       "source_item_id": "INPX-LOC-103",
@@ -2040,7 +2277,226 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
+      "context_docs": [
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "base_branch": "develop",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5"
+      ],
+      "packet_schema_version": 2,
+      "worker_instructions": [
+        "Read doc_refs and input_refs before editing.",
+        "Inspect code_refs and current target-branch code before changing behavior.",
+        "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
+        "Modify only allowed_paths and never touch forbidden_paths without explicit dispatcher repair.",
+        "Run every required script_action and capture evidence.",
+        "If a required check cannot run or fails, stop and return needs_worker_fix with the exact blocker.",
+        "Write/update the worker report and emit integration_requested only when output_contract is satisfied."
+      ],
+      "traceability": {
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+        "canonical_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+        "canonical_target_id": null,
+        "source_lane": null,
+        "source_file": null,
+        "provenance": [
+          {
+            "source_type": "project_design_handoff",
+            "source_file": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+            "captured_at": "2026-07-25T16:21:21Z"
+          }
+        ],
+        "derived_from": null,
+        "repaired_at": "2026-07-25T17:45:35Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "README.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/test/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "README.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Game/Human/Configs Localization Branding.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/developer/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/devbot/**",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/catalog/SecondaryCatalog.kt",
+          "InplaceX-android/app/src/test/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "forbidden_paths": [
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/StaticLocalizationProvider.kt",
+          ".git/**",
+          ".env*",
+          "local.properties"
+        ],
+        "context_docs": [
+          "README.md",
+          "AiStudio/Task_manager/task_queue.json"
+        ],
+        "source_file": null,
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :app:testDebugUnitTest",
+          "bash gradlew assembleDebug",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :app:testDebugUnitTest",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew assembleDebug",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "Dispatcher must inspect current target-branch implementation for the touched code_refs before worker claim.",
+        "Worker must treat current develop behavior as the baseline to preserve, not as disposable scaffolding."
+      ],
+      "preserve_contract": [
+        "Do not remove existing commands, callbacks, routes, handlers, public functions, config fields, diagnostics, links, or UI controls unless explicitly requested.",
+        "If current target code is more complete than the task draft, extend the current code instead of replacing it with a simpler implementation.",
+        "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "repaired_packet_at": "2026-07-25T17:45:35Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
@@ -2066,10 +2522,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
+      ],
+      "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
       ],
-      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
@@ -2123,7 +2580,9 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
@@ -2593,8 +3052,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "none",
@@ -2802,7 +3261,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:03:20Z",
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
@@ -2830,7 +3289,8 @@
           "event": "direct_merge_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
@@ -3217,8 +3677,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "none",
@@ -3411,7 +3871,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T17:03:20Z",
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
@@ -3439,12 +3899,13 @@
           "event": "direct_merge_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
       "title": "Modular Ktor backend and health contract",
-      "status": "blocked_by_dependency",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -3462,17 +3923,20 @@
       "depends_on": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
       ],
-      "blocked_by": [
+      "blocked_by": [],
+      "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
       ],
-      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/**",
         "InplaceX-logging/**",
         "build.gradle.kts",
         "settings.gradle.kts",
-        "gradle/**"
+        "gradle/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "forbidden_paths": [
         ".git/**",
@@ -3492,14 +3956,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
-      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
-      "not_worker_ready_reason": "waiting for finalized dependency tasks",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
       "source_item_id": "INPX-BE-410",
@@ -3519,7 +3982,215 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
+      "context_docs": [
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "base_branch": "develop",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5"
+      ],
+      "packet_schema_version": 2,
+      "worker_instructions": [
+        "Read doc_refs and input_refs before editing.",
+        "Inspect code_refs and current target-branch code before changing behavior.",
+        "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
+        "Modify only allowed_paths and never touch forbidden_paths without explicit dispatcher repair.",
+        "Run every required script_action and capture evidence.",
+        "If a required check cannot run or fails, stop and return needs_worker_fix with the exact blocker.",
+        "Write/update the worker report and emit integration_requested only when output_contract is satisfied."
+      ],
+      "traceability": {
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+        "canonical_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+        "canonical_target_id": null,
+        "source_lane": null,
+        "source_file": null,
+        "provenance": [
+          {
+            "source_type": "project_design_handoff",
+            "source_file": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+            "captured_at": "2026-07-25T16:21:21Z"
+          }
+        ],
+        "derived_from": null,
+        "repaired_at": "2026-07-25T17:45:35Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "README.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-backend/**",
+        "InplaceX-logging/**",
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "gradle/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-backend/**",
+          "InplaceX-logging/**",
+          "build.gradle.kts",
+          "settings.gradle.kts",
+          "gradle/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "README.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Backend/Ktor Architecture.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-backend/**",
+          "InplaceX-logging/**",
+          "build.gradle.kts",
+          "settings.gradle.kts",
+          "gradle/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "forbidden_paths": [
+          ".git/**",
+          ".env*",
+          "local.properties",
+          "**/*.key",
+          "**/*.pem"
+        ],
+        "context_docs": [
+          "README.md",
+          "AiStudio/Task_manager/task_queue.json"
+        ],
+        "source_file": null,
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :InplaceX-backend:test",
+          "bash gradlew verifyProject",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :InplaceX-backend:test",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew verifyProject",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "Dispatcher must inspect current target-branch implementation for the touched code_refs before worker claim.",
+        "Worker must treat current develop behavior as the baseline to preserve, not as disposable scaffolding."
+      ],
+      "preserve_contract": [
+        "Do not remove existing commands, callbacks, routes, handlers, public functions, config fields, diagnostics, links, or UI controls unless explicitly requested.",
+        "If current target code is more complete than the task draft, extend the current code instead of replacing it with a simpler implementation.",
+        "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "repaired_packet_at": "2026-07-25T17:45:35Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
@@ -3676,7 +4347,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
       "title": "Authoritative duel aggregate",
-      "status": "blocked_by_dependency",
+      "status": "planned",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -3696,16 +4367,19 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
       ],
-      "blocked_by": [
+      "blocked_by": [],
+      "resolved_dependencies": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
       ],
-      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/src/main/kotlin/**/domain/**",
         "InplaceX-backend/src/test/kotlin/**/domain/**",
-        "InplaceX-bot-core/**"
+        "InplaceX-bot-core/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "forbidden_paths": [
         "InplaceX-backend/src/main/kotlin/**/transport/**",
@@ -3724,14 +4398,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
-      "dispatcher_decision_reason": "design handoff dependencies are not finalized",
-      "not_worker_ready_reason": "waiting for finalized dependency tasks",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
       "source_item_id": "INPX-BE-413",
@@ -3753,7 +4426,220 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
+      "context_docs": [
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "packet_normalized_at": "2026-07-25T17:45:35Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "base_branch": "develop",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5"
+      ],
+      "packet_schema_version": 2,
+      "worker_instructions": [
+        "Read doc_refs and input_refs before editing.",
+        "Inspect code_refs and current target-branch code before changing behavior.",
+        "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
+        "Modify only allowed_paths and never touch forbidden_paths without explicit dispatcher repair.",
+        "Run every required script_action and capture evidence.",
+        "If a required check cannot run or fails, stop and return needs_worker_fix with the exact blocker.",
+        "Write/update the worker report and emit integration_requested only when output_contract is satisfied."
+      ],
+      "traceability": {
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "canonical_task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "canonical_target_id": null,
+        "source_lane": null,
+        "source_file": null,
+        "provenance": [
+          {
+            "source_type": "project_design_handoff",
+            "source_file": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+            "captured_at": "2026-07-25T16:21:21Z"
+          }
+        ],
+        "derived_from": null,
+        "repaired_at": "2026-07-25T17:45:35Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "README.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Game/GPT/Match Domain Model.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-backend/src/main/kotlin/**/domain/**",
+        "InplaceX-backend/src/test/kotlin/**/domain/**",
+        "InplaceX-bot-core/**",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-backend/src/main/kotlin/**/domain/**",
+          "InplaceX-backend/src/test/kotlin/**/domain/**",
+          "InplaceX-bot-core/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "README.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Game/GPT/Match Domain Model.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "InplaceX-docs/Game/Human/Duel Setup Flow.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/HANDOFF.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/backlog/backlog.json",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/00_dispatch/design-sessions/inplacex-finalization/v002/task_candidates.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
+            "purpose": "task context"
+          },
+          {
+            "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-backend/src/main/kotlin/**/domain/**",
+          "InplaceX-backend/src/test/kotlin/**/domain/**",
+          "InplaceX-bot-core/**",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
+        ],
+        "forbidden_paths": [
+          "InplaceX-backend/src/main/kotlin/**/transport/**",
+          ".git/**",
+          ".env*",
+          "local.properties"
+        ],
+        "context_docs": [
+          "README.md",
+          "AiStudio/Task_manager/task_queue.json"
+        ],
+        "source_file": null,
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "bash gradlew :InplaceX-backend:test",
+          "bash gradlew :InplaceX-bot-core:test",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "bash gradlew :InplaceX-backend:test",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "bash gradlew :InplaceX-bot-core:test",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "Dispatcher must inspect current target-branch implementation for the touched code_refs before worker claim.",
+        "Worker must treat current develop behavior as the baseline to preserve, not as disposable scaffolding."
+      ],
+      "preserve_contract": [
+        "Do not remove existing commands, callbacks, routes, handlers, public functions, config fields, diagnostics, links, or UI controls unless explicitly requested.",
+        "If current target code is more complete than the task draft, extend the current code instead of replacing it with a simpler implementation.",
+        "Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation."
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "repaired_packet_at": "2026-07-25T17:45:35Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
@@ -4017,10 +4903,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
-      "resolved_dependencies": [],
+      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
+      ],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
@@ -4074,7 +4961,9 @@
           "source_item_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
           "captured_at": "2026-07-25T16:21:21Z"
         }
-      ]
+      ],
+      "dependency_reconciled_at": "2026-07-25T17:45:35Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
