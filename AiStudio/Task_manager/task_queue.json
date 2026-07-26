@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T15:34:32Z",
+  "updated_at": "2026-07-26T15:36:22Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -5287,7 +5287,7 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5562,11 +5562,11 @@
       ],
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "started_at": "2026-07-26T12:59:22Z",
+      "started_at": "2026-07-26T15:36:22Z",
       "retry_count": 7,
       "last_rejected_candidate": "c09bf40e0162778dab9743005183366a34f2e485",
       "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_C09BF40_20260726.md",
-      "status_reason": "c09bf40 is preserved and rejected; the exact strict retry is worker-ready on the stronger auto-worker-5.5 profile",
+      "status_reason": "central runner claimed task before isolated worker launch",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5684,7 +5684,12 @@
       ],
       "integration_status": "rejected",
       "rejected_github_pr": 5,
-      "rejected_github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/5"
+      "rejected_github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/5",
+      "worker_id": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T153622Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T153622Z",
+      "lock_expires_at": "2026-07-26T23:36:22Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
