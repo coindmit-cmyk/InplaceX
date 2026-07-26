@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T13:14:40Z",
+  "updated_at": "2026-07-26T13:26:33Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -856,17 +856,14 @@
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "released",
+      "state": "review",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "at": "2026-07-26T12:22:29Z",
       "expires_at": "2026-07-26T20:22:29Z",
-      "notes": "strict integrator review accepted candidate; draft PR #4 awaits explicit owner merge authorization",
-      "review_at": "2026-07-26T12:32:28Z",
-      "released_at": "2026-07-26T12:59:58Z",
-      "released_by": "Codex strict integrator",
-      "release_reason": "review complete; draft PR #4 is preserved pending explicit owner authorization"
+      "notes": "worker result already synced for integrator review",
+      "review_at": "2026-07-26T13:26:33Z"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
@@ -945,13 +942,13 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
       "at": "2026-07-26T13:14:40Z",
       "expires_at": "2026-07-26T21:14:40Z",
-      "notes": "central runner claim",
+      "notes": "worker result synced for integrator review",
       "lease": {
         "lease_id": "lease-4975e0e454e7",
         "project_id": "inplacex",
@@ -963,7 +960,8 @@
       },
       "lease_id": "lease-4975e0e454e7",
       "execution_lease_id": "lease-4975e0e454e7",
-      "lease_expires_at": "2026-07-26T15:24:33Z"
+      "lease_expires_at": "2026-07-26T15:24:33Z",
+      "review_at": "2026-07-26T13:26:33Z"
     }
   ]
 }
