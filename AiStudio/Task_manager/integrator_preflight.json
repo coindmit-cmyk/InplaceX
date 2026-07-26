@@ -1,8 +1,8 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-26T20:38:08Z",
+  "checked_at": "2026-07-26T20:53:21Z",
   "base_branch": "origin/develop",
-  "base_sha": "2d1c95a47049e7ed7555268a888030b8b1e174f5",
+  "base_sha": "bd1418250b95724fa404941afc39ca7610502c0d",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
@@ -30,17 +30,19 @@
   "repository_hygiene_valid": true,
   "repository_hygiene_candidate_count": 0,
   "candidate_ref_fetch": {
-    "requested_count": 4,
-    "fetched_count": 4,
+    "requested_count": 5,
+    "fetched_count": 5,
     "invalid_count": 0,
     "unavailable_count": 0,
     "requested": [
+      "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "codex/app-shell-ux-v4",
       "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "feature/online-foundation-v1",
       "feature/backend-auth-boundary-v1"
     ],
     "fetched": [
+      "origin/AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "origin/codex/app-shell-ux-v4",
       "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "origin/feature/online-foundation-v1",
@@ -49,15 +51,72 @@
     "invalid": [],
     "unavailable": []
   },
-  "candidate_count": 4,
+  "candidate_count": 5,
   "candidates": [
+    {
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "head_sha": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "merge_base_sha": "a5f8305b4e76d280f981fd08ca629f3687ebbeac",
+      "ahead_of_base": 1,
+      "behind_base": 2,
+      "changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
+      ],
+      "integration_changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "agent_version_integration_decision": null,
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "pr": null,
+      "repository_pr_identity": null,
+      "path_count": 15,
+      "stored_path_count": 15,
+      "path_source": "merge_base_to_head_excluding_current_base_matches",
+      "path_list_truncated": false,
+      "omitted_path_count": 0,
+      "coordination_path_count": 10,
+      "integration_path_count": 5
+    },
     {
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 20,
+      "behind_base": 28,
       "changed_paths": [
         ".github/workflows/ci.yml",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -85,6 +144,7 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
@@ -93,7 +153,10 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T124448Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "scripts/ci/artifact_identity.sh",
         "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
         "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
@@ -134,11 +197,15 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T124448Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T124448Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "integration_changed_paths": [
         ".github/workflows/ci.yml",
@@ -181,12 +248,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/5"
         ]
       },
-      "path_count": 48,
-      "stored_path_count": 48,
+      "path_count": 52,
+      "stored_path_count": 52,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 30,
+      "coordination_path_count": 34,
       "integration_path_count": 18
     },
     {
@@ -195,7 +262,7 @@
       "head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
       "merge_base_sha": "af415d48a91ce28582c5a74fc96e5b148886d5c4",
       "ahead_of_base": 4,
-      "behind_base": 41,
+      "behind_base": 49,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -222,6 +289,7 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
@@ -273,11 +341,14 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "coordination_changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -305,6 +376,7 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
@@ -320,11 +392,14 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "integration_changed_paths": [
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
@@ -385,12 +460,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/6"
         ]
       },
-      "path_count": 81,
-      "stored_path_count": 81,
+      "path_count": 85,
+      "stored_path_count": 85,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 45,
+      "coordination_path_count": 49,
       "integration_path_count": 36
     },
     {
@@ -399,7 +474,7 @@
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 6,
+      "behind_base": 14,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -426,12 +501,16 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "CHANGELOG.md",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "InplaceX-docs/Backend/Ktor Architecture.md"
+        "InplaceX-docs/Backend/Ktor Architecture.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "coordination_changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -458,7 +537,11 @@
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
-        "AiStudio/Task_manager/task_queue.json"
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "integration_changed_paths": [
         "CHANGELOG.md",
@@ -489,12 +572,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/8"
         ]
       },
-      "path_count": 31,
-      "stored_path_count": 31,
+      "path_count": 35,
+      "stored_path_count": 35,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 25,
+      "coordination_path_count": 29,
       "integration_path_count": 6
     },
     {
@@ -503,7 +586,7 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 6,
+      "behind_base": 14,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -530,6 +613,7 @@
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
         "CHANGELOG.md",
         "InplaceX-android/app/build.gradle.kts",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
@@ -540,6 +624,9 @@
         "InplaceX-docs/Backend/Online Contracts.md",
         "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
         "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "gradle/libs.versions.toml"
       ],
       "coordination_changed_paths": [
@@ -567,7 +654,11 @@
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
         "AiStudio/Task_manager/task_identity_audit.json",
-        "AiStudio/Task_manager/task_queue.json"
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
       ],
       "integration_changed_paths": [
         "CHANGELOG.md",
@@ -603,17 +694,25 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/7"
         ]
       },
-      "path_count": 36,
-      "stored_path_count": 36,
+      "path_count": 40,
+      "stored_path_count": 40,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 25,
+      "coordination_path_count": 29,
       "integration_path_count": 11
     }
   ],
-  "integration_task_count": 4,
+  "integration_task_count": 5,
   "integration_tasks": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "status": "integration_requested",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "pr": null,
+      "worker_ready": false,
+      "dispatcher_decision": "worker_ready"
+    },
     {
       "task_id": "REPO-PR-3-6",
       "status": "integration_requested",
@@ -648,17 +747,43 @@
     }
   ],
   "integration_task_refs": [
+    "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
     "origin/codex/app-shell-ux-v4",
     "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
     "origin/feature/online-foundation-v1",
     "origin/feature/backend-auth-boundary-v1"
   ],
-  "active_lock_count": 0,
-  "active_locks": [],
-  "conflict_count": 2,
-  "stored_conflict_count": 2,
+  "active_lock_count": 1,
+  "active_locks": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "state": "review",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "at": "2026-07-26T20:43:23Z",
+      "expires_at": "2026-07-27T04:43:23Z",
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T20:53:03Z"
+    }
+  ],
+  "conflict_count": 3,
+  "stored_conflict_count": 3,
   "omitted_conflict_count": 0,
   "path_conflicts": [
+    {
+      "left": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "overlap_path_count": 3,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
     {
       "left": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "right": "origin/codex/app-shell-ux-v4",
@@ -684,7 +809,7 @@
       "severity": "warning"
     }
   ],
-  "blocker_count": 7,
+  "blocker_count": 9,
   "blockers": [
     {
       "code": "dirty_worktree",
@@ -694,26 +819,46 @@
     {
       "code": "stale_branch",
       "severity": "warning",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "behind_base": 2
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 20
+      "behind_base": 28
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/codex/app-shell-ux-v4",
-      "behind_base": 41
+      "behind_base": 49
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 6
+      "behind_base": 14
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 6
+      "behind_base": 14
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "overlap_path_count": 3,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
     },
     {
       "code": "changed_path_overlap",

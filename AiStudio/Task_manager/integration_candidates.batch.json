@@ -1,7 +1,34 @@
 {
-  "generated_at": "2026-07-26T20:38:10Z",
-  "batch_id": "BATCH-20260726-203810",
+  "generated_at": "2026-07-26T20:53:23Z",
+  "batch_id": "BATCH-20260726-205323",
   "candidates": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "pr": null,
+      "head_sha": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "identity_status": "identity_ok",
+      "identity_valid": true,
+      "identity_provisional": null,
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
+      "source_artifact_id": null,
+      "source_artifact": false,
+      "risk_class": "medium",
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "classification": "ready_candidate",
+      "reason": "traceable candidate with no blocking product overlap",
+      "source": "integration_batch_builder"
+    },
     {
       "task_id": "REPO-PR-7",
       "task_ids": [

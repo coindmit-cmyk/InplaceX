@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:38:09Z",
+  "created_at": "2026-07-26T20:53:23Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "readiness": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
   "clean_rebuild_recovery_count": 2,
   "counts": {
-    "identity_ok": 56,
+    "identity_ok": 57,
     "identity_conflict": 1
   },
   "items": [
@@ -55,6 +55,7 @@
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T200644Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T204207Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25_20260725T204509Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31_20260725T190700Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31_20260725T190848Z.md"
       ],
@@ -619,12 +620,17 @@
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
       "status": "identity_ok",
-      "task_status": "planned",
-      "branch": null,
+      "task_status": "integration_requested",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "github_pr": null,
-      "worker_report": null,
-      "report_paths": [],
-      "inferred_task_ids": [],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
+      "report_paths": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "inferred_task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
       "repository_pr_identity": null,
       "issues": [],
       "next_owner": null
@@ -871,10 +877,10 @@
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "canonical_target_id": "task:CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "status": "identity_ok",
-      "task_status": "planned",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
+      "task_status": "needs_worker_fix",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T204317Z",
       "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
       "report_paths": [
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
@@ -884,7 +890,9 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
       ],
       "inferred_task_ids": [
         "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP"
@@ -1123,6 +1131,29 @@
     {
       "kind": "integration_candidate",
       "index": 0,
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "status": "identity_ok",
+      "classification": "ready_candidate",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "pr": null,
+      "report_paths": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "inferred_task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "identity_recovered_from": null,
+      "source_task_id": null,
+      "repository_pr_identity": null,
+      "identity_superseded_task_ids": [],
+      "issues": [],
+      "next_owner": null
+    },
+    {
+      "kind": "integration_candidate",
+      "index": 1,
       "task_id": "REPO-PR-5",
       "canonical_target_id": "task:REPO-PR-5",
       "status": "identity_ok",
@@ -1158,7 +1189,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 1,
+      "index": 2,
       "task_id": "REPO-PR-3-6",
       "canonical_target_id": "task:REPO-PR-3-6",
       "status": "identity_ok",
@@ -1193,7 +1224,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 2,
+      "index": 3,
       "task_id": "REPO-PR-8",
       "canonical_target_id": "task:REPO-PR-8",
       "status": "identity_ok",
@@ -1226,7 +1257,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 3,
+      "index": 4,
       "task_id": "REPO-PR-7",
       "canonical_target_id": "task:REPO-PR-7",
       "status": "identity_ok",

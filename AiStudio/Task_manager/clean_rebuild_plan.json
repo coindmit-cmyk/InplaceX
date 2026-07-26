@@ -1,24 +1,66 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:38:10Z",
+  "created_at": "2026-07-26T20:53:23Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "clean_rebuild_planner.py",
   "policy": "plan clean rebuild routes only; do not mutate product code",
   "small_auto_paths": 8,
   "medium_auto_paths": 25,
-  "item_count": 4,
-  "needs_clean_rebuild_count": 4,
+  "item_count": 5,
+  "needs_clean_rebuild_count": 5,
   "counts": {
+    "needs_dispatcher_rebuild": 1,
     "needs_human_rebuild": 2,
     "auto_clean_rebuild_large": 1,
     "auto_clean_rebuild_medium": 1
   },
   "clean_rebuild_counts": {
+    "needs_dispatcher_rebuild": 1,
     "needs_human_rebuild": 2,
     "auto_clean_rebuild_large": 1,
     "auto_clean_rebuild_medium": 1
   },
   "items": [
+    {
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "source_classification": "needs_clean_rebuild",
+      "rebuild_route": "needs_dispatcher_rebuild",
+      "next_owner": "auto-dispatcher",
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "canonical_target_id": null,
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "path_count": 5,
+      "size_tier": "small",
+      "module_scopes": [
+        "InplaceX-android",
+        "InplaceX-logging"
+      ],
+      "allowed_paths_covered": false,
+      "allowed_paths_source": null,
+      "allowed_paths_sample": [],
+      "path_source": "merge_base_to_head",
+      "head_sha": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "behind_base": 2,
+      "reason": "requires exactly one task_id",
+      "blocking_reasons": [
+        "requires exactly one task_id"
+      ],
+      "warnings": [
+        "product payload spans multiple module scopes without full task allowed_paths coverage"
+      ],
+      "recommended_next_action": "create_fresh_task_packet_or_split",
+      "source_reason": "branch is behind current base; requires rebase or clean package rebuild before merge"
+    },
     {
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
@@ -62,7 +104,7 @@
       "allowed_paths_sample": [],
       "path_source": "merge_base_to_head",
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "behind_base": 20,
+      "behind_base": 28,
       "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
       "blocking_reasons": [
         "requires exactly one task_id",
@@ -146,7 +188,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
-      "behind_base": 41,
+      "behind_base": 49,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],
@@ -188,7 +230,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "behind_base": 6,
+      "behind_base": 14,
       "reason": "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
       "blocking_reasons": [
         "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt"
@@ -244,7 +286,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
-      "behind_base": 6,
+      "behind_base": 14,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],

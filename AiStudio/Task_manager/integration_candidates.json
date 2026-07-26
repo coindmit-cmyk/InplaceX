@@ -1,6 +1,39 @@
 {
-  "generated_at": "2026-07-26T20:38:05Z",
+  "generated_at": "2026-07-26T20:53:18Z",
   "candidates": [
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
+      "title": "Android online transport foundation",
+      "status": "integration_requested",
+      "integration_status": "pending",
+      "worker_check_evidence": {
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
+      },
+      "integrator_must_run_checks": false,
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "head_sha": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "pr": null,
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "migration_sensitive": false,
+      "migration_compatibility_policy": null,
+      "integrator_must_adapt_migrations": false,
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew verifyProject",
+        "git diff --check"
+      ]
+    },
     {
       "task_id": "REPO-PR-3-6",
       "title": "Integrate open PR stack #3-#6",

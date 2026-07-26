@@ -1,17 +1,82 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:38:10Z",
+  "created_at": "2026-07-26T20:53:23Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
-  "candidate_count": 4,
+  "candidate_count": 5,
   "counts": {
-    "needs_clean_rebuild": 4
+    "needs_clean_rebuild": 5
   },
   "next_owner_counts": {
-    "auto-dispatcher": 4
+    "auto-dispatcher": 5
   },
   "items": [
+    {
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "classification": "needs_clean_rebuild",
+      "next_owner": "auto-dispatcher",
+      "reason": "branch is behind current base; requires rebase or clean package rebuild before merge",
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "known_task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
+      ],
+      "canonical_target_id": null,
+      "risk_class": "medium",
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "ahead_changed_paths_sample": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "current_base_changed_paths_sample": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt"
+      ],
+      "product_path_count": 5,
+      "current_product_path_count": 5,
+      "coordination_or_noise_path_count": 1,
+      "noisy_path_count": 0,
+      "product_paths_sample": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt"
+      ],
+      "noisy_paths_sample": [],
+      "source_classification": "ready_candidate",
+      "identity_valid": true,
+      "identity_issues": [],
+      "head_sha": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "ahead_of_base": 1,
+      "behind_base": 2,
+      "path_source": "merge_base_to_head"
+    },
     {
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
@@ -101,7 +166,7 @@
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 20,
+      "behind_base": 28,
       "path_source": "merge_base_to_head"
     },
     {
@@ -208,7 +273,7 @@
       "identity_issues": [],
       "head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
       "ahead_of_base": 4,
-      "behind_base": 41,
+      "behind_base": 49,
       "path_source": "merge_base_to_head"
     },
     {
@@ -271,7 +336,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 6,
+      "behind_base": 14,
       "path_source": "merge_base_to_head"
     },
     {
@@ -349,7 +414,7 @@
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 6,
+      "behind_base": 14,
       "path_source": "merge_base_to_head"
     }
   ]
