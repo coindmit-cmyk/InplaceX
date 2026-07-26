@@ -1,0 +1,44 @@
+name: fail_short_circuit
+kind: workflow
+category: fail_short_circuit
+expected: fail
+workflow: |
+  name: fail-contract-baseline
+  on: {}
+  jobs:
+    verify:
+      runs-on: ubuntu-latest
+      steps:
+        - run: ./gradlew verifyProject
+        - run: ./gradlew lint
+        - run: ./gradlew :app:assembleDebugAndroidTest
+        - run: ./gradlew assembleDebug
+        - run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk --output-dir build/ci-artifacts
+        - run: python scripts/ci/validate_ci_contract.py
+    instrumentation:
+      needs: verify
+      runs-on: ubuntu-latest
+      steps:
+        - run: if [ ! -e /dev/kvm ]; then exit 1; fi
+        - run: avdmanager create avd --force --name ci-api-34 --package "system-images;android-34;google_apis;x86_64" --device "pixel"
+        - run: |
+            emulator -avd ci-api-34
+            adb wait-for-device
+            boot_completed=""
+            for i in $(seq 1 90); do
+              boot_completed="$(adb shell getprop sys.boot_completed | tr -d '\r')"
+              if [[ "$boot_completed" == "1" ]]; then
+                break
+              fi
+              sleep 1
+            done
+            if [[ "$boot_completed" != "1" ]]; then
+              exit 1
+            fi
+            ./gradlew :app:connectedDebugAndroidTest || true
+    release:
+      needs: verify
+      runs-on: ubuntu-latest
+      steps:
+        - run: ./gradlew :app:assembleRelease
+        - run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/release/app-release.apk --output-dir build/ci-release-artifacts
