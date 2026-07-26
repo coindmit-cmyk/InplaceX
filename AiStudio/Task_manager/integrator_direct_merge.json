@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:38:21Z",
+  "created_at": "2026-07-26T21:43:23Z",
   "status": "no_ready_items",
   "input_source": "integration_batch",
   "batch_exists": true,
-  "base_sha": "4c53e4d9cc9ad9469df35fc62d1d4284287ffba4",
+  "base_sha": "69971f4a09382ddb8fcd3051dbb391661516dbbf",
   "ready": [],
   "source_pr_close_retried": [],
   "routed": [
@@ -142,14 +142,14 @@
         "worktree",
         "add",
         "-B",
-        "integrator/direct/20260726T213818Z",
-        "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+        "integrator/direct/20260726T214321Z",
+        "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
         "origin/develop"
       ],
       "cwd": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
       "exit_code": 0,
-      "stdout": "branch 'integrator/direct/20260726T213818Z' set up to track 'origin/develop'.\nУказатель HEAD сейчас на коммите 4c53e4d chore(agent): record integration_run state\n",
-      "stderr": "Preparing worktree (new branch 'integrator/direct/20260726T213818Z')\n"
+      "stdout": "branch 'integrator/direct/20260726T214321Z' set up to track 'origin/develop'.\nУказатель HEAD сейчас на коммите 69971f4 chore(agent): record integration_run state\n",
+      "stderr": "Preparing worktree (new branch 'integrator/direct/20260726T214321Z')\n"
     },
     {
       "command": [
@@ -157,9 +157,9 @@
         "rev-parse",
         "HEAD"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
-      "stdout": "4c53e4d9cc9ad9469df35fc62d1d4284287ffba4\n",
+      "stdout": "69971f4a09382ddb8fcd3051dbb391661516dbbf\n",
       "stderr": ""
     },
     {
@@ -169,7 +169,7 @@
         "--verify",
         "origin/feature/online-foundation-v1"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\n",
       "stderr": ""
@@ -180,7 +180,7 @@
         "rev-parse",
         "origin/feature/online-foundation-v1"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\n",
       "stderr": ""
@@ -194,7 +194,7 @@
         "--json",
         "number,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,statusCheckRollup"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "{\"baseRefName\":\"develop\",\"headRefName\":\"feature/online-foundation-v1\",\"headRefOid\":\"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\"isDraft\":true,\"mergeStateStatus\":\"DIRTY\",\"number\":7,\"state\":\"OPEN\",\"statusCheckRollup\":[{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T20:19:04Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89836843608\",\"name\":\"Unit verification and debug artifact\",\"startedAt\":\"2026-07-26T20:14:44Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T20:20:56Z\",\"conclusion\":\"FAILURE\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89837241831\",\"name\":\"Instrumentation checks (non-blocking)\",\"startedAt\":\"2026-07-26T20:19:07Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T20:22:12Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89837241778\",\"name\":\"Release checks (non-blocking)\",\"startedAt\":\"2026-07-26T20:19:07Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"}]}\n",
       "stderr": ""
@@ -206,7 +206,7 @@
         "--verify",
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8\n",
       "stderr": ""
@@ -217,7 +217,7 @@
         "rev-parse",
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8\n",
       "stderr": ""
@@ -231,7 +231,7 @@
         "--json",
         "number,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,statusCheckRollup"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "{\"baseRefName\":\"develop\",\"headRefName\":\"AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z\",\"headRefOid\":\"1270470ca5dff7c836dcb0c1058f85eabc6d20e8\",\"isDraft\":true,\"mergeStateStatus\":\"UNSTABLE\",\"number\":5,\"state\":\"OPEN\",\"statusCheckRollup\":[{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T12:51:02Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795484781\",\"name\":\"Unit verification and debug artifact\",\"startedAt\":\"2026-07-26T12:47:39Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T13:41:19Z\",\"conclusion\":\"CANCELLED\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795784980\",\"name\":\"Instrumentation checks\",\"startedAt\":\"2026-07-26T12:51:05Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T12:54:06Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795784946\",\"name\":\"Release checks\",\"startedAt\":\"2026-07-26T12:51:05Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"}]}\n",
       "stderr": ""
@@ -243,7 +243,7 @@
         "--verify",
         "origin/feature/toy-room-ui-v5"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "a37517141b6954aa85736e9284f5997fa77afb2e\n",
       "stderr": ""
@@ -254,7 +254,7 @@
         "rev-parse",
         "origin/feature/toy-room-ui-v5"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "a37517141b6954aa85736e9284f5997fa77afb2e\n",
       "stderr": ""
@@ -268,7 +268,7 @@
         "--json",
         "number,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,statusCheckRollup"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "{\"baseRefName\":\"codex/app-shell-ux-v4\",\"headRefName\":\"feature/toy-room-ui-v5\",\"headRefOid\":\"a37517141b6954aa85736e9284f5997fa77afb2e\",\"isDraft\":true,\"mergeStateStatus\":\"UNSTABLE\",\"number\":9,\"state\":\"OPEN\",\"statusCheckRollup\":[{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T21:10:19Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89841841786\",\"name\":\"Unit verification and debug artifact\",\"startedAt\":\"2026-07-26T21:08:01Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T21:12:43Z\",\"conclusion\":\"FAILURE\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051184\",\"name\":\"Instrumentation checks (non-blocking)\",\"startedAt\":\"2026-07-26T21:10:21Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"},{\"__typename\":\"CheckRun\",\"completedAt\":\"2026-07-26T21:13:38Z\",\"conclusion\":\"SUCCESS\",\"detailsUrl\":\"https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051193\",\"name\":\"Release checks (non-blocking)\",\"startedAt\":\"2026-07-26T21:10:21Z\",\"status\":\"COMPLETED\",\"workflowName\":\"InplaceX CI\"}]}\n",
       "stderr": ""
@@ -278,9 +278,9 @@
         "git",
         "diff",
         "--check",
-        "4c53e4d9cc9ad9469df35fc62d1d4284287ffba4..HEAD"
+        "69971f4a09382ddb8fcd3051dbb391661516dbbf..HEAD"
       ],
-      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t213818z",
+      "cwd": "/mnt/d/agent-runtime/integrator-worktrees/inplacex/direct-20260726t214321z",
       "exit_code": 0,
       "stdout": "",
       "stderr": ""
