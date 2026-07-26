@@ -332,6 +332,8 @@ The contract is testable without a running Ktor server:
 7. Assert that a full outbound queue closes only the affected socket and leaves
    the authoritative session state available through REST.
 
-These checks are contract tests for future backend and client adapters; this
-task adds no runtime implementation and does not authorize exposing production
-credentials or real provider configuration.
+These checks apply to backend and client adapters. The Android S28 foundation
+implements a runtime client transport under `platform.online`, while the
+authoritative backend routes remain a separate gated delivery. This contract
+does not authorize exposing production credentials or real provider
+configuration.

@@ -41,6 +41,9 @@ class InplaceXLoggerTest {
                 "accessToken" to "abc123",
                 "apiKey" to "real-key",
                 "cookie" to "session=secret",
+                "guess" to "4060",
+                "providerPayload" to "provider-private",
+                "purchaseToken" to "purchase-private",
             ),
         )
 
@@ -49,6 +52,9 @@ class InplaceXLoggerTest {
         assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["accessToken"])
         assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["apiKey"])
         assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["cookie"])
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["guess"])
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["providerPayload"])
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["purchaseToken"])
     }
 
     @Test

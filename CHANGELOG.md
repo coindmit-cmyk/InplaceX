@@ -30,6 +30,11 @@
   title plaque, compact chapter/reward dashboard, descending mission route,
   numbered locked levels, cream code cards, selected-level gold emphasis, and
   a green primary play action while preserving campaign behavior.
+- Added the Android online transport foundation for the versioned REST and
+  WebSocket contracts: HTTPS/WSS enforcement, transport-owned bearer
+  authentication, single-flight refresh, bounded deterministic retries,
+  idempotency requirements, reconnect cursors, frame limits, and redacted
+  diagnostics.
 - Hardened the authoritative duel engine with single-use mutable digit
   commands, ASCII-only validation, viewer-neutral attempt snapshots, and
   deterministic secret-buffer zeroization after finish, close, or failure.
