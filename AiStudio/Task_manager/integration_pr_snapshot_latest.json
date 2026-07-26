@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T22:48:24Z",
+  "generated_at": "2026-07-26T22:53:26Z",
   "repository": "coindmit-cmyk/InplaceX",
   "pull_requests": [
     {
       "baseRefName": "codex/app-shell-ux-v4",
       "headRefName": "feature/toy-room-ui-v5",
-      "headRefOid": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "headRefOid": "1e508f938af8d5438262eb34385a0c348dcab467",
       "isDraft": true,
       "mergeStateStatus": "UNSTABLE",
       "number": 9,
@@ -15,37 +15,17 @@
       "statusCheckRollup": [
         {
           "__typename": "CheckRun",
-          "completedAt": "2026-07-26T21:10:19Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89841841786",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30224047672/job/89851273744",
           "name": "Unit verification and debug artifact",
-          "startedAt": "2026-07-26T21:08:01Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T21:12:43Z",
-          "conclusion": "FAILURE",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051184",
-          "name": "Instrumentation checks (non-blocking)",
-          "startedAt": "2026-07-26T21:10:21Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T21:13:38Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051193",
-          "name": "Release checks (non-blocking)",
-          "startedAt": "2026-07-26T21:10:21Z",
-          "status": "COMPLETED",
+          "startedAt": "2026-07-26T22:53:27Z",
+          "status": "IN_PROGRESS",
           "workflowName": "InplaceX CI"
         }
       ],
       "title": "feat(android): establish Toy Room UI v5",
-      "updatedAt": "2026-07-26T21:07:55Z",
+      "updatedAt": "2026-07-26T22:53:20Z",
       "url": "https://github.com/coindmit-cmyk/InplaceX/pull/9"
     },
     {
