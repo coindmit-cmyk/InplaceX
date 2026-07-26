@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T21:18:03Z",
+  "updated_at": "2026-07-26T22:03:24Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10640,7 +10640,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10701,7 +10701,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10923,10 +10923,10 @@
       "created_at": "2026-07-25T23:05:00Z",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio",
-      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T210322Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T210322Z",
-      "started_at": "2026-07-26T21:03:22Z",
-      "lock_expires_at": "2026-07-27T05:03:22Z",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
+      "started_at": "2026-07-26T22:03:24Z",
+      "lock_expires_at": "2026-07-27T06:03:24Z",
       "retry_count": 8,
       "last_rejected_candidate": "f3151a5cb058aba3a435a219b0acb57c35573de1",
       "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_F3151A5_20260726.md",
@@ -11029,7 +11029,8 @@
         "AiStudio/Task_manager/task_queue.json"
       ],
       "packet_normalized_at": "2026-07-26T21:08:07Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",

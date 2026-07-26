@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T21:18:03Z",
+  "updated_at": "2026-07-26T22:03:24Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -1034,6 +1034,16 @@
       "expires_at": "2026-07-27T05:03:27Z",
       "notes": "worker result already synced for integrator review",
       "review_at": "2026-07-26T21:18:03Z"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
+      "at": "2026-07-26T22:03:24Z",
+      "expires_at": "2026-07-27T06:03:24Z",
+      "notes": "central runner claim"
     }
   ]
 }
