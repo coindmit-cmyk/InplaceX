@@ -11353,7 +11353,7 @@
     {
       "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "title": "Implement fail-closed capability preservation integration gate",
-      "status": "integration_requested",
+      "status": "done",
       "priority": "P0",
       "complexity": "L",
       "type": "automation-guard",
@@ -11397,14 +11397,14 @@
         "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
         "git diff --check"
       ],
-      "lock": "review",
+      "lock": "free",
       "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_integrator_review",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "retry rejects c69bb62 because a pre-existing same-name symbol in another changed file falsely proves a move and masks capability removal",
-      "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_owner": "none",
+      "next_role": "none",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
         "auto-worker-5.5",
@@ -11635,7 +11635,7 @@
         "c69bb62d043269aedf1f795c02bfe29698450948",
         "4e721c31fb9f438d09c4ac322084c3fcd2832977"
       ],
-      "integration_status": "needs_integrator_review",
+      "integration_status": "finalized",
       "retry_count": 2,
       "last_rejected_candidate": "c69bb62d043269aedf1f795c02bfe29698450948",
       "integration_review": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_ACCEPTANCE_4E721C3_20260726.md",
@@ -11658,7 +11658,23 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "stale_lock_released_at": "2026-07-26T20:32:09Z",
       "stale_lock_released_by": "status_orchestrator.py",
-      "stale_lock_previous_status": "integration_requested"
+      "stale_lock_previous_status": "integration_requested",
+      "merge_commit": "8fb2b0442d268f958a8457d55c33eafa33461158",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-26T20:33:19Z",
+      "finalized_by": "auto-integrator",
+      "status_history": [
+        {
+          "at": "2026-07-26T20:33:19Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
@@ -11757,7 +11773,7 @@
     {
       "id": "REPO-PR-3-6",
       "title": "Integrate open PR stack #3-#6",
-      "status": "agent_done",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "repository_hygiene_integration",
@@ -11766,8 +11782,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "needs_integrator_review",
-      "integration_status": "needs_integrator_review",
+      "dispatcher_decision": "integration_ready",
+      "integration_status": "pending_required_ci",
       "branch": "origin/codex/app-shell-ux-v4",
       "base_branch": "develop",
       "github_pr": 6,
@@ -11809,7 +11825,7 @@
       ],
       "lock": "free",
       "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_role": "auto_integrator",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-26T20:31:58Z",
       "changed_paths": [
@@ -11931,12 +11947,27 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization."
+      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "repair_request": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/make-human/company-ux-v3' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
+      "missing_packet_fields": [],
+      "repair_owner": "Integrator",
+      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "status_history": [
+        {
+          "at": "2026-07-26T20:33:19Z",
+          "by": "integrator_direct_merge",
+          "from": "agent_done",
+          "to": "integration_requested",
+          "reason": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/make-human/company-ux-v3' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
+          "event": "integration_routed",
+          "next_owner": "integrator"
+        }
+      ]
     },
     {
       "id": "REPO-PR-5",
       "title": "Integrate open PR #5",
-      "status": "agent_done",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "repository_hygiene_integration",
@@ -11945,8 +11976,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "needs_integrator_review",
-      "integration_status": "needs_integrator_review",
+      "dispatcher_decision": "integration_ready",
+      "integration_status": "pending_required_ci",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "base_branch": "develop",
       "github_pr": 5,
@@ -11986,7 +12017,7 @@
       ],
       "lock": "free",
       "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_role": "auto_integrator",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-26T20:31:58Z",
       "changed_paths": [
@@ -12058,12 +12089,27 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization."
+      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+      "missing_packet_fields": [],
+      "repair_owner": "Integrator",
+      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "status_history": [
+        {
+          "at": "2026-07-26T20:33:19Z",
+          "by": "integrator_direct_merge",
+          "from": "agent_done",
+          "to": "integration_requested",
+          "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+          "event": "integration_routed",
+          "next_owner": "integrator"
+        }
+      ]
     },
     {
       "id": "REPO-PR-7",
       "title": "Integrate open PR #7",
-      "status": "agent_done",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "repository_hygiene_integration",
@@ -12072,8 +12118,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "needs_integrator_review",
-      "integration_status": "needs_integrator_review",
+      "dispatcher_decision": "integration_ready",
+      "integration_status": "pending_required_ci",
       "branch": "origin/feature/online-foundation-v1",
       "base_branch": "develop",
       "github_pr": 7,
@@ -12113,7 +12159,7 @@
       ],
       "lock": "free",
       "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_role": "auto_integrator",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-26T20:31:58Z",
       "changed_paths": [
@@ -12160,7 +12206,22 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization."
+      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+      "missing_packet_fields": [],
+      "repair_owner": "Integrator",
+      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "status_history": [
+        {
+          "at": "2026-07-26T20:33:19Z",
+          "by": "integrator_direct_merge",
+          "from": "agent_done",
+          "to": "integration_requested",
+          "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+          "event": "integration_routed",
+          "next_owner": "integrator"
+        }
+      ]
     },
     {
       "id": "REPO-PR-8",

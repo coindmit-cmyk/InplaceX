@@ -856,14 +856,18 @@
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "at": "2026-07-26T12:22:29Z",
       "expires_at": "2026-07-26T20:22:29Z",
       "notes": "worker result already synced for integrator review",
-      "review_at": "2026-07-26T20:32:09Z"
+      "review_at": "2026-07-26T20:32:09Z",
+      "previous_state": "review",
+      "released_at": "2026-07-26T20:33:19Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
