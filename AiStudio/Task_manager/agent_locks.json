@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:35:22Z",
+  "updated_at": "2026-07-26T11:36:38Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -734,13 +734,16 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
       "at": "2026-07-26T11:12:23Z",
       "expires_at": "2026-07-26T19:12:23Z",
-      "notes": "central runner claim"
+      "notes": "S17 launch failed because preserved worker branch has unique commits; requeue on fresh retry branch without rewriting preserved history",
+      "released_at": "2026-07-26T11:36:38Z",
+      "released_by": "release_dead_worker_claims.py",
+      "release_reason": "S17 launch failed because preserved worker branch has unique commits; requeue on fresh retry branch without rewriting preserved history"
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
