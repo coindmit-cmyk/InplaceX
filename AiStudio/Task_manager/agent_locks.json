@@ -998,14 +998,18 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "at": "2026-07-26T20:43:23Z",
       "expires_at": "2026-07-27T04:43:23Z",
       "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-26T20:53:03Z"
+      "review_at": "2026-07-26T20:53:03Z",
+      "previous_state": "review",
+      "released_at": "2026-07-26T20:53:27Z",
+      "released_by": "auto-integrator",
+      "release_reason": "direct integration finalized"
     }
   ]
 }

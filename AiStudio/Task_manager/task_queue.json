@@ -8547,7 +8547,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
       "title": "Android online transport foundation",
-      "status": "integration_requested",
+      "status": "done",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -8595,14 +8595,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "review",
+      "lock": "free",
       "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "done",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Integrator",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
       "source_item_id": "INPX-AND-420",
@@ -8849,7 +8849,23 @@
       "commits": [
         "9f3a8870002f6ade055ec6690ac976d72f61235f"
       ],
-      "integration_status": "pending"
+      "integration_status": "finalized",
+      "merge_commit": "38c3ce88ebf17f5fba4755050afb5cae50d4e6ff",
+      "finalization_status": "recorded",
+      "requires_human_attention": false,
+      "finalized_at": "2026-07-26T20:53:27Z",
+      "finalized_by": "auto-integrator",
+      "status_history": [
+        {
+          "at": "2026-07-26T20:53:27Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "done",
+          "reason": "direct integrator merge to develop",
+          "event": "direct_merge_recorded",
+          "next_owner": "none"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
