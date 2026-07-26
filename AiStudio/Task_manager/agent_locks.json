@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:59:46Z",
+  "updated_at": "2026-07-26T12:12:58Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -789,33 +789,38 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T115936Z",
       "at": "2026-07-26T11:59:36Z",
       "expires_at": "2026-07-26T19:59:36Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced and returned from worker lane",
+      "released_at": "2026-07-26T12:12:58Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "worker result synced and returned from worker lane"
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T115941Z",
       "at": "2026-07-26T11:59:41Z",
       "expires_at": "2026-07-26T19:59:41Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T12:12:58Z"
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T115946Z",
       "at": "2026-07-26T11:59:46Z",
       "expires_at": "2026-07-26T19:59:46Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T12:12:58Z"
     }
   ]
 }
