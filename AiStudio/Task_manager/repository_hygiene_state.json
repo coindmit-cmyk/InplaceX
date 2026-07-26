@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-26T20:31:58Z",
+  "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+  "repo": "coindmit-cmyk/InplaceX",
+  "remote": "origin",
+  "base_ref": "origin/develop",
+  "apply": true,
+  "fetch": {
+    "skipped": true
+  },
+  "open_pr_count": 6,
+  "group_count": 5,
+  "stack_group_count": 1,
+  "direct_group_count": 4,
+  "dispatcher_group_count": 5,
+  "needs_human_group_count": 0,
+  "groups": [
+    {
+      "group_key": "repository-pr-group:ceebeb4036b98c5c7eb7",
+      "task_id": "REPO-PR-3-6",
+      "classification": "stacked_pr_bundle",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        3,
+        6
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/3",
+        "https://github.com/coindmit-cmyk/InplaceX/pull/6"
+      ],
+      "root_pr": 3,
+      "leaf_pr": 6,
+      "candidate_branch": "origin/codex/app-shell-ux-v4",
+      "candidate_head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
+      "roots": [
+        3
+      ],
+      "leaves": [
+        6
+      ],
+      "draft_prs": [
+        3,
+        6
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "linear PR stack can be reviewed as one cumulative leaf candidate"
+    },
+    {
+      "group_key": "repository-pr-group:fe149e972f1c58b562ba",
+      "task_id": "REPO-PR-4",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        4
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/4"
+      ],
+      "root_pr": 4,
+      "leaf_pr": 4,
+      "candidate_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "candidate_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "roots": [
+        4
+      ],
+      "leaves": [
+        4
+      ],
+      "draft_prs": [
+        4
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "direct PR can be routed through Dispatcher and Integrator"
+    },
+    {
+      "group_key": "repository-pr-group:ffa980524204d27db72c",
+      "task_id": "REPO-PR-5",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        5
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/5"
+      ],
+      "root_pr": 5,
+      "leaf_pr": 5,
+      "candidate_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "candidate_head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "roots": [
+        5
+      ],
+      "leaves": [
+        5
+      ],
+      "draft_prs": [
+        5
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "direct PR can be routed through Dispatcher and Integrator"
+    },
+    {
+      "group_key": "repository-pr-group:a61cc190aa06e5db919b",
+      "task_id": "REPO-PR-7",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        7
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/7"
+      ],
+      "root_pr": 7,
+      "leaf_pr": 7,
+      "candidate_branch": "origin/feature/online-foundation-v1",
+      "candidate_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
+      "roots": [
+        7
+      ],
+      "leaves": [
+        7
+      ],
+      "draft_prs": [
+        7
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "direct PR can be routed through Dispatcher and Integrator"
+    },
+    {
+      "group_key": "repository-pr-group:c4c334e72139ebb46de8",
+      "task_id": "REPO-PR-8",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        8
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/8"
+      ],
+      "root_pr": 8,
+      "leaf_pr": 8,
+      "candidate_branch": "origin/feature/backend-auth-boundary-v1",
+      "candidate_head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "roots": [
+        8
+      ],
+      "leaves": [
+        8
+      ],
+      "draft_prs": [
+        8
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "direct PR can be routed through Dispatcher and Integrator"
+    }
+  ],
+  "task_routing": {
+    "staged_count": 4,
+    "updated_count": 0,
+    "covered_count": 1,
+    "superseded_count": 0,
+    "staged_task_ids": [
+      "REPO-PR-3-6",
+      "REPO-PR-5",
+      "REPO-PR-7",
+      "REPO-PR-8"
+    ],
+    "updated_task_ids": [],
+    "covered_task_ids": [
+      "REPO-PR-4"
+    ],
+    "superseded_task_ids": [],
+    "changed": true,
+    "merged_parent_reconciliation": {
+      "reconciled_count": 0,
+      "reconciled_task_ids": [],
+      "protected_task_ids": [],
+      "base_ref": "origin/develop",
+      "base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
+      "changed": false
+    },
+    "integrated_descendant_reconciliation": {
+      "resolved_count": 0,
+      "resolved_task_ids": [],
+      "protected_task_ids": [],
+      "unproven_parent_ids": [],
+      "base_ref": "origin/develop",
+      "base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
+      "changed": false
+    },
+    "repair_parent_reconciliation": {
+      "reconciled_count": 0,
+      "waiting_count": 0,
+      "reconciled_task_ids": [],
+      "waiting_task_ids": [],
+      "changed": false
+    },
+    "recovery": {
+      "staged_count": 0,
+      "deferred_count": 0,
+      "updated_count": 0,
+      "covered_count": 0,
+      "resolved_count": 0,
+      "resolved_repair_count": 0,
+      "staged_task_ids": [],
+      "deferred_task_ids": [],
+      "updated_task_ids": [],
+      "covered_task_ids": [],
+      "resolved_task_ids": [],
+      "resolved_repair_task_ids": [],
+      "changed": false
+    }
+  },
+  "event": {
+    "event_appended": true,
+    "event_id": "repository-hygiene-2afdf624bf2c7cb8396f",
+    "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
+  },
+  "repair_parent_events": {
+    "event_count": 0,
+    "event_ids": [],
+    "reason": "no_reconciled_repair_parents"
+  },
+  "branch_cleanup": {
+    "counts": {},
+    "logical_counts": {
+      "merged_safe_delete": 0,
+      "archive_candidate": 0,
+      "dirty_worker_candidate": 0,
+      "cleanup_candidate": 0,
+      "unknown_needs_review": 0,
+      "integration_recovery_candidate": 0
+    },
+    "pr_evidence_available": true,
+    "warnings": [],
+    "actionable_count": 0,
+    "actionable_ref_count": 0,
+    "candidate_sample": [],
+    "candidate_sample_truncated": false,
+    "merged_safe_delete_branches": [],
+    "archive_branches": [],
+    "grace_cleanup_branches": [],
+    "unknown_review_branches": [],
+    "integration_recovery_branches": [],
+    "salvage_branches": [],
+    "destructive_apply_performed": false,
+    "apply_gate": "cleanup_merged_branches.py deterministic protection checks and project policy",
+    "skipped": true,
+    "reason": "fast_pr_registry"
+  },
+  "worktree_retirement": {
+    "schema_version": "1.0",
+    "skipped": true,
+    "reason": "fast_pr_registry",
+    "candidate_count": 0,
+    "eligible_count": 0,
+    "blocked_count": 0,
+    "worktrees": []
+  },
+  "worktree_retirement_apply": {
+    "skipped": true,
+    "reason": "disabled_or_dry_run",
+    "retired_count": 0,
+    "failed_count": 0
+  },
+  "branch_lifecycle_scan": {
+    "schema_version": "1.0",
+    "generated_at": "2026-07-26T20:31:59Z",
+    "stale_days": 14,
+    "codex_activity_coverage_complete": false,
+    "counts": {
+      "archive_ready": 0,
+      "work_required": 0,
+      "keep": 0
+    },
+    "decisions": []
+  },
+  "codex_activity": {},
+  "cleanup_apply": {
+    "skipped": true,
+    "reason": "safe_delete_guard_blocked",
+    "deleted_count": 0,
+    "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
+  },
+  "ok": true,
+  "state_signature": "5674005a6775ed01ebcaf0d6c6604bf9ba8913eef5265e265b27889cdddfaac0",
+  "state_written": true
+}

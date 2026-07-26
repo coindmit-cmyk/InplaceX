@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T17:46:29Z",
+  "updated_at": "2026-07-26T20:32:09Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -863,7 +863,7 @@
       "at": "2026-07-26T12:22:29Z",
       "expires_at": "2026-07-26T20:22:29Z",
       "notes": "worker result already synced for integrator review",
-      "review_at": "2026-07-26T13:26:33Z"
+      "review_at": "2026-07-26T20:32:09Z"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
