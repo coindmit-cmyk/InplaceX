@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:43:53Z",
+  "updated_at": "2026-07-26T12:52:58Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5287,12 +5287,12 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "retry rejects 6965ee9 because it does not compile with the required JDK, preserves only a partial mutation suite and removes executable mode from a shell entrypoint",
+      "dispatcher_decision_reason": "retry rejects 1270470 because the full workflow validator accepts short-circuited lint, echoed artifact identity and echoed AVD creation",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -5344,6 +5344,10 @@
         "Keep the Box import when replacing BoxWithConstraints, preserve executable mode on scripts/ci/artifact_identity.sh and compile before reporting lint or release success.",
         "Make --self-test fail unless every mandatory hostile fixture category is present and proves the expected pass or rejection result; a partial fixture count is a blocker.",
         "Use the exact packet-provided JDK and Android SDK environment before every Gradle command; do not report a PATH-only Java miss.",
+        "Read docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md completely and treat 1270470 and draft PR #5 as preserved negative evidence only.",
+        "Reject required commands behind ||, &&, command substitution, subshells or any control flow that can avoid execution; a parser must not split an unsafe expression into a fake successful command.",
+        "Require artifact identity and avdmanager creation as executable parsed commands. Echo, printf, comments, labels and raw-text fallback matches must fail.",
+        "Validate the bounded boot wait from executable commands rather than raw substrings and add full-workflow hostile regressions for short-circuit lint, artifact echo, AVD echo and boot-wait echo.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5371,6 +5375,10 @@
         "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md",
+          "purpose": "mandatory executable-command parsing and full-workflow hostile mutation retry contract"
+        },
         {
           "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
           "purpose": "mandatory compilation, complete mutation fixture, executable mode and exact toolchain retry contract"
@@ -5545,10 +5553,10 @@
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "started_at": "2026-07-26T12:40:45Z",
-      "retry_count": 5,
-      "last_rejected_candidate": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
-      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "retry_count": 6,
+      "last_rejected_candidate": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md",
+      "status_reason": "strict full-workflow mutation review rejected 1270470; executable-command parsing retry packet is worker-ready",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5573,16 +5581,25 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
           "commit": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
           "reason": "rejected and preserved: missing Box import breaks compilation, mutation self-test proves only 2/8 fixtures and artifact_identity.sh lost executable mode"
+        },
+        {
+          "released_at": "2026-07-26T12:52:58Z",
+          "reason": "S17 candidate 1270470 preserved and rejected by strict integrator hostile CI contract review",
+          "status": "in_progress",
+          "worker_id": "auto-worker-5.3",
+          "machine_id": "aistudio-manual",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+          "lock_expires_at": "2026-07-26T20:40:45Z"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+          "commit": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+          "reason": "rejected and preserved: full workflow validator accepts short-circuited lint, echoed artifact identity and echoed AVD creation; draft PR #5 must not merge"
         }
       ],
-      "claim_released_at": "2026-07-26T11:36:38Z",
-      "worker_id": "auto-worker-5.3",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "lock_expires_at": "2026-07-26T20:40:45Z",
-      "worker_result_commit": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
-      "worker_result_synced_at": "2026-07-26T12:32:28Z",
+      "claim_released_at": "2026-07-26T12:52:58Z",
+      "worker_result_commit": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "worker_result_synced_at": "2026-07-26T12:52:58Z",
       "worker_changed_paths": [
         ".github/workflows/ci.yml",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
@@ -5634,25 +5651,15 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as partial"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
       "commits": [
         "db7123e77e9146e8d3032b051f945d318b8f724e",
         "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
-        "6965ee92e429a400fbe6683aece0bc61b90d85cc"
+        "6965ee92e429a400fbe6683aece0bc61b90d85cc",
+        "1270470ca5dff7c836dcb0c1058f85eabc6d20e8"
       ],
       "integration_status": "rejected",
-      "lease": {
-        "lease_id": "lease-a6b44b400b1a",
-        "project_id": "inplacex",
-        "worker_id": "auto-worker-5.3",
-        "model": "gpt-5.3-codex-spark",
-        "created_at": "2026-07-26T12:40:38Z",
-        "heartbeat_at": "2026-07-26T12:40:38Z",
-        "expires_at": "2026-07-26T14:50:38Z"
-      },
-      "lease_id": "lease-a6b44b400b1a",
-      "execution_lease_id": "lease-a6b44b400b1a",
-      "lease_expires_at": "2026-07-26T14:50:38Z"
+      "rejected_github_pr": 5,
+      "rejected_github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/5"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
