@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T21:12:54Z",
+  "generated_at": "2026-07-26T22:53:01Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -39,7 +39,7 @@
       "root_pr": 3,
       "leaf_pr": 9,
       "candidate_branch": "origin/feature/toy-room-ui-v5",
-      "candidate_head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "candidate_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
       "roots": [
         3
       ],
@@ -52,7 +52,7 @@
         9
       ],
       "dirty_prs": [],
-      "candidate_ci_state": "failed",
+      "candidate_ci_state": "pending",
       "requires_reconstruction": true,
       "reason": "linear PR stack can be reviewed as one cumulative leaf candidate"
     },
@@ -218,7 +218,7 @@
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "1f803b2eb2ea358d37c9d36d90669ce8124efdbe",
+      "base_sha": "644df33dd9f951f48464277478f45b193b00b5b0",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -227,7 +227,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "1f803b2eb2ea358d37c9d36d90669ce8124efdbe",
+      "base_sha": "644df33dd9f951f48464277478f45b193b00b5b0",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -255,7 +255,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-54251f8893193f878b00",
+    "event_id": "repository-hygiene-9f1d7b56ab0c9d2f0f53",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -307,7 +307,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-26T21:12:55Z",
+    "generated_at": "2026-07-26T22:53:03Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -325,6 +325,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "2396cc58b75d19f5813bf267af367c1e8523a3fbc3d89ed71956adfc444dcdea",
+  "state_signature": "c462afd2ce9f46513532070038154b9aaabe392d93809a27c044419e74087c19",
   "state_written": true
 }

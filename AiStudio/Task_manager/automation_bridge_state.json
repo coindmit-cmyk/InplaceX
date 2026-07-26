@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-26T22:47:58Z",
+  "updated_at": "2026-07-26T22:53:01Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
-  "apply": false,
+  "apply": true,
   "counters": {
     "pr_checked": 9,
     "pr_missing": 0,
@@ -14,7 +14,7 @@
     "repository_open_prs": 7,
     "repository_pr_groups": 5,
     "repository_tasks_staged": 0,
-    "repository_tasks_updated": 0,
+    "repository_tasks_updated": 1,
     "repository_tasks_superseded": 0,
     "repository_branch_candidates": 0,
     "repository_branch_refs": 0,
@@ -51,7 +51,7 @@
       "repository_open_prs": 7,
       "repository_pr_groups": 5,
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 0,
+      "repository_tasks_updated": 1,
       "repository_tasks_superseded": 0,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
@@ -85,7 +85,7 @@
       "worker_ready_delta": 0,
       "worker_queue_updates": 0
     },
-    "material_update_count": 0,
+    "material_update_count": 1,
     "noop_cycle": false
   },
   "convergence": {
@@ -114,7 +114,7 @@
     },
     "normalize": {
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 0,
+      "repository_tasks_updated": 1,
       "repository_tasks_superseded": 0,
       "task_docs_imported": 0,
       "task_docs_updated": 0,
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 287,
+    "pr_checked": 305,
     "pr_events_applied": 7,
     "pr_failed": 0,
     "pr_missing": 14,
@@ -181,19 +181,19 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 221,
-    "repository_pr_groups": 165,
+    "repository_open_prs": 235,
+    "repository_pr_groups": 175,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 10,
     "repository_tasks_superseded": 2,
-    "repository_tasks_updated": 4,
+    "repository_tasks_updated": 6,
     "task_docs_imported": 0,
     "task_docs_updated": 0,
     "worker_ready_delta": 0
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 287,
+      "pr_checked": 305,
       "pr_events_applied": 7,
       "pr_failed": 0,
       "pr_missing": 14,
@@ -201,12 +201,12 @@
       "project_state_intake_written": 7,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 221,
-      "repository_pr_groups": 165,
+      "repository_open_prs": 235,
+      "repository_pr_groups": 175,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
-      "repository_tasks_updated": 4
+      "repository_tasks_updated": 6
     },
     "documentation": {
       "design_blocked_by_dependency": 0,
@@ -228,15 +228,15 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 1817,
-      "queue_before_total": 1812,
+      "queue_after_total": 1927,
+      "queue_before_total": 1922,
       "queue_total_delta": 5,
       "worker_queue_updates": 0,
-      "worker_ready_after": 53,
-      "worker_ready_before": 53,
+      "worker_ready_after": 57,
+      "worker_ready_before": 57,
       "worker_ready_delta": 0
     },
-    "material_update_count": 44,
+    "material_update_count": 46,
     "noop_cycle_count": 0
   },
   "cumulative_convergence": {
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 8733,
-      "documentation_manifest_errors": 68,
-      "documentation_orphans": 8733,
-      "pr_checked": 287,
+      "documentation_classified": 9247,
+      "documentation_manifest_errors": 72,
+      "documentation_orphans": 9247,
+      "pr_checked": 305,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 221,
-      "repository_pr_groups": 165,
+      "repository_open_prs": 235,
+      "repository_pr_groups": 175,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 476,
+      "documentation_debt_candidates": 504,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
-      "repository_tasks_updated": 4,
-      "review_required": 8733,
+      "repository_tasks_updated": 6,
+      "review_required": 9247,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 476,
-      "documentation_orphan_count": 8733,
+      "documentation_debt_candidates": 504,
+      "documentation_orphan_count": 9247,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,23 +291,23 @@
       "worker_ready_delta": 0
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 287,
+      "code_prs_checked": 305,
       "docs_to_queue": 10,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 1817,
-      "worker_ready_total": 53
+      "task_queue_total": 1927,
+      "worker_ready_total": 57
     },
-    "cycle_count": 34,
-    "blocking_count": 34,
+    "cycle_count": 36,
+    "blocking_count": 36,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 34
+      "needs_repair": 36
     },
     "ok": false
   },
-  "last_material_update_at": "2026-07-26T21:12:53Z",
+  "last_material_update_at": "2026-07-26T22:53:01Z",
   "last_material_counters": {
     "pr_checked": 9,
     "pr_missing": 0,
@@ -381,8 +381,8 @@
       "owner_gap_count": 0
     },
     "worker_queue": {
-      "queue_before_total": 54,
-      "queue_after_total": 54,
+      "queue_before_total": 55,
+      "queue_after_total": 55,
       "queue_total_delta": 0,
       "worker_ready_before": 2,
       "worker_ready_after": 2,
