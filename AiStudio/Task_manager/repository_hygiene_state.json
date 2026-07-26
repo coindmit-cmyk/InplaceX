@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T20:57:54Z",
+  "generated_at": "2026-07-26T21:07:56Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -9,7 +9,7 @@
   "fetch": {
     "skipped": true
   },
-  "open_pr_count": 6,
+  "open_pr_count": 7,
   "group_count": 5,
   "stack_group_count": 1,
   "direct_group_count": 4,
@@ -17,8 +17,8 @@
   "needs_human_group_count": 0,
   "groups": [
     {
-      "group_key": "repository-pr-group:ceebeb4036b98c5c7eb7",
-      "task_id": "REPO-PR-3-6",
+      "group_key": "repository-pr-group:68e14e22500b79124072",
+      "task_id": "REPO-PR-3-9",
       "classification": "stacked_pr_bundle",
       "topology": "linear",
       "route": "dispatcher_integration",
@@ -28,28 +28,31 @@
       "automatic_target": true,
       "pr_numbers": [
         3,
-        6
+        6,
+        9
       ],
       "pr_urls": [
         "https://github.com/coindmit-cmyk/InplaceX/pull/3",
-        "https://github.com/coindmit-cmyk/InplaceX/pull/6"
+        "https://github.com/coindmit-cmyk/InplaceX/pull/6",
+        "https://github.com/coindmit-cmyk/InplaceX/pull/9"
       ],
       "root_pr": 3,
-      "leaf_pr": 6,
-      "candidate_branch": "origin/codex/app-shell-ux-v4",
-      "candidate_head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
+      "leaf_pr": 9,
+      "candidate_branch": "origin/feature/toy-room-ui-v5",
+      "candidate_head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
       "roots": [
         3
       ],
       "leaves": [
-        6
+        9
       ],
       "draft_prs": [
         3,
-        6
+        6,
+        9
       ],
       "dirty_prs": [],
-      "candidate_ci_state": "failed",
+      "candidate_ci_state": "pending",
       "requires_reconstruction": true,
       "reason": "linear PR stack can be reviewed as one cumulative leaf candidate"
     },
@@ -193,29 +196,30 @@
     }
   ],
   "task_routing": {
-    "staged_count": 0,
-    "updated_count": 1,
-    "covered_count": 5,
-    "superseded_count": 0,
-    "staged_task_ids": [],
-    "updated_task_ids": [
-      "REPO-PR-7"
+    "staged_count": 1,
+    "updated_count": 0,
+    "covered_count": 4,
+    "superseded_count": 1,
+    "staged_task_ids": [
+      "REPO-PR-3-9"
     ],
+    "updated_task_ids": [],
     "covered_task_ids": [
-      "REPO-PR-3-6",
       "REPO-PR-4",
       "REPO-PR-5",
       "REPO-PR-7",
       "REPO-PR-8"
     ],
-    "superseded_task_ids": [],
+    "superseded_task_ids": [
+      "REPO-PR-3-6"
+    ],
     "changed": true,
     "merged_parent_reconciliation": {
       "reconciled_count": 0,
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "d7527d6b80596f42161cf627f028dbd1e6683cc4",
+      "base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -224,7 +228,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "d7527d6b80596f42161cf627f028dbd1e6683cc4",
+      "base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -252,7 +256,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-cae463353f53fab56dae",
+    "event_id": "repository-hygiene-d2357bf2e433eb783cf1",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -304,7 +308,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-26T20:57:56Z",
+    "generated_at": "2026-07-26T21:07:57Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -322,6 +326,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "b20f90b7cbd140af2e4f1f4ceab3d0553a3bc2770e6c1fe07d411cb16966ad53",
+  "state_signature": "b86721e93caac81afc74fd2b4a1b5bd7924c27086e0cda1a884ab88b73d3134d",
   "state_written": true
 }
