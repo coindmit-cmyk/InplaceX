@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Completed the PvE Race terminal loop: exhausted moves now show a defeat
+  result, wins no longer silently restart, result details include attempts and
+  elapsed time, retry is explicit, and each win grants 10 profile coins.
 - Rebalanced campaign progression so the first block remains an onboarding
   experience while level 11 starts a meaningful five-digit medium-difficulty
   step; later code-length and tier bands now grow toward the intended

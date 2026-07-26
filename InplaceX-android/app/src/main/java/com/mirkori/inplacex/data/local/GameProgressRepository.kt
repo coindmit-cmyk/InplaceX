@@ -3,6 +3,7 @@ package com.mirkori.inplacex.data.local
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import com.mirkori.inplacex.core.match.RaceRewardPolicy
 
 enum class HintStockType {
     OPEN_POSITION,
@@ -279,6 +280,7 @@ class GameProgressRepository(
                     pveWins = row.pveWins + if (won) 1 else 0,
                     pveLosses = row.pveLosses + if (won) 0 else 1,
                     matchesWon = row.matchesWon + if (won) 1 else 0,
+                    coins = row.coins + RaceRewardPolicy.coinsFor(won),
                 )
 
                 GameModeStatType.PVP_DUEL -> row.copy(

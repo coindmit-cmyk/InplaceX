@@ -8,6 +8,18 @@ import org.junit.Test
 
 class AndroidLogSinkTest {
     @Test
+    fun `default android writer never crashes a local unit test`() {
+        AndroidLogSink().emit(
+            LogEvent(
+                level = LogLevel.INFO,
+                tag = "GameFieldScreen",
+                message = "terminal match",
+                timestampMillis = 42L,
+            ),
+        )
+    }
+
+    @Test
     fun `android sink maps structured event to android writer`() {
         val writes = mutableListOf<Triple<Int, String, String>>()
         val sink = AndroidLogSink { priority, tag, message ->

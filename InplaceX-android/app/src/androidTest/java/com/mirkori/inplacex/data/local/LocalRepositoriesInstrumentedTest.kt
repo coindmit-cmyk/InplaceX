@@ -38,7 +38,7 @@ class LocalRepositoriesInstrumentedTest {
             assertEquals(3, state.checkPositionHints)
             assertEquals(3, state.extraMovesBoosts)
             assertEquals(4, state.extraTimeBoosts)
-            assertEquals(190, state.coins)
+            assertEquals(200, state.coins)
             assertEquals(4, state.campaignEnergy)
             assertEquals(1, state.matchesPlayed)
             assertEquals(2, state.matchesWon)
@@ -57,6 +57,10 @@ class LocalRepositoriesInstrumentedTest {
                 CampaignLevelProgress(levelNumber = 3, bestBackendRating = 8),
                 reloadedRepository.loadCampaignProgress(3),
             )
+
+            val coinsBeforeLoss = state.coins
+            reloadedRepository.recordModeResult(GameModeStatType.PVE_RACE, won = false)
+            assertEquals(coinsBeforeLoss, reloadedRepository.loadState().coins)
 
             nowMs += ENERGY_REFILL_MINUTES * 60_000L
             val regenerated = GameProgressRepository(context, config).loadState()

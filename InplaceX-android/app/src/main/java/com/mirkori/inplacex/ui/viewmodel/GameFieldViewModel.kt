@@ -91,7 +91,7 @@ internal class GameFieldRouteController(
 ) {
     private val _overlay = MutableStateFlow(GameFieldRouteOverlay())
     val overlay: StateFlow<GameFieldRouteOverlay> = _overlay.asStateFlow()
-    private var completionReported = false
+    private var completionReported = viewModel.uiState.value.match.phase.isTerminal()
 
     fun dispatch(event: GameFieldEvent, callbacks: GameFieldLifecycleCallbacks): GameFieldUiState {
         val attemptsBefore = viewModel.uiState.value.match.attempts.size
@@ -286,3 +286,6 @@ internal class GameFieldRouteController(
         )
     }
 }
+
+private fun MatchPhase.isTerminal(): Boolean =
+    this == MatchPhase.WON || this == MatchPhase.LOST

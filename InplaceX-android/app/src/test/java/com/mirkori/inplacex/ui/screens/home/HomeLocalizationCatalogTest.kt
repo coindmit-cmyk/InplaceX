@@ -49,6 +49,20 @@ class HomeLocalizationCatalogTest {
         )
         assertEquals("Введите 6 цифр", ru.homeEnterDigits(6))
         assertEquals("Enter 6 digits", en.homeEnterDigits(6))
+        assertEquals("Попытки: 8 из 12", ru.homeRaceAttempts(used = 8, limit = 12))
+        assertEquals("Attempts: 8 of 12", en.homeRaceAttempts(used = 8, limit = 12))
+        assertEquals("Время: 02:05", ru.homeRaceTime(elapsedSeconds = 125))
+        assertEquals("Time: 02:05", en.homeRaceTime(elapsedSeconds = 125))
+        assertEquals("Награда: +10 монет", ru.homeRaceReward(coins = 10))
+        assertEquals("Reward: +10 coins", en.homeRaceReward(coins = 10))
+    }
+
+    @Test
+    fun `race elapsed time is stable and never negative`() {
+        assertEquals("00:00", formatRaceElapsed(-1))
+        assertEquals("00:59", formatRaceElapsed(59))
+        assertEquals("01:00", formatRaceElapsed(60))
+        assertEquals("61:01", formatRaceElapsed(3_661))
     }
 
     @Test

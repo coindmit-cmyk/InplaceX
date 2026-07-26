@@ -24,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,6 +91,10 @@ fun HomeRootScreen(
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
+    var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
+    var raceResultElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
+    var pveSessionSeed by rememberSaveable { mutableIntStateOf(1) }
     var preMatchPhase by rememberSaveable { mutableStateOf(PreMatchPhase.SECRET_SELECTION) }
     var preMatchSecretInput by rememberSaveable { mutableStateOf("") }
     var preMatchTimeoutLeft by rememberSaveable { mutableIntStateOf(60) }
@@ -166,9 +171,21 @@ fun HomeRootScreen(
         onExitGameConsumed()
     }
 
-    BackHandler(enabled = showExitDialog || showPreMatchDialog || showDuelResultDialog) {
+    fun closeRaceResultToHome() {
+        raceResultWon = null
+        onScreenStateChange(HomeScreenState.ROOT)
+        onDebugSecretChange(null)
+    }
+
+    BackHandler(
+        enabled = showExitDialog ||
+            showPreMatchDialog ||
+            showDuelResultDialog ||
+            raceResultWon != null,
+    ) {
         when {
             showExitDialog -> showExitDialog = false
+            raceResultWon != null -> closeRaceResultToHome()
             showDuelResultDialog -> showDuelResultDialog = false
             showPreMatchDialog -> {
                 showPreMatchDialog = false
@@ -184,7 +201,8 @@ fun HomeRootScreen(
         enabled = screenState != HomeScreenState.ROOT &&
             !showExitDialog &&
             !showPreMatchDialog &&
-            !showDuelResultDialog
+            !showDuelResultDialog &&
+            raceResultWon == null
     ) {
         showExitDialog = true
     }
@@ -208,25 +226,33 @@ fun HomeRootScreen(
         }
 
         HomeScreenState.PVE_GAME -> {
-            GameFieldScreen(
-                title = "",
-                params = pveMode.toFieldParams(TypeGame.RaceMatch),
-                onBack = { showExitDialog = true },
-                onDebugSecretChange = onDebugSecretChange,
-                openPositionHints = openPositionHints,
-                checkDigitHints = checkDigitHints,
-                checkPositionHints = checkPositionHints,
-                autoModeAvailable = autoModeAvailable,
-                infiniteHintsEnabled = infiniteHintsEnabled,
-                onConsumeOpenPositionHint = onConsumeOpenPositionHint,
-                onConsumeCheckDigitHint = onConsumeCheckDigitHint,
-                onConsumeCheckPositionHint = onConsumeCheckPositionHint,
-                onWatchRewardedHintAd = onWatchRewardedHintAd,
-                onMatchStarted = onMatchStarted,
-                onMatchFinished = { summary ->
-                    onRecordPveResult(summary.won)
-                }
-            )
+            key(pveSessionSeed) {
+                GameFieldScreen(
+                    title = "",
+                    params = pveMode.toFieldParams(TypeGame.RaceMatch),
+                    onBack = { showExitDialog = true },
+                    onDebugSecretChange = onDebugSecretChange,
+                    openPositionHints = openPositionHints,
+                    checkDigitHints = checkDigitHints,
+                    checkPositionHints = checkPositionHints,
+                    autoModeAvailable = autoModeAvailable,
+                    infiniteHintsEnabled = infiniteHintsEnabled,
+                    onConsumeOpenPositionHint = onConsumeOpenPositionHint,
+                    onConsumeCheckDigitHint = onConsumeCheckDigitHint,
+                    onConsumeCheckPositionHint = onConsumeCheckPositionHint,
+                    onWatchRewardedHintAd = onWatchRewardedHintAd,
+                    onMatchStarted = {
+                        if (raceResultWon == null) onMatchStarted()
+                    },
+                    onMatchFinished = { summary ->
+                        onRecordPveResult(summary.won)
+                        raceResultWon = summary.won
+                        raceResultAttempts = summary.attemptsUsed
+                        raceResultElapsedSeconds = summary.elapsedSeconds
+                    },
+                    autoRestartOnWin = false,
+                )
+            }
         }
 
         HomeScreenState.PVP_GAME -> {
@@ -349,6 +375,20 @@ fun HomeRootScreen(
                     Text(strings.text("home.dialog.result.ok"))
                 }
             }
+        )
+    }
+
+    raceResultWon?.let { won ->
+        RaceResultDialog(
+            won = won,
+            attemptsUsed = raceResultAttempts,
+            attemptLimit = pveMode.config.attemptLimit,
+            elapsedSeconds = raceResultElapsedSeconds,
+            onRetry = {
+                raceResultWon = null
+                pveSessionSeed += 1
+            },
+            onHome = ::closeRaceResultToHome,
         )
     }
 

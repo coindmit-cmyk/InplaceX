@@ -59,7 +59,7 @@ fun GameFieldScreen(
     onMatchWon: () -> Unit = {},
     onMatchFinished: (MatchSessionSummary) -> Unit = {},
     onGuessResolved: (guess: String, score: Int, isWin: Boolean) -> Unit = { _, _, _ -> },
-    autoRestartOnWin: Boolean = true,
+    autoRestartOnWin: Boolean = false,
     extraMovesPerBoost: Int = 0,
     extraTimeSecondsPerBoost: Int = 0,
 ) {

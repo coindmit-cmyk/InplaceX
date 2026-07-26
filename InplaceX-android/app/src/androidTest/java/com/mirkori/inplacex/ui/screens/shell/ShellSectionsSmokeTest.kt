@@ -18,6 +18,7 @@ import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
+import com.mirkori.inplacex.ui.screens.home.RaceResultDialog
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
@@ -87,6 +88,49 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Продолжить компанию").performClick()
         composeRule.runOnIdle { assertTrue(opened) }
+    }
+
+    @Test
+    fun raceLossShowsAResultAndExplicitNavigationChoices() {
+        var returnedHome = false
+        setContent {
+            RaceResultDialog(
+                won = false,
+                attemptsUsed = 12,
+                attemptLimit = 12,
+                elapsedSeconds = 125,
+                onRetry = {},
+                onHome = { returnedHome = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Ходы закончились").assertIsDisplayed()
+        composeRule.onNodeWithText("Попытки: 12 из 12").assertIsDisplayed()
+        composeRule.onNodeWithText("Время: 02:05").assertIsDisplayed()
+        composeRule.onNodeWithText("Ещё раз").assertIsDisplayed()
+        composeRule.onNodeWithText("На главную").performClick()
+        composeRule.runOnIdle { assertTrue(returnedHome) }
+    }
+
+    @Test
+    fun raceWinShowsRewardAndOnlyRetriesAfterPlayerChoice() {
+        var retried = false
+        setContent {
+            RaceResultDialog(
+                won = true,
+                attemptsUsed = 6,
+                attemptLimit = 12,
+                elapsedSeconds = 70,
+                onRetry = { retried = true },
+                onHome = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Гонка выиграна!").assertIsDisplayed()
+        composeRule.onNodeWithText("Награда: +10 монет").assertIsDisplayed()
+        composeRule.runOnIdle { assertTrue(!retried) }
+        composeRule.onNodeWithText("Ещё раз").performClick()
+        composeRule.runOnIdle { assertTrue(retried) }
     }
 
     @Test
