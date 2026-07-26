@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T21:18:17Z",
+  "generated_at": "2026-07-26T21:53:27Z",
   "candidates": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -134,8 +134,8 @@
     {
       "task_id": "REPO-PR-3-9",
       "title": "Integrate open PR stack #3-#9",
-      "status": "agent_done",
-      "integration_status": "needs_integrator_review",
+      "status": "integration_requested",
+      "integration_status": "pending_required_ci",
       "worker_check_evidence": null,
       "integrator_must_run_checks": false,
       "branch": "origin/feature/toy-room-ui-v5",

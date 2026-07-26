@@ -1,8 +1,8 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-26T21:18:20Z",
+  "checked_at": "2026-07-26T21:53:31Z",
   "base_branch": "origin/develop",
-  "base_sha": "d2dc89ec07e9f263a079183798eaf15211b4aa33",
+  "base_sha": "60c5b11a4ed9c6024eeaa086721d6e2a62c7094f",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
@@ -61,7 +61,7 @@
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "merge_base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "ahead_of_base": 1,
-      "behind_base": 6,
+      "behind_base": 22,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -75,6 +75,8 @@
         "AiStudio/Task_manager/integration_candidates.json",
         "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
         "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
@@ -106,6 +108,8 @@
         "AiStudio/Task_manager/integration_candidates.json",
         "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
         "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
@@ -132,12 +136,12 @@
       ],
       "pr": null,
       "repository_pr_identity": null,
-      "path_count": 29,
-      "stored_path_count": 29,
+      "path_count": 31,
+      "stored_path_count": 31,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 25,
+      "coordination_path_count": 27,
       "integration_path_count": 4
     },
     {
@@ -146,7 +150,7 @@
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 43,
+      "behind_base": 59,
       "changed_paths": [
         ".github/workflows/ci.yml",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -298,7 +302,7 @@
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 29,
+      "behind_base": 45,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -416,7 +420,7 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 29,
+      "behind_base": 45,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -544,7 +548,7 @@
       "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
       "merge_base_sha": "af415d48a91ce28582c5a74fc96e5b148886d5c4",
       "ahead_of_base": 5,
-      "behind_base": 64,
+      "behind_base": 80,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -807,11 +811,11 @@
     },
     {
       "task_id": "REPO-PR-3-9",
-      "status": "agent_done",
+      "status": "integration_requested",
       "branch": "origin/feature/toy-room-ui-v5",
       "pr": 9,
       "worker_ready": false,
-      "dispatcher_decision": "needs_integrator_review"
+      "dispatcher_decision": "integration_ready"
     }
   ],
   "integration_task_refs": [
@@ -897,31 +901,31 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 6
+      "behind_base": 22
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 43
+      "behind_base": 59
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 29
+      "behind_base": 45
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 29
+      "behind_base": 45
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/toy-room-ui-v5",
-      "behind_base": 64
+      "behind_base": 80
     },
     {
       "code": "changed_path_overlap",

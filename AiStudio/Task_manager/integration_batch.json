@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "batch_id": "BATCH-20260726-211822",
-  "created_at": "2026-07-26T21:18:22Z",
+  "batch_id": "BATCH-20260726-215332",
+  "created_at": "2026-07-26T21:53:32Z",
   "target_branch": "origin/develop",
-  "base_sha": "d2dc89ec07e9f263a079183798eaf15211b4aa33",
+  "base_sha": "60c5b11a4ed9c6024eeaa086721d6e2a62c7094f",
   "risk_class": "medium",
   "strategy": "auto_integrator_review_batch",
   "batch_policy": {
@@ -83,7 +83,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 29; Integrator should update/rebase before final handoff",
+        "behind base by 45; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -97,7 +97,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 29,
+      "behind_base": 45,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -179,7 +179,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 43; Integrator should update/rebase before final handoff",
+        "behind base by 59; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -193,7 +193,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 43,
+      "behind_base": 59,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -315,7 +315,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 64; Integrator should update/rebase before final handoff",
+        "behind base by 80; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -329,7 +329,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 64,
+      "behind_base": 80,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -371,6 +371,8 @@
           "AiStudio/Task_manager/integration_candidates.json",
           "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
           "AiStudio/Task_manager/integrator_direct_merge.json",
+          "AiStudio/Task_manager/integrator_llm_advice.json",
+          "AiStudio/Task_manager/integrator_llm_context.json",
           "AiStudio/Task_manager/integrator_preflight.json",
           "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
           "AiStudio/Task_manager/pr_readiness_report.json",
@@ -400,7 +402,7 @@
         "source_artifact": false,
         "source_artifact_id": null,
         "merge_target_allowed": true,
-        "behind_base": 6,
+        "behind_base": 22,
         "next_owner": "auto-integrator",
         "migration_sensitive": null,
         "migration_compatibility_policy": null,
@@ -481,7 +483,7 @@
         "source_artifact": true,
         "source_artifact_id": null,
         "merge_target_allowed": false,
-        "behind_base": 29,
+        "behind_base": 45,
         "next_owner": "auto-integrator",
         "migration_sensitive": null,
         "migration_compatibility_policy": null,
