@@ -225,6 +225,9 @@ class MainActivity : ComponentActivity() {
                                             adService.showInterstitial(InterstitialPlacement.POST_MATCH)
                                         }
                                     },
+                                    onOpenCompany = {
+                                        currentSection = AppSection.COMPANY
+                                    },
                                 )
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen()
@@ -318,54 +321,74 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = progressState,
                                 onWatchRewardedCoins = {
-                                    if (adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)) {
+                                    val rewarded = adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)
+                                    if (rewarded) {
                                         progressState = progressRepository.grantRewardedCoins(20)
                                     }
+                                    rewarded
                                 },
                                 onBuyOpenPositionHint = {
-                                    if (progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyCheckDigitHint = {
-                                    if (progressRepository.buyHint(HintStockType.CHECK_DIGIT, costCoins = 15)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.CHECK_DIGIT, costCoins = 15)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyCheckPositionHint = {
-                                    if (progressRepository.buyHint(HintStockType.CHECK_POSITION, costCoins = 25)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.CHECK_POSITION, costCoins = 25)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyExtraMovesBoost = {
-                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_MOVES, costCoins = 30)) {
+                                    val purchased = progressRepository.buyBoost(BoostStockType.EXTRA_MOVES, costCoins = 30)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyExtraTimeBoost = {
-                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_TIME, costCoins = 30)) {
+                                    val purchased = progressRepository.buyBoost(BoostStockType.EXTRA_TIME, costCoins = 30)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyEnergy = {
-                                    if (progressRepository.buyCampaignEnergy(costCoins = 25)) {
+                                    val purchased = progressRepository.buyCampaignEnergy(costCoins = 25)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyRemoveAds = {
-                                    if (billingService.purchase(BillingProductId.REMOVE_ADS)) {
+                                    val purchased = billingService.purchase(BillingProductId.REMOVE_ADS)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
                                     }
+                                    purchased
                                 },
                                 onBuyPro = {
-                                    if (billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)) {
+                                    val purchased = billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
                                     }
+                                    purchased
                                 },
                                 onBuyProPlus = {
-                                    if (billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)) {
+                                    val purchased = billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
                                     }
+                                    purchased
                                 },
                             )
 
@@ -376,10 +399,14 @@ class MainActivity : ComponentActivity() {
                                     if (session.isSignedIn) {
                                         progressState = progressRepository.signInWithGooglePlay(session.playerName)
                                     }
+                                    session.isSignedIn
                                 },
                                 onGooglePlaySignOut = {
-                                    authService.signOut()
-                                    progressState = progressRepository.signOutFromGooglePlay()
+                                    val session = authService.signOut()
+                                    if (!session.isSignedIn) {
+                                        progressState = progressRepository.signOutFromGooglePlay()
+                                    }
+                                    !session.isSignedIn
                                 },
                             )
                         }

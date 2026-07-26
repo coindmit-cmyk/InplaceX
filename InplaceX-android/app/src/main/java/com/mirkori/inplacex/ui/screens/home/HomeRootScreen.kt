@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -25,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -72,6 +76,7 @@ fun HomeRootScreen(
     onMatchStarted: () -> Unit = {},
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
+    onOpenCompany: () -> Unit = {},
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
@@ -189,7 +194,8 @@ fun HomeRootScreen(
                     preMatchSecretInput = ""
                     preMatchError = null
                     showPreMatchDialog = true
-                }
+                },
+                onOpenCompany = onOpenCompany,
             )
         }
 
@@ -444,7 +450,8 @@ private fun HomeSelectionScreen(
     pveMode: GameModeDefinition,
     pvpMode: GameModeDefinition,
     onOpenPve: () -> Unit,
-    onOpenPvp: () -> Unit
+    onOpenPvp: () -> Unit,
+    onOpenCompany: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
 
@@ -453,11 +460,18 @@ private fun HomeSelectionScreen(
             .fillMaxSize()
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        val heroSpacing = maxHeight * 0.022f
+        val compact = maxWidth < 560.dp || maxHeight < 620.dp
+        val heroSpacing = if (compact) 10.dp else maxHeight * 0.022f
+        val scrollModifier = if (compact) {
+            Modifier.verticalScroll(rememberScrollState())
+        } else {
+            Modifier
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .then(scrollModifier)
                 .padding(horizontal = 10.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
@@ -466,7 +480,12 @@ private fun HomeSelectionScreen(
             ) {
                 Text(
                     text = AppConfigCatalog.branding.appName,
-                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.semantics { heading() },
+                    style = if (compact) {
+                        MaterialTheme.typography.headlineLarge
+                    } else {
+                        MaterialTheme.typography.displaySmall
+                    },
                     color = InplaceXColors.Ink,
                 )
                 Text(
@@ -482,14 +501,11 @@ private fun HomeSelectionScreen(
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            if (compact) {
                 SceneActionTile(
                     title = strings.text(pveMode.titleKey),
                     subtitle = strings.text(pveMode.subtitleKey),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     accentBrush = Brush.verticalGradient(
                         listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
                     ),
@@ -498,29 +514,51 @@ private fun HomeSelectionScreen(
                 SceneActionTile(
                     title = strings.text(pvpMode.titleKey),
                     subtitle = strings.text(pvpMode.subtitleKey),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     accentBrush = Brush.verticalGradient(
                         listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
                     ),
                     onClick = onOpenPvp
                 )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SceneActionTile(
+                        title = strings.text(pveMode.titleKey),
+                        subtitle = strings.text(pveMode.subtitleKey),
+                        modifier = Modifier.weight(1f),
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
+                        ),
+                        onClick = onOpenPve,
+                    )
+                    SceneActionTile(
+                        title = strings.text(pvpMode.titleKey),
+                        subtitle = strings.text(pvpMode.subtitleKey),
+                        modifier = Modifier.weight(1f),
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
+                        ),
+                        onClick = onOpenPvp,
+                    )
+                }
             }
 
-            SceneCard(
-                accentColor = InplaceXColors.Surface.copy(alpha = 0.94f)
-            ) {
-                Text(
-                    text = strings.text("section.company.short"),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = strings.text("home.company.teaser"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            SceneActionTile(
+                title = strings.text("home.company.continue"),
+                subtitle = strings.text("home.company.teaser"),
+                modifier = Modifier.fillMaxWidth(),
+                accentBrush = Brush.verticalGradient(
+                    listOf(InplaceXColors.Amber, Color(0xFFE78122))
+                ),
+                onClick = onOpenCompany,
+            )
 
-            Spacer(modifier = Modifier.weight(1f))
+            if (!compact) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

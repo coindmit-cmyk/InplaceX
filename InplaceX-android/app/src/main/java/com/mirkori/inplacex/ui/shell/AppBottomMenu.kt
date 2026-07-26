@@ -19,6 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,7 +81,15 @@ private fun BottomMenuItem(
     val title = AppSectionCatalog.shortLabel(section, strings)
 
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .semantics {
+                role = Role.Tab
+                this.selected = selected
+            }
+            .clickable(
+                role = Role.Tab,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(18.dp),
         color = if (selected) InplaceXColors.Cobalt.copy(alpha = 0.24f) else Color.Transparent,
         tonalElevation = 0.dp,

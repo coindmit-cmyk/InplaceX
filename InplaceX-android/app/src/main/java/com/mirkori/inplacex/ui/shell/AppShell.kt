@@ -95,10 +95,19 @@ private fun ShellBackground(
 
             val horizontalPadding = screenWidth * layoutConfig.shellHorizontalPaddingPercent
             val innerHorizontalPadding = screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
-            val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) 0.dp
-            else screenHeight * layoutConfig.topSlotHeightPercent
-            val bottomSlotHeight = if (bottomMode == BottomLayerMode.NONE) 0.dp
-            else screenHeight * layoutConfig.bottomSlotHeightPercent
+            val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
+                0.dp
+            } else {
+                maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
+            }
+            val bottomSlotHeight = when (bottomMode) {
+                BottomLayerMode.NONE -> 0.dp
+                BottomLayerMode.MENU -> maxOf(
+                    screenHeight * layoutConfig.bottomSlotHeightPercent,
+                    72.dp,
+                )
+                BottomLayerMode.AD -> screenHeight * layoutConfig.bottomSlotHeightPercent
+            }
 
             if (topMode != TopLayerMode.NONE && topContent != null) {
                 Box(

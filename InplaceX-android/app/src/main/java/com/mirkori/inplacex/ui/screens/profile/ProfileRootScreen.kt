@@ -1,131 +1,266 @@
 package com.mirkori.inplacex.ui.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
-import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
+import com.mirkori.inplacex.platform.localization.LocalizationProvider
+import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
-import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
+import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
 fun ProfileRootScreen(
     progressState: GameProgressState,
-    onGooglePlaySignIn: () -> Unit = {},
-    onGooglePlaySignOut: () -> Unit = {},
+    onGooglePlaySignIn: () -> Boolean = { false },
+    onGooglePlaySignOut: () -> Boolean = { false },
 ) {
     val strings = LocalAppStrings.current
+    var resultKey by rememberSaveable { mutableStateOf<String?>(null) }
 
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
-        scrollable = true
+        scrollable = true,
     ) {
-        SceneCard(accentColor = Color.White.copy(alpha = 0.76f)) {
-            Text(
-                text = progressState.playerDisplayName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = strings.text("profile.account"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            SceneSplitStatRow(
-                leftLabel = strings.text("top.coins"),
-                leftValue = progressState.coins.toString(),
-                rightLabel = strings.text("top.energy"),
-                rightValue = "${progressState.campaignEnergy}/${progressState.campaignEnergyMax}",
-            )
-            Button(
-                onClick = if (progressState.googlePlaySignedIn) onGooglePlaySignOut else onGooglePlaySignIn,
-                modifier = Modifier.fillMaxWidth()
+        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.97f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    if (progressState.googlePlaySignedIn) {
-                        strings.text("profile.google_play.sign_out")
-                    } else {
-                        strings.text("profile.google_play.sign_in")
+                Surface(
+                    modifier = Modifier.size(64.dp),
+                    shape = CircleShape,
+                    color = InplaceXColors.Cobalt,
+                    contentColor = InplaceXColors.White,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = playerInitials(progressState.playerDisplayName),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
-                )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = progressState.playerDisplayName,
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = if (progressState.googlePlaySignedIn) {
+                            strings.text("profile.google_play.connected.short")
+                        } else {
+                            strings.text("profile.google_play.guest")
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            SceneActionTile(
-                title = strings.text("profile.progress"),
-                subtitle = "${strings.text("profile.campaign_level")}: ${progressState.highestUnlockedCampaignLevel}",
-                modifier = Modifier.weight(1f),
-                accentBrush = Brush.verticalGradient(listOf(Color(0xFF6FB6FF), Color(0xFF4C6FFF))),
-                onClick = {}
-            )
-            SceneActionTile(
-                title = strings.text("profile.google_play.title"),
-                subtitle = if (progressState.googlePlaySignedIn) {
-                    strings.text("profile.google_play.connected")
-                } else {
-                    strings.text("profile.google_play.guest")
-                },
-                modifier = Modifier.weight(1f),
-                accentBrush = Brush.verticalGradient(listOf(Color(0xFF6FD8B5), Color(0xFF2FA77D))),
-                onClick = {}
-            )
-        }
-
-        SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
-            Text(
-                text = strings.text("profile.membership"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            MembershipLine(strings.text("profile.membership.ads"), progressState.adFreePurchased, strings)
-            MembershipLine(strings.text("profile.membership.pro"), progressState.proSubscriptionActive, strings)
-            MembershipLine(strings.text("profile.membership.pro_plus"), progressState.proPlusSubscriptionActive, strings)
-        }
-
-        SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
-            Text(
-                text = strings.text("profile.progress"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text("${strings.text("profile.campaign_level")}: ${progressState.highestUnlockedCampaignLevel}")
-            Text("${strings.text("profile.campaign_rating")}: ${progressState.totalCampaignRating}")
             Text(
                 text = if (progressState.googlePlaySignedIn) {
                     strings.text("profile.google_play.connected")
                 } else {
                     strings.text("profile.google_play.disconnected")
                 },
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            if (progressState.googlePlaySignedIn) {
+                OutlinedButton(
+                    onClick = {
+                        resultKey = if (onGooglePlaySignOut()) {
+                            "profile.auth.signed_out"
+                        } else {
+                            "profile.auth.unavailable"
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(strings.text("profile.google_play.sign_out"))
+                }
+            } else {
+                Button(
+                    onClick = {
+                        resultKey = if (onGooglePlaySignIn()) {
+                            "profile.auth.signed_in"
+                        } else {
+                            "profile.auth.unavailable"
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(strings.text("profile.google_play.sign_in"))
+                }
+            }
+
+            resultKey?.let { key ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (key == "profile.auth.unavailable") {
+                        InplaceXColors.Coral.copy(alpha = 0.12f)
+                    } else {
+                        InplaceXColors.Mint.copy(alpha = 0.14f)
+                    },
+                    border = BorderStroke(
+                        1.dp,
+                        if (key == "profile.auth.unavailable") InplaceXColors.Coral else InplaceXColors.Mint,
+                    ),
+                ) {
+                    Text(
+                        text = strings.text(key),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
         }
 
-        SceneCard(accentColor = Color.White.copy(alpha = 0.72f)) {
+        Text(
+            text = strings.text("profile.overview"),
+            modifier = Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        ProfileOverview(progressState)
+
+        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.95f)) {
+            Text(
+                text = strings.text("profile.membership"),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            MembershipLine(strings.text("profile.membership.ads"), progressState.adFreePurchased, strings)
+            MembershipLine(strings.text("profile.membership.pro"), progressState.proSubscriptionActive, strings)
+            MembershipLine(strings.text("profile.membership.pro_plus"), progressState.proPlusSubscriptionActive, strings)
+        }
+
+        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.match_stats"),
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
-            MatchStatsRow(strings.text("profile.match_stats.pve"), progressState.pveStats.wins, progressState.pveStats.losses, strings)
-            MatchStatsRow(strings.text("profile.match_stats.pvp"), progressState.pvpStats.wins, progressState.pvpStats.losses, strings)
-            MatchStatsRow(strings.text("section.company.short"), progressState.companyStats.wins, progressState.companyStats.losses, strings)
+            MatchStatsRow(
+                strings.text("profile.match_stats.pve"),
+                progressState.pveStats.wins,
+                progressState.pveStats.losses,
+                strings,
+            )
+            MatchStatsRow(
+                strings.text("profile.match_stats.pvp"),
+                progressState.pvpStats.wins,
+                progressState.pvpStats.losses,
+                strings,
+            )
+            MatchStatsRow(
+                strings.text("section.company.short"),
+                progressState.companyStats.wins,
+                progressState.companyStats.losses,
+                strings,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileOverview(progressState: GameProgressState) {
+    val strings = LocalAppStrings.current
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val compact = maxWidth < 560.dp
+        if (compact) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SceneBadge(
+                        label = strings.text("profile.campaign_level"),
+                        value = progressState.highestUnlockedCampaignLevel.toString(),
+                        modifier = Modifier.weight(1f),
+                    )
+                    SceneBadge(
+                        label = strings.text("profile.campaign_rating"),
+                        value = progressState.totalCampaignRating.toString(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SceneBadge(
+                        label = strings.text("top.coins"),
+                        value = progressState.coins.toString(),
+                        modifier = Modifier.weight(1f),
+                    )
+                    SceneBadge(
+                        label = strings.text("profile.matches"),
+                        value = progressState.matchesPlayed.toString(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SceneBadge(
+                    label = strings.text("profile.campaign_level"),
+                    value = progressState.highestUnlockedCampaignLevel.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                SceneBadge(
+                    label = strings.text("profile.campaign_rating"),
+                    value = progressState.totalCampaignRating.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                SceneBadge(
+                    label = strings.text("top.coins"),
+                    value = progressState.coins.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                SceneBadge(
+                    label = strings.text("profile.matches"),
+                    value = progressState.matchesPlayed.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -134,18 +269,32 @@ fun ProfileRootScreen(
 private fun MembershipLine(
     title: String,
     active: Boolean,
-    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
+    strings: LocalizationProvider,
 ) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        shape = RoundedCornerShape(14.dp),
+        color = if (active) {
+            InplaceXColors.Mint.copy(alpha = 0.12f)
+        } else {
+            InplaceXColors.SurfaceMuted
+        },
     ) {
-        Text(title)
-        Text(
-            text = if (active) strings.text("profile.membership.active") else strings.text("profile.membership.locked"),
-            fontWeight = FontWeight.SemiBold,
-            color = if (active) Color(0xFF2E7D32) else Color(0xFF8A93A8)
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = if (active) {
+                    strings.text("profile.membership.active")
+                } else {
+                    strings.text("profile.membership.locked")
+                },
+                fontWeight = FontWeight.SemiBold,
+                color = if (active) InplaceXColors.Mint else InplaceXColors.InkMuted,
+            )
+        }
     }
 }
 
@@ -154,17 +303,32 @@ private fun MatchStatsRow(
     title: String,
     wins: Int,
     losses: Int,
-    strings: com.mirkori.inplacex.platform.localization.LocalizationProvider,
+    strings: LocalizationProvider,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, fontWeight = FontWeight.SemiBold)
         Text(
             strings.text("profile.match_stats.result")
                 .replace("{wins}", wins.toString())
-                .replace("{losses}", losses.toString())
+                .replace("{losses}", losses.toString()),
         )
+    }
+}
+
+internal fun playerInitials(displayName: String): String {
+    val parts = displayName
+        .trim()
+        .split(Regex("\\s+|_+"))
+        .filter(String::isNotBlank)
+    return when {
+        parts.isEmpty() -> "IX"
+        parts.size == 1 -> parts.first().take(2).uppercase()
+        else -> "${parts.first().first()}${parts.last().first()}".uppercase()
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -156,13 +161,26 @@ fun SceneActionTile(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    stateDescription: String? = null,
     accentBrush: Brush = Brush.verticalGradient(
         listOf(InplaceXColors.Cobalt, InplaceXColors.Indigo)
     ),
     onClick: () -> Unit,
 ) {
+    val semanticsModifier = Modifier.semantics {
+        role = Role.Button
+        stateDescription?.let { this.stateDescription = it }
+    }
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .heightIn(min = 96.dp)
+            .then(semanticsModifier)
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(22.dp),
         color = Color.Transparent,
         tonalElevation = 0.dp,
@@ -185,7 +203,7 @@ fun SceneActionTile(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.88f)
+                color = Color.White.copy(alpha = if (enabled) 0.88f else 0.70f)
             )
         }
     }
