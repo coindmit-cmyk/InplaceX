@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T22:53:01Z",
+  "generated_at": "2026-07-26T22:58:02Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -52,7 +52,7 @@
         9
       ],
       "dirty_prs": [],
-      "candidate_ci_state": "pending",
+      "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "linear PR stack can be reviewed as one cumulative leaf candidate"
     },
@@ -218,7 +218,7 @@
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "644df33dd9f951f48464277478f45b193b00b5b0",
+      "base_sha": "a057cc0240f2b640091b5e087750fd64333e8a8e",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -227,7 +227,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "644df33dd9f951f48464277478f45b193b00b5b0",
+      "base_sha": "a057cc0240f2b640091b5e087750fd64333e8a8e",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -254,9 +254,9 @@
     }
   },
   "event": {
-    "event_appended": true,
-    "event_id": "repository-hygiene-9f1d7b56ab0c9d2f0f53",
-    "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
+    "event_appended": false,
+    "reason": "event_already_exists",
+    "event_id": "repository-hygiene-9f1d7b56ab0c9d2f0f53"
   },
   "repair_parent_events": {
     "event_count": 0,
@@ -307,7 +307,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-26T22:53:03Z",
+    "generated_at": "2026-07-26T22:58:04Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -325,6 +325,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "c462afd2ce9f46513532070038154b9aaabe392d93809a27c044419e74087c19",
+  "state_signature": "43384d2897e68fe2407fb90b9cfdcd4fe396d752a585a51bc7bf5e1e01559698",
   "state_written": true
 }

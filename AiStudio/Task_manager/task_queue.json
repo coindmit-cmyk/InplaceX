@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T22:53:01Z",
+  "updated_at": "2026-07-26T22:58:02Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12703,7 +12703,7 @@
         6,
         9
       ],
-      "repository_hygiene_ci_state": "pending",
+      "repository_hygiene_ci_state": "failed",
       "source_lane": "repository_hygiene_cycle",
       "source_summary": "linear PR stack can be reviewed as one cumulative leaf candidate",
       "provenance": [
@@ -12730,7 +12730,7 @@
       "next_owner": "Integrator",
       "next_role": "auto_integrator",
       "discovered_at": "2026-07-26T21:07:56Z",
-      "updated_at": "2026-07-26T22:53:01Z",
+      "updated_at": "2026-07-26T22:58:02Z",
       "changed_paths": [
         "CHANGELOG.md",
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
