@@ -18,6 +18,8 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.sql.DataSource
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 enum class GuestPlatform { ANDROID, IOS, DESKTOP, UNKNOWN }
 
@@ -92,9 +94,10 @@ data class CredentialPolicy(
     val refreshTtl: Duration = Duration.ofDays(30),
 ) {
     init {
-        require(issuer.isNotBlank())
-        require(audience.isNotBlank())
+        require(issuer.isSafeJwtPolicyValue())
+        require(audience.isSafeJwtPolicyValue())
         require(!accessTtl.isNegative && !accessTtl.isZero)
+        require(accessTtl <= Duration.ofHours(1))
         require(!refreshTtl.isNegative && !refreshTtl.isZero)
         require(refreshTtl >= accessTtl)
     }
@@ -113,7 +116,7 @@ class GuestIdentityService(
     private val random: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
 ) {
-    private val accessTokens = SignedAccessTokenIssuer(signingSecret, policy, clock, random)
+    private val accessTokens = SignedAccessTokenIssuer(signingSecret, policy)
 
     fun bootstrap(command: GuestBootstrapCommand): GuestBootstrapResult {
         validateBootstrap(command)
@@ -455,27 +458,48 @@ data class RefreshRotation(val playerId: String, val refreshExpiresAt: Instant)
 private class SignedAccessTokenIssuer(
     signingSecret: ByteArray,
     private val policy: CredentialPolicy,
-    private val clock: Clock,
-    private val random: SecureRandom,
 ) {
-    private val signingKey = signingSecret.copyOf().also { require(it.size >= 32) }
+    private val signingKey = signingSecret.copyOf().let { keyCopy ->
+        try {
+            require(keyCopy.size >= 32)
+            SecretKeySpec(keyCopy, "HmacSHA256")
+        } finally {
+            keyCopy.fill(0)
+        }
+    }
     private val encoder = Base64.getUrlEncoder().withoutPadding()
 
     fun issue(playerId: String, issuedAt: Instant, expiresAt: Instant): String {
-        val header = encoder.encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".toByteArray(StandardCharsets.UTF_8))
+        require(UUID.fromString(playerId).toString() == playerId.lowercase()) {
+            "playerId must be a canonical UUID"
+        }
+        val header = encoder.encodeToString(
+            JsonObject(
+                mapOf(
+                    "alg" to JsonPrimitive("HS256"),
+                    "typ" to JsonPrimitive("JWT"),
+                ),
+            ).toString().toByteArray(StandardCharsets.UTF_8),
+        )
         val payload = encoder.encodeToString(
-            """{"iss":"${json(policy.issuer)}","aud":"${json(policy.audience)}","sub":"${json(playerId)}","iat":${issuedAt.epochSecond},"exp":${expiresAt.epochSecond},"jti":"${UUID.randomUUID()}"}"""
-                .toByteArray(StandardCharsets.UTF_8),
+            JsonObject(
+                mapOf(
+                    "iss" to JsonPrimitive(policy.issuer),
+                    "aud" to JsonPrimitive(policy.audience),
+                    "sub" to JsonPrimitive(playerId),
+                    "iat" to JsonPrimitive(issuedAt.epochSecond),
+                    "exp" to JsonPrimitive(expiresAt.epochSecond),
+                    "jti" to JsonPrimitive(UUID.randomUUID().toString()),
+                ),
+            ).toString().toByteArray(StandardCharsets.UTF_8),
         )
         val unsigned = "$header.$payload"
         val signature = Mac.getInstance("HmacSHA256").run {
-            init(SecretKeySpec(signingKey, "HmacSHA256"))
+            init(signingKey)
             encoder.encodeToString(doFinal(unsigned.toByteArray(StandardCharsets.US_ASCII)))
         }
         return "$unsigned.$signature"
     }
-
-    private fun json(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"")
 }
 
 private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
@@ -488,3 +512,6 @@ private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
 private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
     .digest(value.toByteArray(StandardCharsets.UTF_8))
     .joinToString(separator = "") { byte -> "%02x".format(byte) }
+
+private fun String.isSafeJwtPolicyValue(): Boolean =
+    length in 1..256 && none { it.isISOControl() || it.isWhitespace() }

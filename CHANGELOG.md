@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a verification-only backend JWT boundary with strict UTF-8 and JSON
+  parsing, duplicate-claim rejection, bounded HS256 validation, opaque
+  principals, issuer/audience/lifetime checks, and identity-owned issuance.
 - Hardened the authoritative duel engine with single-use mutable digit
   commands, ASCII-only validation, viewer-neutral attempt snapshots, and
   deterministic secret-buffer zeroization after finish, close, or failure.

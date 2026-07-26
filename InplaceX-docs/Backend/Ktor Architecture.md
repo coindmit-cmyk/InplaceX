@@ -393,6 +393,32 @@ Responsibilities:
 - use bounded WebSocket queues and close slow consumers so a socket cannot
   block the authoritative session
 
+### Runtime trust boundary
+
+The production security contract treats every client, network request,
+provider payload, persisted value, and serialized message as untrusted. The
+backend process, its deployment image, its dependency graph, and
+process-injected secrets are trusted computing-base components. Production
+must not allow arbitrary plugins, JVM agents, debugger attachment, or
+unreviewed code inside that process.
+
+Unrestricted reflection or `Unsafe` access by hostile code already executing
+inside the same JVM cannot be made an unforgeable security boundary. If future
+requirements introduce untrusted in-process code, authentication issuance must
+move behind a separate process boundary with authenticated IPC; retries that
+only hide mutable fields do not satisfy that threat model.
+
+Within the trusted server process:
+
+- the identity service alone issues access and refresh credentials;
+- the canonical JWT verifier validates bounded raw bytes, strict UTF-8, exact
+  signed claims, issuer, audience, time window, token id, and signature;
+- a verified principal contains identity only and does not establish duel
+  membership;
+- authoritative session composition resolves membership from the
+  server-owned membership source and never accepts a caller-provided resolver
+  or `playerId`.
+
 See [`Online Contracts v1`](Online%20Contracts.md) for the required error
 codes, reconnect cursor, event ordering, backpressure, and contract-test
 invariants.

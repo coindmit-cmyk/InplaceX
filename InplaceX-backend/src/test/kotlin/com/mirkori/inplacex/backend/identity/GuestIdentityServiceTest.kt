@@ -1,5 +1,8 @@
 package com.mirkori.inplacex.backend.identity
 
+import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
+import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
+import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
 import com.mirkori.inplacex.logging.InplaceXLogger
@@ -33,6 +36,28 @@ class GuestIdentityServiceTest {
         assertNotEquals(first.credentials.refreshToken, repeated.credentials.refreshToken)
         assertFalse(first.credentials.toString().contains(first.credentials.refreshToken))
         assertEquals(3, first.credentials.accessToken.split('.').size)
+    }
+
+    @Test
+    fun `identity-issued access token authenticates as the same opaque principal`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val bootstrap = service(clock).bootstrap(bootstrap("installation-auth-boundary"))
+        val verifier = JwtAccessTokenVerifier(
+            signingSecret = SigningSecret,
+            policy = JwtVerificationPolicy(
+                issuer = "inplacex-test",
+                audience = "inplacex-client",
+            ),
+            clock = clock,
+        )
+
+        val authenticated = verifier.authenticate(
+            "Bearer ${bootstrap.credentials.accessToken}",
+        ) as AccessTokenAuthentication.Accepted
+
+        assertEquals(bootstrap.playerId, authenticated.principal.playerId)
+        assertFalse(authenticated.principal.toString().contains(bootstrap.playerId))
+        assertFalse(authenticated.principal.toString().contains(bootstrap.credentials.accessToken))
     }
 
     @Test
@@ -148,10 +173,14 @@ class GuestIdentityServiceTest {
             identities = JdbcGuestIdentityRepository(dataSource),
             saves = JdbcSaveRepository(dataSource),
             policy = CredentialPolicy(issuer = "inplacex-test", audience = "inplacex-client"),
-            signingSecret = ByteArray(32) { 7 },
+            signingSecret = SigningSecret,
             clock = clock,
             logger = InplaceXLogger(sink, LogLevel.DEBUG),
         )
+    }
+
+    private companion object {
+        val SigningSecret: ByteArray = ByteArray(32) { 7 }
     }
 }
 
