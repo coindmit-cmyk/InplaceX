@@ -1,6 +1,10 @@
 package com.mirkori.inplacex.ui.screens.company
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +19,6 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,7 +27,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.campaign.CampaignLevelDefinition
@@ -46,12 +56,17 @@ internal fun CompanyActionBar(
     compact: Boolean,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = InplaceXColors.Midnight.copy(alpha = 0.96f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp),
+        color = InplaceXColors.ToyCream,
+        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
+        shadowElevation = 3.dp,
     ) {
         if (compact) {
             Row(
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -70,7 +85,7 @@ internal fun CompanyActionBar(
             }
         } else {
             Column(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CompanyPrimaryAction(
@@ -103,13 +118,14 @@ private fun CompanyRulesAction(
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.MenuBook,
             contentDescription = null,
-            tint = InplaceXColors.Cyan,
+            tint = InplaceXColors.ToyBlue,
             modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = strings.text("company.action.rules"),
-            color = InplaceXColors.Cyan,
+            color = InplaceXColors.ToyBlueDeep,
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -126,39 +142,69 @@ private fun CompanyPrimaryAction(
     onBuyEnergy: () -> Unit,
     onPlay: () -> Unit,
 ) {
-    Button(
-        onClick = if (!hasEnergy && playable) onBuyEnergy else onPlay,
-        enabled = playable,
+    val actionText = when {
+        !playable && lockRequiresStars -> strings.text("company.action.need_stars")
+            .replace("{value}", requiredStars.toString())
+
+        !playable -> strings.text("company.scene.locked_level")
+        !hasEnergy -> strings.text("company.action.restore_energy")
+        else -> strings.text("company.action.play")
+            .replace("{value}", levelNumber.toString())
+    }
+    val action = if (!hasEnergy && playable) onBuyEnergy else onPlay
+    val actionBrush = if (playable) {
+        Brush.verticalGradient(
+            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(Color(0xFFC9C0AF), Color(0xFF8F877B)),
+        )
+    }
+
+    Surface(
         modifier = modifier
             .heightIn(min = 56.dp)
+            .shadow(7.dp, RoundedCornerShape(18.dp))
+            .semantics {
+                role = Role.Button
+                stateDescription = actionText
+                if (!playable) disabled()
+            }
+            .clickable(
+                enabled = playable,
+                role = Role.Button,
+                onClick = action,
+            )
             .testTag("company-play"),
         shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = InplaceXColors.Cobalt,
-            contentColor = InplaceXColors.White,
-            disabledContainerColor = InplaceXColors.NavySurface,
-            disabledContentColor = InplaceXColors.SurfaceMuted,
-        ),
+        color = Color.Transparent,
+        border = BorderStroke(2.dp, if (playable) Color(0xFFB8F25D) else Color(0xFFD5CBB8)),
+        shadowElevation = 3.dp,
     ) {
-        Icon(
-            imageVector = if (playable) Icons.Outlined.Bolt else Icons.Outlined.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = when {
-                !playable && lockRequiresStars -> strings.text("company.action.need_stars")
-                    .replace("{value}", requiredStars.toString())
-
-                !playable -> strings.text("company.scene.locked_level")
-                !hasEnergy -> strings.text("company.action.restore_energy")
-                else -> strings.text("company.action.play")
-                    .replace("{value}", levelNumber.toString())
-            },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(actionBrush)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (playable) Icons.Outlined.Bolt else Icons.Outlined.Lock,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = actionText,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+        }
     }
 }
 

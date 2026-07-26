@@ -18,9 +18,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,12 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.ui.theme.InplaceXColors
@@ -48,90 +51,161 @@ internal fun CompanyScreenHeader(
     onHistory: () -> Unit,
     onBuyEnergy: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 52.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = strings.text("company.title"),
-                style = if (compact) {
-                    MaterialTheme.typography.titleLarge
-                } else {
-                    MaterialTheme.typography.headlineSmall
-                },
-                color = InplaceXColors.White,
-                fontWeight = FontWeight.Bold,
-            )
-            if (!compact) {
+    if (compact) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(7.dp, RoundedCornerShape(17.dp)),
+                shape = RoundedCornerShape(17.dp),
+                color = InplaceXColors.ToyOrangeTop,
+                border = BorderStroke(2.dp, Color(0xFFFFD959)),
+                shadowElevation = 3.dp,
+            ) {
                 Text(
-                    text = strings.text("company.scene.subtitle"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InplaceXColors.SurfaceMuted,
+                    text = strings.text("company.title"),
+                    color = InplaceXColors.ToyBrown,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
                 )
             }
+            HeaderIconButton(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.History,
+                        contentDescription = strings.text("company.scene.history"),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                },
+                onClick = onHistory,
+                testTag = "company-history",
+            )
         }
+        return
+    }
 
-        Surface(
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clickable(onClick = onHistory)
-                .testTag("company-history"),
-            shape = RoundedCornerShape(16.dp),
-            color = InplaceXColors.NavySurface.copy(alpha = 0.92f),
-            border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.32f)),
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 5.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.History,
-                    contentDescription = strings.text("company.scene.history"),
-                    tint = InplaceXColors.Cyan,
-                    modifier = Modifier.size(20.dp),
+            Row(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Inplace",
+                    color = InplaceXColors.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
                 )
-                if (!compact) {
+                Text(
+                    text = "X",
+                    color = InplaceXColors.ToyOrangeTop,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            HeaderIconButton(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.History,
+                        contentDescription = strings.text("company.scene.history"),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                },
+                onClick = onHistory,
+                testTag = "company-history",
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Surface(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onBuyEnergy)
+                    .testTag("company-energy"),
+                shape = RoundedCornerShape(18.dp),
+                color = InplaceXColors.ToyBlueDeep,
+                border = BorderStroke(2.dp, InplaceXColors.ToyCyan),
+                shadowElevation = 5.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text("⚡", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = strings.text("company.scene.history"),
-                        color = InplaceXColors.White,
-                        style = MaterialTheme.typography.labelLarge,
+                        text = "$energy/$energyMax",
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
-
         Surface(
             modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clickable(onClick = onBuyEnergy)
-                .testTag("company-energy"),
-            shape = RoundedCornerShape(16.dp),
-            color = InplaceXColors.Cobalt.copy(alpha = 0.18f),
-            border = BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.42f)),
+                .shadow(9.dp, RoundedCornerShape(18.dp))
+                .fillMaxWidth(if (compact) 0.68f else 0.58f),
+            shape = RoundedCornerShape(18.dp),
+            color = InplaceXColors.ToyOrangeTop,
+            border = BorderStroke(3.dp, Color(0xFFFFD959)),
+            shadowElevation = 4.dp,
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Bolt,
-                    contentDescription = strings.text("company.scene.energy"),
-                    tint = InplaceXColors.Cyan,
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    text = "$energy/$energyMax",
-                    color = InplaceXColors.White,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            Text(
+                text = strings.text("company.title"),
+                color = InplaceXColors.ToyBrown,
+                style = if (compact) {
+                    MaterialTheme.typography.headlineSmall
+                } else {
+                    MaterialTheme.typography.headlineMedium
+                },
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = if (compact) 5.dp else 8.dp),
+            )
+        }
+        Text(
+            text = strings.text("company.scene.subtitle"),
+            color = InplaceXColors.ToyBrown,
+            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun HeaderIconButton(
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+    testTag: String,
+) {
+    Surface(
+        modifier = Modifier
+            .size(48.dp)
+            .semantics { role = Role.Button }
+            .clickable(onClick = onClick)
+            .testTag(testTag),
+        shape = RoundedCornerShape(17.dp),
+        color = InplaceXColors.ToyBlueDeep,
+        border = BorderStroke(2.dp, InplaceXColors.ToyCyan),
+        shadowElevation = 5.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            icon()
         }
     }
 }
@@ -148,84 +222,74 @@ internal fun CompanyChapterHero(
     val target = requiredStars.coerceAtLeast(1)
     val progress = (totalStars.toFloat() / target.toFloat()).coerceIn(0f, 1f)
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(if (compact) 20.dp else 24.dp),
-        color = InplaceXColors.MidnightElevated.copy(alpha = 0.96f),
-        border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.44f)),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (compact) 76.dp else 88.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        Row(
+        CampaignSideBadge(
+            modifier = Modifier.width(if (compact) 68.dp else 78.dp),
+            background = Brush.verticalGradient(
+                listOf(Color(0xFFFF7B00), Color(0xFFD63A00)),
+            ),
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+            label = strings.text("company.chapter.number").replace("{value}", chapter.toString()),
+        )
+
+        Surface(
             modifier = Modifier
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            InplaceXColors.Cobalt.copy(alpha = 0.16f),
-                            Color.Transparent,
-                            InplaceXColors.Amber.copy(alpha = 0.08f),
-                        ),
-                    ),
-                )
-                .padding(if (compact) 14.dp else 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .weight(1f)
+                .fillMaxHeight()
+                .shadow(7.dp, RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
+            color = InplaceXColors.ToyCream,
+            border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
+            shadowElevation = 3.dp,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = strings.text("company.chapter.number")
-                        .replace("{value}", chapter.toString()),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = InplaceXColors.Cyan,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = strings.text("company.chapter.title"),
-                    style = if (compact) {
-                        MaterialTheme.typography.titleLarge
-                    } else {
-                        MaterialTheme.typography.headlineSmall
-                    },
-                    color = InplaceXColors.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Star,
                         contentDescription = null,
-                        tint = InplaceXColors.Amber,
+                        tint = InplaceXColors.ToyOrange,
                         modifier = Modifier.size(20.dp),
                     )
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = strings.text("company.chapter.progress")
                             .replace("{current}", totalStars.toString())
                             .replace("{required}", requiredStars.toString()),
-                        color = InplaceXColors.White,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        color = InplaceXColors.ToyBrown,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Black,
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(CircleShape)
-                        .background(InplaceXColors.NavySurface),
+                        .height(11.dp)
+                        .background(InplaceXColors.ToyCreamShadow, CircleShape),
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(progress)
                             .fillMaxHeight()
-                            .clip(CircleShape)
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(InplaceXColors.Amber, InplaceXColors.Cyan),
+                                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
                                 ),
+                                CircleShape,
                             ),
                     )
                 }
@@ -235,39 +299,63 @@ internal fun CompanyChapterHero(
                     } else {
                         strings.text("company.scene.unlocked")
                     },
+                    color = InplaceXColors.ToyBrown.copy(alpha = 0.78f),
                     style = MaterialTheme.typography.labelSmall,
-                    color = InplaceXColors.SurfaceMuted,
-                    modifier = Modifier.padding(top = 6.dp),
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
+        }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Surface(
-                    modifier = Modifier.size(if (compact) 52.dp else 64.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    color = InplaceXColors.Amber.copy(alpha = 0.14f),
-                    border = BorderStroke(1.dp, InplaceXColors.Amber.copy(alpha = 0.5f)),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.EmojiEvents,
-                            contentDescription = null,
-                            tint = InplaceXColors.Amber,
-                            modifier = Modifier.size(if (compact) 30.dp else 36.dp),
-                        )
-                    }
-                }
-                if (!compact) {
-                    Text(
-                        text = strings.text("company.chapter.reward"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = InplaceXColors.SurfaceMuted,
-                    )
-                }
-            }
+        CampaignSideBadge(
+            modifier = Modifier.width(if (compact) 68.dp else 78.dp),
+            background = Brush.verticalGradient(
+                listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
+            ),
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.CardGiftcard,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+            label = strings.text("company.chapter.reward"),
+        )
+    }
+}
+
+@Composable
+private fun CampaignSideBadge(
+    modifier: Modifier,
+    background: Brush,
+    icon: @Composable () -> Unit,
+    label: String,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxHeight()
+            .shadow(6.dp, RoundedCornerShape(18.dp)),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.Transparent,
+        border = BorderStroke(2.dp, Color.White.copy(alpha = 0.45f)),
+        shadowElevation = 3.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .background(background)
+                .padding(horizontal = 4.dp, vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            icon()
+            Text(
+                text = label,
+                color = Color.White,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
         }
     }
 }

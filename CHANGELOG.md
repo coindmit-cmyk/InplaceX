@@ -6,6 +6,10 @@
   warm desk scenery, glossy blue resource chrome, cream raised cards, vivid
   orange/purple/green mode hierarchy, compact top actions, and an illuminated
   blue bottom navigation shared by Home, Friends, Company, Shop, and Profile.
+- Rebuilt the Company campaign map in the same toy-room language with a yellow
+  title plaque, compact chapter/reward dashboard, descending mission route,
+  numbered locked levels, cream code cards, selected-level gold emphasis, and
+  a green primary play action while preserving campaign behavior.
 - Hardened the authoritative duel engine with single-use mutable digit
   commands, ASCII-only validation, viewer-neutral attempt snapshots, and
   deterministic secret-buffer zeroization after finish, close, or failure.

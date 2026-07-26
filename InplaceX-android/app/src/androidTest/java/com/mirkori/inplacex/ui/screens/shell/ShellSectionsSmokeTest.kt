@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.mirkori.inplacex.data.local.GameProgressState
@@ -13,6 +15,7 @@ import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
@@ -84,6 +87,25 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Продолжить компанию").performClick()
         composeRule.runOnIdle { assertTrue(opened) }
+    }
+
+    @Test
+    fun companyShowsCampaignMapAndPrimaryAction() {
+        setContent {
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = emptyList(),
+                activeLevelNumber = null,
+                onActiveLevelNumberChange = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Компания").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-level-4").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-level-3")
+            .assertIsDisplayed()
+            .assertIsSelected()
+        composeRule.onNodeWithTag("company-play").assertIsDisplayed()
     }
 
     private fun setContent(content: @androidx.compose.runtime.Composable () -> Unit) {

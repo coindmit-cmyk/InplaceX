@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.company
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -7,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -38,6 +41,7 @@ internal fun CompanySceneScreen(
     onPlay: (Int) -> Unit,
 ) {
     val listState = rememberLazyListState()
+    val displayItems = levelItems.asReversed()
     var selectedLevel by rememberSaveable { mutableIntStateOf(focusLevel) }
     var showRules by rememberSaveable { mutableStateOf(false) }
     val selectedItem =
@@ -51,29 +55,37 @@ internal fun CompanySceneScreen(
                     selectedLevel <= progressState.highestUnlockedCampaignLevel
                 )
     val hasEnergy = progressState.campaignEnergy > 0
-    val focusIndex = levelItems.indexOfFirst { it.definition.levelNumber == focusLevel }
+    val focusIndex = displayItems.indexOfFirst { it.definition.levelNumber == focusLevel }
         .coerceAtLeast(0)
 
     LaunchedEffect(focusLevel, levelItems.size) {
         selectedLevel = focusLevel
     }
 
-    LaunchedEffect(selectedLevel, levelItems.size) {
-        val selectedIndex = levelItems
-            .indexOfFirst { it.definition.levelNumber == selectedLevel }
-            .coerceAtLeast(focusIndex)
-        // The chapter hero is item 0; mission N starts at lazy-list index N.
-        listState.animateScrollToItem((selectedIndex + 1).coerceAtMost(levelItems.size))
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val compact = maxHeight < 650.dp || maxWidth < 360.dp
-        val horizontalPadding = if (compact) 10.dp else 16.dp
+        val landscape = maxWidth > maxHeight
+        val horizontalPadding = if (compact) 7.dp else 11.dp
+        val landscapeCardWidth = (maxWidth - 22.dp) / 2f
+        val selectedIndex = displayItems
+            .indexOfFirst { it.definition.levelNumber == selectedLevel }
+            .coerceAtLeast(focusIndex)
+
+        LaunchedEffect(selectedLevel, displayItems.size, landscape) {
+            val targetIndex = if (landscape) {
+                (selectedIndex - 1).coerceAtLeast(0)
+            } else {
+                // The chapter hero occupies item 0. This keeps one future mission visible above
+                // the selected mission without allowing the primary mission below the viewport.
+                selectedIndex.coerceAtMost(displayItems.lastIndex)
+            }
+            listState.animateScrollToItem(targetIndex)
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = horizontalPadding, vertical = 6.dp),
+                .padding(horizontal = horizontalPadding, vertical = 4.dp),
         ) {
             CompanyScreenHeader(
                 strings = strings,
@@ -84,55 +96,80 @@ internal fun CompanySceneScreen(
                 onBuyEnergy = onBuyEnergy,
             )
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .testTag("company-mission-list"),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    top = 8.dp,
-                    bottom = 12.dp,
-                ),
-            ) {
-                item(key = "chapter-hero") {
-                    CompanyChapterHero(
-                        strings = strings,
-                        chapter = selectedItem.definition.blockNumber,
-                        totalStars = totalStars,
-                        requiredStars = requiredStarsForNextBlock,
-                        nextBlockLocked = nextBlockLocked,
-                        compact = compact,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+            if (landscape) {
+                LazyRow(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("company-mission-list"),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        top = 5.dp,
+                        bottom = 3.dp,
+                    ),
+                ) {
+                    itemsIndexed(
+                        items = displayItems,
+                        key = { _, item -> item.definition.levelNumber },
+                    ) { index, item ->
+                        Box(modifier = Modifier.width(landscapeCardWidth)) {
+                            CompanyMissionCard(
+                                strings = strings,
+                                item = item,
+                                selectedLevel = selectedLevel,
+                                accessibleMaxLevel = accessibleMaxLevel,
+                                highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
+                                requiredStars = requiredStarsForNextBlock,
+                                first = index == 0,
+                                last = index == displayItems.lastIndex,
+                                compact = true,
+                                onSelect = { selectedLevel = it },
+                            )
+                        }
+                    }
                 }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("company-mission-list"),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        top = 7.dp,
+                        bottom = 7.dp,
+                    ),
+                ) {
+                    item(key = "chapter-hero") {
+                        CompanyChapterHero(
+                            strings = strings,
+                            chapter = selectedItem.definition.blockNumber,
+                            totalStars = totalStars,
+                            requiredStars = requiredStarsForNextBlock,
+                            nextBlockLocked = nextBlockLocked,
+                            compact = compact,
+                        )
+                        Spacer(modifier = Modifier.height(9.dp))
+                    }
 
-                itemsIndexed(
-                    items = levelItems,
-                    key = { _, item -> item.definition.levelNumber },
-                ) { index, item ->
-                    val level = item.definition.levelNumber
-                    val isCompleted = item.progress.bestBackendRating > 0
-                    val isPlayable =
-                        isCompleted ||
-                            (
-                                level <= accessibleMaxLevel &&
-                                    level <= progressState.highestUnlockedCampaignLevel
-                                )
-
-                    CompanyMissionTimelineItem(
-                        strings = strings,
-                        item = item,
-                        selected = level == selectedLevel,
-                        completed = isCompleted,
-                        locked = !isPlayable,
-                        requiredStars = requiredStarsForNextBlock,
-                        lockRequiresStars = level > accessibleMaxLevel,
-                        first = index == 0,
-                        last = index == levelItems.lastIndex,
-                        compact = compact,
-                        onSelect = { selectedLevel = level },
-                    )
+                    itemsIndexed(
+                        items = displayItems,
+                        key = { _, item -> item.definition.levelNumber },
+                    ) { index, item ->
+                        CompanyMissionCard(
+                            strings = strings,
+                            item = item,
+                            selectedLevel = selectedLevel,
+                            accessibleMaxLevel = accessibleMaxLevel,
+                            highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
+                            requiredStars = requiredStarsForNextBlock,
+                            first = index == 0,
+                            last = index == displayItems.lastIndex,
+                            compact = compact,
+                            onSelect = { selectedLevel = it },
+                        )
+                    }
                 }
             }
 
@@ -158,4 +195,41 @@ internal fun CompanySceneScreen(
             onDismiss = { showRules = false },
         )
     }
+}
+
+@Composable
+private fun CompanyMissionCard(
+    strings: LocalizationProvider,
+    item: CampaignLevelListItem,
+    selectedLevel: Int,
+    accessibleMaxLevel: Int,
+    highestUnlockedLevel: Int,
+    requiredStars: Int,
+    first: Boolean,
+    last: Boolean,
+    compact: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    val level = item.definition.levelNumber
+    val isCompleted = item.progress.bestBackendRating > 0
+    val isPlayable =
+        isCompleted ||
+            (
+                level <= accessibleMaxLevel &&
+                    level <= highestUnlockedLevel
+                )
+
+    CompanyMissionTimelineItem(
+        strings = strings,
+        item = item,
+        selected = level == selectedLevel,
+        completed = isCompleted,
+        locked = !isPlayable,
+        requiredStars = requiredStars,
+        lockRequiresStars = level > accessibleMaxLevel,
+        first = first,
+        last = last,
+        compact = compact,
+        onSelect = { onSelect(level) },
+    )
 }
