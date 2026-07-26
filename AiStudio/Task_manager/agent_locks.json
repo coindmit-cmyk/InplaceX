@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:52:58Z",
+  "updated_at": "2026-07-26T12:57:31Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -892,13 +892,13 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
       "at": "2026-07-26T12:43:53Z",
       "expires_at": "2026-07-26T20:43:53Z",
-      "notes": "central runner claim",
+      "notes": "worker result synced and returned from worker lane",
       "lease": {
         "lease_id": "lease-d5cfc153655f",
         "project_id": "inplacex",
@@ -910,7 +910,10 @@
       },
       "lease_id": "lease-d5cfc153655f",
       "execution_lease_id": "lease-d5cfc153655f",
-      "lease_expires_at": "2026-07-26T14:53:45Z"
+      "lease_expires_at": "2026-07-26T14:53:45Z",
+      "released_at": "2026-07-26T12:57:31Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "worker result synced and returned from worker lane"
     }
   ]
 }
