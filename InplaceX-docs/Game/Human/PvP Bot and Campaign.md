@@ -73,6 +73,12 @@ Campaign levels are grouped by 10:
 
 Difficulty keeps rising until about levels `300-500`, then reaches a plateau of maximum difficulty.
 
+The first 10 levels are the onboarding block with 4-digit codes. Starting at
+level 11, the campaign moves to medium difficulty and 5-digit codes. Code
+length then grows in controlled bands until it reaches 10 digits at level 301.
+This makes the second campaign block noticeably harder without removing the
+10-level pattern of standard, spike, and hardcore missions.
+
 ### Hints And Boosts
 
 Campaign allows gameplay assistance systems, but the player may need to own them first.

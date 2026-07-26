@@ -78,6 +78,27 @@ The generator uses:
 
 Difficulty should keep growing until about `300-500`, then flatten into a stable maximum band.
 
+The generated campaign uses these deterministic tier boundaries:
+
+- `1..10`: `EASY`
+- `11..80`: `MEDIUM`
+- `81..220`: `HARD`
+- `221+`: `HARDCORE`
+
+Secret length grows independently so that early play does not stay flat:
+
+- `1..10`: 4 digits
+- `11..40`: 5 digits
+- `41..90`: 6 digits
+- `91..150`: 7 digits
+- `151..220`: 8 digits
+- `221..300`: 9 digits
+- `301+`: 10 digits
+
+This keeps the first 10-level block suitable for onboarding, makes the second
+block a real deduction step, and reaches the maximum code length inside the
+canonical `300-500` plateau window.
+
 ## Rating Policy
 
 Campaign rating uses:

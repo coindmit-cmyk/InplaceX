@@ -48,9 +48,9 @@ object CampaignLevelGenerator {
 
     private fun tierForLevel(levelNumber: Int): CampaignDifficultyTier {
         return when {
-            levelNumber <= 80 -> CampaignDifficultyTier.EASY
-            levelNumber <= 180 -> CampaignDifficultyTier.MEDIUM
-            levelNumber <= 350 -> CampaignDifficultyTier.HARD
+            levelNumber <= 10 -> CampaignDifficultyTier.EASY
+            levelNumber <= 80 -> CampaignDifficultyTier.MEDIUM
+            levelNumber <= 220 -> CampaignDifficultyTier.HARD
             else -> CampaignDifficultyTier.HARDCORE
         }
     }
@@ -64,8 +64,15 @@ object CampaignLevelGenerator {
     }
 
     private fun codeLengthForLevel(levelNumber: Int): Int {
-        val raw = 4 + ((levelNumber - 1) / 55)
-        return min(10, raw)
+        return when {
+            levelNumber <= 10 -> 4
+            levelNumber <= 40 -> 5
+            levelNumber <= 90 -> 6
+            levelNumber <= 150 -> 7
+            levelNumber <= 220 -> 8
+            levelNumber <= 300 -> 9
+            else -> 10
+        }
     }
 
     private fun multiplierFor(

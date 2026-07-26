@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Rebalanced campaign progression so the first block remains an onboarding
+  experience while level 11 starts a meaningful five-digit medium-difficulty
+  step; later code-length and tier bands now grow toward the intended
+  level-300 plateau instead of keeping levels 1 through 55 nearly identical.
 - Added the Toy Room UI v5 foundation from the approved visual references:
   warm desk scenery, glossy blue resource chrome, cream raised cards, vivid
   orange/purple/green mode hierarchy, compact top actions, and an illuminated
