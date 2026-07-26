@@ -71,5 +71,13 @@ class LocalizationCatalogTest {
 
         assertEquals("Звёзды: {current} / {required}", StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("company.scene.stars"))
         assertEquals("Stars: {current} / {required}", StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("company.scene.stars"))
+        assertEquals(
+            "Играть уровень {value} — 1 энергия",
+            StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("company.action.play"),
+        )
+        assertEquals(
+            "Play level {value} — 1 energy",
+            StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("company.action.play"),
+        )
     }
 }
