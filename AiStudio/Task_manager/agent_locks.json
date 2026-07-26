@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T21:08:05Z",
+  "updated_at": "2026-07-26T21:13:06Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -1026,13 +1026,14 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
       "at": "2026-07-26T21:03:27Z",
       "expires_at": "2026-07-27T05:03:27Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T21:13:06Z"
     }
   ]
 }
