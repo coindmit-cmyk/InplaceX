@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:12:34Z",
+  "updated_at": "2026-07-26T11:35:22Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -9954,7 +9954,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10011,13 +10011,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "retry rejects candidate 618dfd0 cross-authority forgery and requires membership to pin the canonical authentication service instance",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -10217,7 +10217,48 @@
           "reason": "rejected and preserved: membership trusted the principal owner instead of a pinned canonical authentication service, allowing cross-authority forgery"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "worker_result_commit": "d2ef53c6a670f41717549db82b90a23f8584bc5e",
+      "worker_result_synced_at": "2026-07-26T11:35:22Z",
+      "worker_changed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md"
+      ],
+      "changed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
+      },
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
+      "commits": [
+        "d2ef53c6a670f41717549db82b90a23f8584bc5e"
+      ],
+      "integration_status": "pending"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -10827,7 +10868,7 @@
     {
       "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "title": "Implement fail-closed capability preservation integration gate",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P0",
       "complexity": "L",
       "type": "automation-guard",
@@ -10869,13 +10910,13 @@
         "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "Integrator role and scripts catalog require an active preservation gate, but the referenced implementation is absent from the current repository snapshot.",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -11050,13 +11091,46 @@
       "requires_strong_review": true,
       "direct_merge_authorized": false,
       "created_at": "2026-07-26T11:02:46Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "status_reason": "worker branch contains product changes; central sync derived integration request",
       "worker_id": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
       "started_at": "2026-07-26T11:12:34Z",
-      "lock_expires_at": "2026-07-26T19:12:34Z"
+      "lock_expires_at": "2026-07-26T19:12:34Z",
+      "worker_result_commit": "98c3d1292ea733082b72051d965ad48f2169f524",
+      "worker_result_synced_at": "2026-07-26T11:35:22Z",
+      "worker_changed_paths": [
+        "docs/automation/SCRIPTS_CATALOG.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
+      ],
+      "changed_paths": [
+        "docs/automation/SCRIPTS_CATALOG.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
+      },
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
+      "commits": [
+        "98c3d1292ea733082b72051d965ad48f2169f524"
+      ],
+      "integration_status": "pending"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",

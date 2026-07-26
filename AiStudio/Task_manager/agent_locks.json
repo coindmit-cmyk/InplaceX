@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:12:34Z",
+  "updated_at": "2026-07-26T11:35:22Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -744,23 +744,25 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
       "at": "2026-07-26T11:12:28Z",
       "expires_at": "2026-07-26T19:12:28Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T11:35:22Z"
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
       "at": "2026-07-26T11:12:34Z",
       "expires_at": "2026-07-26T19:12:34Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T11:35:22Z"
     }
   ]
 }
