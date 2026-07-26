@@ -65,7 +65,7 @@ class GamePresentationComponentsTest {
     }
 
     @Test
-    fun `manual yes remains a hypothesis and does not fill a guess slot`() {
+    fun `manual yes remains a hypothesis and immediately appears in the guess slot`() {
         val stateHolder = GameFieldStateHolder(
             savedStateHandle = SavedStateHandle(),
             parameters = GameFieldMatchParameters(codeLength = 4),
@@ -79,6 +79,7 @@ class GamePresentationComponentsTest {
             ),
         )
 
-        assertEquals(listOf(null, null, null, null), displayedGuessSlots(stateHolder.state.value))
+        assertEquals(listOf('9', null, null, null), displayedGuessSlots(stateHolder.state.value))
+        assertTrue(stateHolder.state.value.evidence.provenFacts.isEmpty())
     }
 }
