@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-26T20:33:06Z",
+  "source_context_hash": "812a48ec4bee1410825b75aa32e20b8a0cd37c9f20a3c69ac19c4150743a2303",
+  "model": "Qwen2.5-Coder-7B-Instruct-Q4_K_M",
+  "route": "LOCAL_INTEGRATOR_ASSISTANT",
+  "status": "dry_run",
+  "overall_summary": "No obvious Integrator blockers were present in the compact context.",
+  "confidence": 0.5,
+  "candidate_advice": [],
+  "batch_suggestions": [],
+  "warnings": [
+    "dry_run advice; no local model call was performed"
+  ],
+  "forbidden_actions_detected": []
+}

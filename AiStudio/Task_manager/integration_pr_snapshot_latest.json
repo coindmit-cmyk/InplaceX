@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-26T20:33:14Z",
+  "repository": "coindmit-cmyk/InplaceX",
+  "pull_requests": [
+    {
+      "baseRefName": "develop",
+      "headRefName": "feature/backend-auth-boundary-v1",
+      "headRefOid": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "isDraft": true,
+      "mergeStateStatus": "UNKNOWN",
+      "number": 8,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:26:55Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218919588/job/89837811119",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T20:25:00Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:28:55Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218919588/job/89838003871",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T20:26:57Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:29:59Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218919588/job/89838003852",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T20:26:58Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(backend): add strict JWT authentication boundary",
+      "updatedAt": "2026-07-26T20:24:56Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/8"
+    },
+    {
+      "baseRefName": "develop",
+      "headRefName": "feature/online-foundation-v1",
+      "headRefOid": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
+      "isDraft": true,
+      "mergeStateStatus": "UNKNOWN",
+      "number": 7,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:19:04Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89836843608",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T20:14:44Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:20:56Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89837241831",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T20:19:07Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T20:22:12Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30218558026/job/89837241778",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T20:19:07Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(android): add guarded online transport foundation",
+      "updatedAt": "2026-07-26T20:14:39Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/7"
+    },
+    {
+      "baseRefName": "codex/make-human/company-ux-v3",
+      "headRefName": "codex/app-shell-ux-v4",
+      "headRefOid": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
+      "isDraft": true,
+      "mergeStateStatus": "UNSTABLE",
+      "number": 6,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T14:20:14Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803550451",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T14:18:32Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T14:22:29Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803703783",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T14:20:17Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T14:23:30Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803703780",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T14:20:17Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(android): redesign home, friends, shop, and profile",
+      "updatedAt": "2026-07-26T14:18:27Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/6"
+    },
+    {
+      "baseRefName": "develop",
+      "headRefName": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "headRefOid": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "isDraft": true,
+      "mergeStateStatus": "UNKNOWN",
+      "number": 5,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T12:51:02Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795484781",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T12:47:39Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T13:41:19Z",
+          "conclusion": "CANCELLED",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795784980",
+          "name": "Instrumentation checks",
+          "startedAt": "2026-07-26T12:51:05Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T12:54:06Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202763701/job/89795784946",
+          "name": "Release checks",
+          "startedAt": "2026-07-26T12:51:05Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "ci(android): enforce blocking emulator and release gates",
+      "updatedAt": "2026-07-26T12:47:33Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/5"
+    },
+    {
+      "baseRefName": "develop",
+      "headRefName": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "headRefOid": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "isDraft": true,
+      "mergeStateStatus": "UNKNOWN",
+      "number": 4,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T12:41:40Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202499936/job/89794783897",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T12:39:40Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T12:43:53Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202499936/job/89794967743",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T12:41:44Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T12:44:51Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30202499936/job/89794967764",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T12:41:43Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(agent): add fail-closed capability preservation gate",
+      "updatedAt": "2026-07-26T12:39:34Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/4"
+    },
+    {
+      "baseRefName": "develop",
+      "headRefName": "codex/make-human/company-ux-v3",
+      "headRefOid": "903527419b7ecbb833b6f1e8b92be881b8363cc8",
+      "isDraft": true,
+      "mergeStateStatus": "UNKNOWN",
+      "number": 3,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T13:44:49Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800398773",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T13:43:09Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T13:46:57Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800547457",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T13:44:51Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T13:47:17Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800547452",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T13:44:51Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(android): redesign Company mission console",
+      "updatedAt": "2026-07-26T13:43:04Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/3"
+    }
+  ]
+}

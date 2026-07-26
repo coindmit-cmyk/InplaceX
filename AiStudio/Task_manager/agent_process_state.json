@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T18:02:47Z",
+  "updated_at": "2026-07-26T20:35:35Z",
   "project": "inplacex",
   "processes": {
     "architect": {
@@ -31,12 +31,12 @@
       "cooldown_until": null
     },
     "integrator": {
-      "state": "idle",
-      "reason": null,
+      "state": "completed",
+      "reason": "integrator_review_event_pending",
       "integration_ready_count": 0,
       "open_pr_stack": 0,
-      "last_started_at": null,
-      "last_finished_at": null,
+      "last_started_at": "2026-07-26T20:33:06Z",
+      "last_finished_at": "2026-07-26T20:35:35Z",
       "cooldown_until": null
     },
     "finalizer": {

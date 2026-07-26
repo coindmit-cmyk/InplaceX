@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-26T20:33:06Z",
+  "project": "inplacex",
+  "project_root_name": "inplacex",
+  "base_branch": "develop",
+  "base_sha": null,
+  "source_files": {
+    "preflight": "AiStudio/Task_manager/integrator_preflight.json",
+    "readiness": "AiStudio/Task_manager/pr_readiness_report.json",
+    "integration_batch": "AiStudio/Task_manager/integration_batch.json",
+    "pre_integrator_repair": "AiStudio/Task_manager/pre_integrator_repair.json"
+  },
+  "summary": {
+    "preflight_candidate_count": 0,
+    "readiness_counts": {},
+    "batch_included_count": 0,
+    "batch_excluded_count": 0,
+    "excluded_route_counts": {},
+    "handoff_ready": null,
+    "dirty_worktree": false
+  },
+  "candidates": [],
+  "batch": {
+    "batch_id": null,
+    "included": [],
+    "excluded": []
+  },
+  "path_conflicts": [],
+  "blockers": [],
+  "handoff_validation": null,
+  "advisory_questions": [
+    "Explain the most important blockers and their next owners.",
+    "Suggest safe small batch groups only when supported by context.",
+    "Explain why excluded items should not enter the current finalizer package.",
+    "Explain handoff validator warnings without proposing direct mutation."
+  ],
+  "advisory_only_boundary": {
+    "llm_may": [
+      "explain blockers",
+      "explain path conflicts",
+      "suggest safe batch groups",
+      "draft rejection_detail text",
+      "explain validator warnings"
+    ],
+    "llm_must_not": [
+      "merge",
+      "push",
+      "delete branch",
+      "close PR",
+      "release lock",
+      "mark task done",
+      "edit queue",
+      "edit locks",
+      "edit events",
+      "edit handoff"
+    ]
+  },
+  "source_context_hash": "812a48ec4bee1410825b75aa32e20b8a0cd37c9f20a3c69ac19c4150743a2303",
+  "redaction": {
+    "redaction_count": 0,
+    "stats": {
+      "pattern_matches": 0
+    },
+    "full_file_contents_included": false,
+    "full_diffs_included": false
+  }
+}
