@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:59:22Z",
+  "updated_at": "2026-07-26T13:07:23Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -920,13 +920,13 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T125922Z",
       "at": "2026-07-26T12:59:22Z",
       "expires_at": "2026-07-26T20:59:22Z",
-      "notes": "central runner claim",
+      "notes": "S17 candidate c09bf40 preserved and rejected: strict retry instructions were not implemented and the same full-workflow bypasses remain",
       "lease": {
         "lease_id": "lease-c7711e6bec2b",
         "project_id": "inplacex",
@@ -938,7 +938,10 @@
       },
       "lease_id": "lease-c7711e6bec2b",
       "execution_lease_id": "lease-c7711e6bec2b",
-      "lease_expires_at": "2026-07-26T15:09:15Z"
+      "lease_expires_at": "2026-07-26T15:09:15Z",
+      "released_at": "2026-07-26T13:07:23Z",
+      "released_by": "release_dead_worker_claims.py",
+      "release_reason": "S17 candidate c09bf40 preserved and rejected: strict retry instructions were not implemented and the same full-workflow bypasses remain"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:59:22Z",
+  "updated_at": "2026-07-26T13:07:23Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5287,12 +5287,12 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "retry rejects 1270470 because the full workflow validator accepts short-circuited lint, echoed artifact identity and echoed AVD creation",
+      "dispatcher_decision_reason": "retry rejects c09bf40 because it ignored the strict executable-command contract and preserved the same short-circuit, echo and raw-text bypasses",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
@@ -5319,7 +5319,7 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
-        "auto-worker-5.3"
+        "auto-worker-5.5"
       ],
       "packet_schema_version": 2,
       "worker_instructions": [
@@ -5352,6 +5352,8 @@
         "The instrumentation path must bound adb wait-for-device, verify read/write KVM access, verify the selected device state, clean up the emulator and run connectedDebugAndroidTest directly.",
         "Reject comment-only boot/signing evidence and heredoc labels. Every negative fixture must mutate one valid full baseline behavior and assert its exact expected diagnostic category rather than passing on an unrelated error.",
         "Add actionlint plus executable fake-apksigner tests for missing verifier, verification failure, success and static status without verifier.",
+        "Read docs/reports/integration/S17_INTEGRATOR_REVIEW_C09BF40_20260726.md completely and treat c09bf40 as preserved negative evidence only.",
+        "Do not return the 1270470/c09bf40 token-search validator again. This retry requires repository-owned instrumentation execution, exact anchored workflow steps and expected-diagnostic hostile tests.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5379,6 +5381,10 @@
         "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_C09BF40_20260726.md",
+          "purpose": "mandatory stronger-profile retry after the executable-command contract was ignored"
+        },
         {
           "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md",
           "purpose": "mandatory executable-command parsing and full-workflow hostile mutation retry contract"
@@ -5557,10 +5563,10 @@
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "started_at": "2026-07-26T12:59:22Z",
-      "retry_count": 6,
-      "last_rejected_candidate": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "retry_count": 7,
+      "last_rejected_candidate": "c09bf40e0162778dab9743005183366a34f2e485",
+      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_C09BF40_20260726.md",
+      "status_reason": "c09bf40 is preserved and rejected; the exact strict retry is worker-ready on the stronger auto-worker-5.5 profile",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5599,9 +5605,23 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
           "commit": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
           "reason": "rejected and preserved: full workflow validator accepts short-circuited lint, echoed artifact identity and echoed AVD creation; draft PR #5 must not merge"
+        },
+        {
+          "released_at": "2026-07-26T13:07:23Z",
+          "reason": "S17 candidate c09bf40 preserved and rejected: strict retry instructions were not implemented and the same full-workflow bypasses remain",
+          "status": "in_progress",
+          "worker_id": "auto-worker-5.3",
+          "machine_id": "aistudio-manual",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T125922Z",
+          "lock_expires_at": "2026-07-26T20:59:22Z"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T125922Z",
+          "commit": "c09bf40e0162778dab9743005183366a34f2e485",
+          "reason": "rejected and preserved locally: strict retry instructions were ignored and the same full-workflow CI contract bypasses remain"
         }
       ],
-      "claim_released_at": "2026-07-26T12:52:58Z",
+      "claim_released_at": "2026-07-26T13:07:23Z",
       "worker_result_commit": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "worker_result_synced_at": "2026-07-26T12:52:58Z",
       "worker_changed_paths": [
@@ -5659,28 +5679,12 @@
         "db7123e77e9146e8d3032b051f945d318b8f724e",
         "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
         "6965ee92e429a400fbe6683aece0bc61b90d85cc",
-        "1270470ca5dff7c836dcb0c1058f85eabc6d20e8"
+        "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+        "c09bf40e0162778dab9743005183366a34f2e485"
       ],
       "integration_status": "rejected",
       "rejected_github_pr": 5,
-      "rejected_github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/5",
-      "worker_id": "auto-worker-5.3",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T125922Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T125922Z",
-      "lock_expires_at": "2026-07-26T20:59:22Z",
-      "lease": {
-        "lease_id": "lease-c7711e6bec2b",
-        "project_id": "inplacex",
-        "worker_id": "auto-worker-5.3",
-        "model": "gpt-5.3-codex-spark",
-        "created_at": "2026-07-26T12:59:15Z",
-        "heartbeat_at": "2026-07-26T12:59:15Z",
-        "expires_at": "2026-07-26T15:09:15Z"
-      },
-      "lease_id": "lease-c7711e6bec2b",
-      "execution_lease_id": "lease-c7711e6bec2b",
-      "lease_expires_at": "2026-07-26T15:09:15Z"
+      "rejected_github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/5"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
@@ -10111,8 +10115,8 @@
     },
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "needs_worker_fix",
+      "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10127,22 +10131,22 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
       ],
-      "summary": "Create the auth-owned, non-forgeable principal and session-membership capability required before authoritative online commands can accept an actor.",
+      "summary": "Create the authentication-owned, non-forgeable JWT principal and identity-owned issuance boundary. Canonical session membership moves to the server-owned S25B application composition.",
       "allowed_paths": [
         "InplaceX-backend/build.gradle.kts",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md"
       ],
       "forbidden_paths": [
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
         "InplaceX-backend/src/main/resources/db/migration/**",
@@ -10156,14 +10160,14 @@
       ],
       "acceptance_criteria": [
         "Only verification of signature, HS256 algorithm, issuer, audience, expiry, not-before or issued-at policy, token id, canonical subject and active-account status can create the opaque authenticated principal.",
-        "No public, internal or synthetic JVM constructor or factory can mint the principal, verified claims, verified membership or session-bound participant capability from String, UUID, player-id, participant-id or Kotlin DefaultConstructorMarker reflection.",
+        "No public, internal or synthetic JVM constructor or factory can mint the principal or verified claims from String, UUID, player-id, ByteArray or Kotlin DefaultConstructorMarker reflection.",
         "Hostile tests enumerate every declared constructor and method, including synthetic constructors, Kotlin internal mangled methods and default bridges, and actively invoke every accessible raw-value path; tests must never filter isSynthetic.",
-        "JwtAccessTokenService exposes no public, protected, package-visible, internal or synthetic token-issuance method that accepts String, UUID or another raw identity; token issuance is JVM-private and identity-owned or consumes an opaque non-forgeable identity capability.",
-        "SessionMembershipResolver is pinned to the exact trusted authentication authority and rejects a principal created by any other JwtAccessTokenService instance, even when that service uses its own valid signature and ACTIVE resolver for the same member id.",
-        "The membership repository, resolver and participant-capability issuer are owned by a non-exported canonical session authorization authority; arbitrary JVM callers cannot supply a membership port or construct a resolver accepted by downstream authorization.",
-        "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
-        "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
-        "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
+        "JwtAccessTokenService and every reachable identity-owned issuer expose no public, protected, package-visible, internal, reflected or synthetic token-issuance method that accepts String, UUID, ByteArray or another raw identity.",
+        "Malformed UTF-8 is rejected with CodingErrorAction.REPORT before JSON parsing; duplicate, unknown, oversized and noncanonical Base64URL claims fail closed.",
+        "A principal produced by another JwtAccessTokenService instance is not accepted by the canonical verifier, even for the same subject.",
+        "Reflected principals, identity grants and token issuers cannot create accepted principals or tokens for caller-selected subjects.",
+        "All failures, logs and toString output redact tokens, subjects, signing material and identity bytes.",
+        "No session membership, route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
       ],
       "checks": [
         "bash gradlew :InplaceX-backend:test --rerun-tasks",
@@ -10171,13 +10175,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "the previous retry was blocked before code changes by missing runner lease propagation; commit 8637b19 fixes and tests the infrastructure defect",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "69d80bb is split into auth-only salvage here; caller-owned session membership moves to S25B production composition",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
@@ -10193,24 +10197,15 @@
         "created_at": "2026-07-25T23:05:00Z"
       },
       "worker_instructions": [
-        "Read the S25B blocker report at source_head_sha and both backend canonical documents before editing.",
-        "Use current origin/develop as the implementation baseline; the report branch is evidence only.",
-        "Treat rejected WIP 407d563 as negative evidence only. Its Kotlin private constructors compile to public synthetic JVM constructors and its tests incorrectly filter isSynthetic; do not cherry-pick or repeat that design.",
-        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md. Treat 30653e5 as negative and salvage evidence only; do not cherry-pick its JwtAccessTokenService raw-subject issuer.",
-        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md. Treat 618dfd0 as salvage and negative evidence only; preserve its private issuer fix while replacing its self-owned principal trust path.",
-        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_D2EF53C_20260726.md. Treat d2ef53c as salvage and negative evidence only; close its caller-owned membership-port and resolver boundary.",
-        "Prefer public authority interfaces implemented by private top-level implementation classes or another JVM shape whose declared constructor surface cannot be invoked with raw values or DefaultConstructorMarker. Verify compiled bytecode with javap and hostile reflection.",
-        "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be a JVM-private identity-owned operation or consume an opaque identity capability that raw String or UUID values cannot forge.",
-        "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
-        "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
-        "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
-        "Construct two authentication services with different keys in a hostile test. Pin membership resolution to the canonical service and prove a principal from the other service cannot bind the same player's membership.",
-        "Construct a hostile caller-owned membership port using the real canonical authentication authority and a genuine principal but an attacker-selected participant id; the canonical session authorization boundary must reject it.",
-        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_93228F8_20260726.md completely and treat 93228f8 as preserved salvage and negative evidence only.",
-        "Provide one concrete non-exported canonical session authorization authority that production composition can construct; a private abstract resolver with no implementation or factory is not acceptable.",
-        "Add a positive realizability test proving a genuine canonical principal and membership resolve to a session-bound capability and a trusted consumer can unwrap it.",
-        "Retain hostile negative coverage for foreign authentication authorities, caller-owned membership data, wrong member/session, reflection, synthetic methods and raw String or UUID identities.",
-        "The prior 6088780 attempt is an infrastructure-only blocker report, not a product candidate. Current develop commit 8637b19 binds a validated execution lease into the task and lock; verify that binding before edits, then execute the full auth packet.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md and both backend canonical documents before editing.",
+        "Use current origin/develop as the implementation baseline. Treat 69d80bb as read-only partial salvage and do not copy its SessionMembershipResolver.",
+        "Salvage only the strict JWT verification, opaque principal registry and identity-grant idea from 69d80bb.",
+        "Remove every reachable raw-subject token issuer surface. SignedAccessTokenIssuer.issue(byte[], ...) and reflection through GuestIdentityService.accessTokens are explicit hostile cases.",
+        "Decode JWT segments with a strict UTF-8 decoder configured with CodingErrorAction.REPORT.",
+        "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be JVM-private and identity-owned or consume an opaque registered grant that reflected/raw values cannot forge.",
+        "Enumerate and actively invoke constructors, methods, fields, synthetic/default bridges and private reachable issuer objects with reflection; never filter isSynthetic.",
+        "Verify duplicate or unknown claims, malformed UTF-8, noncanonical Base64URL, oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and inactive account.",
+        "Do not add or modify session membership code in this task. Canonical membership ownership is now an explicit S25B responsibility.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
       ],
@@ -10223,6 +10218,10 @@
         "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
+          "purpose": "mandatory auth-only salvage, raw-byte issuer and strict UTF-8 retry contract"
+        },
         {
           "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_93228F8_20260726.md",
           "purpose": "mandatory positive canonical authority realizability and dead-contract rejection"
@@ -10250,15 +10249,13 @@
       ],
       "code_refs": [
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**"
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
         "code_refs": [
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**"
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/**"
         ],
         "doc_refs": [
           {
@@ -10290,16 +10287,16 @@
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
           "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md"
         ],
         "forbidden_paths": [
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/transport/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/**",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
           "InplaceX-android/**",
           "ops/**",
           ".env*"
@@ -10329,7 +10326,7 @@
         {
           "command": "bash gradlew :InplaceX-backend:test --rerun-tasks",
           "required": true,
-          "purpose": "hostile auth and membership tests plus backend regression"
+          "purpose": "hostile authentication and identity-owned issuance tests plus backend regression"
         },
         {
           "command": "bash gradlew verifyProject",
@@ -10351,13 +10348,12 @@
         "Do not add transport routes, persistence implementations or caller-controlled authority factories."
       ],
       "regression_guards": [
-        "Reject any principal or participant capability constructible from String, UUID or public value objects.",
+        "Reject any principal constructible from String, UUID, ByteArray or public value objects.",
         "Reject any test that filters synthetic constructors, and reject every public synthetic constructor accepting raw identity values directly or through DefaultConstructorMarker.",
-        "Reject every public, protected, package-visible, internal, mangled or synthetic method that accepts a raw identity and returns a token or authority; inspect methods as well as constructors.",
+        "Reject every public, protected, package-visible, internal, reflected, mangled or synthetic method that accepts a raw identity and returns a token or authority; inspect fields and reachable private issuer objects as well as constructors.",
         "Reject a principal produced by a non-canonical JwtAccessTokenService, including a service with an attacker key and ACTIVE resolver for a real member id.",
-        "Reject any design where arbitrary JVM code can supply SessionMembershipPort or construct a resolver whose capability is accepted by downstream authorization.",
         "Reject token or subject values in logs, exceptions, toString or reports.",
-        "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
+        "Hostile tests must cover forged, malformed UTF-8, duplicated, noncanonical Base64URL, oversized, expired and inactive-player cases."
       ],
       "integration_notes": [
         "Independent strong review must inspect constructors and reflection surface, not only happy-path token verification.",
@@ -10372,9 +10368,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
       "started_at": "2026-07-26T12:43:53Z",
       "lock_expires_at": "2026-07-26T20:43:53Z",
-      "retry_count": 6,
-      "last_rejected_candidate": "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
-      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_93228F8_20260726.md",
+      "retry_count": 7,
+      "last_rejected_candidate": "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
+      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
@@ -10405,9 +10401,14 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
           "commit": "6088780b9e69f7397d49a5357928d43f2ea134d6",
           "reason": "preserved infrastructure-only blocker report: central runner omitted execution lease binding before commit 8637b19"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
+          "commit": "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
+          "reason": "rejected and preserved as partial salvage: caller-owned membership factory and reflected raw-byte token issuer remain; membership ownership moves to S25B"
         }
       ],
-      "status_reason": "worker explicitly reported required checks as partial",
+      "status_reason": "69d80bb is split into auth-only salvage; the narrowed strict UTF-8 and raw-issuer retry is worker-ready",
       "worker_result_commit": "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
       "worker_result_synced_at": "2026-07-26T12:57:31Z",
       "worker_changed_paths": [
@@ -10454,20 +10455,7 @@
         "6088780b9e69f7397d49a5357928d43f2ea134d6",
         "69d80bbbd496a9e7b371aa371cd144b4e5d878d0"
       ],
-      "integration_status": "needs_worker_fix",
-      "lease": {
-        "lease_id": "lease-d5cfc153655f",
-        "project_id": "inplacex",
-        "worker_id": "auto-worker-5.5",
-        "model": "gpt-5.6-terra",
-        "created_at": "2026-07-26T12:43:45Z",
-        "heartbeat_at": "2026-07-26T12:43:45Z",
-        "expires_at": "2026-07-26T14:53:45Z"
-      },
-      "lease_id": "lease-d5cfc153655f",
-      "execution_lease_id": "lease-d5cfc153655f",
-      "lease_expires_at": "2026-07-26T14:53:45Z",
-      "not_worker_ready_reason": "worker explicitly reported required checks as partial"
+      "integration_status": "rejected"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -10717,7 +10705,7 @@
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
-      "title": "S25B authoritative transition after auth and mutable-digit prerequisites",
+      "title": "S25B canonical session authority and authoritative transition after auth and mutable-digit prerequisites",
       "status": "blocked_by_dependency",
       "priority": "P0",
       "complexity": "L",
@@ -10736,10 +10724,14 @@
       "resolved_dependencies": [
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
       ],
-      "summary": "Introduce the server-authoritative application boundary after the security contracts are integrated.",
+      "summary": "Introduce the production-owned canonical session authority and server-authoritative application boundary after the authentication and mutable-digit contracts are integrated.",
       "allowed_paths": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorization.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorizationTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/**",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/application/**",
         "docs/reports/workers/**",
@@ -10762,6 +10754,10 @@
         "Only an internally constructed validated transition can cross into persistence.",
         "The repository port and validated transition contain no plaintext secret, raw guess, SensitiveDuelDigits or replayable raw aggregate history; only validated viewer-neutral public state, ordered event, result, revision and server-derived fingerprint may cross the persistence boundary.",
         "No raw String or UUID factory can mint a trusted actor. Actor binding must consume an authentication-bound principal capability and verify current session membership; if current auth contracts cannot prove that boundary, stop with needs_worker_fix instead of inventing trust.",
+        "Production composition owns the trusted JwtAccessTokenService, concrete server-owned membership source, canonical resolver and downstream authoritative consumer together; callers cannot inject a membership authority or resolver.",
+        "No exported, package-visible, protected, Kotlin internal, synthetic or default factory or constructor accepts a caller-owned SessionMembershipPort, membership record, resolver or capability.",
+        "A genuine production-composed positive path succeeds, while caller-owned ports or records, foreign resolvers, reflected resolvers, synthetic membership records, reflected capabilities, wrong sessions, wrong members, duplicates and membership-limit violations fail closed.",
+        "Javap and hostile reflection tests enumerate every constructor, synthetic constructor, default bridge and mangled Kotlin internal method on the session-authorization and production-composition boundary.",
         "Secret and guess command values are never copied into additional immutable Strings, logs, snapshots, events, results or persistence records; mutable temporary buffers are zeroed in finally.",
         "Adversarial tests reject spoofed actors, stale revisions, out-of-turn moves, forged outcomes, config/history mutation and commands after terminal phase.",
         "Domain and application responsibilities remain in focused files and no new production file exceeds 400 lines."
@@ -10791,6 +10787,7 @@
       "integration_repair_parent_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "source_head_sha": "ac4f9c0e16f68a774ac32a0ab48ed97fe1c80078",
       "context_docs": [
+        "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
         "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
         "InplaceX-docs/Backend/Online Contracts.md"
       ],
@@ -10804,9 +10801,14 @@
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md completely. Treat the 69d80bb SessionMembershipResolver and its caller-owned canonical factory as negative evidence only.",
         "Treat local-only rejected WIP b68c9f1 as negative evidence only; do not reuse its plaintext state, String(digits) conversions or TrustedSessionActor.established(String) factory.",
         "Keep every persistence-facing value free of plaintext secrets and guesses. The authoritative transition may expose only validated public state/event/result, revision and canonical server-derived fingerprint.",
         "Do not add a raw actor-id constructor or factory. Bind the actor through an authentication-proven principal plus session-membership resolver, and add hostile tests proving arbitrary UUID strings cannot mint authority.",
+        "Build the concrete canonical membership authority only in production composition, where the trusted JwtAccessTokenService, server-owned membership state, resolver and authoritative consumer are owned together.",
+        "Do not export any factory or constructor that accepts a caller-owned SessionMembershipPort, membership record, resolver or capability, including Kotlin internal and compiler-generated default or synthetic surfaces.",
+        "Exercise the genuine production-composed positive path and hostile caller-owned port or record, foreign resolver, reflection, wrong-session, wrong-member, duplicate and membership-limit cases.",
+        "Run javap on every touched production class and inspect constructors, synthetic constructors, Kotlin internal mangled methods and default bridges before reporting success.",
         "If existing S24 DuelMatch or current auth contracts make the no-plaintext or proven-principal boundary impossible inside allowed_paths, stop and return needs_worker_fix with the exact missing contract instead of duplicating the engine or weakening security.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21 and JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11.",
         "Read doc_refs and input_refs before editing.",
@@ -10833,6 +10835,10 @@
       },
       "doc_refs": [
         {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
+          "purpose": "negative evidence and canonical session-authority ownership split"
+        },
+        {
           "path": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
           "purpose": "required context"
         },
@@ -10842,8 +10848,12 @@
         }
       ],
       "code_refs": [
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorization.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorizationTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/**",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/application/**",
         "docs/reports/workers/**",
@@ -10852,14 +10862,22 @@
       "context_inventory": {
         "base_ref": "origin/develop",
         "code_refs": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorization.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorizationTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/**",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/application/**",
           "docs/reports/workers/**",
           "CHANGELOG.md"
         ],
         "doc_refs": [
+          {
+            "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
+            "purpose": "negative evidence and canonical session-authority ownership split"
+          },
           {
             "path": "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
             "purpose": "required context"
@@ -10886,8 +10904,12 @@
         "base_branch": "develop",
         "base_ref": "origin/develop",
         "allowed_paths": [
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorization.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/domain/**",
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/application/**",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/app/BackendSessionAuthorizationTest.kt",
+          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/**",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/domain/**",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/application/**",
           "docs/reports/workers/**",
@@ -10905,6 +10927,7 @@
           "**/*.pem"
         ],
         "context_docs": [
+          "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
           "docs/reports/integration/S25_INTEGRATOR_REVIEW_AC4F9C0_20260725.md",
           "InplaceX-docs/Backend/Online Contracts.md"
         ],
@@ -10957,6 +10980,8 @@
       "regression_guards": [
         "Reject any repository state or validated transition that contains SensitiveDuelDigits, secret plaintext, raw guess text or full private aggregate history.",
         "Reject any TrustedSessionActor or equivalent factory callable with only String, UUID or caller-controlled payload data.",
+        "Reject any production or test composition factory callable with a caller-owned SessionMembershipPort, membership record, resolver or capability.",
+        "Reject any synthetic, default, reflected or Kotlin internal path that can mint or substitute canonical membership authority outside the production-owned composition.",
         "Reject any new immutable secret copy such as String(charArray) and any mutable secret buffer not zeroed in finally.",
         "Compare changed code against current develop before finalizing.",
         "Document any intentional behavior removal in the worker report and integration_notes."
