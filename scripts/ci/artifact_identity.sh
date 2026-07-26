@@ -4,11 +4,33 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: artifact_identity.sh --apk PATH [--output-dir PATH]
+Usage: artifact_identity.sh --apk PATH [--output-dir PATH] [--artifact-type debug|release]
 
 Copies an APK into an artifact directory and writes a manifest and checksum
 that bind the artifact to the source version and commit.
 EOF
+}
+
+find_apksigner() {
+    if [[ -n "${APKSIGNER:-}" ]]; then
+        [[ -x "$APKSIGNER" ]] || die "APKSIGNER is not executable: $APKSIGNER"
+        printf '%s\n' "$APKSIGNER"
+        return
+    fi
+    if command -v apksigner >/dev/null 2>&1; then
+        command -v apksigner
+        return
+    fi
+    local sdk_root candidate
+    for sdk_root in "${ANDROID_HOME:-}" "${ANDROID_SDK_ROOT:-}"; do
+        [[ -n "$sdk_root" && -d "$sdk_root/build-tools" ]] || continue
+        candidate=$(find "$sdk_root/build-tools" -type f -name apksigner -perm -u+x | sort -V | tail -n 1)
+        if [[ -n "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return
+        fi
+    done
+    die 'apksigner is required to derive APK signing status'
 }
 
 die() {
@@ -18,6 +40,7 @@ die() {
 
 apk_path=''
 output_dir='build/ci-artifacts'
+artifact_type='debug'
 
 while (($# > 0)); do
     case "$1" in
@@ -31,6 +54,11 @@ while (($# > 0)); do
             output_dir=$2
             shift 2
             ;;
+        --artifact-type)
+            (($# >= 2)) || die "--artifact-type requires a value"
+            artifact_type=$2
+            shift 2
+            ;;
         --help|-h)
             usage
             exit 0
@@ -42,6 +70,7 @@ while (($# > 0)); do
 done
 
 [[ -n "$apk_path" ]] || die "--apk is required"
+[[ "$artifact_type" == 'debug' || "$artifact_type" == 'release' ]] || die "--artifact-type must be debug or release"
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$script_dir/../.." && git rev-parse --show-toplevel)
@@ -56,6 +85,7 @@ resolve_path() {
 apk_path=$(resolve_path "$apk_path")
 output_dir=$(resolve_path "$output_dir")
 [[ -f "$apk_path" ]] || die "APK does not exist: $apk_path"
+apksigner_path=$(find_apksigner)
 
 version_file="$repo_root/InplaceX-android/app/build.gradle.kts"
 [[ -f "$version_file" ]] || die "version source does not exist: $version_file"
@@ -90,11 +120,17 @@ else
     die 'sha256sum or shasum is required'
 fi
 
-artifact_name="inplacex-debug-${version}-${short_commit}.apk"
+artifact_name="inplacex-${artifact_type}-${version}-${short_commit}.apk"
 manifest_name="${artifact_name%.apk}.json"
 checksum_name="${artifact_name}.sha256"
 mkdir -p "$output_dir"
 cp "$apk_path" "$output_dir/$artifact_name"
+
+if "$apksigner_path" verify --verbose --print-certs "$apk_path" >"$output_dir/${artifact_name}.apksigner.txt" 2>&1; then
+    signing_status='verified'
+else
+    signing_status='unverified'
+fi
 
 cat > "$output_dir/$manifest_name" <<EOF
 {
@@ -103,7 +139,9 @@ cat > "$output_dir/$manifest_name" <<EOF
   "version_code": $version_code,
   "commit": "$commit",
   "sha256": "$sha256",
-  "sha256_algorithm": "SHA-256"
+  "sha256_algorithm": "SHA-256",
+  "signing_status": "$signing_status",
+  "signing_verifier": "apksigner"
 }
 EOF
 printf '%s  %s\n' "$sha256" "$artifact_name" > "$output_dir/$checksum_name"
@@ -115,6 +153,7 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
         printf 'sha256=%s\n' "$sha256"
         printf 'version=%s\n' "$version"
         printf 'commit=%s\n' "$commit"
+        printf 'signing_status=%s\n' "$signing_status"
     } >> "$GITHUB_OUTPUT"
 fi
 
@@ -126,7 +165,8 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
         printf '%s\n' "- Commit: \`$commit\`"
         printf '%s\n' "- SHA-256: \`$sha256\`"
         printf '%s\n' "- Artifact: \`$artifact_name\`"
+        printf '%s\n' "- APK signing status: \`$signing_status\` (derived by apksigner)"
     } >> "$GITHUB_STEP_SUMMARY"
 fi
 
-printf 'artifact=%s version=%s commit=%s sha256=%s\n' "$artifact_name" "$version" "$commit" "$sha256"
+printf 'artifact=%s version=%s commit=%s sha256=%s signing_status=%s\n' "$artifact_name" "$version" "$commit" "$sha256" "$signing_status"

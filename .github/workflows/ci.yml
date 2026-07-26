@@ -55,15 +55,15 @@ jobs:
       - name: Run unit verification
         run: ./gradlew verifyProject
 
+      - name: Run Android lint
+        run: ./gradlew lint
+
       - name: Assemble debug APK
         run: ./gradlew assembleDebug
 
       - name: Write artifact identity
         id: artifact_identity
-        run: |
-          bash scripts/ci/artifact_identity.sh \
-            --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk \
-            --output-dir build/ci-artifacts
+        run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk --output-dir build/ci-artifacts
 
       - name: Upload identified debug artifact
         uses: actions/upload-artifact@v4
@@ -74,12 +74,10 @@ jobs:
           retention-days: 14
 
   instrumentation:
-    name: Instrumentation checks (non-blocking)
-    if: ${{ always() }}
+    name: Instrumentation checks
     needs: verify
-    continue-on-error: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -95,16 +93,14 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android platform
-        run: sdkmanager --install "platform-tools" "platforms;android-36"
+        run: sdkmanager --install "platform-tools" "platforms;android-36" "emulator" "system-images;android-34;google_apis;x86_64"
 
-      - name: Build and run instrumentation checks
-        run: ./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest
+      - name: Provision and run instrumentation checks
+        run: bash scripts/ci/run_instrumentation.sh
 
   release:
-    name: Release checks (non-blocking)
-    if: ${{ always() }}
+    name: Release checks
     needs: verify
-    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -124,5 +120,30 @@ jobs:
       - name: Install Android platform
         run: sdkmanager --install "platform-tools" "platforms;android-36"
 
-      - name: Assemble unsigned release candidate
+      - name: Assemble release candidate
         run: ./gradlew :app:assembleRelease
+
+      - name: Write release artifact identity
+        run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/release/app-release-unsigned.apk --output-dir build/ci-release-artifacts --artifact-type release
+
+      - name: Upload identified release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inplacex-release-artifact
+          path: build/ci-release-artifacts
+          if-no-files-found: error
+          retention-days: 14
+
+  ci-contract:
+    name: CI contract guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+
+      - name: Validate CI contract
+        run: python3 scripts/ci/validate_ci_contract.py --self-test
