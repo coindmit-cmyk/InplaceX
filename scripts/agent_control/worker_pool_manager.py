@@ -795,9 +795,10 @@ def main() -> int:
         return 0
     launches: list[dict[str, Any]] = []
     started_processes: list[tuple[subprocess.Popen[Any], dict[str, Any], dict[str, Any] | None, float]] = []
-    execution_policy = None
+    execution_policy = execution_lease_manager.default_policy() if args.apply else None
     if args.execution_policy:
-        execution_policy = execution_lease_manager.default_policy()
+        if execution_policy is None:
+            execution_policy = execution_lease_manager.default_policy()
         execution_policy.update(load_json(Path(args.execution_policy).expanduser()))
 
     for lane in planned_lanes:

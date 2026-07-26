@@ -2231,6 +2231,8 @@ def main() -> int:
         ]
         if args.task_id:
             claim_cmd.extend(["--task-id", args.task_id])
+        if args.execution_lease_id:
+            claim_cmd.extend(["--execution-lease-id", args.execution_lease_id])
         if args.push_ref:
             claim_cmd.extend(["--push-ref", args.push_ref])
         if args.fetch:

@@ -22,6 +22,7 @@ from typing import Any
 
 import validate_task_queue_readiness
 from codex_model_capability import default_catalog_path, resolve_requested_model
+import execution_lease_manager
 from project_paths import task_file, task_relpath
 
 
@@ -720,6 +721,68 @@ def choose_task(
     return candidates[0] if candidates else None
 
 
+def bind_execution_lease(target: dict[str, Any], lease: dict[str, Any] | None) -> None:
+    if not isinstance(lease, dict):
+        return
+    lease_id = str(lease.get("lease_id") or "").strip()
+    expires_at = str(lease.get("expires_at") or "").strip()
+    if not lease_id or not expires_at:
+        raise ValueError("execution lease requires lease_id and expires_at")
+    public_lease = {
+        key: lease.get(key)
+        for key in (
+            "lease_id",
+            "project_id",
+            "worker_id",
+            "model",
+            "created_at",
+            "heartbeat_at",
+            "expires_at",
+        )
+        if lease.get(key) is not None
+    }
+    target["lease"] = public_lease
+    target["lease_id"] = lease_id
+    target["execution_lease_id"] = lease_id
+    target["lease_expires_at"] = expires_at
+
+
+def resolve_execution_lease(
+    runtime_root: Path,
+    lease_id: str,
+    project_id: str,
+    worker_id: str,
+    model: str,
+) -> dict[str, Any]:
+    requested = str(lease_id or "").strip()
+    if not requested:
+        raise ValueError("execution lease id is empty")
+    state = execution_lease_manager.status(runtime_root)
+    lease = next(
+        (
+            item
+            for item in state.get("leases", [])
+            if isinstance(item, dict) and str(item.get("lease_id") or "") == requested
+        ),
+        None,
+    )
+    if lease is None:
+        raise ValueError("execution lease is missing or expired")
+    expected = {
+        "project_id": project_id,
+        "worker_id": worker_id,
+        "model": model,
+    }
+    mismatches = [
+        key
+        for key, value in expected.items()
+        if value and str(lease.get(key) or "") != str(value)
+    ]
+    if mismatches:
+        raise ValueError(f"execution lease binding mismatch: {', '.join(mismatches)}")
+    return lease
+
+
 def claim(
     queue: dict[str, Any],
     locks: dict[str, Any],
@@ -728,6 +791,7 @@ def claim(
     machine_id: str,
     ttl_hours: int,
     exact_task_id: str | None = None,
+    execution_lease: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     tasks = queue.get("tasks")
     if not isinstance(tasks, list):
@@ -757,6 +821,7 @@ def claim(
             task["started_at"] = now
             task["lock_expires_at"] = expires
             task["status_reason"] = "central runner claimed task before isolated worker launch"
+            bind_execution_lease(task, execution_lease)
             break
     queue["updated_at"] = now
 
@@ -764,23 +829,23 @@ def claim(
     if not isinstance(lock_list, list):
         lock_list = []
         locks["locks"] = lock_list
-    lock_list.append(
-        {
-            "task_id": chosen_id,
-            "state": "in_progress",
-            "by": worker_id,
-            "machine_id": machine_id,
-            "branch": branch,
-            "at": now,
-            "expires_at": expires,
-            "notes": "central runner claim",
-        }
-    )
+    lock_entry = {
+        "task_id": chosen_id,
+        "state": "in_progress",
+        "by": worker_id,
+        "machine_id": machine_id,
+        "branch": branch,
+        "at": now,
+        "expires_at": expires,
+        "notes": "central runner claim",
+    }
+    bind_execution_lease(lock_entry, execution_lease)
+    lock_list.append(lock_entry)
     locks["updated_at"] = now
     locks.setdefault("schema_version", 1)
     locks.setdefault("default_ttl_hours", ttl_hours)
 
-    return {
+    result = {
         "task_id": chosen_id,
         "title": chosen.get("title"),
         "worker_id": worker_id,
@@ -790,6 +855,8 @@ def claim(
         "claimed_at": now,
         "lock_expires_at": expires,
     }
+    bind_execution_lease(result, execution_lease)
+    return result
 
 
 def main() -> int:
@@ -803,6 +870,7 @@ def main() -> int:
     parser.add_argument("--task-id", help="Claim this exact task id if it is eligible for the selected worker profile.")
     parser.add_argument("--machine-id", default="aistudio")
     parser.add_argument("--runtime-root", default="~/agent-runtime")
+    parser.add_argument("--execution-lease-id", help="Active host execution lease to bind into the task and lock claim.")
     parser.add_argument("--ttl-hours", type=int, default=8)
     parser.add_argument("--push-retries", type=int, default=5, help="Retry claim from fresh GitHub state after a rejected push.")
     parser.add_argument("--push-retry-delay", type=float, default=1.0, help="Seconds to wait between rejected-push retries.")
@@ -896,7 +964,36 @@ def main() -> int:
                     time.sleep(max(0.0, args.push_retry_delay))
                     continue
 
-            claim_result = claim(queue, locks, profile, args.worker_id, args.machine_id, args.ttl_hours, args.task_id)
+            execution_lease = None
+            if args.execution_lease_id:
+                try:
+                    execution_lease = resolve_execution_lease(
+                        Path(args.runtime_root).expanduser(),
+                        args.execution_lease_id,
+                        project_root.name,
+                        args.worker_id,
+                        str((model_resolution or {}).get("resolved_model") or args.requested_model or ""),
+                    )
+                except ValueError as exc:
+                    result = {
+                        "claimed": False,
+                        "reason": "execution_lease_invalid",
+                        "detail": str(exc),
+                        "worker_id": args.worker_id,
+                        "requested_task_id": args.task_id,
+                    }
+                    print(json.dumps(result, ensure_ascii=False, indent=2))
+                    return 2
+            claim_result = claim(
+                queue,
+                locks,
+                profile,
+                args.worker_id,
+                args.machine_id,
+                args.ttl_hours,
+                args.task_id,
+                execution_lease,
+            )
             if not claim_result:
                 result = {
                     "claimed": False,
