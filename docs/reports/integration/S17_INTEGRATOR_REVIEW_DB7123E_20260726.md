@@ -30,10 +30,23 @@ workflow_mutation_exit=0
 This violates the acceptance criterion that the repository-owned check prevent
 silent regression to labels or no-device execution.
 
+Additional isolated mutations also passed incorrectly:
+
+- `continue-on-error: true` on the lint step;
+- `if: ${{ false }}` on both required instrumentation and release jobs;
+- removal of `apksigner verify` plus a static `signing_status="signed"`.
+
+The artifact script also continues with `signing_status="unknown"` if no
+Android signing verifier is available. A blocking signing-evidence gate must
+fail closed instead.
+
 ## Required retry contract
 
 - Parse workflow jobs and steps as executable actions rather than searching a
   combined text blob.
+- Reject `continue-on-error` at both job and required-step level.
+- Reject disabled or conditionally skipped required jobs and steps, including
+  `if: false`.
 - Require a real emulator start command and a real Gradle
   `connectedDebugAndroidTest` invocation; `echo`, comments and unrelated labels
   must not satisfy either requirement.
@@ -41,6 +54,11 @@ silent regression to labels or no-device execution.
 - Inspect `artifact_identity.sh` semantically enough to reject a static
   `signing_status=signed` implementation and require an Android verifier call
   against the produced APK.
+- Fail the release evidence step when signing verification is unavailable or
+  remains unknown.
+- Configure Linux runner KVM access, or use a maintained emulator action that
+  does so, and capture a real GitHub Actions run where the emulator boots and
+  `connectedDebugAndroidTest` executes.
 - Add mutation tests proving that replacing emulator start, device wait,
   instrumentation execution, release assembly or signing verification with
   labels/no-ops makes the guard fail.

@@ -5274,8 +5274,10 @@
         "The instrumentation and release jobs do not use continue-on-error and their failure makes the workflow fail.",
         "A repository-owned CI contract check verifies the blocking jobs, emulator provisioning, release assembly and artifact signing evidence so the workflow cannot silently regress to labels or no-device execution.",
         "Artifact version and signing status are explicitly reported.",
-        "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label.",
-        "Mutation tests prove that echo, comments, labels or no-op replacements for emulator start, boot wait, connectedDebugAndroidTest, release assembly and APK signing verification are rejected by the CI contract guard."
+        "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label; missing verifier or unknown status fails the blocking release evidence step.",
+        "Required jobs and required steps reject continue-on-error and disabled or conditionally skipped execution, including if: false.",
+        "Mutation tests prove that echo, comments, labels, no-op replacements, step-level continue-on-error, disabled jobs or static signing labels are rejected by the CI contract guard.",
+        "A real GitHub Actions run proves Linux KVM/emulator readiness, bounded boot and connectedDebugAndroidTest execution before integration."
       ],
       "checks": [
         "bash gradlew verifyProject",
@@ -5330,7 +5332,10 @@
         "Derive APK signing state with apksigner or an equivalent Android signing verifier. Do not trust a --signing-status argument or static workflow label.",
         "Read docs/reports/integration/S17_INTEGRATOR_REVIEW_DB7123E_20260726.md and treat db7123e as preserved negative/salvage evidence only.",
         "Validate executable workflow actions structurally; an echo, comment, label or unrelated string containing a required command must not satisfy the contract.",
-        "Add negative mutation fixtures for emulator start, bounded boot wait, connectedDebugAndroidTest, release assembly and apksigner verification.",
+        "Reject continue-on-error at both job and required-step level, and reject if: false or another condition that can silently skip required jobs or steps.",
+        "Make signing evidence fail closed when apksigner/equivalent is unavailable or produces unknown status.",
+        "Configure Linux runner KVM access or a maintained emulator action, then capture a real GitHub Actions run proving boot and connectedDebugAndroidTest.",
+        "Add negative mutation fixtures for emulator start, bounded boot wait, connectedDebugAndroidTest, release assembly, apksigner verification, step-level continue-on-error and disabled jobs.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5512,8 +5517,8 @@
       "regression_guards": [
         "Compare changed code against current develop before finalizing.",
         "Reject a CI workflow that invokes connectedDebugAndroidTest without provisioning and booting an emulator in the same job.",
-        "Reject continue-on-error on instrumentation or release jobs and reject caller-supplied signing-status labels.",
-        "Reject echo/comment/label substitutions for emulator start, boot wait, instrumentation, release assembly or APK signing verification.",
+        "Reject continue-on-error on required jobs or steps, disabled required jobs/steps and caller-supplied signing-status labels.",
+        "Reject echo/comment/label substitutions for emulator start, boot wait, instrumentation, release assembly or APK signing verification, and reject unknown signing evidence.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
