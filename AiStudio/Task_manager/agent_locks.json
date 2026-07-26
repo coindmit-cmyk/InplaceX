@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T20:32:09Z",
+  "updated_at": "2026-07-26T20:43:17Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -982,6 +982,16 @@
       "released_at": "2026-07-26T17:46:29Z",
       "released_by": "Codex preservation-first S17 owner-gate repair",
       "release_reason": "candidate 43e10a5 preserved in verified bundle and published through authorized SSH; exact-SHA run 30212992284 failed instrumentation because /dev/kvm was unavailable, so automatic worker retry is stopped pending owner runner decision"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T204317Z",
+      "at": "2026-07-26T20:43:17Z",
+      "expires_at": "2026-07-27T04:43:17Z",
+      "notes": "central runner claim"
     }
   ]
 }
