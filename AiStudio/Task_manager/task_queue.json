@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:02:46Z",
+  "updated_at": "2026-07-26T11:12:23Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5284,7 +5284,7 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5518,11 +5518,11 @@
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
-      "started_at": "2026-07-25T22:31:32Z",
-      "lock_expires_at": "2026-07-26T06:31:32Z",
+      "started_at": "2026-07-26T11:12:23Z",
+      "lock_expires_at": "2026-07-26T19:12:23Z",
       "retry_count": 2,
       "last_rejected_candidate": "56dba7020bfc2a37a2b73f269f328a69146c2e59",
-      "status_reason": "56dba70 preserved but rejected: required Gradle gates were not run in the installed AiStudio SDK environment and signing status was caller-supplied"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",

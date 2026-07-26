@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:43:43Z",
+  "updated_at": "2026-07-26T11:12:23Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -731,6 +731,16 @@
       "released_at": "2026-07-26T00:10:43Z",
       "released_by": "Codex Manual Integrator cross-authority audit",
       "release_reason": "candidate 618dfd0 allowed a principal from an attacker-owned JwtAccessTokenService to self-validate membership"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
+      "at": "2026-07-26T11:12:23Z",
+      "expires_at": "2026-07-26T19:12:23Z",
+      "notes": "central runner claim"
     }
   ]
 }
