@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:13:25Z",
+  "created_at": "2026-07-26T21:18:21Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "base_branch": "origin/develop",
-  "base_sha": "b7da52d4a9d1d557af5a3b385fc508f1e6d63968",
-  "preflight_checked_at": "2026-07-26T21:13:23Z",
+  "base_sha": "d2dc89ec07e9f263a079183798eaf15211b4aa33",
+  "preflight_checked_at": "2026-07-26T21:18:20Z",
   "policy": {
     "require_checks": false,
     "block_drafts": false,
@@ -45,8 +45,22 @@
         "AiStudio/Task_manager/agent_locks.json",
         "AiStudio/Task_manager/agent_process_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
         "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
+        "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
@@ -58,8 +72,22 @@
         "AiStudio/Task_manager/agent_locks.json",
         "AiStudio/Task_manager/agent_process_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
         "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
+        "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
@@ -70,16 +98,16 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
       ],
       "path_count": 4,
-      "full_path_count": 15,
-      "stored_path_count": 15,
+      "full_path_count": 29,
+      "stored_path_count": 29,
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "raw_path_count": 15,
+      "raw_path_count": 29,
       "mirror_refs": [
         "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter"
       ],
       "ahead_of_base": 1,
-      "behind_base": 2,
+      "behind_base": 6,
       "check_state": "unknown",
       "merge_state": null,
       "is_draft": null,
@@ -237,7 +265,7 @@
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z"
       ],
       "ahead_of_base": 1,
-      "behind_base": 39,
+      "behind_base": 43,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -250,7 +278,7 @@
         "product_conflicts=1"
       ],
       "warnings": [
-        "behind base by 39; Integrator should update/rebase before final handoff",
+        "behind base by 43; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
@@ -363,7 +391,7 @@
         "origin/feature/backend-auth-boundary-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 25,
+      "behind_base": 29,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -497,7 +525,7 @@
         "origin/feature/online-foundation-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 25,
+      "behind_base": 29,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -510,7 +538,7 @@
         "product_conflicts=2"
       ],
       "warnings": [
-        "behind base by 25; Integrator should update/rebase before final handoff",
+        "behind base by 29; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
@@ -737,7 +765,7 @@
         "origin/feature/toy-room-ui-v5"
       ],
       "ahead_of_base": 5,
-      "behind_base": 60,
+      "behind_base": 64,
       "check_state": "passed",
       "merge_state": "UNSTABLE",
       "is_draft": true,
@@ -750,7 +778,7 @@
         "product_conflicts=3"
       ],
       "warnings": [
-        "behind base by 60; Integrator should update/rebase before final handoff",
+        "behind base by 64; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]

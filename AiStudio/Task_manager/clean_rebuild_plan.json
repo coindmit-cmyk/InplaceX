@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:13:25Z",
+  "created_at": "2026-07-26T21:18:22Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "clean_rebuild_planner.py",
   "policy": "plan clean rebuild routes only; do not mutate product code",
@@ -48,7 +48,7 @@
       "allowed_paths_sample": [],
       "path_source": "merge_base_to_head",
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
-      "behind_base": 2,
+      "behind_base": 6,
       "reason": "requires exactly one task_id",
       "blocking_reasons": [
         "requires exactly one task_id"
@@ -100,7 +100,7 @@
       "allowed_paths_sample": [],
       "path_source": "merge_base_to_head",
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "behind_base": 39,
+      "behind_base": 43,
       "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
       "blocking_reasons": [
         "requires exactly one task_id",
@@ -147,7 +147,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "behind_base": 25,
+      "behind_base": 29,
       "reason": "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
       "blocking_reasons": [
         "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt"
@@ -203,7 +203,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
-      "behind_base": 25,
+      "behind_base": 29,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],
@@ -288,7 +288,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
-      "behind_base": 60,
+      "behind_base": 64,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],

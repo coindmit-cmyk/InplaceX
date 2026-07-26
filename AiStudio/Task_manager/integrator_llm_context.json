@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:33:06Z",
+  "created_at": "2026-07-26T21:18:13Z",
   "project": "inplacex",
   "project_root_name": "inplacex",
-  "base_branch": "develop",
-  "base_sha": null,
+  "base_branch": "origin/develop",
+  "base_sha": "b7da52d4a9d1d557af5a3b385fc508f1e6d63968",
   "source_files": {
     "preflight": "AiStudio/Task_manager/integrator_preflight.json",
     "readiness": "AiStudio/Task_manager/pr_readiness_report.json",
@@ -12,22 +12,546 @@
     "pre_integrator_repair": "AiStudio/Task_manager/pre_integrator_repair.json"
   },
   "summary": {
-    "preflight_candidate_count": 0,
-    "readiness_counts": {},
-    "batch_included_count": 0,
-    "batch_excluded_count": 0,
-    "excluded_route_counts": {},
-    "handoff_ready": null,
-    "dirty_worktree": false
+    "preflight_candidate_count": 5,
+    "readiness_counts": {
+      "needs_integrator_review": 2,
+      "ready_candidate": 3
+    },
+    "batch_included_count": 2,
+    "batch_excluded_count": 3,
+    "excluded_route_counts": {
+      "excluded_from_package": 2,
+      "deferred_next_batch": 1
+    },
+    "handoff_ready": true,
+    "dirty_worktree": true
   },
-  "candidates": [],
+  "candidates": [
+    {
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "pr": null,
+      "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29"
+      ],
+      "classification": "needs_integrator_review",
+      "risk_class": "high",
+      "reason": "high-risk paths require owner/strong review",
+      "next_owner": "auto-integrator",
+      "ahead_of_base": 1,
+      "behind_base": 2,
+      "check_state": "unknown",
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/repository_hygiene_state.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+      ],
+      "evidence": [
+        "no PR metadata snapshot"
+      ],
+      "warnings": []
+    },
+    {
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "pr": 5,
+      "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "task_ids": [
+        "REPO-PR-5"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "medium",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 1,
+      "behind_base": 39,
+      "check_state": "passed",
+      "changed_paths": [
+        ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "docs/automation/CI_FOUNDATION.md",
+        "scripts/ci/artifact_identity.sh",
+        "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+        "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+        "scripts/ci/contract_mutations/fail_connected_noop.yml",
+        "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+        "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+        "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+        "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+        "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+        "scripts/ci/contract_mutations/fail_short_circuit.yml",
+        "scripts/ci/contract_mutations/pass_artifact.yml",
+        "scripts/ci/contract_mutations/pass_baseline.yml",
+        "scripts/ci/validate_ci_contract.py"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json"
+      ],
+      "evidence": [
+        "product_conflicts=1"
+      ],
+      "warnings": [
+        "behind base by 39; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
+        "product path overlaps another candidate; batch builder must isolate by module/path"
+      ]
+    },
+    {
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "normalized_branch": "feature/backend-auth-boundary-v1",
+      "pr": 8,
+      "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "task_ids": [
+        "REPO-PR-8"
+      ],
+      "classification": "needs_integrator_review",
+      "risk_class": "high",
+      "reason": "high-risk paths require owner/strong review",
+      "next_owner": "auto-integrator",
+      "ahead_of_base": 1,
+      "behind_base": 25,
+      "check_state": "passed",
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json"
+      ],
+      "evidence": [
+        "product_conflicts=2"
+      ],
+      "warnings": []
+    },
+    {
+      "branch": "origin/feature/online-foundation-v1",
+      "normalized_branch": "feature/online-foundation-v1",
+      "pr": 7,
+      "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
+      "task_ids": [
+        "REPO-PR-7"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "medium",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 1,
+      "behind_base": 25,
+      "check_state": "passed",
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "gradle/libs.versions.toml"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json"
+      ],
+      "evidence": [
+        "product_conflicts=2"
+      ],
+      "warnings": [
+        "behind base by 25; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
+        "product path overlaps another candidate; batch builder must isolate by module/path"
+      ]
+    },
+    {
+      "branch": "origin/feature/toy-room-ui-v5",
+      "normalized_branch": "feature/toy-room-ui-v5",
+      "pr": 9,
+      "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "task_ids": [
+        "REPO-PR-3-9"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "medium",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 5,
+      "behind_base": 60,
+      "check_state": "passed",
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt"
+      ],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json"
+      ],
+      "evidence": [
+        "product_conflicts=3"
+      ],
+      "warnings": [
+        "behind base by 60; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
+        "product path overlaps another candidate; batch builder must isolate by module/path"
+      ]
+    }
+  ],
   "batch": {
-    "batch_id": null,
-    "included": [],
-    "excluded": []
+    "batch_id": "BATCH-20260726-211325",
+    "included": [
+      {
+        "branch": "origin/feature/online-foundation-v1",
+        "task_ids": [
+          "REPO-PR-7"
+        ],
+        "classification": "ready_candidate",
+        "risk_class": "medium",
+        "route": null,
+        "reason": "traceable candidate with no blocking product overlap",
+        "next_owner": "integration_batch_builder",
+        "changed_paths": [
+          "CHANGELOG.md",
+          "InplaceX-android/app/build.gradle.kts",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+          "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+          "gradle/libs.versions.toml"
+        ],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+        "task_ids": [
+          "REPO-PR-5"
+        ],
+        "classification": "ready_candidate",
+        "risk_class": "medium",
+        "route": null,
+        "reason": "traceable candidate with no blocking product overlap",
+        "next_owner": "integration_batch_builder",
+        "changed_paths": [
+          ".github/workflows/ci.yml",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+          "docs/automation/CI_FOUNDATION.md",
+          "scripts/ci/artifact_identity.sh",
+          "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+          "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+          "scripts/ci/contract_mutations/fail_connected_noop.yml",
+          "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+          "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+          "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+          "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+          "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+          "scripts/ci/contract_mutations/fail_short_circuit.yml",
+          "scripts/ci/contract_mutations/pass_artifact.yml",
+          "scripts/ci/contract_mutations/pass_baseline.yml",
+          "scripts/ci/validate_ci_contract.py"
+        ],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      }
+    ],
+    "excluded": [
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "excluded_from_package",
+        "reason": "task already routed to manual Integrator review in central queue",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "deferred_next_batch",
+        "reason": "directly routed ready candidates preempt salvage and manual-review backlog",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "excluded_from_package",
+        "reason": "task already routed to manual Integrator review in central queue",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      }
+    ]
   },
-  "path_conflicts": [],
-  "blockers": [],
+  "path_conflicts": [
+    {
+      "left": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt"
+      ],
+      "overlap_path_count": 3,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "left": "origin/feature/online-foundation-v1",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    }
+  ],
+  "blockers": [
+    {
+      "code": "dirty_worktree",
+      "severity": "warning",
+      "message": "local worktree has uncommitted changes"
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "behind_base": 2
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "behind_base": 39
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "behind_base": 25
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/feature/online-foundation-v1",
+      "behind_base": 25
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/feature/toy-room-ui-v5",
+      "behind_base": 60
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt"
+      ],
+      "overlap_path_count": 3,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "origin/feature/online-foundation-v1",
+      "right": "origin/feature/toy-room-ui-v5",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    }
+  ],
   "handoff_validation": null,
   "advisory_questions": [
     "Explain the most important blockers and their next owners.",
@@ -56,7 +580,7 @@
       "edit handoff"
     ]
   },
-  "source_context_hash": "812a48ec4bee1410825b75aa32e20b8a0cd37c9f20a3c69ac19c4150743a2303",
+  "source_context_hash": "2508c793050d91be14b30ef5078c23d768effcbe749dba131514fd059bd323c0",
   "redaction": {
     "redaction_count": 0,
     "stats": {

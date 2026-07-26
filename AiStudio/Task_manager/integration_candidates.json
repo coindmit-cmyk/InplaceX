@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-26T21:13:20Z",
+  "generated_at": "2026-07-26T21:18:17Z",
   "candidates": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "title": "Android guest auth and cloud-save adapter",
       "status": "integration_requested",
-      "integration_status": "pending",
+      "integration_status": "needs_integrator_review",
       "worker_check_evidence": {
         "ok": true,
         "route": "agent_done",
