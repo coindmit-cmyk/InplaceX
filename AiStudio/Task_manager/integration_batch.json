@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "batch_id": "BATCH-20260726-215332",
-  "created_at": "2026-07-26T21:53:32Z",
+  "batch_id": "BATCH-20260726-215818",
+  "created_at": "2026-07-26T21:58:18Z",
   "target_branch": "origin/develop",
-  "base_sha": "60c5b11a4ed9c6024eeaa086721d6e2a62c7094f",
+  "base_sha": "34a2309d902dc3b1e8be953665ca8ecf42ef585a",
   "risk_class": "medium",
   "strategy": "auto_integrator_review_batch",
   "batch_policy": {
@@ -83,7 +83,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 45; Integrator should update/rebase before final handoff",
+        "behind base by 49; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -97,7 +97,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 45,
+      "behind_base": 49,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -179,7 +179,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 59; Integrator should update/rebase before final handoff",
+        "behind base by 63; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -193,7 +193,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 59,
+      "behind_base": 63,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -315,7 +315,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "blocking_reasons": [],
       "warnings": [
-        "behind base by 80; Integrator should update/rebase before final handoff",
+        "behind base by 84; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ],
@@ -329,7 +329,7 @@
       "source_artifact": true,
       "source_artifact_id": null,
       "merge_target_allowed": false,
-      "behind_base": 80,
+      "behind_base": 84,
       "next_owner": "integration_batch_builder",
       "migration_sensitive": null,
       "migration_compatibility_policy": null,
@@ -402,14 +402,14 @@
         "source_artifact": false,
         "source_artifact_id": null,
         "merge_target_allowed": true,
-        "behind_base": 22,
+        "behind_base": 26,
         "next_owner": "auto-integrator",
         "migration_sensitive": null,
         "migration_compatibility_policy": null,
         "integrator_must_adapt_migrations": null
       },
-      "reason": "directly routed ready candidates preempt salvage and manual-review backlog",
-      "route": "deferred_next_batch"
+      "reason": "task already routed to manual Integrator review in central queue",
+      "route": "excluded_from_package"
     },
     {
       "item": {
@@ -483,21 +483,21 @@
         "source_artifact": true,
         "source_artifact_id": null,
         "merge_target_allowed": false,
-        "behind_base": 45,
+        "behind_base": 49,
         "next_owner": "auto-integrator",
         "migration_sensitive": null,
         "migration_compatibility_policy": null,
         "integrator_must_adapt_migrations": null
       },
-      "reason": "directly routed ready candidates preempt salvage and manual-review backlog",
-      "route": "deferred_next_batch"
+      "reason": "task already routed to manual Integrator review in central queue",
+      "route": "excluded_from_package"
     }
   ],
   "included_count": 3,
   "excluded_count": 2,
-  "deferred_count": 2,
+  "deferred_count": 0,
   "excluded_counts": {
-    "deferred_next_batch": 2
+    "excluded_from_package": 2
   },
   "checks_required": [
     "integrator_preflight",

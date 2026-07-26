@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:53:32Z",
+  "created_at": "2026-07-26T21:58:18Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "base_branch": "origin/develop",
-  "base_sha": "60c5b11a4ed9c6024eeaa086721d6e2a62c7094f",
-  "preflight_checked_at": "2026-07-26T21:53:31Z",
+  "base_sha": "34a2309d902dc3b1e8be953665ca8ecf42ef585a",
+  "preflight_checked_at": "2026-07-26T21:58:16Z",
   "policy": {
     "require_checks": false,
     "block_drafts": false,
@@ -111,7 +111,7 @@
         "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter"
       ],
       "ahead_of_base": 1,
-      "behind_base": 22,
+      "behind_base": 26,
       "check_state": "unknown",
       "merge_state": null,
       "is_draft": null,
@@ -269,7 +269,7 @@
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z"
       ],
       "ahead_of_base": 1,
-      "behind_base": 59,
+      "behind_base": 63,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -282,7 +282,7 @@
         "product_conflicts=1"
       ],
       "warnings": [
-        "behind base by 59; Integrator should update/rebase before final handoff",
+        "behind base by 63; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
@@ -395,7 +395,7 @@
         "origin/feature/backend-auth-boundary-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -529,7 +529,7 @@
         "origin/feature/online-foundation-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
@@ -542,7 +542,7 @@
         "product_conflicts=2"
       ],
       "warnings": [
-        "behind base by 45; Integrator should update/rebase before final handoff",
+        "behind base by 49; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
@@ -769,7 +769,7 @@
         "origin/feature/toy-room-ui-v5"
       ],
       "ahead_of_base": 5,
-      "behind_base": 80,
+      "behind_base": 84,
       "check_state": "passed",
       "merge_state": "UNSTABLE",
       "is_draft": true,
@@ -782,7 +782,7 @@
         "product_conflicts=3"
       ],
       "warnings": [
-        "behind base by 80; Integrator should update/rebase before final handoff",
+        "behind base by 84; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]

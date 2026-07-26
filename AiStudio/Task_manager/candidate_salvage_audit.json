@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:53:32Z",
+  "created_at": "2026-07-26T21:58:18Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
@@ -71,7 +71,7 @@
       "identity_issues": [],
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "ahead_of_base": 1,
-      "behind_base": 22,
+      "behind_base": 26,
       "path_source": "merge_base_to_head"
     },
     {
@@ -163,7 +163,7 @@
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 59,
+      "behind_base": 63,
       "path_source": "merge_base_to_head"
     },
     {
@@ -226,7 +226,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "path_source": "merge_base_to_head"
     },
     {
@@ -304,7 +304,7 @@
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "path_source": "merge_base_to_head"
     },
     {
@@ -417,7 +417,7 @@
       "identity_issues": [],
       "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
       "ahead_of_base": 5,
-      "behind_base": 80,
+      "behind_base": 84,
       "path_source": "merge_base_to_head"
     }
   ]

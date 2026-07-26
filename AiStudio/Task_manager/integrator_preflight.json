@@ -1,17 +1,15 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-26T21:53:31Z",
+  "checked_at": "2026-07-26T21:58:16Z",
   "base_branch": "origin/develop",
-  "base_sha": "60c5b11a4ed9c6024eeaa086721d6e2a62c7094f",
+  "base_sha": "34a2309d902dc3b1e8be953665ca8ecf42ef585a",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "git_status": [
     "## develop...origin/develop",
     " M AiStudio/Task_manager/agent_process_state.json",
-    " M AiStudio/Task_manager/integration_candidates.json",
-    " M AiStudio/Task_manager/integrator_llm_advice.json",
-    " M AiStudio/Task_manager/integrator_llm_context.json"
+    " M AiStudio/Task_manager/integration_candidates.json"
   ],
   "dirty_worktree": true,
   "candidate_prefixes": [
@@ -61,7 +59,7 @@
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "merge_base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "ahead_of_base": 1,
-      "behind_base": 22,
+      "behind_base": 26,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -150,7 +148,7 @@
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 59,
+      "behind_base": 63,
       "changed_paths": [
         ".github/workflows/ci.yml",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -302,7 +300,7 @@
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -420,7 +418,7 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 45,
+      "behind_base": 49,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -548,7 +546,7 @@
       "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
       "merge_base_sha": "af415d48a91ce28582c5a74fc96e5b148886d5c4",
       "ahead_of_base": 5,
-      "behind_base": 80,
+      "behind_base": 84,
       "changed_paths": [
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -901,31 +899,31 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 22
+      "behind_base": 26
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 59
+      "behind_base": 63
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 45
+      "behind_base": 49
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 45
+      "behind_base": 49
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/toy-room-ui-v5",
-      "behind_base": 80
+      "behind_base": 84
     },
     {
       "code": "changed_path_overlap",
