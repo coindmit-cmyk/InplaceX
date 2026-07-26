@@ -1,8 +1,53 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T20:58:18Z",
+  "generated_at": "2026-07-26T21:13:24Z",
   "repository": "coindmit-cmyk/InplaceX",
   "pull_requests": [
+    {
+      "baseRefName": "codex/app-shell-ux-v4",
+      "headRefName": "feature/toy-room-ui-v5",
+      "headRefOid": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "isDraft": true,
+      "mergeStateStatus": "UNSTABLE",
+      "number": 9,
+      "reviewDecision": "",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T21:10:19Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89841841786",
+          "name": "Unit verification and debug artifact",
+          "startedAt": "2026-07-26T21:08:01Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T21:12:43Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051184",
+          "name": "Instrumentation checks (non-blocking)",
+          "startedAt": "2026-07-26T21:10:21Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-07-26T21:13:38Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30220435643/job/89842051193",
+          "name": "Release checks (non-blocking)",
+          "startedAt": "2026-07-26T21:10:21Z",
+          "status": "COMPLETED",
+          "workflowName": "InplaceX CI"
+        }
+      ],
+      "title": "feat(android): establish Toy Room UI v5",
+      "updatedAt": "2026-07-26T21:07:55Z",
+      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/9"
+    },
     {
       "baseRefName": "develop",
       "headRefName": "feature/backend-auth-boundary-v1",

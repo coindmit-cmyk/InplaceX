@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:53:23Z",
+  "created_at": "2026-07-26T21:13:25Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "base_ref": "origin/develop",
   "clean_rebuild_promotion": null,
   "worker_bridge": {
     "sync_report": {
       "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-      "checked_at": "2026-07-26T20:53:18Z",
+      "checked_at": "2026-07-26T21:13:20Z",
       "apply": true,
       "scanned_worker_tasks": 0,
       "change_count": 0,
@@ -28,8 +28,8 @@
       "exit_code": 0
     },
     "candidate_count": 5,
-    "emitted_count": 0,
-    "skipped_existing_event_count": 5,
+    "emitted_count": 1,
+    "skipped_existing_event_count": 4,
     "output": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/integration_candidates.json",
     "dry_run": false,
     "exit_code": 0
@@ -39,7 +39,7 @@
     "ok": true,
     "repository": "coindmit-cmyk/InplaceX",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/integration_pr_snapshot_latest.json",
-    "pull_request_count": 6
+    "pull_request_count": 7
   },
   "pr_readiness_report": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
   "task_identity_audit": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_identity_audit.json",
@@ -48,11 +48,11 @@
   "batch_candidates": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/integration_candidates.batch.json",
   "preflight_candidate_count": 5,
   "readiness_counts": {
-    "ready_candidate": 4,
-    "needs_integrator_review": 1
+    "needs_integrator_review": 2,
+    "ready_candidate": 3
   },
   "identity_audit_counts": {
-    "identity_ok": 57,
+    "identity_ok": 58,
     "identity_conflict": 1
   },
   "identity_counts": {
@@ -64,19 +64,18 @@
   "clean_rebuild_counts": {
     "needs_dispatcher_rebuild": 1,
     "needs_human_rebuild": 2,
-    "auto_clean_rebuild_large": 1,
-    "auto_clean_rebuild_medium": 1
+    "auto_clean_rebuild_medium": 1,
+    "auto_clean_rebuild_large": 1
   },
   "rebuild_decision_counts": {
-    "ready_candidate": 4,
-    "needs_human": 3,
-    "integrator_module_batch": 1,
+    "needs_human": 5,
+    "ready_candidate": 3,
     "crb_auto_task": 2
   },
-  "rebuild_route_event_count": 2,
-  "batch_included_count": 4,
-  "batch_excluded_count": 1,
-  "manual_review_task_count": 2,
+  "rebuild_route_event_count": 4,
+  "batch_included_count": 2,
+  "batch_excluded_count": 3,
+  "manual_review_task_count": 3,
   "reprocess_integrator_review": false,
   "handoff_ready": true
 }
