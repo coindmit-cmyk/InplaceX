@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:43:43Z",
+  "updated_at": "2026-07-26T11:02:46Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5270,13 +5270,18 @@
       "acceptance_criteria": [
         "Current lint errors are fixed without blanket suppression.",
         "Unit, lint, UI smoke and release assemble become blocking CI checks.",
+        "The GitHub instrumentation job provisions and boots an API-compatible Android emulator, waits for boot completion and runs connectedDebugAndroidTest against that device; a runner with no connected device is a CI configuration failure, not an acceptable non-blocking result.",
+        "The instrumentation and release jobs do not use continue-on-error and their failure makes the workflow fail.",
+        "A repository-owned CI contract check verifies the blocking jobs, emulator provisioning, release assembly and artifact signing evidence so the workflow cannot silently regress to labels or no-device execution.",
         "Artifact version and signing status are explicitly reported.",
         "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label."
       ],
       "checks": [
         "bash gradlew verifyProject",
         "bash gradlew lint",
+        "bash gradlew :app:assembleDebugAndroidTest",
         "bash gradlew assembleRelease",
+        "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
       "lock": "free",
@@ -5318,6 +5323,9 @@
         "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
         "Run verifyProject, lint and assembleRelease yourself in that environment; do not leave mandatory checks to the Integrator.",
+        "Treat GitHub Actions run 30180875285 as negative evidence: connectedDebugAndroidTest failed with DeviceException No connected devices because the workflow installed the SDK but never provisioned or booted an emulator.",
+        "Update the instrumentation job to provision a deterministic API-compatible emulator, wait for it to become ready and then run connectedDebugAndroidTest. Remove continue-on-error from instrumentation and release jobs.",
+        "Add scripts/ci/validate_ci_contract.py as a repository-owned regression guard for blocking job semantics, emulator provisioning and derived artifact signing evidence, and run it before reporting success.",
         "Derive APK signing state with apksigner or an equivalent Android signing verifier. Do not trust a --signing-status argument or static workflow label.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
@@ -5434,7 +5442,9 @@
         "required_checks": [
           "bash gradlew verifyProject",
           "bash gradlew lint",
+          "bash gradlew :app:assembleDebugAndroidTest",
           "bash gradlew assembleRelease",
+          "python scripts/ci/validate_ci_contract.py",
           "git diff --check"
         ],
         "worker_report_required": true,
@@ -5458,9 +5468,21 @@
           "on_failure": "stop and return needs_worker_fix with command output"
         },
         {
+          "command": "bash gradlew :app:assembleDebugAndroidTest",
+          "required": true,
+          "purpose": "prove the instrumentation APK compiles before GitHub emulator execution",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
           "command": "bash gradlew assembleRelease",
           "required": true,
           "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/ci/validate_ci_contract.py",
+          "required": true,
+          "purpose": "prove blocking CI semantics, emulator provisioning and derived signing evidence",
           "on_failure": "stop and return needs_worker_fix with command output"
         },
         {
@@ -5481,6 +5503,8 @@
       ],
       "regression_guards": [
         "Compare changed code against current develop before finalizing.",
+        "Reject a CI workflow that invokes connectedDebugAndroidTest without provisioning and booting an emulator in the same job.",
+        "Reject continue-on-error on instrumentation or release jobs and reject caller-supplied signing-status labels.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
@@ -9930,7 +9954,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9977,6 +10001,7 @@
         "No public, internal or synthetic JVM constructor or factory can mint the principal, verified claims, verified membership or session-bound participant capability from String, UUID, player-id, participant-id or Kotlin DefaultConstructorMarker reflection.",
         "Hostile tests enumerate every declared constructor and method, including synthetic constructors, Kotlin internal mangled methods and default bridges, and actively invoke every accessible raw-value path; tests must never filter isSynthetic.",
         "JwtAccessTokenService exposes no public, protected, package-visible, internal or synthetic token-issuance method that accepts String, UUID or another raw identity; token issuance is JVM-private and identity-owned or consumes an opaque non-forgeable identity capability.",
+        "SessionMembershipResolver is pinned to the exact trusted authentication authority and rejects a principal created by any other JwtAccessTokenService instance, even when that service uses its own valid signature and ACTIVE resolver for the same member id.",
         "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
         "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
         "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
@@ -9986,12 +10011,12 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "retry rejects candidate 30653e5 public JVM raw-subject token issuer and requires method-level javap plus hostile reflection gates",
+      "dispatcher_decision_reason": "retry rejects candidate 618dfd0 cross-authority forgery and requires membership to pin the canonical authentication service instance",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
@@ -10013,11 +10038,13 @@
         "Use current origin/develop as the implementation baseline; the report branch is evidence only.",
         "Treat rejected WIP 407d563 as negative evidence only. Its Kotlin private constructors compile to public synthetic JVM constructors and its tests incorrectly filter isSynthetic; do not cherry-pick or repeat that design.",
         "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md. Treat 30653e5 as negative and salvage evidence only; do not cherry-pick its JwtAccessTokenService raw-subject issuer.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md. Treat 618dfd0 as salvage and negative evidence only; preserve its private issuer fix while replacing its self-owned principal trust path.",
         "Prefer public authority interfaces implemented by private top-level implementation classes or another JVM shape whose declared constructor surface cannot be invoked with raw values or DefaultConstructorMarker. Verify compiled bytecode with javap and hostile reflection.",
         "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be a JVM-private identity-owned operation or consume an opaque identity capability that raw String or UUID values cannot forge.",
         "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
         "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
         "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
+        "Construct two authentication services with different keys in a hostile test. Pin membership resolution to the canonical service and prove a principal from the other service cannot bind the same player's membership.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
       ],
@@ -10030,6 +10057,10 @@
         "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
+          "purpose": "mandatory cross-authority principal-forgery rejection and trusted-auth pinning contract"
+        },
         {
           "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md",
           "purpose": "mandatory raw-subject token issuer rejection and method-level retry gates"
@@ -10149,6 +10180,7 @@
         "Reject any principal or participant capability constructible from String, UUID or public value objects.",
         "Reject any test that filters synthetic constructors, and reject every public synthetic constructor accepting raw identity values directly or through DefaultConstructorMarker.",
         "Reject every public, protected, package-visible, internal, mangled or synthetic method that accepts a raw identity and returns a token or authority; inspect methods as well as constructors.",
+        "Reject a principal produced by a non-canonical JwtAccessTokenService, including a service with an attacker key and ACTIVE resolver for a real member id.",
         "Reject token or subject values in logs, exceptions, toString or reports.",
         "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
       ],
@@ -10165,9 +10197,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
       "started_at": "2026-07-25T23:43:43Z",
       "lock_expires_at": "2026-07-26T07:43:43Z",
-      "retry_count": 2,
-      "last_rejected_candidate": "30653e5a5eba6d81193435cab77769f0faa984c9",
-      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md",
+      "retry_count": 3,
+      "last_rejected_candidate": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
+      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
@@ -10178,9 +10210,14 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
           "commit": "30653e5a5eba6d81193435cab77769f0faa984c9",
           "reason": "rejected and preserved: internal issue(String) compiled to public JVM token-minting methods and hostile tests inspected constructors only"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
+          "commit": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
+          "reason": "rejected and preserved: membership trusted the principal owner instead of a pinned canonical authentication service, allowing cross-authority forgery"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "candidate 618dfd0 rejected and preserved; requeued with canonical-auth pinning and cross-authority hostile test"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -10786,6 +10823,234 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true
+    },
+    {
+      "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+      "title": "Implement fail-closed capability preservation integration gate",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "automation-guard",
+      "phase": "Integration Protection",
+      "module_id": "automation.capability-preservation",
+      "depends_on": [],
+      "blocked_by": [],
+      "resolved_dependencies": [],
+      "summary": "Implement the script already required by the Integrator role and catalog so candidate integration can prove existing capabilities were preserved instead of relying on manual claims.",
+      "allowed_paths": [
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py",
+        "scripts/agent_control/test_integrator_guard_regressions.py",
+        "docs/automation/SCRIPTS_CATALOG.md",
+        "docs/reports/workers/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "AiStudio/Task_manager/**",
+        "**/*.key",
+        "**/*.pem",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "scripts/agent_control/capability_preservation_check.py implements the documented --base-ref, --head-ref, --all-changed and --json CLI without mutating either ref or the caller worktree.",
+        "The check compares the complete changed-ref surface and conservatively detects removed or silently replaced functions, classes, CLI flags, schema fields, task statuses, public documentation headings and executable entrypoints, including symbols moved between changed files.",
+        "The JSON result is deterministic and includes resolved base/head SHAs, changed paths, preserved moves, potential removals, status and exit decision; missing refs, parse failures and incomplete comparison fail closed.",
+        "An unchanged or capability-preserving move returns success, while an unapproved potential removal returns a non-zero review-required decision.",
+        "Tests create isolated temporary Git repositories and cover unchanged refs, symbol moves, real removals, renames, raw file deletion, CLI flag loss, JSON field loss, public heading loss, invalid refs and paths containing spaces.",
+        "The implementation reuses compatible behavior-token logic where safe but does not weaken detection to make current candidates pass.",
+        "No repository files outside allowed_paths and no user worktrees, stashes, branches or refs are mutated."
+      ],
+      "checks": [
+        "python scripts/agent_control/test_capability_preservation_check.py",
+        "python scripts/agent_control/test_integrator_guard_regressions.py",
+        "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "Integrator role and scripts catalog require an active preservation gate, but the referenced implementation is absent from the current repository snapshot.",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "recommended_agent": "auto-worker-5.5",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "context_docs": [
+        ".agent/roles/integrator.md",
+        "docs/automation/SCRIPTS_CATALOG.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "manual_integration_reality_gap",
+          "source_file": ".agent/roles/integrator.md",
+          "source_item_id": "capability-preservation-check-missing",
+          "captured_at": "2026-07-26T11:02:46Z"
+        }
+      ],
+      "worker_instructions": [
+        "Read .agent/roles/integrator.md and the capability_preservation_check catalog entry before editing.",
+        "Inspect integrator_direct_merge.py behavior_tokens and detect_behavior_regression as reusable evidence, but do not assume their current token coverage satisfies the broader documented preservation rule.",
+        "Build the CLI as a read-only ref comparison. Do not checkout, merge, reset, stash, clean, update refs or write into the compared worktrees.",
+        "Use temporary repositories inside tests and delete only test-owned temporary directories.",
+        "Treat missing or ambiguous comparison evidence as review_required or error; do not report preserved merely because no token was extracted.",
+        "Keep output free of file contents, credentials and secrets; report repository-relative paths and symbol identifiers only.",
+        "Modify only allowed_paths and run every script_action before emitting integration_requested.",
+        "Write the worker report and include exact resolved SHAs, test counts and known conservative limitations."
+      ],
+      "traceability": {
+        "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+        "canonical_task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+        "canonical_target_id": "script:scripts/agent_control/capability_preservation_check.py",
+        "source_lane": "manual-integrator",
+        "source_file": ".agent/roles/integrator.md",
+        "provenance": {
+          "source": "current repository reality gap",
+          "created_at": "2026-07-26T11:02:46Z"
+        },
+        "derived_from": "Integrator Preservation Rule"
+      },
+      "doc_refs": [
+        {
+          "path": ".agent/roles/integrator.md",
+          "purpose": "authoritative preservation rule and required command contract"
+        },
+        {
+          "path": "docs/automation/SCRIPTS_CATALOG.md",
+          "purpose": "declared active script identity and ownership"
+        }
+      ],
+      "code_refs": [
+        "scripts/agent_control/integrator_direct_merge.py",
+        "scripts/agent_control/test_integrator_guard_regressions.py",
+        "scripts/agent_control/workspace_preservation_plan.py"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "scripts/agent_control/integrator_direct_merge.py",
+          "scripts/agent_control/test_integrator_guard_regressions.py",
+          "scripts/agent_control/workspace_preservation_plan.py"
+        ],
+        "doc_refs": [
+          {
+            "path": ".agent/roles/integrator.md",
+            "purpose": "required behavior"
+          },
+          {
+            "path": "docs/automation/SCRIPTS_CATALOG.md",
+            "purpose": "cataloged script contract"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+            "purpose": "worker packet"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Compare against current origin/develop and preserve existing integration behavior; conservative review-required findings are preferable to silent capability loss."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "scripts/agent_control/capability_preservation_check.py",
+          "scripts/agent_control/test_capability_preservation_check.py",
+          "scripts/agent_control/test_integrator_guard_regressions.py",
+          "docs/automation/SCRIPTS_CATALOG.md",
+          "docs/reports/workers/**"
+        ],
+        "forbidden_paths": [
+          ".git/**",
+          ".env*",
+          "local.properties",
+          "AiStudio/Task_manager/**",
+          "**/*.key",
+          "**/*.pem",
+          "**/*.jks",
+          "**/*.keystore"
+        ],
+        "context_docs": [
+          ".agent/roles/integrator.md",
+          "docs/automation/SCRIPTS_CATALOG.md"
+        ],
+        "source_file": ".agent/roles/integrator.md",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "python scripts/agent_control/test_capability_preservation_check.py",
+          "python scripts/agent_control/test_integrator_guard_regressions.py",
+          "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "python scripts/agent_control/test_capability_preservation_check.py",
+          "required": true,
+          "purpose": "isolated preservation CLI regression suite",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/agent_control/test_integrator_guard_regressions.py",
+          "required": true,
+          "purpose": "existing integration guard compatibility",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+          "required": true,
+          "purpose": "real repository ref comparison smoke",
+          "on_failure": "record the exact review-required findings; only implementation/runtime errors are worker blockers"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "patch hygiene",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "integrator_direct_merge.py already performs a narrow behavior token regression check for changed candidate files.",
+        "workspace preservation planning and existing integration reports remain valid evidence sources and must not be removed or bypassed."
+      ],
+      "preserve_contract": [
+        "Do not weaken or delete existing integration guard behavior.",
+        "Do not mutate compared refs, branches, worktrees, stashes or user files.",
+        "Do not convert uncertain extraction into a preservation success."
+      ],
+      "regression_guards": [
+        "A moved symbol across changed files remains preserved.",
+        "A symbol or public contract removed from every changed destination is review_required.",
+        "Invalid refs and incomplete scans fail closed.",
+        "The check produces identical ordered JSON for identical refs."
+      ],
+      "integration_notes": [
+        "Integrator must independently run the new command against the exact candidate SHA before accepting it.",
+        "Potential removals remain a human/integrator review gate; the script does not authorize deletion or merge.",
+        "Do not mark this task done until the script exists at the cataloged path and all isolated repository fixtures pass."
+      ],
+      "requires_strong_review": true,
+      "direct_merge_authorized": false,
+      "created_at": "2026-07-26T11:02:46Z",
+      "status_reason": "Current Integrator rules require this fail-closed gate, but the cataloged implementation file is missing."
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",

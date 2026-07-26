@@ -669,7 +669,7 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
@@ -721,13 +721,16 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
       "at": "2026-07-25T23:43:43Z",
       "expires_at": "2026-07-26T07:43:43Z",
-      "notes": "central runner claim"
+      "notes": "central runner claim",
+      "released_at": "2026-07-26T00:10:43Z",
+      "released_by": "Codex Manual Integrator cross-authority audit",
+      "release_reason": "candidate 618dfd0 allowed a principal from an attacker-owned JwtAccessTokenService to self-validate membership"
     }
   ]
 }
