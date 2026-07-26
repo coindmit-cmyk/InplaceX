@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "integration_requested",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5274,7 +5274,8 @@
         "The instrumentation and release jobs do not use continue-on-error and their failure makes the workflow fail.",
         "A repository-owned CI contract check verifies the blocking jobs, emulator provisioning, release assembly and artifact signing evidence so the workflow cannot silently regress to labels or no-device execution.",
         "Artifact version and signing status are explicitly reported.",
-        "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label."
+        "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label.",
+        "Mutation tests prove that echo, comments, labels or no-op replacements for emulator start, boot wait, connectedDebugAndroidTest, release assembly and APK signing verification are rejected by the CI contract guard."
       ],
       "checks": [
         "bash gradlew verifyProject",
@@ -5284,13 +5285,13 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "review",
-      "worker_ready": false,
+      "lock": "free",
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Integrator",
+      "dispatcher_decision_reason": "retry rejects candidate db7123e because substring-only CI validation accepts echo/no-op emulator and instrumentation labels",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
@@ -5327,6 +5328,9 @@
         "Update the instrumentation job to provision a deterministic API-compatible emulator, wait for it to become ready and then run connectedDebugAndroidTest. Remove continue-on-error from instrumentation and release jobs.",
         "Add scripts/ci/validate_ci_contract.py as a repository-owned regression guard for blocking job semantics, emulator provisioning and derived artifact signing evidence, and run it before reporting success.",
         "Derive APK signing state with apksigner or an equivalent Android signing verifier. Do not trust a --signing-status argument or static workflow label.",
+        "Read docs/reports/integration/S17_INTEGRATOR_REVIEW_DB7123E_20260726.md and treat db7123e as preserved negative/salvage evidence only.",
+        "Validate executable workflow actions structurally; an echo, comment, label or unrelated string containing a required command must not satisfy the contract.",
+        "Add negative mutation fixtures for emulator start, bounded boot wait, connectedDebugAndroidTest, release assembly and apksigner verification.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5354,6 +5358,10 @@
         "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_DB7123E_20260726.md",
+          "purpose": "mandatory rejection evidence and semantic CI-contract mutation requirements"
+        },
         {
           "path": "docs/testing.md",
           "purpose": "required context"
@@ -5505,6 +5513,7 @@
         "Compare changed code against current develop before finalizing.",
         "Reject a CI workflow that invokes connectedDebugAndroidTest without provisioning and booting an emulator in the same job.",
         "Reject continue-on-error on instrumentation or release jobs and reject caller-supplied signing-status labels.",
+        "Reject echo/comment/label substitutions for emulator start, boot wait, instrumentation, release assembly or APK signing verification.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
@@ -5515,9 +5524,10 @@
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "started_at": "2026-07-26T11:37:16Z",
-      "retry_count": 2,
-      "last_rejected_candidate": "56dba7020bfc2a37a2b73f269f328a69146c2e59",
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "retry_count": 3,
+      "last_rejected_candidate": "db7123e77e9146e8d3032b051f945d318b8f724e",
+      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_DB7123E_20260726.md",
+      "status_reason": "candidate db7123e rejected and preserved; requeued with semantic CI mutation guards",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5527,6 +5537,11 @@
           "machine_id": "aistudio-manual",
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
           "lock_expires_at": "2026-07-26T19:12:23Z"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T113716Z",
+          "commit": "db7123e77e9146e8d3032b051f945d318b8f724e",
+          "reason": "rejected and preserved: substring-only CI contract accepted echo/no-op emulator start and connectedDebugAndroidTest labels"
         }
       ],
       "claim_released_at": "2026-07-26T11:36:38Z",
@@ -10007,7 +10022,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "integration_requested",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10055,6 +10070,7 @@
         "Hostile tests enumerate every declared constructor and method, including synthetic constructors, Kotlin internal mangled methods and default bridges, and actively invoke every accessible raw-value path; tests must never filter isSynthetic.",
         "JwtAccessTokenService exposes no public, protected, package-visible, internal or synthetic token-issuance method that accepts String, UUID or another raw identity; token issuance is JVM-private and identity-owned or consumes an opaque non-forgeable identity capability.",
         "SessionMembershipResolver is pinned to the exact trusted authentication authority and rejects a principal created by any other JwtAccessTokenService instance, even when that service uses its own valid signature and ACTIVE resolver for the same member id.",
+        "The membership repository, resolver and participant-capability issuer are owned by a non-exported canonical session authorization authority; arbitrary JVM callers cannot supply a membership port or construct a resolver accepted by downstream authorization.",
         "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
         "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
         "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
@@ -10064,13 +10080,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "review",
-      "worker_ready": false,
+      "lock": "free",
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "retry rejects candidate 618dfd0 cross-authority forgery and requires membership to pin the canonical authentication service instance",
-      "next_owner": "Integrator",
+      "dispatcher_decision_reason": "retry rejects candidate d2ef53c because caller-owned SessionMembershipPort and resolver can mint a capability for an attacker-selected participant",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -10092,12 +10108,14 @@
         "Treat rejected WIP 407d563 as negative evidence only. Its Kotlin private constructors compile to public synthetic JVM constructors and its tests incorrectly filter isSynthetic; do not cherry-pick or repeat that design.",
         "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md. Treat 30653e5 as negative and salvage evidence only; do not cherry-pick its JwtAccessTokenService raw-subject issuer.",
         "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md. Treat 618dfd0 as salvage and negative evidence only; preserve its private issuer fix while replacing its self-owned principal trust path.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_D2EF53C_20260726.md. Treat d2ef53c as salvage and negative evidence only; close its caller-owned membership-port and resolver boundary.",
         "Prefer public authority interfaces implemented by private top-level implementation classes or another JVM shape whose declared constructor surface cannot be invoked with raw values or DefaultConstructorMarker. Verify compiled bytecode with javap and hostile reflection.",
         "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be a JVM-private identity-owned operation or consume an opaque identity capability that raw String or UUID values cannot forge.",
         "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
         "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
         "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
         "Construct two authentication services with different keys in a hostile test. Pin membership resolution to the canonical service and prove a principal from the other service cannot bind the same player's membership.",
+        "Construct a hostile caller-owned membership port using the real canonical authentication authority and a genuine principal but an attacker-selected participant id; the canonical session authorization boundary must reject it.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
       ],
@@ -10110,6 +10128,10 @@
         "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_D2EF53C_20260726.md",
+          "purpose": "mandatory caller-owned membership authority rejection and canonical session-authorization ownership contract"
+        },
         {
           "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
           "purpose": "mandatory cross-authority principal-forgery rejection and trusted-auth pinning contract"
@@ -10234,6 +10256,7 @@
         "Reject any test that filters synthetic constructors, and reject every public synthetic constructor accepting raw identity values directly or through DefaultConstructorMarker.",
         "Reject every public, protected, package-visible, internal, mangled or synthetic method that accepts a raw identity and returns a token or authority; inspect methods as well as constructors.",
         "Reject a principal produced by a non-canonical JwtAccessTokenService, including a service with an attacker key and ACTIVE resolver for a real member id.",
+        "Reject any design where arbitrary JVM code can supply SessionMembershipPort or construct a resolver whose capability is accepted by downstream authorization.",
         "Reject token or subject values in logs, exceptions, toString or reports.",
         "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
       ],
@@ -10250,9 +10273,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
       "started_at": "2026-07-26T11:12:28Z",
       "lock_expires_at": "2026-07-26T19:12:28Z",
-      "retry_count": 3,
-      "last_rejected_candidate": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
-      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
+      "retry_count": 4,
+      "last_rejected_candidate": "d2ef53c6a670f41717549db82b90a23f8584bc5e",
+      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_D2EF53C_20260726.md",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
@@ -10268,9 +10291,14 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
           "commit": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
           "reason": "rejected and preserved: membership trusted the principal owner instead of a pinned canonical authentication service, allowing cross-authority forgery"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
+          "commit": "d2ef53c6a670f41717549db82b90a23f8584bc5e",
+          "reason": "rejected and preserved: caller-owned membership port and public resolver minted a capability for an attacker-selected participant"
         }
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "status_reason": "candidate d2ef53c rejected and preserved; requeued with canonical session-authorization ownership and caller-owned-port hostile test",
       "worker_result_commit": "d2ef53c6a670f41717549db82b90a23f8584bc5e",
       "worker_result_synced_at": "2026-07-26T11:35:22Z",
       "worker_changed_paths": [
@@ -10921,7 +10949,7 @@
     {
       "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "title": "Implement fail-closed capability preservation integration gate",
-      "status": "integration_requested",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "automation-guard",
@@ -10954,6 +10982,7 @@
         "The JSON result is deterministic and includes resolved base/head SHAs, changed paths, preserved moves, potential removals, status and exit decision; missing refs, parse failures and incomplete comparison fail closed.",
         "An unchanged or capability-preserving move returns success, while an unapproved potential removal returns a non-zero review-required decision.",
         "Tests create isolated temporary Git repositories and cover unchanged refs, symbol moves, real removals, renames, raw file deletion, CLI flag loss, JSON field loss, public heading loss, invalid refs and paths containing spaces.",
+        "Deleted-file attribution is computed independently for every base path and remains correct with multiple changed entries in every ordering; no loop state can leak between paths.",
         "The implementation reuses compatible behavior-token logic where safe but does not weaken detection to make current candidates pass.",
         "No repository files outside allowed_paths and no user worktrees, stashes, branches or refs are mutated."
       ],
@@ -10963,13 +10992,13 @@
         "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
         "git diff --check"
       ],
-      "lock": "review",
-      "worker_ready": false,
+      "lock": "free",
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "Integrator role and scripts catalog require an active preservation gate, but the referenced implementation is absent from the current repository snapshot.",
-      "next_owner": "Integrator",
+      "dispatcher_decision_reason": "retry rejects candidate 98c3d12 because deleted-file classification leaks new_path from a prior loop and depends on changed-path ordering",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -10996,6 +11025,9 @@
         "Build the CLI as a read-only ref comparison. Do not checkout, merge, reset, stash, clean, update refs or write into the compared worktrees.",
         "Use temporary repositories inside tests and delete only test-owned temporary directories.",
         "Treat missing or ambiguous comparison evidence as review_required or error; do not report preserved merely because no token was extracted.",
+        "Read docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_REVIEW_98C3D12_20260726.md and treat 98c3d12 as preserved negative/salvage evidence only.",
+        "Compute base-to-head path presence inside the per-base-path iteration; never reuse new_path or another classification variable from a previous loop.",
+        "Add multi-entry permutation fixtures combining delete, modify, rename and move operations, and require identical deterministic JSON plus correct deleted-path attribution.",
         "Keep output free of file contents, credentials and secrets; report repository-relative paths and symbol identifiers only.",
         "Modify only allowed_paths and run every script_action before emitting integration_requested.",
         "Write the worker report and include exact resolved SHAs, test counts and known conservative limitations."
@@ -11013,6 +11045,10 @@
         "derived_from": "Integrator Preservation Rule"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_REVIEW_98C3D12_20260726.md",
+          "purpose": "mandatory deleted-path state-leak rejection and multi-entry permutation regression contract"
+        },
         {
           "path": ".agent/roles/integrator.md",
           "purpose": "authoritative preservation rule and required command contract"
@@ -11133,6 +11169,7 @@
       "regression_guards": [
         "A moved symbol across changed files remains preserved.",
         "A symbol or public contract removed from every changed destination is review_required.",
+        "Multiple changed entries and every path-order permutation produce the same deleted-path attribution without leaked loop state.",
         "Invalid refs and incomplete scans fail closed.",
         "The check produces identical ordered JSON for identical refs."
       ],
@@ -11144,7 +11181,7 @@
       "requires_strong_review": true,
       "direct_merge_authorized": false,
       "created_at": "2026-07-26T11:02:46Z",
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "status_reason": "candidate 98c3d12 rejected and preserved; requeued with per-path deletion state and multi-entry permutation fixtures",
       "worker_id": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
@@ -11183,7 +11220,17 @@
       "commits": [
         "98c3d1292ea733082b72051d965ad48f2169f524"
       ],
-      "integration_status": "pending"
+      "integration_status": "pending",
+      "retry_count": 1,
+      "last_rejected_candidate": "98c3d1292ea733082b72051d965ad48f2169f524",
+      "integration_review": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_REVIEW_98C3D12_20260726.md",
+      "abandoned_claims": [
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
+          "commit": "98c3d1292ea733082b72051d965ad48f2169f524",
+          "reason": "rejected and preserved: deleted-file classification leaked new_path from a prior loop and depended on changed-path ordering"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",

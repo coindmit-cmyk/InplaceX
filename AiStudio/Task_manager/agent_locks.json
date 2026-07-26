@@ -747,36 +747,45 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
       "at": "2026-07-26T11:12:28Z",
       "expires_at": "2026-07-26T19:12:28Z",
       "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-26T11:35:22Z"
+      "review_at": "2026-07-26T11:35:22Z",
+      "released_at": "2026-07-26T11:55:59Z",
+      "released_by": "Codex strict session authorization review",
+      "release_reason": "candidate d2ef53c allowed a caller-owned membership port and public resolver to mint a capability for an attacker-selected participant"
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
       "at": "2026-07-26T11:12:34Z",
       "expires_at": "2026-07-26T19:12:34Z",
       "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-26T11:35:22Z"
+      "review_at": "2026-07-26T11:35:22Z",
+      "released_at": "2026-07-26T11:55:59Z",
+      "released_by": "Codex strict capability preservation review",
+      "release_reason": "candidate 98c3d12 leaked new_path across loops so deleted-file classification depended on changed-path ordering"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T113716Z",
       "at": "2026-07-26T11:37:16Z",
       "expires_at": "2026-07-26T19:37:16Z",
       "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-26T11:52:24Z"
+      "review_at": "2026-07-26T11:52:24Z",
+      "released_at": "2026-07-26T11:55:59Z",
+      "released_by": "Codex strict CI contract review",
+      "release_reason": "candidate db7123e substring-only validator accepted echo/no-op emulator and connectedDebugAndroidTest labels"
     }
   ]
 }
