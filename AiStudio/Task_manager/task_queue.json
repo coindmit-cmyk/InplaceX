@@ -5270,13 +5270,18 @@
       "acceptance_criteria": [
         "Current lint errors are fixed without blanket suppression.",
         "Unit, lint, UI smoke and release assemble become blocking CI checks.",
+        "The GitHub instrumentation job provisions and boots an API-compatible Android emulator, waits for boot completion and runs connectedDebugAndroidTest against that device; a runner with no connected device is a CI configuration failure, not an acceptable non-blocking result.",
+        "The instrumentation and release jobs do not use continue-on-error and their failure makes the workflow fail.",
+        "A repository-owned CI contract check verifies the blocking jobs, emulator provisioning, release assembly and artifact signing evidence so the workflow cannot silently regress to labels or no-device execution.",
         "Artifact version and signing status are explicitly reported.",
         "Signing status is derived from the produced APK with Android signing tools and is never accepted as a caller-supplied label."
       ],
       "checks": [
         "bash gradlew verifyProject",
         "bash gradlew lint",
+        "bash gradlew :app:assembleDebugAndroidTest",
         "bash gradlew assembleRelease",
+        "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
       "lock": "free",
@@ -5318,6 +5323,9 @@
         "Before any Gradle command set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "The AiStudio JDK and Android SDK are installed at those exact paths; do not report them missing based on PATH-only probes.",
         "Run verifyProject, lint and assembleRelease yourself in that environment; do not leave mandatory checks to the Integrator.",
+        "Treat GitHub Actions run 30180875285 as negative evidence: connectedDebugAndroidTest failed with DeviceException No connected devices because the workflow installed the SDK but never provisioned or booted an emulator.",
+        "Update the instrumentation job to provision a deterministic API-compatible emulator, wait for it to become ready and then run connectedDebugAndroidTest. Remove continue-on-error from instrumentation and release jobs.",
+        "Add scripts/ci/validate_ci_contract.py as a repository-owned regression guard for blocking job semantics, emulator provisioning and derived artifact signing evidence, and run it before reporting success.",
         "Derive APK signing state with apksigner or an equivalent Android signing verifier. Do not trust a --signing-status argument or static workflow label.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
@@ -5434,7 +5442,9 @@
         "required_checks": [
           "bash gradlew verifyProject",
           "bash gradlew lint",
+          "bash gradlew :app:assembleDebugAndroidTest",
           "bash gradlew assembleRelease",
+          "python scripts/ci/validate_ci_contract.py",
           "git diff --check"
         ],
         "worker_report_required": true,
@@ -5458,9 +5468,21 @@
           "on_failure": "stop and return needs_worker_fix with command output"
         },
         {
+          "command": "bash gradlew :app:assembleDebugAndroidTest",
+          "required": true,
+          "purpose": "prove the instrumentation APK compiles before GitHub emulator execution",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
           "command": "bash gradlew assembleRelease",
           "required": true,
           "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/ci/validate_ci_contract.py",
+          "required": true,
+          "purpose": "prove blocking CI semantics, emulator provisioning and derived signing evidence",
           "on_failure": "stop and return needs_worker_fix with command output"
         },
         {
@@ -5481,6 +5503,8 @@
       ],
       "regression_guards": [
         "Compare changed code against current develop before finalizing.",
+        "Reject a CI workflow that invokes connectedDebugAndroidTest without provisioning and booting an emulator in the same job.",
+        "Reject continue-on-error on instrumentation or release jobs and reject caller-supplied signing-status labels.",
         "Document any intentional behavior removal in the worker report and integration_notes."
       ],
       "integration_notes": [
