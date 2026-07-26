@@ -1,68 +1,17 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:33:14Z",
+  "created_at": "2026-07-26T20:38:10Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
-  "candidate_count": 5,
+  "candidate_count": 4,
   "counts": {
-    "cleanup_candidate": 1,
     "needs_clean_rebuild": 4
   },
   "next_owner_counts": {
-    "cleanup": 1,
     "auto-dispatcher": 4
   },
   "items": [
-    {
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "classification": "cleanup_candidate",
-      "next_owner": "cleanup",
-      "reason": "no product payload after filtering coordination/noisy paths",
-      "task_ids": [
-        "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK"
-      ],
-      "known_task_ids": [
-        "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK"
-      ],
-      "canonical_target_id": "task:CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "risk_class": "low",
-      "changed_paths": [],
-      "ahead_changed_paths_sample": [
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
-        "scripts/agent_control/capability_preservation_check.py",
-        "scripts/agent_control/test_capability_preservation_check.py"
-      ],
-      "current_base_changed_paths_sample": [
-        "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
-        "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/automation_bridge_state.json",
-        "AiStudio/Task_manager/process_locks.json",
-        "AiStudio/Task_manager/repository_hygiene_state.json",
-        "AiStudio/Task_manager/task_queue.json"
-      ],
-      "product_path_count": 0,
-      "current_product_path_count": 6,
-      "coordination_or_noise_path_count": 4,
-      "noisy_path_count": 0,
-      "product_paths_sample": [],
-      "noisy_paths_sample": [],
-      "source_classification": "ready_candidate",
-      "identity_valid": true,
-      "identity_issues": [],
-      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
-      "ahead_of_base": 1,
-      "behind_base": 20,
-      "path_source": "merge_base_to_head"
-    },
     {
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
@@ -122,11 +71,11 @@
         "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
         "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/automation_bridge_state.json",
-        "AiStudio/Task_manager/process_locks.json",
-        "AiStudio/Task_manager/repository_hygiene_state.json"
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json"
       ],
       "product_path_count": 17,
       "current_product_path_count": 23,
@@ -152,7 +101,7 @@
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 16,
+      "behind_base": 20,
       "path_source": "merge_base_to_head"
     },
     {
@@ -228,12 +177,12 @@
         "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
         "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
-        "AiStudio/Task_manager/process_locks.json",
-        "AiStudio/Task_manager/repository_hygiene_state.json",
-        "AiStudio/Task_manager/task_queue.json"
+        "AiStudio/Task_manager/candidate_salvage_audit.json"
       ],
       "product_path_count": 36,
       "current_product_path_count": 42,
@@ -259,7 +208,7 @@
       "identity_issues": [],
       "head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
       "ahead_of_base": 4,
-      "behind_base": 37,
+      "behind_base": 41,
       "path_source": "merge_base_to_head"
     },
     {
@@ -298,12 +247,12 @@
         "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
         "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
-        "AiStudio/Task_manager/process_locks.json",
-        "AiStudio/Task_manager/repository_hygiene_state.json",
-        "AiStudio/Task_manager/task_queue.json"
+        "AiStudio/Task_manager/candidate_salvage_audit.json"
       ],
       "product_path_count": 5,
       "current_product_path_count": 11,
@@ -322,7 +271,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 2,
+      "behind_base": 6,
       "path_source": "merge_base_to_head"
     },
     {
@@ -371,12 +320,12 @@
         "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
         "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
-        "AiStudio/Task_manager/process_locks.json",
-        "AiStudio/Task_manager/repository_hygiene_state.json",
-        "AiStudio/Task_manager/task_queue.json"
+        "AiStudio/Task_manager/candidate_salvage_audit.json"
       ],
       "product_path_count": 10,
       "current_product_path_count": 16,
@@ -400,7 +349,7 @@
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 2,
+      "behind_base": 6,
       "path_source": "merge_base_to_head"
     }
   ]

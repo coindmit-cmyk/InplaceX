@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T20:33:14Z",
+  "created_at": "2026-07-26T20:38:09Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "readiness": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
-  "clean_rebuild_recovery_count": 0,
+  "clean_rebuild_recovery_count": 2,
   "counts": {
-    "identity_ok": 57,
+    "identity_ok": 56,
     "identity_conflict": 1
   },
   "items": [
@@ -956,7 +956,7 @@
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "canonical_target_id": "task:CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "status": "identity_ok",
-      "task_status": "integration_requested",
+      "task_status": "done",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "github_pr": 4,
       "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
@@ -997,7 +997,7 @@
       "task_id": "REPO-PR-3-6",
       "canonical_target_id": "task:REPO-PR-3-6",
       "status": "identity_ok",
-      "task_status": "agent_done",
+      "task_status": "integration_requested",
       "branch": "origin/codex/app-shell-ux-v4",
       "github_pr": 6,
       "worker_report": null,
@@ -1019,9 +1019,7 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/6"
         ]
       },
-      "issues": [
-        "completed/review task has no worker report evidence"
-      ],
+      "issues": [],
       "next_owner": null
     },
     {
@@ -1030,7 +1028,7 @@
       "task_id": "REPO-PR-5",
       "canonical_target_id": "task:REPO-PR-5",
       "status": "identity_ok",
-      "task_status": "agent_done",
+      "task_status": "integration_requested",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "github_pr": 5,
       "worker_report": null,
@@ -1055,9 +1053,7 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/5"
         ]
       },
-      "issues": [
-        "completed/review task has no worker report evidence"
-      ],
+      "issues": [],
       "next_owner": null
     },
     {
@@ -1066,7 +1062,7 @@
       "task_id": "REPO-PR-7",
       "canonical_target_id": "task:REPO-PR-7",
       "status": "identity_ok",
-      "task_status": "agent_done",
+      "task_status": "integration_requested",
       "branch": "origin/feature/online-foundation-v1",
       "github_pr": 7,
       "worker_report": null,
@@ -1088,9 +1084,7 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/7"
         ]
       },
-      "issues": [
-        "completed/review task has no worker report evidence"
-      ],
+      "issues": [],
       "next_owner": null
     },
     {
@@ -1129,33 +1123,6 @@
     {
       "kind": "integration_candidate",
       "index": 0,
-      "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "canonical_target_id": "task:CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "status": "identity_ok",
-      "classification": "ready_candidate",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "pr": 4,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md"
-      ],
-      "inferred_task_ids": [
-        "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK"
-      ],
-      "identity_recovered_from": null,
-      "source_task_id": null,
-      "repository_pr_identity": null,
-      "identity_superseded_task_ids": [],
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "integration_candidate",
-      "index": 1,
       "task_id": "REPO-PR-5",
       "canonical_target_id": "task:REPO-PR-5",
       "status": "identity_ok",
@@ -1191,17 +1158,19 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 2,
+      "index": 1,
       "task_id": "REPO-PR-3-6",
       "canonical_target_id": "task:REPO-PR-3-6",
       "status": "identity_ok",
       "classification": "ready_candidate",
       "branch": "origin/codex/app-shell-ux-v4",
       "pr": 6,
-      "report_paths": [],
+      "report_paths": [
+        "AiStudio/Task_manager/clean_rebuild_plan.json"
+      ],
       "inferred_task_ids": [],
-      "identity_recovered_from": null,
-      "source_task_id": null,
+      "identity_recovered_from": "clean_rebuild_plan",
+      "source_task_id": "REPO-PR-3-6",
       "repository_pr_identity": {
         "applicable": true,
         "valid": true,
@@ -1224,7 +1193,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 3,
+      "index": 2,
       "task_id": "REPO-PR-8",
       "canonical_target_id": "task:REPO-PR-8",
       "status": "identity_ok",
@@ -1257,17 +1226,19 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 4,
+      "index": 3,
       "task_id": "REPO-PR-7",
       "canonical_target_id": "task:REPO-PR-7",
       "status": "identity_ok",
       "classification": "ready_candidate",
       "branch": "origin/feature/online-foundation-v1",
       "pr": 7,
-      "report_paths": [],
+      "report_paths": [
+        "AiStudio/Task_manager/clean_rebuild_plan.json"
+      ],
       "inferred_task_ids": [],
-      "identity_recovered_from": null,
-      "source_task_id": null,
+      "identity_recovered_from": "clean_rebuild_plan",
+      "source_task_id": "REPO-PR-7",
       "repository_pr_identity": {
         "applicable": true,
         "valid": true,

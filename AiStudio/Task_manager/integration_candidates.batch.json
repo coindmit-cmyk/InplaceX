@@ -1,31 +1,7 @@
 {
-  "generated_at": "2026-07-26T20:33:14Z",
-  "batch_id": "BATCH-20260726-203314",
+  "generated_at": "2026-07-26T20:38:10Z",
+  "batch_id": "BATCH-20260726-203810",
   "candidates": [
-    {
-      "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "task_ids": [
-        "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK"
-      ],
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "pr": 4,
-      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
-      "canonical_target_id": "task:CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "identity_status": "identity_ok",
-      "identity_valid": true,
-      "identity_provisional": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
-      "source_artifact_id": null,
-      "source_artifact": true,
-      "risk_class": "low",
-      "changed_paths": [
-        "scripts/agent_control/capability_preservation_check.py",
-        "scripts/agent_control/test_capability_preservation_check.py"
-      ],
-      "classification": "ready_candidate",
-      "reason": "traceable candidate with no blocking product overlap",
-      "source": "integration_batch_builder"
-    },
     {
       "task_id": "REPO-PR-7",
       "task_ids": [
@@ -38,7 +14,7 @@
       "identity_status": "repository_pr_identity",
       "identity_valid": true,
       "identity_provisional": null,
-      "worker_report": null,
+      "worker_report": "AiStudio/Task_manager/clean_rebuild_plan.json",
       "source_artifact_id": null,
       "source_artifact": true,
       "risk_class": "medium",
@@ -111,7 +87,7 @@
       "identity_status": "repository_pr_identity",
       "identity_valid": true,
       "identity_provisional": null,
-      "worker_report": null,
+      "worker_report": "AiStudio/Task_manager/clean_rebuild_plan.json",
       "source_artifact_id": null,
       "source_artifact": true,
       "risk_class": "medium",

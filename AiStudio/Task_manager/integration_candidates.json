@@ -1,43 +1,11 @@
 {
-  "generated_at": "2026-07-26T20:33:09Z",
+  "generated_at": "2026-07-26T20:38:05Z",
   "candidates": [
-    {
-      "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "title": "Implement fail-closed capability preservation integration gate",
-      "status": "integration_requested",
-      "integration_status": "needs_integrator_review",
-      "worker_check_evidence": {
-        "ok": true,
-        "route": "agent_done",
-        "check_status": "passed",
-        "integration_status": "pending",
-        "reason": "immutable worker report explicitly records required checks as passed"
-      },
-      "integrator_must_run_checks": false,
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
-      "pr": 4,
-      "changed_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
-        "scripts/agent_control/capability_preservation_check.py",
-        "scripts/agent_control/test_capability_preservation_check.py"
-      ],
-      "migration_sensitive": false,
-      "migration_compatibility_policy": null,
-      "integrator_must_adapt_migrations": false,
-      "checks": [
-        "python scripts/agent_control/test_capability_preservation_check.py",
-        "python scripts/agent_control/test_integrator_guard_regressions.py",
-        "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
-        "git diff --check"
-      ]
-    },
     {
       "task_id": "REPO-PR-3-6",
       "title": "Integrate open PR stack #3-#6",
-      "status": "agent_done",
-      "integration_status": "needs_integrator_review",
+      "status": "integration_requested",
+      "integration_status": "pending_required_ci",
       "worker_check_evidence": null,
       "integrator_must_run_checks": false,
       "branch": "origin/codex/app-shell-ux-v4",
@@ -93,8 +61,8 @@
     {
       "task_id": "REPO-PR-5",
       "title": "Integrate open PR #5",
-      "status": "agent_done",
-      "integration_status": "needs_integrator_review",
+      "status": "integration_requested",
+      "integration_status": "pending_required_ci",
       "worker_check_evidence": null,
       "integrator_must_run_checks": false,
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
@@ -132,8 +100,8 @@
     {
       "task_id": "REPO-PR-7",
       "title": "Integrate open PR #7",
-      "status": "agent_done",
-      "integration_status": "needs_integrator_review",
+      "status": "integration_requested",
+      "integration_status": "pending_required_ci",
       "worker_check_evidence": null,
       "integrator_must_run_checks": false,
       "branch": "origin/feature/online-foundation-v1",
