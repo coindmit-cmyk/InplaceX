@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:12:58Z",
+  "updated_at": "2026-07-26T12:21:21Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -827,6 +827,16 @@
       "released_at": "2026-07-26T12:18:36Z",
       "released_by": "Codex strict session authorization review",
       "release_reason": "candidate 93228f8 exposes a dead resolver contract with no constructible canonical authority and an always-throwing capability consumer"
+    },
+    {
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
+      "at": "2026-07-26T12:21:21Z",
+      "expires_at": "2026-07-26T20:21:21Z",
+      "notes": "central runner claim"
     }
   ]
 }
