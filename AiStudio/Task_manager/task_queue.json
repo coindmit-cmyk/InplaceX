@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:12:23Z",
+  "updated_at": "2026-07-26T11:12:28Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -9954,7 +9954,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10011,7 +10011,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10193,10 +10193,10 @@
       "created_at": "2026-07-25T23:05:00Z",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
-      "started_at": "2026-07-25T23:43:43Z",
-      "lock_expires_at": "2026-07-26T07:43:43Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
+      "started_at": "2026-07-26T11:12:28Z",
+      "lock_expires_at": "2026-07-26T19:12:28Z",
       "retry_count": 3,
       "last_rejected_candidate": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
       "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
@@ -10217,7 +10217,7 @@
           "reason": "rejected and preserved: membership trusted the principal owner instead of a pinned canonical authentication service, allowing cross-authority forgery"
         }
       ],
-      "status_reason": "candidate 618dfd0 rejected and preserved; requeued with canonical-auth pinning and cross-authority hostile test"
+      "status_reason": "central runner claimed task before isolated worker launch"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",

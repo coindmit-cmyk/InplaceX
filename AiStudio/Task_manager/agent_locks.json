@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:12:23Z",
+  "updated_at": "2026-07-26T11:12:28Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -740,6 +740,16 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/lint-cleanup-and-blocking-quality-gate",
       "at": "2026-07-26T11:12:23Z",
       "expires_at": "2026-07-26T19:12:23Z",
+      "notes": "central runner claim"
+    },
+    {
+      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
+      "state": "in_progress",
+      "by": "auto-worker-5.5",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T111228Z",
+      "at": "2026-07-26T11:12:28Z",
+      "expires_at": "2026-07-26T19:12:28Z",
       "notes": "central runner claim"
     }
   ]
