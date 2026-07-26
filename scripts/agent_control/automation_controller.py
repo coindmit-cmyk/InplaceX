@@ -15,13 +15,15 @@ from typing import Any
 import project_registry
 import entry_preflight
 import automation_authority_guard
+import claim_next_task
+import fast_track_gate
 import model_resource_router
 import runner_readiness_report
 from action_report import build_report as build_action_report
 from action_report import validate_report as validate_action_report
 
 ROLE_MODES = {"all", "architect", "dispatcher", "workers", "integrator", "finalizer", "model_limit_retries", "release_locks", "pr_intake", "result_handoff", "full_intake"}
-MODES = {"plan", "full", "project", "role", "one-task", "worktrees", "status"}
+MODES = {"plan", "full", "project", "role", "one-task", "fast-track", "worktrees", "status"}
 
 
 def now_utc() -> str:
@@ -249,6 +251,16 @@ def one_task_command(project: dict[str, Any], runtime_root: Path, task_id: str, 
     return command
 
 
+def fast_track_decision(project: dict[str, Any], task_id: str, worker_id: str) -> dict[str, Any]:
+    project_root = project_command_root(project)
+    queue_path = project_root / str(project.get("task_queue_path") or "AiStudio/Task_manager/task_queue.json")
+    locks_path = project_root / str(project.get("agent_locks_path") or "AiStudio/Task_manager/agent_locks.json")
+    queue = load_json(queue_path) if queue_path.is_file() else {"tasks": []}
+    locks = load_json(locks_path) if locks_path.is_file() else {"locks": []}
+    profile = claim_next_task.load_profile(project_root, worker_id)
+    return fast_track_gate.evaluate(task_id, queue, locks, worker_id, profile)
+
+
 def worktree_provision_command(args: argparse.Namespace) -> list[str]:
     command = [
         sys.executable,
@@ -282,7 +294,7 @@ def worker_lock_preflight(project: dict[str, Any]) -> dict[str, Any]:
 
 
 def worker_execution_requested(args: argparse.Namespace) -> bool:
-    if args.mode in {"full", "project"}:
+    if args.mode in {"full", "project", "fast-track"}:
         return True
     return args.mode == "role" and args.role in {"all", "workers"}
 
@@ -442,12 +454,21 @@ def build_plan(args: argparse.Namespace, projects: list[dict[str, Any]]) -> list
         return []
     if args.mode == "worktrees":
         return [{"project_id": args.project_id, "mode": "worktrees", "command": worktree_provision_command(args)}]
-    if args.mode == "one-task":
+    if args.mode in {"one-task", "fast-track"}:
         if not args.project_id or len(projects) != 1:
-            raise ValueError("one-task mode requires exactly one --project-id")
+            raise ValueError(f"{args.mode} mode requires exactly one --project-id")
         if not args.task_id:
-            raise ValueError("one-task mode requires --task-id")
-        return [{"project_id": projects[0]["project_id"], "mode": "one-task", "command": one_task_command(projects[0], Path(args.runtime_root).expanduser(), args.task_id, args.worker_id, args.apply)}]
+            raise ValueError(f"{args.mode} mode requires --task-id")
+        decision = fast_track_decision(projects[0], args.task_id, args.worker_id) if args.mode == "fast-track" else None
+        command = (
+            one_task_command(projects[0], Path(args.runtime_root).expanduser(), args.task_id, args.worker_id, args.apply)
+            if decision is None or decision["eligible"]
+            else None
+        )
+        item = {"project_id": projects[0]["project_id"], "mode": args.mode, "command": command}
+        if decision is not None:
+            item["fast_track"] = decision
+        return [item]
     role_mode = args.role if args.mode == "role" else "all"
     if role_mode not in ROLE_MODES:
         raise ValueError(f"unsupported role mode: {role_mode}")
@@ -607,6 +628,38 @@ def main() -> int:
         write_controller_outputs(args, report_path, payload)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else payload["error"])
         return 2
+    fast_track_fallbacks = [
+        item["fast_track"]
+        for item in plan
+        if item.get("mode") == "fast-track"
+        and isinstance(item.get("fast_track"), dict)
+        and not item["fast_track"].get("eligible")
+    ]
+    if fast_track_fallbacks:
+        finished_at = now_utc()
+        payload = {
+            "schema_version": "1.0",
+            "run_id": run_id,
+            "state": "no_op",
+            "mode": args.mode,
+            "project_id": args.project_id,
+            "task_id": args.task_id,
+            "worker_id": args.worker_id,
+            "apply": bool(args.apply),
+            "started_at": started_at,
+            "updated_at": finished_at,
+            "finished_at": finished_at,
+            "project_count": len(projects),
+            "planned_commands": plan,
+            "results": [],
+            "route": "standard_lifecycle",
+            "fast_track": fast_track_fallbacks[0],
+            "returncode": 0,
+            "command_root_diagnostics": root_diagnostics,
+        }
+        write_controller_outputs(args, report_path, payload)
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else f"standard lifecycle: {run_id}")
+        return 0
     root_blockers = command_root_preflight_blockers(args, root_diagnostics)
     isolate_preflight_failures = fleet_execution_requested(args, projects)
     if root_blockers and not isolate_preflight_failures:
@@ -663,7 +716,7 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else payload["error"])
         return 2
     preflight = None
-    if args.apply and args.mode == "one-task":
+    if args.apply and args.mode in {"one-task", "fast-track"}:
         preflight = worker_lock_preflight(projects[0])
         if not preflight.get("ok"):
             finished_at = now_utc()
