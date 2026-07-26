@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T22:03:24Z",
+  "updated_at": "2026-07-26T22:08:11Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10640,7 +10640,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10666,7 +10666,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "forbidden_paths": [
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
@@ -10701,7 +10702,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10791,7 +10792,12 @@
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "README.md"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
@@ -10807,7 +10813,12 @@
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
           "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
           "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
         ],
         "doc_refs": [
           {
@@ -10841,7 +10852,10 @@
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
           "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md"
+          "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
+          "docs/reports/**",
+          "CHANGELOG.md",
+          "README.md"
         ],
         "forbidden_paths": [
           "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/persistence/**",
@@ -10976,17 +10990,17 @@
           "lock_expires_at": "2026-07-26T21:14:40Z"
         }
       ],
-      "worker_result_commit": "3900ee0933976d4d0d3fe7ac974784d7a7a2cc42",
-      "worker_result_synced_at": "2026-07-26T21:08:05Z",
+      "worker_result_commit": "8cc2beb6f2781293540af0fad28a8aba75116223",
+      "worker_result_synced_at": "2026-07-26T22:08:09Z",
       "worker_changed_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
       "changed_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
@@ -11000,7 +11014,9 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
       "worker_check_evidence": {
         "ok": false,
@@ -11009,7 +11025,7 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as blocked"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T210322Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
       "commits": [
         "d2ef53c6a670f41717549db82b90a23f8584bc5e",
         "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
@@ -11017,20 +11033,20 @@
         "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
         "f3151a5cb058aba3a435a219b0acb57c35573de1",
         "d79b9741fa03746cd3a0644496fa6cdef4ab63a1",
-        "3900ee0933976d4d0d3fe7ac974784d7a7a2cc42"
+        "3900ee0933976d4d0d3fe7ac974784d7a7a2cc42",
+        "8cc2beb6f2781293540af0fad28a8aba75116223"
       ],
       "integration_status": "needs_worker_fix",
-      "repaired_packet_metadata_at": "2026-07-26T21:07:57Z",
+      "repaired_packet_metadata_at": "2026-07-26T22:07:59Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "repaired_packet_at": "2026-07-26T21:08:07Z",
+      "repaired_packet_at": "2026-07-26T22:08:11Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "context_docs": [
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-26T21:08:07Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "packet_normalized_at": "2026-07-26T22:08:11Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -11593,7 +11609,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-26T21:08:07Z",
+      "dependency_state_checked_at": "2026-07-26T22:08:11Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11682,7 +11698,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-26T21:08:07Z",
+      "dependency_state_checked_at": "2026-07-26T22:08:11Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {

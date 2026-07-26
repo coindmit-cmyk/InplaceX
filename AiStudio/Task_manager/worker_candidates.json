@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-26T21:08:07Z",
+  "generated_at": "2026-07-26T22:08:11Z",
   "summary": {
     "candidate_count": 1,
     "scheduling_class_counts": {
@@ -29,7 +29,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
         "docs/reports/**",
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        "AiStudio/Task_manager/task_queue.json"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
