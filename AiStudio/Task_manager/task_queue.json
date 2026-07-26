@@ -9930,7 +9930,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -9977,6 +9977,7 @@
         "No public, internal or synthetic JVM constructor or factory can mint the principal, verified claims, verified membership or session-bound participant capability from String, UUID, player-id, participant-id or Kotlin DefaultConstructorMarker reflection.",
         "Hostile tests enumerate every declared constructor and method, including synthetic constructors, Kotlin internal mangled methods and default bridges, and actively invoke every accessible raw-value path; tests must never filter isSynthetic.",
         "JwtAccessTokenService exposes no public, protected, package-visible, internal or synthetic token-issuance method that accepts String, UUID or another raw identity; token issuance is JVM-private and identity-owned or consumes an opaque non-forgeable identity capability.",
+        "SessionMembershipResolver is pinned to the exact trusted authentication authority and rejects a principal created by any other JwtAccessTokenService instance, even when that service uses its own valid signature and ACTIVE resolver for the same member id.",
         "The membership resolver consumes only an authenticated principal plus route-bound session id, resolves current membership through a port and never accepts a caller-supplied participant id.",
         "Player A cannot bind player B, a different session or a non-member; all failures and toString output redact tokens and subjects.",
         "No route, JDBC, schema, duel transition or persistence implementation is introduced in this prerequisite."
@@ -9986,12 +9987,12 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
+      "lock": "free",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "retry rejects candidate 30653e5 public JVM raw-subject token issuer and requires method-level javap plus hostile reflection gates",
+      "dispatcher_decision_reason": "retry rejects candidate 618dfd0 cross-authority forgery and requires membership to pin the canonical authentication service instance",
       "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
@@ -10013,11 +10014,13 @@
         "Use current origin/develop as the implementation baseline; the report branch is evidence only.",
         "Treat rejected WIP 407d563 as negative evidence only. Its Kotlin private constructors compile to public synthetic JVM constructors and its tests incorrectly filter isSynthetic; do not cherry-pick or repeat that design.",
         "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md. Treat 30653e5 as negative and salvage evidence only; do not cherry-pick its JwtAccessTokenService raw-subject issuer.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md. Treat 618dfd0 as salvage and negative evidence only; preserve its private issuer fix while replacing its self-owned principal trust path.",
         "Prefer public authority interfaces implemented by private top-level implementation classes or another JVM shape whose declared constructor surface cannot be invoked with raw values or DefaultConstructorMarker. Verify compiled bytecode with javap and hostile reflection.",
         "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be a JVM-private identity-owned operation or consume an opaque identity capability that raw String or UUID values cannot forge.",
         "Keep authority constructors opaque and auth-owned. An interface or data class that arbitrary callers can implement or construct from raw ids does not satisfy this task.",
         "Verify duplicate or unknown claims, malformed or oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and active player state.",
         "The membership resolver must accept no participant id from a transport command and must return a session-bound capability that cannot be moved across sessions.",
+        "Construct two authentication services with different keys in a hostile test. Pin membership resolution to the canonical service and prove a principal from the other service cannot bind the same player's membership.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
       ],
@@ -10030,6 +10033,10 @@
         "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
+          "purpose": "mandatory cross-authority principal-forgery rejection and trusted-auth pinning contract"
+        },
         {
           "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md",
           "purpose": "mandatory raw-subject token issuer rejection and method-level retry gates"
@@ -10149,6 +10156,7 @@
         "Reject any principal or participant capability constructible from String, UUID or public value objects.",
         "Reject any test that filters synthetic constructors, and reject every public synthetic constructor accepting raw identity values directly or through DefaultConstructorMarker.",
         "Reject every public, protected, package-visible, internal, mangled or synthetic method that accepts a raw identity and returns a token or authority; inspect methods as well as constructors.",
+        "Reject a principal produced by a non-canonical JwtAccessTokenService, including a service with an attacker key and ACTIVE resolver for a real member id.",
         "Reject token or subject values in logs, exceptions, toString or reports.",
         "Hostile tests must cover forged, malformed, duplicated, oversized, expired, cross-session and inactive-player cases."
       ],
@@ -10165,9 +10173,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
       "started_at": "2026-07-25T23:43:43Z",
       "lock_expires_at": "2026-07-26T07:43:43Z",
-      "retry_count": 2,
-      "last_rejected_candidate": "30653e5a5eba6d81193435cab77769f0faa984c9",
-      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_30653E5_20260725.md",
+      "retry_count": 3,
+      "last_rejected_candidate": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
+      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_618DFD0_20260726.md",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
@@ -10178,9 +10186,14 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T232612Z",
           "commit": "30653e5a5eba6d81193435cab77769f0faa984c9",
           "reason": "rejected and preserved: internal issue(String) compiled to public JVM token-minting methods and hostile tests inspected constructors only"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260725T234343Z",
+          "commit": "618dfd088e314c86ba847a9cb6b0e8316abacc16",
+          "reason": "rejected and preserved: membership trusted the principal owner instead of a pinned canonical authentication service, allowing cross-authority forgery"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "candidate 618dfd0 rejected and preserved; requeued with canonical-auth pinning and cross-authority hostile test"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
