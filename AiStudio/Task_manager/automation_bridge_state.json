@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-26T21:12:53Z",
+  "updated_at": "2026-07-26T21:17:53Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
-  "apply": true,
+  "apply": false,
   "counters": {
     "pr_checked": 9,
     "pr_missing": 0,
@@ -14,7 +14,7 @@
     "repository_open_prs": 7,
     "repository_pr_groups": 5,
     "repository_tasks_staged": 0,
-    "repository_tasks_updated": 1,
+    "repository_tasks_updated": 0,
     "repository_tasks_superseded": 0,
     "repository_branch_candidates": 0,
     "repository_branch_refs": 0,
@@ -51,7 +51,7 @@
       "repository_open_prs": 7,
       "repository_pr_groups": 5,
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 1,
+      "repository_tasks_updated": 0,
       "repository_tasks_superseded": 0,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
@@ -80,12 +80,12 @@
       "queue_before_total": 54,
       "queue_after_total": 54,
       "queue_total_delta": 0,
-      "worker_ready_before": 2,
-      "worker_ready_after": 2,
+      "worker_ready_before": 1,
+      "worker_ready_after": 1,
       "worker_ready_delta": 0,
       "worker_queue_updates": 0
     },
-    "material_update_count": 1,
+    "material_update_count": 0,
     "noop_cycle": false
   },
   "convergence": {
@@ -114,7 +114,7 @@
     },
     "normalize": {
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 1,
+      "repository_tasks_updated": 0,
       "repository_tasks_superseded": 0,
       "task_docs_imported": 0,
       "task_docs_updated": 0,
@@ -150,7 +150,7 @@
       "task_docs_updated": 0,
       "code_prs_checked": 9,
       "task_queue_total": 54,
-      "worker_ready_total": 2,
+      "worker_ready_total": 1,
       "owner_gap_count": 0
     }
   },
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 116,
+    "pr_checked": 125,
     "pr_events_applied": 7,
     "pr_failed": 0,
     "pr_missing": 14,
@@ -181,8 +181,8 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 88,
-    "repository_pr_groups": 70,
+    "repository_open_prs": 95,
+    "repository_pr_groups": 75,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 10,
     "repository_tasks_superseded": 2,
@@ -193,7 +193,7 @@
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 116,
+      "pr_checked": 125,
       "pr_events_applied": 7,
       "pr_failed": 0,
       "pr_missing": 14,
@@ -201,8 +201,8 @@
       "project_state_intake_written": 7,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 88,
-      "repository_pr_groups": 70,
+      "repository_open_prs": 95,
+      "repository_pr_groups": 75,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
@@ -228,12 +228,12 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 784,
-      "queue_before_total": 779,
+      "queue_after_total": 838,
+      "queue_before_total": 833,
       "queue_total_delta": 5,
       "worker_queue_updates": 0,
-      "worker_ready_after": 27,
-      "worker_ready_before": 27,
+      "worker_ready_after": 28,
+      "worker_ready_before": 28,
       "worker_ready_delta": 0
     },
     "material_update_count": 44,
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 3850,
-      "documentation_manifest_errors": 30,
-      "documentation_orphans": 3850,
-      "pr_checked": 116,
+      "documentation_classified": 4107,
+      "documentation_manifest_errors": 32,
+      "documentation_orphans": 4107,
+      "pr_checked": 125,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 88,
-      "repository_pr_groups": 70,
+      "repository_open_prs": 95,
+      "repository_pr_groups": 75,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 210,
+      "documentation_debt_candidates": 224,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
       "repository_tasks_updated": 4,
-      "review_required": 3850,
+      "review_required": 4107,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 210,
-      "documentation_orphan_count": 3850,
+      "documentation_debt_candidates": 224,
+      "documentation_orphan_count": 4107,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,19 +291,19 @@
       "worker_ready_delta": 0
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 116,
+      "code_prs_checked": 125,
       "docs_to_queue": 10,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 784,
-      "worker_ready_total": 27
+      "task_queue_total": 838,
+      "worker_ready_total": 28
     },
-    "cycle_count": 15,
-    "blocking_count": 15,
+    "cycle_count": 16,
+    "blocking_count": 16,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 15
+      "needs_repair": 16
     },
     "ok": false
   },
@@ -394,15 +394,15 @@
   },
   "queue_before": {
     "total": 54,
-    "worker_ready": 2,
+    "worker_ready": 1,
     "owner_gap_count": 0,
-    "status_count": 8
+    "status_count": 7
   },
   "queue_after": {
     "total": 54,
-    "worker_ready": 2,
+    "worker_ready": 1,
     "owner_gap_count": 0,
-    "status_count": 8
+    "status_count": 7
   },
   "last_errors": [
     {

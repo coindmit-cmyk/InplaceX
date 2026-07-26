@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T21:13:06Z",
+  "updated_at": "2026-07-26T21:18:03Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -8927,10 +8927,10 @@
       "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_integrator_review",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
       "next_owner": "Integrator",
-      "next_role": "auto_workers",
+      "next_role": "integrator_review",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "source_item_id": "INPX-AND-421",
@@ -9154,7 +9154,7 @@
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "status_reason": "Integrator direct-merge pass exhausted candidates; Dispatcher routed this integration request to explicit Integrator review.",
       "worker_check_evidence": {
         "ok": true,
         "route": "agent_done",
@@ -9166,7 +9166,9 @@
       "commits": [
         "82e6dc228d73516e8132e4fc926f723033be1459"
       ],
-      "integration_status": "pending"
+      "integration_status": "needs_integrator_review",
+      "dispatcher_repaired_at": "2026-07-26T21:17:56Z",
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
