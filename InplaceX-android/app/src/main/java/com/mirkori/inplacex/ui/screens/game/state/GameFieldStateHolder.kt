@@ -192,7 +192,27 @@ class GameFieldStateHolder(
         val marks = nextType?.let {
             retained + GameFieldManualMark(event.position, event.symbol, it)
         } ?: retained
-        update(current.copy(manualMarks = marks, status = GameFieldStatus.Idle))
+        val input = when {
+            nextType == GameFieldManualMarkType.YES -> current.input.withSlot(
+                position = event.position,
+                symbol = event.symbol,
+            )
+
+            existing?.type == GameFieldManualMarkType.YES &&
+                current.input.slots[event.position] == event.symbol -> current.input.withSlot(
+                    position = event.position,
+                    symbol = null,
+                )
+
+            else -> current.input
+        }
+        update(
+            current.copy(
+                input = input,
+                manualMarks = marks,
+                status = GameFieldStatus.Idle,
+            ),
+        )
     }
 
     private fun checkPosition(
@@ -332,6 +352,9 @@ class GameFieldStateHolder(
         _state.value = rebuildEvidence(state)
         persist()
     }
+
+    private fun GameFieldInputState.withSlot(position: Int, symbol: Char?): GameFieldInputState =
+        copy(slots = slots.toMutableList().apply { this[position] = symbol })
 
     private fun persist() {
         savedStateStore.save(_state.value, engine.checkpoint())
