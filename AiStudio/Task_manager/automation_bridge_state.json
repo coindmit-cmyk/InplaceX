@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-26T22:58:02Z",
+  "updated_at": "2026-07-26T23:02:58Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
-  "apply": true,
+  "apply": false,
   "counters": {
     "pr_checked": 9,
     "pr_missing": 0,
@@ -14,7 +14,7 @@
     "repository_open_prs": 7,
     "repository_pr_groups": 5,
     "repository_tasks_staged": 0,
-    "repository_tasks_updated": 1,
+    "repository_tasks_updated": 0,
     "repository_tasks_superseded": 0,
     "repository_branch_candidates": 0,
     "repository_branch_refs": 0,
@@ -51,7 +51,7 @@
       "repository_open_prs": 7,
       "repository_pr_groups": 5,
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 1,
+      "repository_tasks_updated": 0,
       "repository_tasks_superseded": 0,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
@@ -85,7 +85,7 @@
       "worker_ready_delta": 0,
       "worker_queue_updates": 0
     },
-    "material_update_count": 1,
+    "material_update_count": 0,
     "noop_cycle": false
   },
   "convergence": {
@@ -114,7 +114,7 @@
     },
     "normalize": {
       "repository_tasks_staged": 0,
-      "repository_tasks_updated": 1,
+      "repository_tasks_updated": 0,
       "repository_tasks_superseded": 0,
       "task_docs_imported": 0,
       "task_docs_updated": 0,
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 323,
+    "pr_checked": 332,
     "pr_events_applied": 7,
     "pr_failed": 0,
     "pr_missing": 14,
@@ -181,8 +181,8 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 249,
-    "repository_pr_groups": 185,
+    "repository_open_prs": 256,
+    "repository_pr_groups": 190,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 10,
     "repository_tasks_superseded": 2,
@@ -193,7 +193,7 @@
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 323,
+      "pr_checked": 332,
       "pr_events_applied": 7,
       "pr_failed": 0,
       "pr_missing": 14,
@@ -201,8 +201,8 @@
       "project_state_intake_written": 7,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 249,
-      "repository_pr_groups": 185,
+      "repository_open_prs": 256,
+      "repository_pr_groups": 190,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
@@ -228,12 +228,12 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 2037,
-      "queue_before_total": 2032,
+      "queue_after_total": 2092,
+      "queue_before_total": 2087,
       "queue_total_delta": 5,
       "worker_queue_updates": 0,
-      "worker_ready_after": 61,
-      "worker_ready_before": 61,
+      "worker_ready_after": 63,
+      "worker_ready_before": 63,
       "worker_ready_delta": 0
     },
     "material_update_count": 48,
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 9761,
-      "documentation_manifest_errors": 76,
-      "documentation_orphans": 9761,
-      "pr_checked": 323,
+      "documentation_classified": 10018,
+      "documentation_manifest_errors": 78,
+      "documentation_orphans": 10018,
+      "pr_checked": 332,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 249,
-      "repository_pr_groups": 185,
+      "repository_open_prs": 256,
+      "repository_pr_groups": 190,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 532,
+      "documentation_debt_candidates": 546,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
       "repository_tasks_updated": 8,
-      "review_required": 9761,
+      "review_required": 10018,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 532,
-      "documentation_orphan_count": 9761,
+      "documentation_debt_candidates": 546,
+      "documentation_orphan_count": 10018,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,19 +291,19 @@
       "worker_ready_delta": 0
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 323,
+      "code_prs_checked": 332,
       "docs_to_queue": 10,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 2037,
-      "worker_ready_total": 61
+      "task_queue_total": 2092,
+      "worker_ready_total": 63
     },
-    "cycle_count": 38,
-    "blocking_count": 38,
+    "cycle_count": 39,
+    "blocking_count": 39,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 38
+      "needs_repair": 39
     },
     "ok": false
   },
