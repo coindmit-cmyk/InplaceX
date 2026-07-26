@@ -36,7 +36,10 @@ The visual reference is `assets/company-v3-concept.png`. It defines direction on
 ## Architecture
 
 - `CompanyRootScreen.kt`: route state, match lifecycle, dialogs, and callbacks.
-- `CompanySceneScreen.kt`: mission-console presentation and interaction.
+- `CompanySceneScreen.kt`: screen state, selection, and adaptive list orchestration.
+- `CompanyHeaderComponents.kt`: Company header and chapter progress.
+- `CompanyMissionTimeline.kt`: mission states and expanded mission facts.
+- `CompanyActionBar.kt`: sticky launch action and rules dialog.
 - `CampaignHistoryScreen.kt`: completed-level history.
 - `CompanyCampaignLogic.kt`: testable progression and rating helpers.
 
