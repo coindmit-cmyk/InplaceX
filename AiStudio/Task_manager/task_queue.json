@@ -12855,7 +12855,7 @@
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
       "status_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "repair_request": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/app-shell-ux-v4' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
+      "repair_request": "repository hygiene live required-CI lookup failed",
       "missing_packet_fields": [],
       "repair_owner": "Integrator",
       "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
@@ -12866,6 +12866,15 @@
           "from": "agent_done",
           "to": "integration_requested",
           "reason": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/app-shell-ux-v4' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
+          "event": "integration_routed",
+          "next_owner": "integrator"
+        },
+        {
+          "at": "2026-07-26T21:54:04Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "integration_requested",
+          "reason": "repository hygiene live required-CI lookup failed",
           "event": "integration_routed",
           "next_owner": "integrator"
         }
