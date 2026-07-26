@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:57:31Z",
+  "updated_at": "2026-07-26T12:59:58Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -856,14 +856,17 @@
     },
     {
       "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "at": "2026-07-26T12:22:29Z",
       "expires_at": "2026-07-26T20:22:29Z",
-      "notes": "worker result synced for integrator review",
-      "review_at": "2026-07-26T12:32:28Z"
+      "notes": "strict integrator review accepted candidate; draft PR #4 awaits explicit owner merge authorization",
+      "review_at": "2026-07-26T12:32:28Z",
+      "released_at": "2026-07-26T12:59:58Z",
+      "released_by": "Codex strict integrator",
+      "release_reason": "review complete; draft PR #4 is preserved pending explicit owner authorization"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
