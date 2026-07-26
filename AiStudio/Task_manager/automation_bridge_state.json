@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-26T20:42:48Z",
+  "updated_at": "2026-07-26T20:47:49Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
   "apply": false,
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 40,
+    "pr_checked": 48,
     "pr_events_applied": 6,
     "pr_failed": 0,
     "pr_missing": 12,
@@ -181,8 +181,8 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 30,
-    "repository_pr_groups": 25,
+    "repository_open_prs": 36,
+    "repository_pr_groups": 30,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 8,
     "repository_tasks_superseded": 0,
@@ -193,7 +193,7 @@
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 40,
+      "pr_checked": 48,
       "pr_events_applied": 6,
       "pr_failed": 0,
       "pr_missing": 12,
@@ -201,8 +201,8 @@
       "project_state_intake_written": 6,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 30,
-      "repository_pr_groups": 25,
+      "repository_open_prs": 36,
+      "repository_pr_groups": 30,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 8,
       "repository_tasks_superseded": 0,
@@ -228,12 +228,12 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 304,
-      "queue_before_total": 300,
+      "queue_after_total": 357,
+      "queue_before_total": 353,
       "queue_total_delta": 4,
       "worker_queue_updates": 0,
-      "worker_ready_after": 13,
-      "worker_ready_before": 13,
+      "worker_ready_after": 15,
+      "worker_ready_before": 15,
       "worker_ready_delta": 0
     },
     "material_update_count": 32,
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 1537,
-      "documentation_manifest_errors": 12,
-      "documentation_orphans": 1537,
-      "pr_checked": 40,
+      "documentation_classified": 1794,
+      "documentation_manifest_errors": 14,
+      "documentation_orphans": 1794,
+      "pr_checked": 48,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 30,
-      "repository_pr_groups": 25,
+      "repository_open_prs": 36,
+      "repository_pr_groups": 30,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 84,
+      "documentation_debt_candidates": 98,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 8,
       "repository_tasks_superseded": 0,
       "repository_tasks_updated": 0,
-      "review_required": 1537,
+      "review_required": 1794,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 84,
-      "documentation_orphan_count": 1537,
+      "documentation_debt_candidates": 98,
+      "documentation_orphan_count": 1794,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,19 +291,19 @@
       "worker_ready_delta": 0
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 40,
+      "code_prs_checked": 48,
       "docs_to_queue": 8,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 304,
-      "worker_ready_total": 13
+      "task_queue_total": 357,
+      "worker_ready_total": 15
     },
-    "cycle_count": 6,
-    "blocking_count": 6,
+    "cycle_count": 7,
+    "blocking_count": 7,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 6
+      "needs_repair": 7
     },
     "ok": false
   },
@@ -396,13 +396,13 @@
     "total": 53,
     "worker_ready": 2,
     "owner_gap_count": 0,
-    "status_count": 6
+    "status_count": 7
   },
   "queue_after": {
     "total": 53,
     "worker_ready": 2,
     "owner_gap_count": 0,
-    "status_count": 6
+    "status_count": 7
   },
   "last_errors": [
     {

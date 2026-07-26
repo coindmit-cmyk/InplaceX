@@ -1,71 +1,12 @@
 {
-  "generated_at": "2026-07-25T18:33:13Z",
+  "generated_at": "2026-07-26T20:47:58Z",
   "summary": {
-    "candidate_count": 3,
-    "scheduling_class_counts": {
-      "primary_delivery": 3
-    },
+    "candidate_count": 0,
+    "scheduling_class_counts": {},
     "integration_continuation_count": 0,
-    "primary_candidate_count": 3,
+    "primary_candidate_count": 0,
     "background_candidate_count": 0,
-    "primary_slot_reservation_required": true
+    "primary_slot_reservation_required": false
   },
-  "candidates": [
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
-      "title": "Thin GameField route and active UI switch",
-      "priority": "P0",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
-      "title": "SQLite migrations and repository tests",
-      "priority": "P1",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/data/local/**",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/local/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-      "title": "PostgreSQL persistence and migrations",
-      "priority": "P1",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-backend/**",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    }
-  ]
+  "candidates": []
 }

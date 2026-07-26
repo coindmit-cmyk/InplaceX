@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T20:43:23Z",
+  "updated_at": "2026-07-26T20:47:58Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -2194,8 +2194,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete behavior-preservation retry packet after reviewed S08 regression",
       "next_owner": "Worker",
@@ -2415,7 +2415,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T18:33:13Z",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "status_reason": "central runner claimed task before isolated worker launch",
       "integration_status": "finalized",
@@ -2553,7 +2553,8 @@
       "lock_expires_at": "2026-07-26T03:08:00Z",
       "finalization_status": "recorded",
       "finalized_by": "auto-integrator",
-      "finalized_at": "2026-07-25T19:43:05Z"
+      "finalized_at": "2026-07-25T19:43:05Z",
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
@@ -3111,7 +3112,10 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization-retry-20260725T234004Z",
       "started_at": "2026-07-25T23:40:04Z",
       "lock_expires_at": "2026-07-26T07:40:04Z",
-      "status_reason": "home and shell RU/EN localization independently verified and integrated into automation/develop"
+      "status_reason": "home and shell RU/EN localization independently verified and integrated into automation/develop",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
@@ -3966,7 +3970,10 @@
       "finalization_status": "recorded",
       "finalized_at": "2026-07-25T21:07:00Z",
       "finalized_by": "Codex integrator independent review",
-      "status_reason": "S12 localization and typed placeholder repair passed unit, build, lint-delta and emulator 12/12 gates"
+      "status_reason": "S12 localization and typed placeholder repair passed unit, build, lint-delta and emulator 12/12 gates",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
@@ -5225,7 +5232,10 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
       "started_at": "2026-07-25T21:10:00Z",
-      "lock_expires_at": "2026-07-26T05:10:00Z"
+      "lock_expires_at": "2026-07-26T05:10:00Z",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
@@ -6096,7 +6106,10 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/s18-expanded-debug-and-release-isolation-retry",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/s18-expanded-debug-and-release-isolation-retry",
       "started_at": "2026-07-25T21:48:14Z",
-      "lock_expires_at": "2026-07-26T05:48:14Z"
+      "lock_expires_at": "2026-07-26T05:48:14Z",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
@@ -6427,7 +6440,10 @@
       "integration_status": "finalized",
       "check_status": "passed",
       "reviewed_at": "2026-07-25T23:12:00Z",
-      "status_reason": "debug mocks remain available only in debug; release contains live empty provider config and fail-closed adapters with no stub classes"
+      "status_reason": "debug mocks remain available only in debug; release contains live empty provider config and fail-closed adapters with no stub classes",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
@@ -7355,8 +7371,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "worker_pool",
@@ -7550,7 +7566,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T18:51:18Z",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
@@ -7573,7 +7589,8 @@
           "event": "finalization_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
@@ -8796,7 +8813,8 @@
       "github_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "started_at": "2026-07-26T20:43:23Z",
       "lock_expires_at": "2026-07-27T04:43:23Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "repaired_packet_metadata_at": "2026-07-26T20:47:51Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -9026,8 +9044,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "next_owner": "worker_pool",
@@ -9245,7 +9263,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-25T18:51:18Z",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
@@ -9268,7 +9286,8 @@
           "event": "finalization_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
@@ -10345,7 +10364,10 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-strict-lexical-json-codec-retry",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-strict-lexical-json-codec-retry",
       "started_at": "2026-07-25T22:00:29Z",
-      "lock_expires_at": "2026-07-26T06:00:29Z"
+      "lock_expires_at": "2026-07-26T06:00:29Z",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
@@ -10704,9 +10726,8 @@
         "f3151a5cb058aba3a435a219b0acb57c35573de1"
       ],
       "integration_status": "rejected",
-      "repaired_packet_metadata_at": "2026-07-26T20:32:00Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "repaired_packet_metadata_at": "2026-07-26T20:47:51Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -10952,7 +10973,10 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
       "started_at": "2026-07-25T23:11:54Z",
       "lock_expires_at": "2026-07-26T07:11:54Z",
-      "status_reason": "mutable duel digits and zeroization independently verified and integrated into automation/develop"
+      "status_reason": "mutable duel digits and zeroization independently verified and integrated into automation/develop",
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
@@ -11266,7 +11290,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-26T20:32:00Z",
+      "dependency_state_checked_at": "2026-07-26T20:47:58Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11355,7 +11379,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-26T20:32:00Z",
+      "dependency_state_checked_at": "2026-07-26T20:47:58Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11407,8 +11431,8 @@
       ],
       "lock": "free",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
+      "packet_status": "done",
+      "normalization_status": "done",
       "dispatcher_decision": "done",
       "dispatcher_decision_reason": "retry rejects c69bb62 because a pre-existing same-name symbol in another changed file falsely proves a move and masks capability removal",
       "next_owner": "none",
@@ -11682,7 +11706,10 @@
           "event": "direct_merge_recorded",
           "next_owner": "none"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "terminal status=done",
+      "packet_normalized_at": "2026-07-26T20:47:57Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
