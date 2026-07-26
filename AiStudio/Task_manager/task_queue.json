@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:32:28Z",
+  "updated_at": "2026-07-26T12:40:45Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5287,7 +5287,7 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -5544,11 +5544,11 @@
       ],
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "started_at": "2026-07-26T12:21:21Z",
+      "started_at": "2026-07-26T12:40:45Z",
       "retry_count": 5,
       "last_rejected_candidate": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
       "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
-      "status_reason": "strict local JDK/SDK review rejected 6965ee9; exact compilation and complete mutation retry packet is worker-ready",
+      "status_reason": "central runner claimed task before isolated worker launch",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5578,9 +5578,9 @@
       "claim_released_at": "2026-07-26T11:36:38Z",
       "worker_id": "auto-worker-5.3",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
-      "lock_expires_at": "2026-07-26T20:21:21Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "lock_expires_at": "2026-07-26T20:40:45Z",
       "worker_result_commit": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
       "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
@@ -5640,7 +5640,19 @@
         "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
         "6965ee92e429a400fbe6683aece0bc61b90d85cc"
       ],
-      "integration_status": "rejected"
+      "integration_status": "rejected",
+      "lease": {
+        "lease_id": "lease-a6b44b400b1a",
+        "project_id": "inplacex",
+        "worker_id": "auto-worker-5.3",
+        "model": "gpt-5.3-codex-spark",
+        "created_at": "2026-07-26T12:40:38Z",
+        "heartbeat_at": "2026-07-26T12:40:38Z",
+        "expires_at": "2026-07-26T14:50:38Z"
+      },
+      "lease_id": "lease-a6b44b400b1a",
+      "execution_lease_id": "lease-a6b44b400b1a",
+      "lease_expires_at": "2026-07-26T14:50:38Z"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
