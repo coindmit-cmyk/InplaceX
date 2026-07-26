@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the Toy Room UI v5 foundation from the approved visual references:
+  warm desk scenery, glossy blue resource chrome, cream raised cards, vivid
+  orange/purple/green mode hierarchy, compact top actions, and an illuminated
+  blue bottom navigation shared by Home, Friends, Company, Shop, and Profile.
 - Hardened the authoritative duel engine with single-use mutable digit
   commands, ASCII-only validation, viewer-neutral attempt snapshots, and
   deterministic secret-buffer zeroization after finish, close, or failure.

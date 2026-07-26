@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,6 +34,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -44,8 +54,6 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
-import com.mirkori.inplacex.ui.screens.shared.SceneCard
-import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -475,39 +483,43 @@ private fun HomeSelectionScreen(
                 .padding(horizontal = 10.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
-            SceneCard(
-                accentColor = InplaceXColors.Surface.copy(alpha = 0.96f)
-            ) {
-                Text(
-                    text = AppConfigCatalog.branding.appName,
-                    modifier = Modifier.semantics { heading() },
-                    style = if (compact) {
-                        MaterialTheme.typography.headlineLarge
-                    } else {
-                        MaterialTheme.typography.displaySmall
-                    },
-                    color = InplaceXColors.Ink,
-                )
-                Text(
-                    text = strings.text("home.subtitle"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                SceneSplitStatRow(
-                    leftLabel = strings.text("mode.pve.title"),
-                    leftValue = strings.homeCodeLength(pveMode.config.codeLength),
-                    rightLabel = strings.text("mode.pvp.title"),
-                    rightValue = strings.text("home.duel.kind")
-                )
-            }
+            Text(
+                text = buildAnnotatedString {
+                    append("Inplace")
+                    withStyle(SpanStyle(color = InplaceXColors.ToyOrangeTop)) {
+                        append("X")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { heading() },
+                style = if (compact) {
+                    MaterialTheme.typography.displaySmall
+                } else {
+                    MaterialTheme.typography.displayMedium
+                },
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = strings.text("home.subtitle"),
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium,
+                color = InplaceXColors.ToyCream,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
 
             if (compact) {
                 SceneActionTile(
                     title = strings.text(pveMode.titleKey),
                     subtitle = strings.text(pveMode.subtitleKey),
                     modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Outlined.Timer,
+                    trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
+                        listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
                     ),
                     onClick = onOpenPve
                 )
@@ -515,8 +527,10 @@ private fun HomeSelectionScreen(
                     title = strings.text(pvpMode.titleKey),
                     subtitle = strings.text(pvpMode.subtitleKey),
                     modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Outlined.Groups,
+                    trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
+                        listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
                     ),
                     onClick = onOpenPvp
                 )
@@ -529,8 +543,10 @@ private fun HomeSelectionScreen(
                         title = strings.text(pveMode.titleKey),
                         subtitle = strings.text(pveMode.subtitleKey),
                         modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Outlined.Timer,
+                        trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
+                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
                         ),
                         onClick = onOpenPve,
                     )
@@ -538,8 +554,10 @@ private fun HomeSelectionScreen(
                         title = strings.text(pvpMode.titleKey),
                         subtitle = strings.text(pvpMode.subtitleKey),
                         modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Outlined.Groups,
+                        trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
+                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
                         ),
                         onClick = onOpenPvp,
                     )
@@ -550,8 +568,10 @@ private fun HomeSelectionScreen(
                 title = strings.text("home.company.continue"),
                 subtitle = strings.text("home.company.teaser"),
                 modifier = Modifier.fillMaxWidth(),
+                leadingIcon = Icons.Outlined.Map,
+                trailingIcon = Icons.Outlined.ChevronRight,
                 accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.Amber, Color(0xFFE78122))
+                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen)
                 ),
                 onClick = onOpenCompany,
             )

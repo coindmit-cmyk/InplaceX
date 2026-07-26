@@ -50,7 +50,7 @@ fun ProfileRootScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.97f)) {
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -165,7 +165,7 @@ fun ProfileRootScreen(
         )
         ProfileOverview(progressState)
 
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.95f)) {
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.membership"),
                 modifier = Modifier.semantics { heading() },
@@ -177,7 +177,7 @@ fun ProfileRootScreen(
             MembershipLine(strings.text("profile.membership.pro_plus"), progressState.proPlusSubscriptionActive, strings)
         }
 
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.95f)) {
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.match_stats"),
                 modifier = Modifier.semantics { heading() },
@@ -277,7 +277,7 @@ private fun MembershipLine(
         color = if (active) {
             InplaceXColors.Mint.copy(alpha = 0.12f)
         } else {
-            InplaceXColors.SurfaceMuted
+            InplaceXColors.ToyCreamShadow.copy(alpha = 0.48f)
         },
     ) {
         Row(

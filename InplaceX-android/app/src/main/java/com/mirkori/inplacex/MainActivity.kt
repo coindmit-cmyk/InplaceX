@@ -112,11 +112,11 @@ class MainActivity : ComponentActivity() {
                 val shouldShowVariantBottomSlot =
                     isInGame && variantToolsBottomSlotEnabled(variantToolsEnabled)
                 val appBackgroundStyle = if (useUnifiedSceneBackground) {
-                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.Dark)
+                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.WarmWorkshop)
                 } else {
                     ScreenBackgroundStyle.ImageAsset(
                         assetPath = "image/background/app_bg.png",
-                        fallbackColor = InplaceXColors.Midnight,
+                        fallbackColor = InplaceXColors.ToyWood,
                     )
                 }
                 val bottomMode = when {
@@ -139,13 +139,19 @@ class MainActivity : ComponentActivity() {
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
+                                energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
                                 showBack = isInGame || isVariantToolsOpen,
+                                showShop = !isInGame,
                                 onBackClick = {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
                                         else -> requestExitGame = true
                                     }
+                                },
+                                onShopClick = {
+                                    currentSection = AppSection.SHOP
+                                    isSettingsOpen = false
                                 },
                                 onSettingsClick = { isSettingsOpen = true },
                             )

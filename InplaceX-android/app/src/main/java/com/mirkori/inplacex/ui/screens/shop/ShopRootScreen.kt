@@ -71,7 +71,7 @@ fun ShopRootScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.97f)) {
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
             Text(
                 text = strings.text("shop.title"),
                 modifier = Modifier.semantics { heading() },
@@ -181,7 +181,7 @@ private fun BoostsCatalog(
     onBuyEnergy: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
-    SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.97f)) {
+    SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
         Text(
             text = strings.text("shop.rewarded.title"),
             modifier = Modifier.semantics { heading() },
@@ -308,7 +308,7 @@ private fun ShopItemCard(
     val affordable = coins >= item.price
     SceneCard(
         modifier = modifier,
-        accentColor = InplaceXColors.Surface.copy(alpha = 0.95f),
+        accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f),
     ) {
         Text(item.title, fontWeight = FontWeight.SemiBold)
         Row(
@@ -356,9 +356,9 @@ private fun ShopItemCard(
 
 @Composable
 private fun shellFilterChipColors() = FilterChipDefaults.filterChipColors(
-    containerColor = InplaceXColors.Surface.copy(alpha = 0.92f),
-    labelColor = InplaceXColors.Ink,
-    selectedContainerColor = InplaceXColors.Indigo.copy(alpha = 0.24f),
+    containerColor = InplaceXColors.ToyCream.copy(alpha = 0.94f),
+    labelColor = InplaceXColors.ToyBrown,
+    selectedContainerColor = InplaceXColors.ToyOrange,
     selectedLabelColor = InplaceXColors.White,
 )
 
@@ -413,7 +413,7 @@ private fun PremiumCard(
         accentColor = if (active) {
             InplaceXColors.Mint.copy(alpha = 0.12f)
         } else {
-            InplaceXColors.Surface.copy(alpha = 0.95f)
+            InplaceXColors.ToyCream.copy(alpha = 0.95f)
         },
     ) {
         Row(

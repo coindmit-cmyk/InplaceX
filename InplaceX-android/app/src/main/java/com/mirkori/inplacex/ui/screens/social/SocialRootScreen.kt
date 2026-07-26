@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,12 +23,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
+import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
@@ -38,17 +43,21 @@ fun SocialRootScreen() {
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.97f)) {
+        SceneCard(
+            accentColor = InplaceXColors.ToyBlue.copy(alpha = 0.96f),
+            contentColor = Color.White,
+        ) {
             Text(
                 text = strings.text("social.title"),
                 modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
             Text(
                 text = strings.text("social.hero.subtitle"),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.88f),
             )
             SocialAvailabilityBanner()
         }
@@ -57,15 +66,36 @@ fun SocialRootScreen() {
             val compact = maxWidth < 560.dp
             if (compact) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SocialEmptyCard(
+                    SceneActionTile(
                         title = strings.text("social.friends"),
-                        message = strings.text("social.friends.empty"),
-                        icon = { Icon(Icons.Outlined.Group, contentDescription = null) },
+                        subtitle = strings.text("social.friends.empty"),
+                        leadingIcon = Icons.Outlined.Group,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
+                        ),
+                        onClick = {},
                     )
-                    SocialEmptyCard(
+                    SceneActionTile(
                         title = strings.text("social.invites"),
-                        message = strings.text("social.invites.empty"),
-                        icon = { Icon(Icons.Outlined.MailOutline, contentDescription = null) },
+                        subtitle = strings.text("social.invites.empty"),
+                        leadingIcon = Icons.Outlined.MailOutline,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
+                        ),
+                        onClick = {},
+                    )
+                    SceneActionTile(
+                        title = strings.text("social.online.title"),
+                        subtitle = strings.text("social.online.description"),
+                        leadingIcon = Icons.Outlined.EmojiEvents,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        enabled = false,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
+                        ),
+                        onClick = {},
                     )
                 }
             } else {
@@ -73,23 +103,45 @@ fun SocialRootScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    SocialEmptyCard(
+                    SceneActionTile(
                         title = strings.text("social.friends"),
-                        message = strings.text("social.friends.empty"),
-                        icon = { Icon(Icons.Outlined.Group, contentDescription = null) },
+                        subtitle = strings.text("social.friends.empty"),
+                        leadingIcon = Icons.Outlined.Group,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
+                        ),
                         modifier = Modifier.weight(1f),
+                        onClick = {},
                     )
-                    SocialEmptyCard(
+                    SceneActionTile(
                         title = strings.text("social.invites"),
-                        message = strings.text("social.invites.empty"),
-                        icon = { Icon(Icons.Outlined.MailOutline, contentDescription = null) },
+                        subtitle = strings.text("social.invites.empty"),
+                        leadingIcon = Icons.Outlined.MailOutline,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
+                        ),
                         modifier = Modifier.weight(1f),
+                        onClick = {},
+                    )
+                    SceneActionTile(
+                        title = strings.text("social.online.title"),
+                        subtitle = strings.text("social.online.description"),
+                        leadingIcon = Icons.Outlined.EmojiEvents,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        enabled = false,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
+                        ),
+                        modifier = Modifier.weight(1f),
+                        onClick = {},
                     )
                 }
             }
         }
 
-        SceneCard(accentColor = InplaceXColors.Surface.copy(alpha = 0.94f)) {
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f)) {
             Text(
                 text = strings.text("social.online.title"),
                 modifier = Modifier.semantics { heading() },
@@ -155,7 +207,7 @@ private fun SocialEmptyCard(
 ) {
     SceneCard(
         modifier = modifier,
-        accentColor = InplaceXColors.Surface.copy(alpha = 0.94f),
+        accentColor = InplaceXColors.ToyCream.copy(alpha = 0.94f),
     ) {
         Surface(
             shape = RoundedCornerShape(14.dp),
