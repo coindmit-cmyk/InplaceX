@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5288,13 +5288,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "retry rejects e3f6e42 because mandatory lint fails and semantic CI guard still accepts conditional, echo, no-op, short-circuit and static-signing bypasses",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "retry rejects 6965ee9 because it does not compile with the required JDK, preserves only a partial mutation suite and removes executable mode from a shell entrypoint",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "source_item_id": "INPX-QA-303",
@@ -5340,6 +5340,10 @@
         "Fix every current UnusedBoxWithConstraintsScope lint failure, including CompanyRootScreen, HomeScreen and RaceSetupScreen, without blanket suppression.",
         "Reject expression-valued continue-on-error, arbitrary conditional skips, echo/comment/label/no-op substitutions and short-circuit control-flow bypasses; require the complete named hostile fixture set.",
         "Avoid yes-pipe avdmanager under pipefail, configure and verify KVM access or a maintained emulator action, and capture a real Actions run for the exact candidate SHA.",
+        "Read docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md completely and treat 6965ee9 as preserved salvage and negative evidence only.",
+        "Keep the Box import when replacing BoxWithConstraints, preserve executable mode on scripts/ci/artifact_identity.sh and compile before reporting lint or release success.",
+        "Make --self-test fail unless every mandatory hostile fixture category is present and proves the expected pass or rejection result; a partial fixture count is a blocker.",
+        "Use the exact packet-provided JDK and Android SDK environment before every Gradle command; do not report a PATH-only Java miss.",
         "Read doc_refs and input_refs before editing.",
         "Inspect code_refs and current target-branch code before changing behavior.",
         "Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.",
@@ -5367,6 +5371,10 @@
         "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
+          "purpose": "mandatory compilation, complete mutation fixture, executable mode and exact toolchain retry contract"
+        },
         {
           "path": "docs/reports/integration/S17_INTEGRATOR_REVIEW_E3F6E42_20260726.md",
           "purpose": "mandatory lint, semantic CI mutation, signing and real emulator proof rejection contract"
@@ -5537,10 +5545,10 @@
       "repaired_packet_at": "2026-07-25T22:25:48Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "started_at": "2026-07-26T12:21:21Z",
-      "retry_count": 4,
-      "last_rejected_candidate": "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
-      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_E3F6E42_20260726.md",
-      "status_reason": "worker explicitly reported required checks as partial",
+      "retry_count": 5,
+      "last_rejected_candidate": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
+      "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
+      "status_reason": "strict local JDK/SDK review rejected 6965ee9; exact compilation and complete mutation retry packet is worker-ready",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5560,6 +5568,11 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T115936Z",
           "commit": "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
           "reason": "rejected and preserved: mandatory lint failed and semantic CI guard accepted conditional, echo, no-op, short-circuit and static-signing bypasses"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
+          "commit": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
+          "reason": "rejected and preserved: missing Box import breaks compilation, mutation self-test proves only 2/8 fixtures and artifact_identity.sh lost executable mode"
         }
       ],
       "claim_released_at": "2026-07-26T11:36:38Z",
@@ -5627,8 +5640,7 @@
         "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
         "6965ee92e429a400fbe6683aece0bc61b90d85cc"
       ],
-      "integration_status": "needs_worker_fix",
-      "not_worker_ready_reason": "worker explicitly reported required checks as partial"
+      "integration_status": "rejected"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
@@ -10060,7 +10072,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10119,13 +10131,13 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "retry rejects 93228f8 because the private abstract resolver has no constructible canonical implementation and its only capability consumer always throws",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "the previous retry was blocked before code changes by missing runner lease propagation; commit 8637b19 fixes and tests the infrastructure defect",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
@@ -10158,6 +10170,7 @@
         "Provide one concrete non-exported canonical session authorization authority that production composition can construct; a private abstract resolver with no implementation or factory is not acceptable.",
         "Add a positive realizability test proving a genuine canonical principal and membership resolve to a session-bound capability and a trusted consumer can unwrap it.",
         "Retain hostile negative coverage for foreign authentication authorities, caller-owned membership data, wrong member/session, reflection, synthetic methods and raw String or UUID identities.",
+        "The prior 6088780 attempt is an infrastructure-only blocker report, not a product candidate. Current develop commit 8637b19 binds a validated execution lease into the task and lock; verify that binding before edits, then execute the full auth packet.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
         "Modify only allowed_paths, run every script_action, write the worker report and emit integration_requested only after all hostile tests pass."
       ],
@@ -10319,7 +10332,7 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
       "started_at": "2026-07-26T12:22:25Z",
       "lock_expires_at": "2026-07-26T20:22:25Z",
-      "retry_count": 5,
+      "retry_count": 6,
       "last_rejected_candidate": "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
       "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_93228F8_20260726.md",
       "abandoned_claims": [
@@ -10347,9 +10360,14 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T115946Z",
           "commit": "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
           "reason": "rejected and preserved: private abstract resolver and capability have no trusted constructible implementation, while participantIdFor always throws"
+        },
+        {
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
+          "commit": "6088780b9e69f7397d49a5357928d43f2ea134d6",
+          "reason": "preserved infrastructure-only blocker report: central runner omitted execution lease binding before commit 8637b19"
         }
       ],
-      "status_reason": "worker explicitly reported required checks as blocked",
+      "status_reason": "runner lease propagation is fixed and tested in develop; auth retry is worker-ready without treating 6088780 as a product rejection",
       "worker_result_commit": "6088780b9e69f7397d49a5357928d43f2ea134d6",
       "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
@@ -10379,8 +10397,7 @@
         "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
         "6088780b9e69f7397d49a5357928d43f2ea134d6"
       ],
-      "integration_status": "needs_worker_fix",
-      "not_worker_ready_reason": "worker explicitly reported required checks as blocked"
+      "integration_status": "rejected"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -11040,7 +11057,7 @@
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "retry rejects c69bb62 because a pre-existing same-name symbol in another changed file falsely proves a move and masks capability removal",
-      "next_owner": "Integrator",
+      "next_owner": "Owner",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -11230,7 +11247,7 @@
       "requires_strong_review": true,
       "direct_merge_authorized": false,
       "created_at": "2026-07-26T11:02:46Z",
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "status_reason": "strict independent review accepted 4e721c3; draft PR #4 awaits explicit owner merge authorization",
       "worker_id": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
@@ -11273,10 +11290,12 @@
         "c69bb62d043269aedf1f795c02bfe29698450948",
         "4e721c31fb9f438d09c4ac322084c3fcd2832977"
       ],
-      "integration_status": "pending",
+      "integration_status": "pending_owner_approval",
       "retry_count": 2,
       "last_rejected_candidate": "c69bb62d043269aedf1f795c02bfe29698450948",
-      "integration_review": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_REVIEW_C69BB62_20260726.md",
+      "integration_review": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_ACCEPTANCE_4E721C3_20260726.md",
+      "github_pr": 4,
+      "github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/4",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in",
