@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T11:37:16Z",
+  "updated_at": "2026-07-26T11:52:24Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5284,13 +5284,13 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
@@ -5517,7 +5517,7 @@
       "started_at": "2026-07-26T11:37:16Z",
       "retry_count": 2,
       "last_rejected_candidate": "56dba7020bfc2a37a2b73f269f328a69146c2e59",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "status_reason": "worker branch contains product changes; central sync derived integration request",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5534,7 +5534,48 @@
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T113716Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T113716Z",
-      "lock_expires_at": "2026-07-26T19:37:16Z"
+      "lock_expires_at": "2026-07-26T19:37:16Z",
+      "worker_result_commit": "db7123e77e9146e8d3032b051f945d318b8f724e",
+      "worker_result_synced_at": "2026-07-26T11:52:24Z",
+      "worker_changed_paths": [
+        ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "docs/automation/CI_FOUNDATION.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
+        "scripts/ci/artifact_identity.sh",
+        "scripts/ci/validate_ci_contract.py"
+      ],
+      "changed_paths": [
+        ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+        "docs/automation/CI_FOUNDATION.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
+        "scripts/ci/artifact_identity.sh",
+        "scripts/ci/validate_ci_contract.py"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md"
+      ],
+      "worker_check_evidence": {
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
+      },
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T113716Z",
+      "commits": [
+        "db7123e77e9146e8d3032b051f945d318b8f724e"
+      ],
+      "integration_status": "pending"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
