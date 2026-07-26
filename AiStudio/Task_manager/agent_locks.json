@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T20:43:23Z",
+  "updated_at": "2026-07-26T20:53:03Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -985,23 +985,27 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "in_progress",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T204317Z",
       "at": "2026-07-26T20:43:17Z",
       "expires_at": "2026-07-27T04:43:17Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced and returned from worker lane",
+      "released_at": "2026-07-26T20:53:03Z",
+      "released_by": "sync_worker_results.py",
+      "release_reason": "worker result synced and returned from worker lane"
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
-      "state": "in_progress",
+      "state": "review",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
       "at": "2026-07-26T20:43:23Z",
       "expires_at": "2026-07-27T04:43:23Z",
-      "notes": "central runner claim"
+      "notes": "worker result synced for integrator review",
+      "review_at": "2026-07-26T20:53:03Z"
     }
   ]
 }

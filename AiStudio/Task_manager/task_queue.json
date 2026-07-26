@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T20:47:58Z",
+  "updated_at": "2026-07-26T20:53:03Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -8547,7 +8547,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
       "title": "Android online transport foundation",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -8595,13 +8595,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
@@ -8814,7 +8814,42 @@
       "started_at": "2026-07-26T20:43:23Z",
       "lock_expires_at": "2026-07-27T04:43:23Z",
       "repaired_packet_metadata_at": "2026-07-26T20:47:51Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "worker_result_commit": "9f3a8870002f6ade055ec6690ac976d72f61235f",
+      "worker_result_synced_at": "2026-07-26T20:53:03Z",
+      "worker_changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineTransportClient.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/DeterministicOnlineTransportClientTest.kt",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
+      "imported_worker_reports": [
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
+      ],
+      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "worker_check_evidence": {
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
+      },
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
+      "commits": [
+        "9f3a8870002f6ade055ec6690ac976d72f61235f"
+      ],
+      "integration_status": "pending"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -10372,7 +10407,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10430,14 +10465,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "f3151a5 is preserved and rejected: hostile reflection forged an accepted token for a caller-selected existing subject and the candidate added forbidden persistence; strict auth-only retry remains worker-ready",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
@@ -10678,27 +10713,17 @@
           "lock_expires_at": "2026-07-26T21:14:40Z"
         }
       ],
-      "worker_result_commit": "f3151a5cb058aba3a435a219b0acb57c35573de1",
-      "worker_result_synced_at": "2026-07-26T13:26:33Z",
+      "worker_result_commit": "d79b9741fa03746cd3a0644496fa6cdef4ab63a1",
+      "worker_result_synced_at": "2026-07-26T20:53:03Z",
       "worker_changed_paths": [
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
       ],
       "changed_paths": [
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
@@ -10708,26 +10733,31 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md"
       ],
       "worker_check_evidence": {
-        "ok": true,
-        "route": "agent_done",
-        "check_status": "passed",
-        "integration_status": "pending",
-        "reason": "immutable worker report explicitly records required checks as passed"
+        "ok": false,
+        "route": "needs_worker_fix",
+        "check_status": "blocked",
+        "integration_status": "needs_worker_fix",
+        "reason": "worker explicitly reported required checks as blocked"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T204317Z",
       "commits": [
         "d2ef53c6a670f41717549db82b90a23f8584bc5e",
         "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
         "6088780b9e69f7397d49a5357928d43f2ea134d6",
         "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
-        "f3151a5cb058aba3a435a219b0acb57c35573de1"
+        "f3151a5cb058aba3a435a219b0acb57c35573de1",
+        "d79b9741fa03746cd3a0644496fa6cdef4ab63a1"
       ],
-      "integration_status": "rejected",
+      "integration_status": "needs_worker_fix",
       "repaired_packet_metadata_at": "2026-07-26T20:47:51Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "status_reason": "worker explicitly reported required checks as blocked",
+      "not_worker_ready_reason": "worker explicitly reported required checks as blocked"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
