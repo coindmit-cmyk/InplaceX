@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T13:26:33Z",
+  "updated_at": "2026-07-26T14:38:18Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -942,13 +942,13 @@
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
       "at": "2026-07-26T13:14:40Z",
       "expires_at": "2026-07-26T21:14:40Z",
-      "notes": "worker result synced for integrator review",
+      "notes": "f3151a5 preserved and rejected after hostile reflection forged a canonically accepted caller-selected token; forbidden persistence also present",
       "lease": {
         "lease_id": "lease-4975e0e454e7",
         "project_id": "inplacex",
@@ -961,7 +961,10 @@
       "lease_id": "lease-4975e0e454e7",
       "execution_lease_id": "lease-4975e0e454e7",
       "lease_expires_at": "2026-07-26T15:24:33Z",
-      "review_at": "2026-07-26T13:26:33Z"
+      "review_at": "2026-07-26T13:26:33Z",
+      "released_at": "2026-07-26T14:38:18Z",
+      "released_by": "codex_integrator_review",
+      "release_reason": "f3151a5 preserved and rejected after hostile reflection forged a canonically accepted caller-selected token; strict auth-only retry required"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T13:26:33Z",
+  "updated_at": "2026-07-26T14:38:18Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10116,7 +10116,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "status": "integration_requested",
+      "status": "planned",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10174,13 +10174,13 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "review",
-      "worker_ready": false,
+      "lock": "free",
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "69d80bb is split into auth-only salvage here; caller-owned session membership moves to S25B production composition",
-      "next_owner": "Integrator",
+      "dispatcher_decision_reason": "f3151a5 is preserved and rejected: hostile reflection forged an accepted token for a caller-selected existing subject and the candidate added forbidden persistence; strict auth-only retry remains worker-ready",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -10197,13 +10197,14 @@
         "created_at": "2026-07-25T23:05:00Z"
       },
       "worker_instructions": [
-        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md and both backend canonical documents before editing.",
+        "Read docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_F3151A5_20260726.md, docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md and both backend canonical documents before editing.",
         "Use current origin/develop as the implementation baseline. Treat 69d80bb as read-only partial salvage and do not copy its SessionMembershipResolver.",
-        "Salvage only the strict JWT verification, opaque principal registry and identity-grant idea from 69d80bb.",
+        "Salvage only strict JWT parsing, malformed UTF-8 rejection and redaction ideas. Do not copy f3151a5 identityGrants or its JDBC active-player lookup.",
         "Remove every reachable raw-subject token issuer surface. SignedAccessTokenIssuer.issue(byte[], ...) and reflection through GuestIdentityService.accessTokens are explicit hostile cases.",
         "Decode JWT segments with a strict UTF-8 decoder configured with CodingErrorAction.REPORT.",
         "Keep JwtAccessTokenService authentication-only at the JVM boundary. Token issuance must be JVM-private and identity-owned or consume an opaque registered grant that reflected/raw values cannot forge.",
-        "Enumerate and actively invoke constructors, methods, fields, synthetic/default bridges and private reachable issuer objects with reflection; never filter isSynthetic.",
+        "Enumerate and actively invoke constructors, methods, fields, mutable maps, synthetic/default bridges and private reachable issuer objects with reflection; never filter isSynthetic.",
+        "A hostile test must reflect private fields and reachable methods, register or mutate every reachable grant or issuer registry with a caller-selected existing subject, and prove that no resulting token is accepted by canonical authentication.",
         "Verify duplicate or unknown claims, malformed UTF-8, noncanonical Base64URL, oversized input, wrong or none algorithm, signature, issuer, audience, time claims, token id, canonical subject and inactive account.",
         "Do not add or modify session membership code in this task. Canonical membership ownership is now an explicit S25B responsibility.",
         "Before Gradle checks set process-only JAVA_HOME=/home/main/.local/jdk21, JAVA_TOOL_OPTIONS=-Dorg.gradle.java.installations.paths=/home/main/.local/jdk11, ANDROID_HOME=/home/main/.local/android-sdk and ANDROID_SDK_ROOT=/home/main/.local/android-sdk.",
@@ -10218,6 +10219,10 @@
         "derived_from": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION"
       },
       "doc_refs": [
+        {
+          "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_F3151A5_20260726.md",
+          "purpose": "mandatory reflected identity-grant forgery and forbidden-persistence rejection contract"
+        },
         {
           "path": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
           "purpose": "mandatory auth-only salvage, raw-byte issuer and strict UTF-8 retry contract"
@@ -10368,9 +10373,9 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
       "started_at": "2026-07-26T13:14:40Z",
       "lock_expires_at": "2026-07-26T21:14:40Z",
-      "retry_count": 7,
-      "last_rejected_candidate": "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
-      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
+      "retry_count": 8,
+      "last_rejected_candidate": "f3151a5cb058aba3a435a219b0acb57c35573de1",
+      "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_F3151A5_20260726.md",
       "abandoned_claims": [
         {
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/s25-prerequisite-a-verified-auth-principal-and-s",
@@ -10406,9 +10411,18 @@
           "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
           "commit": "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
           "reason": "rejected and preserved as partial salvage: caller-owned membership factory and reflected raw-byte token issuer remain; membership ownership moves to S25B"
+        },
+        {
+          "released_at": "2026-07-26T14:38:18Z",
+          "reason": "f3151a5 preserved and rejected: hostile reflection mutated private identityGrants for a caller-selected existing subject, reached private issueAccessToken and produced a JWT accepted by canonical authentication; candidate also added forbidden JDBC persistence",
+          "status": "integration_requested",
+          "worker_id": "auto-worker-5.5",
+          "machine_id": "aistudio-manual",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T131440Z",
+          "lock_expires_at": "2026-07-26T21:14:40Z"
         }
       ],
-      "status_reason": "worker branch contains product changes; central sync derived integration request",
+      "status_reason": "f3151a5 is preserved and strictly rejected; auth-only retry is worker-ready, but unrestricted reflection may require an explicit JVM module or composition boundary if the next design cannot close the same surface",
       "worker_result_commit": "f3151a5cb058aba3a435a219b0acb57c35573de1",
       "worker_result_synced_at": "2026-07-26T13:26:33Z",
       "worker_changed_paths": [
@@ -10456,19 +10470,7 @@
         "69d80bbbd496a9e7b371aa371cd144b4e5d878d0",
         "f3151a5cb058aba3a435a219b0acb57c35573de1"
       ],
-      "integration_status": "pending",
-      "lease": {
-        "lease_id": "lease-4975e0e454e7",
-        "project_id": "inplacex",
-        "worker_id": "auto-worker-5.5",
-        "model": "gpt-5.6-terra",
-        "created_at": "2026-07-26T13:14:33Z",
-        "heartbeat_at": "2026-07-26T13:14:33Z",
-        "expires_at": "2026-07-26T15:24:33Z"
-      },
-      "lease_id": "lease-4975e0e454e7",
-      "execution_lease_id": "lease-4975e0e454e7",
-      "lease_expires_at": "2026-07-26T15:24:33Z"
+      "integration_status": "rejected"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
