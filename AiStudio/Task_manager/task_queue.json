@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:22:29Z",
+  "updated_at": "2026-07-26T12:32:28Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -5230,7 +5230,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "title": "S17 AiStudio SDK-aware lint and blocking quality gate retry",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "M",
       "type": "design-handoff-intake",
@@ -5287,14 +5287,14 @@
         "python scripts/ci/validate_ci_contract.py",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "retry rejects e3f6e42 because mandatory lint fails and semantic CI guard still accepts conditional, echo, no-op, short-circuit and static-signing bypasses",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "source_item_id": "INPX-QA-303",
@@ -5540,7 +5540,7 @@
       "retry_count": 4,
       "last_rejected_candidate": "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
       "integration_review": "docs/reports/integration/S17_INTEGRATOR_REVIEW_E3F6E42_20260726.md",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "status_reason": "worker explicitly reported required checks as partial",
       "abandoned_claims": [
         {
           "released_at": "2026-07-26T11:36:38Z",
@@ -5568,36 +5568,51 @@
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
       "lock_expires_at": "2026-07-26T20:21:21Z",
-      "worker_result_commit": "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
-      "worker_result_synced_at": "2026-07-26T12:12:58Z",
+      "worker_result_commit": "6965ee92e429a400fbe6683aece0bc61b90d85cc",
+      "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
         ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
         "docs/automation/CI_FOUNDATION.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
         "scripts/ci/artifact_identity.sh",
-        "scripts/ci/contract_mutations/fail-if-false.yml",
-        "scripts/ci/contract_mutations/fail-missing-connected.yml",
-        "scripts/ci/contract_mutations/pass_contract.yml",
+        "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+        "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+        "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+        "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+        "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+        "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+        "scripts/ci/contract_mutations/pass_artifact.yml",
+        "scripts/ci/contract_mutations/pass_baseline.yml",
         "scripts/ci/validate_ci_contract.py"
       ],
       "changed_paths": [
         ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
         "docs/automation/CI_FOUNDATION.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
         "scripts/ci/artifact_identity.sh",
-        "scripts/ci/contract_mutations/fail-if-false.yml",
-        "scripts/ci/contract_mutations/fail-missing-connected.yml",
-        "scripts/ci/contract_mutations/pass_contract.yml",
+        "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+        "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+        "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+        "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+        "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+        "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+        "scripts/ci/contract_mutations/pass_artifact.yml",
+        "scripts/ci/contract_mutations/pass_baseline.yml",
         "scripts/ci/validate_ci_contract.py"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120539Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md"
       ],
       "worker_check_evidence": {
         "ok": false,
@@ -5606,12 +5621,14 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as partial"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T115936Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T122121Z",
       "commits": [
         "db7123e77e9146e8d3032b051f945d318b8f724e",
-        "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a"
+        "e3f6e4269fb2ca67c18501f9dc9d9ee84ad1a69a",
+        "6965ee92e429a400fbe6683aece0bc61b90d85cc"
       ],
-      "integration_status": "rejected"
+      "integration_status": "needs_worker_fix",
+      "not_worker_ready_reason": "worker explicitly reported required checks as partial"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
@@ -10043,7 +10060,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "in_progress",
+      "status": "needs_worker_fix",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10101,14 +10118,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "free",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision": "needs_worker_fix",
       "dispatcher_decision_reason": "retry rejects 93228f8 because the private abstract resolver has no constructible canonical implementation and its only capability consumer always throws",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
         "auto-worker-5.5"
@@ -10332,51 +10349,38 @@
           "reason": "rejected and preserved: private abstract resolver and capability have no trusted constructible implementation, while participantIdFor always throws"
         }
       ],
-      "status_reason": "central runner claimed task before isolated worker launch",
-      "worker_result_commit": "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
-      "worker_result_synced_at": "2026-07-26T12:12:58Z",
+      "status_reason": "worker explicitly reported required checks as blocked",
+      "worker_result_commit": "6088780b9e69f7397d49a5357928d43f2ea134d6",
+      "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121037Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121135Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md"
       ],
       "changed_paths": [
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolver.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/session/authorization/SessionMembershipResolverTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121037Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121135Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121135Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121037Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121135Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121135Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md"
       ],
       "worker_check_evidence": {
-        "ok": true,
-        "route": "agent_done",
-        "check_status": "passed",
-        "integration_status": "pending",
-        "reason": "immutable worker report explicitly records required checks as passed"
+        "ok": false,
+        "route": "needs_worker_fix",
+        "check_status": "blocked",
+        "integration_status": "needs_worker_fix",
+        "reason": "worker explicitly reported required checks as blocked"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T115946Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
       "commits": [
         "d2ef53c6a670f41717549db82b90a23f8584bc5e",
-        "93228f8b21e2de0d28e50d12e8870177b0e2e2c3"
+        "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
+        "6088780b9e69f7397d49a5357928d43f2ea134d6"
       ],
-      "integration_status": "rejected"
+      "integration_status": "needs_worker_fix",
+      "not_worker_ready_reason": "worker explicitly reported required checks as blocked"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
@@ -10986,7 +10990,7 @@
     {
       "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
       "title": "Implement fail-closed capability preservation integration gate",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P0",
       "complexity": "L",
       "type": "automation-guard",
@@ -11030,13 +11034,13 @@
         "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
         "git diff --check"
       ],
-      "lock": "locked",
-      "worker_ready": true,
+      "lock": "review",
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
       "dispatcher_decision_reason": "retry rejects c69bb62 because a pre-existing same-name symbol in another changed file falsely proves a move and masks capability removal",
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -11226,35 +11230,35 @@
       "requires_strong_review": true,
       "direct_merge_authorized": false,
       "created_at": "2026-07-26T11:02:46Z",
-      "status_reason": "central runner claimed task before isolated worker launch",
+      "status_reason": "worker branch contains product changes; central sync derived integration request",
       "worker_id": "auto-worker-5.5max",
       "machine_id": "aistudio-manual",
       "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "started_at": "2026-07-26T12:22:29Z",
       "lock_expires_at": "2026-07-26T20:22:29Z",
-      "worker_result_commit": "c69bb62d043269aedf1f795c02bfe29698450948",
-      "worker_result_synced_at": "2026-07-26T12:12:58Z",
+      "worker_result_commit": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
-        "docs/automation/SCRIPTS_CATALOG.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
         "scripts/agent_control/capability_preservation_check.py",
         "scripts/agent_control/test_capability_preservation_check.py"
       ],
       "changed_paths": [
-        "docs/automation/SCRIPTS_CATALOG.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
         "scripts/agent_control/capability_preservation_check.py",
         "scripts/agent_control/test_capability_preservation_check.py"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
       "imported_worker_reports": [
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md"
       ],
       "worker_check_evidence": {
         "ok": true,
@@ -11263,12 +11267,13 @@
         "integration_status": "pending",
         "reason": "immutable worker report explicitly records required checks as passed"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T115941Z",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "commits": [
         "98c3d1292ea733082b72051d965ad48f2169f524",
-        "c69bb62d043269aedf1f795c02bfe29698450948"
+        "c69bb62d043269aedf1f795c02bfe29698450948",
+        "4e721c31fb9f438d09c4ac322084c3fcd2832977"
       ],
-      "integration_status": "rejected",
+      "integration_status": "pending",
       "retry_count": 2,
       "last_rejected_candidate": "c69bb62d043269aedf1f795c02bfe29698450948",
       "integration_review": "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_REVIEW_C69BB62_20260726.md",
