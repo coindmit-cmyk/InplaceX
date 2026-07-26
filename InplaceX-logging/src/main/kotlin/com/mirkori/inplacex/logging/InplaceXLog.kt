@@ -52,6 +52,11 @@ class SensitiveKeyLogSanitizer(
             "key",
             "password",
             "private",
+            "guess",
+            "purchase",
+            "integrity",
+            "providerpayload",
+            "rawpayload",
             "secret",
             "token",
         )

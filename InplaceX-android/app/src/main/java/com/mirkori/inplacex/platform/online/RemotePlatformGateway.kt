@@ -45,6 +45,7 @@ data class RemoteRequestSpec(
     val headers: Map<String, String> = emptyMap(),
     val body: Map<String, Any?> = emptyMap(),
     val idempotencyKey: String? = null,
+    val requiresAuthentication: Boolean = false,
 )
 
 data class RemoteProgressPayload(
