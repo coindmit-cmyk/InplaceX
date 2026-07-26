@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-26T22:13:10Z",
+  "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+  "apply": true,
+  "decision": {
+    "run_class": "clean_rebuild_promotion",
+    "reason": "auto clean rebuild tasks can be promoted"
+  },
+  "commands": [
+    [
+      "/usr/bin/python3",
+      "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.342/scripts/agent_control/clean_rebuild_queue_bridge.py",
+      "--project-root",
+      "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "--max-items",
+      "10",
+      "--json",
+      "--apply"
+    ]
+  ],
+  "executions": [
+    {
+      "command": [
+        "/usr/bin/python3",
+        "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.342/scripts/agent_control/clean_rebuild_queue_bridge.py",
+        "--project-root",
+        "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+        "--max-items",
+        "10",
+        "--json",
+        "--apply"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"schema_version\": 1,\n  \"created_at\": \"2026-07-26T22:13:10Z\",\n  \"project_root\": \"/mnt/d/agent-runtime/managed-checkouts/inplacex\",\n  \"apply\": true,\n  \"source_plan\": \"/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/clean_rebuild_plan.json\",\n  \"queue\": \"/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json\",\n  \"base_ref\": \"origin/develop\",\n  \"created_count\": 1,\n  \"closed_count\": 0,\n  \"blocked_count\": 0,\n  \"skipped_count\": 0,\n  \"created\": [\n    {\n      \"id\": \"CRB-REPO-PR-7\",\n      \"title\": \"Clean rebuild REPO-PR-7 from worker result\",\n      \"status\": \"planned\",\n      \"priority\": \"P1\",\n      \"complexity\": \"M\",\n      \"type\": \"clean-rebuild\",\n      \"worker_ready\": true,\n      \"packet_status\": \"worker_ready\",\n      \"normalization_status\": \"worker_ready\",\n      \"dispatcher_decision\": \"worker_ready\",\n      \"dispatcher_decision_reason\": \"auto clean rebuild candidate promoted from clean_rebuild_plan\",\n      \"recommended_agent\": \"auto-worker-5.3\",\n      \"eligible_worker_profiles\": [\n        \"auto-worker-5.3\",\n        \"auto-worker-5.5\"\n      ],\n      \"allowed_paths\": [\n        \"CHANGELOG.md\",\n        \"InplaceX-android/app/build.gradle.kts\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n        \"InplaceX-docs/Backend/Online Contracts.md\",\n        \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n        \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n        \"gradle/libs.versions.toml\"\n      ],\n      \"forbidden_paths\": [\n        \".env\",\n        \".env.*\",\n        \"secrets\",\n        \"production config\"\n      ],\n      \"changed_paths\": [\n        \"InplaceX-android/app/build.gradle.kts\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n        \"InplaceX-docs/Backend/Online Contracts.md\",\n        \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n        \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n        \"gradle/libs.versions.toml\"\n      ],\n      \"checks\": [\n        \"git diff --check\",\n        \"run targeted tests or project checks touched by changed_paths\"\n      ],\n      \"acceptance_criteria\": [\n        \"Rebuild only the listed changed_paths from the source worker branch on current develop\",\n        \"Do not copy noisy nested worktree, upstream checkout, local runtime or unrelated files\",\n        \"Record source_branch, source_head_sha and changed_paths in the worker result\",\n        \"If the patch cannot be cleanly rebuilt, return the task with needs_worker_fix and a precise blocker\"\n      ],\n      \"context_docs\": [\n        \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n        \"docs/plans/allowed_paths_repair_plan.json\"\n      ],\n      \"source_file\": \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n      \"provenance\": {\n        \"source\": \"clean_rebuild_queue_bridge.py\",\n        \"source_task_id\": \"REPO-PR-7\",\n        \"source_branch\": \"origin/feature/online-foundation-v1\",\n        \"source_head_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n        \"rebuild_route\": \"auto_clean_rebuild_medium\",\n        \"allowed_paths_source\": \"task_packet\",\n        \"promoted_at\": \"2026-07-26T22:13:10Z\"\n      },\n      \"source_task_id\": \"REPO-PR-7\",\n      \"source_branch\": \"origin/feature/online-foundation-v1\",\n      \"source_head_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n      \"clean_rebuild_source_branch\": \"origin/feature/online-foundation-v1\",\n      \"clean_rebuild_source_head_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n      \"clean_rebuild_route\": \"auto_clean_rebuild_medium\",\n      \"lock\": {\n        \"state\": \"free\",\n        \"by\": null,\n        \"at\": null,\n        \"expires_at\": null\n      },\n      \"created_at\": \"2026-07-26T22:13:10Z\",\n      \"base_branch\": \"develop\",\n      \"packet_schema_version\": 2,\n      \"worker_instructions\": [\n        \"Read doc_refs and input_refs before editing.\",\n        \"Inspect code_refs and current target-branch code before changing behavior.\",\n        \"Preserve existing_behavior and preserve_contract unless the task explicitly authorizes a replacement.\",\n        \"Modify only allowed_paths and never touch forbidden_paths without explicit dispatcher repair.\",\n        \"Run every required script_action and capture evidence.\",\n        \"If a required check cannot run or fails, stop and return needs_worker_fix with the exact blocker.\",\n        \"Write/update the worker report and emit integration_requested only when output_contract is satisfied.\"\n      ],\n      \"traceability\": {\n        \"task_id\": \"CRB-REPO-PR-7\",\n        \"canonical_task_id\": \"CRB-REPO-PR-7\",\n        \"canonical_target_id\": null,\n        \"source_lane\": null,\n        \"source_file\": \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n        \"provenance\": {\n          \"source\": \"clean_rebuild_queue_bridge.py\",\n          \"source_task_id\": \"REPO-PR-7\",\n          \"source_branch\": \"origin/feature/online-foundation-v1\",\n          \"source_head_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n          \"rebuild_route\": \"auto_clean_rebuild_medium\",\n          \"allowed_paths_source\": \"task_packet\",\n          \"promoted_at\": \"2026-07-26T22:13:10Z\"\n        },\n        \"derived_from\": null,\n        \"repaired_at\": \"2026-07-26T22:13:10Z\",\n        \"repaired_by\": \"scripts/agent_control/dispatcher_packet_repair.py\"\n      },\n      \"doc_refs\": [\n        {\n          \"path\": \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n          \"purpose\": \"required context\"\n        },\n        {\n          \"path\": \"docs/plans/allowed_paths_repair_plan.json\",\n          \"purpose\": \"required context\"\n        }\n      ],\n      \"code_refs\": [\n        \"InplaceX-android/app/build.gradle.kts\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n        \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n        \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n        \"InplaceX-docs/Backend/Online Contracts.md\",\n        \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n        \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n        \"gradle/libs.versions.toml\",\n        \"CHANGELOG.md\"\n      ],\n      \"context_inventory\": {\n        \"base_ref\": \"origin/develop\",\n        \"code_refs\": [\n          \"InplaceX-android/app/build.gradle.kts\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n          \"InplaceX-docs/Backend/Online Contracts.md\",\n          \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n          \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n          \"gradle/libs.versions.toml\",\n          \"CHANGELOG.md\"\n        ],\n        \"doc_refs\": [\n          {\n            \"path\": \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n            \"purpose\": \"required context\"\n          },\n          {\n            \"path\": \"docs/plans/allowed_paths_repair_plan.json\",\n            \"purpose\": \"required context\"\n          }\n        ],\n        \"task_refs\": [\n          {\n            \"id\": \"CRB-REPO-PR-7\",\n            \"purpose\": \"task context\"\n          }\n        ],\n        \"task_queue_ref\": \"AiStudio/Task_manager/task_queue.json\",\n        \"review_policy\": \"Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker.\"\n      },\n      \"input_refs\": {\n        \"base_branch\": \"develop\",\n        \"base_ref\": \"origin/develop\",\n        \"allowed_paths\": [\n          \"CHANGELOG.md\",\n          \"InplaceX-android/app/build.gradle.kts\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n          \"InplaceX-docs/Backend/Online Contracts.md\",\n          \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n          \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n          \"gradle/libs.versions.toml\"\n        ],\n        \"forbidden_paths\": [\n          \".env\",\n          \".env.*\",\n          \"secrets\",\n          \"production config\"\n        ],\n        \"context_docs\": [\n          \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n          \"docs/plans/allowed_paths_repair_plan.json\"\n        ],\n        \"source_file\": \"AiStudio/Task_manager/clean_rebuild_plan.json\",\n        \"worker_source_branch\": null\n      },\n      \"output_contract\": {\n        \"changed_paths_must_match_allowed_paths\": true,\n        \"required_checks\": [\n          \"git diff --check\",\n          \"run targeted tests or project checks touched by changed_paths\"\n        ],\n        \"worker_report_required\": true,\n        \"worker_report_path\": \"docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_<timestamp>.md\",\n        \"event_required\": \"integration_requested\",\n        \"task_state_on_success\": \"agent_done\",\n        \"task_state_on_blocker\": \"needs_worker_fix\",\n        \"preserve_existing_behavior\": true\n      },\n      \"script_actions\": [\n        {\n          \"command\": \"git diff --check\",\n          \"required\": true,\n          \"purpose\": \"worker validation evidence\",\n          \"on_failure\": \"stop and return needs_worker_fix with command output\"\n        }\n      ],\n      \"existing_behavior\": [\n        \"Dispatcher must inspect current target-branch implementation for the touched code_refs before worker claim.\",\n        \"Worker must treat current develop behavior as the baseline to preserve, not as disposable scaffolding.\"\n      ],\n      \"preserve_contract\": [\n        \"Do not remove existing commands, callbacks, routes, handlers, public functions, config fields, diagnostics, links, or UI controls unless explicitly requested.\",\n        \"If current target code is more complete than the task draft, extend the current code instead of replacing it with a simpler implementation.\",\n        \"Minor target-branch drift is not a blocker by itself; integrate the requested compatible change into the current implementation.\"\n      ],\n      \"regression_guards\": [\n        \"Compare changed code against current develop before finalizing.\",\n        \"Document any intentional behavior removal in the worker report and integration_notes.\"\n      ],\n      \"integration_notes\": [\n        \"Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.\",\n        \"If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.\",\n        \"If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner.\"\n      ],\n      \"next_owner\": \"worker_pool\",\n      \"next_role\": \"auto_workers\",\n      \"repaired_packet_at\": \"2026-07-26T22:13:10Z\",\n      \"repaired_packet_by\": \"scripts/agent_control/dispatcher_packet_repair.py\",\n      \"deterministic_preflight\": {\n        \"schema_version\": 1,\n        \"base_ref\": \"origin/develop\",\n        \"source_head_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n        \"changed_paths\": [\n          \"InplaceX-android/app/build.gradle.kts\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n          \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n          \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n          \"InplaceX-docs/Backend/Online Contracts.md\",\n          \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n          \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n          \"gradle/libs.versions.toml\"\n        ],\n        \"outcome\": \"promote\",\n        \"proof\": \"changed_path_blob_diff_present\",\n        \"resolved_source_sha\": \"11b3d222bfd0d3df5a6ffaea583030f8087ab5a0\",\n        \"resolved_base_sha\": \"e8c6f6e6074ae301ec3bf47ac5f937105fd0635e\",\n        \"path_evidence\": [\n          {\n            \"path\": \"InplaceX-android/app/build.gradle.kts\",\n            \"source_blob\": \"0183f5a1e57aca112ed88fb1943cc8f6392536c6\",\n            \"base_blob\": \"89913c12a8508197ea53f68b21304e96aca5b943\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n            \"source_blob\": \"8518c3e1397c05cd67ad7e850dc99a9ce8ccf4e7\",\n            \"base_blob\": null,\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n            \"source_blob\": \"85c0389ee002b3bf8c9af887155b6fb0f3655c1a\",\n            \"base_blob\": \"9b2a850eb9602950bbecabbd3158ac6a3c89f9a3\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n            \"source_blob\": \"c04ecdcbfd644ff46751c2d6d4067360cda31287\",\n            \"base_blob\": \"09070916ff637e3d0fc60230933442177a84bc26\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n            \"source_blob\": \"88af5dffde80410c7c137aae126c2a93c701b2fc\",\n            \"base_blob\": null,\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n            \"source_blob\": \"0ff794f895f96baacc372ca49d455904ba89b626\",\n            \"base_blob\": \"5453689262596d8f7828661e7a2faea4b41b7c08\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-docs/Backend/Online Contracts.md\",\n            \"source_blob\": \"4975b0e9d0fc83b26412721cbb2a883def151aa3\",\n            \"base_blob\": \"637dd0034340efc0632ea3708a38af4e7873e3c8\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n            \"source_blob\": \"fd86fab47f9997b4a0e54a820018473b862c0f90\",\n            \"base_blob\": \"76d364f9d3148e2af5c047e1732afca6acf806e7\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n            \"source_blob\": \"7ea5ab2179df4587b6624ea74dd0cbd1c8af17d3\",\n            \"base_blob\": \"24459a97f855a9aaf86fa4b03b788357dada3e2d\",\n            \"equal\": false\n          },\n          {\n            \"path\": \"gradle/libs.versions.toml\",\n            \"source_blob\": \"4849cdb5ba37f7d06c6cac62a9c20a8154628069\",\n            \"base_blob\": \"63ac1851827a90cfe401fda71e02c588982e5ede\",\n            \"equal\": false\n          }\n        ],\n        \"release_metadata_evidence\": {\n          \"eligible\": false,\n          \"proof\": null,\n          \"source_version\": null,\n          \"base_version\": null,\n          \"reason\": \"changed_paths_not_release_metadata_only\",\n          \"disallowed_paths\": [\n            \"InplaceX-android/app/build.gradle.kts\",\n            \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt\",\n            \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt\",\n            \"InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt\",\n            \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt\",\n            \"InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt\",\n            \"InplaceX-docs/Backend/Online Contracts.md\",\n            \"InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt\",\n            \"InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt\",\n            \"gradle/libs.versions.toml\"\n          ]\n        },\n        \"reason\": \"source payload is not represented in current base\"\n      }\n    }\n  ],\n  \"closed\": [],\n  \"blocked\": [],\n  \"skipped\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "consumed_events": 3,
+  "status": {
+    "schema_version": 1,
+    "project": "inplacex",
+    "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+    "updated_at": "2026-07-26T22:13:10Z",
+    "counts": {
+      "planned": 2,
+      "done": 28,
+      "needs_human": 6,
+      "blocked_by_dependency": 17,
+      "integration_requested": 4,
+      "clean_rebuild_tasks": 5,
+      "stale_or_superseded": 1,
+      "agent_done": 1,
+      "ready_candidate": 3,
+      "crb_auto_task": 2,
+      "pending_events": 72,
+      "ready_to_finalize": 0,
+      "cleanup_candidates": 0
+    },
+    "next_actions": [
+      "run clean_rebuild_queue_bridge",
+      "run worker_pool_manager",
+      "run pre_integrator_repair / integration_batch_builder",
+      "review needs_human queue"
+    ],
+    "human_queue": [
+      {
+        "branch": "origin/feature/backend-auth-boundary-v1",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T20:33:14Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T203314Z-d61af023",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "CHANGELOG.md",
+            "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
+            "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+            "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
+            "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+            "InplaceX-docs/Backend/Ktor Architecture.md"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "CHANGELOG.md",
+            "InplaceX-backend",
+            "InplaceX-docs"
+          ],
+          "reason": "high-risk paths require owner/strong review",
+          "risk_class": "high",
+          "source_status": "needs_integrator_review"
+        },
+        "pr": 8,
+        "project": "inplacex",
+        "reason": "high-risk paths require owner/strong review",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "REPO-PR-8"
+      },
+      {
+        "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T20:33:14Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T203314Z-c6693cdd",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            ".github/workflows/ci.yml",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+            "scripts/ci/artifact_identity.sh",
+            "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+            "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+            "scripts/ci/contract_mutations/fail_connected_noop.yml",
+            "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+            "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+            "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+            "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+            "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+            "scripts/ci/contract_mutations/fail_short_circuit.yml",
+            "scripts/ci/contract_mutations/pass_artifact.yml",
+            "scripts/ci/contract_mutations/pass_baseline.yml",
+            "scripts/ci/validate_ci_contract.py"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            ".github",
+            "InplaceX-android",
+            "scripts"
+          ],
+          "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
+          "risk_class": "high",
+          "source_status": "needs_human_rebuild"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002"
+      },
+      {
+        "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T21:13:25Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T211325Z-6a2f383e",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+            "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "InplaceX-android"
+          ],
+          "reason": "high-risk paths require owner/strong review",
+          "risk_class": "high",
+          "source_status": "needs_integrator_review"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "high-risk paths require owner/strong review",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29"
+      },
+      {
+        "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T21:13:25Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T211325Z-344c2dab",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+            "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "InplaceX-android"
+          ],
+          "reason": "requires exactly one task_id",
+          "risk_class": "high",
+          "source_status": "needs_dispatcher_rebuild"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "requires exactly one task_id",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002"
+      }
+    ],
+    "blocked": [
+      {
+        "branch": "origin/feature/backend-auth-boundary-v1",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T20:33:14Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T203314Z-d61af023",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "CHANGELOG.md",
+            "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
+            "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+            "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
+            "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+            "InplaceX-docs/Backend/Ktor Architecture.md"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "CHANGELOG.md",
+            "InplaceX-backend",
+            "InplaceX-docs"
+          ],
+          "reason": "high-risk paths require owner/strong review",
+          "risk_class": "high",
+          "source_status": "needs_integrator_review"
+        },
+        "pr": 8,
+        "project": "inplacex",
+        "reason": "high-risk paths require owner/strong review",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "REPO-PR-8"
+      },
+      {
+        "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T20:33:14Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T203314Z-c6693cdd",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            ".github/workflows/ci.yml",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+            "scripts/ci/artifact_identity.sh",
+            "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+            "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+            "scripts/ci/contract_mutations/fail_connected_noop.yml",
+            "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+            "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+            "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+            "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+            "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+            "scripts/ci/contract_mutations/fail_short_circuit.yml",
+            "scripts/ci/contract_mutations/pass_artifact.yml",
+            "scripts/ci/contract_mutations/pass_baseline.yml",
+            "scripts/ci/validate_ci_contract.py"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            ".github",
+            "InplaceX-android",
+            "scripts"
+          ],
+          "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
+          "risk_class": "high",
+          "source_status": "needs_human_rebuild"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002"
+      },
+      {
+        "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T21:13:25Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T211325Z-6a2f383e",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+            "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "InplaceX-android"
+          ],
+          "reason": "high-risk paths require owner/strong review",
+          "risk_class": "high",
+          "source_status": "needs_integrator_review"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "high-risk paths require owner/strong review",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29"
+      },
+      {
+        "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+        "consumed_at": null,
+        "consumed_by": null,
+        "created_at": "2026-07-26T21:13:25Z",
+        "event": "needs_human_created",
+        "event_id": "evt-20260726T211325Z-344c2dab",
+        "next_owner": "human",
+        "next_role": "human",
+        "payload": {
+          "changed_paths": [
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+            "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+            "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+          ],
+          "decision": "needs_human",
+          "module_scopes": [
+            "InplaceX-android"
+          ],
+          "reason": "requires exactly one task_id",
+          "risk_class": "high",
+          "source_status": "needs_dispatcher_rebuild"
+        },
+        "pr": null,
+        "project": "inplacex",
+        "reason": "requires exactly one task_id",
+        "role": "router",
+        "schema_version": 1,
+        "severity": "blocked",
+        "source": "route_rebuild_and_integration_results.py",
+        "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002"
+      }
+    ],
+    "latest_reports": [
+      "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/rebuild_decision_report.json",
+      "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/integration_handoff.json",
+      "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
+    ]
+  },
+  "state": "succeeded",
+  "output": null
+}
