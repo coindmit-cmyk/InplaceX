@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T12:40:45Z",
+  "updated_at": "2026-07-26T12:43:53Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10084,7 +10084,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM principal and membership",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10142,7 +10142,7 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "free",
+      "lock": "locked",
       "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
@@ -10340,10 +10340,10 @@
       "created_at": "2026-07-25T23:05:00Z",
       "worker_id": "auto-worker-5.5",
       "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T122225Z",
-      "started_at": "2026-07-26T12:22:25Z",
-      "lock_expires_at": "2026-07-26T20:22:25Z",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
+      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-princip-retry-20260726T124353Z",
+      "started_at": "2026-07-26T12:43:53Z",
+      "lock_expires_at": "2026-07-26T20:43:53Z",
       "retry_count": 6,
       "last_rejected_candidate": "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
       "integration_review": "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_93228F8_20260726.md",
@@ -10379,7 +10379,7 @@
           "reason": "preserved infrastructure-only blocker report: central runner omitted execution lease binding before commit 8637b19"
         }
       ],
-      "status_reason": "runner lease propagation is fixed and tested in develop; auth retry is worker-ready without treating 6088780 as a product rejection",
+      "status_reason": "central runner claimed task before isolated worker launch",
       "worker_result_commit": "6088780b9e69f7397d49a5357928d43f2ea134d6",
       "worker_result_synced_at": "2026-07-26T12:32:28Z",
       "worker_changed_paths": [
@@ -10409,7 +10409,19 @@
         "93228f8b21e2de0d28e50d12e8870177b0e2e2c3",
         "6088780b9e69f7397d49a5357928d43f2ea134d6"
       ],
-      "integration_status": "rejected"
+      "integration_status": "rejected",
+      "lease": {
+        "lease_id": "lease-d5cfc153655f",
+        "project_id": "inplacex",
+        "worker_id": "auto-worker-5.5",
+        "model": "gpt-5.6-terra",
+        "created_at": "2026-07-26T12:43:45Z",
+        "heartbeat_at": "2026-07-26T12:43:45Z",
+        "expires_at": "2026-07-26T14:53:45Z"
+      },
+      "lease_id": "lease-d5cfc153655f",
+      "execution_lease_id": "lease-d5cfc153655f",
+      "lease_expires_at": "2026-07-26T14:53:45Z"
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
