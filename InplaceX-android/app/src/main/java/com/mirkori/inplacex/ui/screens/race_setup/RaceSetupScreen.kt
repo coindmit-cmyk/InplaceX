@@ -2,7 +2,7 @@ package com.mirkori.inplacex.ui.screens.race_setup
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -45,7 +45,7 @@ fun RaceSetupScreen(
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val navBar = WindowInsets.navigationBars.asPaddingValues()
 
-    BoxWithConstraints(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)

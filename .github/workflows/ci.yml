@@ -55,17 +55,49 @@ jobs:
       - name: Run unit verification
         run: ./gradlew verifyProject
 
+      - name: Run lint checks
+        run: ./gradlew lint
+
       - name: Assemble debug APK
         run: ./gradlew assembleDebug
 
-      - name: Write artifact identity
+      - name: Build debug instrumentation APK
+        run: ./gradlew :app:assembleDebugAndroidTest
+
+      - name: Write debug artifact identity
         id: artifact_identity
         run: |
           bash scripts/ci/artifact_identity.sh \
             --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk \
             --output-dir build/ci-artifacts
 
-      - name: Upload identified debug artifact
+      - name: Verify debug artifact identity
+        run: |
+          signing_status='${{ steps.artifact_identity.outputs.signing_status }}'
+          manifest_path='${{ steps.artifact_identity.outputs.manifest_path }}'
+          apk_path='${{ steps.artifact_identity.outputs.artifact_path }}'
+
+          if [[ -z "$signing_status" || "$signing_status" == "unknown" ]]; then
+            echo "Debug signing status is unavailable: ${signing_status:-<missing>}"
+            exit 1
+          fi
+
+          if [[ "$signing_status" != "signed" && "$signing_status" != "unsigned" ]]; then
+            echo "Unexpected debug signing status: $signing_status"
+            exit 1
+          fi
+
+          if [[ -z "$manifest_path" || ! -f "$manifest_path" ]]; then
+            echo "Missing debug artifact manifest: ${manifest_path:-<missing>}"
+            exit 1
+          fi
+
+          if [[ -z "$apk_path" || ! -f "$apk_path" ]]; then
+            echo "Missing debug artifact file: ${apk_path:-<missing>}"
+            exit 1
+          fi
+
+      - name: Upload debug artifact identity bundle
         uses: actions/upload-artifact@v4
         with:
           name: inplacex-debug-artifact
@@ -73,16 +105,19 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Validate CI contract
+        run: python scripts/ci/validate_ci_contract.py --workflow .github/workflows/ci.yml
+
   instrumentation:
-    name: Instrumentation checks (non-blocking)
-    if: ${{ always() }}
+    name: Instrumentation checks
     needs: verify
-    continue-on-error: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 21 launcher
         uses: actions/setup-java@v4
@@ -94,22 +129,70 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android platform
-        run: sdkmanager --install "platform-tools" "platforms;android-36"
+      - name: Install Android platform and API image
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-36"
+          sdkmanager --install "system-images;android-34;google_apis;x86_64"
 
-      - name: Build and run instrumentation checks
-        run: ./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest
+      - name: Verify Linux KVM availability
+        run: |
+          if [ ! -e /dev/kvm ]; then
+            echo "Linux KVM is required for emulator execution"
+            exit 1
+          fi
+          ls -l /dev/kvm
+
+      - name: Prepare deterministic emulator
+        run: |
+          avdmanager create avd \
+            --force \
+            --name ci-api-34 \
+            --package "system-images;android-34;google_apis;x86_64" \
+            --device "pixel"
+
+      - name: Run connected instrumentation tests
+        run: |
+          emulator -avd ci-api-34 \
+            -no-snapshot \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -gpu swiftshader_indirect \
+            -accel on \
+            -camera-back none \
+            -camera-front none \
+            > build/ci-emulator.log 2>&1 &
+
+          adb wait-for-device
+
+          boot_completed=""
+          for i in $(seq 1 90); do
+            boot_completed="$(adb shell getprop sys.boot_completed | tr -d '\r')"
+            if [[ "$boot_completed" == "1" ]]; then
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "$boot_completed" != "1" ]]; then
+            echo "Emulator boot timeout"
+            tail -n 120 build/ci-emulator.log
+            exit 1
+          fi
+
+          adb devices
+          ./gradlew :app:connectedDebugAndroidTest
 
   release:
-    name: Release checks (non-blocking)
-    if: ${{ always() }}
+    name: Release checks
     needs: verify
-    continue-on-error: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 21 launcher
         uses: actions/setup-java@v4
@@ -126,3 +209,53 @@ jobs:
 
       - name: Assemble unsigned release candidate
         run: ./gradlew :app:assembleRelease
+
+      - name: Write release artifact identity
+        id: release_artifact_identity
+        run: |
+          release_apk="InplaceX-android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          if [[ ! -f "$release_apk" ]]; then
+            release_apk="InplaceX-android/app/build/outputs/apk/release/app-release.apk"
+          fi
+          if [[ ! -f "$release_apk" ]]; then
+            echo "Release APK not found"
+            exit 1
+          fi
+
+          bash scripts/ci/artifact_identity.sh \
+            --apk "$release_apk" \
+            --output-dir build/ci-release-artifacts
+
+      - name: Require concrete release signing evidence
+        run: |
+          signing_status='${{ steps.release_artifact_identity.outputs.signing_status }}'
+          manifest_path='${{ steps.release_artifact_identity.outputs.manifest_path }}'
+          apk_path='${{ steps.release_artifact_identity.outputs.artifact_path }}'
+
+          if [[ -z "$signing_status" || "$signing_status" == "unknown" ]]; then
+            echo "Release signing status is unavailable: ${signing_status:-<missing>}"
+            exit 1
+          fi
+
+          if [[ "$signing_status" != "signed" && "$signing_status" != "unsigned" ]]; then
+            echo "Unexpected release signing status: $signing_status"
+            exit 1
+          fi
+
+          if [[ -z "$manifest_path" || ! -f "$manifest_path" ]]; then
+            echo "Missing release artifact manifest: ${manifest_path:-<missing>}"
+            exit 1
+          fi
+
+          if [[ -z "$apk_path" || ! -f "$apk_path" ]]; then
+            echo "Missing release artifact file: ${apk_path:-<missing>}"
+            exit 1
+          fi
+
+      - name: Upload release identity artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inplacex-release-artifact
+          path: build/ci-release-artifacts
+          if-no-files-found: error
+          retention-days: 14

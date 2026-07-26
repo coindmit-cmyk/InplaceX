@@ -1,0 +1,5 @@
+name: pass_artifact_current_script
+kind: artifact_script
+category: pass_artifact
+expected: pass
+artifact_script_path: scripts/ci/artifact_identity.sh

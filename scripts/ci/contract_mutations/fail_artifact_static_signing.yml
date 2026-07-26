@@ -1,0 +1,9 @@
+name: fail_artifact_static_signing
+kind: artifact_script
+category: fail_artifact_static_signing
+expected: fail
+artifact_script: |
+  #!/usr/bin/env bash
+  set -euo pipefail
+  signing_status="signed"
+  echo "forced status"

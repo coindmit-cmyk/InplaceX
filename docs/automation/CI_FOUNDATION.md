@@ -1,48 +1,72 @@
 # CI foundation and artifact identity
 
 Репозиторий использует `.github/workflows/ci.yml` как базовый GitHub Actions
-pipeline для проверяемого debug-артефакта.
+pipeline для проверяемого debug- и release-артефактов.
 
-## Blocking checks
+## Блокирующие проверки
 
-Job `verify` запускается на Ubuntu с Java 21 как JVM, запускающей Gradle. Java
-toolchains проекта остаются на Java 11: JVM-модули объявляют `jvmToolchain(11)`,
-Android-модуль компилируется с Java 11, а Gradle может автоматически получить
-нужный toolchain через Foojay resolver.
+В текущем варианте CI блокируют следующие проверки:
 
-Блокирующие команды:
+- `verify`:
+  - `./gradlew verifyProject`
+  - `./gradlew lint`
+  - `./gradlew :app:assembleDebugAndroidTest`
+  - `./gradlew assembleDebug`
+  - фиксирование debug-идентичности артефакта
+  - проверка debug-архивации подписи и `manifest`
+  - запуск `python scripts/ci/validate_ci_contract.py`
+- `instrumentation` (зависит от `verify`):
+  - установка платформы + Android API-образы
+  - проверка Linux KVM (`/dev/kvm`)
+  - создание AVD и запуск эмулятора
+  - bounded wait для `adb` + `sys.boot_completed`
+  - запуск `./gradlew :app:connectedDebugAndroidTest`
+- `release` (зависит от `verify`):
+  - `./gradlew :app:assembleRelease`
+  - фиксирование release-идентичности артефакта
+  - проверка release-свидетельства подписи и `manifest`
 
-```bash
-./gradlew verifyProject
-./gradlew assembleDebug
-```
-
-Перед ними workflow печатает версии launcher и доступных Gradle toolchains,
-чтобы несовпадение Java 21/11 было видно в логе.
+Ни `verify`, ни `instrumentation`, ни `release` не используют
+`continue-on-error` и не имеют условных `if` в `jobs` или `steps` для сквозного
+пропуска критичных действий.
 
 ## Artifact identity
 
-После debug-сборки `scripts/ci/artifact_identity.sh` создаёт в одном каталоге:
+Скрипт `scripts/ci/artifact_identity.sh`:
 
-- APK с именем `inplacex-debug-<version>-<commit>.apk`;
-- JSON-манифест с `version`, `version_code`, полным `commit` и `sha256`;
-- checksum-файл для независимой проверки SHA-256.
+- копирует APK в `build/ci-artifacts` / `build/ci-release-artifacts`;
+- пишет JSON-манифест, содержащий `artifact`, `version`, `version_code`, `commit`,
+  `signing_status` и `sha256`;
+- пишет checksum для независимой проверки SHA-256;
+- пытается определить `apksigner` через `ANDROID_HOME/build-tools/*/apksigner` и
+  всегда запускает `apksigner verify`;
+- при отсутствии верификатора завершает CI с ошибкой (fail-closed);
+- записывает в `GITHUB_OUTPUT` `manifest_path`, `artifact_path`, `signing_status`
+  и связанные метаданные.
 
-Скрипт получает version и version code из текущего `app/build.gradle.kts`, а
-commit — из `GITHUB_SHA` или локального `HEAD`. Пример локального запуска:
+## Контракт валидации CI
 
-```bash
-bash scripts/ci/artifact_identity.sh \
-  --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk \
-  --output-dir build/ci-artifacts
-```
+Скрипт `scripts/ci/validate_ci_contract.py` проверяет не только наличие строк,
+а их семантику:
 
-Подписывание и публикация release-артефактов в этот foundation не входят.
+- обязательное наличие трех jobs с зависимостями `instrumentation/release -> verify`;
+- отсутствие `continue-on-error`/`if` на job и step уровне;
+- обязательные команды сборки, AVD-провиженинга, bounded boot wait и запуск
+  instrumentation-теста;
+- обязательное создание release-артефакта и сигнатурной проверки;
+- обязательное содержание `manifest_path`/`artifact_path`/`signing_status` в скрипте
+  identity.
 
-## Non-blocking visibility
+Контракт дополнительно покрыт негативными fixture для проверки `--self-test`:
 
-Jobs `instrumentation` и `release` видны в каждом workflow run, но помечены
-`continue-on-error: true`. Instrumentation пока включает сборку test APK и
-connected-тесты; release job собирает unsigned release candidate. После
-принятия dedicated-задач эти jobs можно сделать блокирующими отдельным
-изменением workflow.
+- `scripts/ci/contract_mutations/pass_baseline.yml`
+- `scripts/ci/contract_mutations/pass_artifact.yml`
+- `scripts/ci/contract_mutations/fail_continue_on_error.yml`
+- `scripts/ci/contract_mutations/fail_instrumentation_if_false.yml`
+- `scripts/ci/contract_mutations/fail_boot_wait_bypass.yml`
+- `scripts/ci/contract_mutations/fail_kvm_skipped.yml`
+- `scripts/ci/contract_mutations/fail_release_missing_assemble.yml`
+- `scripts/ci/contract_mutations/fail_artifact_static_signing.yml`
+- `scripts/ci/contract_mutations/fail_emulator_noop.yml`
+- `scripts/ci/contract_mutations/fail_connected_noop.yml`
+- `scripts/ci/contract_mutations/fail_short_circuit.yml`
