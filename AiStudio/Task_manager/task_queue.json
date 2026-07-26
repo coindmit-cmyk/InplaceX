@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-25T23:43:43Z",
+  "updated_at": "2026-07-26T11:02:46Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10823,6 +10823,234 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true
+    },
+    {
+      "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+      "title": "Implement fail-closed capability preservation integration gate",
+      "status": "planned",
+      "priority": "P0",
+      "complexity": "L",
+      "type": "automation-guard",
+      "phase": "Integration Protection",
+      "module_id": "automation.capability-preservation",
+      "depends_on": [],
+      "blocked_by": [],
+      "resolved_dependencies": [],
+      "summary": "Implement the script already required by the Integrator role and catalog so candidate integration can prove existing capabilities were preserved instead of relying on manual claims.",
+      "allowed_paths": [
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py",
+        "scripts/agent_control/test_integrator_guard_regressions.py",
+        "docs/automation/SCRIPTS_CATALOG.md",
+        "docs/reports/workers/**"
+      ],
+      "forbidden_paths": [
+        ".git/**",
+        ".env*",
+        "local.properties",
+        "AiStudio/Task_manager/**",
+        "**/*.key",
+        "**/*.pem",
+        "**/*.jks",
+        "**/*.keystore"
+      ],
+      "acceptance_criteria": [
+        "scripts/agent_control/capability_preservation_check.py implements the documented --base-ref, --head-ref, --all-changed and --json CLI without mutating either ref or the caller worktree.",
+        "The check compares the complete changed-ref surface and conservatively detects removed or silently replaced functions, classes, CLI flags, schema fields, task statuses, public documentation headings and executable entrypoints, including symbols moved between changed files.",
+        "The JSON result is deterministic and includes resolved base/head SHAs, changed paths, preserved moves, potential removals, status and exit decision; missing refs, parse failures and incomplete comparison fail closed.",
+        "An unchanged or capability-preserving move returns success, while an unapproved potential removal returns a non-zero review-required decision.",
+        "Tests create isolated temporary Git repositories and cover unchanged refs, symbol moves, real removals, renames, raw file deletion, CLI flag loss, JSON field loss, public heading loss, invalid refs and paths containing spaces.",
+        "The implementation reuses compatible behavior-token logic where safe but does not weaken detection to make current candidates pass.",
+        "No repository files outside allowed_paths and no user worktrees, stashes, branches or refs are mutated."
+      ],
+      "checks": [
+        "python scripts/agent_control/test_capability_preservation_check.py",
+        "python scripts/agent_control/test_integrator_guard_regressions.py",
+        "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+        "git diff --check"
+      ],
+      "lock": "free",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "Integrator role and scripts catalog require an active preservation gate, but the referenced implementation is absent from the current repository snapshot.",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "recommended_agent": "auto-worker-5.5",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
+      ],
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "context_docs": [
+        ".agent/roles/integrator.md",
+        "docs/automation/SCRIPTS_CATALOG.md"
+      ],
+      "provenance": [
+        {
+          "source_type": "manual_integration_reality_gap",
+          "source_file": ".agent/roles/integrator.md",
+          "source_item_id": "capability-preservation-check-missing",
+          "captured_at": "2026-07-26T11:02:46Z"
+        }
+      ],
+      "worker_instructions": [
+        "Read .agent/roles/integrator.md and the capability_preservation_check catalog entry before editing.",
+        "Inspect integrator_direct_merge.py behavior_tokens and detect_behavior_regression as reusable evidence, but do not assume their current token coverage satisfies the broader documented preservation rule.",
+        "Build the CLI as a read-only ref comparison. Do not checkout, merge, reset, stash, clean, update refs or write into the compared worktrees.",
+        "Use temporary repositories inside tests and delete only test-owned temporary directories.",
+        "Treat missing or ambiguous comparison evidence as review_required or error; do not report preserved merely because no token was extracted.",
+        "Keep output free of file contents, credentials and secrets; report repository-relative paths and symbol identifiers only.",
+        "Modify only allowed_paths and run every script_action before emitting integration_requested.",
+        "Write the worker report and include exact resolved SHAs, test counts and known conservative limitations."
+      ],
+      "traceability": {
+        "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+        "canonical_task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+        "canonical_target_id": "script:scripts/agent_control/capability_preservation_check.py",
+        "source_lane": "manual-integrator",
+        "source_file": ".agent/roles/integrator.md",
+        "provenance": {
+          "source": "current repository reality gap",
+          "created_at": "2026-07-26T11:02:46Z"
+        },
+        "derived_from": "Integrator Preservation Rule"
+      },
+      "doc_refs": [
+        {
+          "path": ".agent/roles/integrator.md",
+          "purpose": "authoritative preservation rule and required command contract"
+        },
+        {
+          "path": "docs/automation/SCRIPTS_CATALOG.md",
+          "purpose": "declared active script identity and ownership"
+        }
+      ],
+      "code_refs": [
+        "scripts/agent_control/integrator_direct_merge.py",
+        "scripts/agent_control/test_integrator_guard_regressions.py",
+        "scripts/agent_control/workspace_preservation_plan.py"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "scripts/agent_control/integrator_direct_merge.py",
+          "scripts/agent_control/test_integrator_guard_regressions.py",
+          "scripts/agent_control/workspace_preservation_plan.py"
+        ],
+        "doc_refs": [
+          {
+            "path": ".agent/roles/integrator.md",
+            "purpose": "required behavior"
+          },
+          {
+            "path": "docs/automation/SCRIPTS_CATALOG.md",
+            "purpose": "cataloged script contract"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+            "purpose": "worker packet"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Compare against current origin/develop and preserve existing integration behavior; conservative review-required findings are preferable to silent capability loss."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "scripts/agent_control/capability_preservation_check.py",
+          "scripts/agent_control/test_capability_preservation_check.py",
+          "scripts/agent_control/test_integrator_guard_regressions.py",
+          "docs/automation/SCRIPTS_CATALOG.md",
+          "docs/reports/workers/**"
+        ],
+        "forbidden_paths": [
+          ".git/**",
+          ".env*",
+          "local.properties",
+          "AiStudio/Task_manager/**",
+          "**/*.key",
+          "**/*.pem",
+          "**/*.jks",
+          "**/*.keystore"
+        ],
+        "context_docs": [
+          ".agent/roles/integrator.md",
+          "docs/automation/SCRIPTS_CATALOG.md"
+        ],
+        "source_file": ".agent/roles/integrator.md",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "python scripts/agent_control/test_capability_preservation_check.py",
+          "python scripts/agent_control/test_integrator_guard_regressions.py",
+          "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "python scripts/agent_control/test_capability_preservation_check.py",
+          "required": true,
+          "purpose": "isolated preservation CLI regression suite",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/agent_control/test_integrator_guard_regressions.py",
+          "required": true,
+          "purpose": "existing integration guard compatibility",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        },
+        {
+          "command": "python scripts/agent_control/capability_preservation_check.py --base-ref HEAD^ --head-ref HEAD --all-changed --json",
+          "required": true,
+          "purpose": "real repository ref comparison smoke",
+          "on_failure": "record the exact review-required findings; only implementation/runtime errors are worker blockers"
+        },
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "patch hygiene",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "existing_behavior": [
+        "integrator_direct_merge.py already performs a narrow behavior token regression check for changed candidate files.",
+        "workspace preservation planning and existing integration reports remain valid evidence sources and must not be removed or bypassed."
+      ],
+      "preserve_contract": [
+        "Do not weaken or delete existing integration guard behavior.",
+        "Do not mutate compared refs, branches, worktrees, stashes or user files.",
+        "Do not convert uncertain extraction into a preservation success."
+      ],
+      "regression_guards": [
+        "A moved symbol across changed files remains preserved.",
+        "A symbol or public contract removed from every changed destination is review_required.",
+        "Invalid refs and incomplete scans fail closed.",
+        "The check produces identical ordered JSON for identical refs."
+      ],
+      "integration_notes": [
+        "Integrator must independently run the new command against the exact candidate SHA before accepting it.",
+        "Potential removals remain a human/integrator review gate; the script does not authorize deletion or merge.",
+        "Do not mark this task done until the script exists at the cataloged path and all isolated repository fixtures pass."
+      ],
+      "requires_strong_review": true,
+      "direct_merge_authorized": false,
+      "created_at": "2026-07-26T11:02:46Z",
+      "status_reason": "Current Integrator rules require this fail-closed gate, but the cataloged implementation file is missing."
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
