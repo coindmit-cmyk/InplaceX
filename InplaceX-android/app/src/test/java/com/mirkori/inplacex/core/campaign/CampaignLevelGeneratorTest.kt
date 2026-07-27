@@ -7,16 +7,21 @@ import org.junit.Test
 class CampaignLevelGeneratorTest {
 
     @Test
-    fun firstBlockStaysForgivingForOnboarding() {
+    fun firstBlockTightensFromTutorialToCheckpoint() {
         val firstLevel = CampaignLevelGenerator.generate(1)
+        val levelEight = CampaignLevelGenerator.generate(8)
         val firstHardcore = CampaignLevelGenerator.generate(10)
 
         assertEquals(CampaignDifficultyTier.EASY, firstLevel.difficultyTier)
         assertEquals(4, firstLevel.config.codeLength)
-        assertEquals(19, firstLevel.config.attemptLimit)
+        assertEquals(14, firstLevel.config.attemptLimit)
+        assertEquals(300, firstLevel.raceTimeLimitSeconds)
+        assertEquals(10, levelEight.config.attemptLimit)
+        assertEquals(195, levelEight.raceTimeLimitSeconds)
         assertEquals(CampaignBlockRole.HARDCORE, firstHardcore.blockRole)
         assertEquals(4, firstHardcore.config.codeLength)
-        assertTrue(firstHardcore.config.attemptLimit < firstLevel.config.attemptLimit)
+        assertEquals(8, firstHardcore.config.attemptLimit)
+        assertEquals(135, firstHardcore.raceTimeLimitSeconds)
     }
 
     @Test
@@ -26,12 +31,24 @@ class CampaignLevelGeneratorTest {
 
         assertEquals(CampaignDifficultyTier.MEDIUM, levelSeventeen.difficultyTier)
         assertEquals(5, levelSeventeen.config.codeLength)
-        assertEquals(19, levelSeventeen.config.attemptLimit)
-        assertEquals(400, levelSeventeen.raceTimeLimitSeconds)
+        assertEquals(14, levelSeventeen.config.attemptLimit)
+        assertEquals(270, levelSeventeen.raceTimeLimitSeconds)
         assertTrue(levelSeventeen.config.codeLength > firstLevel.config.codeLength)
         assertTrue(levelSeventeen.raceTimeLimitSeconds < firstLevel.raceTimeLimitSeconds)
         assertEquals(8, levelSeventeen.ratingPolicy.assistsBudget.perfectHintsBudget)
         assertEquals(2, levelSeventeen.ratingPolicy.assistsBudget.perfectBoostsBudget)
+    }
+
+    @Test
+    fun onboardingAttemptCurveMatchesThePlayableBudget() {
+        val expectedAttempts = listOf(14, 14, 13, 13, 11, 11, 11, 10, 10, 8)
+        val expectedSeconds = listOf(300, 285, 270, 255, 225, 225, 210, 195, 180, 135)
+
+        (1..10).forEach { level ->
+            val definition = CampaignLevelGenerator.generate(level)
+            assertEquals("attempts at level $level", expectedAttempts[level - 1], definition.config.attemptLimit)
+            assertEquals("time at level $level", expectedSeconds[level - 1], definition.raceTimeLimitSeconds)
+        }
     }
 
     @Test

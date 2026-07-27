@@ -80,16 +80,21 @@ object CampaignLevelGenerator {
         role: CampaignBlockRole,
         levelNumber: Int,
     ): Double {
-        val tierBase = when (tier) {
-            CampaignDifficultyTier.EASY -> 4.6
-            CampaignDifficultyTier.MEDIUM -> 3.8
-            CampaignDifficultyTier.HARD -> 3.1
-            CampaignDifficultyTier.HARDCORE -> 2.6
-        }
         val roleDelta = when (role) {
             CampaignBlockRole.STANDARD -> 0.0
             CampaignBlockRole.SPIKE -> -0.35
             CampaignBlockRole.HARDCORE -> -0.55
+        }
+        if (levelNumber <= 10) {
+            val onboardingBase = 3.4 - (levelNumber - 1) * 0.13
+            return max(1.8, onboardingBase + roleDelta)
+        }
+
+        val tierBase = when (tier) {
+            CampaignDifficultyTier.EASY -> 3.4
+            CampaignDifficultyTier.MEDIUM -> 2.8
+            CampaignDifficultyTier.HARD -> 2.5
+            CampaignDifficultyTier.HARDCORE -> 2.2
         }
         val longRunDelta = min(0.9, ((levelNumber - 1) / 120.0) * 0.2)
         return max(1.8, tierBase + roleDelta - longRunDelta)
@@ -101,21 +106,25 @@ object CampaignLevelGenerator {
         role: CampaignBlockRole,
         levelNumber: Int,
     ): Int {
-        val tierBase = when (tier) {
-            CampaignDifficultyTier.EASY -> 270
-            CampaignDifficultyTier.MEDIUM -> 190
-            CampaignDifficultyTier.HARD -> 140
-            CampaignDifficultyTier.HARDCORE -> 110
-        }
         val rolePenalty = when (role) {
             CampaignBlockRole.STANDARD -> 0
             CampaignBlockRole.SPIKE -> 15
             CampaignBlockRole.HARDCORE -> 30
         }
+        if (levelNumber <= 10) {
+            val onboardingBase = 300 - (levelNumber - 1) * 15
+            return max(120, onboardingBase - rolePenalty)
+        }
+
+        val tierBase = when (tier) {
+            CampaignDifficultyTier.EASY -> 270
+            CampaignDifficultyTier.MEDIUM -> 150
+            CampaignDifficultyTier.HARD -> 130
+            CampaignDifficultyTier.HARDCORE -> 110
+        }
         val onboardingBonus = when {
-            levelNumber <= 10 -> 180
-            levelNumber <= 25 -> 120
-            levelNumber <= 50 -> 60
+            levelNumber <= 25 -> 30
+            levelNumber <= 50 -> 15
             else -> 0
         }
         return max(45, tierBase + codeLength * 18 - rolePenalty + onboardingBonus)

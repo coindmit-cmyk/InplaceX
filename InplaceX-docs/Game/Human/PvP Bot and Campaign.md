@@ -79,6 +79,15 @@ length then grows in controlled bands until it reaches 10 digits at level 301.
 This makes the second campaign block noticeably harder without removing the
 10-level pattern of standard, spike, and hardcore missions.
 
+Внутри первого блока запас ходов уменьшается по мере обучения: с `14` попыток
+на первом уровне до `10` на восьмом и `8` на контрольном десятом. Лимит времени
+снижается с `5:00` до `3:15` на восьмом и `2:15` на десятом. Четыре цифры
+сохраняются как понятный обучающий формат, но после знакомства с механикой
+появляется реальный риск поражения.
+
+На уровне 17 пятизначный код получает `14` попыток и `4:30`, а не прежние
+`19` попыток и `6:40`.
+
 ### Hints And Boosts
 
 Campaign allows gameplay assistance systems, but the player may need to own them first.

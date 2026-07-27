@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Tightened the campaign difficulty curve after playtesting: four-digit levels
+  now fall from 14 attempts at level 1 to 10 at level 8 and 8 at level 10,
+  with shorter match timers; level 17 now uses 14 attempts and 4:30 instead of
+  the overly forgiving 19 attempts and 6:40.
 - Added a one-hour temporary PRO purchase for 60 profile coins. The entitlement
   persists across restarts, extends from any remaining time, updates its
   countdown live in Shop and Profile, enables auto-table assistance, and
