@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-27T22:06:07Z",
+  "updated_at": "2026-07-27T22:37:19Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -11611,7 +11611,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-27T21:54:12Z",
+      "dependency_state_checked_at": "2026-07-27T22:37:19Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11700,7 +11700,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-27T21:54:12Z",
+      "dependency_state_checked_at": "2026-07-27T22:37:19Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -12919,7 +12919,7 @@
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13270,7 +13270,7 @@
         },
         "reason": "source payload is not represented in current base"
       },
-      "packet_normalized_at": "2026-07-27T21:54:12Z",
+      "packet_normalized_at": "2026-07-27T22:37:19Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "status_history": [
         {
@@ -13332,6 +13332,80 @@
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
       ],
       "integration_status": "needs_worker_fix"
+    },
+    {
+      "id": "REPO-PR-13",
+      "title": "Integrate open PR #13",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "repository_hygiene_integration",
+      "recommended_agent": "Dispatcher",
+      "requires_human_attention": false,
+      "worker_ready": false,
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "integration_status": "closed_coordination_only",
+      "branch": "origin/automation/reclassify-crb-repo-pr-7-needs-human-20260728",
+      "base_branch": "develop",
+      "github_pr": 13,
+      "pr_numbers": [
+        13
+      ],
+      "repository_hygiene_key": "repository-pr-group:9b4175ba4dc49f35130f",
+      "repository_hygiene_topology": "linear",
+      "repository_hygiene_route": "dispatcher_integration",
+      "repository_hygiene_head_sha": "7fd5ddbc4b3fa03a5cfc194476637a78848208b1",
+      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_draft_prs": [
+        13
+      ],
+      "repository_hygiene_ci_state": "pending",
+      "source_lane": "repository_hygiene_cycle",
+      "source_summary": "direct PR can be routed through Dispatcher and Integrator",
+      "provenance": [
+        {
+          "source_type": "github_pull_request_topology",
+          "source_item_id": "repository-pr-group:9b4175ba4dc49f35130f",
+          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/13",
+          "captured_at": "2026-07-27T22:37:06Z",
+          "summary": "direct PR can be routed through Dispatcher and Integrator"
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve existing behavior unless the PR explicitly replaces it.",
+        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
+        "Run project-required tests and git diff --check before finalization.",
+        "Close or delete source PR branches only after merge evidence exists."
+      ],
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ],
+      "lock": "free",
+      "next_owner": "dispatcher",
+      "next_role": "auto_dispatcher",
+      "discovered_at": "2026-07-27T22:37:06Z",
+      "updated_at": "2026-07-27T22:37:06Z",
+      "changed_paths": [
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "integration_changed_paths": [],
+      "coordination_changed_paths": [
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "allowed_paths": [
+        "AiStudio/Task_manager/task_queue.json"
+      ],
+      "dispatcher_repaired_at": "2026-07-27T22:37:07Z",
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
+      "closed_at": "2026-07-27T22:37:07Z",
+      "closed_by": "dispatcher_integration_repair",
+      "not_worker_ready_reason": "terminal status=stale_or_superseded",
+      "packet_normalized_at": "2026-07-27T22:37:19Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     }
   ],
   "design_handoff_intake_import": {

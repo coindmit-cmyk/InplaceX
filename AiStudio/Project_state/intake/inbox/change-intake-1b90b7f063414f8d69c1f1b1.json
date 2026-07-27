@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-1b90b7f063414f8d69c1f1b1",
+  "type": "change",
+  "subtype": "queue",
+  "status": "new",
+  "created_at": "2026-07-27T22:37:06Z",
+  "updated_at": "2026-07-27T22:37:06Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "fix(agent): route CRB-REPO-PR-7 to human",
+  "pr_number": 13,
+  "route": "queue",
+  "event_name": "queue_changed",
+  "event_id": "change-intake-1b90b7f063414f8d69c1f1b1",
+  "next_owner": "Dispatcher",
+  "next_action": null,
+  "handoff": null,
+  "changed_paths": [
+    "AiStudio/Task_manager/task_queue.json"
+  ],
+  "source_refs": [
+    "origin/automation/reclassify-crb-repo-pr-7-needs-human-20260728"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260727T223706Z/CHANGE_INTAKE_CYCLE_20260727T223706Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}
