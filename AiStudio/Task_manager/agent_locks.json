@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T22:08:09Z",
+  "updated_at": "2026-07-27T21:55:27Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -1047,6 +1047,16 @@
       "released_at": "2026-07-26T22:08:09Z",
       "released_by": "sync_worker_results.py",
       "release_reason": "worker result synced and returned from worker lane"
+    },
+    {
+      "task_id": "CRB-REPO-PR-7",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-controller",
+      "branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
+      "at": "2026-07-27T21:55:27Z",
+      "expires_at": "2026-07-28T05:55:27Z",
+      "notes": "central runner claim"
     }
   ]
 }

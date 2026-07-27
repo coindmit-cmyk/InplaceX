@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-27T21:54:12Z",
+  "updated_at": "2026-07-27T21:55:27Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12911,7 +12911,7 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "planned",
+      "status": "in_progress",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
@@ -12990,7 +12990,7 @@
       "clean_rebuild_source_branch": "origin/feature/online-foundation-v1",
       "clean_rebuild_source_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "clean_rebuild_route": "auto_clean_rebuild_medium",
-      "lock": "free",
+      "lock": "locked",
       "created_at": "2026-07-26T22:13:10Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -13278,7 +13278,14 @@
           "reason": "Agent Core v0.4.22.358 validates source-only clean-rebuild refs against pinned source commit 11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
           "next_owner": "worker_pool"
         }
-      ]
+      ],
+      "worker_id": "auto-worker-5.3",
+      "machine_id": "aistudio-controller",
+      "branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
+      "github_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
+      "started_at": "2026-07-27T21:55:27Z",
+      "lock_expires_at": "2026-07-28T05:55:27Z",
+      "status_reason": "central runner claimed task before isolated worker launch"
     }
   ],
   "design_handoff_intake_import": {
