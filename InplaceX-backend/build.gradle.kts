@@ -23,6 +23,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.websockets)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation("org.postgresql:postgresql:42.7.4")
 
@@ -30,6 +31,7 @@ dependencies {
     testImplementation(project(":InplaceX-test-support"))
     testImplementation(libs.junit)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.websockets)
 }
 
 application {
