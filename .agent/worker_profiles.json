@@ -92,7 +92,7 @@
     "runner_mode": "phase_2_runner",
     "launcher": "remote-codex-desktop",
     "enabled": true,
-    "autostart_enabled": false,
+    "autostart_enabled": true,
     "model_family": "5.3",
     "codex_model": "gpt-5.3-codex-spark",
     "model_candidates": [
