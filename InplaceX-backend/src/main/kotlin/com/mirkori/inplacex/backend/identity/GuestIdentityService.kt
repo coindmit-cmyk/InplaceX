@@ -15,8 +15,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 import javax.sql.DataSource
 
 enum class GuestPlatform { ANDROID, IOS, DESKTOP, UNKNOWN }
@@ -100,6 +98,10 @@ data class CredentialPolicy(
     }
 }
 
+fun interface AccessTokenIssuer {
+    fun issue(playerId: String, issuedAt: Instant, expiresAt: Instant): String
+}
+
 /**
  * Доменный сервис без HTTP-привязки. Маршруты передают ему уже проверенные
  * транспортные данные и не получают доступ к хранимым хешам токенов.
@@ -108,13 +110,11 @@ class GuestIdentityService(
     private val identities: JdbcGuestIdentityRepository,
     private val saves: JdbcSaveRepository,
     private val policy: CredentialPolicy,
-    signingSecret: ByteArray,
+    private val accessTokenIssuer: AccessTokenIssuer,
     private val clock: Clock = Clock.systemUTC(),
     private val random: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
 ) {
-    private val accessTokens = SignedAccessTokenIssuer(signingSecret, policy, clock, random)
-
     fun bootstrap(command: GuestBootstrapCommand): GuestBootstrapResult {
         validateBootstrap(command)
         val player = identities.findOrCreateGuest(
@@ -205,7 +205,7 @@ class GuestIdentityService(
         val now = clock.instant()
         val accessExpiresAt = now.plus(policy.accessTtl)
         return RenewableCredentials(
-            accessToken = accessTokens.issue(playerId, now, accessExpiresAt),
+            accessToken = accessTokenIssuer.issue(playerId, now, accessExpiresAt),
             refreshToken = refreshToken,
             accessExpiresAt = accessExpiresAt,
             refreshExpiresAt = refreshExpiresAt,
@@ -451,32 +451,6 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
 
 data class StoredGuestIdentity(val playerId: String)
 data class RefreshRotation(val playerId: String, val refreshExpiresAt: Instant)
-
-private class SignedAccessTokenIssuer(
-    signingSecret: ByteArray,
-    private val policy: CredentialPolicy,
-    private val clock: Clock,
-    private val random: SecureRandom,
-) {
-    private val signingKey = signingSecret.copyOf().also { require(it.size >= 32) }
-    private val encoder = Base64.getUrlEncoder().withoutPadding()
-
-    fun issue(playerId: String, issuedAt: Instant, expiresAt: Instant): String {
-        val header = encoder.encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".toByteArray(StandardCharsets.UTF_8))
-        val payload = encoder.encodeToString(
-            """{"iss":"${json(policy.issuer)}","aud":"${json(policy.audience)}","sub":"${json(playerId)}","iat":${issuedAt.epochSecond},"exp":${expiresAt.epochSecond},"jti":"${UUID.randomUUID()}"}"""
-                .toByteArray(StandardCharsets.UTF_8),
-        )
-        val unsigned = "$header.$payload"
-        val signature = Mac.getInstance("HmacSHA256").run {
-            init(SecretKeySpec(signingKey, "HmacSHA256"))
-            encoder.encodeToString(doFinal(unsigned.toByteArray(StandardCharsets.US_ASCII)))
-        }
-        return "$unsigned.$signature"
-    }
-
-    private fun json(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"")
-}
 
 private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
     saveSchemaVersion = schemaVersion,

@@ -148,7 +148,9 @@ class GuestIdentityServiceTest {
             identities = JdbcGuestIdentityRepository(dataSource),
             saves = JdbcSaveRepository(dataSource),
             policy = CredentialPolicy(issuer = "inplacex-test", audience = "inplacex-client"),
-            signingSecret = ByteArray(32) { 7 },
+            accessTokenIssuer = AccessTokenIssuer { playerId, issuedAt, expiresAt ->
+                "test.${playerId}:${issuedAt.epochSecond}:${expiresAt.epochSecond}.signature"
+            },
             clock = clock,
             logger = InplaceXLogger(sink, LogLevel.DEBUG),
         )
