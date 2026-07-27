@@ -17,12 +17,21 @@
 ## Banner and Post-Match Ads
 
 - during gameplay the bottom slot is reserved for a banner ad
-- players with `Remove Ads`, `Pro`, or `Pro+` do not see banner ads
+- players with `Remove Ads`, temporary `Pro`, permanent `Pro`, or `Pro+` do not see banner ads
 - post-match ads are rare and delayed:
   - never in the first `20` matches
   - later only on some matches, not every game
 
 ## Paid Products
+
+- temporary `Pro`
+  - bought inside the game for `60` coins
+  - lasts for `1` hour from purchase
+  - another purchase extends the existing expiration by `1` hour
+  - enables auto table mode
+  - removes banner ads and post-match ads while active
+  - does not grant the infinite hints included in `Pro+`
+  - cannot be bought while permanent `Pro` or `Pro+` is active
 
 - `Remove Ads`
   - one-time purchase
@@ -43,4 +52,5 @@
 
 - auth, ads, and billing are implemented as local stubs
 - UI and local persistence already use these contracts
+- temporary `Pro` is a local coin purchase rather than a billing-provider product
 - real SDK integration comes later without changing the game flow again

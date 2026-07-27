@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a one-hour temporary PRO purchase for 60 profile coins. The entitlement
+  persists across restarts, extends from any remaining time, updates its
+  countdown live in Shop and Profile, enables auto-table assistance, and
+  suppresses ads without granting PRO+ infinite hints.
 - Made the first bot-duel turn fail safely: solver or restored-state errors no
   longer escape the Compose coroutine and close the app; the duel stays open,
   control returns to the player, and a localized recovery message is shown.

@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
@@ -40,6 +41,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 fun ProfileRootScreen(
     progressState: GameProgressState,
+    nowMs: Long = System.currentTimeMillis(),
     onGooglePlaySignIn: () -> Boolean = { false },
     onGooglePlaySignOut: () -> Boolean = { false },
 ) {
@@ -175,6 +177,21 @@ fun ProfileRootScreen(
             MembershipLine(strings.text("profile.membership.ads"), progressState.adFreePurchased, strings)
             MembershipLine(strings.text("profile.membership.pro"), progressState.proSubscriptionActive, strings)
             MembershipLine(strings.text("profile.membership.pro_plus"), progressState.proPlusSubscriptionActive, strings)
+            val temporaryIncluded = progressState.proSubscriptionActive || progressState.proPlusSubscriptionActive
+            val temporaryActive = progressState.temporaryProActiveAt(nowMs)
+            MembershipLine(
+                title = strings.text("profile.membership.temporary_pro"),
+                active = temporaryIncluded || temporaryActive,
+                strings = strings,
+                activeText = when {
+                    temporaryIncluded -> strings.text("profile.membership.included")
+                    temporaryActive -> strings.text("profile.membership.remaining").replace(
+                        "{time}",
+                        TemporaryProPolicy.formatRemaining(progressState.temporaryProExpiresAtMs, nowMs),
+                    )
+                    else -> null
+                },
+            )
         }
 
         SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
@@ -270,6 +287,7 @@ private fun MembershipLine(
     title: String,
     active: Boolean,
     strings: LocalizationProvider,
+    activeText: String? = null,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -287,7 +305,7 @@ private fun MembershipLine(
             Text(title, fontWeight = FontWeight.SemiBold)
             Text(
                 text = if (active) {
-                    strings.text("profile.membership.active")
+                    activeText ?: strings.text("profile.membership.active")
                 } else {
                     strings.text("profile.membership.locked")
                 },

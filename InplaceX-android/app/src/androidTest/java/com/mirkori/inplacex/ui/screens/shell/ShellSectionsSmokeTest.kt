@@ -67,6 +67,37 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun shopOffersOneHourOfProForCoins() {
+        var purchased = false
+        setContent {
+            ShopRootScreen(
+                progressState = progress(coins = 60),
+                nowMs = 1_725_000_000_000L,
+                onWatchRewardedCoins = { false },
+                onBuyOpenPositionHint = { false },
+                onBuyCheckDigitHint = { false },
+                onBuyCheckPositionHint = { false },
+                onBuyExtraMovesBoost = { false },
+                onBuyExtraTimeBoost = { false },
+                onBuyEnergy = { false },
+                onBuyRemoveAds = { false },
+                onBuyPro = { false },
+                onBuyProPlus = { false },
+                onBuyTemporaryPro = {
+                    purchased = true
+                    true
+                },
+            )
+        }
+
+        composeRule.onNodeWithText("Премиум").performClick()
+        composeRule.onNodeWithText("PRO на 1 час").assertIsDisplayed()
+        composeRule.onNodeWithText("Доступ на 01:00:00").assertIsDisplayed()
+        composeRule.onNodeWithText("Купить за 60 монет").performClick()
+        composeRule.runOnIdle { assertTrue(purchased) }
+    }
+
+    @Test
     fun profileReportsFailedSignIn() {
         setContent {
             ProfileRootScreen(
@@ -240,7 +271,10 @@ class ShellSectionsSmokeTest {
         }
     }
 
-    private fun progress(coins: Int = 100): GameProgressState = GameProgressState(
+    private fun progress(
+        coins: Int = 100,
+        temporaryProExpiresAtMs: Long = 0L,
+    ): GameProgressState = GameProgressState(
         playerDisplayName = "Player_7065",
         googlePlaySignedIn = false,
         openPositionHints = 0,
@@ -262,5 +296,6 @@ class ShellSectionsSmokeTest {
         adFreePurchased = false,
         proSubscriptionActive = false,
         proPlusSubscriptionActive = false,
+        temporaryProExpiresAtMs = temporaryProExpiresAtMs,
     )
 }

@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,10 +25,12 @@ import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.data.local.MonetizationProductType
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
@@ -51,6 +54,7 @@ import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
@@ -84,8 +88,18 @@ class MainActivity : ComponentActivity() {
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 var progressState by remember { mutableStateOf(progressRepository.loadState()) }
+                var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
+
+                LaunchedEffect(progressState.temporaryProExpiresAtMs) {
+                    currentTimeMs = System.currentTimeMillis()
+                    while (progressState.temporaryProActiveAt(currentTimeMs)) {
+                        val remainingMs = progressState.temporaryProExpiresAtMs - currentTimeMs
+                        delay(minOf(1_000L, remainingMs.coerceAtLeast(1L)))
+                        currentTimeMs = System.currentTimeMillis()
+                    }
+                }
 
                 LaunchedEffect(
                     progressState.highestUnlockedCampaignLevel,
@@ -100,10 +114,11 @@ class MainActivity : ComponentActivity() {
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
                 }
-                val entitlements = remember(progressState) {
+                val entitlements = remember(progressState, currentTimeMs) {
                     MonetizationEntitlements(
                         adFreePurchased = progressState.adFreePurchased,
-                        proSubscriptionActive = progressState.proSubscriptionActive,
+                        proSubscriptionActive = progressState.proSubscriptionActive ||
+                            progressState.temporaryProActiveAt(currentTimeMs),
                         proPlusSubscriptionActive = progressState.proPlusSubscriptionActive,
                     )
                 }
@@ -159,7 +174,7 @@ class MainActivity : ComponentActivity() {
                         bottomAdContent = {
                             VariantBottomAdContent(
                                 inspectionValue = currentInspectionValue,
-                                adsDisabled = progressState.adsDisabled,
+                                adsDisabled = progressState.adsDisabledAt(currentTimeMs),
                                 toolsEnabled = variantToolsEnabled,
                             )
                         },
@@ -176,7 +191,7 @@ class MainActivity : ComponentActivity() {
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
                                     checkPositionHints = progressState.checkPositionHints,
-                                    autoModeAvailable = progressState.autoTableAssistEnabled,
+                                    autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
                                     infiniteHintsEnabled = progressState.infiniteHintsEnabled,
                                     onConsumeOpenPositionHint = {
                                         if (progressState.infiniteHintsEnabled) {
@@ -250,7 +265,7 @@ class MainActivity : ComponentActivity() {
                                 openPositionHints = progressState.openPositionHints,
                                 checkDigitHints = progressState.checkDigitHints,
                                 checkPositionHints = progressState.checkPositionHints,
-                                autoModeAvailable = progressState.autoTableAssistEnabled,
+                                autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
                                 infiniteHintsEnabled = progressState.infiniteHintsEnabled,
                                 extraMovesBoosts = progressState.extraMovesBoosts,
                                 extraTimeBoosts = progressState.extraTimeBoosts,
@@ -326,6 +341,7 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = progressState,
+                                nowMs = currentTimeMs,
                                 onWatchRewardedCoins = {
                                     val rewarded = adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)
                                     if (rewarded) {
@@ -396,10 +412,27 @@ class MainActivity : ComponentActivity() {
                                     }
                                     purchased
                                 },
+                                onBuyTemporaryPro = {
+                                    val purchased = progressRepository.buyTemporaryPro()
+                                    if (purchased) {
+                                        progressState = progressRepository.loadState()
+                                        AppLog.info(
+                                            tag = "MainActivity",
+                                            message = "temporary Pro purchased",
+                                            attributes = mapOf(
+                                                "priceCoins" to TemporaryProPolicy.PRICE_COINS.toString(),
+                                                "durationMinutes" to
+                                                    (TemporaryProPolicy.DURATION_MS / 60_000L).toString(),
+                                            ),
+                                        )
+                                    }
+                                    purchased
+                                },
                             )
 
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
                                 progressState = progressState,
+                                nowMs = currentTimeMs,
                                 onGooglePlaySignIn = {
                                     val session = authService.signInWithGooglePlay()
                                     if (session.isSignedIn) {

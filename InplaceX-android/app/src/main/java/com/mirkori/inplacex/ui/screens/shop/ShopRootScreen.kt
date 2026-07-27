@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
@@ -47,6 +48,7 @@ private enum class ShopCategory {
 @Composable
 fun ShopRootScreen(
     progressState: GameProgressState,
+    nowMs: Long = System.currentTimeMillis(),
     onWatchRewardedCoins: () -> Boolean,
     onBuyOpenPositionHint: () -> Boolean,
     onBuyCheckDigitHint: () -> Boolean,
@@ -57,6 +59,7 @@ fun ShopRootScreen(
     onBuyRemoveAds: () -> Boolean,
     onBuyPro: () -> Boolean,
     onBuyProPlus: () -> Boolean,
+    onBuyTemporaryPro: () -> Boolean = { false },
 ) {
     val strings = LocalAppStrings.current
     var categoryName by rememberSaveable { mutableStateOf(ShopCategory.BOOSTS.name) }
@@ -159,10 +162,12 @@ fun ShopRootScreen(
 
             ShopCategory.PREMIUM -> PremiumCatalog(
                 progressState = progressState,
+                nowMs = nowMs,
                 onReport = ::report,
                 onBuyRemoveAds = onBuyRemoveAds,
                 onBuyPro = onBuyPro,
                 onBuyProPlus = onBuyProPlus,
+                onBuyTemporaryPro = onBuyTemporaryPro,
             )
         }
     }
@@ -365,10 +370,12 @@ private fun shellFilterChipColors() = FilterChipDefaults.filterChipColors(
 @Composable
 private fun PremiumCatalog(
     progressState: GameProgressState,
+    nowMs: Long,
     onReport: (Boolean) -> Unit,
     onBuyRemoveAds: () -> Boolean,
     onBuyPro: () -> Boolean,
     onBuyProPlus: () -> Boolean,
+    onBuyTemporaryPro: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
     Text(
@@ -384,6 +391,11 @@ private fun PremiumCatalog(
         actionLabel = strings.text(if (progressState.adFreePurchased) "shop.owned" else "shop.buy"),
         onAction = { onReport(onBuyRemoveAds()) },
     )
+    TemporaryProCard(
+        progressState = progressState,
+        nowMs = nowMs,
+        onAction = { onReport(onBuyTemporaryPro()) },
+    )
     PremiumCard(
         title = strings.text("shop.product.pro"),
         description = strings.text("shop.product.pro.desc"),
@@ -398,6 +410,86 @@ private fun PremiumCatalog(
         actionLabel = strings.text(if (progressState.proPlusSubscriptionActive) "shop.active" else "shop.subscribe"),
         onAction = { onReport(onBuyProPlus()) },
     )
+}
+
+@Composable
+private fun TemporaryProCard(
+    progressState: GameProgressState,
+    nowMs: Long,
+    onAction: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    val includedInPermanent = progressState.proSubscriptionActive || progressState.proPlusSubscriptionActive
+    val active = progressState.temporaryProActiveAt(nowMs)
+    val affordable = progressState.coins >= TemporaryProPolicy.PRICE_COINS
+    val enabled = !includedInPermanent && affordable
+    val price = TemporaryProPolicy.PRICE_COINS.toString()
+    val status = when {
+        includedInPermanent -> strings.text("shop.temporary_pro.included")
+        active -> strings.text("shop.temporary_pro.remaining").replace(
+            "{time}",
+            TemporaryProPolicy.formatRemaining(progressState.temporaryProExpiresAtMs, nowMs),
+        )
+        else -> strings.text("shop.temporary_pro.duration")
+    }
+    val actionLabel = when {
+        includedInPermanent -> strings.text("shop.temporary_pro.included")
+        !affordable -> strings.text("shop.not_enough_coins")
+        active -> strings.text("shop.temporary_pro.extend").replace("{price}", price)
+        else -> strings.text("shop.temporary_pro.buy").replace("{price}", price)
+    }
+
+    SceneCard(
+        accentColor = if (active || includedInPermanent) {
+            InplaceXColors.Mint.copy(alpha = 0.12f)
+        } else {
+            InplaceXColors.ToyCream.copy(alpha = 0.95f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = strings.text("shop.product.temporary_pro"),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = strings.text("shop.price").replace("{price}", price),
+                style = MaterialTheme.typography.labelLarge,
+                color = InplaceXColors.ToyOrange,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            text = strings.text("shop.product.temporary_pro.desc"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (active || includedInPermanent) InplaceXColors.Mint else InplaceXColors.InkMuted,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Button(
+            onClick = onAction,
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .semantics {
+                    role = Role.Button
+                    if (!enabled) {
+                        stateDescription = actionLabel
+                    }
+                },
+        ) {
+            Text(actionLabel)
+        }
+    }
 }
 
 @Composable
