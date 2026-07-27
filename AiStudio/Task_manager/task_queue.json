@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-27T21:26:28Z",
+  "updated_at": "2026-07-27T21:54:12Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -11611,7 +11611,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-26T23:03:14Z",
+      "dependency_state_checked_at": "2026-07-27T21:54:12Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11700,7 +11700,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-26T23:03:14Z",
+      "dependency_state_checked_at": "2026-07-27T21:54:12Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -12919,7 +12919,7 @@
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "clean-rebuild source refs validated by Agent Core v0.4.22.358",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13254,7 +13254,7 @@
         },
         "reason": "source payload is not represented in current base"
       },
-      "packet_normalized_at": "2026-07-26T23:03:14Z",
+      "packet_normalized_at": "2026-07-27T21:54:12Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "next_action": "Run the exact clean-rebuild packet through auto-worker-5.3.",
       "status_history": [
