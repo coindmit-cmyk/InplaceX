@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-27T21:57:09Z",
+  "updated_at": "2026-07-27T22:06:07Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": false,
+      "worker_ready": true,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13045,7 +13045,12 @@
         "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
         "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
         "gradle/libs.versions.toml",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/**",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "docs/plans/allowed_paths_repair_plan.json",
+        "README.md"
       ],
       "context_inventory": {
         "base_ref": "origin/develop",
@@ -13060,7 +13065,12 @@
           "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
           "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
           "gradle/libs.versions.toml",
-          "CHANGELOG.md"
+          "CHANGELOG.md",
+          "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+          "docs/reports/**",
+          "AiStudio/Task_manager/clean_rebuild_plan.json",
+          "docs/plans/allowed_paths_repair_plan.json",
+          "README.md"
         ],
         "doc_refs": [
           {
@@ -13095,7 +13105,11 @@
           "InplaceX-docs/Backend/Online Contracts.md",
           "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
           "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-          "gradle/libs.versions.toml"
+          "gradle/libs.versions.toml",
+          "docs/reports/**",
+          "AiStudio/Task_manager/clean_rebuild_plan.json",
+          "docs/plans/allowed_paths_repair_plan.json",
+          "README.md"
         ],
         "forbidden_paths": [
           ".env",
@@ -13149,9 +13163,9 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
-      "repaired_packet_at": "2026-07-26T22:13:10Z",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "repaired_packet_at": "2026-07-27T22:06:07Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "deterministic_preflight": {
         "schema_version": 1,
@@ -13258,7 +13272,6 @@
       },
       "packet_normalized_at": "2026-07-27T21:54:12Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "next_action": "Run the exact clean-rebuild packet through auto-worker-5.3.",
       "status_history": [
         {
           "at": "2026-07-27T21:26:28Z",
@@ -13287,7 +13300,6 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
       "started_at": "2026-07-27T21:55:27Z",
       "lock_expires_at": "2026-07-28T05:55:27Z",
-      "status_reason": "worker explicitly reported required checks as partial",
       "worker_result_commit": "283916b5a6a8750d2d1b31bf3dac2e73f68f5008",
       "worker_result_synced_at": "2026-07-27T21:57:09Z",
       "worker_changed_paths": [
@@ -13315,7 +13327,6 @@
         "integration_status": "needs_worker_fix",
         "reason": "worker explicitly reported required checks as partial"
       },
-      "not_worker_ready_reason": "worker explicitly reported required checks as partial",
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
       "commits": [
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
