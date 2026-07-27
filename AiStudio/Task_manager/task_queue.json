@@ -9131,7 +9131,6 @@
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
       "github_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
       "started_at": "2026-07-26T21:03:27Z",
-      "lock_expires_at": "2026-07-27T05:03:27Z",
       "repaired_packet_metadata_at": "2026-07-26T21:07:57Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "worker_result_commit": "82e6dc228d73516e8132e4fc926f723033be1459",
@@ -9168,7 +9167,10 @@
       ],
       "integration_status": "needs_integrator_review",
       "dispatcher_repaired_at": "2026-07-26T21:17:56Z",
-      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py"
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
+      "stale_lock_released_at": "2026-07-27T17:28:42Z",
+      "stale_lock_released_by": "status_orchestrator.py",
+      "stale_lock_previous_status": "integration_requested"
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
