@@ -175,6 +175,15 @@ server-side; clients do not choose an opponent or session authority. A
 `matchmaking.matched` WebSocket event is an optimization, not the only way to
 discover a match; polling the ticket remains valid.
 
+The staging v1 policy first returns a `searching` ticket and pairs the oldest
+compatible ticket from a different authenticated player. If no peer is found
+within the server-configured bounded fallback interval (five seconds by
+default), the next ticket read atomically creates a server-bot session and
+returns `matched` with `matchedWithBot: true`. A searching ticket always has a
+null `sessionId`; a matched ticket always has a server-generated non-null
+`sessionId`. Replaying the create command returns the ticket's current state,
+including a later human or bot match, rather than creating another ticket.
+
 ### Duel commands
 
 The server validates the active phase, participant ownership, expected revision,

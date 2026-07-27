@@ -215,7 +215,11 @@ private class OnlineJsonCodec {
     fun encodeTicket(ticket: MatchmakingTicket): String = buildJsonObject {
         put("ticketId", ticket.ticketId)
         put("status", ticket.status.name.lowercase())
-        ticket.sessionId?.let { put("sessionId", it) }
+        if (ticket.sessionId == null) {
+            put("sessionId", JsonNull)
+        } else {
+            put("sessionId", ticket.sessionId)
+        }
         put("matchedWithBot", ticket.matchedWithBot)
         put("createdAtEpochMs", ticket.createdAt.toEpochMilli())
     }.toString()
@@ -245,8 +249,16 @@ private class OnlineJsonCodec {
         put("sessionId", snapshot.sessionId)
         put("revision", snapshot.revision)
         put("phase", snapshot.phase)
-        snapshot.currentTurn?.let { put("currentTurn", it) } ?: put("currentTurn", JsonNull)
-        snapshot.winner?.let { put("winner", it) } ?: put("winner", JsonNull)
+        if (snapshot.currentTurn == null) {
+            put("currentTurn", JsonNull)
+        } else {
+            put("currentTurn", snapshot.currentTurn)
+        }
+        if (snapshot.winner == null) {
+            put("winner", JsonNull)
+        } else {
+            put("winner", snapshot.winner)
+        }
         put("codeLength", snapshot.codeLength)
         put("attemptLimit", snapshot.attemptLimit)
         put("allowDuplicates", snapshot.allowDuplicates)

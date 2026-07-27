@@ -5,6 +5,7 @@ import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 class OnlineRuntime private constructor(
@@ -26,7 +27,21 @@ class OnlineRuntime private constructor(
                 }
         }
         if (authenticated == null) return OnlineClientResult.AuthenticationRequired
-        return duel.createMatch(mode)
+        val created = duel.createMatch(mode)
+        if (created !is OnlineClientResult.Success) return created
+        if (created.value.status == OnlineMatchStatus.MATCHED) return created
+
+        repeat(MaximumTicketPolls) {
+            delay(TicketPollDelayMillis)
+            when (val ticket = duel.readTicket(created.value.ticketId)) {
+                is OnlineClientResult.Success -> {
+                    if (ticket.value.status == OnlineMatchStatus.MATCHED) return ticket
+                }
+                OnlineClientResult.TemporarilyUnavailable -> Unit
+                else -> return ticket
+            }
+        }
+        return OnlineClientResult.TemporarilyUnavailable
     }
 
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
@@ -51,6 +66,9 @@ class OnlineRuntime private constructor(
     }
 
     companion object {
+        private const val TicketPollDelayMillis = 500L
+        private const val MaximumTicketPolls = 40
+
         fun createOrNull(
             context: Context,
             profile: LocalPlayerProfile,

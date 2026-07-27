@@ -35,7 +35,14 @@ class OnlineDuelClientTest {
         val result = OnlineDuelClient(boundary).createMatch(RemoteMatchmakingMode.CLASSIC)
 
         assertEquals(
-            OnlineClientResult.Success(OnlineMatchTicket(ticketId, sessionId, true)),
+            OnlineClientResult.Success(
+                OnlineMatchTicket(
+                    ticketId = ticketId,
+                    status = OnlineMatchStatus.MATCHED,
+                    sessionId = sessionId,
+                    matchedWithBot = true,
+                ),
+            ),
             result,
         )
         val request = requireNotNull(boundary.requests.single())
@@ -45,6 +52,43 @@ class OnlineDuelClientTest {
             .jsonPrimitive
             .content
         assertEquals(bodyCommandId, request.idempotencyKey)
+    }
+
+    @Test
+    fun `searching ticket stays explicit and can be polled`() = runBlocking {
+        val ticketId = UUID.randomUUID().toString()
+        val boundary = QueueBoundary(
+            RemoteCallResult.Success(
+                RemoteResponse(
+                    200,
+                    emptyMap(),
+                    """
+                        {
+                          "ticketId":"$ticketId",
+                          "status":"searching",
+                          "sessionId":null,
+                          "matchedWithBot":false,
+                          "createdAtEpochMs":1000
+                        }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+
+        val result = OnlineDuelClient(boundary).readTicket(ticketId)
+
+        assertEquals(
+            OnlineClientResult.Success(
+                OnlineMatchTicket(
+                    ticketId = ticketId,
+                    status = OnlineMatchStatus.SEARCHING,
+                    sessionId = null,
+                    matchedWithBot = false,
+                ),
+            ),
+            result,
+        )
+        assertEquals("/api/v1/matchmaking/tickets/$ticketId", boundary.requests.single().path)
     }
 
     @Test

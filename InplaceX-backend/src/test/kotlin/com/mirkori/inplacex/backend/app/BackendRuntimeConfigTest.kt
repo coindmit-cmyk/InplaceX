@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.security.KeyPairGenerator
+import java.time.Duration
 import java.util.Base64
 
 class BackendRuntimeConfigTest {
@@ -71,7 +72,36 @@ class BackendRuntimeConfigTest {
         )
 
         assertEquals("RSA", requireNotNull(config.online).verificationKey.algorithm)
+        assertEquals(Duration.ofSeconds(5), config.online?.botFallbackDelay)
         assertFalse(config.online.toString().contains(encodedPublicKey))
+    }
+
+    @Test
+    fun `online game API accepts a bounded bot fallback delay`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
+                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+                OnlineRuntimeConfig.BotFallbackSecondsKey to "8",
+            ),
+        )
+
+        assertEquals(Duration.ofSeconds(8), config.online?.botFallbackDelay)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `online game API rejects an unbounded bot fallback delay`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
+                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+                OnlineRuntimeConfig.BotFallbackSecondsKey to "600",
+            ),
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

@@ -39,7 +39,9 @@ fun Application.backendModule(
         }
     }
     val onlineService = config.online?.let { onlineConfig ->
-        AuthoritativeOnlineDuelService().also { service ->
+        AuthoritativeOnlineDuelService(
+            botFallbackDelay = onlineConfig.botFallbackDelay,
+        ).also { service ->
             environment.monitor.subscribe(ApplicationStopped) {
                 service.close()
             }

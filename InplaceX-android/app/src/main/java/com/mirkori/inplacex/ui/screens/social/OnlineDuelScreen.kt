@@ -82,7 +82,7 @@ internal fun OnlineDuelScreen(
                         scope.launch {
                             when (val ticket = runtime.createMatch()) {
                                 is OnlineClientResult.Success -> accept(
-                                    runtime.readSession(ticket.value.sessionId),
+                                    runtime.readSession(requireNotNull(ticket.value.sessionId)),
                                 )
                                 OnlineClientResult.AuthenticationRequired ->
                                     state = OnlineDuelUiState.Error("Не удалось войти как гость")

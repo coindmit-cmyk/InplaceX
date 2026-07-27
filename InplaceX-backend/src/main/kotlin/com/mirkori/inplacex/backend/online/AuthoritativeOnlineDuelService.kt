@@ -1,18 +1,21 @@
 package com.mirkori.inplacex.backend.online
 
 import com.mirkori.inplacex.backend.bot.ServerBotPlayer
+import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
+import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
 import com.mirkori.inplacex.backend.domain.duel.DuelMatch
 import com.mirkori.inplacex.backend.domain.duel.DuelParticipant
 import com.mirkori.inplacex.backend.domain.duel.DuelPhase
 import com.mirkori.inplacex.backend.domain.duel.DuelSnapshot
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
+import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.model.GameConfig
 import java.security.MessageDigest
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 enum class OnlineMatchMode {
     CLASSIC,
@@ -21,6 +24,7 @@ enum class OnlineMatchMode {
 }
 
 enum class MatchmakingStatus {
+    SEARCHING,
     MATCHED,
     CANCELLED,
 }
@@ -66,19 +70,27 @@ class OnlineRevisionConflictException(val current: OnlineDuelSnapshot) :
 class OnlineCommandIdReusedException : IllegalStateException("online command id reused with a different payload")
 
 /**
- * First server-authoritative online vertical slice.
+ * Server-authoritative matchmaking and duel runtime.
  *
- * Membership is created and resolved only from the registry-owned session
- * record. The caller never supplies a membership resolver or participant role.
- * The initial opponent is a server bot fallback; replacing it with a human
- * matchmaking peer does not change the session command contract.
+ * A ticket first waits for another authenticated player in the same mode.
+ * Reading it after [botFallbackDelay] promotes it to a server-owned bot match.
+ * Session membership and participant roles are created only inside this
+ * service; callers can never provide either value.
  */
 class AuthoritativeOnlineDuelService(
     private val clock: Clock = Clock.systemUTC(),
+    private val botFallbackDelay: Duration = Duration.ofSeconds(5),
 ) : AutoCloseable {
-    private val tickets = ConcurrentHashMap<String, MatchmakingTicket>()
-    private val ticketReplays = ConcurrentHashMap<String, TicketReplay>()
-    private val sessions = ConcurrentHashMap<String, SessionRecord>()
+    private val lock = Any()
+    private val tickets = mutableMapOf<String, TicketRecord>()
+    private val ticketReplays = mutableMapOf<String, TicketReplay>()
+    private val sessions = mutableMapOf<String, SessionRecord>()
+
+    init {
+        require(!botFallbackDelay.isNegative && !botFallbackDelay.isZero) {
+            "botFallbackDelay must be positive"
+        }
+    }
 
     fun createTicket(
         playerId: String,
@@ -87,12 +99,114 @@ class AuthoritativeOnlineDuelService(
     ): MatchmakingTicket {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(commandId, "commandId")
-        val replayKey = "$playerId:$commandId"
-        ticketReplays[replayKey]?.let { replay ->
-            if (replay.mode != mode) throw OnlineCommandIdReusedException()
-            return replay.ticket
-        }
+        synchronized(lock) {
+            val replayKey = "$playerId:$commandId"
+            ticketReplays[replayKey]?.let { replay ->
+                if (replay.mode != mode) throw OnlineCommandIdReusedException()
+                return tickets.getValue(replay.ticketId).ticket
+            }
 
+            promoteExpiredTickets(clock.instant())
+            val waitingPeer = tickets.values
+                .asSequence()
+                .filter { record ->
+                    record.mode == mode &&
+                        record.ticket.status == MatchmakingStatus.SEARCHING &&
+                        record.ticket.ownerPlayerId != playerId
+                }
+                .minWithOrNull(compareBy<TicketRecord>({ it.ticket.createdAt }, { it.ticket.ticketId }))
+
+            val ticketId = UUID.randomUUID().toString()
+            val createdAt = clock.instant()
+            val ticket = if (waitingPeer == null) {
+                MatchmakingTicket(
+                    ticketId = ticketId,
+                    ownerPlayerId = playerId,
+                    status = MatchmakingStatus.SEARCHING,
+                    sessionId = null,
+                    matchedWithBot = false,
+                    createdAt = createdAt,
+                )
+            } else {
+                val session = createHumanSession(
+                    mode = mode,
+                    firstPlayerId = waitingPeer.ticket.ownerPlayerId,
+                    secondPlayerId = playerId,
+                )
+                waitingPeer.ticket = waitingPeer.ticket.matched(session.sessionId, withBot = false)
+                MatchmakingTicket(
+                    ticketId = ticketId,
+                    ownerPlayerId = playerId,
+                    status = MatchmakingStatus.MATCHED,
+                    sessionId = session.sessionId,
+                    matchedWithBot = false,
+                    createdAt = createdAt,
+                )
+            }
+            tickets[ticketId] = TicketRecord(mode, ticket)
+            ticketReplays[replayKey] = TicketReplay(mode, ticketId)
+            return ticket
+        }
+    }
+
+    fun readTicket(playerId: String, ticketId: String): MatchmakingTicket {
+        requireCanonicalUuid(playerId, "playerId")
+        synchronized(lock) {
+            val record = tickets[ticketId] ?: throw NoSuchElementException("matchmaking ticket not found")
+            if (record.ticket.ownerPlayerId != playerId) throw OnlineMembershipRejectedException()
+            if (record.ticket.status == MatchmakingStatus.SEARCHING) {
+                promoteTicketToBotIfExpired(record, clock.instant())
+            }
+            return record.ticket
+        }
+    }
+
+    fun readSession(playerId: String, sessionId: String): OnlineDuelSnapshot =
+        sessionFor(playerId, sessionId).snapshotFor(playerId)
+
+    fun submitSecret(
+        playerId: String,
+        sessionId: String,
+        commandId: String,
+        expectedRevision: Long,
+        secret: String,
+    ): OnlineDuelSnapshot =
+        sessionFor(playerId, sessionId).submitSecret(
+            playerId = playerId,
+            commandId = commandId,
+            expectedRevision = expectedRevision,
+            secret = secret,
+        )
+
+    fun submitGuess(
+        playerId: String,
+        sessionId: String,
+        commandId: String,
+        expectedRevision: Long,
+        guess: String,
+    ): OnlineDuelSnapshot =
+        sessionFor(playerId, sessionId).submitGuess(
+            playerId = playerId,
+            commandId = commandId,
+            expectedRevision = expectedRevision,
+            guess = guess,
+        )
+
+    private fun promoteExpiredTickets(now: Instant) {
+        tickets.values
+            .filter { it.ticket.status == MatchmakingStatus.SEARCHING }
+            .forEach { promoteTicketToBotIfExpired(it, now) }
+    }
+
+    private fun promoteTicketToBotIfExpired(record: TicketRecord, now: Instant) {
+        if (record.ticket.status != MatchmakingStatus.SEARCHING) return
+        val deadline = record.ticket.createdAt.plus(botFallbackDelay)
+        if (now.isBefore(deadline)) return
+        val session = createBotSession(record.mode, record.ticket.ownerPlayerId)
+        record.ticket = record.ticket.matched(session.sessionId, withBot = true)
+    }
+
+    private fun createBotSession(mode: OnlineMatchMode, playerId: String): SessionRecord {
         val sessionId = UUID.randomUUID().toString()
         val config = mode.gameConfig()
         val bot = ServerBotPlayer.create(
@@ -101,143 +215,184 @@ class AuthoritativeOnlineDuelService(
             secretSeed = sessionId.hashCode().toLong(),
             brainSeed = playerId.hashCode().toLong() xor sessionId.hashCode().toLong(),
         )
-        val record = SessionRecord(
+        return SessionRecord(
             sessionId = sessionId,
-            ownerPlayerId = playerId,
             match = DuelMatch.create(config),
+            memberships = mapOf(playerId to DuelParticipant.FIRST),
             bot = bot,
-        )
-        sessions[sessionId] = record
-        val ticket = MatchmakingTicket(
-            ticketId = UUID.randomUUID().toString(),
-            ownerPlayerId = playerId,
-            status = MatchmakingStatus.MATCHED,
+        ).also { sessions[sessionId] = it }
+    }
+
+    private fun createHumanSession(
+        mode: OnlineMatchMode,
+        firstPlayerId: String,
+        secondPlayerId: String,
+    ): SessionRecord {
+        val sessionId = UUID.randomUUID().toString()
+        return SessionRecord(
             sessionId = sessionId,
-            matchedWithBot = true,
-            createdAt = clock.instant(),
-        )
-        tickets[ticket.ticketId] = ticket
-        val prior = ticketReplays.putIfAbsent(replayKey, TicketReplay(mode, ticket))
-        if (prior != null) {
-            sessions.remove(sessionId)?.close()
-            tickets.remove(ticket.ticketId)
-            if (prior.mode != mode) throw OnlineCommandIdReusedException()
-            return prior.ticket
-        }
-        return ticket
-    }
-
-    fun readTicket(playerId: String, ticketId: String): MatchmakingTicket {
-        val ticket = tickets[ticketId] ?: throw NoSuchElementException("matchmaking ticket not found")
-        if (ticket.ownerPlayerId != playerId) throw OnlineMembershipRejectedException()
-        return ticket
-    }
-
-    fun readSession(playerId: String, sessionId: String): OnlineDuelSnapshot =
-        sessionFor(playerId, sessionId).snapshot()
-
-    fun submitSecret(
-        playerId: String,
-        sessionId: String,
-        commandId: String,
-        expectedRevision: Long,
-        secret: String,
-    ): OnlineDuelSnapshot = sessionFor(playerId, sessionId).submit(
-        commandId = commandId,
-        expectedRevision = expectedRevision,
-        fingerprint = fingerprint("secret", secret),
-    ) {
-        match.setSecret(
-            DuelParticipant.FIRST,
-            MutableDuelCommand.secret(secret.toCharArray()),
-        )
-        match.setSecret(
-            DuelParticipant.SECOND,
-            MutableDuelCommand.secret(bot.revealSecret().toCharArray()),
-        )
-        revision += 1
-        snapshot()
-    }
-
-    fun submitGuess(
-        playerId: String,
-        sessionId: String,
-        commandId: String,
-        expectedRevision: Long,
-        guess: String,
-    ): OnlineDuelSnapshot = sessionFor(playerId, sessionId).submit(
-        commandId = commandId,
-        expectedRevision = expectedRevision,
-        fingerprint = fingerprint("guess", guess),
-    ) {
-        val afterPlayer = match.submitGuess(
-            DuelParticipant.FIRST,
-            MutableDuelCommand.guess(guess.toCharArray()),
-        )
-        bot.scoreIncomingGuess(guess)
-        revision += 1
-        if (afterPlayer.phase == DuelPhase.ACTIVE) {
-            val turn = bot.nextTurn()
-            val afterBot = match.submitGuess(
-                DuelParticipant.SECOND,
-                MutableDuelCommand.guess(turn.guess.toCharArray()),
-            )
-            val exactMatches = afterBot.attempts.last().exactMatches
-            bot.registerTurnFeedback(turn.guess, exactMatches)
-            revision += 1
-        }
-        snapshot()
+            match = DuelMatch.create(mode.gameConfig()),
+            memberships = mapOf(
+                firstPlayerId to DuelParticipant.FIRST,
+                secondPlayerId to DuelParticipant.SECOND,
+            ),
+            bot = null,
+        ).also { sessions[sessionId] = it }
     }
 
     private fun sessionFor(playerId: String, sessionId: String): SessionRecord {
-        val record = sessions[sessionId] ?: throw NoSuchElementException("online session not found")
-        if (record.ownerPlayerId != playerId) throw OnlineMembershipRejectedException()
-        return record
+        requireCanonicalUuid(playerId, "playerId")
+        requireCanonicalUuid(sessionId, "sessionId")
+        synchronized(lock) {
+            val record = sessions[sessionId] ?: throw NoSuchElementException("online session not found")
+            if (!record.isMember(playerId)) throw OnlineMembershipRejectedException()
+            return record
+        }
     }
 
     override fun close() {
-        sessions.values.forEach(SessionRecord::close)
-        sessions.clear()
-        tickets.clear()
-        ticketReplays.clear()
+        synchronized(lock) {
+            sessions.values.forEach(SessionRecord::close)
+            sessions.clear()
+            tickets.clear()
+            ticketReplays.clear()
+        }
     }
 
     private data class TicketReplay(
         val mode: OnlineMatchMode,
-        val ticket: MatchmakingTicket,
+        val ticketId: String,
+    )
+
+    private data class TicketRecord(
+        val mode: OnlineMatchMode,
+        var ticket: MatchmakingTicket,
     )
 
     private class SessionRecord(
         val sessionId: String,
-        val ownerPlayerId: String,
         val match: DuelMatch,
-        val bot: ServerBotPlayer,
+        private val memberships: Map<String, DuelParticipant>,
+        private val bot: ServerBotPlayer?,
     ) : AutoCloseable {
-        var revision: Long = 0
+        private var revision: Long = 0
         private val commandReplays = mutableMapOf<String, CommandReplay>()
+        private val pendingSecrets = mutableMapOf<DuelParticipant, CharArray>()
+
+        fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
 
         @Synchronized
-        fun submit(
+        fun submitSecret(
+            playerId: String,
             commandId: String,
             expectedRevision: Long,
-            fingerprint: String,
-            operation: SessionRecord.() -> OnlineDuelSnapshot,
-        ): OnlineDuelSnapshot {
-            requireCanonicalUuid(commandId, "commandId")
-            commandReplays[commandId]?.let { replay ->
-                if (replay.fingerprint != fingerprint) throw OnlineCommandIdReusedException()
-                return replay.snapshot
+            secret: String,
+        ): OnlineDuelSnapshot = submit(
+            playerId = playerId,
+            commandId = commandId,
+            expectedRevision = expectedRevision,
+            fingerprint = fingerprint("secret", secret),
+        ) { participant ->
+            if (match.snapshot().phase != DuelPhase.SETUP || participant in pendingSecrets) {
+                throw DuelCommandRejectedException(DuelCommandRejection.SECRET_NOT_EXPECTED)
             }
-            if (expectedRevision != revision) throw OnlineRevisionConflictException(snapshot())
-            val result = operation()
-            commandReplays[commandId] = CommandReplay(fingerprint, result)
-            return result
+            val secretChars = secret.toCharArray()
+            val validationReason = try {
+                GuessValidator.validateOrReason(secretChars, match.config)
+            } finally {
+                secretChars.fill(CLEARED_DIGIT)
+            }
+            if (validationReason != null) {
+                throw DuelCommandRejectedException(DuelCommandRejection.INVALID_SECRET, validationReason)
+            }
+            pendingSecrets[participant] = secret.toCharArray()
+            if (bot != null) {
+                check(participant == DuelParticipant.FIRST)
+                configureSecret(DuelParticipant.FIRST, pendingSecrets.remove(DuelParticipant.FIRST)!!)
+                configureSecret(DuelParticipant.SECOND, bot.revealSecret().toCharArray())
+            } else if (pendingSecrets.keys.containsAll(DuelParticipant.entries)) {
+                configureSecret(DuelParticipant.FIRST, pendingSecrets.remove(DuelParticipant.FIRST)!!)
+                configureSecret(DuelParticipant.SECOND, pendingSecrets.remove(DuelParticipant.SECOND)!!)
+            }
+            revision += 1
+            snapshotFor(playerId)
         }
 
         @Synchronized
-        fun snapshot(): OnlineDuelSnapshot = match.snapshot().toOnlineSnapshot(sessionId, revision)
+        fun submitGuess(
+            playerId: String,
+            commandId: String,
+            expectedRevision: Long,
+            guess: String,
+        ): OnlineDuelSnapshot = submit(
+            playerId = playerId,
+            commandId = commandId,
+            expectedRevision = expectedRevision,
+            fingerprint = fingerprint("guess", guess),
+        ) { participant ->
+            val afterPlayer = match.submitGuess(
+                participant,
+                MutableDuelCommand.guess(guess.toCharArray()),
+            )
+            revision += 1
+            if (bot != null && afterPlayer.phase == DuelPhase.ACTIVE) {
+                bot.scoreIncomingGuess(guess)
+                val turn = bot.nextTurn()
+                val afterBot = match.submitGuess(
+                    DuelParticipant.SECOND,
+                    MutableDuelCommand.guess(turn.guess.toCharArray()),
+                )
+                bot.registerTurnFeedback(turn.guess, afterBot.attempts.last().exactMatches)
+                revision += 1
+            }
+            snapshotFor(playerId)
+        }
 
-        override fun close() = match.close()
+        @Synchronized
+        fun snapshotFor(playerId: String): OnlineDuelSnapshot {
+            val viewer = memberships[playerId] ?: throw OnlineMembershipRejectedException()
+            return match.snapshot().toOnlineSnapshot(
+                sessionId = sessionId,
+                revision = revision,
+                viewer = viewer,
+                pendingSecrets = pendingSecrets.keys,
+            )
+        }
+
+        private fun submit(
+            playerId: String,
+            commandId: String,
+            expectedRevision: Long,
+            fingerprint: String,
+            operation: SessionRecord.(DuelParticipant) -> OnlineDuelSnapshot,
+        ): OnlineDuelSnapshot {
+            requireCanonicalUuid(commandId, "commandId")
+            val participant = memberships[playerId] ?: throw OnlineMembershipRejectedException()
+            val replayKey = "$playerId:$commandId"
+            commandReplays[replayKey]?.let { replay ->
+                if (replay.fingerprint != fingerprint) throw OnlineCommandIdReusedException()
+                return replay.snapshot
+            }
+            if (expectedRevision != revision) throw OnlineRevisionConflictException(snapshotFor(playerId))
+            val result = operation(participant)
+            commandReplays[replayKey] = CommandReplay(fingerprint, result)
+            return result
+        }
+
+        private fun configureSecret(participant: DuelParticipant, secret: CharArray) {
+            try {
+                match.setSecret(participant, MutableDuelCommand.secret(secret))
+            } finally {
+                secret.fill(CLEARED_DIGIT)
+            }
+        }
+
+        @Synchronized
+        override fun close() {
+            pendingSecrets.values.forEach { it.fill(CLEARED_DIGIT) }
+            pendingSecrets.clear()
+            match.close()
+        }
     }
 
     private data class CommandReplay(
@@ -246,35 +401,47 @@ class AuthoritativeOnlineDuelService(
     )
 }
 
-private fun DuelSnapshot.toOnlineSnapshot(sessionId: String, revision: Long): OnlineDuelSnapshot =
+private fun MatchmakingTicket.matched(sessionId: String, withBot: Boolean): MatchmakingTicket =
+    copy(
+        status = MatchmakingStatus.MATCHED,
+        sessionId = sessionId,
+        matchedWithBot = withBot,
+    )
+
+private fun DuelSnapshot.toOnlineSnapshot(
+    sessionId: String,
+    revision: Long,
+    viewer: DuelParticipant,
+    pendingSecrets: Set<DuelParticipant>,
+): OnlineDuelSnapshot =
     OnlineDuelSnapshot(
         sessionId = sessionId,
         revision = revision,
         phase = phase.name.lowercase(),
-        currentTurn = currentTurn?.publicActor(),
-        winner = winner?.publicActor(),
+        currentTurn = currentTurn?.publicActorFor(viewer),
+        winner = winner?.publicActorFor(viewer),
         codeLength = config.codeLength,
         attemptLimit = config.attemptLimit,
         allowDuplicates = config.allowDuplicates,
         attempts = attempts.map { attempt ->
             OnlineDuelAttempt(
-                actor = attempt.attacker.publicActor(),
+                actor = attempt.attacker.publicActorFor(viewer),
                 exactMatches = attempt.exactMatches,
                 number = attempt.number,
             )
         },
         participants = participants.map { participant ->
             OnlineDuelParticipant(
-                actor = participant.participant.publicActor(),
-                secretConfigured = participant.secretConfigured,
+                actor = participant.participant.publicActorFor(viewer),
+                secretConfigured = participant.secretConfigured || participant.participant in pendingSecrets,
                 attemptsUsed = participant.attemptsUsed,
                 attemptsLeft = participant.attemptsLeft,
             )
         },
     )
 
-private fun DuelParticipant.publicActor(): String =
-    if (this == DuelParticipant.FIRST) "player" else "opponent"
+private fun DuelParticipant.publicActorFor(viewer: DuelParticipant): String =
+    if (this == viewer) "player" else "opponent"
 
 private fun OnlineMatchMode.gameConfig(): GameConfig = when (this) {
     OnlineMatchMode.CLASSIC -> GameConfig(
@@ -312,3 +479,5 @@ private fun requireCanonicalUuid(value: String, name: String) {
         "$name must be a canonical UUID"
     }
 }
+
+private const val CLEARED_DIGIT: Char = '\u0000'

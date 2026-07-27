@@ -14,7 +14,9 @@ import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
 import io.ktor.server.testing.testApplication
 import java.security.KeyPairGenerator
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.runBlocking
 import org.h2.jdbcx.JdbcDataSource
@@ -42,7 +44,11 @@ class OnlineVerticalSliceE2ETest {
             accessTokenIssuer = Rs256AccessTokenIssuer(keys.private, policy),
             clock = clock,
         )
-        val online = AuthoritativeOnlineDuelService(clock)
+        val matchmakingClock = E2EMutableClock(now)
+        val online = AuthoritativeOnlineDuelService(
+            clock = matchmakingClock,
+            botFallbackDelay = Duration.ofSeconds(5),
+        )
         application {
             configureIdentityRoutes(identity)
             configureOnlineRoutes(
@@ -88,8 +94,14 @@ class OnlineVerticalSliceE2ETest {
             tokenProvider = auth,
         )
         val duel = OnlineDuelClient(authenticatedTransport)
-        val ticket = duel.createMatch(RemoteMatchmakingMode.CLASSIC)
-        val sessionId = (ticket as OnlineClientResult.Success).value.sessionId
+        val searching = duel.createMatch(RemoteMatchmakingMode.CLASSIC)
+        val createdTicket = (searching as OnlineClientResult.Success).value
+        assertEquals(OnlineMatchStatus.SEARCHING, createdTicket.status)
+        matchmakingClock.advance(Duration.ofSeconds(5))
+        val ticket = duel.readTicket(createdTicket.ticketId) as OnlineClientResult.Success
+        assertEquals(OnlineMatchStatus.MATCHED, ticket.value.status)
+        assertTrue(ticket.value.matchedWithBot)
+        val sessionId = requireNotNull(ticket.value.sessionId)
         val initial = duel.readSession(sessionId) as OnlineClientResult.Success
         val active = duel.submitSecret(
             sessionId,
@@ -106,6 +118,21 @@ class OnlineVerticalSliceE2ETest {
         assertTrue(turn.value.revision > active.value.revision)
         assertTrue(turn.value.attempts.any { it.actor == "player" })
         assertTrue(turn.value.attempts.none { it.exactMatches !in 0..turn.value.codeLength })
+    }
+
+    private class E2EMutableClock(
+        @Volatile private var current: Instant,
+        private val zone: ZoneId = ZoneOffset.UTC,
+    ) : Clock() {
+        override fun getZone(): ZoneId = zone
+
+        override fun withZone(zone: ZoneId): Clock = E2EMutableClock(current, zone)
+
+        override fun instant(): Instant = current
+
+        fun advance(duration: Duration) {
+            current = current.plus(duration)
+        }
     }
 
     private class MemoryGuestSessionStore : SecureGuestSessionStore {

@@ -20,7 +20,9 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import java.security.KeyPairGenerator
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.serialization.json.Json
@@ -52,9 +54,10 @@ class OnlineRoutesTest {
 
     @Test
     fun `authenticated REST flow creates and plays an authoritative online duel`() = testApplication {
-        val service = AuthoritativeOnlineDuelService(Clock.fixed(now, ZoneOffset.UTC))
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
         application { configureOnlineRoutes(verifier, service) }
-        val ticket = createTicket(playerToken)
+        val ticket = createMatchedTicket(playerToken, serviceClock)
         val sessionId = ticket.getValue("sessionId").jsonPrimitive.content
 
         val initial = client.get("/api/v1/sessions/$sessionId") {
@@ -94,9 +97,11 @@ class OnlineRoutesTest {
 
     @Test
     fun `authenticated WebSocket returns authoritative snapshot and rejects foreign membership`() = testApplication {
-        val service = AuthoritativeOnlineDuelService(Clock.fixed(now, ZoneOffset.UTC))
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
         application { configureOnlineRoutes(verifier, service) }
-        val sessionId = createTicket(playerToken).getValue("sessionId").jsonPrimitive.content
+        val sessionId = createMatchedTicket(playerToken, serviceClock)
+            .getValue("sessionId").jsonPrimitive.content
         val wsClient = createClient { install(WebSockets) }
         var snapshotFrame = ""
 
@@ -121,7 +126,8 @@ class OnlineRoutesTest {
 
     @Test
     fun `forged token and stale revision fail closed`() = testApplication {
-        val service = AuthoritativeOnlineDuelService(Clock.fixed(now, ZoneOffset.UTC))
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
         application { configureOnlineRoutes(verifier, service) }
         val forgedKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val forgedToken = Rs256AccessTokenIssuer(forgedKeys.private, tokenPolicy)
@@ -136,7 +142,8 @@ class OnlineRoutesTest {
         }
         assertEquals(HttpStatusCode.Unauthorized, unauthorized.status)
 
-        val sessionId = createTicket(playerToken).getValue("sessionId").jsonPrimitive.content
+        val sessionId = createMatchedTicket(playerToken, serviceClock)
+            .getValue("sessionId").jsonPrimitive.content
         val staleCommand = UUID.randomUUID().toString()
         val stale = client.post("/api/v1/sessions/$sessionId/turns") {
             bearer(playerToken)
@@ -162,9 +169,42 @@ class OnlineRoutesTest {
             json(response.bodyAsText())
         }
 
+    private suspend fun io.ktor.server.testing.ApplicationTestBuilder.createMatchedTicket(
+        token: String,
+        clock: RouteMutableClock,
+    ) = createTicket(token).let { created ->
+        assertEquals("searching", created.getValue("status").jsonPrimitive.content)
+        val ticketId = created.getValue("ticketId").jsonPrimitive.content
+        clock.advance(Duration.ofSeconds(5))
+        client.get("/api/v1/matchmaking/tickets/$ticketId") {
+            bearer(token)
+        }.let { response ->
+            assertEquals(HttpStatusCode.OK, response.status)
+            val matched = json(response.bodyAsText())
+            assertEquals("matched", matched.getValue("status").jsonPrimitive.content)
+            assertFalse(matched.getValue("sessionId").toString() == "null")
+            matched
+        }
+    }
+
     private fun io.ktor.client.request.HttpRequestBuilder.bearer(token: String) {
         header(HttpHeaders.Authorization, "Bearer $token")
     }
 
     private fun json(source: String) = Json.parseToJsonElement(source).jsonObject
+}
+
+private class RouteMutableClock(
+    @Volatile private var current: Instant,
+    private val zone: ZoneId = ZoneOffset.UTC,
+) : Clock() {
+    override fun getZone(): ZoneId = zone
+
+    override fun withZone(zone: ZoneId): Clock = RouteMutableClock(current, zone)
+
+    override fun instant(): Instant = current
+
+    fun advance(duration: Duration) {
+        current = current.plus(duration)
+    }
 }

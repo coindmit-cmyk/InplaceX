@@ -1,44 +1,135 @@
 package com.mirkori.inplacex.backend.online
 
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthoritativeOnlineDuelServiceTest {
     private val playerId = UUID.randomUUID().toString()
+    private val clock = MutableClock(Instant.parse("2026-07-27T12:00:00Z"))
     private val service = AuthoritativeOnlineDuelService(
-        Clock.fixed(Instant.parse("2026-07-27T12:00:00Z"), ZoneOffset.UTC),
+        clock = clock,
+        botFallbackDelay = Duration.ofSeconds(5),
     )
 
     @Test
-    fun `matchmaking creates a server-owned bot fallback session`() {
+    fun `ticket searches first and becomes a server bot match only after timeout`() {
         val commandId = UUID.randomUUID().toString()
 
-        val first = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
-        val replay = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
-        val snapshot = service.readSession(playerId, requireNotNull(first.sessionId))
+        val created = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
+        val replayWhileSearching = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
 
-        assertEquals(first, replay)
-        assertEquals(MatchmakingStatus.MATCHED, first.status)
-        assertTrue(first.matchedWithBot)
+        assertEquals(created, replayWhileSearching)
+        assertEquals(MatchmakingStatus.SEARCHING, created.status)
+        assertNull(created.sessionId)
+        assertFalse(created.matchedWithBot)
+
+        clock.advance(Duration.ofSeconds(4))
+        assertEquals(MatchmakingStatus.SEARCHING, service.readTicket(playerId, created.ticketId).status)
+
+        clock.advance(Duration.ofSeconds(1))
+        val matched = service.readTicket(playerId, created.ticketId)
+        val replayAfterPromotion = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
+        val snapshot = service.readSession(playerId, requireNotNull(matched.sessionId))
+
+        assertEquals(matched, replayAfterPromotion)
+        assertEquals(MatchmakingStatus.MATCHED, matched.status)
+        assertTrue(matched.matchedWithBot)
         assertEquals("setup", snapshot.phase)
         assertEquals(0, snapshot.revision)
         assertTrue(snapshot.attempts.isEmpty())
     }
 
     @Test
-    fun `caller cannot select or reuse another player membership`() {
-        val ticket = service.createTicket(
+    fun `two different waiting players are paired before bot timeout`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val firstTicket = service.createTicket(
             playerId,
             UUID.randomUUID().toString(),
             OnlineMatchMode.CLASSIC,
         )
+        clock.advance(Duration.ofSeconds(2))
+        val secondTicket = service.createTicket(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+        val updatedFirst = service.readTicket(playerId, firstTicket.ticketId)
+
+        assertEquals(MatchmakingStatus.MATCHED, updatedFirst.status)
+        assertEquals(MatchmakingStatus.MATCHED, secondTicket.status)
+        assertEquals(updatedFirst.sessionId, secondTicket.sessionId)
+        assertFalse(updatedFirst.matchedWithBot)
+        assertFalse(secondTicket.matchedWithBot)
+
+        val sessionId = requireNotNull(secondTicket.sessionId)
+        val firstSetup = service.readSession(playerId, sessionId)
+        val secondSetup = service.readSession(secondPlayer, sessionId)
+        assertEquals("player", firstSetup.participants.first().actor)
+        assertEquals("opponent", secondSetup.participants.first().actor)
+
+        val secondSecret = service.submitSecret(
+            secondPlayer,
+            sessionId,
+            UUID.randomUUID().toString(),
+            0,
+            "5678",
+        )
+        assertTrue(secondSecret.participants.first { it.actor == "player" }.secretConfigured)
+        val firstSecret = service.submitSecret(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            secondSecret.revision,
+            "1234",
+        )
+        assertEquals("active", firstSecret.phase)
+        assertEquals("player", firstSecret.currentTurn)
+
+        val firstTurn = service.submitGuess(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            firstSecret.revision,
+            "0123",
+        )
+        val secondView = service.readSession(secondPlayer, sessionId)
+        assertEquals("opponent", firstTurn.currentTurn)
+        assertEquals("player", secondView.currentTurn)
+        assertEquals("opponent", secondView.attempts.single().actor)
+    }
+
+    @Test
+    fun `same player cannot match their own second ticket`() {
+        val first = service.createTicket(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+        val second = service.createTicket(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+
+        assertEquals(MatchmakingStatus.SEARCHING, first.status)
+        assertEquals(MatchmakingStatus.SEARCHING, second.status)
+        assertNotEquals(first.ticketId, second.ticketId)
+    }
+
+    @Test
+    fun `caller cannot select or reuse another player membership`() {
+        val ticket = matchedBotTicket()
         val attacker = UUID.randomUUID().toString()
 
         assertThrows(OnlineMembershipRejectedException::class.java) {
@@ -51,11 +142,7 @@ class AuthoritativeOnlineDuelServiceTest {
 
     @Test
     fun `secret and turn commands are idempotent and return authoritative bot progress`() {
-        val sessionId = service.createTicket(
-            playerId,
-            UUID.randomUUID().toString(),
-            OnlineMatchMode.CLASSIC,
-        ).sessionId!!
+        val sessionId = requireNotNull(matchedBotTicket().sessionId)
         val secretCommand = UUID.randomUUID().toString()
         val active = service.submitSecret(playerId, sessionId, secretCommand, 0, "1234")
         val replayedSecret = service.submitSecret(playerId, sessionId, secretCommand, 0, "1234")
@@ -82,11 +169,7 @@ class AuthoritativeOnlineDuelServiceTest {
 
     @Test
     fun `stale revisions and changed replay payloads fail closed`() {
-        val sessionId = service.createTicket(
-            playerId,
-            UUID.randomUUID().toString(),
-            OnlineMatchMode.CLASSIC,
-        ).sessionId!!
+        val sessionId = requireNotNull(matchedBotTicket().sessionId)
         val commandId = UUID.randomUUID().toString()
         service.submitSecret(playerId, sessionId, commandId, 0, "1234")
 
@@ -102,5 +185,30 @@ class AuthoritativeOnlineDuelServiceTest {
         assertThrows(OnlineCommandIdReusedException::class.java) {
             service.submitSecret(playerId, sessionId, commandId, 0, "5678")
         }
+    }
+
+    private fun matchedBotTicket(): MatchmakingTicket {
+        val ticket = service.createTicket(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+        clock.advance(Duration.ofSeconds(5))
+        return service.readTicket(playerId, ticket.ticketId)
+    }
+}
+
+private class MutableClock(
+    private var current: Instant,
+    private val zone: ZoneId = ZoneOffset.UTC,
+) : Clock() {
+    override fun getZone(): ZoneId = zone
+
+    override fun withZone(zone: ZoneId): Clock = MutableClock(current, zone)
+
+    override fun instant(): Instant = current
+
+    fun advance(duration: Duration) {
+        current = current.plus(duration)
     }
 }
