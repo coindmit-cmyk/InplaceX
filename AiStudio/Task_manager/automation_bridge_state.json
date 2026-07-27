@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-27T19:07:10Z",
+  "updated_at": "2026-07-27T19:11:46Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
   "apply": false,
   "counters": {
-    "pr_checked": 10,
+    "pr_checked": 0,
     "pr_missing": 0,
     "pr_processed": 0,
     "pr_failed": 0,
@@ -42,7 +42,7 @@
   },
   "conversion": {
     "incoming": {
-      "pr_checked": 10,
+      "pr_checked": 0,
       "pr_missing": 0,
       "pr_failed": 0,
       "pr_processed": 0,
@@ -94,9 +94,9 @@
     "status": "needs_repair",
     "ok": false,
     "cycle_count": 1,
-    "blocking_count": 1,
+    "blocking_count": 2,
     "scan": {
-      "pr_checked": 10,
+      "pr_checked": 0,
       "pr_failed": 0,
       "repository_open_prs": 7,
       "repository_pr_groups": 5,
@@ -148,7 +148,7 @@
     "documentation_code_tasks": {
       "docs_to_queue": 0,
       "task_docs_updated": 0,
-      "code_prs_checked": 10,
+      "code_prs_checked": 0,
       "task_queue_total": 55,
       "worker_ready_total": 2,
       "owner_gap_count": 0
@@ -181,8 +181,8 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 347,
-    "repository_pr_groups": 255,
+    "repository_open_prs": 354,
+    "repository_pr_groups": 260,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 10,
     "repository_tasks_superseded": 2,
@@ -201,8 +201,8 @@
       "project_state_intake_written": 7,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 347,
-      "repository_pr_groups": 255,
+      "repository_open_prs": 354,
+      "repository_pr_groups": 260,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
@@ -228,12 +228,12 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 2807,
-      "queue_before_total": 2802,
+      "queue_after_total": 2862,
+      "queue_before_total": 2857,
       "queue_total_delta": 5,
       "worker_queue_updates": 0,
-      "worker_ready_after": 89,
-      "worker_ready_before": 89,
+      "worker_ready_after": 91,
+      "worker_ready_before": 91,
       "worker_ready_delta": 0
     },
     "material_update_count": 48,
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 13359,
-      "documentation_manifest_errors": 104,
-      "documentation_orphans": 13359,
+      "documentation_classified": 13616,
+      "documentation_manifest_errors": 106,
+      "documentation_orphans": 13616,
       "pr_checked": 456,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 347,
-      "repository_pr_groups": 255,
+      "repository_open_prs": 354,
+      "repository_pr_groups": 260,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 728,
+      "documentation_debt_candidates": 742,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 10,
       "repository_tasks_superseded": 2,
       "repository_tasks_updated": 8,
-      "review_required": 13359,
+      "review_required": 13616,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 728,
-      "documentation_orphan_count": 13359,
+      "documentation_debt_candidates": 742,
+      "documentation_orphan_count": 13616,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -295,15 +295,15 @@
       "docs_to_queue": 10,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 2807,
-      "worker_ready_total": 89
+      "task_queue_total": 2862,
+      "worker_ready_total": 91
     },
-    "cycle_count": 52,
-    "blocking_count": 52,
+    "cycle_count": 53,
+    "blocking_count": 54,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 52
+      "needs_repair": 53
     },
     "ok": false
   },
@@ -405,6 +405,10 @@
     "status_count": 7
   },
   "last_errors": [
+    {
+      "section": "pr_intake",
+      "error": "Command '['gh', 'pr', 'list', '--repo', 'coindmit-cmyk/InplaceX', '--state', 'all', '--limit', '50', '--json', 'number,title,state,isDraft,baseRefName,headRefName,headRefOid,author,body,labels,mergedAt,closedAt,updatedAt,url']' returned non-zero exit status 1."
+    },
     {
       "section": "documentation_health",
       "error": "documentation manifest or required navigation is invalid",
