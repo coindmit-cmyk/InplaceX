@@ -64,7 +64,7 @@ class GuestAuthSessionManager(
     private val store: SecureGuestSessionStore,
     private val clockMs: () -> Long = System::currentTimeMillis,
     private val logger: InplaceXLogger = InplaceXLogger(),
-) : OnlineTokenStore {
+) : AccessTokenProvider {
     fun bootstrap(installation: GuestInstallation): GuestAuthResult {
         return persistSuccessfulResult(api.bootstrap(installation), operation = "bootstrap")
     }
@@ -75,13 +75,13 @@ class GuestAuthSessionManager(
         return accessTokenOrNull()?.let { store.read() }
     }
 
-    override fun accessTokenOrNull(): String? {
+    fun accessTokenOrNull(): String? {
         val session = store.read() ?: return null
         return session.accessToken.takeIf { session.accessExpiresAtEpochMs > clockMs() }
             ?: refreshAccessTokenOrNull()
     }
 
-    override fun refreshAccessTokenOrNull(): String? {
+    fun refreshAccessTokenOrNull(): String? {
         val session = store.read() ?: return null
         if (session.refreshExpiresAtEpochMs <= clockMs()) {
             store.clear()
@@ -100,6 +100,20 @@ class GuestAuthSessionManager(
             }
             GuestAuthResult.TemporarilyUnavailable -> null
         }
+    }
+
+    override suspend fun currentAccessToken(): AccessToken? =
+        accessTokenOrNull()?.let(AccessToken::from)
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? {
+        val current = store.read()
+            ?.takeIf { it.accessExpiresAtEpochMs > clockMs() }
+            ?.accessToken
+            ?.let(AccessToken::from)
+        if (current != null && !current.sameValueAs(rejectedToken)) {
+            return current
+        }
+        return refreshAccessTokenOrNull()?.let(AccessToken::from)
     }
 
     private fun persistSuccessfulResult(result: GuestAuthResult, operation: String): GuestAuthResult = when (result) {
