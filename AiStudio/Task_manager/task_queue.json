@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-26T23:03:14Z",
+  "updated_at": "2026-07-27T21:26:28Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "planned",
+      "status": "needs_dispatcher_repair",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "dispatcher_decision_reason": "worker packet v2 defect found before worker claim",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -12990,12 +12990,7 @@
       "clean_rebuild_source_branch": "origin/feature/online-foundation-v1",
       "clean_rebuild_source_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "clean_rebuild_route": "auto_clean_rebuild_medium",
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
+      "lock": "free",
       "created_at": "2026-07-26T22:13:10Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -13152,7 +13147,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "worker_pool",
+      "next_owner": "Dispatcher",
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-26T22:13:10Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
@@ -13260,7 +13255,35 @@
         "reason": "source payload is not represented in current base"
       },
       "packet_normalized_at": "2026-07-26T23:03:14Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "task_packet_defects": [
+        "missing_input_ref:InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+        "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
+      ],
+      "missing_packet_fields": [
+        "missing_input_ref:InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+        "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
+      ],
+      "repair_request": "Repair the listed Worker Packet v2 defects before worker claim.",
+      "repair_owner": "dispatcher",
+      "next_action": "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair.",
+      "dispatcher_next_review_at": "2026-07-27T21:26:28Z",
+      "not_worker_ready_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "status_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "status_history": [
+        {
+          "at": "2026-07-27T21:26:28Z",
+          "by": "claim_next_task",
+          "from": "planned",
+          "to": "needs_dispatcher_repair",
+          "reason": "worker_packet_v2_defect",
+          "defects": [
+            "missing_input_ref:InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+            "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
+          ],
+          "next_owner": "Dispatcher"
+        }
+      ]
     }
   ],
   "design_handoff_intake_import": {
