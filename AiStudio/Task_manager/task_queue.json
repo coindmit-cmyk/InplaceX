@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "needs_dispatcher_repair",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": false,
-      "packet_status": "needs_dispatcher_repair",
-      "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
-      "dispatcher_decision_reason": "worker packet v2 defect found before worker claim",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "clean-rebuild source refs validated by Agent Core v0.4.22.358",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13147,7 +13147,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "Dispatcher",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-26T22:13:10Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
@@ -13256,20 +13256,7 @@
       },
       "packet_normalized_at": "2026-07-26T23:03:14Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
-      "task_packet_defects": [
-        "missing_input_ref:InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
-      ],
-      "missing_packet_fields": [
-        "missing_input_ref:InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
-      ],
-      "repair_request": "Repair the listed Worker Packet v2 defects before worker claim.",
-      "repair_owner": "dispatcher",
-      "next_action": "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair.",
-      "dispatcher_next_review_at": "2026-07-27T21:26:28Z",
-      "not_worker_ready_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
-      "status_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "next_action": "Run the exact clean-rebuild packet through auto-worker-5.3.",
       "status_history": [
         {
           "at": "2026-07-27T21:26:28Z",
@@ -13282,6 +13269,14 @@
             "missing_input_ref:InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
           ],
           "next_owner": "Dispatcher"
+        },
+        {
+          "at": "2026-07-27T21:45:11Z",
+          "by": "Codex Dispatcher",
+          "from": "needs_dispatcher_repair",
+          "to": "planned",
+          "reason": "Agent Core v0.4.22.358 validates source-only clean-rebuild refs against pinned source commit 11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
+          "next_owner": "worker_pool"
         }
       ]
     }
