@@ -48,6 +48,10 @@ internal object HomeCatalog {
             localizationEntry("home.duel.turn.opponent", "Ход соперника"),
             localizationEntry("home.duel.status.with_score", "Последний счёт соперника: %d • Подтверждено: %d/%d"),
             localizationEntry("home.duel.status.waiting", "Соперник ещё не ходил • Подтверждено: %d/%d"),
+            localizationEntry(
+                "home.duel.status.bot_turn_failed",
+                "Ход соперника не рассчитан. Дуэль остаётся открытой — повторите свой ход.",
+            ),
             localizationEntry("home.duel.result.bot_win", "Соперник угадал ваш секрет. Последний счёт бота: %d"),
             localizationEntry("home.duel.result.player_win", "Вы первыми угадали секрет соперника."),
             localizationEntry("home.dialog.exit.title", "Выйти из текущей игры?"),
@@ -131,6 +135,10 @@ internal object HomeCatalog {
             localizationEntry("home.duel.turn.opponent", "Opponent turn"),
             localizationEntry("home.duel.status.with_score", "Opponent's last score: %d • Confirmed: %d/%d"),
             localizationEntry("home.duel.status.waiting", "Opponent has not moved yet • Confirmed: %d/%d"),
+            localizationEntry(
+                "home.duel.status.bot_turn_failed",
+                "The opponent's turn could not be calculated. The duel remains open — try your turn again.",
+            ),
             localizationEntry("home.duel.result.bot_win", "The opponent guessed your secret. Last bot score: %d"),
             localizationEntry("home.duel.result.player_win", "You guessed the opponent's secret first."),
             localizationEntry("home.dialog.exit.title", "Exit the current game?"),

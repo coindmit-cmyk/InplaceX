@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Made the first bot-duel turn fail safely: solver or restored-state errors no
+  longer escape the Compose coroutine and close the app; the duel stays open,
+  control returns to the player, and a localized recovery message is shown.
+  Added end-to-end coverage for both a normal first exchange and a first-guess
+  win, plus focused unit coverage for bot-turn failures and cancellation.
 - Completed the PvE Race terminal loop: exhausted moves now show a defeat
   result, wins no longer silently restart, result details include attempts and
   elapsed time, retry is explicit, and each win grants 10 profile coins.

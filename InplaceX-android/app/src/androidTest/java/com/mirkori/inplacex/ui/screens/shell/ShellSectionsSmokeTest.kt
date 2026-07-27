@@ -2,14 +2,20 @@ package com.mirkori.inplacex.ui.screens.shell
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.localization.AppLanguage
@@ -88,6 +94,78 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Продолжить компанию").performClick()
         composeRule.runOnIdle { assertTrue(opened) }
+    }
+
+    @Test
+    fun duelRemainsOpenAfterThePlayersFirstAcceptedGuess() {
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+            )
+        }
+
+        composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
+        composeRule.onNodeWithText("Подтвердить").performClick()
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(6_000)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitUntil(timeoutMillis = 8_000) {
+            composeRule.onAllNodesWithTag("game-digit-9").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        listOf('9', '8', '7', '6', '5', '4').forEach { digit ->
+            composeRule.onNodeWithTag("game-digit-$digit").performClick()
+        }
+        composeRule.onNodeWithText("Подтвердить").performClick()
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(2_500)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Ход игрока").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText("Ход игрока").assertIsDisplayed()
+        composeRule.onNodeWithText("Дуэль").assertIsDisplayed()
+    }
+
+    @Test
+    fun duelFirstGuessWinShowsResultInsteadOfSilentlyClosingTheGame() {
+        var inspectedSecret: String? = null
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+                onDebugSecretChange = { inspectedSecret = it },
+            )
+        }
+
+        composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
+        composeRule.onNodeWithText("Подтвердить").performClick()
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(6_000)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitUntil(timeoutMillis = 8_000) {
+            composeRule.onAllNodesWithTag("game-digit-0").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        val opponentSecret = composeRule.runOnIdle {
+            checkNotNull(inspectedSecret)
+        }
+        opponentSecret.forEach { digit ->
+            composeRule.onNodeWithTag("game-digit-$digit").performClick()
+        }
+        composeRule.onNodeWithText("Подтвердить").performClick()
+
+        composeRule.onNodeWithText("Результат дуэли").assertIsDisplayed()
+        composeRule.onNodeWithText("Вы первыми угадали секрет соперника.").assertIsDisplayed()
     }
 
     @Test

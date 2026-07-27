@@ -50,12 +50,14 @@ import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameModeDefinition
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -105,6 +107,7 @@ fun HomeRootScreen(
     var duelTurnOwner by rememberSaveable { mutableStateOf(DuelTurnOwner.PLAYER) }
     var botLastScore by rememberSaveable { mutableIntStateOf(-1) }
     var botConfirmedPositions by rememberSaveable { mutableIntStateOf(0) }
+    var duelTurnError by rememberSaveable { mutableStateOf<String?>(null) }
     var duelSessionSeed by rememberSaveable { mutableIntStateOf(1) }
 
     val pveMode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
@@ -151,6 +154,7 @@ fun HomeRootScreen(
                     duelTurnOwner = DuelTurnOwner.PLAYER
                     botLastScore = -1
                     botConfirmedPositions = 0
+                    duelTurnError = null
                     duelSessionSeed += 1
                     preMatchPhase = PreMatchPhase.READY_TO_START
                     showPreMatchDialog = false
@@ -274,25 +278,45 @@ fun HomeRootScreen(
                 delay(2200)
 
                 val botTurn = withContext(Dispatchers.Default) {
-                    val decision = botSolver.nextTurn()
-                    val score = ScoreCalculator.countExactMatches(playerSecretForDuel, decision.guess)
-                    botSolver.registerFeedback(decision.guess, score)
-                    BotTurnResolution(
-                        score = score,
-                        confirmedPositions = botSolver.confirmedPositionsCount(),
+                    resolveDuelBotTurn(
+                        playerSecret = playerSecretForDuel,
+                        codeLength = pvpMode.config.codeLength,
+                        nextGuess = { botSolver.nextTurn().guess },
+                        registerFeedback = botSolver::registerFeedback,
+                        confirmedPositions = botSolver::confirmedPositionsCount,
                     )
                 }
-                botLastScore = botTurn.score
-                botConfirmedPositions = botTurn.confirmedPositions
 
-                if (botTurn.score == pvpMode.config.codeLength) {
-                    onRecordPvpResult(false)
-                    duelResultText = strings.homeDuelResultBotWin(botTurn.score)
-                    showDuelResultDialog = true
-                    onScreenStateChange(HomeScreenState.ROOT)
-                    onDebugSecretChange(null)
-                } else {
-                    duelTurnOwner = DuelTurnOwner.PLAYER
+                when (botTurn) {
+                    is DuelBotTurnResult.Completed -> {
+                        duelTurnError = null
+                        botLastScore = botTurn.score
+                        botConfirmedPositions = botTurn.confirmedPositions
+
+                        if (botTurn.score == pvpMode.config.codeLength) {
+                            onRecordPvpResult(false)
+                            duelResultText = strings.homeDuelResultBotWin(botTurn.score)
+                            showDuelResultDialog = true
+                            onScreenStateChange(HomeScreenState.ROOT)
+                            onDebugSecretChange(null)
+                        } else {
+                            duelTurnOwner = DuelTurnOwner.PLAYER
+                        }
+                    }
+
+                    is DuelBotTurnResult.Failed -> {
+                        AppLog.error(
+                            tag = "HomeRootScreen",
+                            message = "duel bot turn failed",
+                            attributes = mapOf(
+                                "codeLength" to pvpMode.config.codeLength.toString(),
+                                "playerSecretLength" to playerSecretForDuel.length.toString(),
+                            ),
+                            throwable = botTurn.cause,
+                        )
+                        duelTurnError = strings.text("home.duel.status.bot_turn_failed")
+                        duelTurnOwner = DuelTurnOwner.PLAYER
+                    }
                 }
             }
 
@@ -304,7 +328,7 @@ fun HomeRootScreen(
                 } else {
                     strings.text("home.duel.turn.opponent")
                 },
-                secondaryStatusText = if (botLastScore >= 0) {
+                secondaryStatusText = duelTurnError ?: if (botLastScore >= 0) {
                     strings.homeDuelStatus(botLastScore, botConfirmedPositions, pvpMode.config.codeLength)
                 } else {
                     strings.homeDuelWaiting(botConfirmedPositions, pvpMode.config.codeLength)
@@ -488,10 +512,41 @@ fun HomeRootScreen(
     }
 }
 
-private data class BotTurnResolution(
-    val score: Int,
-    val confirmedPositions: Int,
-)
+internal sealed interface DuelBotTurnResult {
+    data class Completed(
+        val score: Int,
+        val confirmedPositions: Int,
+    ) : DuelBotTurnResult
+
+    data class Failed(
+        val cause: Exception,
+    ) : DuelBotTurnResult
+}
+
+internal fun resolveDuelBotTurn(
+    playerSecret: String,
+    codeLength: Int,
+    nextGuess: () -> String,
+    registerFeedback: (String, Int) -> Unit,
+    confirmedPositions: () -> Int,
+): DuelBotTurnResult {
+    return try {
+        require(playerSecret.length == codeLength) {
+            "Duel player secret length does not match the configured code length"
+        }
+        val guess = nextGuess()
+        val score = ScoreCalculator.countExactMatches(playerSecret, guess)
+        registerFeedback(guess, score)
+        DuelBotTurnResult.Completed(
+            score = score,
+            confirmedPositions = confirmedPositions(),
+        )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        DuelBotTurnResult.Failed(error)
+    }
+}
 
 @Composable
 private fun HomeSelectionScreen(
