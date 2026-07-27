@@ -130,7 +130,7 @@ class CloudSaveSyncAdapterTest {
 
         override fun bootstrap(installation: GuestInstallation): GuestAuthResult = bootstrapResult
 
-        override fun refresh(refreshToken: String): GuestAuthResult {
+        override fun refresh(playerId: String, refreshToken: String): GuestAuthResult {
             refreshCalls += 1
             return refreshResult
         }

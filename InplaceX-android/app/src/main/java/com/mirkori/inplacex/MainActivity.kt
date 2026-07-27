@@ -10,6 +10,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -31,6 +32,7 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
@@ -111,6 +113,20 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
+                val localPlayerProfile = remember(platformLocalRepository) {
+                    platformLocalRepository.loadPlayerProfile()
+                }
+                val onlineRuntime = remember(currentLanguage, localPlayerProfile.installationId) {
+                    OnlineRuntime.createOrNull(
+                        context = applicationContext,
+                        profile = localPlayerProfile,
+                        locale = if (currentLanguage == AppLanguage.RU) "ru-RU" else "en-US",
+                        regionCode = if (currentLanguage == AppLanguage.RU) "RU" else "US",
+                    )
+                }
+                DisposableEffect(onlineRuntime) {
+                    onDispose { onlineRuntime?.close() }
+                }
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
                 }
@@ -251,7 +267,9 @@ class MainActivity : ComponentActivity() {
                                     },
                                 )
 
-                            currentSection == AppSection.SOCIAL -> SocialRootScreen()
+                            currentSection == AppSection.SOCIAL -> SocialRootScreen(
+                                onlineRuntime = onlineRuntime,
+                            )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
                                 progressState = progressState,

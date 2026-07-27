@@ -45,6 +45,8 @@ android {
 
     buildTypes {
         getByName("debug") {
+            buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
+            buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
@@ -63,6 +65,8 @@ android {
         }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.release.baseUrl", "")}\"")
+            buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "false")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"live\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")

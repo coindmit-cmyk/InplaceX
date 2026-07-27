@@ -44,7 +44,7 @@ sealed interface GuestAuthResult {
 interface GuestAuthApi {
     fun bootstrap(installation: GuestInstallation): GuestAuthResult
 
-    fun refresh(refreshToken: String): GuestAuthResult
+    fun refresh(playerId: String, refreshToken: String): GuestAuthResult
 }
 
 /**
@@ -92,7 +92,12 @@ class GuestAuthSessionManager(
             )
             return null
         }
-        return when (val result = persistSuccessfulResult(api.refresh(session.refreshToken), operation = "refresh")) {
+        return when (
+            val result = persistSuccessfulResult(
+                api.refresh(session.playerId, session.refreshToken),
+                operation = "refresh",
+            )
+        ) {
             is GuestAuthResult.Authenticated -> result.session.accessToken
             GuestAuthResult.Rejected -> {
                 store.clear()

@@ -66,7 +66,7 @@ class GuestAuthSessionManagerTest {
         override fun bootstrap(installation: GuestInstallation): GuestAuthResult =
             GuestAuthResult.TemporarilyUnavailable
 
-        override fun refresh(refreshToken: String): GuestAuthResult {
+        override fun refresh(playerId: String, refreshToken: String): GuestAuthResult {
             refreshCalls += 1
             return refreshResult
         }
