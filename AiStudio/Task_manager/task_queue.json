@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "planned",
+      "status": "needs_human",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
+      "worker_ready": false,
+      "packet_status": "human_required",
       "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "dispatcher_decision": "needs_human",
+      "dispatcher_decision_reason": "worker implementation is preserved at 283916b5a6a8750d2d1b31bf3dac2e73f68f5008; required Gradle checks are blocked because the automation host has no Java runtime and JAVA_HOME is unset",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13163,8 +13163,8 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "human",
+      "next_role": "owner_review",
       "repaired_packet_at": "2026-07-27T22:06:07Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "deterministic_preflight": {
@@ -13292,6 +13292,14 @@
           "to": "planned",
           "reason": "Agent Core v0.4.22.358 validates source-only clean-rebuild refs against pinned source commit 11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
           "next_owner": "worker_pool"
+        },
+        {
+          "at": "2026-07-27T22:33:44Z",
+          "by": "Codex Dispatcher",
+          "from": "planned",
+          "to": "needs_human",
+          "reason": "worker implementation is complete and preserved; required Gradle checks cannot run because the automation host has no Java runtime and JAVA_HOME is unset",
+          "next_owner": "human"
         }
       ],
       "worker_id": "auto-worker-5.3",
@@ -13322,16 +13330,20 @@
       ],
       "worker_check_evidence": {
         "ok": false,
-        "route": "needs_worker_fix",
+        "route": "needs_human",
         "check_status": "partial",
-        "integration_status": "needs_worker_fix",
-        "reason": "worker explicitly reported required checks as partial"
+        "integration_status": "needs_human",
+        "reason": "git apply --check and git diff --check passed; required Gradle checks are blocked because the automation host has no Java runtime and JAVA_HOME is unset"
       },
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
       "commits": [
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
       ],
-      "integration_status": "needs_worker_fix"
+      "integration_status": "needs_human",
+      "status_reason": "worker implementation is preserved at 283916b5a6a8750d2d1b31bf3dac2e73f68f5008; validation is blocked by missing Java/JAVA_HOME on the automation host, not by a worker code defect",
+      "next_action": "Install or configure an approved JDK on the automation host, rerun the two recorded targeted Gradle test commands against worker commit 283916b5a6a8750d2d1b31bf3dac2e73f68f5008, then return the same candidate to Integrator without rerunning the model.",
+      "repair_request": "Owner must approve or provide the automation-host JDK/JAVA_HOME configuration required for the recorded Gradle checks.",
+      "requires_human_attention": true
     },
     {
       "id": "REPO-PR-13",
