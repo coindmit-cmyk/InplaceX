@@ -10,9 +10,11 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import java.util.Base64
 import java.util.UUID
 import javax.sql.DataSource
@@ -296,7 +298,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             ).use { statement ->
                 statement.setString(1, familyId)
                 statement.setString(2, playerId)
-                statement.setObject(3, refreshExpiresAt)
+                statement.setInstant(3, refreshExpiresAt)
                 statement.executeUpdate()
             }
             connection.prepareStatement(
@@ -304,7 +306,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             ).use { statement ->
                 statement.setString(1, tokenHash)
                 statement.setString(2, familyId)
-                statement.setObject(3, refreshExpiresAt)
+                statement.setInstant(3, refreshExpiresAt)
                 statement.executeUpdate()
             }
         }
@@ -322,7 +324,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         val consumed = connection.prepareStatement(
             "UPDATE refresh_tokens SET consumed_at = ? WHERE token_hash = ? AND consumed_at IS NULL",
         ).use { statement ->
-            statement.setObject(1, now)
+            statement.setInstant(1, now)
             statement.setString(2, presentedTokenHash)
             statement.executeUpdate()
         }
@@ -335,7 +337,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         ).use { statement ->
             statement.setString(1, replacementTokenHash)
             statement.setString(2, token.familyId)
-            statement.setObject(3, token.familyExpiresAt)
+            statement.setInstant(3, token.familyExpiresAt)
             statement.executeUpdate()
         }
         RefreshRotation(token.playerId, token.familyExpiresAt)
@@ -408,7 +410,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         connection.prepareStatement(
             "UPDATE refresh_token_families SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
         ).use { statement ->
-            statement.setObject(1, now)
+            statement.setInstant(1, now)
             statement.setString(2, familyId)
             statement.executeUpdate()
         }
@@ -462,3 +464,7 @@ private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
 private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
     .digest(value.toByteArray(StandardCharsets.UTF_8))
     .joinToString(separator = "") { byte -> "%02x".format(byte) }
+
+private fun PreparedStatement.setInstant(index: Int, value: Instant) {
+    setObject(index, value.atOffset(ZoneOffset.UTC))
+}

@@ -1,7 +1,9 @@
 package com.mirkori.inplacex.backend.persistence
 
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.time.Instant
+import java.time.ZoneOffset
 import javax.sql.DataSource
 
 class RevisionConflictException(playerId: String, expectedRevision: Long) : IllegalStateException(
@@ -222,7 +224,7 @@ class JdbcTicketRepository(private val dataSource: DataSource) {
             statement.setString(1, ticket.id)
             statement.setString(2, ticket.playerId)
             statement.setString(3, ticket.mode)
-            statement.setObject(4, ticket.expiresAt)
+            statement.setInstant(4, ticket.expiresAt)
             statement.executeUpdate()
         }
     }
@@ -312,4 +314,8 @@ internal inline fun <T> DataSource.transaction(block: (Connection) -> T): T = co
     } finally {
         connection.autoCommit = previousAutoCommit
     }
+}
+
+private fun PreparedStatement.setInstant(index: Int, value: Instant) {
+    setObject(index, value.atOffset(ZoneOffset.UTC))
 }
