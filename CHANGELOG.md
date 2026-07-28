@@ -8,6 +8,8 @@
 - Added a fail-closed Mirkori Games Telegram distribution service template.
   It serves only allowlisted, manifest-declared APKs whose SHA-256 is verified
   immediately before delivery; bot credentials remain VPS-only.
+- Mirkori Games now returns a verified HTTPS download button instead of
+  uploading APK binaries through Telegram.
 - Removed the opaque white Company gameplay backdrop: campaign levels now
   retain the same warm toy-room scene used by the campaign map.
 - Added real Google account authentication through Android Credential Manager

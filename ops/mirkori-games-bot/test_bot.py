@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bot import is_chat_allowed, load_catalog, verify_release_file
+from bot import TelegramApi, is_chat_allowed, load_catalog, verify_release_file
 
 
 class CatalogTest(unittest.TestCase):
@@ -27,6 +27,7 @@ class CatalogTest(unittest.TestCase):
                                 "apk": "inplacex.apk",
                                 "sha256": digest,
                                 "notes": "Проверенная тестовая сборка",
+                                "downloadUrl": "https://inplacex.dmit.life/downloads/InplaceX.apk",
                             },
                         ],
                     },
@@ -58,6 +59,7 @@ class CatalogTest(unittest.TestCase):
                                 "apk": "../outside.apk",
                                 "sha256": hashlib.sha256(outside.read_bytes()).hexdigest(),
                                 "notes": "",
+                                "downloadUrl": "https://inplacex.dmit.life/downloads/InplaceX.apk",
                             },
                         ],
                     },
@@ -99,6 +101,7 @@ class CatalogTest(unittest.TestCase):
                                 "apk": "inplacex.apk",
                                 "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
                                 "notes": "",
+                                "downloadUrl": "https://inplacex.dmit.life/downloads/InplaceX.apk",
                             },
                         ],
                     },
@@ -111,6 +114,82 @@ class CatalogTest(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 verify_release_file(release)
+
+    def test_catalog_rejects_unapproved_download_url(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            apk = root / "inplacex.apk"
+            apk.write_bytes(b"verified-apk")
+            catalog = root / "games.json"
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "games": [
+                            {
+                                "id": "inplacex",
+                                "title": "InplaceX",
+                                "version": "test",
+                                "apk": "inplacex.apk",
+                                "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+                                "notes": "",
+                                "downloadUrl": "https://example.com/InplaceX.apk",
+                            },
+                        ],
+                    },
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValueError):
+                load_catalog(catalog, root)
+
+    def test_delivery_uses_https_link_instead_of_telegram_document(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            apk = root / "inplacex.apk"
+            apk.write_bytes(b"verified-apk")
+            catalog = root / "games.json"
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "games": [
+                            {
+                                "id": "inplacex",
+                                "title": "InplaceX",
+                                "version": "test",
+                                "apk": "inplacex.apk",
+                                "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+                                "notes": "",
+                                "downloadUrl": "https://inplacex.dmit.life/downloads/InplaceX.apk",
+                            },
+                        ],
+                    },
+                ),
+                encoding="utf-8",
+            )
+            api = RecordingTelegramApi()
+
+            api.send_download_link(100, load_catalog(catalog, root)[0])
+
+            self.assertEqual("sendMessage", api.method)
+            self.assertEqual(
+                "https://inplacex.dmit.life/downloads/InplaceX.apk",
+                api.payload["reply_markup"]["inline_keyboard"][0][0]["url"],
+            )
+
+
+class RecordingTelegramApi(TelegramApi):
+    def __init__(self) -> None:
+        super().__init__("test-token")
+        self.method = ""
+        self.payload = {}
+
+    def call(self, method, payload):
+        self.method = method
+        self.payload = payload
+        return {"ok": True}
 
 
 if __name__ == "__main__":

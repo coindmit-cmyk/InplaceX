@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import urllib.parse
 from pathlib import Path
 
 
@@ -27,6 +28,7 @@ def main() -> int:
     parser.add_argument("--title", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--notes", default="")
+    parser.add_argument("--download-url", required=True)
     args = parser.parse_args()
 
     source = args.apk.resolve(strict=True)
@@ -34,6 +36,24 @@ def main() -> int:
         raise ValueError("source must be an APK")
     if not args.game_id.replace("-", "").isalnum():
         raise ValueError("game id has an invalid format")
+    if not args.version or len(args.version) > 40 or any(
+        char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+        for char in args.version
+    ):
+        raise ValueError("version has an invalid format")
+    parsed_download_url = urllib.parse.urlsplit(args.download_url)
+    if (
+        parsed_download_url.scheme != "https"
+        or parsed_download_url.hostname not in {"inplacex.dmit.life", "games.dmit.life"}
+        or parsed_download_url.port not in {None, 443}
+        or parsed_download_url.username is not None
+        or parsed_download_url.password is not None
+        or parsed_download_url.query
+        or parsed_download_url.fragment
+        or not parsed_download_url.path.startswith("/downloads/")
+        or not parsed_download_url.path.lower().endswith(".apk")
+    ):
+        raise ValueError("download URL is not an approved HTTPS APK URL")
 
     artifact_root = args.artifact_root.resolve()
     game_directory = artifact_root / args.game_id
@@ -63,6 +83,7 @@ def main() -> int:
             "apk": target.relative_to(artifact_root).as_posix(),
             "sha256": source_hash,
             "notes": args.notes,
+            "downloadUrl": args.download_url,
         },
     )
     catalog = {"schemaVersion": 1, "games": sorted(games, key=lambda game: game["id"])}

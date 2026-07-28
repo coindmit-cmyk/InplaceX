@@ -1,7 +1,8 @@
 # Mirkori Games Telegram Bot
 
-Бот выдаёт проверенные APK из общего каталога Mirkori Games. Он не собирает
-приложения и не принимает произвольные пути от пользователя.
+Бот выдаёт HTTPS-ссылки на проверенные APK из общего каталога Mirkori Games.
+Он не собирает приложения, не загружает APK через Telegram и не принимает
+произвольные пути или URL от пользователя.
 
 ## Безопасность
 
@@ -9,9 +10,10 @@
 - по умолчанию скачивание закрыто списком разрешённых Telegram chat ID;
 - публичный режим включается только явным
   `MIRKORI_GAMES_PUBLIC_DOWNLOADS=true`;
-- перед отправкой бот повторно вычисляет SHA-256 APK и сравнивает его с
+- перед выдачей ссылки бот повторно вычисляет SHA-256 APK и сравнивает его с
   `games.json`;
-- путь APK обязан находиться внутри каталога `releases`;
+- путь APK обязан находиться внутри каталога `downloads`;
+- URL обязан вести на разрешённый HTTPS-домен и путь `/downloads/*.apk`;
 - каталог не содержит токенов, chat ID или иных персональных данных.
 
 ## Переменные окружения
@@ -24,9 +26,8 @@ MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 
 ## Публикация сборки
 
-Для обычного Telegram Bot API файл должен быть меньше 50 МБ. Поэтому для
-внутренней раздачи используется минифицированный, подписанный тестовым ключом
-вариант (он не является Play-релизом):
+Для внутренней раздачи используется минифицированный, подписанный тестовым
+ключом вариант. Он не является Play-релизом:
 
 ```powershell
 .\gradlew.bat :app:assembleInternalDistribution
@@ -37,23 +38,29 @@ MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 ```bash
 python3 current/publish_release.py \
   --apk /path/to/app-internalDistribution.apk \
-  --artifact-root /srv/agent-projects/mirkori-games-bot/releases \
+  --artifact-root /srv/agent-projects/mirkori-games-bot/downloads \
   --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
   --game-id inplacex \
   --title InplaceX \
   --version 0.1.0-debug \
-  --notes "Тестовая сборка"
+  --notes "Тестовая сборка" \
+  --download-url https://inplacex.dmit.life/downloads/InplaceX.apk
 
 python3 current/bot.py \
   --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
-  --artifact-root /srv/agent-projects/mirkori-games-bot/releases \
+  --artifact-root /srv/agent-projects/mirkori-games-bot/downloads \
   --validate-catalog
 ```
 
 Только после успешной проверки каталога разрешается перезапускать сервис.
 
+Nginx публикует только один стабильный путь
+`https://inplacex.dmit.life/downloads/InplaceX.apk`. Конфигурация находится в
+`inplacex-downloads.nginx.conf`; directory listing и произвольные пути не
+включаются.
+
 ## Команды пользователя
 
 - `/start` или `/games` — показать каталог;
-- `/inplacex` — сразу скачать текущую сборку InplaceX;
-- кнопка под названием игры — скачать выбранный APK.
+- `/inplacex` — получить ссылку на текущую сборку InplaceX;
+- кнопка под названием игры — открыть HTTPS-скачивание APK.

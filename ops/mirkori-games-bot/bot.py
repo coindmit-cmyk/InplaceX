@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import mimetypes
 import os
 import secrets
 import sys
@@ -20,7 +19,7 @@ from typing import Any
 
 
 MAX_CATALOG_BYTES = 256 * 1024
-MAX_APK_BYTES = 49 * 1024 * 1024
+MAX_APK_BYTES = 2 * 1024 * 1024 * 1024
 MAX_UPDATE_OFFSET_FILE_BYTES = 64
 
 
@@ -32,6 +31,7 @@ class GameRelease:
     apk_path: Path
     sha256: str
     notes: str
+    download_url: str
 
 
 def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, ...]:
@@ -55,6 +55,7 @@ def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, 
             "apk",
             "sha256",
             "notes",
+            "downloadUrl",
         }:
             raise ValueError("catalog game has unexpected fields")
         game_id = _safe_text(item["id"], 32, "id")
@@ -64,6 +65,7 @@ def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, 
         title = _safe_text(item["title"], 80, "title")
         version = _safe_text(item["version"], 40, "version")
         notes = _safe_text(item["notes"], 800, "notes", allow_empty=True)
+        download_url = _safe_download_url(item["downloadUrl"])
         expected_hash = str(item["sha256"]).lower()
         if len(expected_hash) != 64 or any(char not in "0123456789abcdef" for char in expected_hash):
             raise ValueError("sha256 has an invalid format")
@@ -89,6 +91,7 @@ def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, 
                 apk_path=apk_path,
                 sha256=actual_hash,
                 notes=notes,
+                download_url=download_url,
             ),
         )
     return tuple(releases)
@@ -107,6 +110,24 @@ def verify_release_file(release: GameRelease) -> None:
         raise ValueError("release APK is unavailable")
     if not secrets.compare_digest(sha256_file(release.apk_path), release.sha256):
         raise ValueError("release APK changed after catalog validation")
+
+
+def _safe_download_url(value: Any) -> str:
+    source = _safe_text(value, 512, "downloadUrl")
+    parsed = urllib.parse.urlsplit(source)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in {"inplacex.dmit.life", "games.dmit.life"}
+        or parsed.port not in {None, 443}
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or not parsed.path.startswith("/downloads/")
+        or not parsed.path.lower().endswith(".apk")
+    ):
+        raise ValueError("downloadUrl is not an approved HTTPS APK URL")
+    return source
 
 
 def parse_allowed_chat_ids(source: str) -> frozenset[int]:
@@ -140,27 +161,24 @@ class TelegramApi:
         )
         return self._read_response(request)
 
-    def send_document(self, chat_id: int, release: GameRelease) -> dict[str, Any]:
+    def send_download_link(self, chat_id: int, release: GameRelease) -> dict[str, Any]:
         verify_release_file(release)
-        boundary = f"----MirkoriGames{secrets.token_hex(16)}"
-        caption = (
-            f"{release.title} {release.version}\n"
-            f"SHA-256: {release.sha256}\n"
-            f"{release.notes}"
-        ).strip()
-        body = _multipart_body(
-            boundary=boundary,
-            fields={"chat_id": str(chat_id), "caption": caption},
-            file_field="document",
-            file_path=release.apk_path,
+        return self.call(
+            "sendMessage",
+            {
+                "chat_id": chat_id,
+                "text": (
+                    f"{release.title} {release.version}\n"
+                    f"{release.notes}\n"
+                    f"SHA-256: {release.sha256}"
+                ).strip(),
+                "reply_markup": {
+                    "inline_keyboard": [
+                        [{"text": "Скачать APK", "url": release.download_url}],
+                    ],
+                },
+            },
         )
-        request = urllib.request.Request(
-            f"{self._base_url}/sendDocument",
-            data=body,
-            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
-            method="POST",
-        )
-        return self._read_response(request)
 
     def _read_response(self, request: urllib.request.Request) -> dict[str, Any]:
         with urllib.request.urlopen(request, timeout=self._timeout_seconds) as response:
@@ -218,7 +236,7 @@ class MirkoriGamesBot:
                 game_id = text[1:].split("@", 1)[0].lower()
                 release = self._releases.get(game_id)
                 if release is not None:
-                    self._api.send_document(chat_id, release)
+                    self._api.send_download_link(chat_id, release)
         elif "callback_query" in update:
             query = update["callback_query"]
             chat_id = int(query["message"]["chat"]["id"])
@@ -229,11 +247,11 @@ class MirkoriGamesBot:
                 release = self._releases.get(data.removeprefix("download:"))
                 if release is not None:
                     self._api.call("answerCallbackQuery", {"callback_query_id": query["id"]})
-                    self._api.send_document(chat_id, release)
+                    self._api.send_download_link(chat_id, release)
 
     def _send_catalog(self, chat_id: int) -> None:
         buttons = [
-            [{"text": f"{release.title} {release.version}", "callback_data": f"download:{release.game_id}"}]
+            [{"text": f"Скачать {release.title} {release.version}", "url": release.download_url}]
             for release in self._releases.values()
         ]
         self._api.call(
@@ -268,39 +286,6 @@ def _safe_text(value: Any, maximum: int, name: str, allow_empty: bool = False) -
     if (not allow_empty and not value) or len(value) > maximum or any(not char.isprintable() for char in value):
         raise ValueError(f"{name} has an invalid format")
     return value
-
-
-def _multipart_body(
-    boundary: str,
-    fields: dict[str, str],
-    file_field: str,
-    file_path: Path,
-) -> bytes:
-    chunks: list[bytes] = []
-    for name, value in fields.items():
-        chunks.extend(
-            [
-                f"--{boundary}\r\n".encode(),
-                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(),
-                value.encode("utf-8"),
-                b"\r\n",
-            ],
-        )
-    content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
-    chunks.extend(
-        [
-            f"--{boundary}\r\n".encode(),
-            (
-                f'Content-Disposition: form-data; name="{file_field}"; '
-                f'filename="{file_path.name}"\r\n'
-            ).encode(),
-            f"Content-Type: {content_type}\r\n\r\n".encode(),
-            file_path.read_bytes(),
-            b"\r\n",
-            f"--{boundary}--\r\n".encode(),
-        ],
-    )
-    return b"".join(chunks)
 
 
 def _parse_args() -> argparse.Namespace:

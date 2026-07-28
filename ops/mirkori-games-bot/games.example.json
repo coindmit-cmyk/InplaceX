@@ -7,7 +7,8 @@
       "version": "0.1.0-debug",
       "apk": "inplacex/inplacex-0.1.0-debug.apk",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "notes": "Тестовая сборка для внутренней проверки."
+      "notes": "Тестовая сборка для внутренней проверки.",
+      "downloadUrl": "https://inplacex.dmit.life/downloads/InplaceX.apk"
     }
   ]
 }
