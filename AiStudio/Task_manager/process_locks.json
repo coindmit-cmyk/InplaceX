@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T02:23:43Z",
+  "updated_at": "2026-07-28T02:24:19Z",
   "locks": [
     {
       "process": "status_orchestrator",
@@ -940,14 +940,15 @@
     },
     {
       "process": "status_orchestrator",
-      "state": "active",
+      "state": "released",
       "by": "status_orchestrator",
       "at": "2026-07-28T02:23:43Z",
       "expires_at": "2026-07-28T02:53:43Z",
       "run_id": "run-20260728-022343",
       "pid": 2407750,
       "host": "AiStudio",
-      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex"
+      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "released_at": "2026-07-28T02:24:19Z"
     }
   ]
 }
