@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "needs_human",
+      "status": "needs_worker_fix",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
       "worker_ready": false,
-      "packet_status": "human_required",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "needs_human",
-      "dispatcher_decision_reason": "worker implementation is preserved at 283916b5a6a8750d2d1b31bf3dac2e73f68f5008; required Gradle checks are blocked because the automation host has no Java runtime and JAVA_HOME is unset",
+      "packet_status": "needs_worker_fix",
+      "normalization_status": "needs_worker_fix",
+      "dispatcher_decision": "needs_worker_fix",
+      "dispatcher_decision_reason": "after Java and Android SDK were configured, the targeted Android unit test reached Kotlin compilation and proved duplicate OnlineTransportPolicy declarations in KtorOnlineTransport.kt and OnlineTransportClient.kt",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13163,8 +13163,8 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "human",
-      "next_role": "owner_review",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "repaired_packet_at": "2026-07-27T22:06:07Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "deterministic_preflight": {
@@ -13300,6 +13300,14 @@
           "to": "needs_human",
           "reason": "worker implementation is complete and preserved; required Gradle checks cannot run because the automation host has no Java runtime and JAVA_HOME is unset",
           "next_owner": "human"
+        },
+        {
+          "at": "2026-07-28T07:41:00Z",
+          "by": "Human validation",
+          "from": "needs_human",
+          "to": "needs_worker_fix",
+          "reason": "automation toolchain was configured; InplaceXLoggerTest passed, then Android Kotlin compilation failed on duplicate OnlineTransportPolicy declarations",
+          "next_owner": "Dispatcher"
         }
       ],
       "worker_id": "auto-worker-5.3",
@@ -13330,20 +13338,42 @@
       ],
       "worker_check_evidence": {
         "ok": false,
-        "route": "needs_human",
-        "check_status": "partial",
-        "integration_status": "needs_human",
-        "reason": "git apply --check and git diff --check passed; required Gradle checks are blocked because the automation host has no Java runtime and JAVA_HOME is unset"
+        "route": "needs_worker_fix",
+        "check_status": "failed",
+        "integration_status": "needs_worker_fix",
+        "reason": "targeted Android unit-test compilation failed because OnlineTransportPolicy is declared in both KtorOnlineTransport.kt:111 and OnlineTransportClient.kt:5"
       },
       "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
       "commits": [
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
       ],
-      "integration_status": "needs_human",
-      "status_reason": "worker implementation is preserved at 283916b5a6a8750d2d1b31bf3dac2e73f68f5008; validation is blocked by missing Java/JAVA_HOME on the automation host, not by a worker code defect",
-      "next_action": "Install or configure an approved JDK on the automation host, rerun the two recorded targeted Gradle test commands against worker commit 283916b5a6a8750d2d1b31bf3dac2e73f68f5008, then return the same candidate to Integrator without rerunning the model.",
-      "repair_request": "Owner must approve or provide the automation-host JDK/JAVA_HOME configuration required for the recorded Gradle checks.",
-      "requires_human_attention": true
+      "integration_status": "needs_worker_fix",
+      "status_reason": "the human-owned automation environment blocker is resolved; exact candidate validation now proves a worker code defect: duplicate OnlineTransportPolicy declarations",
+      "next_action": "Create one bounded worker-fix packet for commit 283916b5a6a8750d2d1b31bf3dac2e73f68f5008 that consolidates OnlineTransportPolicy without removing existing behavior, then rerun the same two targeted Gradle checks.",
+      "repair_request": "Remove the duplicate OnlineTransportPolicy declaration between KtorOnlineTransport.kt and OnlineTransportClient.kt, preserve the existing shared contract and rerun InplaceXLoggerTest plus the two online Android unit tests.",
+      "requires_human_attention": false,
+      "human_validation_evidence": {
+        "validated_at": "2026-07-28T07:41:00Z",
+        "candidate_commit": "283916b5a6a8750d2d1b31bf3dac2e73f68f5008",
+        "toolchain": {
+          "java_home": "/home/main/.local/jdk17",
+          "android_home": "/home/main/.local/android-sdk",
+          "fleet_service_drop_in": "/home/main/.config/systemd/user/aistudio-fleet-automation.service.d/android-toolchain.conf"
+        },
+        "checks": [
+          {
+            "command": "./gradlew -q :InplaceX-logging:test --tests com.mirkori.inplacex.logging.InplaceXLoggerTest",
+            "result": "passed",
+            "wall_seconds": 30.44
+          },
+          {
+            "command": "./gradlew -q :app:testDebugUnitTest --tests com.mirkori.inplacex.platform.online.KtorOnlineTransportTest --tests com.mirkori.inplacex.platform.online.RemotePlatformGatewayTest",
+            "result": "failed",
+            "wall_seconds": 23.97,
+            "failure": "Kotlin redeclaration: OnlineTransportPolicy in KtorOnlineTransport.kt:111 and OnlineTransportClient.kt:5"
+          }
+        ]
+      }
     },
     {
       "id": "REPO-PR-13",
