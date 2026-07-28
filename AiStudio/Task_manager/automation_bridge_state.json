@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-28T00:37:21Z",
+  "updated_at": "2026-07-28T00:52:41Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "failed",
   "apply": false,
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 754,
+    "pr_checked": 767,
     "pr_events_applied": 8,
     "pr_failed": 0,
     "pr_missing": 16,
@@ -181,8 +181,8 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 538,
-    "repository_pr_groups": 392,
+    "repository_open_prs": 545,
+    "repository_pr_groups": 397,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 12,
     "repository_tasks_superseded": 2,
@@ -193,7 +193,7 @@
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 754,
+      "pr_checked": 767,
       "pr_events_applied": 8,
       "pr_failed": 0,
       "pr_missing": 16,
@@ -201,8 +201,8 @@
       "project_state_intake_written": 8,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 538,
-      "repository_pr_groups": 392,
+      "repository_open_prs": 545,
+      "repository_pr_groups": 397,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 12,
       "repository_tasks_superseded": 2,
@@ -228,12 +228,12 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 4301,
-      "queue_before_total": 4295,
+      "queue_after_total": 4357,
+      "queue_before_total": 4351,
       "queue_total_delta": 6,
       "worker_queue_updates": 0,
-      "worker_ready_after": 134,
-      "worker_ready_before": 134,
+      "worker_ready_after": 135,
+      "worker_ready_before": 135,
       "worker_ready_delta": 0
     },
     "material_update_count": 54,
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 20298,
-      "documentation_manifest_errors": 158,
-      "documentation_orphans": 20298,
-      "pr_checked": 754,
+      "documentation_classified": 20555,
+      "documentation_manifest_errors": 160,
+      "documentation_orphans": 20555,
+      "pr_checked": 767,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 538,
-      "repository_pr_groups": 392,
+      "repository_open_prs": 545,
+      "repository_pr_groups": 397,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 1106,
+      "documentation_debt_candidates": 1120,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 12,
       "repository_tasks_superseded": 2,
       "repository_tasks_updated": 8,
-      "review_required": 20298,
+      "review_required": 20555,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 1106,
-      "documentation_orphan_count": 20298,
+      "documentation_debt_candidates": 1120,
+      "documentation_orphan_count": 20555,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,19 +291,19 @@
       "worker_ready_delta": 0
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 754,
+      "code_prs_checked": 767,
       "docs_to_queue": 12,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 4301,
-      "worker_ready_total": 134
+      "task_queue_total": 4357,
+      "worker_ready_total": 135
     },
-    "cycle_count": 79,
-    "blocking_count": 80,
+    "cycle_count": 80,
+    "blocking_count": 81,
     "policy": "documentation = code + tasks",
     "status": "needs_repair",
     "statuses": {
-      "needs_repair": 79
+      "needs_repair": 80
     },
     "ok": false
   },
