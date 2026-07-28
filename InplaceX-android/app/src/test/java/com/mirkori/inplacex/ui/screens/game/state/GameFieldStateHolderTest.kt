@@ -175,6 +175,28 @@ class GameFieldStateHolderTest {
     }
 
     @Test
+    fun `manual yes prefills every next accepted attempt until removed`() {
+        val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
+        source.dispatch(GameFieldEvent.ManualMarkChanged(2, '6', GameFieldManualMarkType.YES))
+
+        "125".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals(listOf(null, null, '6', null), source.state.value.input.slots)
+        assertEquals(listOf("1265"), source.state.value.match.attempts.map { it.guess })
+
+        "127".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals(listOf(null, null, '6', null), source.state.value.input.slots)
+        assertEquals(listOf("1265", "1267"), source.state.value.match.attempts.map { it.guess })
+        assertEquals(
+            listOf(GameFieldManualMark(2, '6', GameFieldManualMarkType.YES)),
+            source.state.value.manualMarks,
+        )
+    }
+
+    @Test
     fun `restart clears durable match and helper state`() {
         val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
 

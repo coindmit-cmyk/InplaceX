@@ -32,6 +32,18 @@ class GameEngineTest {
     }
 
     @Test
+    fun `invalid fixed secret is replaced before the first guess`() {
+        val engine = GameEngine(config.copy(seed = 17L))
+
+        val started = engine.start(secretOverride = "")
+        val submitted = engine.submit("1234")
+
+        assertEquals(config.codeLength, started.debugSecret.length)
+        assertTrue(started.debugSecret.all(Char::isDigit))
+        assertEquals(1, submitted.attempts.size)
+    }
+
+    @Test
     fun `extra moves feedback uses repaired text and typed amount`() {
         val engine = GameEngine(config)
         engine.start(secretOverride = "1234")

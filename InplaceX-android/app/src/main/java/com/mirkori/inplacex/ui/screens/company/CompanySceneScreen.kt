@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.ui.screens.company
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -21,8 +23,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.R
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 
@@ -75,12 +82,30 @@ internal fun CompanySceneScreen(
             val targetIndex = if (landscape) {
                 (selectedIndex - 1).coerceAtLeast(0)
             } else {
-                // The chapter hero occupies item 0. This keeps one future mission visible above
-                // the selected mission without allowing the primary mission below the viewport.
-                selectedIndex.coerceAtMost(displayItems.lastIndex)
+                (selectedIndex - 1).coerceAtLeast(0)
             }
             listState.animateScrollToItem(targetIndex)
         }
+
+        Image(
+            painter = painterResource(R.drawable.company_room_bg_v2),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0x33002A67),
+                            Color.Transparent,
+                            Color(0x1A5B2500),
+                        ),
+                    ),
+                ),
+        )
 
         Column(
             modifier = Modifier
@@ -95,6 +120,19 @@ internal fun CompanySceneScreen(
                 onHistory = onHistory,
                 onBuyEnergy = onBuyEnergy,
             )
+            Spacer(modifier = Modifier.height(if (compact) 4.dp else 7.dp))
+
+            if (!landscape) {
+                CompanyChapterHero(
+                    strings = strings,
+                    chapter = selectedItem.definition.blockNumber,
+                    totalStars = totalStars,
+                    requiredStars = requiredStarsForNextBlock,
+                    nextBlockLocked = nextBlockLocked,
+                    compact = compact,
+                )
+                Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
+            }
 
             if (landscape) {
                 LazyRow(
@@ -141,18 +179,6 @@ internal fun CompanySceneScreen(
                         bottom = 7.dp,
                     ),
                 ) {
-                    item(key = "chapter-hero") {
-                        CompanyChapterHero(
-                            strings = strings,
-                            chapter = selectedItem.definition.blockNumber,
-                            totalStars = totalStars,
-                            requiredStars = requiredStarsForNextBlock,
-                            nextBlockLocked = nextBlockLocked,
-                            compact = compact,
-                        )
-                        Spacer(modifier = Modifier.height(9.dp))
-                    }
-
                     itemsIndexed(
                         items = displayItems,
                         key = { _, item -> item.definition.levelNumber },

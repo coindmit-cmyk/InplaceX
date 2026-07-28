@@ -98,60 +98,51 @@ internal fun CompanyScreenHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 5.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 58.dp),
         ) {
-            Row(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Inplace",
-                    color = InplaceXColors.White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                )
-                Text(
-                    text = "X",
-                    color = InplaceXColors.ToyOrangeTop,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            HeaderIconButton(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.History,
-                        contentDescription = strings.text("company.scene.history"),
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp),
-                    )
-                },
-                onClick = onHistory,
-                testTag = "company-history",
-            )
-            Spacer(modifier = Modifier.width(6.dp))
             Surface(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .clickable(onClick = onBuyEnergy)
-                    .testTag("company-energy"),
-                shape = RoundedCornerShape(18.dp),
-                color = InplaceXColors.ToyBlueDeep,
+                    .align(Alignment.Center)
+                    .shadow(9.dp, RoundedCornerShape(22.dp)),
+                shape = RoundedCornerShape(22.dp),
+                color = InplaceXColors.ToyBlueDeep.copy(alpha = 0.96f),
                 border = BorderStroke(2.dp, InplaceXColors.ToyCyan),
-                shadowElevation = 5.dp,
+                shadowElevation = 4.dp,
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("⚡", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = "$energy/$energyMax",
-                        color = Color.White,
+                        text = "Inplace",
+                        color = InplaceXColors.White,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = "X",
+                        color = InplaceXColors.ToyOrangeTop,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black,
                     )
                 }
+            }
+            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                HeaderIconButton(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.History,
+                            contentDescription = strings.text("company.scene.history"),
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    },
+                    onClick = onHistory,
+                    testTag = "company-history",
+                )
             }
         }
 
