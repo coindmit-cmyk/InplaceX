@@ -9,7 +9,6 @@ import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.security.KeyStore
-import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -41,10 +40,10 @@ class AndroidKeystoreGuestSessionStore(
     }
 
     private fun encrypt(session: GuestSession): String {
-        val iv = ByteArray(IvLength).also(random::nextBytes)
         val cipher = Cipher.getInstance(Transformation).apply {
-            init(Cipher.ENCRYPT_MODE, key(), GCMParameterSpec(TagLengthBits, iv))
+            init(Cipher.ENCRYPT_MODE, key())
         }
+        val iv = requireNotNull(cipher.iv).also { require(it.size == IvLength) }
         val encrypted = cipher.doFinal(session.toBytes())
         return Base64.encodeToString(iv + encrypted, Base64.NO_WRAP)
     }
@@ -104,6 +103,5 @@ class AndroidKeystoreGuestSessionStore(
         const val IvLength = 12
         const val TagLengthBits = 128
         const val FormatVersion = 1
-        val random = SecureRandom()
     }
 }
