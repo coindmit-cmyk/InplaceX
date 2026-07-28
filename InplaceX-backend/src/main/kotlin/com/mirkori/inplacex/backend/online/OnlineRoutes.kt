@@ -64,6 +64,42 @@ fun Application.configureOnlineRoutes(
             call.respondJson(HttpStatusCode.OK, codec.encodeTicket(result))
         }
 
+        post("/api/v1/friends/invites") {
+            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val command = runCatching { codec.decodeTicket(call.receiveText()) }.getOrElse {
+                call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            if (!call.hasMatchingIdempotencyKey(command.commandId)) return@post
+            val result = runOnlineCommand(call) {
+                service.createPrivateInvite(principal.playerId, command.commandId, command.mode)
+            } ?: return@post
+            call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvite(result))
+        }
+
+        get("/api/v1/friends/invites/{inviteCode}") {
+            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@get
+            val inviteCode = call.safeInviteCodeParameter() ?: return@get
+            val result = runOnlineCommand(call) {
+                service.readPrivateInvite(principal.playerId, inviteCode)
+            } ?: return@get
+            call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvite(result))
+        }
+
+        post("/api/v1/friends/invites/{inviteCode}/accept") {
+            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val inviteCode = call.safeInviteCodeParameter() ?: return@post
+            val command = runCatching { codec.decodeInviteAccept(call.receiveText()) }.getOrElse {
+                call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            if (!call.hasMatchingIdempotencyKey(command.commandId)) return@post
+            val result = runOnlineCommand(call) {
+                service.acceptPrivateInvite(principal.playerId, command.commandId, inviteCode)
+            } ?: return@post
+            call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvite(result))
+        }
+
         get("/api/v1/sessions/{sessionId}") {
             val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@get
             val sessionId = call.safeUuidParameter("sessionId") ?: return@get
@@ -173,6 +209,10 @@ private data class ReconnectCommand(
     val commandId: String,
 )
 
+private data class InviteAcceptCommand(
+    val commandId: String,
+)
+
 private class OnlineJsonCodec {
     private val json = Json {
         isLenient = false
@@ -212,6 +252,11 @@ private class OnlineJsonCodec {
         return ReconnectCommand(value.uuid("commandId"))
     }
 
+    fun decodeInviteAccept(source: String): InviteAcceptCommand {
+        val value = decodeObject(source, setOf("commandId"))
+        return InviteAcceptCommand(value.uuid("commandId"))
+    }
+
     fun encodeTicket(ticket: MatchmakingTicket): String = buildJsonObject {
         put("ticketId", ticket.ticketId)
         put("status", ticket.status.name.lowercase())
@@ -225,6 +270,18 @@ private class OnlineJsonCodec {
     }.toString()
 
     fun encodeSnapshot(snapshot: OnlineDuelSnapshot): String = snapshotJson(snapshot).toString()
+
+    fun encodePrivateInvite(invite: PrivateDuelInvite): String = buildJsonObject {
+        put("inviteCode", invite.inviteCode)
+        put("status", invite.status.name.lowercase())
+        if (invite.sessionId == null) {
+            put("sessionId", JsonNull)
+        } else {
+            put("sessionId", invite.sessionId)
+        }
+        put("createdAtEpochMs", invite.createdAt.toEpochMilli())
+        put("expiresAtEpochMs", invite.expiresAt.toEpochMilli())
+    }.toString()
 
     fun encodeSnapshotFrame(snapshot: OnlineDuelSnapshot): String = buildJsonObject {
         put("type", "session.snapshot")
@@ -340,6 +397,15 @@ private suspend fun ApplicationCall.safeUuidParameter(name: String): String? {
     return value
 }
 
+private suspend fun ApplicationCall.safeInviteCodeParameter(): String? {
+    val value = parameters["inviteCode"]?.uppercase()
+    if (value == null || !value.matches(Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}"))) {
+        respondOnlineError(HttpStatusCode.BadRequest, "invalid_path")
+        return null
+    }
+    return value
+}
+
 private suspend fun ApplicationCall.hasMatchingIdempotencyKey(commandId: String): Boolean {
     if (request.headers["Idempotency-Key"] != commandId) {
         respondOnlineError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
@@ -371,6 +437,9 @@ private suspend fun <T> runOnlineCommand(
         null
     } catch (_: OnlineCommandIdReusedException) {
         call.respondOnlineError(HttpStatusCode.Conflict, "command_id_reused")
+        null
+    } catch (_: OnlineInviteUnavailableException) {
+        call.respondOnlineError(HttpStatusCode.Conflict, "invite_unavailable")
         null
     } catch (_: IllegalArgumentException) {
         call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")

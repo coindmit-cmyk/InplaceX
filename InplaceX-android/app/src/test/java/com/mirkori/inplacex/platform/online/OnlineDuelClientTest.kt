@@ -92,6 +92,51 @@ class OnlineDuelClientTest {
     }
 
     @Test
+    fun `friend invite encodes a safe private code and shared session`() = runBlocking {
+        val sessionId = UUID.randomUUID().toString()
+        val inviteCode = "7KMQ3NWP"
+        val boundary = QueueBoundary(
+            RemoteCallResult.Success(
+                RemoteResponse(
+                    200,
+                    emptyMap(),
+                    """
+                        {
+                          "inviteCode":"$inviteCode",
+                          "status":"matched",
+                          "sessionId":"$sessionId",
+                          "createdAtEpochMs":1000,
+                          "expiresAtEpochMs":601000
+                        }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+
+        val result = OnlineDuelClient(boundary).acceptFriendInvite(inviteCode.lowercase())
+
+        assertEquals(
+            OnlineClientResult.Success(
+                OnlineFriendInvite(
+                    inviteCode = inviteCode,
+                    status = OnlineFriendInviteStatus.MATCHED,
+                    sessionId = sessionId,
+                    expiresAtEpochMs = 601000,
+                ),
+            ),
+            result,
+        )
+        val request = boundary.requests.single()
+        assertEquals("/api/v1/friends/invites/$inviteCode/accept", request.path)
+        val commandId = Json.parseToJsonElement(requireNotNull(request.bodyJson))
+            .jsonObject
+            .getValue("commandId")
+            .jsonPrimitive
+            .content
+        assertEquals(commandId, request.idempotencyKey)
+    }
+
+    @Test
     fun `snapshot parser accepts authoritative progress and no secret field`() = runBlocking {
         val sessionId = UUID.randomUUID().toString()
         val boundary = QueueBoundary(

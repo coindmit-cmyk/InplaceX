@@ -44,6 +44,27 @@ class OnlineRuntime private constructor(
         return withContext(Dispatchers.IO) { googleAuth.challenge() }
     }
 
+    suspend fun createFriendInvite(
+        mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
+    ): OnlineClientResult<OnlineFriendInvite> {
+        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        return duel.createFriendInvite(mode)
+    }
+
+    suspend fun readFriendInvite(
+        inviteCode: String,
+    ): OnlineClientResult<OnlineFriendInvite> {
+        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        return duel.readFriendInvite(inviteCode)
+    }
+
+    suspend fun acceptFriendInvite(
+        inviteCode: String,
+    ): OnlineClientResult<OnlineFriendInvite> {
+        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        return duel.acceptFriendInvite(inviteCode)
+    }
+
     suspend fun authenticateWithGoogle(
         idToken: String,
         nonce: String,

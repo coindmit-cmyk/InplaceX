@@ -12,6 +12,7 @@ import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.model.GameConfig
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -29,6 +30,12 @@ enum class MatchmakingStatus {
     CANCELLED,
 }
 
+enum class PrivateInviteStatus {
+    WAITING,
+    MATCHED,
+    EXPIRED,
+}
+
 data class MatchmakingTicket(
     val ticketId: String,
     val ownerPlayerId: String,
@@ -36,6 +43,14 @@ data class MatchmakingTicket(
     val sessionId: String?,
     val matchedWithBot: Boolean,
     val createdAt: Instant,
+)
+
+data class PrivateDuelInvite(
+    val inviteCode: String,
+    val status: PrivateInviteStatus,
+    val sessionId: String?,
+    val createdAt: Instant,
+    val expiresAt: Instant,
 )
 
 data class OnlineDuelAttempt(
@@ -68,6 +83,7 @@ class OnlineMembershipRejectedException : IllegalStateException("online session 
 class OnlineRevisionConflictException(val current: OnlineDuelSnapshot) :
     IllegalStateException("online session revision conflict")
 class OnlineCommandIdReusedException : IllegalStateException("online command id reused with a different payload")
+class OnlineInviteUnavailableException : IllegalStateException("private duel invite is unavailable")
 
 /**
  * Server-authoritative matchmaking and duel runtime.
@@ -80,15 +96,23 @@ class OnlineCommandIdReusedException : IllegalStateException("online command id 
 class AuthoritativeOnlineDuelService(
     private val clock: Clock = Clock.systemUTC(),
     private val botFallbackDelay: Duration = Duration.ofSeconds(5),
+    private val privateInviteLifetime: Duration = Duration.ofMinutes(10),
+    private val secureRandom: SecureRandom = SecureRandom(),
 ) : AutoCloseable {
     private val lock = Any()
     private val tickets = mutableMapOf<String, TicketRecord>()
     private val ticketReplays = mutableMapOf<String, TicketReplay>()
+    private val privateInvites = mutableMapOf<String, PrivateInviteRecord>()
+    private val privateInviteCreateReplays = mutableMapOf<String, PrivateInviteCreateReplay>()
+    private val privateInviteAcceptReplays = mutableMapOf<String, PrivateInviteAcceptReplay>()
     private val sessions = mutableMapOf<String, SessionRecord>()
 
     init {
         require(!botFallbackDelay.isNegative && !botFallbackDelay.isZero) {
             "botFallbackDelay must be positive"
+        }
+        require(!privateInviteLifetime.isNegative && !privateInviteLifetime.isZero) {
+            "privateInviteLifetime must be positive"
         }
     }
 
@@ -161,6 +185,90 @@ class AuthoritativeOnlineDuelService(
         }
     }
 
+    fun createPrivateInvite(
+        playerId: String,
+        commandId: String,
+        mode: OnlineMatchMode,
+    ): PrivateDuelInvite {
+        requireCanonicalUuid(playerId, "playerId")
+        requireCanonicalUuid(commandId, "commandId")
+        synchronized(lock) {
+            val replayKey = "$playerId:$commandId"
+            privateInviteCreateReplays[replayKey]?.let { replay ->
+                if (replay.mode != mode) throw OnlineCommandIdReusedException()
+                return privateInvites.getValue(replay.inviteCode).invite
+            }
+            expirePrivateInvites(clock.instant())
+            val createdAt = clock.instant()
+            val inviteCode = nextInviteCode()
+            val invite = PrivateDuelInvite(
+                inviteCode = inviteCode,
+                status = PrivateInviteStatus.WAITING,
+                sessionId = null,
+                createdAt = createdAt,
+                expiresAt = createdAt.plus(privateInviteLifetime),
+            )
+            privateInvites[inviteCode] = PrivateInviteRecord(
+                mode = mode,
+                ownerPlayerId = playerId,
+                invite = invite,
+            )
+            privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(mode, inviteCode)
+            return invite
+        }
+    }
+
+    fun readPrivateInvite(playerId: String, inviteCode: String): PrivateDuelInvite {
+        requireCanonicalUuid(playerId, "playerId")
+        requireInviteCode(inviteCode)
+        synchronized(lock) {
+            val record = privateInvites[inviteCode] ?: throw NoSuchElementException("private duel invite not found")
+            expirePrivateInvite(record, clock.instant())
+            if (playerId != record.ownerPlayerId && playerId != record.guestPlayerId) {
+                throw OnlineMembershipRejectedException()
+            }
+            return record.invite
+        }
+    }
+
+    fun acceptPrivateInvite(
+        playerId: String,
+        commandId: String,
+        inviteCode: String,
+    ): PrivateDuelInvite {
+        requireCanonicalUuid(playerId, "playerId")
+        requireCanonicalUuid(commandId, "commandId")
+        requireInviteCode(inviteCode)
+        synchronized(lock) {
+            val replayKey = "$playerId:$commandId"
+            privateInviteAcceptReplays[replayKey]?.let { replay ->
+                if (replay.inviteCode != inviteCode) throw OnlineCommandIdReusedException()
+                return privateInvites.getValue(replay.inviteCode).invite
+            }
+            val record = privateInvites[inviteCode] ?: throw NoSuchElementException("private duel invite not found")
+            expirePrivateInvite(record, clock.instant())
+            if (playerId == record.ownerPlayerId) throw OnlineInviteUnavailableException()
+            if (record.invite.status != PrivateInviteStatus.WAITING) {
+                if (record.guestPlayerId == playerId && record.invite.status == PrivateInviteStatus.MATCHED) {
+                    return record.invite
+                }
+                throw OnlineInviteUnavailableException()
+            }
+            val session = createHumanSession(
+                mode = record.mode,
+                firstPlayerId = record.ownerPlayerId,
+                secondPlayerId = playerId,
+            )
+            record.guestPlayerId = playerId
+            record.invite = record.invite.copy(
+                status = PrivateInviteStatus.MATCHED,
+                sessionId = session.sessionId,
+            )
+            privateInviteAcceptReplays[replayKey] = PrivateInviteAcceptReplay(inviteCode)
+            return record.invite
+        }
+    }
+
     fun readSession(playerId: String, sessionId: String): OnlineDuelSnapshot =
         sessionFor(playerId, sessionId).snapshotFor(playerId)
 
@@ -196,6 +304,31 @@ class AuthoritativeOnlineDuelService(
         tickets.values
             .filter { it.ticket.status == MatchmakingStatus.SEARCHING }
             .forEach { promoteTicketToBotIfExpired(it, now) }
+    }
+
+    private fun expirePrivateInvites(now: Instant) {
+        privateInvites.values.forEach { expirePrivateInvite(it, now) }
+    }
+
+    private fun expirePrivateInvite(record: PrivateInviteRecord, now: Instant) {
+        if (
+            record.invite.status == PrivateInviteStatus.WAITING &&
+            !now.isBefore(record.invite.expiresAt)
+        ) {
+            record.invite = record.invite.copy(status = PrivateInviteStatus.EXPIRED)
+        }
+    }
+
+    private fun nextInviteCode(): String {
+        repeat(MaximumInviteCodeAttempts) {
+            val code = buildString(PrivateInviteCodeLength) {
+                repeat(PrivateInviteCodeLength) {
+                    append(PrivateInviteAlphabet[secureRandom.nextInt(PrivateInviteAlphabet.length)])
+                }
+            }
+            if (!privateInvites.containsKey(code)) return code
+        }
+        throw IllegalStateException("could not allocate private duel invite code")
     }
 
     private fun promoteTicketToBotIfExpired(record: TicketRecord, now: Instant) {
@@ -256,6 +389,9 @@ class AuthoritativeOnlineDuelService(
             sessions.clear()
             tickets.clear()
             ticketReplays.clear()
+            privateInvites.clear()
+            privateInviteCreateReplays.clear()
+            privateInviteAcceptReplays.clear()
         }
     }
 
@@ -267,6 +403,22 @@ class AuthoritativeOnlineDuelService(
     private data class TicketRecord(
         val mode: OnlineMatchMode,
         var ticket: MatchmakingTicket,
+    )
+
+    private data class PrivateInviteCreateReplay(
+        val mode: OnlineMatchMode,
+        val inviteCode: String,
+    )
+
+    private data class PrivateInviteAcceptReplay(
+        val inviteCode: String,
+    )
+
+    private data class PrivateInviteRecord(
+        val mode: OnlineMatchMode,
+        val ownerPlayerId: String,
+        var guestPlayerId: String? = null,
+        var invite: PrivateDuelInvite,
     )
 
     private class SessionRecord(
@@ -480,4 +632,13 @@ private fun requireCanonicalUuid(value: String, name: String) {
     }
 }
 
+private fun requireInviteCode(value: String) {
+    require(value.matches(Regex("[$PrivateInviteAlphabet]{$PrivateInviteCodeLength}"))) {
+        "inviteCode has an invalid format"
+    }
+}
+
 private const val CLEARED_DIGIT: Char = '\u0000'
+private const val PrivateInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+private const val PrivateInviteCodeLength = 8
+private const val MaximumInviteCodeAttempts = 32

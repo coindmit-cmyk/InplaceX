@@ -17,10 +17,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.mirkori.inplacex.data.local.GameProgressState
+import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
@@ -43,6 +45,35 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
         composeRule.onNodeWithText("Новых приглашений нет.").assertIsDisplayed()
+    }
+
+    @Test
+    fun configuredSocialSectionOpensPrivateFriendDuel() {
+        val runtime = requireNotNull(
+            OnlineRuntime.createOrNull(
+                context = composeRule.activity,
+                profile = LocalPlayerProfile(
+                    playerId = "instrumented-player",
+                    installationId = "instrumented-installation",
+                    displayName = "Instrumented",
+                ),
+                locale = "ru-RU",
+                regionCode = "RU",
+                baseUrl = "http://127.0.0.1:65535",
+                allowCleartextLoopback = true,
+            ),
+        )
+        try {
+            setContent { SocialRootScreen(onlineRuntime = runtime) }
+
+            composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
+            composeRule.onNodeWithText("Друзья").performClick()
+            composeRule.onNodeWithText("Онлайн-дуэль").assertIsDisplayed()
+            composeRule.onNodeWithText("Создать код").assertIsDisplayed()
+            composeRule.onNodeWithText("Войти по коду").assertIsDisplayed()
+        } finally {
+            runtime.close()
+        }
     }
 
     @Test

@@ -152,6 +152,11 @@ data class RemoteMatchmakingPayload(
     val mode: RemoteMatchmakingMode,
 )
 
+data class RemoteFriendInvitePayload(
+    val commandId: String,
+    val mode: RemoteMatchmakingMode,
+)
+
 data class RemoteSubmitSecretPayload(
     val sessionId: String,
     val commandId: String,
@@ -207,6 +212,19 @@ interface RemotePlatformGateway : MatchmakingStub {
     ): RemoteRequestSpec
 
     fun prepareReadMatchmakingTicket(ticketId: String): RemoteRequestSpec
+
+    fun prepareCreateFriendInvite(
+        payload: RemoteFriendInvitePayload,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
+    fun prepareReadFriendInvite(inviteCode: String): RemoteRequestSpec
+
+    fun prepareAcceptFriendInvite(
+        inviteCode: String,
+        commandId: String,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
 
     fun prepareCancelMatchmakingTicket(
         ticketId: String,
@@ -375,6 +393,48 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
         )
     }
 
+    override fun prepareCreateFriendInvite(
+        payload: RemoteFriendInvitePayload,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        requireSafeUuid(payload.commandId, "commandId")
+        return RemoteRequestSpec(
+            operation = "friends.invite.create",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/friends/invites",
+            bodyJson = jsonObject(
+                "commandId" to JsonPrimitive(payload.commandId),
+                "mode" to JsonPrimitive(payload.mode.name.lowercase()),
+            ),
+            idempotencyKey = idempotencyKey,
+        )
+    }
+
+    override fun prepareReadFriendInvite(inviteCode: String): RemoteRequestSpec {
+        requireFriendInviteCode(inviteCode)
+        return RemoteRequestSpec(
+            operation = "friends.invite.read",
+            method = RemoteHttpMethod.GET,
+            path = "/api/v1/friends/invites/${inviteCode.uppercase()}",
+        )
+    }
+
+    override fun prepareAcceptFriendInvite(
+        inviteCode: String,
+        commandId: String,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        requireFriendInviteCode(inviteCode)
+        requireSafeUuid(commandId, "commandId")
+        return RemoteRequestSpec(
+            operation = "friends.invite.accept",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/friends/invites/${inviteCode.uppercase()}/accept",
+            bodyJson = jsonObject("commandId" to JsonPrimitive(commandId)),
+            idempotencyKey = idempotencyKey,
+        )
+    }
+
     override fun prepareCancelMatchmakingTicket(
         ticketId: String,
         idempotencyKey: String,
@@ -493,6 +553,12 @@ private fun requireSafePathSegment(value: String, field: String) {
     }
     require(value != "." && value != "..") {
         "$field must not be a traversal segment"
+    }
+}
+
+private fun requireFriendInviteCode(value: String) {
+    require(value.uppercase().matches(Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}"))) {
+        "inviteCode has an invalid format"
     }
 }
 

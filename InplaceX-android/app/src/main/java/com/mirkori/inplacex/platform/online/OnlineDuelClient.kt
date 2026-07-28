@@ -23,6 +23,19 @@ data class OnlineMatchTicket(
     val matchedWithBot: Boolean,
 )
 
+enum class OnlineFriendInviteStatus {
+    WAITING,
+    MATCHED,
+    EXPIRED,
+}
+
+data class OnlineFriendInvite(
+    val inviteCode: String,
+    val status: OnlineFriendInviteStatus,
+    val sessionId: String?,
+    val expiresAtEpochMs: Long,
+)
+
 data class OnlineDuelAttemptState(
     val actor: String,
     val exactMatches: Int,
@@ -68,6 +81,32 @@ class OnlineDuelClient(
 
     suspend fun readTicket(ticketId: String): OnlineClientResult<OnlineMatchTicket> =
         transport.execute(gateway.prepareReadMatchmakingTicket(ticketId)).decode(codec::ticket)
+
+    suspend fun createFriendInvite(
+        mode: RemoteMatchmakingMode,
+    ): OnlineClientResult<OnlineFriendInvite> {
+        val commandId = UUID.randomUUID().toString()
+        return transport.execute(
+            gateway.prepareCreateFriendInvite(
+                payload = RemoteFriendInvitePayload(commandId, mode),
+                idempotencyKey = commandId,
+            ),
+        ).decode(codec::friendInvite)
+    }
+
+    suspend fun readFriendInvite(inviteCode: String): OnlineClientResult<OnlineFriendInvite> =
+        transport.execute(gateway.prepareReadFriendInvite(inviteCode)).decode(codec::friendInvite)
+
+    suspend fun acceptFriendInvite(inviteCode: String): OnlineClientResult<OnlineFriendInvite> {
+        val commandId = UUID.randomUUID().toString()
+        return transport.execute(
+            gateway.prepareAcceptFriendInvite(
+                inviteCode = inviteCode,
+                commandId = commandId,
+                idempotencyKey = commandId,
+            ),
+        ).decode(codec::friendInvite)
+    }
 
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
         transport.execute(gateway.prepareReadSession(sessionId)).decode(codec::snapshot)
@@ -173,6 +212,31 @@ private class OnlineDuelResponseCodec {
                 )
             },
         )
+    }
+
+    fun friendInvite(source: String): OnlineFriendInvite {
+        val value = objectValue(
+            source,
+            setOf("inviteCode", "status", "sessionId", "createdAtEpochMs", "expiresAtEpochMs"),
+        )
+        val status = when (value.string("status", 16)) {
+            "waiting" -> OnlineFriendInviteStatus.WAITING
+            "matched" -> OnlineFriendInviteStatus.MATCHED
+            "expired" -> OnlineFriendInviteStatus.EXPIRED
+            else -> throw IllegalArgumentException("unsupported friend invite status")
+        }
+        val sessionId = value.nullableUuid("sessionId")
+        require((status == OnlineFriendInviteStatus.MATCHED) == (sessionId != null))
+        return OnlineFriendInvite(
+            inviteCode = value.string("inviteCode", 8).also {
+                require(it.matches(Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}")))
+            },
+            status = status,
+            sessionId = sessionId,
+            expiresAtEpochMs = value.nonNegativeLong("expiresAtEpochMs"),
+        ).also {
+            require(value.nonNegativeLong("createdAtEpochMs") <= it.expiresAtEpochMs)
+        }
     }
 
     private fun objectValue(source: String, expectedFields: Set<String>): JsonObject {

@@ -110,6 +110,84 @@ class AuthoritativeOnlineDuelServiceTest {
     }
 
     @Test
+    fun `private invite pairs exactly two authenticated players without bot fallback`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val createCommand = UUID.randomUUID().toString()
+        val created = service.createPrivateInvite(
+            playerId,
+            createCommand,
+            OnlineMatchMode.CLASSIC,
+        )
+        val replayed = service.createPrivateInvite(
+            playerId,
+            createCommand,
+            OnlineMatchMode.CLASSIC,
+        )
+
+        assertEquals(created, replayed)
+        assertTrue(created.inviteCode.matches(Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}")))
+        assertEquals(PrivateInviteStatus.WAITING, created.status)
+        assertNull(created.sessionId)
+
+        val accepted = service.acceptPrivateInvite(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            created.inviteCode,
+        )
+        val ownerView = service.readPrivateInvite(playerId, created.inviteCode)
+
+        assertEquals(PrivateInviteStatus.MATCHED, accepted.status)
+        assertEquals(accepted, ownerView)
+        val sessionId = requireNotNull(accepted.sessionId)
+        assertFalse(sessionId.isBlank())
+
+        val secondSecret = service.submitSecret(
+            secondPlayer,
+            sessionId,
+            UUID.randomUUID().toString(),
+            0,
+            "5678",
+        )
+        val active = service.submitSecret(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            secondSecret.revision,
+            "1234",
+        )
+        assertEquals("active", active.phase)
+        assertEquals("player", active.currentTurn)
+    }
+
+    @Test
+    fun `private invite expires and cannot be joined by its owner or a late guest`() {
+        val invite = service.createPrivateInvite(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+
+        assertThrows(OnlineInviteUnavailableException::class.java) {
+            service.acceptPrivateInvite(
+                playerId,
+                UUID.randomUUID().toString(),
+                invite.inviteCode,
+            )
+        }
+
+        clock.advance(Duration.ofMinutes(10))
+        val expired = service.readPrivateInvite(playerId, invite.inviteCode)
+        assertEquals(PrivateInviteStatus.EXPIRED, expired.status)
+        assertThrows(OnlineInviteUnavailableException::class.java) {
+            service.acceptPrivateInvite(
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
+                invite.inviteCode,
+            )
+        }
+    }
+
+    @Test
     fun `same player cannot match their own second ticket`() {
         val first = service.createTicket(
             playerId,

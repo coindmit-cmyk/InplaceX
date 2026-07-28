@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added private friend duels for two phones: one authenticated guest creates an
+  eight-character expiring invite, another guest joins it, and both clients
+  automatically poll the same server-authoritative setup, turns, and result.
+- Added a fail-closed Mirkori Games Telegram distribution service template.
+  It serves only allowlisted, manifest-declared APKs whose SHA-256 is verified
+  immediately before delivery; bot credentials remain VPS-only.
 - Removed the opaque white Company gameplay backdrop: campaign levels now
   retain the same warm toy-room scene used by the campaign map.
 - Added real Google account authentication through Android Credential Manager

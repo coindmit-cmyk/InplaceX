@@ -91,7 +91,8 @@ fun SocialRootScreen(
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
                         ),
-                        onClick = {},
+                        enabled = onlineRuntime != null,
+                        onClick = { onlineDuelOpen = true },
                     )
                     SceneActionTile(
                         title = strings.text("social.invites"),
@@ -101,7 +102,8 @@ fun SocialRootScreen(
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
                         ),
-                        onClick = {},
+                        enabled = onlineRuntime != null,
+                        onClick = { onlineDuelOpen = true },
                     )
                     SceneActionTile(
                         title = strings.text("social.online.title"),
@@ -129,7 +131,8 @@ fun SocialRootScreen(
                             listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
                         ),
                         modifier = Modifier.weight(1f),
-                        onClick = {},
+                        enabled = onlineRuntime != null,
+                        onClick = { onlineDuelOpen = true },
                     )
                     SceneActionTile(
                         title = strings.text("social.invites"),
@@ -140,7 +143,8 @@ fun SocialRootScreen(
                             listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
                         ),
                         modifier = Modifier.weight(1f),
-                        onClick = {},
+                        enabled = onlineRuntime != null,
+                        onClick = { onlineDuelOpen = true },
                     )
                     SceneActionTile(
                         title = strings.text("social.online.title"),
@@ -209,7 +213,7 @@ private fun SocialAvailabilityBanner(
                 )
                 Text(
                     text = if (onlineConfigured) {
-                        "Авторизация и серверные дуэли готовы к подключению"
+                        "Приватные коды и серверные дуэли доступны"
                     } else {
                         strings.text("social.status.preparing.description")
                     },

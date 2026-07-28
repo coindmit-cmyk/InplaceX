@@ -125,6 +125,53 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `private friend invite creates one shared human session for two tokens`() = testApplication {
+        val service = AuthoritativeOnlineDuelService(
+            Clock.fixed(now, ZoneOffset.UTC),
+            Duration.ofSeconds(5),
+        )
+        application { configureOnlineRoutes(verifier, service) }
+
+        val createCommand = UUID.randomUUID().toString()
+        val createdResponse = client.post("/api/v1/friends/invites") {
+            bearer(playerToken)
+            header("Idempotency-Key", createCommand)
+            contentType(ContentType.Application.Json)
+            setBody("""{"commandId":"$createCommand","mode":"classic"}""")
+        }
+        assertEquals(HttpStatusCode.OK, createdResponse.status)
+        val created = json(createdResponse.bodyAsText())
+        val inviteCode = created.getValue("inviteCode").jsonPrimitive.content
+        assertEquals("waiting", created.getValue("status").jsonPrimitive.content)
+
+        val acceptCommand = UUID.randomUUID().toString()
+        val acceptedResponse = client.post("/api/v1/friends/invites/$inviteCode/accept") {
+            bearer(attackerToken)
+            header("Idempotency-Key", acceptCommand)
+            contentType(ContentType.Application.Json)
+            setBody("""{"commandId":"$acceptCommand"}""")
+        }
+        assertEquals(HttpStatusCode.OK, acceptedResponse.status)
+        val accepted = json(acceptedResponse.bodyAsText())
+        val sessionId = accepted.getValue("sessionId").jsonPrimitive.content
+        assertEquals("matched", accepted.getValue("status").jsonPrimitive.content)
+
+        val ownerPoll = client.get("/api/v1/friends/invites/$inviteCode") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.OK, ownerPoll.status)
+        assertEquals(
+            sessionId,
+            json(ownerPoll.bodyAsText()).getValue("sessionId").jsonPrimitive.content,
+        )
+
+        val firstSession = client.get("/api/v1/sessions/$sessionId") { bearer(playerToken) }
+        val secondSession = client.get("/api/v1/sessions/$sessionId") { bearer(attackerToken) }
+        assertEquals(HttpStatusCode.OK, firstSession.status)
+        assertEquals(HttpStatusCode.OK, secondSession.status)
+    }
+
+    @Test
     fun `forged token and stale revision fail closed`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
