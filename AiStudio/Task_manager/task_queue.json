@@ -12939,7 +12939,6 @@
         "gradle/libs.versions.toml",
         "docs/reports/**",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "docs/plans/allowed_paths_repair_plan.json",
         "README.md"
       ],
       "forbidden_paths": [
@@ -12973,8 +12972,7 @@
         "If the patch cannot be cleanly rebuilt, return the task with needs_worker_fix and a precise blocker"
       ],
       "context_docs": [
-        "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "docs/plans/allowed_paths_repair_plan.json"
+        "AiStudio/Task_manager/clean_rebuild_plan.json"
       ],
       "source_file": "AiStudio/Task_manager/clean_rebuild_plan.json",
       "provenance": {
@@ -13028,10 +13026,6 @@
         {
           "path": "AiStudio/Task_manager/clean_rebuild_plan.json",
           "purpose": "required context"
-        },
-        {
-          "path": "docs/plans/allowed_paths_repair_plan.json",
-          "purpose": "required context"
         }
       ],
       "code_refs": [
@@ -13049,7 +13043,6 @@
         "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
         "docs/reports/**",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "docs/plans/allowed_paths_repair_plan.json",
         "README.md"
       ],
       "context_inventory": {
@@ -13069,16 +13062,11 @@
           "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
           "docs/reports/**",
           "AiStudio/Task_manager/clean_rebuild_plan.json",
-          "docs/plans/allowed_paths_repair_plan.json",
           "README.md"
         ],
         "doc_refs": [
           {
             "path": "AiStudio/Task_manager/clean_rebuild_plan.json",
-            "purpose": "required context"
-          },
-          {
-            "path": "docs/plans/allowed_paths_repair_plan.json",
             "purpose": "required context"
           }
         ],
@@ -13108,7 +13096,6 @@
           "gradle/libs.versions.toml",
           "docs/reports/**",
           "AiStudio/Task_manager/clean_rebuild_plan.json",
-          "docs/plans/allowed_paths_repair_plan.json",
           "README.md"
         ],
         "forbidden_paths": [
@@ -13118,8 +13105,7 @@
           "production config"
         ],
         "context_docs": [
-          "AiStudio/Task_manager/clean_rebuild_plan.json",
-          "docs/plans/allowed_paths_repair_plan.json"
+          "AiStudio/Task_manager/clean_rebuild_plan.json"
         ],
         "source_file": "AiStudio/Task_manager/clean_rebuild_plan.json",
         "worker_source_branch": null
