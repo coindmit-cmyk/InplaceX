@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T07:57:58Z",
+  "updated_at": "2026-07-28T08:27:33Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12610,7 +12610,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        8
+      ],
       "repository_hygiene_draft_prs": [
         8
       ],
@@ -12641,7 +12643,7 @@
       "next_owner": "Integrator",
       "next_role": "integrator_review",
       "discovered_at": "2026-07-26T20:31:58Z",
-      "updated_at": "2026-07-26T20:31:58Z",
+      "updated_at": "2026-07-28T08:27:25Z",
       "changed_paths": [
         "CHANGELOG.md",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
@@ -12990,7 +12992,7 @@
       "clean_rebuild_source_branch": "origin/feature/online-foundation-v1",
       "clean_rebuild_source_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "clean_rebuild_route": "auto_clean_rebuild_medium",
-      "lock": "review",
+      "lock": "free",
       "created_at": "2026-07-26T22:13:10Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -13328,7 +13330,6 @@
       "branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
       "github_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
       "started_at": "2026-07-28T07:53:59Z",
-      "lock_expires_at": "2026-07-28T15:53:59Z",
       "worker_result_commit": "b712225e6ad8fbadb80b7132081e14fc990c25c4",
       "worker_result_synced_at": "2026-07-28T07:57:58Z",
       "worker_changed_paths": [
@@ -13406,7 +13407,17 @@
       "next_action": null,
       "dispatcher_next_review_at": "2026-07-28T07:54:21Z",
       "not_worker_ready_reason": null,
-      "status_reason": "repaired online transport foundation merged through PR #16; required exact-head CI passed and the task is finalized"
+      "status_reason": "repaired online transport foundation merged through PR #16; required exact-head CI passed and the task is finalized",
+      "terminal_residue_history": [
+        {
+          "closed_at": "2026-07-28T08:27:33Z",
+          "reason": "terminal task queue residue cleanup",
+          "previous_integration_status": "finalized",
+          "previous_lock": "review"
+        }
+      ],
+      "terminal_residue_closed_at": "2026-07-28T08:27:33Z",
+      "terminal_residue_closed_by": "release_dead_worker_claims.py"
     },
     {
       "id": "REPO-PR-13",

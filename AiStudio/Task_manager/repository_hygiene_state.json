@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-28T04:40:37Z",
+  "generated_at": "2026-07-28T08:27:25Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -189,7 +189,9 @@
       "draft_prs": [
         8
       ],
-      "dirty_prs": [],
+      "dirty_prs": [
+        8
+      ],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -197,11 +199,13 @@
   ],
   "task_routing": {
     "staged_count": 0,
-    "updated_count": 0,
+    "updated_count": 1,
     "covered_count": 5,
     "superseded_count": 0,
     "staged_task_ids": [],
-    "updated_task_ids": [],
+    "updated_task_ids": [
+      "REPO-PR-8"
+    ],
     "covered_task_ids": [
       "REPO-PR-3-9",
       "REPO-PR-4",
@@ -210,13 +214,13 @@
       "REPO-PR-8"
     ],
     "superseded_task_ids": [],
-    "changed": false,
+    "changed": true,
     "merged_parent_reconciliation": {
       "reconciled_count": 0,
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "7f7d998c79bf01758dce4832f25c9447018ce69d",
+      "base_sha": "5224d598e5a3d900bd852d08682298d60f694d28",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -225,7 +229,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "7f7d998c79bf01758dce4832f25c9447018ce69d",
+      "base_sha": "5224d598e5a3d900bd852d08682298d60f694d28",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -252,8 +256,9 @@
     }
   },
   "event": {
-    "event_appended": false,
-    "reason": "no_task_changes"
+    "event_appended": true,
+    "event_id": "repository-hygiene-3082c69155ef408a6f10",
+    "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
     "event_count": 0,
@@ -304,7 +309,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-28T04:40:38Z",
+    "generated_at": "2026-07-28T08:27:27Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -322,6 +327,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "631fb1a427702d192fcf7b09b58e75827ee18d8d3a149834c67e01743c09ed1b",
+  "state_signature": "4b2cb61595b8bcfae02d6974af7a359985173ebccf29edc0ac1aa206abbcba1b",
   "state_written": true
 }
