@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "integration_requested",
+      "status": "done",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
       "worker_ready": false,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "stale nonexistent context ref removed; packet retains authoritative clean_rebuild_plan.json and exact human validation evidence",
+      "packet_status": "done",
+      "normalization_status": "done",
+      "dispatcher_decision": "done",
+      "dispatcher_decision_reason": "PR #16 merged exact head b3a88322a28798f02587cd457d536bbe326e9180 after required Unit verification and debug artifact succeeded",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13149,8 +13149,8 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "Integrator",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": null,
       "repaired_packet_at": "2026-07-28T07:46:14Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "deterministic_preflight": {
@@ -13313,6 +13313,14 @@
           "to": "planned",
           "reason": "removed stale nonexistent context ref and preserved authoritative task context plus exact compile-failure evidence",
           "next_owner": "worker_pool"
+        },
+        {
+          "at": "2026-07-28T08:13:39Z",
+          "by": "Codex Integrator",
+          "from": "integration_requested",
+          "to": "done",
+          "reason": "PR #16 merged repaired worker result after exact-head required CI passed",
+          "next_owner": "none"
         }
       ],
       "worker_id": "auto-worker-5.3",
@@ -13354,7 +13362,20 @@
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008",
         "b712225e6ad8fbadb80b7132081e14fc990c25c4"
       ],
-      "integration_status": "pending",
+      "integration_status": "finalized",
+      "candidate_commit": "b3a88322a28798f02587cd457d536bbe326e9180",
+      "merge_commit": "a0bbed544592455eb6c6e14df705277008693b8d",
+      "github_pr": 16,
+      "github_pr_url": "https://github.com/coindmit-cmyk/InplaceX/pull/16",
+      "exact_sha_ci_run": {
+        "id": 30340981958,
+        "head_sha": "b3a88322a28798f02587cd457d536bbe326e9180",
+        "required_check": "Unit verification and debug artifact",
+        "required_check_conclusion": "success"
+      },
+      "finalized_at": "2026-07-28T08:13:39Z",
+      "finalized_by": "Codex Integrator",
+      "reviewed_at": "2026-07-28T08:13:39Z",
       "requires_human_attention": false,
       "human_validation_evidence": {
         "validated_at": "2026-07-28T07:41:00Z",
@@ -13385,7 +13406,7 @@
       "next_action": null,
       "dispatcher_next_review_at": "2026-07-28T07:54:21Z",
       "not_worker_ready_reason": null,
-      "status_reason": "worker branch contains product changes; central sync derived integration request"
+      "status_reason": "repaired online transport foundation merged through PR #16; required exact-head CI passed and the task is finalized"
     },
     {
       "id": "REPO-PR-13",
