@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T08:42:39Z",
+  "updated_at": "2026-07-28T15:46:43Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -10642,7 +10642,7 @@
     {
       "id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "status": "planned",
+      "status": "needs_dispatcher_repair",
       "priority": "P0",
       "complexity": "L",
       "type": "clean-rebuild",
@@ -10705,12 +10705,12 @@
         "git diff --check"
       ],
       "lock": "free",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "dispatcher_decision_reason": "worker packet v2 defect found before worker claim",
+      "next_owner": "Dispatcher",
       "next_role": "auto_workers",
       "recommended_agent": "auto-worker-5.5",
       "eligible_worker_profiles": [
@@ -11048,7 +11048,38 @@
         "AiStudio/Task_manager/task_queue.json"
       ],
       "packet_normalized_at": "2026-07-26T22:08:11Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "task_packet_defects": [
+        "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+        "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+        "missing_input_ref:InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt"
+      ],
+      "missing_packet_fields": [
+        "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+        "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+        "missing_input_ref:InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt"
+      ],
+      "repair_request": "Repair the listed Worker Packet v2 defects before worker claim.",
+      "repair_owner": "dispatcher",
+      "next_action": "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair.",
+      "dispatcher_next_review_at": "2026-07-28T15:46:43Z",
+      "not_worker_ready_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "status_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "status_history": [
+        {
+          "at": "2026-07-28T15:46:43Z",
+          "by": "claim_next_task",
+          "from": "planned",
+          "to": "needs_dispatcher_repair",
+          "reason": "worker_packet_v2_defect",
+          "defects": [
+            "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
+            "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
+            "missing_input_ref:InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt"
+          ],
+          "next_owner": "Dispatcher"
+        }
+      ]
     },
     {
       "id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
