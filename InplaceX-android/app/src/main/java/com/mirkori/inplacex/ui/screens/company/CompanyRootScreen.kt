@@ -94,55 +94,57 @@ fun CompanyRootScreen(
     }
 
     when {
-        activeLevel != null -> GameFieldScreen(
-            title = "",
-            params = activeLevel.toFieldParams(),
-            onBack = { showExitDialog = true },
-            onDebugSecretChange = onDebugSecretChange,
-            openPositionHints = openPositionHints,
-            checkDigitHints = checkDigitHints,
-            checkPositionHints = checkPositionHints,
-            autoModeAvailable = autoModeAvailable,
-            infiniteHintsEnabled = infiniteHintsEnabled,
-            extraMovesBoosts = extraMovesBoosts,
-            extraTimeBoosts = extraTimeBoosts,
-            onConsumeOpenPositionHint = onConsumeOpenPositionHint,
-            onConsumeCheckDigitHint = onConsumeCheckDigitHint,
-            onConsumeCheckPositionHint = onConsumeCheckPositionHint,
-            onWatchRewardedHintAd = onWatchRewardedHintAd,
-            onConsumeExtraMovesBoost = onConsumeExtraMovesBoost,
-            onConsumeExtraTimeBoost = onConsumeExtraTimeBoost,
-            onMatchStarted = onMatchStarted,
-            onMatchFinished = { summary ->
-                AppLog.info(
-                    tag = logTag,
-                    message = "campaign match finished",
-                    attributes = mapOf(
-                        "level" to activeLevel.levelNumber.toString(),
-                        "won" to summary.won.toString(),
-                        "attempts" to summary.attemptsUsed.toString(),
-                        "elapsedSeconds" to summary.elapsedSeconds.toString(),
-                    ),
-                )
-                val rating = if (summary.won) rateCampaignMatch(activeLevel, summary) else 0
-                if (summary.won) {
-                    onRecordCampaignCompletion(activeLevel.levelNumber, rating)
-                } else {
-                    onRecordCompanyLoss()
-                }
-                resultState = CompanyMatchResult(
-                    levelNumber = activeLevel.levelNumber,
-                    won = summary.won,
-                    backendRating = rating,
-                    stars = starsForRating(rating),
-                )
-                onActiveLevelNumberChange(null)
-                onDebugSecretChange(null)
-            },
-            autoRestartOnWin = false,
-            extraMovesPerBoost = activeLevel.boostPack.extraMoves,
-            extraTimeSecondsPerBoost = activeLevel.boostPack.extraSeconds,
-        )
+        activeLevel != null -> CompanyRoomBackground {
+            GameFieldScreen(
+                title = "",
+                params = activeLevel.toFieldParams(),
+                onBack = { showExitDialog = true },
+                onDebugSecretChange = onDebugSecretChange,
+                openPositionHints = openPositionHints,
+                checkDigitHints = checkDigitHints,
+                checkPositionHints = checkPositionHints,
+                autoModeAvailable = autoModeAvailable,
+                infiniteHintsEnabled = infiniteHintsEnabled,
+                extraMovesBoosts = extraMovesBoosts,
+                extraTimeBoosts = extraTimeBoosts,
+                onConsumeOpenPositionHint = onConsumeOpenPositionHint,
+                onConsumeCheckDigitHint = onConsumeCheckDigitHint,
+                onConsumeCheckPositionHint = onConsumeCheckPositionHint,
+                onWatchRewardedHintAd = onWatchRewardedHintAd,
+                onConsumeExtraMovesBoost = onConsumeExtraMovesBoost,
+                onConsumeExtraTimeBoost = onConsumeExtraTimeBoost,
+                onMatchStarted = onMatchStarted,
+                onMatchFinished = { summary ->
+                    AppLog.info(
+                        tag = logTag,
+                        message = "campaign match finished",
+                        attributes = mapOf(
+                            "level" to activeLevel.levelNumber.toString(),
+                            "won" to summary.won.toString(),
+                            "attempts" to summary.attemptsUsed.toString(),
+                            "elapsedSeconds" to summary.elapsedSeconds.toString(),
+                        ),
+                    )
+                    val rating = if (summary.won) rateCampaignMatch(activeLevel, summary) else 0
+                    if (summary.won) {
+                        onRecordCampaignCompletion(activeLevel.levelNumber, rating)
+                    } else {
+                        onRecordCompanyLoss()
+                    }
+                    resultState = CompanyMatchResult(
+                        levelNumber = activeLevel.levelNumber,
+                        won = summary.won,
+                        backendRating = rating,
+                        stars = starsForRating(rating),
+                    )
+                    onActiveLevelNumberChange(null)
+                    onDebugSecretChange(null)
+                },
+                autoRestartOnWin = false,
+                extraMovesPerBoost = activeLevel.boostPack.extraMoves,
+                extraTimeSecondsPerBoost = activeLevel.boostPack.extraSeconds,
+            )
+        }
 
         showHistory -> CampaignHistoryScreen(
             strings = strings,

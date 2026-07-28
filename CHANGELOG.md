@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Removed the opaque white Company gameplay backdrop: campaign levels now
+  retain the same warm toy-room scene used by the campaign map.
 - Added real Google account authentication through Android Credential Manager
   and the isolated identity process. The server verifies Google ID tokens and
   one-time nonces, links the provider subject to the existing guest player,

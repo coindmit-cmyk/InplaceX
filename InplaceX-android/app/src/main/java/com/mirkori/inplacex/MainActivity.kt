@@ -153,7 +153,8 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val isPremium = entitlements.adsDisabled
-                val useUnifiedSceneBackground = !isInGame
+                val useUnifiedSceneBackground =
+                    !isInGame || currentSection == AppSection.COMPANY
                 val shouldShowVariantBottomSlot =
                     isInGame && variantToolsBottomSlotEnabled(variantToolsEnabled)
                 val appBackgroundStyle = if (useUnifiedSceneBackground) {

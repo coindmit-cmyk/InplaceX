@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -69,24 +70,152 @@ internal fun CompanySceneScreen(
         selectedLevel = focusLevel
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val compact = maxHeight < 650.dp || maxWidth < 360.dp
-        val landscape = maxWidth > maxHeight
-        val horizontalPadding = if (compact) 7.dp else 11.dp
-        val landscapeCardWidth = (maxWidth - 22.dp) / 2f
-        val selectedIndex = displayItems
-            .indexOfFirst { it.definition.levelNumber == selectedLevel }
-            .coerceAtLeast(focusIndex)
+    CompanyRoomBackground {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val compact = maxHeight < 650.dp || maxWidth < 360.dp
+            val landscape = maxWidth > maxHeight
+            val horizontalPadding = if (compact) 7.dp else 11.dp
+            val landscapeCardWidth = (maxWidth - 22.dp) / 2f
+            val selectedIndex = displayItems
+                .indexOfFirst { it.definition.levelNumber == selectedLevel }
+                .coerceAtLeast(focusIndex)
 
-        LaunchedEffect(selectedLevel, displayItems.size, landscape) {
-            val targetIndex = if (landscape) {
-                (selectedIndex - 1).coerceAtLeast(0)
-            } else {
-                (selectedIndex - 1).coerceAtLeast(0)
+            LaunchedEffect(selectedLevel, displayItems.size, landscape) {
+                val targetIndex = if (landscape) {
+                    (selectedIndex - 1).coerceAtLeast(0)
+                } else {
+                    (selectedIndex - 1).coerceAtLeast(0)
+                }
+                listState.animateScrollToItem(targetIndex)
             }
-            listState.animateScrollToItem(targetIndex)
-        }
 
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = horizontalPadding, vertical = 4.dp),
+            ) {
+                CompanyScreenHeader(
+                    strings = strings,
+                    energy = progressState.campaignEnergy,
+                    energyMax = progressState.campaignEnergyMax,
+                    compact = compact,
+                    onHistory = onHistory,
+                    onBuyEnergy = onBuyEnergy,
+                )
+                Spacer(modifier = Modifier.height(if (compact) 4.dp else 7.dp))
+
+                if (!landscape) {
+                    CompanyChapterHero(
+                        strings = strings,
+                        chapter = selectedItem.definition.blockNumber,
+                        totalStars = totalStars,
+                        requiredStars = requiredStarsForNextBlock,
+                        nextBlockLocked = nextBlockLocked,
+                        compact = compact,
+                    )
+                    Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
+                }
+
+                if (landscape) {
+                    LazyRow(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .testTag("company-mission-list"),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            top = 5.dp,
+                            bottom = 3.dp,
+                        ),
+                    ) {
+                        itemsIndexed(
+                            items = displayItems,
+                            key = { _, item -> item.definition.levelNumber },
+                        ) { index, item ->
+                            Box(modifier = Modifier.width(landscapeCardWidth)) {
+                                CompanyMissionCard(
+                                    strings = strings,
+                                    item = item,
+                                    selectedLevel = selectedLevel,
+                                    accessibleMaxLevel = accessibleMaxLevel,
+                                    highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
+                                    requiredStars = requiredStarsForNextBlock,
+                                    first = index == 0,
+                                    last = index == displayItems.lastIndex,
+                                    compact = true,
+                                    onSelect = { selectedLevel = it },
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .testTag("company-mission-list"),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            top = 7.dp,
+                            bottom = 7.dp,
+                        ),
+                    ) {
+                        itemsIndexed(
+                            items = displayItems,
+                            key = { _, item -> item.definition.levelNumber },
+                        ) { index, item ->
+                            CompanyMissionCard(
+                                strings = strings,
+                                item = item,
+                                selectedLevel = selectedLevel,
+                                accessibleMaxLevel = accessibleMaxLevel,
+                                highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
+                                requiredStars = requiredStarsForNextBlock,
+                                first = index == 0,
+                                last = index == displayItems.lastIndex,
+                                compact = compact,
+                                onSelect = { selectedLevel = it },
+                            )
+                        }
+                    }
+                }
+
+                CompanyActionBar(
+                    strings = strings,
+                    levelNumber = selectedLevel,
+                    playable = selectedPlayable,
+                    hasEnergy = hasEnergy,
+                    requiredStars = requiredStarsForNextBlock,
+                    lockRequiresStars = selectedLevel > accessibleMaxLevel,
+                    onBuyEnergy = onBuyEnergy,
+                    onPlay = { onPlay(selectedLevel) },
+                    onRules = { showRules = true },
+                    compact = compact,
+                )
+            }
+        }
+    }
+
+    if (showRules) {
+        CompanyRulesDialog(
+            strings = strings,
+            level = selectedItem.definition,
+            onDismiss = { showRules = false },
+        )
+    }
+}
+
+@Composable
+internal fun CompanyRoomBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("company-room-background"),
+    ) {
         Image(
             painter = painterResource(R.drawable.company_room_bg_v2),
             contentDescription = null,
@@ -106,120 +235,12 @@ internal fun CompanySceneScreen(
                     ),
                 ),
         )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = horizontalPadding, vertical = 4.dp),
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            CompanyScreenHeader(
-                strings = strings,
-                energy = progressState.campaignEnergy,
-                energyMax = progressState.campaignEnergyMax,
-                compact = compact,
-                onHistory = onHistory,
-                onBuyEnergy = onBuyEnergy,
-            )
-            Spacer(modifier = Modifier.height(if (compact) 4.dp else 7.dp))
-
-            if (!landscape) {
-                CompanyChapterHero(
-                    strings = strings,
-                    chapter = selectedItem.definition.blockNumber,
-                    totalStars = totalStars,
-                    requiredStars = requiredStarsForNextBlock,
-                    nextBlockLocked = nextBlockLocked,
-                    compact = compact,
-                )
-                Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
-            }
-
-            if (landscape) {
-                LazyRow(
-                    state = listState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .testTag("company-mission-list"),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        top = 5.dp,
-                        bottom = 3.dp,
-                    ),
-                ) {
-                    itemsIndexed(
-                        items = displayItems,
-                        key = { _, item -> item.definition.levelNumber },
-                    ) { index, item ->
-                        Box(modifier = Modifier.width(landscapeCardWidth)) {
-                            CompanyMissionCard(
-                                strings = strings,
-                                item = item,
-                                selectedLevel = selectedLevel,
-                                accessibleMaxLevel = accessibleMaxLevel,
-                                highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                                requiredStars = requiredStarsForNextBlock,
-                                first = index == 0,
-                                last = index == displayItems.lastIndex,
-                                compact = true,
-                                onSelect = { selectedLevel = it },
-                            )
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .testTag("company-mission-list"),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        top = 7.dp,
-                        bottom = 7.dp,
-                    ),
-                ) {
-                    itemsIndexed(
-                        items = displayItems,
-                        key = { _, item -> item.definition.levelNumber },
-                    ) { index, item ->
-                        CompanyMissionCard(
-                            strings = strings,
-                            item = item,
-                            selectedLevel = selectedLevel,
-                            accessibleMaxLevel = accessibleMaxLevel,
-                            highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                            requiredStars = requiredStarsForNextBlock,
-                            first = index == 0,
-                            last = index == displayItems.lastIndex,
-                            compact = compact,
-                            onSelect = { selectedLevel = it },
-                        )
-                    }
-                }
-            }
-
-            CompanyActionBar(
-                strings = strings,
-                levelNumber = selectedLevel,
-                playable = selectedPlayable,
-                hasEnergy = hasEnergy,
-                requiredStars = requiredStarsForNextBlock,
-                lockRequiresStars = selectedLevel > accessibleMaxLevel,
-                onBuyEnergy = onBuyEnergy,
-                onPlay = { onPlay(selectedLevel) },
-                onRules = { showRules = true },
-                compact = compact,
-            )
+            content()
         }
-    }
-
-    if (showRules) {
-        CompanyRulesDialog(
-            strings = strings,
-            level = selectedItem.definition,
-            onDismiss = { showRules = false },
-        )
     }
 }
 

@@ -261,6 +261,20 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithTag("company-play").assertIsDisplayed()
     }
 
+    @Test
+    fun companyGameKeepsTheToyRoomBackground() {
+        setContent {
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = emptyList(),
+                activeLevelNumber = 1,
+                onActiveLevelNumberChange = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("company-room-background").assertIsDisplayed()
+    }
+
     private fun setContent(content: @androidx.compose.runtime.Composable () -> Unit) {
         composeRule.setContent {
             CompositionLocalProvider(
