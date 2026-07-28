@@ -84,6 +84,17 @@ android {
                 "proguard-rules.pro"
             )
         }
+        create("internalDistribution") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+    }
+    sourceSets.getByName("internalDistribution") {
+        kotlin.srcDir("src/release/java")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

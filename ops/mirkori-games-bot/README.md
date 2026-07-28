@@ -24,11 +24,19 @@ MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 
 ## Публикация сборки
 
-Сначала соберите и проверьте APK. Затем на VPS:
+Для обычного Telegram Bot API файл должен быть меньше 50 МБ. Поэтому для
+внутренней раздачи используется минифицированный, подписанный тестовым ключом
+вариант (он не является Play-релизом):
+
+```powershell
+.\gradlew.bat :app:assembleInternalDistribution
+```
+
+Сначала соберите, установите и проверьте APK. Затем на VPS:
 
 ```bash
 python3 current/publish_release.py \
-  --apk /path/to/app-debug.apk \
+  --apk /path/to/app-internalDistribution.apk \
   --artifact-root /srv/agent-projects/mirkori-games-bot/releases \
   --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
   --game-id inplacex \

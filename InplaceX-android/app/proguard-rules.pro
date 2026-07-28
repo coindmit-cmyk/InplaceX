@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Ktor depends on the SLF4J API but Android uses the project logging boundary
+# instead of the optional JVM StaticLoggerBinder implementation.
+-dontwarn org.slf4j.impl.StaticLoggerBinder
