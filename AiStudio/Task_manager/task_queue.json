@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T07:53:59Z",
+  "updated_at": "2026-07-28T07:57:58Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12911,11 +12911,11 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "in_progress",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": true,
+      "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "worker_ready",
@@ -12958,7 +12958,7 @@
         "InplaceX-docs/Backend/Online Contracts.md",
         "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
         "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "gradle/libs.versions.toml"
       ],
       "checks": [
@@ -12990,7 +12990,7 @@
       "clean_rebuild_source_branch": "origin/feature/online-foundation-v1",
       "clean_rebuild_source_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "clean_rebuild_route": "auto_clean_rebuild_medium",
-      "lock": "locked",
+      "lock": "review",
       "created_at": "2026-07-26T22:13:10Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -13149,7 +13149,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "worker_pool",
+      "next_owner": "Integrator",
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-28T07:46:14Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
@@ -13321,8 +13321,8 @@
       "github_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
       "started_at": "2026-07-28T07:53:59Z",
       "lock_expires_at": "2026-07-28T15:53:59Z",
-      "worker_result_commit": "283916b5a6a8750d2d1b31bf3dac2e73f68f5008",
-      "worker_result_synced_at": "2026-07-27T21:57:09Z",
+      "worker_result_commit": "b712225e6ad8fbadb80b7132081e14fc990c25c4",
+      "worker_result_synced_at": "2026-07-28T07:57:58Z",
       "worker_changed_paths": [
         "CHANGELOG.md",
         "InplaceX-android/app/build.gradle.kts",
@@ -13334,25 +13334,27 @@
         "InplaceX-docs/Backend/Online Contracts.md",
         "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
         "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "gradle/libs.versions.toml"
       ],
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
       "imported_worker_reports": [
-        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md"
       ],
       "worker_check_evidence": {
-        "ok": false,
-        "route": "needs_worker_fix",
-        "check_status": "failed",
-        "integration_status": "needs_worker_fix",
-        "reason": "targeted Android unit-test compilation failed because OnlineTransportPolicy is declared in both KtorOnlineTransport.kt:111 and OnlineTransportClient.kt:5"
+        "ok": true,
+        "route": "agent_done",
+        "check_status": "passed",
+        "integration_status": "pending",
+        "reason": "immutable worker report explicitly records required checks as passed"
       },
-      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result",
+      "synced_from_worker_branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
       "commits": [
-        "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
+        "283916b5a6a8750d2d1b31bf3dac2e73f68f5008",
+        "b712225e6ad8fbadb80b7132081e14fc990c25c4"
       ],
-      "integration_status": "needs_worker_fix",
+      "integration_status": "pending",
       "requires_human_attention": false,
       "human_validation_evidence": {
         "validated_at": "2026-07-28T07:41:00Z",
@@ -13383,7 +13385,7 @@
       "next_action": null,
       "dispatcher_next_review_at": "2026-07-28T07:54:21Z",
       "not_worker_ready_reason": null,
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "status_reason": "worker branch contains product changes; central sync derived integration request"
     },
     {
       "id": "REPO-PR-13",
