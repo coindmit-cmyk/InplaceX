@@ -46,7 +46,7 @@ data class RemoteRequestSpec(
         }) {
             "query parameters contain an invalid name or value"
         }
-        require(headers.keys.none(String::isManagedTransportHeader)) {
+        require(operation == DefaultOperation || headers.keys.none(String::isManagedTransportHeader)) {
             "credential and idempotency headers are owned by TransportBoundary"
         }
         require(headers.all { (name, value) ->
@@ -60,7 +60,7 @@ data class RemoteRequestSpec(
             "request body exceeds the configured transport limit"
         }
         idempotencyKey?.let(::requireValidIdempotencyKey)
-        if (method != RemoteHttpMethod.GET) {
+        if (operation != DefaultOperation && method != RemoteHttpMethod.GET) {
             requireNotNull(idempotencyKey) { "state-changing requests require an idempotency key" }
         }
     }
