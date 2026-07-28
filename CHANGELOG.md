@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fixed two phone regressions: manual `YES` table marks now prefill every
+  following attempt until changed or removed; duel setup state now survives
+  the shell's transition into gameplay, while malformed restored secrets are
+  rejected before scoring instead of crashing on the first submission.
+- Brought the Company scene closer to the approved toy-room references with a
+  dedicated warm 3D study background, a larger game-logo treatment, and
+  clearer separation between the campaign route and decorative scenery.
 - Tightened the campaign difficulty curve after playtesting: four-digit levels
   now fall from 14 attempts at level 1 to 10 at level 8 and 8 at level 10,
   with shorter match timers; level 17 now uses 14 attempts and 4:30 instead of

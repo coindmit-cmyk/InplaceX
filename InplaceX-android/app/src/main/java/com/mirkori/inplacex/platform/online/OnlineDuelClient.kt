@@ -11,9 +11,15 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
+enum class OnlineMatchStatus {
+    SEARCHING,
+    MATCHED,
+}
+
 data class OnlineMatchTicket(
     val ticketId: String,
-    val sessionId: String,
+    val status: OnlineMatchStatus,
+    val sessionId: String?,
     val matchedWithBot: Boolean,
 )
 
@@ -59,6 +65,9 @@ class OnlineDuelClient(
         )
         return transport.execute(request).decode(codec::ticket)
     }
+
+    suspend fun readTicket(ticketId: String): OnlineClientResult<OnlineMatchTicket> =
+        transport.execute(gateway.prepareReadMatchmakingTicket(ticketId)).decode(codec::ticket)
 
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
         transport.execute(gateway.prepareReadSession(sessionId)).decode(codec::snapshot)
@@ -125,12 +134,21 @@ private class OnlineDuelResponseCodec {
             source,
             setOf("ticketId", "status", "sessionId", "matchedWithBot", "createdAtEpochMs"),
         )
-        require(value.string("status", 16) == "matched")
+        val status = when (value.string("status", 16)) {
+            "searching" -> OnlineMatchStatus.SEARCHING
+            "matched" -> OnlineMatchStatus.MATCHED
+            else -> throw IllegalArgumentException("unsupported ticket status")
+        }
+        val sessionId = value.nullableUuid("sessionId")
+        require((status == OnlineMatchStatus.MATCHED) == (sessionId != null))
         return OnlineMatchTicket(
             ticketId = value.uuid("ticketId"),
-            sessionId = value.uuid("sessionId"),
+            status = status,
+            sessionId = sessionId,
             matchedWithBot = value.boolean("matchedWithBot"),
-        )
+        ).also {
+            require(status == OnlineMatchStatus.MATCHED || !it.matchedWithBot)
+        }
     }
 
     fun snapshot(source: String): OnlineDuelSnapshotState {
@@ -175,6 +193,12 @@ private class OnlineDuelResponseCodec {
     private fun JsonObject.uuid(name: String): String =
         string(name, 36).takeIf(String::isCanonicalUuid)
             ?: throw IllegalArgumentException("$name is invalid")
+
+    private fun JsonObject.nullableUuid(name: String): String? {
+        val value = this[name] ?: throw IllegalArgumentException("$name is required")
+        if (value is JsonNull) return null
+        return uuid(name)
+    }
 
     private fun JsonObject.boolean(name: String): Boolean =
         (this[name] as? JsonPrimitive)

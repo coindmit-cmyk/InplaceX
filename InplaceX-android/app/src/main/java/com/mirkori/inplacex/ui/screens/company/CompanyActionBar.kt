@@ -64,43 +64,28 @@ internal fun CompanyActionBar(
         border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
         shadowElevation = 3.dp,
     ) {
-        if (compact) {
-            Row(
-                modifier = Modifier.padding(7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CompanyPrimaryAction(
-                    modifier = Modifier.weight(1f),
-                    strings = strings,
-                    levelNumber = levelNumber,
-                    playable = playable,
-                    hasEnergy = hasEnergy,
-                    requiredStars = requiredStars,
-                    lockRequiresStars = lockRequiresStars,
-                    onBuyEnergy = onBuyEnergy,
-                    onPlay = onPlay,
-                )
-                CompanyRulesAction(strings = strings, minimumHeight = 56, onRules = onRules)
-            }
-        } else {
-            Column(
-                modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                CompanyPrimaryAction(
-                    modifier = Modifier.fillMaxWidth(),
-                    strings = strings,
-                    levelNumber = levelNumber,
-                    playable = playable,
-                    hasEnergy = hasEnergy,
-                    requiredStars = requiredStars,
-                    lockRequiresStars = lockRequiresStars,
-                    onBuyEnergy = onBuyEnergy,
-                    onPlay = onPlay,
-                )
-                CompanyRulesAction(strings = strings, minimumHeight = 48, onRules = onRules)
-            }
+        Row(
+            modifier = Modifier.padding(if (compact) 6.dp else 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CompanyPrimaryAction(
+                modifier = Modifier.weight(1f),
+                strings = strings,
+                levelNumber = levelNumber,
+                playable = playable,
+                hasEnergy = hasEnergy,
+                requiredStars = requiredStars,
+                lockRequiresStars = lockRequiresStars,
+                onBuyEnergy = onBuyEnergy,
+                onPlay = onPlay,
+            )
+            CompanyRulesAction(
+                strings = strings,
+                minimumHeight = 56,
+                showLabel = compact,
+                onRules = onRules,
+            )
         }
     }
 }
@@ -109,6 +94,7 @@ internal fun CompanyActionBar(
 private fun CompanyRulesAction(
     strings: LocalizationProvider,
     minimumHeight: Int,
+    showLabel: Boolean,
     onRules: () -> Unit,
 ) {
     TextButton(
@@ -119,14 +105,16 @@ private fun CompanyRulesAction(
             imageVector = Icons.AutoMirrored.Outlined.MenuBook,
             contentDescription = null,
             tint = InplaceXColors.ToyBlue,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(if (showLabel) 20.dp else 26.dp),
         )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = strings.text("company.action.rules"),
-            color = InplaceXColors.ToyBlueDeep,
-            fontWeight = FontWeight.Bold,
-        )
+        if (showLabel) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = strings.text("company.action.rules"),
+                color = InplaceXColors.ToyBlueDeep,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 

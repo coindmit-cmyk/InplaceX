@@ -150,7 +150,11 @@ class GameFieldStateHolder(
         update(
             createState(
                 snapshot = latestSnapshot,
-                input = if (acceptedAttempt == null) current.input else GameFieldInputState.empty(parameters.codeLength),
+                input = if (acceptedAttempt == null) {
+                    current.input
+                } else {
+                    inputFromManualConfirmations(current.manualMarks)
+                },
                 manualMarks = current.manualMarks,
                 provenFacts = current.evidence.provenFacts,
                 timers = if (acceptedAttempt == null) current.timers else current.timers.copy(turnElapsedSeconds = 0),
@@ -160,6 +164,18 @@ class GameFieldStateHolder(
                     ?: GameFieldStatus.EngineFeedback(latestSnapshot.feedback),
             ),
         )
+    }
+
+    private fun inputFromManualConfirmations(
+        manualMarks: Collection<GameFieldManualMark>,
+    ): GameFieldInputState {
+        val slots = MutableList<Char?>(parameters.codeLength) { null }
+        manualMarks
+            .asSequence()
+            .filter { it.type == GameFieldManualMarkType.YES }
+            .filter { it.position in slots.indices }
+            .forEach { mark -> slots[mark.position] = mark.symbol }
+        return GameFieldInputState(slots)
     }
 
     private fun restart() {

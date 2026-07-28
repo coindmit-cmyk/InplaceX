@@ -310,7 +310,8 @@ fun HomeRootScreen(
                             message = "duel bot turn failed",
                             attributes = mapOf(
                                 "codeLength" to pvpMode.config.codeLength.toString(),
-                                "playerSecretLength" to playerSecretForDuel.length.toString(),
+                                "inputLength" to playerSecretForDuel.length.toString(),
+                                "failureStage" to botTurn.stage.name,
                             ),
                             throwable = botTurn.cause,
                         )
@@ -520,7 +521,16 @@ internal sealed interface DuelBotTurnResult {
 
     data class Failed(
         val cause: Exception,
+        val stage: DuelBotTurnStage,
     ) : DuelBotTurnResult
+}
+
+internal enum class DuelBotTurnStage {
+    VALIDATE_SECRET,
+    CREATE_GUESS,
+    SCORE_GUESS,
+    REGISTER_FEEDBACK,
+    READ_PROGRESS,
 }
 
 internal fun resolveDuelBotTurn(
@@ -530,13 +540,18 @@ internal fun resolveDuelBotTurn(
     registerFeedback: (String, Int) -> Unit,
     confirmedPositions: () -> Int,
 ): DuelBotTurnResult {
+    var stage = DuelBotTurnStage.VALIDATE_SECRET
     return try {
         require(playerSecret.length == codeLength) {
             "Duel player secret length does not match the configured code length"
         }
+        stage = DuelBotTurnStage.CREATE_GUESS
         val guess = nextGuess()
+        stage = DuelBotTurnStage.SCORE_GUESS
         val score = ScoreCalculator.countExactMatches(playerSecret, guess)
+        stage = DuelBotTurnStage.REGISTER_FEEDBACK
         registerFeedback(guess, score)
+        stage = DuelBotTurnStage.READ_PROGRESS
         DuelBotTurnResult.Completed(
             score = score,
             confirmedPositions = confirmedPositions(),
@@ -544,7 +559,7 @@ internal fun resolveDuelBotTurn(
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
-        DuelBotTurnResult.Failed(error)
+        DuelBotTurnResult.Failed(error, stage)
     }
 }
 

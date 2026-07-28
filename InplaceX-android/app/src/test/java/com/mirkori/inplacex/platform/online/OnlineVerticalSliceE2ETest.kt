@@ -89,7 +89,7 @@ class OnlineVerticalSliceE2ETest {
         )
         val duel = OnlineDuelClient(authenticatedTransport)
         val ticket = duel.createMatch(RemoteMatchmakingMode.CLASSIC)
-        val sessionId = (ticket as OnlineClientResult.Success).value.sessionId
+        val sessionId = requireNotNull((ticket as OnlineClientResult.Success).value.sessionId)
         val initial = duel.readSession(sessionId) as OnlineClientResult.Success
         val active = duel.submitSecret(
             sessionId,
