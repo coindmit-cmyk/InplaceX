@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T07:46:14Z",
+  "updated_at": "2026-07-28T07:46:47Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "planned",
+      "status": "needs_dispatcher_repair",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": true,
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "worker_ready": false,
+      "packet_status": "needs_dispatcher_repair",
+      "normalization_status": "needs_dispatcher_repair",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "dispatcher_decision_reason": "worker packet v2 defect found before worker claim",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13163,7 +13163,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "worker_pool",
+      "next_owner": "Dispatcher",
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-28T07:46:14Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
@@ -13308,6 +13308,17 @@
           "to": "needs_worker_fix",
           "reason": "automation toolchain was configured; InplaceXLoggerTest passed, then Android Kotlin compilation failed on duplicate OnlineTransportPolicy declarations",
           "next_owner": "Dispatcher"
+        },
+        {
+          "at": "2026-07-28T07:46:47Z",
+          "by": "claim_next_task",
+          "from": "planned",
+          "to": "needs_dispatcher_repair",
+          "reason": "worker_packet_v2_defect",
+          "defects": [
+            "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
+          ],
+          "next_owner": "Dispatcher"
         }
       ],
       "worker_id": "auto-worker-5.3",
@@ -13370,7 +13381,19 @@
             "failure": "Kotlin redeclaration: OnlineTransportPolicy in KtorOnlineTransport.kt:111 and OnlineTransportClient.kt:5"
           }
         ]
-      }
+      },
+      "task_packet_defects": [
+        "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
+      ],
+      "missing_packet_fields": [
+        "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
+      ],
+      "repair_request": "Repair the listed Worker Packet v2 defects before worker claim.",
+      "repair_owner": "dispatcher",
+      "next_action": "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair.",
+      "dispatcher_next_review_at": "2026-07-28T07:46:47Z",
+      "not_worker_ready_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
+      "status_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution"
     },
     {
       "id": "REPO-PR-13",
