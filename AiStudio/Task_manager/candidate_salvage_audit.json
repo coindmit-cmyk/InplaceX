@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:58:18Z",
+  "created_at": "2026-07-28T15:31:50Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
@@ -42,6 +42,8 @@
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "current_base_changed_paths_sample": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -50,13 +52,11 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "AiStudio/Task_manager/integration_batch.json",
-        "AiStudio/Task_manager/integration_candidates.batch.json",
-        "AiStudio/Task_manager/integration_candidates.json",
-        "AiStudio/Task_manager/integration_pr_snapshot_latest.json"
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json"
       ],
       "product_path_count": 4,
-      "current_product_path_count": 5,
+      "current_product_path_count": 16,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -71,7 +71,7 @@
       "identity_issues": [],
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "ahead_of_base": 1,
-      "behind_base": 26,
+      "behind_base": 319,
       "path_source": "merge_base_to_head"
     },
     {
@@ -126,7 +126,9 @@
         "scripts/ci/contract_mutations/fail_emulator_noop.yml"
       ],
       "current_base_changed_paths_sample": [
+        ".agent/worker_profiles.json",
         ".github/workflows/ci.yml",
+        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
         "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
@@ -135,12 +137,10 @@
         "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
-        "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/agent_process_state.json"
+        "AiStudio/Task_manager/agent_events.jsonl"
       ],
       "product_path_count": 17,
-      "current_product_path_count": 29,
+      "current_product_path_count": 37,
       "coordination_or_noise_path_count": 2,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -163,7 +163,7 @@
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 63,
+      "behind_base": 356,
       "path_source": "merge_base_to_head"
     },
     {
@@ -196,6 +196,8 @@
         "InplaceX-docs/Backend/Ktor Architecture.md"
       ],
       "current_base_changed_paths_sample": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
         "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
@@ -205,12 +207,10 @@
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/agent_process_state.json",
-        "AiStudio/Task_manager/automation_bridge_state.json"
+        "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 5,
-      "current_product_path_count": 17,
+      "current_product_path_count": 25,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -226,7 +226,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 49,
+      "behind_base": 342,
       "path_source": "merge_base_to_head"
     },
     {
@@ -269,6 +269,8 @@
         "gradle/libs.versions.toml"
       ],
       "current_base_changed_paths_sample": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
         "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
@@ -278,12 +280,10 @@
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/agent_process_state.json",
-        "AiStudio/Task_manager/automation_bridge_state.json"
+        "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 10,
-      "current_product_path_count": 19,
+      "current_product_path_count": 13,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -304,7 +304,7 @@
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 49,
+      "behind_base": 342,
       "path_source": "merge_base_to_head"
     },
     {
@@ -380,6 +380,8 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt"
       ],
       "current_base_changed_paths_sample": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
         "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
@@ -389,12 +391,10 @@
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json",
-        "AiStudio/Task_manager/agent_process_state.json",
-        "AiStudio/Task_manager/automation_bridge_state.json"
+        "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 42,
-      "current_product_path_count": 54,
+      "current_product_path_count": 62,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -415,9 +415,9 @@
       "source_classification": "ready_candidate",
       "identity_valid": true,
       "identity_issues": [],
-      "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
-      "ahead_of_base": 5,
-      "behind_base": 84,
+      "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
+      "ahead_of_base": 6,
+      "behind_base": 377,
       "path_source": "merge_base_to_head"
     }
   ]

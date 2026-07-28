@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-26T21:58:18Z",
-  "batch_id": "BATCH-20260726-215818",
+  "generated_at": "2026-07-28T15:31:51Z",
+  "batch_id": "BATCH-20260728-153151",
   "candidates": [
     {
       "task_id": "REPO-PR-7",
@@ -19,17 +19,9 @@
       "source_artifact": true,
       "risk_class": "medium",
       "changed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/build.gradle.kts",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
-        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-        "gradle/libs.versions.toml"
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
       ],
       "classification": "ready_candidate",
       "reason": "traceable candidate with no blocking product overlap",
@@ -82,7 +74,7 @@
       ],
       "branch": "origin/feature/toy-room-ui-v5",
       "pr": 9,
-      "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
       "canonical_target_id": "task:REPO-PR-3-9",
       "identity_status": "repository_pr_identity",
       "identity_valid": true,

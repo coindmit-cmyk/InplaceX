@@ -1,15 +1,17 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-26T21:58:16Z",
+  "checked_at": "2026-07-28T15:31:48Z",
   "base_branch": "origin/develop",
-  "base_sha": "34a2309d902dc3b1e8be953665ca8ecf42ef585a",
+  "base_sha": "20e5440f95cb38585f9d0cceaa9aec5463ff59a4",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "git_status": [
     "## develop...origin/develop",
     " M AiStudio/Task_manager/agent_process_state.json",
-    " M AiStudio/Task_manager/integration_candidates.json"
+    " M AiStudio/Task_manager/integration_candidates.json",
+    " M AiStudio/Task_manager/integrator_llm_advice.json",
+    " M AiStudio/Task_manager/integrator_llm_context.json"
   ],
   "dirty_worktree": true,
   "candidate_prefixes": [
@@ -59,8 +61,9 @@
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "merge_base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "ahead_of_base": 1,
-      "behind_base": 26,
+      "behind_base": 319,
       "changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -68,6 +71,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -76,6 +80,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -90,10 +95,15 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
       "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -101,6 +111,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -109,6 +120,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -119,8 +131,12 @@
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
       "integration_changed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
@@ -134,12 +150,12 @@
       ],
       "pr": null,
       "repository_pr_identity": null,
-      "path_count": 31,
-      "stored_path_count": 31,
+      "path_count": 38,
+      "stored_path_count": 38,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 27,
+      "coordination_path_count": 34,
       "integration_path_count": 4
     },
     {
@@ -148,8 +164,9 @@
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 63,
+      "behind_base": 356,
       "changed_paths": [
+        ".agent/worker_profiles.json",
         ".github/workflows/ci.yml",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
@@ -158,6 +175,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -167,6 +185,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -181,6 +200,8 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
         "docs/automation/CI_FOUNDATION.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
@@ -189,6 +210,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T124448Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md",
@@ -207,6 +230,7 @@
         "scripts/ci/validate_ci_contract.py"
       ],
       "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -214,6 +238,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -223,6 +248,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -233,6 +259,8 @@
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
@@ -241,6 +269,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T124448Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
@@ -286,12 +316,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/5"
         ]
       },
-      "path_count": 55,
-      "stored_path_count": 55,
+      "path_count": 62,
+      "stored_path_count": 62,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 37,
+      "coordination_path_count": 44,
       "integration_path_count": 18
     },
     {
@@ -300,8 +330,9 @@
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 49,
+      "behind_base": 342,
       "changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -309,6 +340,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -318,6 +350,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -334,14 +367,19 @@
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
         "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
         "InplaceX-docs/Backend/Ktor Architecture.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -349,6 +387,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -358,6 +397,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -368,10 +408,14 @@
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
@@ -404,12 +448,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/8"
         ]
       },
-      "path_count": 38,
-      "stored_path_count": 38,
+      "path_count": 45,
+      "stored_path_count": 45,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 32,
+      "coordination_path_count": 39,
       "integration_path_count": 6
     },
     {
@@ -418,8 +462,9 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 49,
+      "behind_base": 342,
       "changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -427,6 +472,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -436,6 +482,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -446,25 +493,22 @@
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
-        "CHANGELOG.md",
-        "InplaceX-android/app/build.gradle.kts",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
         "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
-        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md",
-        "gradle/libs.versions.toml"
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -472,6 +516,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -481,6 +526,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -491,25 +537,21 @@
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "integration_changed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/build.gradle.kts",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
-        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-        "gradle/libs.versions.toml"
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt"
       ],
       "agent_version_integration_decision": null,
       "task_ids": [
@@ -532,22 +574,23 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/7"
         ]
       },
-      "path_count": 43,
-      "stored_path_count": 43,
+      "path_count": 42,
+      "stored_path_count": 42,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 32,
-      "integration_path_count": 11
+      "coordination_path_count": 39,
+      "integration_path_count": 3
     },
     {
       "branch": "origin/feature/toy-room-ui-v5",
       "normalized_branch": "feature/toy-room-ui-v5",
-      "head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+      "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
       "merge_base_sha": "af415d48a91ce28582c5a74fc96e5b148886d5c4",
-      "ahead_of_base": 5,
-      "behind_base": 84,
+      "ahead_of_base": 6,
+      "behind_base": 377,
       "changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -555,6 +598,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -564,6 +608,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -623,6 +668,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121037Z.md",
@@ -636,6 +683,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
@@ -645,6 +694,7 @@
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -652,6 +702,7 @@
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
         "AiStudio/Task_manager/integration_batch.json",
         "AiStudio/Task_manager/integration_candidates.batch.json",
         "AiStudio/Task_manager/integration_candidates.json",
@@ -661,6 +712,7 @@
         "AiStudio/Task_manager/integrator_llm_advice.validation.json",
         "AiStudio/Task_manager/integrator_llm_context.json",
         "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
         "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
         "AiStudio/Task_manager/pr_readiness_report.json",
         "AiStudio/Task_manager/pre_integrator_repair.json",
@@ -677,6 +729,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T121037Z.md",
@@ -690,6 +744,8 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T113719Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T114334Z.md",
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T120305Z.md",
@@ -754,22 +810,22 @@
         "task_id": "REPO-PR-3-9",
         "pr_number": 9,
         "branch": "feature/toy-room-ui-v5",
-        "expected_head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+        "expected_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
         "issues": [],
         "evidence": [
           "github_pr:9",
           "pr_numbers:3,6,9",
           "branch:feature/toy-room-ui-v5",
-          "head_sha:a37517141b6954aa85736e9284f5997fa77afb2e",
+          "head_sha:1e508f938af8d5438262eb34385a0c348dcab467",
           "https://github.com/coindmit-cmyk/InplaceX/pull/9"
         ]
       },
-      "path_count": 95,
-      "stored_path_count": 95,
+      "path_count": 102,
+      "stored_path_count": 102,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 52,
+      "coordination_path_count": 59,
       "integration_path_count": 43
     }
   ],
@@ -837,8 +893,8 @@
       "review_at": "2026-07-26T21:18:03Z"
     }
   ],
-  "conflict_count": 4,
-  "stored_conflict_count": 4,
+  "conflict_count": 2,
+  "stored_conflict_count": 2,
   "omitted_conflict_count": 0,
   "path_conflicts": [
     {
@@ -856,28 +912,6 @@
     },
     {
       "left": "origin/feature/backend-auth-boundary-v1",
-      "right": "origin/feature/online-foundation-v1",
-      "overlap_paths": [
-        "CHANGELOG.md"
-      ],
-      "overlap_path_count": 1,
-      "overlap_paths_truncated": false,
-      "omitted_overlap_path_count": 0,
-      "severity": "warning"
-    },
-    {
-      "left": "origin/feature/backend-auth-boundary-v1",
-      "right": "origin/feature/toy-room-ui-v5",
-      "overlap_paths": [
-        "CHANGELOG.md"
-      ],
-      "overlap_path_count": 1,
-      "overlap_paths_truncated": false,
-      "omitted_overlap_path_count": 0,
-      "severity": "warning"
-    },
-    {
-      "left": "origin/feature/online-foundation-v1",
       "right": "origin/feature/toy-room-ui-v5",
       "overlap_paths": [
         "CHANGELOG.md"
@@ -888,7 +922,7 @@
       "severity": "warning"
     }
   ],
-  "blocker_count": 10,
+  "blocker_count": 8,
   "blockers": [
     {
       "code": "dirty_worktree",
@@ -899,31 +933,31 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 26
+      "behind_base": 319
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 63
+      "behind_base": 356
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 49
+      "behind_base": 342
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 49
+      "behind_base": 342
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/toy-room-ui-v5",
-      "behind_base": 84
+      "behind_base": 377
     },
     {
       "code": "changed_path_overlap",
@@ -942,30 +976,6 @@
     {
       "code": "changed_path_overlap",
       "left": "origin/feature/backend-auth-boundary-v1",
-      "right": "origin/feature/online-foundation-v1",
-      "overlap_paths": [
-        "CHANGELOG.md"
-      ],
-      "overlap_path_count": 1,
-      "overlap_paths_truncated": false,
-      "omitted_overlap_path_count": 0,
-      "severity": "warning"
-    },
-    {
-      "code": "changed_path_overlap",
-      "left": "origin/feature/backend-auth-boundary-v1",
-      "right": "origin/feature/toy-room-ui-v5",
-      "overlap_paths": [
-        "CHANGELOG.md"
-      ],
-      "overlap_path_count": 1,
-      "overlap_paths_truncated": false,
-      "omitted_overlap_path_count": 0,
-      "severity": "warning"
-    },
-    {
-      "code": "changed_path_overlap",
-      "left": "origin/feature/online-foundation-v1",
       "right": "origin/feature/toy-room-ui-v5",
       "overlap_paths": [
         "CHANGELOG.md"

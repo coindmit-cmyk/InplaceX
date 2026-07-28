@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-26T21:58:18Z",
+  "created_at": "2026-07-28T15:31:50Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "readiness": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
   "clean_rebuild_recovery_count": 2,
   "counts": {
-    "identity_ok": 58,
+    "identity_ok": 60,
     "identity_conflict": 1
   },
   "items": [
@@ -884,9 +884,9 @@
       "canonical_target_id": "task:CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "status": "identity_ok",
       "task_status": "planned",
-      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T210322Z",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
       "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
       "report_paths": [
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112311Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T112402Z.md",
@@ -900,7 +900,9 @@
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md"
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md"
       ],
       "inferred_task_ids": [
         "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP"
@@ -1082,7 +1084,10 @@
       "branch": "origin/feature/online-foundation-v1",
       "github_pr": 7,
       "worker_report": null,
-      "report_paths": [],
+      "report_paths": [
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md"
+      ],
       "inferred_task_ids": [],
       "repository_pr_identity": {
         "applicable": true,
@@ -1154,14 +1159,70 @@
         "task_id": "REPO-PR-3-9",
         "pr_number": 9,
         "branch": "feature/toy-room-ui-v5",
-        "expected_head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+        "expected_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
         "issues": [],
         "evidence": [
           "github_pr:9",
           "pr_numbers:3,6,9",
           "branch:feature/toy-room-ui-v5",
-          "head_sha:a37517141b6954aa85736e9284f5997fa77afb2e",
+          "head_sha:1e508f938af8d5438262eb34385a0c348dcab467",
           "https://github.com/coindmit-cmyk/InplaceX/pull/9"
+        ]
+      },
+      "issues": [],
+      "next_owner": null
+    },
+    {
+      "kind": "queue_task",
+      "index": 54,
+      "task_id": "CRB-REPO-PR-7",
+      "canonical_target_id": "task:CRB-REPO-PR-7",
+      "status": "identity_ok",
+      "task_status": "done",
+      "branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
+      "github_pr": 16,
+      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
+      "report_paths": [
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md"
+      ],
+      "inferred_task_ids": [
+        "CRB-REPO-PR-7",
+        "REPO-PR-7"
+      ],
+      "repository_pr_identity": null,
+      "issues": [],
+      "next_owner": null
+    },
+    {
+      "kind": "queue_task",
+      "index": 55,
+      "task_id": "REPO-PR-13",
+      "canonical_target_id": "task:REPO-PR-13",
+      "status": "identity_ok",
+      "task_status": "stale_or_superseded",
+      "branch": "origin/automation/reclassify-crb-repo-pr-7-needs-human-20260728",
+      "github_pr": 13,
+      "worker_report": null,
+      "report_paths": [],
+      "inferred_task_ids": [
+        "CRB-REPO-PR-7",
+        "REPO-PR-7"
+      ],
+      "repository_pr_identity": {
+        "applicable": true,
+        "valid": true,
+        "task_id": "REPO-PR-13",
+        "pr_number": 13,
+        "branch": "automation/reclassify-crb-repo-pr-7-needs-human-20260728",
+        "expected_head_sha": "7fd5ddbc4b3fa03a5cfc194476637a78848208b1",
+        "issues": [],
+        "evidence": [
+          "github_pr:13",
+          "pr_numbers:13",
+          "branch:automation/reclassify-crb-repo-pr-7-needs-human-20260728",
+          "head_sha:7fd5ddbc4b3fa03a5cfc194476637a78848208b1",
+          "https://github.com/coindmit-cmyk/InplaceX/pull/13"
         ]
       },
       "issues": [],
@@ -1269,7 +1330,9 @@
       "branch": "origin/feature/online-foundation-v1",
       "pr": 7,
       "report_paths": [
-        "AiStudio/Task_manager/clean_rebuild_plan.json"
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md"
       ],
       "inferred_task_ids": [],
       "identity_recovered_from": "clean_rebuild_plan",
@@ -1315,13 +1378,13 @@
         "task_id": "REPO-PR-3-9",
         "pr_number": 9,
         "branch": "feature/toy-room-ui-v5",
-        "expected_head_sha": "a37517141b6954aa85736e9284f5997fa77afb2e",
+        "expected_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
         "issues": [],
         "evidence": [
           "github_pr:9",
           "pr_numbers:3,6,9",
           "branch:feature/toy-room-ui-v5",
-          "head_sha:a37517141b6954aa85736e9284f5997fa77afb2e",
+          "head_sha:1e508f938af8d5438262eb34385a0c348dcab467",
           "https://github.com/coindmit-cmyk/InplaceX/pull/9"
         ]
       },
