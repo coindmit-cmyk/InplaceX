@@ -6,6 +6,8 @@ Online authentication is split across two process compositions:
 
 - the identity process owns guest bootstrap, refresh-token rotation, and the RSA
   private signing key;
+- the identity process alone verifies Google ID tokens and stores the
+  provider-subject-to-player link;
 - the game API owns matchmaking and authoritative sessions and receives only the
   matching RSA public key.
 
@@ -25,6 +27,11 @@ The verified player principal is still not proof of session membership.
 Authoritative session composition must resolve membership from server-owned
 session state before returning a snapshot, accepting a command, reconnecting a
 player, or opening a WebSocket.
+
+Google configuration is identity-process-only. `INPLACEX_GOOGLE_WEB_CLIENT_ID`
+is the expected OAuth web client audience; the game API never receives it,
+provider tokens, or provider payloads. Raw Google ID tokens and email addresses
+are neither persisted nor logged.
 
 ## Deployment gate
 

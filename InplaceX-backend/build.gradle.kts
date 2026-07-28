@@ -26,6 +26,8 @@ dependencies {
     implementation(libs.ktor.server.websockets)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation("org.postgresql:postgresql:42.7.4")
+    implementation("com.google.api-client:google-api-client:2.9.0")
+    implementation("com.google.http-client:google-http-client-gson:2.2.0")
 
     testImplementation("com.h2database:h2:2.3.232")
     testImplementation(project(":InplaceX-test-support"))

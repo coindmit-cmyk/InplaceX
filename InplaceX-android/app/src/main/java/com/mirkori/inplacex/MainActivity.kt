@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,8 +34,12 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.GuestAuthResult
+import com.mirkori.inplacex.platform.online.GoogleChallengeResult
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
+import com.mirkori.inplacex.platform.services.GoogleCredentialResult
+import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
 import com.mirkori.inplacex.platform.services.RewardedPlacement
@@ -58,6 +63,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -77,7 +83,13 @@ class MainActivity : ComponentActivity() {
                 }
                 val adService = providerServices.adService
                 val billingService = providerServices.billingService
-                val authService = providerServices.authService
+                val googleCredentialSignIn = remember {
+                    GoogleCredentialSignIn(
+                        context = applicationContext,
+                        config = AppConfigCatalog.platformConfig.providers.googlePlay,
+                    )
+                }
+                val coroutineScope = rememberCoroutineScope()
 
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
@@ -92,6 +104,8 @@ class MainActivity : ComponentActivity() {
                 var progressState by remember { mutableStateOf(progressRepository.loadState()) }
                 var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
+                var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
+                var profileAuthInProgress by rememberSaveable { mutableStateOf(false) }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
 
                 LaunchedEffect(progressState.temporaryProExpiresAtMs) {
@@ -451,19 +465,74 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
                                 progressState = progressState,
                                 nowMs = currentTimeMs,
+                                authResultKey = profileAuthResultKey,
+                                authInProgress = profileAuthInProgress,
                                 onGooglePlaySignIn = {
-                                    val session = authService.signInWithGooglePlay()
-                                    if (session.isSignedIn) {
-                                        progressState = progressRepository.signInWithGooglePlay(session.playerName)
+                                    if (!profileAuthInProgress) {
+                                        profileAuthInProgress = true
+                                        profileAuthResultKey = null
+                                        coroutineScope.launch {
+                                            val challenge = onlineRuntime?.createGoogleChallenge()
+                                            profileAuthResultKey = when (challenge) {
+                                                is GoogleChallengeResult.Ready -> {
+                                                    when (
+                                                        val providerResult = googleCredentialSignIn.signIn(
+                                                            activity = this@MainActivity,
+                                                            nonce = challenge.challenge.nonce,
+                                                        )
+                                                    ) {
+                                                        is GoogleCredentialResult.Success -> {
+                                                            when (
+                                                                val serverResult = onlineRuntime.authenticateWithGoogle(
+                                                                    idToken = providerResult.credential.idToken,
+                                                                    nonce = challenge.challenge.nonce,
+                                                                )
+                                                            ) {
+                                                                is GuestAuthResult.Authenticated -> {
+                                                                    progressState = progressRepository.signInWithGooglePlay(
+                                                                        providerResult.credential.playerName
+                                                                            ?: progressState.playerDisplayName,
+                                                                    )
+                                                                    "profile.auth.signed_in"
+                                                                }
+                                                                GuestAuthResult.Rejected ->
+                                                                    "profile.auth.rejected"
+                                                                GuestAuthResult.TemporarilyUnavailable ->
+                                                                    "profile.auth.unavailable"
+                                                            }
+                                                        }
+                                                        GoogleCredentialResult.Cancelled ->
+                                                            "profile.auth.cancelled"
+                                                        GoogleCredentialResult.Unavailable ->
+                                                            "profile.auth.not_configured"
+                                                        GoogleCredentialResult.Failed ->
+                                                            "profile.auth.rejected"
+                                                    }
+                                                }
+                                                GoogleChallengeResult.AuthenticationRequired,
+                                                GoogleChallengeResult.Rejected,
+                                                -> "profile.auth.rejected"
+                                                GoogleChallengeResult.ProviderUnavailable ->
+                                                    "profile.auth.not_configured"
+                                                GoogleChallengeResult.TemporarilyUnavailable,
+                                                null,
+                                                -> "profile.auth.unavailable"
+                                            }
+                                            profileAuthInProgress = false
+                                        }
                                     }
-                                    session.isSignedIn
                                 },
                                 onGooglePlaySignOut = {
-                                    val session = authService.signOut()
-                                    if (!session.isSignedIn) {
-                                        progressState = progressRepository.signOutFromGooglePlay()
+                                    if (!profileAuthInProgress) {
+                                        profileAuthInProgress = true
+                                        coroutineScope.launch {
+                                            googleCredentialSignIn.signOut()
+                                            onlineRuntime?.signOut()
+                                            progressState = progressRepository.signOutFromGooglePlay()
+                                            profileAuthResultKey = "profile.auth.signed_out"
+                                            profileAuthInProgress = false
+                                        }
                                     }
-                                    !session.isSignedIn
                                 },
                             )
                         }

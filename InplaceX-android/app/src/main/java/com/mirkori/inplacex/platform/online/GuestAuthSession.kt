@@ -75,6 +75,18 @@ class GuestAuthSessionManager(
         return accessTokenOrNull()?.let { store.read() }
     }
 
+    fun acceptProviderResult(result: GuestAuthResult): GuestAuthResult =
+        persistSuccessfulResult(result, operation = "provider")
+
+    fun clear() {
+        store.clear()
+        logger.info(
+            tag = LogTag,
+            message = "local online session cleared",
+            attributes = mapOf("operation" to "sign_out"),
+        )
+    }
+
     fun accessTokenOrNull(): String? {
         val session = store.read() ?: return null
         return session.accessToken.takeIf { session.accessExpiresAtEpochMs > clockMs() }

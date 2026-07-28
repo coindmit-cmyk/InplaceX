@@ -129,6 +129,68 @@ class GuestIdentityServiceTest {
         assertFalse(renderedEvents.contains("private-marker"))
     }
 
+    @Test
+    fun `Google identity links a guest once and restores the same player`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = JdbcDataSource().apply {
+            setURL("jdbc:h2:mem:google-identity-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+            user = "sa"
+            password = ""
+        }
+        JdbcMigrationRunner().migrate(dataSource)
+        val verifier = GoogleIdentityVerifier { idToken, expectedNonce ->
+            if (idToken == "valid-google-token" && expectedNonce.isNotBlank()) {
+                VerifiedGoogleIdentity(subject = "google-subject-1", displayName = "Verified Player")
+            } else {
+                null
+            }
+        }
+        val service = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
+        val firstGuest = service.bootstrap(bootstrap("google-installation-a"))
+        val firstChallenge = service.createGoogleChallenge(firstGuest.playerId)
+
+        val linked = service.authenticateWithGoogle(
+            currentPlayerId = firstGuest.playerId,
+            idToken = "valid-google-token",
+            nonce = firstChallenge.nonce,
+        )
+
+        assertEquals(firstGuest.playerId, linked.playerId)
+        assertEquals("google", linked.accountKind)
+        assertThrows(GoogleIdentityRejectedException::class.java) {
+            service.authenticateWithGoogle(
+                currentPlayerId = firstGuest.playerId,
+                idToken = "valid-google-token",
+                nonce = firstChallenge.nonce,
+            )
+        }
+
+        val secondGuest = service.bootstrap(bootstrap("google-installation-b"))
+        val secondChallenge = service.createGoogleChallenge(secondGuest.playerId)
+        val restored = service.authenticateWithGoogle(
+            currentPlayerId = secondGuest.playerId,
+            idToken = "valid-google-token",
+            nonce = secondChallenge.nonce,
+        )
+
+        assertEquals(firstGuest.playerId, restored.playerId)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT COUNT(*) FROM player_identities").use { result ->
+                    result.next()
+                    assertEquals(1, result.getInt(1))
+                }
+                statement.executeQuery(
+                    "SELECT account_kind, display_name FROM players WHERE id = '${firstGuest.playerId}'",
+                ).use { result ->
+                    result.next()
+                    assertEquals("google", result.getString("account_kind"))
+                    assertEquals("Verified Player", result.getString("display_name"))
+                }
+            }
+        }
+    }
+
     private fun bootstrap(installationId: String) = GuestBootstrapCommand(
         installationId = installationId,
         platform = GuestPlatform.ANDROID,
@@ -137,12 +199,16 @@ class GuestIdentityServiceTest {
         regionHint = "RU",
     )
 
-    private fun service(clock: Clock, sink: RecordingLogSink = RecordingLogSink()): GuestIdentityService {
-        val dataSource = JdbcDataSource().apply {
+    private fun service(
+        clock: Clock,
+        sink: RecordingLogSink = RecordingLogSink(),
+        dataSource: DataSource = JdbcDataSource().apply {
             setURL("jdbc:h2:mem:identity-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
             user = "sa"
             password = ""
-        }
+        },
+        googleIdentityVerifier: GoogleIdentityVerifier? = null,
+    ): GuestIdentityService {
         JdbcMigrationRunner().migrate(dataSource)
         return GuestIdentityService(
             identities = JdbcGuestIdentityRepository(dataSource),
@@ -151,6 +217,7 @@ class GuestIdentityServiceTest {
             accessTokenIssuer = AccessTokenIssuer { playerId, issuedAt, expiresAt ->
                 "test.${playerId}:${issuedAt.epochSecond}:${expiresAt.epochSecond}.signature"
             },
+            googleIdentityVerifier = googleIdentityVerifier,
             clock = clock,
             logger = InplaceXLogger(sink, LogLevel.DEBUG),
         )

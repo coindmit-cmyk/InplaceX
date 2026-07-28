@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.backend.identity
 
+import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
+import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
 import io.ktor.client.request.header
@@ -78,6 +80,91 @@ class IdentityRoutesTest {
         assertEquals(HttpStatusCode.BadRequest, malformed.status)
         assertFalse(missingKey.bodyAsText().contains(secret))
         assertFalse(malformed.bodyAsText().contains(secret))
+    }
+
+    @Test
+    fun `Google exchange requires player auth and consumes a server challenge`() = testApplication {
+        val dataSource = JdbcDataSource().apply {
+            setURL("jdbc:h2:mem:identity-google-routes-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+            user = "sa"
+            password = ""
+        }
+        JdbcMigrationRunner().migrate(dataSource)
+        val policy = CredentialPolicy("inplacex-identity", "inplacex-game-api")
+        val keyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val service = GuestIdentityService(
+            identities = JdbcGuestIdentityRepository(dataSource),
+            saves = JdbcSaveRepository(dataSource),
+            policy = policy,
+            accessTokenIssuer = Rs256AccessTokenIssuer(keyPair.private, policy),
+            googleIdentityVerifier = GoogleIdentityVerifier { idToken, nonce ->
+                if (idToken == "verified-google-token" && nonce.isNotBlank()) {
+                    VerifiedGoogleIdentity("verified-subject", "Verified Player")
+                } else {
+                    null
+                }
+            },
+            clock = Clock.fixed(now, ZoneOffset.UTC),
+        )
+        val accessVerifier = JwtAccessTokenVerifier(
+            keyPair.public,
+            JwtVerificationPolicy(policy.issuer, policy.audience),
+            Clock.fixed(now, ZoneOffset.UTC),
+        )
+        application { configureIdentityRoutes(service, accessVerifier) }
+
+        val bootstrap = client.post("/api/v1/auth/bootstrap") {
+            header("Idempotency-Key", UUID.randomUUID().toString())
+            contentType(ContentType.Application.Json)
+            setBody("""{"installationId":"google-install","platform":"android"}""")
+        }
+        val bootstrapJson = Json.parseToJsonElement(bootstrap.bodyAsText()).jsonObject
+        val accessToken = bootstrapJson
+            .getValue("credentials")
+            .jsonObject
+            .getValue("accessToken")
+            .jsonPrimitive
+            .content
+
+        val unauthorized = client.post("/api/v1/auth/google/challenge") {
+            header("Idempotency-Key", UUID.randomUUID().toString())
+        }
+        assertEquals(HttpStatusCode.Unauthorized, unauthorized.status)
+
+        val challenge = client.post("/api/v1/auth/google/challenge") {
+            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Authorization", "Bearer $accessToken")
+        }
+        assertEquals(HttpStatusCode.OK, challenge.status)
+        val nonce = Json.parseToJsonElement(challenge.bodyAsText())
+            .jsonObject
+            .getValue("nonce")
+            .jsonPrimitive
+            .content
+
+        val exchange = client.post("/api/v1/auth/google") {
+            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody("""{"idToken":"verified-google-token","nonce":"$nonce"}""")
+        }
+        assertEquals(HttpStatusCode.OK, exchange.status)
+        val exchangeJson = Json.parseToJsonElement(exchange.bodyAsText()).jsonObject
+        assertEquals("google", exchangeJson.getValue("accountKind").jsonPrimitive.content)
+        assertEquals(
+            bootstrapJson.getValue("playerId").jsonPrimitive.content,
+            exchangeJson.getValue("playerId").jsonPrimitive.content,
+        )
+
+        val replay = client.post("/api/v1/auth/google") {
+            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody("""{"idToken":"verified-google-token","nonce":"$nonce"}""")
+        }
+        assertEquals(HttpStatusCode.Unauthorized, replay.status)
+        assertFalse(replay.bodyAsText().contains("verified-google-token"))
+        assertFalse(replay.bodyAsText().contains(nonce))
     }
 
     private fun service(): GuestIdentityService {

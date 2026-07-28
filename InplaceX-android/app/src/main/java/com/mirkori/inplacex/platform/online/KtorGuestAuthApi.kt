@@ -58,15 +58,22 @@ class KtorGuestAuthApi(
     }
 }
 
-private class GuestAuthResponseCodec {
+internal class GuestAuthResponseCodec {
     private val json = Json {
         isLenient = false
         ignoreUnknownKeys = false
     }
 
     fun decodeBootstrap(source: String): GuestAuthResult.Authenticated {
+        return decodeProvider(source, expectedAccountKind = "guest")
+    }
+
+    fun decodeProvider(
+        source: String,
+        expectedAccountKind: String,
+    ): GuestAuthResult.Authenticated {
         val value = decodeObject(source, BootstrapFields)
-        require(value.string("accountKind", 16) == "guest")
+        require(value.string("accountKind", 16) == expectedAccountKind)
         val playerId = value.string("playerId", 36)
         require(playerId.isCanonicalUuid())
         val credentials = value["credentials"] as? JsonObject

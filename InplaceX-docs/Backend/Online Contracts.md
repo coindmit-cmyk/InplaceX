@@ -64,9 +64,23 @@ unique token id. The client sends it as `Authorization: Bearer <token>` for
 REST and during the WebSocket handshake. Tokens are never accepted in a query
 parameter, WebSocket payload, path, or application log.
 
-Provider linking (for example Google) uses the authenticated player context and
-is not allowed to replace guest ownership silently. Logout revokes the active
-token family but does not delete cloud save data.
+Google linking uses the authenticated guest player context:
+
+1. `POST /api/v1/auth/google/challenge` creates a short-lived, single-use
+   server challenge for the authenticated player.
+2. Android passes that nonce to Credential Manager and receives a Google ID
+   token for the configured web client ID.
+3. `POST /api/v1/auth/google` submits the ID token and nonce over HTTPS.
+4. The identity process verifies the Google signature, issuer, audience,
+   expiry, subject, and nonce, consumes the challenge, and links the opaque
+   Google subject to the player.
+
+The database stores the provider name and opaque subject, never the raw Google
+ID token or email address. A provider subject already linked to a player
+restores that player after explicit Google sign-in; a new subject promotes the
+current guest player without replacing its progress. A player cannot silently
+link a second Google subject. Logout clears the local online session but does
+not delete cloud data or the server-side identity link.
 
 ## Common command rules
 
@@ -138,6 +152,8 @@ Every authenticated route checks that the player owns the referenced resource.
 | --- | --- | --- |
 | Guest bootstrap | `POST /api/v1/auth/bootstrap` | `AuthBootstrapRequest` → `AuthTokenResponse` |
 | Refresh | `POST /api/v1/auth/refresh` | `RefreshRequest` → `RefreshResponse` |
+| Create Google challenge | `POST /api/v1/auth/google/challenge` | authenticated empty request → nonce and expiry |
+| Authenticate with Google | `POST /api/v1/auth/google` | Google ID token + nonce → `AuthTokenResponse` |
 | Read cloud save | `GET /api/v1/me/save` | `CloudSaveSnapshot` |
 | Write cloud save | `PUT /api/v1/me/save` | `CloudSavePutCommand` → `CloudSaveSnapshot` |
 | Create matchmaking ticket | `POST /api/v1/matchmaking/tickets` | `MatchmakingCreateCommand` → `MatchmakingTicket` |

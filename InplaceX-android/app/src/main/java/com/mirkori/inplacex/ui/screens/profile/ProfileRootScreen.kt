@@ -19,10 +19,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
@@ -42,11 +38,12 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun ProfileRootScreen(
     progressState: GameProgressState,
     nowMs: Long = System.currentTimeMillis(),
-    onGooglePlaySignIn: () -> Boolean = { false },
-    onGooglePlaySignOut: () -> Boolean = { false },
+    authResultKey: String? = null,
+    authInProgress: Boolean = false,
+    onGooglePlaySignIn: () -> Unit = {},
+    onGooglePlaySignOut: () -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var resultKey by rememberSaveable { mutableStateOf<String?>(null) }
 
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
@@ -106,13 +103,8 @@ fun ProfileRootScreen(
 
             if (progressState.googlePlaySignedIn) {
                 OutlinedButton(
-                    onClick = {
-                        resultKey = if (onGooglePlaySignOut()) {
-                            "profile.auth.signed_out"
-                        } else {
-                            "profile.auth.unavailable"
-                        }
-                    },
+                    onClick = onGooglePlaySignOut,
+                    enabled = !authInProgress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp),
@@ -121,13 +113,8 @@ fun ProfileRootScreen(
                 }
             } else {
                 Button(
-                    onClick = {
-                        resultKey = if (onGooglePlaySignIn()) {
-                            "profile.auth.signed_in"
-                        } else {
-                            "profile.auth.unavailable"
-                        }
-                    },
+                    onClick = onGooglePlaySignIn,
+                    enabled = !authInProgress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp),
@@ -136,18 +123,19 @@ fun ProfileRootScreen(
                 }
             }
 
+            val resultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
             resultKey?.let { key ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    color = if (key == "profile.auth.unavailable") {
+                    color = if (key in AuthErrorKeys) {
                         InplaceXColors.Coral.copy(alpha = 0.12f)
                     } else {
                         InplaceXColors.Mint.copy(alpha = 0.14f)
                     },
                     border = BorderStroke(
                         1.dp,
-                        if (key == "profile.auth.unavailable") InplaceXColors.Coral else InplaceXColors.Mint,
+                        if (key in AuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
                     ),
                 ) {
                     Text(
@@ -222,6 +210,12 @@ fun ProfileRootScreen(
         }
     }
 }
+
+private val AuthErrorKeys = setOf(
+    "profile.auth.unavailable",
+    "profile.auth.not_configured",
+    "profile.auth.rejected",
+)
 
 @Composable
 private fun ProfileOverview(progressState: GameProgressState) {

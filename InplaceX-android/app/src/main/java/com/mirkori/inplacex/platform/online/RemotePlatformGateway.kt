@@ -128,6 +128,14 @@ data class RemoteAuthBootstrapPayload(
         "RemoteAuthBootstrapPayload(installationId=[redacted], platform=$platform)"
 }
 
+data class RemoteGoogleAuthenticationPayload(
+    val idToken: String,
+    val nonce: String,
+) {
+    override fun toString(): String =
+        "RemoteGoogleAuthenticationPayload(idToken=[redacted], nonce=[redacted])"
+}
+
 data class RemoteCloudSavePayload(
     val commandId: String,
     val expectedRevision: Long,
@@ -174,6 +182,15 @@ interface RemotePlatformGateway : MatchmakingStub {
 
     fun prepareRefresh(
         refreshToken: String,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
+    fun prepareGoogleChallenge(
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
+    fun prepareGoogleAuthentication(
+        payload: RemoteGoogleAuthenticationPayload,
         idempotencyKey: String = UUID.randomUUID().toString(),
     ): RemoteRequestSpec
 
@@ -268,6 +285,38 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
             bodyJson = jsonObject("refreshToken" to JsonPrimitive(refreshToken)),
             idempotencyKey = idempotencyKey,
             requiresAuthentication = false,
+        )
+    }
+
+    override fun prepareGoogleChallenge(
+        idempotencyKey: String,
+    ): RemoteRequestSpec =
+        RemoteRequestSpec(
+            operation = "auth.google.challenge",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/auth/google/challenge",
+            idempotencyKey = idempotencyKey,
+        )
+
+    override fun prepareGoogleAuthentication(
+        payload: RemoteGoogleAuthenticationPayload,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        require(payload.idToken.length in 1..8_192 && payload.idToken.none(Char::isWhitespace)) {
+            "Google ID token has an invalid format"
+        }
+        require(payload.nonce.matches(Regex("[A-Za-z0-9_-]{32,128}"))) {
+            "Google nonce has an invalid format"
+        }
+        return RemoteRequestSpec(
+            operation = "auth.google.exchange",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/auth/google",
+            bodyJson = jsonObject(
+                "idToken" to JsonPrimitive(payload.idToken),
+                "nonce" to JsonPrimitive(payload.nonce),
+            ),
+            idempotencyKey = idempotencyKey,
         )
     }
 

@@ -84,6 +84,16 @@ data class GuestBootstrapResult(
 )
 
 class RefreshTokenRejectedException : IllegalStateException("Refresh token is not accepted")
+class GoogleIdentityRejectedException : IllegalStateException("Google identity is not accepted")
+class GoogleIdentityConflictException : IllegalStateException("Player already has a different Google identity")
+class GoogleIdentityUnavailableException : IllegalStateException("Google identity provider is unavailable")
+
+data class GoogleAuthChallenge(
+    val nonce: String,
+    val expiresAt: Instant,
+) {
+    override fun toString(): String = "GoogleAuthChallenge([redacted])"
+}
 
 data class CredentialPolicy(
     val issuer: String,
@@ -113,6 +123,7 @@ class GuestIdentityService(
     private val saves: JdbcSaveRepository,
     private val policy: CredentialPolicy,
     private val accessTokenIssuer: AccessTokenIssuer,
+    private val googleIdentityVerifier: GoogleIdentityVerifier? = null,
     private val clock: Clock = Clock.systemUTC(),
     private val random: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
@@ -147,6 +158,60 @@ class GuestIdentityService(
         val credentials = credentialsFor(rotation.playerId, nextRefreshToken, rotation.refreshExpiresAt)
         logger.info("GuestIdentity", "refresh token rotated", mapOf("playerId" to rotation.playerId))
         return credentials
+    }
+
+    fun createGoogleChallenge(playerId: String): GoogleAuthChallenge {
+        requireCanonicalPlayerId(playerId)
+        if (googleIdentityVerifier == null) throw GoogleIdentityUnavailableException()
+        val nonce = newNonce()
+        val expiresAt = clock.instant().plus(GoogleChallengeTtl)
+        identities.createGoogleChallenge(
+            playerId = playerId,
+            nonceHash = sha256(nonce),
+            expiresAt = expiresAt,
+        )
+        logger.info(
+            "GuestIdentity",
+            "Google auth challenge created",
+            mapOf("playerId" to playerId),
+        )
+        return GoogleAuthChallenge(nonce = nonce, expiresAt = expiresAt)
+    }
+
+    fun authenticateWithGoogle(
+        currentPlayerId: String,
+        idToken: String,
+        nonce: String,
+    ): GuestBootstrapResult {
+        requireCanonicalPlayerId(currentPlayerId)
+        require(idToken.length in 1..MaximumGoogleIdTokenCharacters)
+        require(nonce.matches(GoogleNoncePattern))
+        val verifier = googleIdentityVerifier ?: throw GoogleIdentityUnavailableException()
+        val verified = verifier.verify(idToken, nonce) ?: throw GoogleIdentityRejectedException()
+        val now = clock.instant()
+        if (!identities.consumeGoogleChallenge(currentPlayerId, sha256(nonce), now)) {
+            throw GoogleIdentityRejectedException()
+        }
+        val player = identities.resolveOrLinkGoogleIdentity(
+            currentPlayerId = currentPlayerId,
+            providerSubject = verified.subject,
+            displayName = verified.displayName,
+            now = now,
+        )
+        val credentials = issueCredentials(player.playerId)
+        logger.info(
+            "GuestIdentity",
+            "Google identity authenticated",
+            mapOf(
+                "playerId" to player.playerId,
+                "restoredExistingPlayer" to player.restoredExistingPlayer.toString(),
+            ),
+        )
+        return GuestBootstrapResult(
+            playerId = player.playerId,
+            accountKind = "google",
+            credentials = credentials,
+        )
     }
 
     fun profile(playerId: String): PlayerProfile = identities.profile(playerId)
@@ -218,6 +283,10 @@ class GuestIdentityService(
         Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
 
+    private fun newNonce(): String = ByteArray(32).also(random::nextBytes).let { bytes ->
+        Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+
     private fun validateBootstrap(command: GuestBootstrapCommand) {
         require(command.installationId.length in 1..128)
         validateOptional(command.appVersion, 64)
@@ -240,6 +309,18 @@ class GuestIdentityService(
 
     private fun validateOptional(value: String?, maximum: Int, minimum: Int = 1) {
         if (value != null) require(value.length in minimum..maximum)
+    }
+
+    private fun requireCanonicalPlayerId(playerId: String) {
+        require(runCatching { UUID.fromString(playerId).toString() == playerId }.getOrDefault(false)) {
+            "playerId must be a canonical UUID"
+        }
+    }
+
+    private companion object {
+        val GoogleChallengeTtl: Duration = Duration.ofMinutes(5)
+        const val MaximumGoogleIdTokenCharacters = 8_192
+        val GoogleNoncePattern = Regex("[A-Za-z0-9_-]{32,128}")
     }
 }
 
@@ -343,6 +424,102 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         RefreshRotation(token.playerId, token.familyExpiresAt)
     }
 
+    fun createGoogleChallenge(
+        playerId: String,
+        nonceHash: String,
+        expiresAt: Instant,
+    ) = dataSource.transaction { connection ->
+        connection.prepareStatement(
+            """
+            INSERT INTO google_auth_challenges(nonce_hash, player_id, expires_at)
+            VALUES (?, ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, nonceHash)
+            statement.setString(2, playerId)
+            statement.setInstant(3, expiresAt)
+            statement.executeUpdate()
+        }
+    }
+
+    fun consumeGoogleChallenge(
+        playerId: String,
+        nonceHash: String,
+        now: Instant,
+    ): Boolean = dataSource.transaction { connection ->
+        connection.prepareStatement(
+            """
+            UPDATE google_auth_challenges
+            SET consumed_at = ?
+            WHERE nonce_hash = ? AND player_id = ? AND consumed_at IS NULL AND expires_at > ?
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setInstant(1, now)
+            statement.setString(2, nonceHash)
+            statement.setString(3, playerId)
+            statement.setInstant(4, now)
+            statement.executeUpdate() == 1
+        }
+    }
+
+    fun resolveOrLinkGoogleIdentity(
+        currentPlayerId: String,
+        providerSubject: String,
+        displayName: String?,
+        now: Instant,
+    ): StoredGoogleIdentity = dataSource.transaction { connection ->
+        findGooglePlayerId(connection, providerSubject)?.let { linkedPlayerId ->
+            touchGoogleIdentity(connection, providerSubject, now)
+            connection.prepareStatement(
+                "UPDATE players SET account_kind = 'google' WHERE id = ?",
+            ).use { statement ->
+                statement.setString(1, linkedPlayerId)
+                statement.executeUpdate()
+            }
+            return@transaction StoredGoogleIdentity(
+                playerId = linkedPlayerId,
+                restoredExistingPlayer = linkedPlayerId != currentPlayerId,
+            )
+        }
+
+        val existingSubject = findGoogleSubjectForPlayer(connection, currentPlayerId)
+        if (existingSubject != null && existingSubject != providerSubject) {
+            throw GoogleIdentityConflictException()
+        }
+        val playerExists = connection.prepareStatement(
+            "SELECT 1 FROM players WHERE id = ?",
+        ).use { statement ->
+            statement.setString(1, currentPlayerId)
+            statement.executeQuery().use { it.next() }
+        }
+        check(playerExists) { "Unknown player" }
+        connection.prepareStatement(
+            """
+            INSERT INTO player_identities(provider, provider_subject, player_id, last_seen_at)
+            VALUES ('google', ?, ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, providerSubject)
+            statement.setString(2, currentPlayerId)
+            statement.setInstant(3, now)
+            statement.executeUpdate()
+        }
+        connection.prepareStatement(
+            """
+            UPDATE players
+            SET account_kind = 'google',
+                display_name = CASE WHEN ? IS NULL THEN display_name ELSE ? END
+            WHERE id = ?
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, displayName)
+            statement.setString(2, displayName)
+            statement.setString(3, currentPlayerId)
+            statement.executeUpdate()
+        }
+        StoredGoogleIdentity(playerId = currentPlayerId, restoredExistingPlayer = false)
+    }
+
     fun profile(playerId: String): PlayerProfile = dataSource.connection.use { connection ->
         connection.prepareStatement(
             """
@@ -382,6 +559,40 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
     ).use { statement ->
         statement.setString(1, installationHash)
         statement.executeQuery().use { resultSet -> if (resultSet.next()) resultSet.getString("player_id") else null }
+    }
+
+    private fun findGooglePlayerId(connection: Connection, providerSubject: String): String? =
+        connection.prepareStatement(
+            "SELECT player_id FROM player_identities WHERE provider = 'google' AND provider_subject = ?",
+        ).use { statement ->
+            statement.setString(1, providerSubject)
+            statement.executeQuery().use { resultSet ->
+                if (resultSet.next()) resultSet.getString("player_id") else null
+            }
+        }
+
+    private fun findGoogleSubjectForPlayer(connection: Connection, playerId: String): String? =
+        connection.prepareStatement(
+            "SELECT provider_subject FROM player_identities WHERE provider = 'google' AND player_id = ?",
+        ).use { statement ->
+            statement.setString(1, playerId)
+            statement.executeQuery().use { resultSet ->
+                if (resultSet.next()) resultSet.getString("provider_subject") else null
+            }
+        }
+
+    private fun touchGoogleIdentity(connection: Connection, providerSubject: String, now: Instant) {
+        connection.prepareStatement(
+            """
+            UPDATE player_identities
+            SET last_seen_at = ?
+            WHERE provider = 'google' AND provider_subject = ?
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setInstant(1, now)
+            statement.setString(2, providerSubject)
+            statement.executeUpdate()
+        }
     }
 
     private fun tokenRecord(connection: Connection, tokenHash: String): RefreshTokenRecord? = connection.prepareStatement(
@@ -452,6 +663,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
 }
 
 data class StoredGuestIdentity(val playerId: String)
+data class StoredGoogleIdentity(val playerId: String, val restoredExistingPlayer: Boolean)
 data class RefreshRotation(val playerId: String, val refreshExpiresAt: Instant)
 
 private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(

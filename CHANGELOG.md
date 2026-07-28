@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added real Google account authentication through Android Credential Manager
+  and the isolated identity process. The server verifies Google ID tokens and
+  one-time nonces, links the provider subject to the existing guest player,
+  stores the link in PostgreSQL, and returns ordinary rotating InplaceX
+  credentials without persisting raw provider tokens or email addresses.
+- Consolidated the independently preserved phone-regression/UX work and the
+  VPS online bot-fallback implementation into one integration branch while
+  retaining both source branches as recovery points.
 - Fixed two phone regressions: manual `YES` table marks now prefill every
   following attempt until changed or removed; duel setup state now survives
   the shell's transition into gameplay, while malformed restored secrets are

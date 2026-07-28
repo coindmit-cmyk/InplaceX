@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.identity.app
 
 import com.mirkori.inplacex.backend.app.DatabaseRuntimeConfig
+import com.mirkori.inplacex.backend.identity.isSafeProviderClientId
 import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -14,10 +15,12 @@ class IdentityRuntimeConfig private constructor(
     val issuer: String,
     val audience: String,
     val privateKey: PrivateKey,
+    val googleWebClientId: String?,
 ) {
     override fun toString(): String =
         "IdentityRuntimeConfig(host=$host, port=$port, environment=$environment, " +
-            "issuer=$issuer, audience=$audience, privateKey=[redacted])"
+            "issuer=$issuer, audience=$audience, privateKey=[redacted], " +
+            "googleConfigured=${googleWebClientId != null})"
 
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): IdentityRuntimeConfig {
@@ -42,6 +45,13 @@ class IdentityRuntimeConfig private constructor(
             }.getOrElse {
                 throw IllegalArgumentException("$PrivateKeyKey is not a valid RSA PKCS8 key")
             }
+            val googleWebClientId = environment[GoogleWebClientIdKey]
+                ?.takeIf(String::isNotBlank)
+                ?.also {
+                    require(it.isSafeProviderClientId()) {
+                        "$GoogleWebClientIdKey has an invalid format"
+                    }
+                }
 
             return IdentityRuntimeConfig(
                 host = environment[HostKey]?.takeIf(String::isNotBlank) ?: DefaultHost,
@@ -51,6 +61,7 @@ class IdentityRuntimeConfig private constructor(
                 issuer = issuer,
                 audience = audience,
                 privateKey = privateKey,
+                googleWebClientId = googleWebClientId,
             )
         }
 
@@ -60,6 +71,7 @@ class IdentityRuntimeConfig private constructor(
         const val IssuerKey = "INPLACEX_IDENTITY_ISSUER"
         const val AudienceKey = "INPLACEX_IDENTITY_AUDIENCE"
         const val PrivateKeyKey = "INPLACEX_IDENTITY_PRIVATE_KEY_PKCS8_BASE64"
+        const val GoogleWebClientIdKey = "INPLACEX_GOOGLE_WEB_CLIENT_ID"
         const val DefaultHost = "127.0.0.1"
         const val DefaultPort = 8081
     }

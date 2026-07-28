@@ -1,7 +1,11 @@
 package com.mirkori.inplacex.backend.identity
 
+import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
+import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
+import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
@@ -17,7 +21,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-fun Application.configureIdentityRoutes(service: GuestIdentityService) {
+fun Application.configureIdentityRoutes(
+    service: GuestIdentityService,
+    accessTokenVerifier: JwtAccessTokenVerifier? = null,
+) {
     val codec = IdentityJsonCodec()
     routing {
         post("/api/v1/auth/bootstrap") {
@@ -64,8 +71,79 @@ fun Application.configureIdentityRoutes(service: GuestIdentityService) {
                 status = HttpStatusCode.OK,
             )
         }
+
+        post("/api/v1/auth/google/challenge") {
+            if (!call.hasValidIdempotencyKey()) {
+                call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
+                return@post
+            }
+            val principal = call.authenticatedPrincipalOrNull(accessTokenVerifier)
+            if (principal == null) {
+                call.respondIdentityError(HttpStatusCode.Unauthorized, "unauthorized")
+                return@post
+            }
+            val challenge = try {
+                service.createGoogleChallenge(principal.playerId)
+            } catch (_: GoogleIdentityUnavailableException) {
+                call.respondIdentityError(HttpStatusCode.ServiceUnavailable, "provider_unavailable")
+                return@post
+            } catch (_: IllegalArgumentException) {
+                call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            call.respondText(
+                text = codec.encodeGoogleChallenge(challenge),
+                contentType = ContentType.Application.Json,
+                status = HttpStatusCode.OK,
+            )
+        }
+
+        post("/api/v1/auth/google") {
+            if (!call.hasValidIdempotencyKey()) {
+                call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
+                return@post
+            }
+            val principal = call.authenticatedPrincipalOrNull(accessTokenVerifier)
+            if (principal == null) {
+                call.respondIdentityError(HttpStatusCode.Unauthorized, "unauthorized")
+                return@post
+            }
+            val request = runCatching { codec.decodeGoogleAuthentication(call.receiveText()) }.getOrElse {
+                call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            val result = try {
+                service.authenticateWithGoogle(
+                    currentPlayerId = principal.playerId,
+                    idToken = request.idToken,
+                    nonce = request.nonce,
+                )
+            } catch (_: GoogleIdentityUnavailableException) {
+                call.respondIdentityError(HttpStatusCode.ServiceUnavailable, "provider_unavailable")
+                return@post
+            } catch (_: GoogleIdentityRejectedException) {
+                call.respondIdentityError(HttpStatusCode.Unauthorized, "google_token_rejected")
+                return@post
+            } catch (_: GoogleIdentityConflictException) {
+                call.respondIdentityError(HttpStatusCode.Conflict, "identity_conflict")
+                return@post
+            } catch (_: IllegalArgumentException) {
+                call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            call.respondText(
+                text = codec.encodeBootstrap(result),
+                contentType = ContentType.Application.Json,
+                status = HttpStatusCode.OK,
+            )
+        }
     }
 }
+
+private data class GoogleAuthenticationRequest(
+    val idToken: String,
+    val nonce: String,
+)
 
 private class IdentityJsonCodec {
     private val json = Json {
@@ -97,6 +175,14 @@ private class IdentityJsonCodec {
     fun decodeRefresh(source: String): String =
         decodeObject(source, RefreshFields, RefreshFields).requiredString("refreshToken", 512)
 
+    fun decodeGoogleAuthentication(source: String): GoogleAuthenticationRequest {
+        val value = decodeObject(source, GoogleAuthenticationFields, GoogleAuthenticationFields)
+        return GoogleAuthenticationRequest(
+            idToken = value.requiredCredential("idToken", MaximumGoogleIdTokenCharacters),
+            nonce = value.requiredCredential("nonce", MaximumGoogleNonceCharacters),
+        )
+    }
+
     fun encodeBootstrap(result: GuestBootstrapResult): String = buildJsonObject {
         put("playerId", result.playerId)
         put("accountKind", result.accountKind)
@@ -105,6 +191,11 @@ private class IdentityJsonCodec {
 
     fun encodeCredentials(credentials: RenewableCredentials): String =
         credentialsJson(credentials).toString()
+
+    fun encodeGoogleChallenge(challenge: GoogleAuthChallenge): String = buildJsonObject {
+        put("nonce", challenge.nonce)
+        put("expiresAtEpochMs", challenge.expiresAt.toEpochMilli())
+    }.toString()
 
     private fun credentialsJson(credentials: RenewableCredentials): JsonObject = buildJsonObject {
         put("accessToken", credentials.accessToken)
@@ -129,6 +220,10 @@ private class IdentityJsonCodec {
     private fun JsonObject.requiredString(name: String, maximum: Int): String =
         optionalString(name, maximum) ?: throw IllegalArgumentException("$name is required")
 
+    private fun JsonObject.requiredCredential(name: String, maximum: Int): String =
+        requiredString(name, maximum).takeIf { it.none(Char::isWhitespace) }
+            ?: throw IllegalArgumentException("$name has invalid characters")
+
     private fun JsonObject.optionalString(name: String, maximum: Int): String? {
         val value = this[name] ?: return null
         if (value is JsonNull) return null
@@ -148,7 +243,20 @@ private class IdentityJsonCodec {
             "regionHint",
         )
         val RefreshFields = setOf("refreshToken")
+        val GoogleAuthenticationFields = setOf("idToken", "nonce")
         const val MaximumIdentityBodyBytes = 16 * 1024
+        const val MaximumGoogleIdTokenCharacters = 8_192
+        const val MaximumGoogleNonceCharacters = 128
+    }
+}
+
+private fun io.ktor.server.application.ApplicationCall.authenticatedPrincipalOrNull(
+    verifier: JwtAccessTokenVerifier?,
+): AuthenticatedPrincipal? {
+    if (verifier == null) return null
+    return when (val result = verifier.authenticate(request.headers[HttpHeaders.Authorization])) {
+        is AccessTokenAuthentication.Accepted -> result.principal
+        is AccessTokenAuthentication.Rejected -> null
     }
 }
 

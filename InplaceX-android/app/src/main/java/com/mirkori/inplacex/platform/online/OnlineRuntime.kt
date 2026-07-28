@@ -11,21 +11,14 @@ import kotlinx.coroutines.withContext
 class OnlineRuntime private constructor(
     private val client: HttpClient,
     private val auth: GuestAuthSessionManager,
+    private val googleAuth: KtorGoogleAuthApi,
     private val duel: OnlineDuelClient,
     private val installation: GuestInstallation,
 ) : AutoCloseable {
     suspend fun createMatch(
         mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
     ): OnlineClientResult<OnlineMatchTicket> {
-        val authenticated = withContext(Dispatchers.IO) {
-            auth.sessionWithFreshAccessTokenOrNull()
-                ?: when (val result = auth.bootstrap(installation)) {
-                    is GuestAuthResult.Authenticated -> result.session
-                    GuestAuthResult.Rejected,
-                    GuestAuthResult.TemporarilyUnavailable,
-                    -> null
-                }
-        }
+        val authenticated = ensureAuthenticatedSession()
         if (authenticated == null) return OnlineClientResult.AuthenticationRequired
         val created = duel.createMatch(mode)
         if (created !is OnlineClientResult.Success) return created
@@ -42,6 +35,24 @@ class OnlineRuntime private constructor(
             }
         }
         return OnlineClientResult.TemporarilyUnavailable
+    }
+
+    suspend fun createGoogleChallenge(): GoogleChallengeResult {
+        if (ensureAuthenticatedSession() == null) {
+            return GoogleChallengeResult.AuthenticationRequired
+        }
+        return withContext(Dispatchers.IO) { googleAuth.challenge() }
+    }
+
+    suspend fun authenticateWithGoogle(
+        idToken: String,
+        nonce: String,
+    ): GuestAuthResult = withContext(Dispatchers.IO) {
+        auth.acceptProviderResult(googleAuth.authenticate(idToken = idToken, nonce = nonce))
+    }
+
+    fun signOut() {
+        auth.clear()
     }
 
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
@@ -64,6 +75,17 @@ class OnlineRuntime private constructor(
     override fun close() {
         client.close()
     }
+
+    private suspend fun ensureAuthenticatedSession(): GuestSession? =
+        withContext(Dispatchers.IO) {
+            auth.sessionWithFreshAccessTokenOrNull()
+                ?: when (val result = auth.bootstrap(installation)) {
+                    is GuestAuthResult.Authenticated -> result.session
+                    GuestAuthResult.Rejected,
+                    GuestAuthResult.TemporarilyUnavailable,
+                    -> null
+                }
+        }
 
     companion object {
         private const val TicketPollDelayMillis = 500L
@@ -97,6 +119,7 @@ class OnlineRuntime private constructor(
             return OnlineRuntime(
                 client = client,
                 auth = auth,
+                googleAuth = KtorGoogleAuthApi(authenticatedTransport),
                 duel = OnlineDuelClient(authenticatedTransport),
                 installation = GuestInstallation(
                     installationId = profile.installationId,

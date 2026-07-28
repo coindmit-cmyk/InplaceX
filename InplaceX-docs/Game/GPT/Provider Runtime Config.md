@@ -43,7 +43,15 @@
 - `ProviderServicesFactory.create(...)` is the canonical entry point
 - the factory is selected by the compile-time Android variant, not by the runtime environment string
 - debug returns stub services for local test flows
-- release returns `GooglePlayAuthService`, `AdMobService`, and `GooglePlayBillingService`; before their SDK integrations exist, they fail closed and do not turn configured strings into provider success
+- Google sign-in uses Android Credential Manager when a variant-specific web
+  client ID and online endpoint are configured; the returned ID token is not a
+  local success and becomes authenticated only after the identity process
+  verifies it and returns InplaceX credentials
+- release returns `GooglePlayAuthService`, `AdMobService`, and
+  `GooglePlayBillingService`; ads and billing continue to fail closed until
+  their SDK integrations exist
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
-Later implementation should fill in SDK calls without changing the app-facing interfaces and must preserve the fail-closed behavior for absent or failed provider responses.
+Absent provider configuration, Credential Manager cancellation, server
+rejection, or network failure leaves the player in guest mode. Debug provider
+stubs remain isolated tooling and are not used by the real Profile sign-in flow.
