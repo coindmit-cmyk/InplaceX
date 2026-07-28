@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T05:26:03Z",
+  "updated_at": "2026-07-28T05:42:58Z",
   "project": "inplacex",
   "processes": {
     "architect": {
@@ -53,9 +53,36 @@
       "pause_until": null
     },
     "orchestrator": {
-      "state": "completed",
-      "reason": "manual_all_succeeded",
-      "last_finished_at": "2026-07-28T05:26:03Z"
+      "state": "failed_retryable",
+      "reason": "manual_all_exit_1",
+      "last_finished_at": "2026-07-28T05:42:58Z",
+      "last_error": {
+        "returncode": 1,
+        "command": [
+          "/usr/bin/python3",
+          "/mnt/d/agent-runtime/releases/agent-core/v0.4.22.358/scripts/agent_control/status_orchestrator.py",
+          "--project-root",
+          "/home/main/agent-runtime/managed-checkouts/inplacex",
+          "--base-ref",
+          "origin/develop",
+          "--push-ref",
+          "develop",
+          "--worker-base-ref",
+          "origin/develop",
+          "--worker-context-ref",
+          "origin/develop",
+          "--machine-id",
+          "aistudio-manual",
+          "--runtime-root",
+          "/home/main/agent-runtime",
+          "--max-total-workers",
+          "1",
+          "--json",
+          "--apply"
+        ],
+        "stdout_tail": "{\n  \"decision\": {\n    \"should_run\": false,\n    \"run_class\": \"scan_only\",\n    \"reason\": \"pre_apply_sync_failed\"\n  },\n  \"pre_apply_sync\": {\n    \"skipped\": false,\n    \"ok\": false,\n    \"reason\": \"pre_apply_fetch_failed\",\n    \"commands\": [\n      {\n        \"command\": [\n          \"git\",\n          \"rev-parse\",\n          \"--is-inside-work-tree\"\n        ],\n        \"exit_code\": 0,\n        \"stdout\": \"true\\n\",\n        \"stderr\": \"\"\n      },\n      {\n        \"command\": [\n          \"git\",\n          \"status\",\n          \"--porcelain\"\n        ],\n        \"exit_code\": 0,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"command\": [\n          \"git\",\n          \"fetch\",\n          \"origin\",\n          \"develop\"\n        ],\n        \"exit_code\": 128,\n        \"stdout\": \"\",\n        \"stderr\": \"fatal: «https://github.com/coindmit-cmyk/InplaceX.git/» недоступно: Failed to connect to github.com port 443 after 132428 ms: Could not connect to server\\n\"\n      }\n    ]\n  },\n  \"exit_code\": 1\n}\n",
+        "stderr_tail": ""
+      }
     }
   }
 }
