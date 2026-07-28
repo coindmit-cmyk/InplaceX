@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-28T07:46:14Z",
+  "generated_at": "2026-07-28T07:51:49Z",
   "summary": {
-    "candidate_count": 2,
+    "candidate_count": 1,
     "scheduling_class_counts": {
-      "primary_delivery": 2
+      "primary_delivery": 1
     },
     "integration_continuation_count": 0,
-    "primary_candidate_count": 2,
+    "primary_candidate_count": 1,
     "background_candidate_count": 0,
     "primary_slot_reservation_required": true
   },
@@ -31,35 +31,6 @@
         "CHANGELOG.md",
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    },
-    {
-      "task_id": "CRB-REPO-PR-7",
-      "title": "Clean rebuild REPO-PR-7 from worker result",
-      "priority": "P1",
-      "complexity": "M",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/build.gradle.kts",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
-        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
-        "gradle/libs.versions.toml",
-        "docs/reports/**",
-        "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "docs/plans/allowed_paths_repair_plan.json",
-        "README.md"
       ],
       "scheduling_class": "primary_delivery",
       "scheduling_class_reason": "default_primary_work"
