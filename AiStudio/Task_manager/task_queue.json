@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "needs_dispatcher_repair",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": false,
-      "packet_status": "needs_dispatcher_repair",
-      "normalization_status": "needs_dispatcher_repair",
-      "dispatcher_decision": "needs_dispatcher_repair",
-      "dispatcher_decision_reason": "worker packet v2 defect found before worker claim",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "stale nonexistent context ref removed; packet retains authoritative clean_rebuild_plan.json and exact human validation evidence",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13149,7 +13149,7 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "Dispatcher",
+      "next_owner": "worker_pool",
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-28T07:46:14Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
@@ -13305,6 +13305,14 @@
             "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
           ],
           "next_owner": "Dispatcher"
+        },
+        {
+          "at": "2026-07-28T07:54:21Z",
+          "by": "Codex Dispatcher",
+          "from": "needs_dispatcher_repair",
+          "to": "planned",
+          "reason": "removed stale nonexistent context ref and preserved authoritative task context plus exact compile-failure evidence",
+          "next_owner": "worker_pool"
         }
       ],
       "worker_id": "auto-worker-5.3",
@@ -13368,18 +13376,14 @@
           }
         ]
       },
-      "task_packet_defects": [
-        "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
-      ],
-      "missing_packet_fields": [
-        "missing_input_ref:docs/plans/allowed_paths_repair_plan.json"
-      ],
-      "repair_request": "Repair the listed Worker Packet v2 defects before worker claim.",
-      "repair_owner": "dispatcher",
-      "next_action": "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair.",
-      "dispatcher_next_review_at": "2026-07-28T07:46:47Z",
-      "not_worker_ready_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution",
-      "status_reason": "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution"
+      "task_packet_defects": [],
+      "missing_packet_fields": [],
+      "repair_request": null,
+      "repair_owner": null,
+      "next_action": null,
+      "dispatcher_next_review_at": "2026-07-28T07:54:21Z",
+      "not_worker_ready_reason": null,
+      "status_reason": null
     },
     {
       "id": "REPO-PR-13",
