@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T08:27:33Z",
+  "updated_at": "2026-07-28T08:42:39Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -11611,7 +11611,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-28T07:51:49Z",
+      "dependency_state_checked_at": "2026-07-28T08:42:39Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11700,7 +11700,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-28T07:51:49Z",
+      "dependency_state_checked_at": "2026-07-28T08:42:39Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -13258,7 +13258,7 @@
         },
         "reason": "source payload is not represented in current base"
       },
-      "packet_normalized_at": "2026-07-28T07:46:14Z",
+      "packet_normalized_at": "2026-07-28T08:42:39Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "status_history": [
         {
@@ -13406,7 +13406,7 @@
       "repair_owner": null,
       "next_action": null,
       "dispatcher_next_review_at": "2026-07-28T07:54:21Z",
-      "not_worker_ready_reason": null,
+      "not_worker_ready_reason": "terminal status=done",
       "status_reason": "repaired online transport foundation merged through PR #16; required exact-head CI passed and the task is finalized",
       "terminal_residue_history": [
         {
