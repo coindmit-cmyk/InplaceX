@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-27T22:37:19Z",
+  "updated_at": "2026-07-28T07:46:14Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -11611,7 +11611,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "dependency_state_checked_at": "2026-07-27T22:37:19Z",
+      "dependency_state_checked_at": "2026-07-28T07:46:14Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -11700,7 +11700,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-27T22:37:19Z",
+      "dependency_state_checked_at": "2026-07-28T07:46:14Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -12911,15 +12911,15 @@
     {
       "id": "CRB-REPO-PR-7",
       "title": "Clean rebuild REPO-PR-7 from worker result",
-      "status": "needs_worker_fix",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
-      "worker_ready": false,
-      "packet_status": "needs_worker_fix",
-      "normalization_status": "needs_worker_fix",
-      "dispatcher_decision": "needs_worker_fix",
-      "dispatcher_decision_reason": "after Java and Android SDK were configured, the targeted Android unit test reached Kotlin compilation and proved duplicate OnlineTransportPolicy declarations in KtorOnlineTransport.kt and OnlineTransportClient.kt",
+      "worker_ready": true,
+      "packet_status": "worker_ready",
+      "normalization_status": "worker_ready",
+      "dispatcher_decision": "worker_ready",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
       "recommended_agent": "auto-worker-5.3",
       "eligible_worker_profiles": [
         "auto-worker-5.3",
@@ -13163,9 +13163,9 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
-      "repaired_packet_at": "2026-07-27T22:06:07Z",
+      "next_owner": "worker_pool",
+      "next_role": "auto_workers",
+      "repaired_packet_at": "2026-07-28T07:46:14Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
       "deterministic_preflight": {
         "schema_version": 1,
@@ -13270,7 +13270,7 @@
         },
         "reason": "source payload is not represented in current base"
       },
-      "packet_normalized_at": "2026-07-27T22:37:19Z",
+      "packet_normalized_at": "2026-07-28T07:46:14Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "status_history": [
         {
@@ -13348,9 +13348,6 @@
         "283916b5a6a8750d2d1b31bf3dac2e73f68f5008"
       ],
       "integration_status": "needs_worker_fix",
-      "status_reason": "the human-owned automation environment blocker is resolved; exact candidate validation now proves a worker code defect: duplicate OnlineTransportPolicy declarations",
-      "next_action": "Create one bounded worker-fix packet for commit 283916b5a6a8750d2d1b31bf3dac2e73f68f5008 that consolidates OnlineTransportPolicy without removing existing behavior, then rerun the same two targeted Gradle checks.",
-      "repair_request": "Remove the duplicate OnlineTransportPolicy declaration between KtorOnlineTransport.kt and OnlineTransportClient.kt, preserve the existing shared contract and rerun InplaceXLoggerTest plus the two online Android unit tests.",
       "requires_human_attention": false,
       "human_validation_evidence": {
         "validated_at": "2026-07-28T07:41:00Z",
