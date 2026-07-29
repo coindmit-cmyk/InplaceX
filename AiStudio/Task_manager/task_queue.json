@@ -3729,7 +3729,7 @@
     {
       "id": "REPO-PR-4",
       "title": "Integrate open PR #4",
-      "status": "agent_done",
+      "status": "integration_requested",
       "priority": "P1",
       "complexity": "L",
       "type": "repository_hygiene_integration",
@@ -3738,8 +3738,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "needs_integrator_review",
-      "integration_status": "needs_integrator_review",
+      "dispatcher_decision": "integration_ready",
+      "integration_status": "pending_required_ci",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "base_branch": "develop",
       "github_pr": 4,
@@ -3781,7 +3781,7 @@
       ],
       "lock": "free",
       "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_role": "auto_integrator",
       "discovered_at": "2026-07-29T00:11:11Z",
       "updated_at": "2026-07-29T14:26:30Z",
       "changed_paths": [
@@ -3808,7 +3808,22 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization."
+      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+      "missing_packet_fields": [],
+      "repair_owner": "Integrator",
+      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "status_history": [
+        {
+          "at": "2026-07-29T14:40:45Z",
+          "by": "integrator_direct_merge",
+          "from": "agent_done",
+          "to": "integration_requested",
+          "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
+          "event": "integration_routed",
+          "next_owner": "integrator"
+        }
+      ]
     },
     {
       "id": "REPO-PR-9",
