@@ -67,7 +67,13 @@ internal fun rateCampaignMatch(
     summary: MatchSessionSummary,
 ): Int {
     var score = level.ratingPolicy.maxBackendPoints.toDouble()
-    score -= (summary.attemptsUsed - level.ratingPolicy.targetAttemptsForPerfect).coerceAtLeast(0)
+    val targetAttempts = level.ratingPolicy.targetAttemptsForPerfect
+    val attemptReserve = (level.config.attemptLimit - targetAttempts).coerceAtLeast(1)
+    val reserveSpent = (summary.attemptsUsed - targetAttempts).coerceAtLeast(0)
+    val maximumAttemptPenalty = level.ratingPolicy.maxBackendPoints - 1
+    score -= ceil(
+        reserveSpent.toDouble() * maximumAttemptPenalty.toDouble() / attemptReserve.toDouble(),
+    )
     score -= ceil(
         ((summary.elapsedSeconds - level.ratingPolicy.targetTimeSecondsForPerfect)
             .coerceAtLeast(0)) / 30.0,

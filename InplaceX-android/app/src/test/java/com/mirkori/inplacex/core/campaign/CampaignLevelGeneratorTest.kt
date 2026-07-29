@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.core.campaign
 
+import com.mirkori.inplacex.core.bot.BotProfiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,13 +15,13 @@ class CampaignLevelGeneratorTest {
 
         assertEquals(CampaignDifficultyTier.EASY, firstLevel.difficultyTier)
         assertEquals(4, firstLevel.config.codeLength)
-        assertEquals(15, firstLevel.config.attemptLimit)
+        assertEquals(19, firstLevel.config.attemptLimit)
         assertEquals(360, firstLevel.raceTimeLimitSeconds)
-        assertEquals(14, levelEight.config.attemptLimit)
+        assertEquals(19, levelEight.config.attemptLimit)
         assertEquals(300, levelEight.raceTimeLimitSeconds)
         assertEquals(CampaignBlockRole.HARDCORE, firstHardcore.blockRole)
         assertEquals(4, firstHardcore.config.codeLength)
-        assertEquals(12, firstHardcore.config.attemptLimit)
+        assertEquals(13, firstHardcore.config.attemptLimit)
         assertEquals(270, firstHardcore.raceTimeLimitSeconds)
     }
 
@@ -31,7 +32,7 @@ class CampaignLevelGeneratorTest {
 
         assertEquals(CampaignDifficultyTier.MEDIUM, levelSeventeen.difficultyTier)
         assertEquals(5, levelSeventeen.config.codeLength)
-        assertEquals(14, levelSeventeen.config.attemptLimit)
+        assertEquals(18, levelSeventeen.config.attemptLimit)
         assertEquals(270, levelSeventeen.raceTimeLimitSeconds)
         assertTrue(levelSeventeen.config.codeLength > firstLevel.config.codeLength)
         assertTrue(levelSeventeen.raceTimeLimitSeconds < firstLevel.raceTimeLimitSeconds)
@@ -41,7 +42,7 @@ class CampaignLevelGeneratorTest {
 
     @Test
     fun onboardingAttemptCurveMatchesThePlayableBudget() {
-        val expectedAttempts = listOf(15, 15, 15, 15, 14, 14, 14, 14, 13, 12)
+        val expectedAttempts = listOf(19, 19, 19, 19, 17, 19, 19, 19, 19, 13)
         val expectedSeconds = listOf(360, 345, 330, 330, 315, 315, 300, 300, 285, 270)
 
         (1..10).forEach { level ->
@@ -49,6 +50,31 @@ class CampaignLevelGeneratorTest {
             assertEquals("attempts at level $level", expectedAttempts[level - 1], definition.config.attemptLimit)
             assertEquals("time at level $level", expectedSeconds[level - 1], definition.raceTimeLimitSeconds)
         }
+    }
+
+    @Test
+    fun hardBudgetsUseExpertSolverTargetPlusTierReserve() {
+        val hardStandard = CampaignLevelGenerator.generate(81)
+        val hardCheckpoint = CampaignLevelGenerator.generate(90)
+        val hardcoreStandard = CampaignLevelGenerator.generate(221)
+        val plateauCheckpoint = CampaignLevelGenerator.generate(500)
+
+        assertEquals(
+            BotProfiles.expert.targetMovesForCodeLength(hardStandard.config.codeLength) + 5,
+            hardStandard.config.attemptLimit,
+        )
+        assertEquals(
+            BotProfiles.expert.targetMovesForCodeLength(hardCheckpoint.config.codeLength) + 3,
+            hardCheckpoint.config.attemptLimit,
+        )
+        assertEquals(
+            BotProfiles.expert.targetMovesForCodeLength(hardcoreStandard.config.codeLength) + 4,
+            hardcoreStandard.config.attemptLimit,
+        )
+        assertEquals(
+            BotProfiles.expert.targetMovesForCodeLength(plateauCheckpoint.config.codeLength) + 2,
+            plateauCheckpoint.config.attemptLimit,
+        )
     }
 
     @Test

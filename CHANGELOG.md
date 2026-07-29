@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Rebased campaign move budgets on the expert solver target plus a
+  tier-and-role reserve: easy standard levels now have a generous margin,
+  level 10 remains a stricter checkpoint, and hard/hardcore levels keep only
+  a small explicit reserve.
+- Normalized the attempt rating across each level's full reserve so a win on
+  the final allowed attempt earns one star instead of always retaining three.
+- Added a debug-only Mirkori Bot test friend backed by VPS quick matchmaking,
+  plus an in-app invitation guide and copy/share actions for real two-phone
+  friend codes; release builds contain no fake friend.
 - Restored the configured online endpoint in the test-build workflow so the
   preserved private-friend-duel code is no longer shipped as an offline UI.
 - Removed the nested Company room image and made `company_room_bg_v2` the

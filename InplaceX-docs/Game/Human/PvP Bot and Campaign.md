@@ -56,11 +56,14 @@ The campaign generator can change:
 - attempt limit
 - time limit
 
-Attempt limits use the same general formula:
+Attempt limits use the expert bot's target plus an explicit safety reserve:
 
-`attemptLimit = ceil(cn * n)`
+`attemptLimit = expertSolverTarget(codeLength) + reserve(tier, role)`
 
-The generator lowers `n` over time as levels get harder.
+Easy standard levels receive `+10` moves, while the hardest hardcore
+checkpoints receive only `+2`. This keeps onboarding forgiving and makes later
+budgets track the best available repository solver instead of an arbitrary
+multiplier.
 
 ### Block Structure
 
@@ -79,14 +82,13 @@ length then grows in controlled bands until it reaches 10 digits at level 301.
 This makes the second campaign block noticeably harder without removing the
 10-level pattern of standard, spike, and hardcore missions.
 
-Внутри первого блока запас ходов уменьшается по мере обучения: с `15` попыток
-на первом уровне до `14` на восьмом и `12` на контрольном десятом. Лимит времени
+Внутри первого блока обычные уровни имеют `19` попыток, пятый уровень — `17`,
+а контрольный десятый — `13`. Лимит времени
 снижается с `6:00` до `5:00` на восьмом и `4:30` на десятом. Четыре цифры
-сохраняются как понятный обучающий формат, но после знакомства с механикой
-появляется реальный риск поражения.
+сохраняются как понятный обучающий формат с большим запасом, но десятый уровень
+остаётся заметно сложнее.
 
-На уровне 17 пятизначный код получает `14` попыток и `4:30`, а не прежние
-`19` попыток и `6:40`.
+На уровне 17 пятизначный код получает `18` попыток и `4:30`.
 
 ### Hints And Boosts
 
@@ -130,6 +132,10 @@ The rating depends on:
 - completion time
 - attempts used
 - amount of help used
+
+The attempt score is spread across the whole reserve above the expert target.
+Solving at the target keeps the maximum score, using about half of the reserve
+falls to two stars, and solving on the final allowed attempt gives one star.
 
 Perfect play should remain possible even on hard content.
 
