@@ -80,22 +80,32 @@ Difficulty should keep growing until about `300-500`, then flatten into a stable
 
 ### Onboarding Balance
 
-The first block keeps four-digit codes, but it must not use the general easy
-multiplier unchanged. Levels `1..10` use a dedicated descending move budget:
+The first block keeps four-digit codes. Its budget is the expert solver target
+(`9` attempts for four digits) plus an explicit role reserve:
 
-- level `1`: `15` attempts and `360` seconds
-- level `8`: `14` attempts and `300` seconds
-- level `10`: `12` attempts and `270` seconds
+- standard level: `+10`, giving `19` attempts
+- spike level: `+8`, giving `17` attempts
+- hardcore checkpoint: `+4`, giving `13` attempts
 
 The exact first-block attempt sequence is
-`15, 15, 15, 15, 14, 14, 14, 14, 13, 12`.
+`19, 19, 19, 19, 17, 19, 19, 19, 19, 13`.
 The matching time sequence is
 `360, 345, 330, 330, 315, 315, 300, 300, 285, 270` seconds.
-Spike and hardcore roles remain visible inside this curve.
+This keeps a forgiving onboarding reserve while making level `10` a visible
+checkpoint.
 
-From level `11`, the medium multiplier starts at `2.8` before role and
-long-run adjustments. This prevents the five-digit block from returning to a
-nineteen-attempt tutorial budget.
+All later levels use the same authoritative formula:
+
+`attemptLimit = expertSolverTarget(codeLength) + reserve(tier, role)`
+
+The expert target is `max(6, ceil(codeLength * 2.0) + 1)`. Reserve values are:
+
+| Tier | Standard | Spike | Hardcore |
+|---|---:|---:|---:|
+| Easy | `+10` | `+8` | `+4` |
+| Medium | `+7` | `+5` | `+4` |
+| Hard | `+5` | `+4` | `+3` |
+| Hardcore | `+4` | `+3` | `+2` |
 
 The generated campaign uses these deterministic tier boundaries:
 
@@ -132,6 +142,11 @@ Inputs that affect the score:
 - finish time against the target time
 - attempts used against the target attempt budget
 - help usage against the allowed assist budget
+
+The attempt penalty is normalized across the complete reserve. Reaching the
+expert target keeps the attempt component perfect; consuming half the reserve
+falls into the two-star band; winning on the final allowed attempt always
+reduces the match to the one-star band before time and assist penalties.
 
 Assist expectations by tier:
 

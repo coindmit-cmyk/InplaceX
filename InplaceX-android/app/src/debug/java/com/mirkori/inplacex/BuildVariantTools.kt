@@ -18,6 +18,8 @@ import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 
 internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
+internal fun testFriendBotEnabled(): Boolean = true
+
 internal fun initialProgressState(
     progressRepository: GameProgressRepository,
 ): GameProgressState {

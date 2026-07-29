@@ -1,5 +1,8 @@
 package com.mirkori.inplacex.ui.screens.social
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,9 +25,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
@@ -39,8 +44,11 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
+    autoStartQuickMatch: Boolean = false,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<OnlineDuelUiState>(OnlineDuelUiState.Ready) }
     var digits by remember { mutableStateOf("") }
@@ -48,6 +56,8 @@ internal fun OnlineDuelScreen(
     var guessHistorySessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var guessHistoryEntries by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var guessSubmitting by rememberSaveable { mutableStateOf(false) }
+    var autoStartConsumed by rememberSaveable { mutableStateOf(false) }
+    var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
         when (result) {
@@ -84,6 +94,28 @@ internal fun OnlineDuelScreen(
             OnlineDuelUiState.Error("Сервер не создал комнату")
         } else {
             snapshotState(runtime.readSession(sessionId))
+        }
+    }
+
+    suspend fun startQuickMatch() {
+        state = OnlineDuelUiState.Loading(strings.text("social.online.searching"))
+        state = when (val ticket = runtime.createMatch()) {
+            is OnlineClientResult.Success -> {
+                val sessionId = ticket.value.sessionId
+                if (sessionId == null) {
+                    OnlineDuelUiState.Error("Сервер не создал матч")
+                } else {
+                    snapshotState(runtime.readSession(sessionId))
+                }
+            }
+            else -> inviteError(ticket)
+        }
+    }
+
+    LaunchedEffect(autoStartQuickMatch) {
+        if (autoStartQuickMatch && !autoStartConsumed) {
+            autoStartConsumed = true
+            startQuickMatch()
         }
     }
 
@@ -213,19 +245,8 @@ internal fun OnlineDuelScreen(
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        state = OnlineDuelUiState.Loading("Ищем соперника…")
                         scope.launch {
-                            state = when (val ticket = runtime.createMatch()) {
-                                is OnlineClientResult.Success -> {
-                                    val sessionId = ticket.value.sessionId
-                                    if (sessionId == null) {
-                                        OnlineDuelUiState.Error("Сервер не создал матч")
-                                    } else {
-                                        snapshotState(runtime.readSession(sessionId))
-                                    }
-                                }
-                                else -> inviteError(ticket)
-                            }
+                            startQuickMatch()
                         }
                     },
                 ) {
@@ -251,10 +272,7 @@ internal fun OnlineDuelScreen(
                 OutlinedTextField(
                     value = inviteCode,
                     onValueChange = { value ->
-                        inviteCode = value
-                            .uppercase()
-                            .filter { it in FriendInviteAlphabet }
-                            .take(FriendInviteCodeLength)
+                        inviteCode = normalizeFriendInviteCode(value)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Код друга") },
@@ -298,6 +316,54 @@ internal fun OnlineDuelScreen(
                     color = InplaceXColors.Cobalt,
                 )
                 Text("Ожидаем второй телефон. Комната действует 10 минут.")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            context.getSystemService(ClipboardManager::class.java)
+                                ?.setPrimaryClip(
+                                    ClipData.newPlainText(
+                                        strings.text("social.invite.clipboard_label"),
+                                        current.invite.inviteCode,
+                                    ),
+                                )
+                            inviteNotice = strings.text("social.invite.copied")
+                        },
+                    ) {
+                        Text(strings.text("social.invite.copy"))
+                    }
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            val shareText = formatFriendInviteShareText(
+                                strings.text("social.invite.share_text"),
+                                current.invite.inviteCode,
+                            )
+                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(
+                                    sendIntent,
+                                    strings.text("social.invite.share_title"),
+                                ),
+                            )
+                        },
+                    ) {
+                        Text(strings.text("social.invite.share"))
+                    }
+                }
+                inviteNotice?.let { notice ->
+                    Text(
+                        text = notice,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = InplaceXColors.Cobalt,
+                    )
+                }
                 CircularProgressIndicator()
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
@@ -433,6 +499,15 @@ private sealed interface OnlineDuelUiState {
 private const val SynchronizationPollMillis = 750L
 private const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+internal fun normalizeFriendInviteCode(value: String): String =
+    value
+        .uppercase()
+        .filter { it in FriendInviteAlphabet }
+        .take(FriendInviteCodeLength)
+
+internal fun formatFriendInviteShareText(template: String, code: String): String =
+    template.replace("{code}", code)
 
 private fun List<String>.toKnownGuessMap(): Map<Int, String> =
     mapNotNull { entry ->

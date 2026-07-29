@@ -15,8 +15,10 @@ import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,12 +48,19 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
+    showTestFriendBot: Boolean = false,
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var onlineDuelOpen by remember { mutableStateOf(false) }
+    var autoStartQuickMatch by remember { mutableStateOf(false) }
+
+    fun openOnline(autoStart: Boolean = false) {
+        autoStartQuickMatch = autoStart
+        onlineDuelOpen = true
+    }
 
     LaunchedEffect(onlineDuelOpen) {
         onInGameChange(onlineDuelOpen)
@@ -69,7 +78,11 @@ fun SocialRootScreen(
     if (onlineDuelOpen && onlineRuntime != null) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
-            onBack = { onlineDuelOpen = false },
+            autoStartQuickMatch = autoStartQuickMatch,
+            onBack = {
+                onlineDuelOpen = false
+                autoStartQuickMatch = false
+            },
         )
         return
     }
@@ -97,6 +110,48 @@ fun SocialRootScreen(
             SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
         }
 
+        if (showTestFriendBot && onlineRuntime != null) {
+            SceneCard(
+                accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = InplaceXColors.ToyPurple.copy(alpha = 0.16f),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.SmartToy,
+                            contentDescription = null,
+                            modifier = Modifier.padding(12.dp),
+                            tint = InplaceXColors.ToyPurple,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = strings.text("social.test_friend.title"),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = strings.text("social.test_friend.subtitle"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Button(onClick = { openOnline(autoStart = true) }) {
+                        Text(strings.text("social.test_friend.play"))
+                    }
+                }
+            }
+        }
+
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val compact = maxWidth < 560.dp
             if (compact) {
@@ -110,18 +165,18 @@ fun SocialRootScreen(
                             listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
                         ),
                         enabled = onlineRuntime != null,
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                     SceneActionTile(
                         title = strings.text("social.invites"),
-                        subtitle = strings.text("social.invites.empty"),
+                        subtitle = strings.text("social.invites.guide"),
                         leadingIcon = Icons.Outlined.MailOutline,
                         trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
                         ),
                         enabled = onlineRuntime != null,
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                     SceneActionTile(
                         title = strings.text("social.online.title"),
@@ -132,7 +187,7 @@ fun SocialRootScreen(
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
                         ),
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                 }
             } else {
@@ -150,11 +205,11 @@ fun SocialRootScreen(
                         ),
                         modifier = Modifier.weight(1f),
                         enabled = onlineRuntime != null,
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                     SceneActionTile(
                         title = strings.text("social.invites"),
-                        subtitle = strings.text("social.invites.empty"),
+                        subtitle = strings.text("social.invites.guide"),
                         leadingIcon = Icons.Outlined.MailOutline,
                         trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
@@ -162,7 +217,7 @@ fun SocialRootScreen(
                         ),
                         modifier = Modifier.weight(1f),
                         enabled = onlineRuntime != null,
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                     SceneActionTile(
                         title = strings.text("social.online.title"),
@@ -174,10 +229,24 @@ fun SocialRootScreen(
                             listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
                         ),
                         modifier = Modifier.weight(1f),
-                        onClick = { onlineDuelOpen = true },
+                        onClick = { openOnline() },
                     )
                 }
             }
+        }
+
+        SceneCard(
+            accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f),
+        ) {
+            Text(
+                text = strings.text("social.invites.how_to"),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(strings.text("social.invites.step_1"))
+            Text(strings.text("social.invites.step_2"))
+            Text(strings.text("social.invites.step_3"))
         }
 
     }

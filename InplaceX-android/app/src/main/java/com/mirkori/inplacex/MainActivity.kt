@@ -286,6 +286,7 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                showTestFriendBot = testFriendBotEnabled(),
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },

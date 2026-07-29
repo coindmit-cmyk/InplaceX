@@ -1,9 +1,9 @@
 package com.mirkori.inplacex.core.campaign
 
+import com.mirkori.inplacex.core.bot.BotProfiles
 import com.mirkori.inplacex.core.model.GameConfig
 import kotlin.math.ceil
 import kotlin.math.max
-import kotlin.math.min
 
 object CampaignLevelGenerator {
 
@@ -15,16 +15,11 @@ object CampaignLevelGenerator {
         val difficultyTier = tierForLevel(levelNumber)
         val blockRole = roleForPosition(positionInBlock)
         val codeLength = codeLengthForLevel(levelNumber)
-        val generatedMultiplier = multiplierFor(difficultyTier, blockRole, levelNumber)
-        val onboardingAttemptLimit = onboardingAttemptLimit(levelNumber)
-        val attemptLimit = onboardingAttemptLimit
-            ?: ceil(codeLength * generatedMultiplier).toInt()
-        val moveMultiplier = onboardingAttemptLimit
-            ?.let { it.toDouble() / codeLength.toDouble() }
-            ?: generatedMultiplier
+        val solverTargetAttempts = BotProfiles.expert.targetMovesForCodeLength(codeLength)
+        val attemptLimit = solverTargetAttempts + attemptReserveFor(difficultyTier, blockRole)
+        val moveMultiplier = attemptLimit.toDouble() / codeLength.toDouble()
         val raceTimeLimitSeconds = timeLimitFor(codeLength, difficultyTier, blockRole, levelNumber)
         val boostPack = boostPackFor(difficultyTier)
-        val targetAttempts = max(1, attemptLimit - attemptSlackFor(difficultyTier, blockRole))
         val targetTime = max(30, raceTimeLimitSeconds - timeSlackFor(difficultyTier, blockRole))
 
         return CampaignLevelDefinition(
@@ -44,7 +39,7 @@ object CampaignLevelGenerator {
             autoModeAllowed = true,
             boostPack = boostPack,
             ratingPolicy = CampaignRatingPolicy(
-                targetAttemptsForPerfect = targetAttempts,
+                targetAttemptsForPerfect = solverTargetAttempts,
                 targetTimeSecondsForPerfect = targetTime,
                 assistsBudget = assistBudgetFor(difficultyTier),
             ),
@@ -80,24 +75,32 @@ object CampaignLevelGenerator {
         }
     }
 
-    private fun multiplierFor(
+    private fun attemptReserveFor(
         tier: CampaignDifficultyTier,
         role: CampaignBlockRole,
-        levelNumber: Int,
-    ): Double {
-        val roleDelta = when (role) {
-            CampaignBlockRole.STANDARD -> 0.0
-            CampaignBlockRole.SPIKE -> -0.35
-            CampaignBlockRole.HARDCORE -> -0.55
+    ): Int {
+        return when (tier) {
+            CampaignDifficultyTier.EASY -> when (role) {
+                CampaignBlockRole.STANDARD -> 10
+                CampaignBlockRole.SPIKE -> 8
+                CampaignBlockRole.HARDCORE -> 4
+            }
+            CampaignDifficultyTier.MEDIUM -> when (role) {
+                CampaignBlockRole.STANDARD -> 7
+                CampaignBlockRole.SPIKE -> 5
+                CampaignBlockRole.HARDCORE -> 4
+            }
+            CampaignDifficultyTier.HARD -> when (role) {
+                CampaignBlockRole.STANDARD -> 5
+                CampaignBlockRole.SPIKE -> 4
+                CampaignBlockRole.HARDCORE -> 3
+            }
+            CampaignDifficultyTier.HARDCORE -> when (role) {
+                CampaignBlockRole.STANDARD -> 4
+                CampaignBlockRole.SPIKE -> 3
+                CampaignBlockRole.HARDCORE -> 2
+            }
         }
-        val tierBase = when (tier) {
-            CampaignDifficultyTier.EASY -> 3.4
-            CampaignDifficultyTier.MEDIUM -> 2.8
-            CampaignDifficultyTier.HARD -> 2.5
-            CampaignDifficultyTier.HARDCORE -> 2.2
-        }
-        val longRunDelta = min(0.9, ((levelNumber - 1) / 120.0) * 0.2)
-        return max(1.8, tierBase + roleDelta - longRunDelta)
     }
 
     private fun timeLimitFor(
@@ -127,9 +130,6 @@ object CampaignLevelGenerator {
         return max(45, tierBase + codeLength * 18 - rolePenalty + onboardingBonus)
     }
 
-    private fun onboardingAttemptLimit(levelNumber: Int): Int? =
-        OnboardingAttemptLimits.getOrNull(levelNumber - 1)
-
     private fun onboardingTimeLimitSeconds(levelNumber: Int): Int? =
         OnboardingTimeLimitsSeconds.getOrNull(levelNumber - 1)
 
@@ -151,24 +151,6 @@ object CampaignLevelGenerator {
         }
     }
 
-    private fun attemptSlackFor(
-        tier: CampaignDifficultyTier,
-        role: CampaignBlockRole,
-    ): Int {
-        val tierSlack = when (tier) {
-            CampaignDifficultyTier.EASY -> 1
-            CampaignDifficultyTier.MEDIUM -> 1
-            CampaignDifficultyTier.HARD -> 2
-            CampaignDifficultyTier.HARDCORE -> 2
-        }
-        val roleSlack = when (role) {
-            CampaignBlockRole.STANDARD -> 0
-            CampaignBlockRole.SPIKE -> 1
-            CampaignBlockRole.HARDCORE -> 1
-        }
-        return tierSlack + roleSlack
-    }
-
     private fun timeSlackFor(
         tier: CampaignDifficultyTier,
         role: CampaignBlockRole,
@@ -187,6 +169,5 @@ object CampaignLevelGenerator {
         return tierSlack + roleSlack
     }
 
-    private val OnboardingAttemptLimits = listOf(15, 15, 15, 15, 14, 14, 14, 14, 13, 12)
     private val OnboardingTimeLimitsSeconds = listOf(360, 345, 330, 330, 315, 315, 300, 300, 285, 270)
 }
