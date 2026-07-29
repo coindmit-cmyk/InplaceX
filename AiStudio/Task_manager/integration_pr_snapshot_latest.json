@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T11:33:02Z",
+  "generated_at": "2026-07-29T11:48:15Z",
   "repository": "coindmit-cmyk/InplaceX",
   "pull_requests": [
     {
@@ -272,51 +272,6 @@
       "title": "feat(agent): add fail-closed capability preservation gate",
       "updatedAt": "2026-07-26T12:39:34Z",
       "url": "https://github.com/coindmit-cmyk/InplaceX/pull/4"
-    },
-    {
-      "baseRefName": "develop",
-      "headRefName": "codex/make-human/company-ux-v3",
-      "headRefOid": "903527419b7ecbb833b6f1e8b92be881b8363cc8",
-      "isDraft": true,
-      "mergeStateStatus": "UNKNOWN",
-      "number": 3,
-      "reviewDecision": "",
-      "state": "OPEN",
-      "statusCheckRollup": [
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T13:44:49Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800398773",
-          "name": "Unit verification and debug artifact",
-          "startedAt": "2026-07-26T13:43:09Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T13:46:57Z",
-          "conclusion": "FAILURE",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800547457",
-          "name": "Instrumentation checks (non-blocking)",
-          "startedAt": "2026-07-26T13:44:51Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T13:47:17Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30204610389/job/89800547452",
-          "name": "Release checks (non-blocking)",
-          "startedAt": "2026-07-26T13:44:51Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        }
-      ],
-      "title": "feat(android): redesign Company mission console",
-      "updatedAt": "2026-07-26T13:43:04Z",
-      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/3"
     }
   ]
 }
