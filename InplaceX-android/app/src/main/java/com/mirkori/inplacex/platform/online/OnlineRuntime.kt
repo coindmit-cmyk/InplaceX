@@ -45,10 +45,11 @@ class OnlineRuntime private constructor(
     }
 
     suspend fun createFriendInvite(
-        mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
+        playStyle: RemoteFriendPlayStyle,
+        codeLength: Int,
     ): OnlineClientResult<OnlineFriendInvite> {
         if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
-        return duel.createFriendInvite(mode)
+        return duel.createFriendInvite(playStyle, codeLength)
     }
 
     suspend fun readFriendInvite(

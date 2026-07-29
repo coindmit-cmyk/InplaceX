@@ -35,6 +35,7 @@ import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineFriendInviteStatus
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.theme.InplaceXColors
@@ -58,6 +59,11 @@ internal fun OnlineDuelScreen(
     var guessSubmitting by rememberSaveable { mutableStateOf(false) }
     var autoStartConsumed by rememberSaveable { mutableStateOf(false) }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
+    var friendPlayStyleName by rememberSaveable {
+        mutableStateOf(RemoteFriendPlayStyle.RACE.name)
+    }
+    var friendCodeLength by rememberSaveable { mutableStateOf(4) }
+    val friendPlayStyle = RemoteFriendPlayStyle.valueOf(friendPlayStyleName)
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
         when (result) {
@@ -254,12 +260,75 @@ internal fun OnlineDuelScreen(
                 }
 
                 Text("Играть с другом", fontWeight = FontWeight.SemiBold)
+                Text("Режим комнаты", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    FriendPlayStyleButton(
+                        selected = friendPlayStyle == RemoteFriendPlayStyle.RACE,
+                        text = "Гонка",
+                        modifier = Modifier.weight(1f),
+                        onClick = { friendPlayStyleName = RemoteFriendPlayStyle.RACE.name },
+                    )
+                    FriendPlayStyleButton(
+                        selected = friendPlayStyle == RemoteFriendPlayStyle.TURN_BASED,
+                        text = "Дуэль",
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            friendPlayStyleName = RemoteFriendPlayStyle.TURN_BASED.name
+                        },
+                    )
+                }
+                Text(
+                    if (friendPlayStyle == RemoteFriendPlayStyle.RACE) {
+                        "Оба разгадывают одновременно. Побеждает первый."
+                    } else {
+                        "Игроки делают по одному ходу по очереди."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Text("Длина секрета", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        enabled = friendCodeLength > MinimumFriendCodeLength,
+                        onClick = { friendCodeLength -= 1 },
+                    ) {
+                        Text("−")
+                    }
+                    Text(
+                        text = "$friendCodeLength цифр",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    OutlinedButton(
+                        enabled = friendCodeLength < MaximumFriendCodeLength,
+                        onClick = { friendCodeLength += 1 },
+                    ) {
+                        Text("+")
+                    }
+                }
+                Text(
+                    "Цифры могут повторяться, но не больше трёх одинаковых подряд. " +
+                        "Лимита ходов нет, время матча — 10 минут.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         state = OnlineDuelUiState.Loading("Создаём приглашение…")
                         scope.launch {
-                            state = when (val result = runtime.createFriendInvite()) {
+                            state = when (
+                                val result = runtime.createFriendInvite(
+                                    playStyle = friendPlayStyle,
+                                    codeLength = friendCodeLength,
+                                )
+                            ) {
                                 is OnlineClientResult.Success ->
                                     OnlineDuelUiState.WaitingForFriend(result.value)
                                 else -> inviteError(result)
@@ -316,6 +385,12 @@ internal fun OnlineDuelScreen(
                     color = InplaceXColors.Cobalt,
                 )
                 Text("Ожидаем второй телефон. Комната действует 10 минут.")
+                Text(
+                    "${current.invite.playStyle.displayName()} · " +
+                        "${current.invite.codeLength} цифр · без лимита ходов",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -388,17 +463,32 @@ internal fun OnlineDuelScreen(
                 SceneCard {
                     Text(
                         text = when (snapshot.phase) {
-                            "setup" -> "Задайте свой секретный код"
-                            "active" -> if (snapshot.currentTurn == "player") "Ваш ход" else "Ход друга"
-                            "finished" -> if (snapshot.winner == "player") "Вы победили!" else "Друг победил"
+                            "setup" -> if (snapshot.playerSecretConfigured) {
+                                "Ждём секрет друга"
+                            } else {
+                                "Задайте свой секретный код"
+                            }
+                            "active" -> if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
+                                "Гонка началась"
+                            } else if (snapshot.currentTurn == "player") {
+                                "Ваш ход"
+                            } else {
+                                "Ход друга"
+                            }
+                            "finished" -> when {
+                                snapshot.finishReason == "time_expired" -> "Время вышло"
+                                snapshot.winner == "player" -> "Вы победили!"
+                                snapshot.winner == "opponent" -> "Друг победил"
+                                else -> "Матч завершён"
+                            }
                             else -> "Матч"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        "Код: ${snapshot.codeLength} цифры · " +
-                            "попыток: ${snapshot.attempts.count { it.actor == "player" }}/${snapshot.attemptLimit}",
+                        "${snapshot.playStyle.displayName()} · ${snapshot.codeLength} цифр · " +
+                            "ходов: ${snapshot.attempts.count { it.actor == "player" }}",
                     )
                     snapshot.attempts.takeLast(8).forEach { attempt ->
                         Text(
@@ -412,10 +502,15 @@ internal fun OnlineDuelScreen(
                     }
                 }
 
-                if (snapshot.phase != "finished" && snapshot.currentTurn != "opponent") {
+                if (
+                    snapshot.phase != "finished" &&
+                    !snapshot.playerSecretConfigured &&
+                    snapshot.currentTurn != "opponent"
+                ) {
                     val inputValid =
                         digits.length == snapshot.codeLength &&
-                            (snapshot.allowDuplicates || digits.toSet().size == digits.length)
+                            digits.maximumConsecutiveRun() <=
+                            (snapshot.maxConsecutiveDuplicateDigits ?: snapshot.codeLength)
                     SceneCard {
                         OutlinedTextField(
                             value = digits,
@@ -427,12 +522,8 @@ internal fun OnlineDuelScreen(
                                 Text(if (snapshot.phase == "setup") "Ваш секрет" else "Ваша комбинация")
                             },
                             supportingText = {
-                                if (
-                                    digits.length == snapshot.codeLength &&
-                                    !snapshot.allowDuplicates &&
-                                    digits.toSet().size != digits.length
-                                ) {
-                                    Text("Цифры не должны повторяться")
+                                if (digits.maximumConsecutiveRun() > 3) {
+                                    Text("Нельзя вводить больше трёх одинаковых цифр подряд")
                                 }
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -469,7 +560,13 @@ internal fun OnlineDuelScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             CircularProgressIndicator()
-                            Text("Ожидаем ход друга…")
+                            Text(
+                                if (snapshot.phase == "setup") {
+                                    "Друг задаёт свой секрет…"
+                                } else {
+                                    "Ожидаем ход друга…"
+                                },
+                            )
                         }
                     }
                 }
@@ -496,9 +593,46 @@ private sealed interface OnlineDuelUiState {
     data class Error(val message: String) : OnlineDuelUiState
 }
 
+@Composable
+private fun FriendPlayStyleButton(
+    selected: Boolean,
+    text: String,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    if (selected) {
+        Button(modifier = modifier, onClick = onClick) {
+            Text(text)
+        }
+    } else {
+        OutlinedButton(modifier = modifier, onClick = onClick) {
+            Text(text)
+        }
+    }
+}
+
+private fun RemoteFriendPlayStyle.displayName(): String = when (this) {
+    RemoteFriendPlayStyle.RACE -> "Гонка"
+    RemoteFriendPlayStyle.TURN_BASED -> "Дуэль"
+}
+
+private fun String.maximumConsecutiveRun(): Int {
+    var maximum = 0
+    var current = 0
+    var previous: Char? = null
+    forEach { digit ->
+        current = if (digit == previous) current + 1 else 1
+        maximum = maxOf(maximum, current)
+        previous = digit
+    }
+    return maximum
+}
+
 private const val SynchronizationPollMillis = 750L
 private const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+private const val MinimumFriendCodeLength = 4
+private const val MaximumFriendCodeLength = 10
 
 internal fun normalizeFriendInviteCode(value: String): String =
     value

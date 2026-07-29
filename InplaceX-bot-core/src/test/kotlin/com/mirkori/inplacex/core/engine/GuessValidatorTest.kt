@@ -69,6 +69,18 @@ class GuessValidatorTest {
     }
 
     @Test
+    fun maximumConsecutiveRuleAllowsThreeButRejectsFourEqualDigits() {
+        val config = config(maxConsecutiveDuplicateDigits = 3)
+
+        assertNull(GuessValidator.validateOrReason("111234", config))
+        assertNull(GuessValidator.validateOrReason("112111", config))
+        assertEquals(
+            GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES,
+            GuessValidator.validateOrReason("111123", config),
+        )
+    }
+
+    @Test
     fun messageBridgePreservesExistingMessagesWithoutDrivingValidation() {
         val config = config(forbidAdjacentDuplicates = true)
 
@@ -134,6 +146,7 @@ class GuessValidatorTest {
         forbidAllSameDigitsGuess: Boolean = true,
         forbidAdjacentDuplicates: Boolean = false,
         forbidTripleDuplicates: Boolean = false,
+        maxConsecutiveDuplicateDigits: Int? = null,
     ): GameConfig {
         return GameConfig(
             codeLength = 6,
@@ -142,6 +155,7 @@ class GuessValidatorTest {
             forbidAllSameDigitsGuess = forbidAllSameDigitsGuess,
             forbidAdjacentDuplicates = forbidAdjacentDuplicates,
             forbidTripleDuplicates = forbidTripleDuplicates,
+            maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
         )
     }
 }

@@ -215,7 +215,11 @@ fun GameTopPanel(
                 label = strings.text("game.top.moves"),
                 value = moveValue(
                     movesDone = uiState.match.attempts.size,
-                    configuredLimit = uiState.route.configuredMoveLimit ?: parameters.attemptLimit,
+                    configuredLimit = if (uiState.route.movesUnlimited) {
+                        null
+                    } else {
+                        uiState.route.configuredMoveLimit ?: parameters.attemptLimit
+                    },
                     bonusMoves = uiState.counters.bonusMoves,
                 ),
                 modifier = Modifier.weight(1f),
@@ -905,6 +909,8 @@ internal fun feedbackText(
         GuessValidationReason.ALL_SAME_DIGITS -> text("game.validation.all_same_digits")
         GuessValidationReason.ADJACENT_DUPLICATES -> text("game.validation.adjacent_duplicates")
         GuessValidationReason.TRIPLE_DUPLICATES -> text("game.validation.triple_duplicates")
+        GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES ->
+            text("game.validation.too_many_consecutive_duplicates")
     }
 
     is MatchFeedback.ExtraMovesGranted -> text("game.status.moves_added")
@@ -966,8 +972,12 @@ private fun timerValue(elapsedSeconds: Int, limitSeconds: Int): String {
     return "%02d:%02d".format(shown / 60, shown % 60)
 }
 
-private fun moveValue(movesDone: Int, configuredLimit: Int, bonusMoves: Int): String =
-    if (configuredLimit > 0) "$movesDone/${configuredLimit + bonusMoves}" else movesDone.toString()
+private fun moveValue(movesDone: Int, configuredLimit: Int?, bonusMoves: Int): String =
+    if (configuredLimit != null && configuredLimit > 0) {
+        "$movesDone/${configuredLimit + bonusMoves}"
+    } else {
+        movesDone.toString()
+    }
 
 private fun formatDuration(seconds: Int): String =
     "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"

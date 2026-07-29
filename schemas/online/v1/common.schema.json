@@ -54,12 +54,23 @@
     "GameConfig": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode", "codeLength", "attemptLimit"],
+      "required": [
+        "mode",
+        "playStyle",
+        "codeLength",
+        "attemptLimit",
+        "allowDuplicates",
+        "maxConsecutiveDuplicateDigits"
+      ],
       "properties": {
         "mode": {
           "type": "string",
           "minLength": 1,
           "maxLength": 64
+        },
+        "playStyle": {
+          "type": "string",
+          "enum": ["race", "turn_based"]
         },
         "codeLength": {
           "type": "integer",
@@ -67,11 +78,30 @@
           "maximum": 20
         },
         "attemptLimit": {
-          "type": "integer",
-          "minimum": 1
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "allowDuplicates": {
           "type": "boolean"
+        },
+        "maxConsecutiveDuplicateDigits": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "turnTimeLimitSec": {
           "type": "integer",

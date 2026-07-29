@@ -3,6 +3,8 @@ package com.mirkori.inplacex.backend.online
 import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
 import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
+import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
+import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -66,13 +68,18 @@ fun Application.configureOnlineRoutes(
 
         post("/api/v1/friends/invites") {
             val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
-            val command = runCatching { codec.decodeTicket(call.receiveText()) }.getOrElse {
+            val command = runCatching { codec.decodeFriendInvite(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
             }
             if (!call.hasMatchingIdempotencyKey(command.commandId)) return@post
             val result = runOnlineCommand(call) {
-                service.createPrivateInvite(principal.playerId, command.commandId, command.mode)
+                service.createPrivateInvite(
+                    playerId = principal.playerId,
+                    commandId = command.commandId,
+                    playStyle = command.playStyle,
+                    codeLength = command.codeLength,
+                )
             } ?: return@post
             call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvite(result))
         }
@@ -205,6 +212,12 @@ private data class SessionCommand(
     val digits: String,
 )
 
+private data class FriendInviteCommand(
+    val commandId: String,
+    val playStyle: OnlineFriendPlayStyle,
+    val codeLength: Int,
+)
+
 private data class ReconnectCommand(
     val commandId: String,
 )
@@ -229,6 +242,22 @@ private class OnlineJsonCodec {
                 "pro_plus" -> OnlineMatchMode.PRO_PLUS
                 else -> throw IllegalArgumentException("unsupported mode")
             },
+        )
+    }
+
+    fun decodeFriendInvite(source: String): FriendInviteCommand {
+        val value = decodeObject(
+            source,
+            setOf("commandId", "playStyle", "codeLength"),
+        )
+        return FriendInviteCommand(
+            commandId = value.uuid("commandId"),
+            playStyle = when (value.string("playStyle", 16)) {
+                "race" -> OnlineFriendPlayStyle.RACE
+                "turn_based" -> OnlineFriendPlayStyle.TURN_BASED
+                else -> throw IllegalArgumentException("unsupported play style")
+            },
+            codeLength = value.intInRange("codeLength", 4..10),
         )
     }
 
@@ -281,6 +310,11 @@ private class OnlineJsonCodec {
         }
         put("createdAtEpochMs", invite.createdAt.toEpochMilli())
         put("expiresAtEpochMs", invite.expiresAt.toEpochMilli())
+        put("playStyle", invite.playStyle.name.lowercase())
+        put("codeLength", invite.codeLength)
+        put("allowDuplicates", invite.allowDuplicates)
+        put("maxConsecutiveDuplicateDigits", invite.maxConsecutiveDuplicateDigits)
+        put("matchDurationSeconds", invite.matchDurationSeconds)
     }.toString()
 
     fun encodeSnapshotFrame(snapshot: OnlineDuelSnapshot): String = buildJsonObject {
@@ -316,9 +350,35 @@ private class OnlineJsonCodec {
         } else {
             put("winner", snapshot.winner)
         }
+        if (snapshot.finishReason == null) {
+            put("finishReason", JsonNull)
+        } else {
+            put("finishReason", snapshot.finishReason)
+        }
+        put("playStyle", snapshot.playStyle)
         put("codeLength", snapshot.codeLength)
-        put("attemptLimit", snapshot.attemptLimit)
+        if (snapshot.attemptLimit == null) {
+            put("attemptLimit", JsonNull)
+        } else {
+            put("attemptLimit", snapshot.attemptLimit)
+        }
         put("allowDuplicates", snapshot.allowDuplicates)
+        if (snapshot.maxConsecutiveDuplicateDigits == null) {
+            put("maxConsecutiveDuplicateDigits", JsonNull)
+        } else {
+            put("maxConsecutiveDuplicateDigits", snapshot.maxConsecutiveDuplicateDigits)
+        }
+        if (snapshot.startedAtEpochMs == null) {
+            put("startedAtEpochMs", JsonNull)
+        } else {
+            put("startedAtEpochMs", snapshot.startedAtEpochMs)
+        }
+        if (snapshot.deadlineAtEpochMs == null) {
+            put("deadlineAtEpochMs", JsonNull)
+        } else {
+            put("deadlineAtEpochMs", snapshot.deadlineAtEpochMs)
+        }
+        put("serverTimeEpochMs", snapshot.serverTimeEpochMs)
         put("attempts", buildJsonArray {
             snapshot.attempts.forEach { attempt ->
                 add(buildJsonObject {
@@ -334,7 +394,11 @@ private class OnlineJsonCodec {
                     put("actor", participant.actor)
                     put("secretConfigured", participant.secretConfigured)
                     put("attemptsUsed", participant.attemptsUsed)
-                    put("attemptsLeft", participant.attemptsLeft)
+                    if (participant.attemptsLeft == null) {
+                        put("attemptsLeft", JsonNull)
+                    } else {
+                        put("attemptsLeft", participant.attemptsLeft)
+                    }
                 })
             }
         })
@@ -370,6 +434,14 @@ private class OnlineJsonCodec {
             ?.longOrNull
             ?.takeIf { it >= 0 }
             ?: throw IllegalArgumentException("$name must be non-negative")
+
+    private fun JsonObject.intInRange(name: String, range: IntRange): Int =
+        (this[name] as? JsonPrimitive)
+            ?.takeUnless(JsonPrimitive::isString)
+            ?.content
+            ?.toIntOrNull()
+            ?.takeIf(range::contains)
+            ?: throw IllegalArgumentException("$name is outside the allowed range")
 
     private companion object {
         const val MaximumOnlineBodyBytes = 16 * 1024
@@ -440,6 +512,21 @@ private suspend fun <T> runOnlineCommand(
         null
     } catch (_: OnlineInviteUnavailableException) {
         call.respondOnlineError(HttpStatusCode.Conflict, "invite_unavailable")
+        null
+    } catch (rejected: DuelCommandRejectedException) {
+        val (status, code) = when (rejected.rejection) {
+            DuelCommandRejection.INVALID_SECRET,
+            DuelCommandRejection.INVALID_GUESS,
+            -> HttpStatusCode.BadRequest to "invalid_guess"
+            DuelCommandRejection.NOT_CURRENT_TURN ->
+                HttpStatusCode.Conflict to "not_your_turn"
+            DuelCommandRejection.MATCH_FINISHED ->
+                HttpStatusCode.Conflict to "session_finished"
+            DuelCommandRejection.SECRET_NOT_EXPECTED,
+            DuelCommandRejection.MATCH_NOT_ACTIVE,
+            -> HttpStatusCode.Conflict to "invalid_state"
+        }
+        call.respondOnlineError(status, code)
         null
     } catch (_: IllegalArgumentException) {
         call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")

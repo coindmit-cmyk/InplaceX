@@ -20,6 +20,17 @@ enum class DuelPhase {
     FINISHED,
 }
 
+enum class DuelPlayStyle {
+    TURN_BASED,
+    RACE,
+}
+
+enum class DuelFinishReason {
+    SOLVED,
+    ATTEMPTS_EXHAUSTED,
+    TIME_EXPIRED,
+}
+
 enum class DuelCommandRejection {
     INVALID_SECRET,
     INVALID_GUESS,
@@ -49,7 +60,7 @@ data class DuelParticipantSnapshot(
     val participant: DuelParticipant,
     val secretConfigured: Boolean,
     val attemptsUsed: Int,
-    val attemptsLeft: Int,
+    val attemptsLeft: Int?,
 )
 
 /**
@@ -57,10 +68,13 @@ data class DuelParticipantSnapshot(
  */
 data class DuelSnapshot(
     val config: GameConfig,
+    val playStyle: DuelPlayStyle,
+    val attemptLimit: Int?,
     val phase: DuelPhase,
     val awaitingSecretFrom: DuelParticipant?,
     val currentTurn: DuelParticipant?,
     val winner: DuelParticipant?,
+    val finishReason: DuelFinishReason?,
     val attempts: List<DuelAttempt>,
     val participants: List<DuelParticipantSnapshot>,
 )
@@ -71,6 +85,8 @@ data class DuelSnapshot(
  */
 class DuelMatch private constructor(
     val config: GameConfig,
+    val playStyle: DuelPlayStyle,
+    val attemptLimit: Int?,
 ) : AutoCloseable {
     private val secrets = mutableMapOf<DuelParticipant, CharArray>()
     private val configuredParticipants = mutableSetOf<DuelParticipant>()
@@ -78,6 +94,7 @@ class DuelMatch private constructor(
     private var phase = DuelPhase.SETUP
     private var currentTurn: DuelParticipant? = null
     private var winner: DuelParticipant? = null
+    private var finishReason: DuelFinishReason? = null
     private var closed = false
 
     @Synchronized
@@ -108,7 +125,11 @@ class DuelMatch private constructor(
             configuredParticipants += participant
             if (configuredParticipants.size == DuelParticipant.entries.size) {
                 phase = DuelPhase.ACTIVE
-                currentTurn = DuelParticipant.FIRST
+                currentTurn = if (playStyle == DuelPlayStyle.TURN_BASED) {
+                    DuelParticipant.FIRST
+                } else {
+                    null
+                }
             }
             snapshot()
         } finally {
@@ -129,7 +150,7 @@ class DuelMatch private constructor(
             DuelPhase.FINISHED -> reject(DuelCommandRejection.MATCH_FINISHED)
             DuelPhase.ACTIVE -> Unit
         }
-        if (currentTurn != attacker) {
+        if (playStyle == DuelPlayStyle.TURN_BASED && currentTurn != attacker) {
             reject(DuelCommandRejection.NOT_CURRENT_TURN)
         }
 
@@ -149,11 +170,25 @@ class DuelMatch private constructor(
         )
 
         when {
-            exactMatches == config.codeLength -> finish(attacker)
-            attemptsFor(attacker) >= config.attemptLimit -> finish(attacker.opponent())
-            else -> currentTurn = attacker.opponent()
+            exactMatches == config.codeLength -> finish(attacker, DuelFinishReason.SOLVED)
+            attemptLimit != null && attemptsFor(attacker) >= attemptLimit ->
+                finish(attacker.opponent(), DuelFinishReason.ATTEMPTS_EXHAUSTED)
+            playStyle == DuelPlayStyle.TURN_BASED -> currentTurn = attacker.opponent()
         }
         snapshot()
+    }
+
+    @Synchronized
+    fun finishDueToTimeout(): DuelSnapshot {
+        ensureOpen()
+        if (phase == DuelPhase.ACTIVE) {
+            phase = DuelPhase.FINISHED
+            currentTurn = null
+            winner = null
+            finishReason = DuelFinishReason.TIME_EXPIRED
+            wipeSecrets()
+        }
+        return snapshot()
     }
 
     @Synchronized
@@ -162,10 +197,13 @@ class DuelMatch private constructor(
         return try {
             DuelSnapshot(
                 config = config,
+                playStyle = playStyle,
+                attemptLimit = attemptLimit,
                 phase = phase,
                 awaitingSecretFrom = if (phase == DuelPhase.SETUP) expectedSecretParticipant() else null,
                 currentTurn = currentTurn,
                 winner = winner,
+                finishReason = finishReason,
                 attempts = attempts.toList(),
                 participants = DuelParticipant.entries.map { participant ->
                     val attemptsUsed = attemptsFor(participant)
@@ -173,7 +211,7 @@ class DuelMatch private constructor(
                         participant = participant,
                         secretConfigured = participant in configuredParticipants,
                         attemptsUsed = attemptsUsed,
-                        attemptsLeft = (config.attemptLimit - attemptsUsed).coerceAtLeast(0),
+                        attemptsLeft = attemptLimit?.let { (it - attemptsUsed).coerceAtLeast(0) },
                     )
                 },
             )
@@ -201,10 +239,14 @@ class DuelMatch private constructor(
 
     private fun attemptsFor(participant: DuelParticipant): Int = attempts.count { it.attacker == participant }
 
-    private fun finish(winningParticipant: DuelParticipant) {
+    private fun finish(
+        winningParticipant: DuelParticipant,
+        reason: DuelFinishReason,
+    ) {
         phase = DuelPhase.FINISHED
         currentTurn = null
         winner = winningParticipant
+        finishReason = reason
         wipeSecrets()
     }
 
@@ -248,7 +290,16 @@ class DuelMatch private constructor(
     ): Nothing = throw DuelCommandRejectedException(rejection, validationReason)
 
     companion object {
-        fun create(config: GameConfig): DuelMatch = DuelMatch(config)
+        fun create(
+            config: GameConfig,
+            playStyle: DuelPlayStyle = DuelPlayStyle.TURN_BASED,
+            attemptLimit: Int? = config.attemptLimit,
+        ): DuelMatch {
+            require(attemptLimit == null || attemptLimit > 0) {
+                "attemptLimit must be null or positive"
+            }
+            return DuelMatch(config, playStyle, attemptLimit)
+        }
     }
 }
 

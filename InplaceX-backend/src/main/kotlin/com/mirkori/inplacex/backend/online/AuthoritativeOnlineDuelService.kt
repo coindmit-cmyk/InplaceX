@@ -6,6 +6,7 @@ import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
 import com.mirkori.inplacex.backend.domain.duel.DuelMatch
 import com.mirkori.inplacex.backend.domain.duel.DuelParticipant
 import com.mirkori.inplacex.backend.domain.duel.DuelPhase
+import com.mirkori.inplacex.backend.domain.duel.DuelPlayStyle
 import com.mirkori.inplacex.backend.domain.duel.DuelSnapshot
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
@@ -36,6 +37,11 @@ enum class PrivateInviteStatus {
     EXPIRED,
 }
 
+enum class OnlineFriendPlayStyle {
+    RACE,
+    TURN_BASED,
+}
+
 data class MatchmakingTicket(
     val ticketId: String,
     val ownerPlayerId: String,
@@ -51,6 +57,11 @@ data class PrivateDuelInvite(
     val sessionId: String?,
     val createdAt: Instant,
     val expiresAt: Instant,
+    val playStyle: OnlineFriendPlayStyle,
+    val codeLength: Int,
+    val allowDuplicates: Boolean,
+    val maxConsecutiveDuplicateDigits: Int,
+    val matchDurationSeconds: Long,
 )
 
 data class OnlineDuelAttempt(
@@ -63,7 +74,7 @@ data class OnlineDuelParticipant(
     val actor: String,
     val secretConfigured: Boolean,
     val attemptsUsed: Int,
-    val attemptsLeft: Int,
+    val attemptsLeft: Int?,
 )
 
 data class OnlineDuelSnapshot(
@@ -72,9 +83,15 @@ data class OnlineDuelSnapshot(
     val phase: String,
     val currentTurn: String?,
     val winner: String?,
+    val finishReason: String?,
+    val playStyle: String,
     val codeLength: Int,
-    val attemptLimit: Int,
+    val attemptLimit: Int?,
     val allowDuplicates: Boolean,
+    val maxConsecutiveDuplicateDigits: Int?,
+    val startedAtEpochMs: Long?,
+    val deadlineAtEpochMs: Long?,
+    val serverTimeEpochMs: Long,
     val attempts: List<OnlineDuelAttempt>,
     val participants: List<OnlineDuelParticipant>,
 )
@@ -97,6 +114,7 @@ class AuthoritativeOnlineDuelService(
     private val clock: Clock = Clock.systemUTC(),
     private val botFallbackDelay: Duration = Duration.ofSeconds(5),
     private val privateInviteLifetime: Duration = Duration.ofMinutes(10),
+    private val privateMatchDuration: Duration = Duration.ofMinutes(10),
     private val secureRandom: SecureRandom = SecureRandom(),
 ) : AutoCloseable {
     private val lock = Any()
@@ -113,6 +131,9 @@ class AuthoritativeOnlineDuelService(
         }
         require(!privateInviteLifetime.isNegative && !privateInviteLifetime.isZero) {
             "privateInviteLifetime must be positive"
+        }
+        require(!privateMatchDuration.isNegative && !privateMatchDuration.isZero) {
+            "privateMatchDuration must be positive"
         }
     }
 
@@ -188,14 +209,20 @@ class AuthoritativeOnlineDuelService(
     fun createPrivateInvite(
         playerId: String,
         commandId: String,
-        mode: OnlineMatchMode,
+        playStyle: OnlineFriendPlayStyle,
+        codeLength: Int,
     ): PrivateDuelInvite {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(commandId, "commandId")
+        require(codeLength in FriendCodeLengthRange) {
+            "codeLength must be in $FriendCodeLengthRange"
+        }
         synchronized(lock) {
             val replayKey = "$playerId:$commandId"
             privateInviteCreateReplays[replayKey]?.let { replay ->
-                if (replay.mode != mode) throw OnlineCommandIdReusedException()
+                if (replay.playStyle != playStyle || replay.codeLength != codeLength) {
+                    throw OnlineCommandIdReusedException()
+                }
                 return privateInvites.getValue(replay.inviteCode).invite
             }
             expirePrivateInvites(clock.instant())
@@ -207,13 +234,21 @@ class AuthoritativeOnlineDuelService(
                 sessionId = null,
                 createdAt = createdAt,
                 expiresAt = createdAt.plus(privateInviteLifetime),
+                playStyle = playStyle,
+                codeLength = codeLength,
+                allowDuplicates = true,
+                maxConsecutiveDuplicateDigits = FriendMaximumConsecutiveDuplicateDigits,
+                matchDurationSeconds = privateMatchDuration.seconds,
             )
             privateInvites[inviteCode] = PrivateInviteRecord(
-                mode = mode,
                 ownerPlayerId = playerId,
                 invite = invite,
             )
-            privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(mode, inviteCode)
+            privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(
+                playStyle,
+                codeLength,
+                inviteCode,
+            )
             return invite
         }
     }
@@ -255,7 +290,10 @@ class AuthoritativeOnlineDuelService(
                 throw OnlineInviteUnavailableException()
             }
             val session = createHumanSession(
-                mode = record.mode,
+                config = record.invite.friendGameConfig(),
+                playStyle = record.invite.playStyle.toDomainPlayStyle(),
+                attemptLimit = null,
+                matchDuration = privateMatchDuration,
                 firstPlayerId = record.ownerPlayerId,
                 secondPlayerId = playerId,
             )
@@ -353,6 +391,8 @@ class AuthoritativeOnlineDuelService(
             match = DuelMatch.create(config),
             memberships = mapOf(playerId to DuelParticipant.FIRST),
             bot = bot,
+            clock = clock,
+            matchDuration = null,
         ).also { sessions[sessionId] = it }
     }
 
@@ -360,16 +400,34 @@ class AuthoritativeOnlineDuelService(
         mode: OnlineMatchMode,
         firstPlayerId: String,
         secondPlayerId: String,
+    ): SessionRecord = createHumanSession(
+        config = mode.gameConfig(),
+        playStyle = DuelPlayStyle.TURN_BASED,
+        attemptLimit = mode.gameConfig().attemptLimit,
+        matchDuration = null,
+        firstPlayerId = firstPlayerId,
+        secondPlayerId = secondPlayerId,
+    )
+
+    private fun createHumanSession(
+        config: GameConfig,
+        playStyle: DuelPlayStyle,
+        attemptLimit: Int?,
+        matchDuration: Duration?,
+        firstPlayerId: String,
+        secondPlayerId: String,
     ): SessionRecord {
         val sessionId = UUID.randomUUID().toString()
         return SessionRecord(
             sessionId = sessionId,
-            match = DuelMatch.create(mode.gameConfig()),
+            match = DuelMatch.create(config, playStyle, attemptLimit),
             memberships = mapOf(
                 firstPlayerId to DuelParticipant.FIRST,
                 secondPlayerId to DuelParticipant.SECOND,
             ),
             bot = null,
+            clock = clock,
+            matchDuration = matchDuration,
         ).also { sessions[sessionId] = it }
     }
 
@@ -406,7 +464,8 @@ class AuthoritativeOnlineDuelService(
     )
 
     private data class PrivateInviteCreateReplay(
-        val mode: OnlineMatchMode,
+        val playStyle: OnlineFriendPlayStyle,
+        val codeLength: Int,
         val inviteCode: String,
     )
 
@@ -415,7 +474,6 @@ class AuthoritativeOnlineDuelService(
     )
 
     private data class PrivateInviteRecord(
-        val mode: OnlineMatchMode,
         val ownerPlayerId: String,
         var guestPlayerId: String? = null,
         var invite: PrivateDuelInvite,
@@ -426,10 +484,14 @@ class AuthoritativeOnlineDuelService(
         val match: DuelMatch,
         private val memberships: Map<String, DuelParticipant>,
         private val bot: ServerBotPlayer?,
+        private val clock: Clock,
+        private val matchDuration: Duration?,
     ) : AutoCloseable {
         private var revision: Long = 0
         private val commandReplays = mutableMapOf<String, CommandReplay>()
         private val pendingSecrets = mutableMapOf<DuelParticipant, CharArray>()
+        private var startedAt: Instant? = null
+        private var deadlineAt: Instant? = null
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
 
@@ -444,6 +506,7 @@ class AuthoritativeOnlineDuelService(
             commandId = commandId,
             expectedRevision = expectedRevision,
             fingerprint = fingerprint("secret", secret),
+            allowStaleRevision = false,
         ) { participant ->
             if (match.snapshot().phase != DuelPhase.SETUP || participant in pendingSecrets) {
                 throw DuelCommandRejectedException(DuelCommandRejection.SECRET_NOT_EXPECTED)
@@ -466,6 +529,7 @@ class AuthoritativeOnlineDuelService(
                 configureSecret(DuelParticipant.FIRST, pendingSecrets.remove(DuelParticipant.FIRST)!!)
                 configureSecret(DuelParticipant.SECOND, pendingSecrets.remove(DuelParticipant.SECOND)!!)
             }
+            startClockIfActive()
             revision += 1
             snapshotFor(playerId)
         }
@@ -481,6 +545,7 @@ class AuthoritativeOnlineDuelService(
             commandId = commandId,
             expectedRevision = expectedRevision,
             fingerprint = fingerprint("guess", guess),
+            allowStaleRevision = match.playStyle == DuelPlayStyle.RACE,
         ) { participant ->
             val afterPlayer = match.submitGuess(
                 participant,
@@ -502,12 +567,16 @@ class AuthoritativeOnlineDuelService(
 
         @Synchronized
         fun snapshotFor(playerId: String): OnlineDuelSnapshot {
+            expireIfNeeded()
             val viewer = memberships[playerId] ?: throw OnlineMembershipRejectedException()
             return match.snapshot().toOnlineSnapshot(
                 sessionId = sessionId,
                 revision = revision,
                 viewer = viewer,
                 pendingSecrets = pendingSecrets.keys,
+                startedAt = startedAt,
+                deadlineAt = deadlineAt,
+                serverTime = clock.instant(),
             )
         }
 
@@ -516,16 +585,23 @@ class AuthoritativeOnlineDuelService(
             commandId: String,
             expectedRevision: Long,
             fingerprint: String,
+            allowStaleRevision: Boolean,
             operation: SessionRecord.(DuelParticipant) -> OnlineDuelSnapshot,
         ): OnlineDuelSnapshot {
             requireCanonicalUuid(commandId, "commandId")
             val participant = memberships[playerId] ?: throw OnlineMembershipRejectedException()
+            expireIfNeeded()
             val replayKey = "$playerId:$commandId"
             commandReplays[replayKey]?.let { replay ->
                 if (replay.fingerprint != fingerprint) throw OnlineCommandIdReusedException()
                 return replay.snapshot
             }
-            if (expectedRevision != revision) throw OnlineRevisionConflictException(snapshotFor(playerId))
+            val revisionAccepted = if (allowStaleRevision) {
+                expectedRevision <= revision
+            } else {
+                expectedRevision == revision
+            }
+            if (!revisionAccepted) throw OnlineRevisionConflictException(snapshotFor(playerId))
             val result = operation(participant)
             commandReplays[replayKey] = CommandReplay(fingerprint, result)
             return result
@@ -536,6 +612,24 @@ class AuthoritativeOnlineDuelService(
                 match.setSecret(participant, MutableDuelCommand.secret(secret))
             } finally {
                 secret.fill(CLEARED_DIGIT)
+            }
+        }
+
+        private fun startClockIfActive() {
+            if (startedAt != null || match.snapshot().phase != DuelPhase.ACTIVE) return
+            val started = clock.instant()
+            startedAt = started
+            deadlineAt = matchDuration?.let(started::plus)
+        }
+
+        private fun expireIfNeeded() {
+            val deadline = deadlineAt ?: return
+            if (
+                match.snapshot().phase == DuelPhase.ACTIVE &&
+                !clock.instant().isBefore(deadline)
+            ) {
+                match.finishDueToTimeout()
+                revision += 1
             }
         }
 
@@ -565,6 +659,9 @@ private fun DuelSnapshot.toOnlineSnapshot(
     revision: Long,
     viewer: DuelParticipant,
     pendingSecrets: Set<DuelParticipant>,
+    startedAt: Instant?,
+    deadlineAt: Instant?,
+    serverTime: Instant,
 ): OnlineDuelSnapshot =
     OnlineDuelSnapshot(
         sessionId = sessionId,
@@ -572,9 +669,15 @@ private fun DuelSnapshot.toOnlineSnapshot(
         phase = phase.name.lowercase(),
         currentTurn = currentTurn?.publicActorFor(viewer),
         winner = winner?.publicActorFor(viewer),
+        finishReason = finishReason?.name?.lowercase(),
+        playStyle = playStyle.name.lowercase(),
         codeLength = config.codeLength,
-        attemptLimit = config.attemptLimit,
+        attemptLimit = attemptLimit,
         allowDuplicates = config.allowDuplicates,
+        maxConsecutiveDuplicateDigits = config.maxConsecutiveDuplicateDigits,
+        startedAtEpochMs = startedAt?.toEpochMilli(),
+        deadlineAtEpochMs = deadlineAt?.toEpochMilli(),
+        serverTimeEpochMs = serverTime.toEpochMilli(),
         attempts = attempts.map { attempt ->
             OnlineDuelAttempt(
                 actor = attempt.attacker.publicActorFor(viewer),
@@ -621,6 +724,18 @@ private fun OnlineMatchMode.botDifficulty(): BotDifficulty = when (this) {
     OnlineMatchMode.PRO_PLUS -> BotDifficulty.EXPERT
 }
 
+private fun PrivateDuelInvite.friendGameConfig(): GameConfig = GameConfig(
+    codeLength = codeLength,
+    allowDuplicates = allowDuplicates,
+    attemptLimit = FriendInternalAttemptCapacity,
+    maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
+)
+
+private fun OnlineFriendPlayStyle.toDomainPlayStyle(): DuelPlayStyle = when (this) {
+    OnlineFriendPlayStyle.RACE -> DuelPlayStyle.RACE
+    OnlineFriendPlayStyle.TURN_BASED -> DuelPlayStyle.TURN_BASED
+}
+
 private fun fingerprint(type: String, payload: String): String =
     MessageDigest.getInstance("SHA-256")
         .digest("$type:$payload".toByteArray(Charsets.UTF_8))
@@ -642,3 +757,6 @@ private const val CLEARED_DIGIT: Char = '\u0000'
 private const val PrivateInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val PrivateInviteCodeLength = 8
 private const val MaximumInviteCodeAttempts = 32
+private val FriendCodeLengthRange = 4..10
+private const val FriendMaximumConsecutiveDuplicateDigits = 3
+private const val FriendInternalAttemptCapacity = 1_000

@@ -29,8 +29,11 @@ Online interfaces bind to the versioned transport-neutral contracts in
   revision, event cursor, reconnect result, and typed command errors.
 - `MatchmakingStub` creates, reads, and cancels idempotent tickets; a matched
   ticket yields a server-owned session id.
-- Friend invite operations create a bounded private code, allow one different
-  authenticated player to accept it, and yield one server-owned human session.
+- Friend invite operations take an owner-selected `race` or `turn_based`
+  style and a 4..10 digit secret length, create a bounded private code, allow
+  one different authenticated player to accept it, and yield one server-owned
+  human session. Private sessions allow repeated digits with a maximum run of
+  three, have no move limit, and use an authoritative server deadline.
 - `TransportBoundary` maps REST and authenticated WebSocket frames to the same
   command, snapshot, and event types. It owns retry, token refresh, reconnect,
   and backpressure handling, not game rules.

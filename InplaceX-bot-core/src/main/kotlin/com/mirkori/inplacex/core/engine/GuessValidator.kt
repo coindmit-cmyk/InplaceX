@@ -9,6 +9,7 @@ enum class GuessValidationReason {
     ALL_SAME_DIGITS,
     ADJACENT_DUPLICATES,
     TRIPLE_DUPLICATES,
+    TOO_MANY_CONSECUTIVE_DUPLICATES,
 }
 
 object GuessValidator {
@@ -42,6 +43,8 @@ object GuessValidator {
         var distinctDigits = 0
         var hasAdjacentDuplicates = false
         var hasTripleDuplicates = false
+        var consecutiveDuplicateCount = 1
+        var maximumConsecutiveDuplicateCount = 1
 
         for (index in 0 until length) {
             val digit = digitAt(index)
@@ -57,6 +60,13 @@ object GuessValidator {
 
             if (index > 0 && digitAt(index - 1) == digit) {
                 hasAdjacentDuplicates = true
+                consecutiveDuplicateCount += 1
+                maximumConsecutiveDuplicateCount = maxOf(
+                    maximumConsecutiveDuplicateCount,
+                    consecutiveDuplicateCount,
+                )
+            } else {
+                consecutiveDuplicateCount = 1
             }
             if (
                 index > 1 &&
@@ -83,6 +93,14 @@ object GuessValidator {
             return GuessValidationReason.TRIPLE_DUPLICATES
         }
 
+        if (
+            config.maxConsecutiveDuplicateDigits?.let {
+                maximumConsecutiveDuplicateCount > it
+            } == true
+        ) {
+            return GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES
+        }
+
         return null
     }
 
@@ -99,6 +117,8 @@ object GuessValidator {
             GuessValidationReason.ALL_SAME_DIGITS -> "All digits cannot be the same"
             GuessValidationReason.ADJACENT_DUPLICATES -> "Adjacent duplicates are forbidden"
             GuessValidationReason.TRIPLE_DUPLICATES -> "Triple duplicates are forbidden"
+            GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES ->
+                "Too many identical digits in a row"
         }
     }
 }

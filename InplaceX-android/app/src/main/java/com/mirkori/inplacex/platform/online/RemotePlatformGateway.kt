@@ -21,6 +21,11 @@ enum class RemoteMatchmakingMode {
     PRO_PLUS,
 }
 
+enum class RemoteFriendPlayStyle {
+    RACE,
+    TURN_BASED,
+}
+
 data class RemoteRequestSpec(
     val operation: String = DefaultOperation,
     val method: RemoteHttpMethod,
@@ -166,7 +171,8 @@ data class RemoteSubmitSecretPayload(
 
 data class RemoteFriendInvitePayload(
     val commandId: String,
-    val mode: RemoteMatchmakingMode,
+    val playStyle: RemoteFriendPlayStyle,
+    val codeLength: Int,
 )
 
 data class RemoteSubmitGuessPayload(
@@ -399,13 +405,15 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
         idempotencyKey: String,
     ): RemoteRequestSpec {
         requireSafeUuid(payload.commandId, "commandId")
+        require(payload.codeLength in 4..10) { "friend code length must be in 4..10" }
         return RemoteRequestSpec(
             operation = "friends.invite.create",
             method = RemoteHttpMethod.POST,
             path = "/api/v1/friends/invites",
             bodyJson = jsonObject(
                 "commandId" to JsonPrimitive(payload.commandId),
-                "mode" to JsonPrimitive(payload.mode.name.lowercase()),
+                "playStyle" to JsonPrimitive(payload.playStyle.name.lowercase()),
+                "codeLength" to JsonPrimitive(payload.codeLength),
             ),
             idempotencyKey = idempotencyKey,
         )
