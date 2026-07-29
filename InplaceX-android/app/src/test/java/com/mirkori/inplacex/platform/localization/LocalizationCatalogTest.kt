@@ -79,5 +79,13 @@ class LocalizationCatalogTest {
             "Play level {value} — 1 energy",
             StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("company.action.play"),
         )
+        assertEquals(
+            "На время",
+            StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("social.match.timed"),
+        )
+        assertEquals(
+            "Turn by turn",
+            StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("social.match.turn_based"),
+        )
     }
 }

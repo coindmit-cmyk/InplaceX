@@ -108,13 +108,13 @@ internal fun OnlineDuelGameField(
                 snapshot.currentTurn == PLAYER_ACTOR
             ) && !submitting,
         modeLabel = if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
-            "Онлайн-гонка"
+            strings.text("social.match.timed.field_title")
         } else {
-            strings.text("social.duel.online_title")
+            strings.text("social.match.turn_based.field_title")
         },
         turnLabel = when {
             snapshot.playStyle == RemoteFriendPlayStyle.RACE ->
-                "Оба игрока разгадывают одновременно"
+                strings.text("social.match.timed.turn_status")
             snapshot.currentTurn == PLAYER_ACTOR -> strings.text("social.duel.your_turn")
             else -> strings.text("social.duel.opponent_turn")
         },

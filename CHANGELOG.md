@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Renamed the private online room choices to the player-facing formats
+  `На время` and `По очереди`, added concise rule explanations in Russian and
+  English, and kept the stable `race`/`turn_based` server contract unchanged.
 - Rebased campaign move budgets on the expert solver target plus a
   tier-and-role reserve: easy standard levels now have a generous margin,
   level 10 remains a stricter checkpoint, and hard/hardcore levels keep only

@@ -118,7 +118,15 @@ class ShellSectionsSmokeTest {
 
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
             composeRule.onNodeWithText("Друзья").performClick()
-            composeRule.onNodeWithText("Онлайн-дуэль").assertIsDisplayed()
+            composeRule.onNodeWithText("Онлайн-матч").assertIsDisplayed()
+            composeRule.onNodeWithText("На время").assertIsDisplayed()
+            composeRule.onNodeWithText(
+                "Оба игрока разгадывают одновременно. Побеждает тот, кто первым найдёт код.",
+            ).assertIsDisplayed()
+            composeRule.onNodeWithText("По очереди").performClick()
+            composeRule.onNodeWithText(
+                "Игроки делают по одному ходу. После принятого хода очередь переходит сопернику.",
+            ).assertIsDisplayed()
             composeRule.onNodeWithText("Создать код").assertIsDisplayed()
             composeRule.onNodeWithText("Войти по коду").assertIsDisplayed()
         } finally {

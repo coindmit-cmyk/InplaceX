@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
@@ -234,7 +235,7 @@ internal fun OnlineDuelScreen(
             contentColor = androidx.compose.ui.graphics.Color.White,
         ) {
             Text(
-                text = "Онлайн-дуэль",
+                text = strings.text("social.match.title"),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -260,20 +261,23 @@ internal fun OnlineDuelScreen(
                 }
 
                 Text("Играть с другом", fontWeight = FontWeight.SemiBold)
-                Text("Режим комнаты", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    strings.text("social.match.format"),
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     FriendPlayStyleButton(
                         selected = friendPlayStyle == RemoteFriendPlayStyle.RACE,
-                        text = "Гонка",
+                        text = strings.text("social.match.timed"),
                         modifier = Modifier.weight(1f),
                         onClick = { friendPlayStyleName = RemoteFriendPlayStyle.RACE.name },
                     )
                     FriendPlayStyleButton(
                         selected = friendPlayStyle == RemoteFriendPlayStyle.TURN_BASED,
-                        text = "Дуэль",
+                        text = strings.text("social.match.turn_based"),
                         modifier = Modifier.weight(1f),
                         onClick = {
                             friendPlayStyleName = RemoteFriendPlayStyle.TURN_BASED.name
@@ -282,9 +286,9 @@ internal fun OnlineDuelScreen(
                 }
                 Text(
                     if (friendPlayStyle == RemoteFriendPlayStyle.RACE) {
-                        "Оба разгадывают одновременно. Побеждает первый."
+                        strings.text("social.match.timed.description")
                     } else {
-                        "Игроки делают по одному ходу по очереди."
+                        strings.text("social.match.turn_based.description")
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -386,7 +390,7 @@ internal fun OnlineDuelScreen(
                 )
                 Text("Ожидаем второй телефон. Комната действует 10 минут.")
                 Text(
-                    "${current.invite.playStyle.displayName()} · " +
+                    "${current.invite.playStyle.displayName(strings)} · " +
                         "${current.invite.codeLength} цифр · без лимита ходов",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -469,7 +473,7 @@ internal fun OnlineDuelScreen(
                                 "Задайте свой секретный код"
                             }
                             "active" -> if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
-                                "Гонка началась"
+                                strings.text("social.match.timed.started")
                             } else if (snapshot.currentTurn == "player") {
                                 "Ваш ход"
                             } else {
@@ -487,7 +491,7 @@ internal fun OnlineDuelScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        "${snapshot.playStyle.displayName()} · ${snapshot.codeLength} цифр · " +
+                        "${snapshot.playStyle.displayName(strings)} · ${snapshot.codeLength} цифр · " +
                             "ходов: ${snapshot.attempts.count { it.actor == "player" }}",
                     )
                     snapshot.attempts.takeLast(8).forEach { attempt ->
@@ -611,9 +615,9 @@ private fun FriendPlayStyleButton(
     }
 }
 
-private fun RemoteFriendPlayStyle.displayName(): String = when (this) {
-    RemoteFriendPlayStyle.RACE -> "Гонка"
-    RemoteFriendPlayStyle.TURN_BASED -> "Дуэль"
+private fun RemoteFriendPlayStyle.displayName(strings: LocalizationProvider): String = when (this) {
+    RemoteFriendPlayStyle.RACE -> strings.text("social.match.timed")
+    RemoteFriendPlayStyle.TURN_BASED -> strings.text("social.match.turn_based")
 }
 
 private fun String.maximumConsecutiveRun(): Int {
