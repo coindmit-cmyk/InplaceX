@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T00:30:42Z",
+  "created_at": "2026-07-29T14:40:33Z",
   "project": "inplacex",
   "project_root_name": "inplacex",
   "base_branch": "origin/develop",
-  "base_sha": "20e5440f95cb38585f9d0cceaa9aec5463ff59a4",
+  "base_sha": "4a7993cd6aff826e254fc7d6c4cf60838c6306ee",
   "source_files": {
     "preflight": "AiStudio/Task_manager/integrator_preflight.json",
     "readiness": "AiStudio/Task_manager/pr_readiness_report.json",
@@ -12,15 +12,17 @@
     "pre_integrator_repair": "AiStudio/Task_manager/pre_integrator_repair.json"
   },
   "summary": {
-    "preflight_candidate_count": 5,
+    "preflight_candidate_count": 6,
     "readiness_counts": {
       "needs_integrator_review": 2,
-      "ready_candidate": 3
+      "ready_candidate": 3,
+      "coordination_only": 1
     },
     "batch_included_count": 3,
-    "batch_excluded_count": 2,
+    "batch_excluded_count": 3,
     "excluded_route_counts": {
-      "deferred_next_batch": 2
+      "deferred_next_batch": 2,
+      "excluded_from_package": 1
     },
     "handoff_ready": true,
     "dirty_worktree": true
@@ -39,7 +41,7 @@
       "reason": "high-risk paths require owner/strong review",
       "next_owner": "auto-integrator",
       "ahead_of_base": 1,
-      "behind_base": 319,
+      "behind_base": 330,
       "check_state": "unknown",
       "changed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapter.kt",
@@ -87,7 +89,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "next_owner": "integration_batch_builder",
       "ahead_of_base": 1,
-      "behind_base": 356,
+      "behind_base": 367,
       "check_state": "passed",
       "changed_paths": [
         ".github/workflows/ci.yml",
@@ -135,10 +137,51 @@
         "product_conflicts=1"
       ],
       "warnings": [
-        "behind base by 356; Integrator should update/rebase before final handoff",
+        "behind base by 367; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
+    },
+    {
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "pr": 4,
+      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "task_ids": [
+        "REPO-PR-4"
+      ],
+      "classification": "coordination_only",
+      "risk_class": "medium",
+      "reason": "coordination-only candidate; central sync state is authoritative",
+      "next_owner": "auto-integrator",
+      "ahead_of_base": 1,
+      "behind_base": 371,
+      "check_state": "passed",
+      "changed_paths": [],
+      "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json"
+      ],
+      "evidence": [],
+      "warnings": []
     },
     {
       "branch": "origin/feature/backend-auth-boundary-v1",
@@ -153,7 +196,7 @@
       "reason": "high-risk paths require owner/strong review",
       "next_owner": "auto-integrator",
       "ahead_of_base": 1,
-      "behind_base": 342,
+      "behind_base": 353,
       "check_state": "passed",
       "changed_paths": [
         "CHANGELOG.md",
@@ -203,7 +246,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "next_owner": "integration_batch_builder",
       "ahead_of_base": 1,
-      "behind_base": 342,
+      "behind_base": 353,
       "check_state": "passed",
       "changed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
@@ -234,7 +277,7 @@
       ],
       "evidence": [],
       "warnings": [
-        "behind base by 342; Integrator should update/rebase before final handoff",
+        "behind base by 353; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target"
       ]
     },
@@ -251,7 +294,7 @@
       "reason": "traceable candidate with no blocking product overlap",
       "next_owner": "integration_batch_builder",
       "ahead_of_base": 6,
-      "behind_base": 377,
+      "behind_base": 388,
       "check_state": "passed",
       "changed_paths": [
         "CHANGELOG.md",
@@ -301,14 +344,14 @@
         "product_conflicts=2"
       ],
       "warnings": [
-        "behind base by 377; Integrator should update/rebase before final handoff",
+        "behind base by 388; Integrator should update/rebase before final handoff",
         "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
         "product path overlaps another candidate; batch builder must isolate by module/path"
       ]
     }
   ],
   "batch": {
-    "batch_id": "BATCH-20260728-153151",
+    "batch_id": "BATCH-20260729-003051",
     "included": [
       {
         "branch": "origin/feature/online-foundation-v1",
@@ -426,6 +469,19 @@
         "migration_sensitive": null,
         "migration_compatibility_policy": null,
         "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "excluded_from_package",
+        "reason": "classification coordination_only is not batch-ready",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
       }
     ]
   },
@@ -465,31 +521,37 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 319
+      "behind_base": 330
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 356
+      "behind_base": 367
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "behind_base": 371
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 342
+      "behind_base": 353
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 342
+      "behind_base": 353
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/toy-room-ui-v5",
-      "behind_base": 377
+      "behind_base": 388
     },
     {
       "code": "changed_path_overlap",
@@ -546,7 +608,7 @@
       "edit handoff"
     ]
   },
-  "source_context_hash": "f821fe4ccec3afb069d8a6bd1fe9ce89bfa9043e2fc8b1c7b981e0105a35c888",
+  "source_context_hash": "2bc9c0efc464bb72b8e54ef45ff1bb0386d31b8be7ca1c67b996b7ff465bb137",
   "redaction": {
     "redaction_count": 0,
     "stats": {

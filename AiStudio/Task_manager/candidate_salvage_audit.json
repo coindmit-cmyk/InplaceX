@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T00:30:51Z",
+  "created_at": "2026-07-29T14:40:42Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
-  "candidate_count": 6,
+  "candidate_count": 5,
   "counts": {
-    "needs_clean_rebuild": 5,
+    "needs_clean_rebuild": 4,
     "cleanup_candidate": 1
   },
   "next_owner_counts": {
-    "auto-dispatcher": 5,
+    "auto-dispatcher": 4,
     "cleanup": 1
   },
   "items": [
@@ -44,21 +44,21 @@
         "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
       ],
       "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
+        ".agent/agent_version.json",
         "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
         "AiStudio/Task_manager/agent_activity_state.json",
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
         "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/candidate_salvage_audit.json",
         "AiStudio/Task_manager/clean_rebuild_plan.json",
-        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
-        "AiStudio/Task_manager/integration_batch.json"
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json"
       ],
       "product_path_count": 4,
-      "current_product_path_count": 16,
+      "current_product_path_count": 149,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -73,7 +73,7 @@
       "identity_issues": [],
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "ahead_of_base": 1,
-      "behind_base": 330,
+      "behind_base": 526,
       "path_source": "merge_base_to_head"
     },
     {
@@ -128,7 +128,7 @@
         "scripts/ci/contract_mutations/fail_emulator_noop.yml"
       ],
       "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
+        ".agent/agent_version.json",
         ".github/workflows/ci.yml",
         "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
@@ -142,7 +142,7 @@
         "AiStudio/Task_manager/agent_events.jsonl"
       ],
       "product_path_count": 17,
-      "current_product_path_count": 37,
+      "current_product_path_count": 170,
       "coordination_or_noise_path_count": 2,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -165,7 +165,7 @@
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 367,
+      "behind_base": 563,
       "path_source": "merge_base_to_head"
     },
     {
@@ -173,7 +173,7 @@
       "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "classification": "cleanup_candidate",
       "next_owner": "cleanup",
-      "reason": "identity-valid readiness classified the branch as coordination-only",
+      "reason": "no product payload after filtering coordination/noisy paths",
       "task_ids": [
         "REPO-PR-4"
       ],
@@ -190,7 +190,7 @@
         "scripts/agent_control/test_capability_preservation_check.py"
       ],
       "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
+        ".agent/agent_version.json",
         "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
@@ -204,17 +204,17 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 0,
-      "current_product_path_count": 0,
+      "current_product_path_count": 158,
       "coordination_or_noise_path_count": 4,
       "noisy_path_count": 0,
       "product_paths_sample": [],
       "noisy_paths_sample": [],
-      "source_classification": "coordination_only",
+      "source_classification": "ready_candidate",
       "identity_valid": true,
       "identity_issues": [],
       "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
       "ahead_of_base": 1,
-      "behind_base": 371,
+      "behind_base": 567,
       "path_source": "merge_base_to_head"
     },
     {
@@ -247,7 +247,7 @@
         "InplaceX-docs/Backend/Ktor Architecture.md"
       ],
       "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
+        ".agent/agent_version.json",
         "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
@@ -261,7 +261,7 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 5,
-      "current_product_path_count": 25,
+      "current_product_path_count": 159,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -277,7 +277,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 353,
+      "behind_base": 549,
       "path_source": "merge_base_to_head"
     },
     {
@@ -320,7 +320,7 @@
         "gradle/libs.versions.toml"
       ],
       "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
+        ".agent/agent_version.json",
         "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
         "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
         "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
@@ -334,7 +334,7 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 10,
-      "current_product_path_count": 13,
+      "current_product_path_count": 155,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -355,120 +355,7 @@
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 353,
-      "path_source": "merge_base_to_head"
-    },
-    {
-      "branch": "origin/feature/toy-room-ui-v5",
-      "normalized_branch": "feature/toy-room-ui-v5",
-      "classification": "needs_clean_rebuild",
-      "next_owner": "auto-dispatcher",
-      "reason": "branch is behind current base; requires rebase or clean package rebuild before merge",
-      "task_ids": [
-        "REPO-PR-3-9"
-      ],
-      "known_task_ids": [
-        "REPO-PR-3-9"
-      ],
-      "canonical_target_id": "task:REPO-PR-3-9",
-      "risk_class": "medium",
-      "changed_paths": [
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppBottomMenu.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppShell.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppTopBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Color.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Theme.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/LocalizationCatalogTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogicTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponentsTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/profile/ProfilePresentationTest.kt",
-        "InplaceX-docs/Game/GPT/Shell Appearance Contracts.md",
-        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "InplaceX-docs/Game/Human/Company UX v3.md",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-friends-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-home-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-compact.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-shop-tall.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-concept.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-landscape.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-portrait.png"
-      ],
-      "ahead_changed_paths_sample": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt"
-      ],
-      "current_base_changed_paths_sample": [
-        ".agent/worker_profiles.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-1b90b7f063414f8d69c1f1b1.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-6506fee35074d51c283729d2.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-7918d17127794d6e426d4a91.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-9eebcab7130f9b6b0c08cb69.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-ad5b3d3177bfde68a7370ae1.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-d8296aea9950f1d7b95592a3.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-e171d801f7d53a7febc804d7.json",
-        "AiStudio/Project_state/intake/inbox/change-intake-f395601d9277af39dd5b2339.json",
-        "AiStudio/Task_manager/agent_activity_state.json",
-        "AiStudio/Task_manager/agent_events.jsonl",
-        "AiStudio/Task_manager/agent_locks.json"
-      ],
-      "product_path_count": 42,
-      "current_product_path_count": 62,
-      "coordination_or_noise_path_count": 1,
-      "noisy_path_count": 0,
-      "product_paths_sample": [
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt"
-      ],
-      "noisy_paths_sample": [],
-      "source_classification": "ready_candidate",
-      "identity_valid": true,
-      "identity_issues": [],
-      "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
-      "ahead_of_base": 6,
-      "behind_base": 388,
+      "behind_base": 549,
       "path_source": "merge_base_to_head"
     }
   ]

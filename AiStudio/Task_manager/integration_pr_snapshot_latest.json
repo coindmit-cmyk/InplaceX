@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T13:49:39Z",
+  "generated_at": "2026-07-29T14:40:41Z",
   "repository": "coindmit-cmyk/InplaceX",
   "pull_requests": [
     {
@@ -137,51 +137,6 @@
       "title": "feat(android): add guarded online transport foundation",
       "updatedAt": "2026-07-26T20:14:39Z",
       "url": "https://github.com/coindmit-cmyk/InplaceX/pull/7"
-    },
-    {
-      "baseRefName": "codex/make-human/company-ux-v3",
-      "headRefName": "codex/app-shell-ux-v4",
-      "headRefOid": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
-      "isDraft": true,
-      "mergeStateStatus": "UNSTABLE",
-      "number": 6,
-      "reviewDecision": "",
-      "state": "OPEN",
-      "statusCheckRollup": [
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T14:20:14Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803550451",
-          "name": "Unit verification and debug artifact",
-          "startedAt": "2026-07-26T14:18:32Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T14:22:29Z",
-          "conclusion": "FAILURE",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803703783",
-          "name": "Instrumentation checks (non-blocking)",
-          "startedAt": "2026-07-26T14:20:17Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        },
-        {
-          "__typename": "CheckRun",
-          "completedAt": "2026-07-26T14:23:30Z",
-          "conclusion": "SUCCESS",
-          "detailsUrl": "https://github.com/coindmit-cmyk/InplaceX/actions/runs/30205813111/job/89803703780",
-          "name": "Release checks (non-blocking)",
-          "startedAt": "2026-07-26T14:20:17Z",
-          "status": "COMPLETED",
-          "workflowName": "InplaceX CI"
-        }
-      ],
-      "title": "feat(android): redesign home, friends, shop, and profile",
-      "updatedAt": "2026-07-26T14:18:27Z",
-      "url": "https://github.com/coindmit-cmyk/InplaceX/pull/6"
     },
     {
       "baseRefName": "develop",
