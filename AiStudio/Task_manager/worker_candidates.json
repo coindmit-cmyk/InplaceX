@@ -1,39 +1,12 @@
 {
-  "generated_at": "2026-07-28T08:42:39Z",
+  "generated_at": "2026-07-29T00:00:39Z",
   "summary": {
-    "candidate_count": 1,
-    "scheduling_class_counts": {
-      "primary_delivery": 1
-    },
+    "candidate_count": 0,
+    "scheduling_class_counts": {},
     "integration_continuation_count": 0,
-    "primary_candidate_count": 1,
+    "primary_candidate_count": 0,
     "background_candidate_count": 0,
-    "primary_slot_reservation_required": true
+    "primary_slot_reservation_required": false
   },
-  "candidates": [
-    {
-      "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
-      "title": "Retry S25 prerequisite A unforgeable JVM authentication principal",
-      "priority": "P0",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-backend/build.gradle.kts",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_*.md",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "README.md",
-        "AiStudio/Task_manager/task_queue.json"
-      ],
-      "scheduling_class": "primary_delivery",
-      "scheduling_class_reason": "default_primary_work"
-    }
-  ]
+  "candidates": []
 }
