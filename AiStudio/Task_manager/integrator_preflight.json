@@ -1,17 +1,15 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-29T14:40:40Z",
+  "checked_at": "2026-07-29T14:55:51Z",
   "base_branch": "origin/develop",
-  "base_sha": "4a610fca2a3441d14c83c986aabe4549360187b8",
+  "base_sha": "7d2e7f2690ffb11751b065117576477b66e2c2c8",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "git_status": [
     "## develop...origin/develop",
     " M AiStudio/Task_manager/agent_process_state.json",
-    " M AiStudio/Task_manager/integration_candidates.json",
-    " M AiStudio/Task_manager/integrator_llm_advice.json",
-    " M AiStudio/Task_manager/integrator_llm_context.json"
+    " M AiStudio/Task_manager/integration_candidates.json"
   ],
   "dirty_worktree": true,
   "candidate_prefixes": [
@@ -61,7 +59,7 @@
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "merge_base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "ahead_of_base": 1,
-      "behind_base": 526,
+      "behind_base": 530,
       "changed_paths": [
         ".agent/agent_version.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -172,7 +170,7 @@
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 563,
+      "behind_base": 567,
       "changed_paths": [
         ".agent/agent_version.json",
         ".github/workflows/ci.yml",
@@ -344,7 +342,7 @@
       "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
       "merge_base_sha": "e99d56826ded2853cabfcd2a70ea89884f0f1f7b",
       "ahead_of_base": 1,
-      "behind_base": 567,
+      "behind_base": 571,
       "changed_paths": [
         ".agent/agent_version.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -488,7 +486,7 @@
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 549,
+      "behind_base": 553,
       "changed_paths": [
         ".agent/agent_version.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -630,7 +628,7 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 549,
+      "behind_base": 553,
       "changed_paths": [
         ".agent/agent_version.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -807,11 +805,11 @@
     },
     {
       "task_id": "REPO-PR-4",
-      "status": "agent_done",
+      "status": "integration_requested",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "pr": 4,
       "worker_ready": false,
-      "dispatcher_decision": "needs_integrator_review"
+      "dispatcher_decision": "integration_ready"
     }
   ],
   "integration_task_refs": [
@@ -862,31 +860,31 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 526
+      "behind_base": 530
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 563
-    },
-    {
-      "code": "stale_branch",
-      "severity": "warning",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "behind_base": 567
     },
     {
       "code": "stale_branch",
       "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "behind_base": 571
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 549
+      "behind_base": 553
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 549
+      "behind_base": 553
     },
     {
       "code": "changed_path_overlap",

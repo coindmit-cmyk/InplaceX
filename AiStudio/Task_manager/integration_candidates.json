@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-29T14:40:36Z",
+  "generated_at": "2026-07-29T14:55:47Z",
   "candidates": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -134,8 +134,8 @@
     {
       "task_id": "REPO-PR-4",
       "title": "Integrate open PR #4",
-      "status": "agent_done",
-      "integration_status": "needs_integrator_review",
+      "status": "integration_requested",
+      "integration_status": "pending_required_ci",
       "worker_check_evidence": null,
       "integrator_must_run_checks": false,
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T14:40:42Z",
+  "created_at": "2026-07-29T14:55:53Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "base_ref": "origin/develop",
   "clean_rebuild_promotion": null,
   "worker_bridge": {
     "sync_report": {
       "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-      "checked_at": "2026-07-29T14:40:36Z",
+      "checked_at": "2026-07-29T14:55:47Z",
       "apply": true,
       "scanned_worker_tasks": 0,
       "change_count": 0,
@@ -72,10 +72,10 @@
     "ready_candidate": 3,
     "crb_auto_task": 1
   },
-  "rebuild_route_event_count": 1,
+  "rebuild_route_event_count": 0,
   "batch_included_count": 3,
   "batch_excluded_count": 2,
-  "manual_review_task_count": 2,
-  "reprocess_integrator_review": true,
+  "manual_review_task_count": 4,
+  "reprocess_integrator_review": false,
   "handoff_ready": true
 }

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T14:40:41Z",
+  "created_at": "2026-07-29T14:55:52Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "readiness": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
-  "clean_rebuild_recovery_count": 2,
+  "clean_rebuild_recovery_count": 1,
   "counts": {
     "identity_ok": 30,
     "identity_conflict": 1
@@ -538,7 +538,7 @@
       "task_id": "REPO-PR-4",
       "canonical_target_id": "task:REPO-PR-4",
       "status": "identity_ok",
-      "task_status": "agent_done",
+      "task_status": "integration_requested",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "github_pr": 4,
       "worker_report": null,
@@ -560,9 +560,7 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/4"
         ]
       },
-      "issues": [
-        "completed/review task has no worker report evidence"
-      ],
+      "issues": [],
       "next_owner": null
     },
     {
