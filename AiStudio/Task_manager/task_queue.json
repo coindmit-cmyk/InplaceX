@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T02:26:53Z",
+  "updated_at": "2026-07-29T02:41:59Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -700,7 +700,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1200,7 +1200,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1589,7 +1589,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1671,7 +1671,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1914,7 +1914,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2162,7 +2162,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2855,9 +2855,9 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-29T02:26:53Z",
+      "dependency_state_checked_at": "2026-07-29T02:41:59Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2953,7 +2953,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3171,7 +3171,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-29T02:26:53Z",
+      "dependency_state_checked_at": "2026-07-29T02:41:59Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3260,7 +3260,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-29T02:26:53Z",
+      "dependency_state_checked_at": "2026-07-29T02:41:59Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3353,7 +3353,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T02:26:53Z",
+      "dependency_reconciled_at": "2026-07-29T02:41:59Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -4051,7 +4051,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-29T02:26:53Z",
+    "generated_at": "2026-07-29T02:41:59Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
