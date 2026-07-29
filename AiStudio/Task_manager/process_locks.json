@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T22:14:50Z",
+  "updated_at": "2026-07-29T23:14:59Z",
   "locks": [
     {
       "process": "status_orchestrator",
@@ -2413,6 +2413,54 @@
       "host": "AiStudio",
       "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
       "released_at": "2026-07-29T22:14:50Z"
+    },
+    {
+      "process": "status_orchestrator",
+      "state": "released",
+      "by": "status_orchestrator",
+      "at": "2026-07-29T22:27:46Z",
+      "expires_at": "2026-07-29T22:57:46Z",
+      "run_id": "run-20260729-222746",
+      "pid": 43306,
+      "host": "AiStudio",
+      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "released_at": "2026-07-29T22:28:37Z"
+    },
+    {
+      "process": "status_orchestrator",
+      "state": "released",
+      "by": "status_orchestrator",
+      "at": "2026-07-29T22:43:53Z",
+      "expires_at": "2026-07-29T23:13:53Z",
+      "run_id": "run-20260729-224353",
+      "pid": 49524,
+      "host": "AiStudio",
+      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "released_at": "2026-07-29T22:44:40Z"
+    },
+    {
+      "process": "status_orchestrator",
+      "state": "released",
+      "by": "status_orchestrator",
+      "at": "2026-07-29T22:58:22Z",
+      "expires_at": "2026-07-29T23:28:22Z",
+      "run_id": "run-20260729-225822",
+      "pid": 54091,
+      "host": "AiStudio",
+      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "released_at": "2026-07-29T22:58:41Z"
+    },
+    {
+      "process": "status_orchestrator",
+      "state": "released",
+      "by": "status_orchestrator",
+      "at": "2026-07-29T23:14:41Z",
+      "expires_at": "2026-07-29T23:44:41Z",
+      "run_id": "run-20260729-231441",
+      "pid": 61560,
+      "host": "AiStudio",
+      "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+      "released_at": "2026-07-29T23:14:59Z"
     }
   ]
 }

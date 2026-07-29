@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T22:14:50Z",
+  "updated_at": "2026-07-29T23:14:53Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -606,14 +606,13 @@
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
-      ],
+      "resolved_dependencies": [],
       "split_into": [
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
@@ -701,7 +700,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1143,12 +1142,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23"
-      ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/**",
@@ -1202,7 +1200,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1552,11 +1550,10 @@
       ],
       "blocked_by": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
@@ -1610,7 +1607,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1637,11 +1634,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "ops/**",
@@ -1693,7 +1689,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1880,12 +1876,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12"
-      ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-docs/Game/Human/**",
@@ -1937,7 +1932,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2127,11 +2122,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
@@ -2186,7 +2180,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2846,7 +2840,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-29T22:14:49Z",
+      "packet_normalized_at": "2026-07-29T22:28:37Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "task_packet_defects": [
         "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
@@ -2879,9 +2873,9 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-29T22:14:50Z",
+      "dependency_state_checked_at": "2026-07-29T23:14:53Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2977,7 +2971,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3195,7 +3189,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-29T22:14:50Z",
+      "dependency_state_checked_at": "2026-07-29T23:14:53Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3284,7 +3278,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-29T22:14:50Z",
+      "dependency_state_checked_at": "2026-07-29T23:14:53Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3311,11 +3305,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
+      "resolved_dependencies": [],
       "summary": "Integrator-only container. Dispatcher must split implementation fixes before any Worker claim.",
       "allowed_paths": [
         "InplaceX-android/**",
@@ -3378,7 +3371,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
+      "dependency_reconciled_at": "2026-07-29T23:14:53Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -3938,1441 +3931,6 @@
       "next_role": "human",
       "discovered_at": "2026-07-29T14:26:30Z",
       "updated_at": "2026-07-29T14:26:30Z"
-    },
-    {
-      "id": "REPO-PR-20",
-      "title": "Integrate open PR #20",
-      "status": "blocked_by_dependency",
-      "priority": "P1",
-      "complexity": "M",
-      "type": "repository_hygiene_integration",
-      "recommended_agent": "Dispatcher",
-      "requires_human_attention": false,
-      "worker_ready": false,
-      "packet_status": "split_into_children",
-      "normalization_status": "repository_pr_decomposed",
-      "dispatcher_decision": "split_into_children",
-      "integration_status": "repair_in_progress",
-      "branch": "origin/feature/friend-modes-config-v1",
-      "base_branch": "develop",
-      "github_pr": 20,
-      "pr_numbers": [
-        20
-      ],
-      "repository_hygiene_key": "repository-pr-group:359e292333b41a2607a1",
-      "repository_hygiene_topology": "linear",
-      "repository_hygiene_route": "dispatcher_integration",
-      "repository_hygiene_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "repository_hygiene_dirty_prs": [],
-      "repository_hygiene_draft_prs": [],
-      "repository_hygiene_ci_state": "pending",
-      "source_lane": "repository_hygiene_cycle",
-      "source_summary": "direct PR can be routed through Dispatcher and Integrator",
-      "provenance": [
-        {
-          "source_type": "github_pull_request_topology",
-          "source_item_id": "repository-pr-group:359e292333b41a2607a1",
-          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/20",
-          "captured_at": "2026-07-29T22:14:35Z",
-          "summary": "direct PR can be routed through Dispatcher and Integrator"
-        }
-      ],
-      "acceptance_criteria": [
-        "Preserve existing behavior unless the PR explicitly replaces it.",
-        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
-        "Run project-required tests and git diff --check before finalization.",
-        "Close or delete source PR branches only after merge evidence exists."
-      ],
-      "checks": [
-        "project-required tests",
-        "git diff --check",
-        "capability preservation comparison"
-      ],
-      "lock": "free",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
-      "discovered_at": "2026-07-29T22:14:35Z",
-      "updated_at": "2026-07-29T22:14:35Z",
-      "changed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json"
-      ],
-      "integration_changed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json"
-      ],
-      "coordination_changed_paths": [],
-      "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json"
-      ],
-      "dispatcher_repaired_at": "2026-07-29T22:14:36Z",
-      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
-      "dispatcher_decision_reason": "large repository PR decomposed into independent Worker Packet v2 slices",
-      "blocked_by": [
-        "CRB-REPO-PR-20-S01",
-        "CRB-REPO-PR-20-S02",
-        "CRB-REPO-PR-20-S03",
-        "CRB-REPO-PR-20-S04"
-      ],
-      "split_into": [
-        "CRB-REPO-PR-20-S01",
-        "CRB-REPO-PR-20-S02",
-        "CRB-REPO-PR-20-S03",
-        "CRB-REPO-PR-20-S04"
-      ],
-      "integration_repair_child_ids": [
-        "CRB-REPO-PR-20-S01",
-        "CRB-REPO-PR-20-S02",
-        "CRB-REPO-PR-20-S03",
-        "CRB-REPO-PR-20-S04"
-      ],
-      "repository_pr_decomposition": {
-        "schema_version": "1.0",
-        "planner_id": "repository_pr_decomposition_planner",
-        "task_id": "REPO-PR-20",
-        "source_branch": "origin/feature/friend-modes-config-v1",
-        "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-        "changed_paths": [
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-          "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt",
-          "InplaceX-docs/Backend/Online Contracts.md",
-          "InplaceX-docs/Game/GPT/Public Interfaces.md",
-          "InplaceX-docs/Game/Human/App Shell UX v4.md",
-          "schemas/online/v1/common.schema.json",
-          "schemas/online/v1/rest.schema.json"
-        ],
-        "path_count": 23,
-        "feature_family_count": 23,
-        "decomposition_reasons": [
-          "large_changed_path_set",
-          "multiple_feature_families",
-          "cross_surface_change"
-        ],
-        "routing_authority": "central_model_router",
-        "deterministic_parent_gates": [
-          "git diff --check",
-          "capability preservation comparison",
-          "project-required tests"
-        ],
-        "status": "decomposed",
-        "should_decompose": true,
-        "reason": "large_repository_pr_split_into_independent_worker_packets",
-        "blocked_paths": [],
-        "slice_count": 4,
-        "slices": [
-          {
-            "slice_key": "S01",
-            "title": "REPO-PR-20 implementation slice 1: code",
-            "paths": [
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
-            ],
-            "categories": [
-              "code"
-            ],
-            "execution_kind": "llm_write",
-            "deterministic_checks": [
-              "git diff --check"
-            ],
-            "depends_on": [],
-            "execution_lane": "llm_balanced",
-            "complexity": "M",
-            "capability_profile_hint": "balanced",
-            "recommended_agent": "auto-worker-5.3",
-            "eligible_worker_profiles": [
-              "auto-worker-5.3",
-              "auto-worker-5.5"
-            ],
-            "model_candidates": [
-              "gpt-5.6-luna",
-              "gpt-5.6-terra",
-              "gpt-5.3-codex-spark"
-            ],
-            "reasoning_effort_hint": "high"
-          },
-          {
-            "slice_key": "S02",
-            "title": "REPO-PR-20 implementation slice 2: code",
-            "paths": [
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-              "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-              "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-              "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-              "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
-            ],
-            "categories": [
-              "code"
-            ],
-            "execution_kind": "llm_write",
-            "deterministic_checks": [
-              "git diff --check"
-            ],
-            "depends_on": [],
-            "execution_lane": "llm_balanced",
-            "complexity": "M",
-            "capability_profile_hint": "balanced",
-            "recommended_agent": "auto-worker-5.3",
-            "eligible_worker_profiles": [
-              "auto-worker-5.3",
-              "auto-worker-5.5"
-            ],
-            "model_candidates": [
-              "gpt-5.6-luna",
-              "gpt-5.6-terra",
-              "gpt-5.3-codex-spark"
-            ],
-            "reasoning_effort_hint": "high"
-          },
-          {
-            "slice_key": "S03",
-            "title": "REPO-PR-20 implementation slice 3: tests",
-            "paths": [
-              "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-              "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-              "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-              "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-              "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-            ],
-            "categories": [
-              "tests"
-            ],
-            "execution_kind": "llm_write",
-            "deterministic_checks": [
-              "git diff --check"
-            ],
-            "depends_on": [
-              "S01",
-              "S02",
-              "S04"
-            ],
-            "execution_lane": "llm_balanced",
-            "complexity": "M",
-            "capability_profile_hint": "balanced",
-            "recommended_agent": "auto-worker-5.3",
-            "eligible_worker_profiles": [
-              "auto-worker-5.3",
-              "auto-worker-5.5"
-            ],
-            "model_candidates": [
-              "gpt-5.6-luna",
-              "gpt-5.6-terra",
-              "gpt-5.3-codex-spark"
-            ],
-            "reasoning_effort_hint": "high"
-          },
-          {
-            "slice_key": "S04",
-            "title": "REPO-PR-20 implementation slice 4: asset, code, contract",
-            "paths": [
-              "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-              "InplaceX-docs/Backend/Online Contracts.md",
-              "InplaceX-docs/Game/GPT/Public Interfaces.md",
-              "InplaceX-docs/Game/Human/App Shell UX v4.md",
-              "schemas/online/v1/common.schema.json",
-              "schemas/online/v1/rest.schema.json"
-            ],
-            "categories": [
-              "asset",
-              "code",
-              "contract"
-            ],
-            "execution_kind": "llm_write",
-            "deterministic_checks": [
-              "python -m json.tool schemas/online/v1/common.schema.json",
-              "python -m json.tool schemas/online/v1/rest.schema.json",
-              "git diff --check"
-            ],
-            "depends_on": [],
-            "execution_lane": "llm_deep",
-            "complexity": "L",
-            "capability_profile_hint": "deep",
-            "recommended_agent": "auto-worker-5.5",
-            "eligible_worker_profiles": [
-              "auto-worker-5.5",
-              "auto-worker-5.5max"
-            ],
-            "model_candidates": [
-              "gpt-5.6-terra",
-              "gpt-5.6-sol",
-              "gpt-5.6-luna"
-            ],
-            "reasoning_effort_hint": "high"
-          }
-        ],
-        "integration": {
-          "strategy": "merge_finalized_children_then_close_source_pr",
-          "required_child_keys": [
-            "S01",
-            "S02",
-            "S03",
-            "S04"
-          ],
-          "synthesis_required": true,
-          "read_only_synthesis": {
-            "capability_profile": "delegated_deep",
-            "model_candidates": [
-              "gpt-5.6-sol",
-              "gpt-5.6-terra"
-            ],
-            "reasoning_effort": "ultra",
-            "mutation_allowed": false,
-            "authority_effect": "none"
-          },
-          "write_integrator": {
-            "capability_profile": "maximum_coherent",
-            "model_candidates": [
-              "gpt-5.6-sol",
-              "gpt-5.6-terra"
-            ],
-            "reasoning_effort": "max",
-            "merge_authority": "integrator_only"
-          }
-        }
-      },
-      "independent_work_units": 4,
-      "synthesis_required": true,
-      "capability_profile_hint": "maximum_coherent",
-      "model_candidates": [
-        "gpt-5.6-sol",
-        "gpt-5.6-terra"
-      ],
-      "reasoning_effort_hint": "max",
-      "repair_owner": "Worker",
-      "next_action": "Run every independent slice, integrate finalized child results, then close the source PR.",
-      "status_reason": "Dispatcher created model-aware decomposition slices for the large source PR."
-    },
-    {
-      "id": "CRB-REPO-PR-20-S01",
-      "title": "REPO-PR-20 implementation slice 1: code",
-      "status": "planned",
-      "priority": "P1",
-      "complexity": "M",
-      "type": "clean-rebuild",
-      "worker_ready": true,
-      "recommended_agent": "auto-worker-5.3",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "model_candidates": [
-        "gpt-5.6-luna",
-        "gpt-5.6-terra",
-        "gpt-5.3-codex-spark"
-      ],
-      "capability_profile_hint": "balanced",
-      "reasoning_effort_hint": "high",
-      "delegation_hint": "forbidden",
-      "independent_work_units": 1,
-      "synthesis_required": false,
-      "execution_kind": "llm_write",
-      "execution_lane": "llm_balanced",
-      "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "forbidden_paths": [
-        ".env",
-        ".env.*",
-        "secrets",
-        "production config"
-      ],
-      "changed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
-      ],
-      "checks": [
-        "git diff --check"
-      ],
-      "depends_on": [],
-      "acceptance_criteria": [
-        "Rebuild only this decomposition slice from the source PR intent on current develop.",
-        "Do not copy or modify paths owned by sibling decomposition slices.",
-        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
-        "Pass every deterministic check and return a normal Worker result for Integrator review."
-      ],
-      "context_docs": [
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-      ],
-      "source_file": "AiStudio/Task_manager/task_queue.json",
-      "source_task_id": "REPO-PR-20",
-      "parent_task_id": "REPO-PR-20",
-      "repair_source_task_id": "REPO-PR-20",
-      "integration_repair_parent_id": "REPO-PR-20",
-      "integration_repair_kind": "proactive_pr_decomposition",
-      "source_branch": "origin/feature/friend-modes-config-v1",
-      "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_source_branch": "origin/feature/friend-modes-config-v1",
-      "clean_rebuild_source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_route": "repository_pr_decomposition",
-      "decomposition_slice_key": "S01",
-      "decomposition_categories": [
-        "code"
-      ],
-      "source_lane": "dispatcher_integration_repair",
-      "provenance": {
-        "source": "repository_pr_decomposition_planner.py",
-        "source_task_id": "REPO-PR-20",
-        "source_branch": "origin/feature/friend-modes-config-v1",
-        "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-        "slice_key": "S01",
-        "created_at": "2026-07-29T22:14:36Z"
-      },
-      "worker_instructions": [
-        "Verify that source_branch still resolves to source_head_sha before using it.",
-        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
-        "Compare every slice path with current develop and preserve newer target behavior.",
-        "Run every script_action and record the actual model selected by the central Router.",
-        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
-      ],
-      "existing_behavior": [
-        "Current develop is the behavior baseline for every decomposition slice.",
-        "Sibling slices own disjoint paths and must remain independently integrable."
-      ],
-      "preserve_contract": [
-        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
-        "Any intentional replacement requires explicit owner evidence and Integrator review."
-      ],
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
-      "created_at": "2026-07-29T22:14:36Z",
-      "base_branch": "develop",
-      "packet_schema_version": 2,
-      "traceability": {
-        "task_id": "CRB-REPO-PR-20-S01",
-        "canonical_task_id": "CRB-REPO-PR-20-S01",
-        "canonical_target_id": null,
-        "source_lane": "dispatcher_integration_repair",
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "provenance": {
-          "source": "repository_pr_decomposition_planner.py",
-          "source_task_id": "REPO-PR-20",
-          "source_branch": "origin/feature/friend-modes-config-v1",
-          "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-          "slice_key": "S01",
-          "created_at": "2026-07-29T22:14:36Z"
-        },
-        "derived_from": null,
-        "repaired_at": "2026-07-29T22:14:36Z",
-        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
-      },
-      "doc_refs": [
-        {
-          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "AiStudio/Task_manager/task_queue.json",
-          "purpose": "required context"
-        }
-      ],
-      "code_refs": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
-      ],
-      "context_inventory": {
-        "base_ref": "origin/develop",
-        "code_refs": [
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
-        ],
-        "doc_refs": [
-          {
-            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "AiStudio/Task_manager/task_queue.json",
-            "purpose": "required context"
-          }
-        ],
-        "task_refs": [
-          {
-            "id": "CRB-REPO-PR-20-S01",
-            "purpose": "task context"
-          }
-        ],
-        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
-        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
-      },
-      "input_refs": {
-        "base_branch": "develop",
-        "base_ref": "origin/develop",
-        "allowed_paths": [
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/GameCatalog.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineDuelClient.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineRuntime.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponents.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldUiState.kt"
-        ],
-        "forbidden_paths": [
-          ".env",
-          ".env.*",
-          "secrets",
-          "production config"
-        ],
-        "context_docs": [
-          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-        ],
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "worker_source_branch": null
-      },
-      "output_contract": {
-        "changed_paths_must_match_allowed_paths": true,
-        "required_checks": [
-          "git diff --check"
-        ],
-        "worker_report_required": true,
-        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-20-S01_<timestamp>.md",
-        "event_required": "integration_requested",
-        "task_state_on_success": "agent_done",
-        "task_state_on_blocker": "needs_worker_fix",
-        "preserve_existing_behavior": true
-      },
-      "script_actions": [
-        {
-          "command": "git diff --check",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        }
-      ],
-      "regression_guards": [
-        "Compare changed code against current develop before finalizing.",
-        "Document any intentional behavior removal in the worker report and integration_notes."
-      ],
-      "integration_notes": [
-        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
-        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
-        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
-      ],
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
-      "repaired_packet_at": "2026-07-29T22:14:36Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "repaired_packet_metadata_at": "2026-07-29T22:14:37Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "packet_normalized_at": "2026-07-29T22:14:49Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
-    },
-    {
-      "id": "CRB-REPO-PR-20-S02",
-      "title": "REPO-PR-20 implementation slice 2: code",
-      "status": "planned",
-      "priority": "P1",
-      "complexity": "M",
-      "type": "clean-rebuild",
-      "worker_ready": true,
-      "recommended_agent": "auto-worker-5.3",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "model_candidates": [
-        "gpt-5.6-luna",
-        "gpt-5.6-terra",
-        "gpt-5.3-codex-spark"
-      ],
-      "capability_profile_hint": "balanced",
-      "reasoning_effort_hint": "high",
-      "delegation_hint": "forbidden",
-      "independent_work_units": 1,
-      "synthesis_required": false,
-      "execution_kind": "llm_write",
-      "execution_lane": "llm_balanced",
-      "allowed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "forbidden_paths": [
-        ".env",
-        ".env.*",
-        "secrets",
-        "production config"
-      ],
-      "changed_paths": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
-      ],
-      "checks": [
-        "git diff --check"
-      ],
-      "depends_on": [],
-      "acceptance_criteria": [
-        "Rebuild only this decomposition slice from the source PR intent on current develop.",
-        "Do not copy or modify paths owned by sibling decomposition slices.",
-        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
-        "Pass every deterministic check and return a normal Worker result for Integrator review."
-      ],
-      "context_docs": [
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-      ],
-      "source_file": "AiStudio/Task_manager/task_queue.json",
-      "source_task_id": "REPO-PR-20",
-      "parent_task_id": "REPO-PR-20",
-      "repair_source_task_id": "REPO-PR-20",
-      "integration_repair_parent_id": "REPO-PR-20",
-      "integration_repair_kind": "proactive_pr_decomposition",
-      "source_branch": "origin/feature/friend-modes-config-v1",
-      "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_source_branch": "origin/feature/friend-modes-config-v1",
-      "clean_rebuild_source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_route": "repository_pr_decomposition",
-      "decomposition_slice_key": "S02",
-      "decomposition_categories": [
-        "code"
-      ],
-      "source_lane": "dispatcher_integration_repair",
-      "provenance": {
-        "source": "repository_pr_decomposition_planner.py",
-        "source_task_id": "REPO-PR-20",
-        "source_branch": "origin/feature/friend-modes-config-v1",
-        "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-        "slice_key": "S02",
-        "created_at": "2026-07-29T22:14:36Z"
-      },
-      "worker_instructions": [
-        "Verify that source_branch still resolves to source_head_sha before using it.",
-        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
-        "Compare every slice path with current develop and preserve newer target behavior.",
-        "Run every script_action and record the actual model selected by the central Router.",
-        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
-      ],
-      "existing_behavior": [
-        "Current develop is the behavior baseline for every decomposition slice.",
-        "Sibling slices own disjoint paths and must remain independently integrable."
-      ],
-      "preserve_contract": [
-        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
-        "Any intentional replacement requires explicit owner evidence and Integrator review."
-      ],
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
-      "created_at": "2026-07-29T22:14:36Z",
-      "base_branch": "develop",
-      "packet_schema_version": 2,
-      "traceability": {
-        "task_id": "CRB-REPO-PR-20-S02",
-        "canonical_task_id": "CRB-REPO-PR-20-S02",
-        "canonical_target_id": null,
-        "source_lane": "dispatcher_integration_repair",
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "provenance": {
-          "source": "repository_pr_decomposition_planner.py",
-          "source_task_id": "REPO-PR-20",
-          "source_branch": "origin/feature/friend-modes-config-v1",
-          "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-          "slice_key": "S02",
-          "created_at": "2026-07-29T22:14:36Z"
-        },
-        "derived_from": null,
-        "repaired_at": "2026-07-29T22:14:36Z",
-        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
-      },
-      "doc_refs": [
-        {
-          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "AiStudio/Task_manager/task_queue.json",
-          "purpose": "required context"
-        }
-      ],
-      "code_refs": [
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
-      ],
-      "context_inventory": {
-        "base_ref": "origin/develop",
-        "code_refs": [
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
-        ],
-        "doc_refs": [
-          {
-            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "AiStudio/Task_manager/task_queue.json",
-            "purpose": "required context"
-          }
-        ],
-        "task_refs": [
-          {
-            "id": "CRB-REPO-PR-20-S02",
-            "purpose": "task context"
-          }
-        ],
-        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
-        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
-      },
-      "input_refs": {
-        "base_branch": "develop",
-        "base_ref": "origin/develop",
-        "allowed_paths": [
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
-          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelService.kt",
-          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutes.kt",
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/engine/GuessValidator.kt"
-        ],
-        "forbidden_paths": [
-          ".env",
-          ".env.*",
-          "secrets",
-          "production config"
-        ],
-        "context_docs": [
-          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-        ],
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "worker_source_branch": null
-      },
-      "output_contract": {
-        "changed_paths_must_match_allowed_paths": true,
-        "required_checks": [
-          "git diff --check"
-        ],
-        "worker_report_required": true,
-        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-20-S02_<timestamp>.md",
-        "event_required": "integration_requested",
-        "task_state_on_success": "agent_done",
-        "task_state_on_blocker": "needs_worker_fix",
-        "preserve_existing_behavior": true
-      },
-      "script_actions": [
-        {
-          "command": "git diff --check",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        }
-      ],
-      "regression_guards": [
-        "Compare changed code against current develop before finalizing.",
-        "Document any intentional behavior removal in the worker report and integration_notes."
-      ],
-      "integration_notes": [
-        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
-        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
-        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
-      ],
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
-      "repaired_packet_at": "2026-07-29T22:14:36Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "repaired_packet_metadata_at": "2026-07-29T22:14:37Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "packet_normalized_at": "2026-07-29T22:14:49Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
-    },
-    {
-      "id": "CRB-REPO-PR-20-S03",
-      "title": "REPO-PR-20 implementation slice 3: tests",
-      "status": "blocked_by_dependency",
-      "priority": "P1",
-      "complexity": "M",
-      "type": "clean-rebuild",
-      "worker_ready": false,
-      "recommended_agent": "auto-worker-5.3",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "model_candidates": [
-        "gpt-5.6-luna",
-        "gpt-5.6-terra",
-        "gpt-5.3-codex-spark"
-      ],
-      "capability_profile_hint": "balanced",
-      "reasoning_effort_hint": "high",
-      "delegation_hint": "forbidden",
-      "independent_work_units": 1,
-      "synthesis_required": false,
-      "execution_kind": "llm_write",
-      "execution_lane": "llm_balanced",
-      "allowed_paths": [
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-      ],
-      "forbidden_paths": [
-        ".env",
-        ".env.*",
-        "secrets",
-        "production config"
-      ],
-      "changed_paths": [
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-      ],
-      "checks": [
-        "git diff --check"
-      ],
-      "depends_on": [
-        "CRB-REPO-PR-20-S01",
-        "CRB-REPO-PR-20-S02",
-        "CRB-REPO-PR-20-S04"
-      ],
-      "acceptance_criteria": [
-        "Rebuild only this decomposition slice from the source PR intent on current develop.",
-        "Do not copy or modify paths owned by sibling decomposition slices.",
-        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
-        "Pass every deterministic check and return a normal Worker result for Integrator review."
-      ],
-      "context_docs": [
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-      ],
-      "source_file": "AiStudio/Task_manager/task_queue.json",
-      "source_task_id": "REPO-PR-20",
-      "parent_task_id": "REPO-PR-20",
-      "repair_source_task_id": "REPO-PR-20",
-      "integration_repair_parent_id": "REPO-PR-20",
-      "integration_repair_kind": "proactive_pr_decomposition",
-      "source_branch": "origin/feature/friend-modes-config-v1",
-      "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_source_branch": "origin/feature/friend-modes-config-v1",
-      "clean_rebuild_source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_route": "repository_pr_decomposition",
-      "decomposition_slice_key": "S03",
-      "decomposition_categories": [
-        "tests"
-      ],
-      "source_lane": "dispatcher_integration_repair",
-      "provenance": {
-        "source": "repository_pr_decomposition_planner.py",
-        "source_task_id": "REPO-PR-20",
-        "source_branch": "origin/feature/friend-modes-config-v1",
-        "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-        "slice_key": "S03",
-        "created_at": "2026-07-29T22:14:36Z"
-      },
-      "worker_instructions": [
-        "Verify that source_branch still resolves to source_head_sha before using it.",
-        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
-        "Compare every slice path with current develop and preserve newer target behavior.",
-        "Run every script_action and record the actual model selected by the central Router.",
-        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
-      ],
-      "existing_behavior": [
-        "Current develop is the behavior baseline for every decomposition slice.",
-        "Sibling slices own disjoint paths and must remain independently integrable."
-      ],
-      "preserve_contract": [
-        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
-        "Any intentional replacement requires explicit owner evidence and Integrator review."
-      ],
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
-      "created_at": "2026-07-29T22:14:36Z",
-      "base_branch": "develop",
-      "packet_schema_version": 2,
-      "traceability": {
-        "task_id": "CRB-REPO-PR-20-S03",
-        "canonical_task_id": "CRB-REPO-PR-20-S03",
-        "canonical_target_id": null,
-        "source_lane": "dispatcher_integration_repair",
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "provenance": {
-          "source": "repository_pr_decomposition_planner.py",
-          "source_task_id": "REPO-PR-20",
-          "source_branch": "origin/feature/friend-modes-config-v1",
-          "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-          "slice_key": "S03",
-          "created_at": "2026-07-29T22:14:36Z"
-        },
-        "derived_from": null,
-        "repaired_at": "2026-07-29T22:14:36Z",
-        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
-      },
-      "doc_refs": [
-        {
-          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "AiStudio/Task_manager/task_queue.json",
-          "purpose": "required context"
-        }
-      ],
-      "code_refs": [
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-        "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-      ],
-      "context_inventory": {
-        "base_ref": "origin/develop",
-        "code_refs": [
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-          "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-        ],
-        "doc_refs": [
-          {
-            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "AiStudio/Task_manager/task_queue.json",
-            "purpose": "required context"
-          }
-        ],
-        "task_refs": [
-          {
-            "id": "CRB-REPO-PR-20-S03",
-            "purpose": "task context"
-          },
-          {
-            "id": "CRB-REPO-PR-20-S01",
-            "purpose": "task context"
-          },
-          {
-            "id": "CRB-REPO-PR-20-S02",
-            "purpose": "task context"
-          },
-          {
-            "id": "CRB-REPO-PR-20-S04",
-            "purpose": "task context"
-          }
-        ],
-        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
-        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
-      },
-      "input_refs": {
-        "base_branch": "develop",
-        "base_ref": "origin/develop",
-        "allowed_paths": [
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/OnlineDuelClientTest.kt",
-          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameFieldTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/AuthoritativeOnlineDuelServiceTest.kt",
-          "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/online/OnlineRoutesTest.kt",
-          "InplaceX-bot-core/src/test/kotlin/com/mirkori/inplacex/core/engine/GuessValidatorTest.kt"
-        ],
-        "forbidden_paths": [
-          ".env",
-          ".env.*",
-          "secrets",
-          "production config"
-        ],
-        "context_docs": [
-          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-        ],
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "worker_source_branch": null
-      },
-      "output_contract": {
-        "changed_paths_must_match_allowed_paths": true,
-        "required_checks": [
-          "git diff --check"
-        ],
-        "worker_report_required": true,
-        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-20-S03_<timestamp>.md",
-        "event_required": "integration_requested",
-        "task_state_on_success": "agent_done",
-        "task_state_on_blocker": "needs_worker_fix",
-        "preserve_existing_behavior": true
-      },
-      "script_actions": [
-        {
-          "command": "git diff --check",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        }
-      ],
-      "regression_guards": [
-        "Compare changed code against current develop before finalizing.",
-        "Document any intentional behavior removal in the worker report and integration_notes."
-      ],
-      "integration_notes": [
-        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
-        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
-        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
-      ],
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
-      "dispatcher_decision_reason": "worker packet waits for unresolved dependencies: CRB-REPO-PR-20-S01, CRB-REPO-PR-20-S02, CRB-REPO-PR-20-S04",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
-      "repaired_packet_at": "2026-07-29T22:14:36Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "status_reason": "ready for independent repository PR slice implementation",
-      "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-REPO-PR-20-S01, CRB-REPO-PR-20-S02, CRB-REPO-PR-20-S04",
-      "resolved_dependencies": [],
-      "dependency_state_checked_at": "2026-07-29T22:14:50Z",
-      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "blocked_by": [
-        "CRB-REPO-PR-20-S01",
-        "CRB-REPO-PR-20-S02",
-        "CRB-REPO-PR-20-S04"
-      ],
-      "dependency_reconciled_at": "2026-07-29T22:14:49Z",
-      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
-    },
-    {
-      "id": "CRB-REPO-PR-20-S04",
-      "title": "REPO-PR-20 implementation slice 4: asset, code, contract",
-      "status": "planned",
-      "priority": "P1",
-      "complexity": "L",
-      "type": "clean-rebuild",
-      "worker_ready": true,
-      "recommended_agent": "auto-worker-5.5",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5",
-        "auto-worker-5.5max"
-      ],
-      "model_candidates": [
-        "gpt-5.6-terra",
-        "gpt-5.6-sol",
-        "gpt-5.6-luna"
-      ],
-      "capability_profile_hint": "deep",
-      "reasoning_effort_hint": "high",
-      "delegation_hint": "forbidden",
-      "independent_work_units": 1,
-      "synthesis_required": false,
-      "execution_kind": "llm_write",
-      "execution_lane": "llm_deep",
-      "allowed_paths": [
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "forbidden_paths": [
-        ".env",
-        ".env.*",
-        "secrets",
-        "production config"
-      ],
-      "changed_paths": [
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json"
-      ],
-      "checks": [
-        "python -m json.tool schemas/online/v1/common.schema.json",
-        "python -m json.tool schemas/online/v1/rest.schema.json",
-        "git diff --check"
-      ],
-      "depends_on": [],
-      "acceptance_criteria": [
-        "Rebuild only this decomposition slice from the source PR intent on current develop.",
-        "Do not copy or modify paths owned by sibling decomposition slices.",
-        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
-        "Pass every deterministic check and return a normal Worker result for Integrator review."
-      ],
-      "context_docs": [
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-      ],
-      "source_file": "AiStudio/Task_manager/task_queue.json",
-      "source_task_id": "REPO-PR-20",
-      "parent_task_id": "REPO-PR-20",
-      "repair_source_task_id": "REPO-PR-20",
-      "integration_repair_parent_id": "REPO-PR-20",
-      "integration_repair_kind": "proactive_pr_decomposition",
-      "source_branch": "origin/feature/friend-modes-config-v1",
-      "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_source_branch": "origin/feature/friend-modes-config-v1",
-      "clean_rebuild_source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-      "clean_rebuild_route": "repository_pr_decomposition",
-      "decomposition_slice_key": "S04",
-      "decomposition_categories": [
-        "asset",
-        "code",
-        "contract"
-      ],
-      "source_lane": "dispatcher_integration_repair",
-      "provenance": {
-        "source": "repository_pr_decomposition_planner.py",
-        "source_task_id": "REPO-PR-20",
-        "source_branch": "origin/feature/friend-modes-config-v1",
-        "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-        "slice_key": "S04",
-        "created_at": "2026-07-29T22:14:36Z"
-      },
-      "worker_instructions": [
-        "Verify that source_branch still resolves to source_head_sha before using it.",
-        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
-        "Compare every slice path with current develop and preserve newer target behavior.",
-        "Run every script_action and record the actual model selected by the central Router.",
-        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
-      ],
-      "existing_behavior": [
-        "Current develop is the behavior baseline for every decomposition slice.",
-        "Sibling slices own disjoint paths and must remain independently integrable."
-      ],
-      "preserve_contract": [
-        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
-        "Any intentional replacement requires explicit owner evidence and Integrator review."
-      ],
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
-      "created_at": "2026-07-29T22:14:36Z",
-      "base_branch": "develop",
-      "packet_schema_version": 2,
-      "traceability": {
-        "task_id": "CRB-REPO-PR-20-S04",
-        "canonical_task_id": "CRB-REPO-PR-20-S04",
-        "canonical_target_id": null,
-        "source_lane": "dispatcher_integration_repair",
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "provenance": {
-          "source": "repository_pr_decomposition_planner.py",
-          "source_task_id": "REPO-PR-20",
-          "source_branch": "origin/feature/friend-modes-config-v1",
-          "source_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
-          "slice_key": "S04",
-          "created_at": "2026-07-29T22:14:36Z"
-        },
-        "derived_from": null,
-        "repaired_at": "2026-07-29T22:14:36Z",
-        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
-      },
-      "doc_refs": [
-        {
-          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-          "purpose": "required context"
-        },
-        {
-          "path": "AiStudio/Task_manager/task_queue.json",
-          "purpose": "required context"
-        }
-      ],
-      "code_refs": [
-        "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "InplaceX-docs/Game/GPT/Public Interfaces.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "schemas/online/v1/common.schema.json",
-        "schemas/online/v1/rest.schema.json"
-      ],
-      "context_inventory": {
-        "base_ref": "origin/develop",
-        "code_refs": [
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-          "InplaceX-docs/Backend/Online Contracts.md",
-          "InplaceX-docs/Game/GPT/Public Interfaces.md",
-          "InplaceX-docs/Game/Human/App Shell UX v4.md",
-          "schemas/online/v1/common.schema.json",
-          "schemas/online/v1/rest.schema.json"
-        ],
-        "doc_refs": [
-          {
-            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-            "purpose": "required context"
-          },
-          {
-            "path": "AiStudio/Task_manager/task_queue.json",
-            "purpose": "required context"
-          }
-        ],
-        "task_refs": [
-          {
-            "id": "CRB-REPO-PR-20-S04",
-            "purpose": "task context"
-          }
-        ],
-        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
-        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
-      },
-      "input_refs": {
-        "base_branch": "develop",
-        "base_ref": "origin/develop",
-        "allowed_paths": [
-          "InplaceX-bot-core/src/main/kotlin/com/mirkori/inplacex/core/model/GameConfig.kt",
-          "InplaceX-docs/Backend/Online Contracts.md",
-          "InplaceX-docs/Game/GPT/Public Interfaces.md",
-          "InplaceX-docs/Game/Human/App Shell UX v4.md",
-          "schemas/online/v1/common.schema.json",
-          "schemas/online/v1/rest.schema.json"
-        ],
-        "forbidden_paths": [
-          ".env",
-          ".env.*",
-          "secrets",
-          "production config"
-        ],
-        "context_docs": [
-          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
-        ],
-        "source_file": "AiStudio/Task_manager/task_queue.json",
-        "worker_source_branch": null
-      },
-      "output_contract": {
-        "changed_paths_must_match_allowed_paths": true,
-        "required_checks": [
-          "python -m json.tool schemas/online/v1/common.schema.json",
-          "python -m json.tool schemas/online/v1/rest.schema.json",
-          "git diff --check"
-        ],
-        "worker_report_required": true,
-        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-20-S04_<timestamp>.md",
-        "event_required": "integration_requested",
-        "task_state_on_success": "agent_done",
-        "task_state_on_blocker": "needs_worker_fix",
-        "preserve_existing_behavior": true
-      },
-      "script_actions": [
-        {
-          "command": "python -m json.tool schemas/online/v1/common.schema.json",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        },
-        {
-          "command": "python -m json.tool schemas/online/v1/rest.schema.json",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        },
-        {
-          "command": "git diff --check",
-          "required": true,
-          "purpose": "worker validation evidence",
-          "on_failure": "stop and return needs_worker_fix with command output"
-        }
-      ],
-      "regression_guards": [
-        "Compare changed code against current develop before finalizing.",
-        "Document any intentional behavior removal in the worker report and integration_notes."
-      ],
-      "integration_notes": [
-        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
-        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
-        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
-      ],
-      "packet_status": "worker_ready",
-      "normalization_status": "worker_ready",
-      "dispatcher_decision": "worker_ready",
-      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
-      "repaired_packet_at": "2026-07-29T22:14:36Z",
-      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "repaired_packet_metadata_at": "2026-07-29T22:14:37Z",
-      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "packet_normalized_at": "2026-07-29T22:14:49Z",
-      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py"
     }
   ],
   "design_handoff_intake_import": {
@@ -5384,7 +3942,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-29T22:14:36Z",
+    "generated_at": "2026-07-29T23:14:53Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
