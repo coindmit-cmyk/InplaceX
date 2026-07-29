@@ -22,7 +22,6 @@ from typing import Any
 
 import validate_task_queue_readiness
 from codex_model_capability import default_catalog_path, resolve_requested_model
-import execution_lease_manager
 from project_paths import task_file, task_relpath
 
 
@@ -168,6 +167,63 @@ def task_id(task: dict[str, Any]) -> str:
     return str(task.get("id") or task.get("task_id") or "").strip()
 
 
+def exact_repository_input_refs(task: dict[str, Any]) -> list[str]:
+    """Return exact repository-relative code refs that must exist before claim."""
+    values: list[Any] = []
+    values.extend(as_list(task.get("code_refs")))
+    context_inventory = task.get("context_inventory")
+    if isinstance(context_inventory, dict):
+        values.extend(as_list(context_inventory.get("code_refs")))
+    refs: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            value = value.get("path")
+        ref = str(value or "").replace("\\", "/").strip()
+        if (
+            not ref
+            or ref.startswith(("runtime-generated:", "http://", "https://", "file://", "/"))
+            or re.match(r"^[A-Za-z]:/", ref)
+            or any(marker in ref for marker in ("*", "?", "[", "]", "{", "}"))
+            or ref.startswith(("../", "~/"))
+        ):
+            continue
+        if ref not in refs:
+            refs.append(ref)
+    return refs
+
+
+def missing_repository_input_refs(task: dict[str, Any], project_root: Path) -> list[str]:
+    source_ref = ""
+    if str(task.get("type") or "").strip().lower() == "clean-rebuild":
+        provenance = task.get("provenance")
+        if not isinstance(provenance, dict):
+            provenance = {}
+        source_ref = str(
+            task.get("clean_rebuild_source_head_sha")
+            or task.get("source_head_sha")
+            or provenance.get("source_head_sha")
+            or task.get("clean_rebuild_source_branch")
+            or task.get("source_branch")
+            or provenance.get("source_branch")
+            or ""
+        ).strip()
+
+    return [
+        ref
+        for ref in exact_repository_input_refs(task)
+        if not (project_root / ref).exists()
+        and not (
+            source_ref
+            and run(
+                ["git", "cat-file", "-e", f"{source_ref}:{ref}"],
+                project_root,
+                check=False,
+            ).returncode
+            == 0
+        )
+    ]
+
+
 def branch_for(machine_id: str, worker_id: str, task_id_value: str, title: str) -> str:
     title_part = slug(title)[:48]
     return f"AiStudio/Agent/worker/{slug(machine_id)}/{slug(worker_id)}/{slug(task_id_value)}/{title_part}".rstrip("/")
@@ -199,7 +255,6 @@ def needs_fresh_retry_branch(task: dict[str, Any]) -> bool:
     status_history = task.get("status_history")
     if isinstance(status_history, list):
         retry_events = {
-            "design_handoff_integration_retry",
             "worker_finalize_failed_routed",
             "worker_finalize_failed_requeued",
             "worker_launch_failed_requeued",
@@ -309,7 +364,7 @@ def task_complexity(task: dict[str, Any]) -> str | None:
     return TASK_COMPLEXITY_ALIASES.get(normalized, normalized) or None
 
 
-def worker_packet_defects(task: dict[str, Any]) -> list[str]:
+def worker_packet_defects(task: dict[str, Any], project_root: Path | None = None) -> list[str]:
     defects: list[str] = []
     for field in REQUIRED_WORKER_PACKET_LIST_FIELDS:
         value = task.get(field)
@@ -332,6 +387,11 @@ def worker_packet_defects(task: dict[str, Any]) -> list[str]:
         and not validate_task_queue_readiness.has_compatibility_policy(task)
     ):
         defects.append("migration_without_compatibility_policy")
+    if project_root is not None:
+        defects.extend(
+            f"missing_input_ref:{ref}"
+            for ref in missing_repository_input_refs(task, project_root)
+        )
     return defects
 
 
@@ -530,6 +590,7 @@ def choose_defective_packet_task(
     worker_id: str,
     locked_ids: set[str],
     exact_task_id: str | None = None,
+    project_root: Path | None = None,
 ) -> tuple[dict[str, Any], list[str]] | None:
     completed_ids = completed_task_ids(tasks)
     tasks_by_id = {task_id(task): task for task in tasks if task_id(task)}
@@ -545,7 +606,7 @@ def choose_defective_packet_task(
             tasks_by_id=tasks_by_id,
         ):
             continue
-        defects = worker_packet_defects(task)
+        defects = worker_packet_defects(task, project_root)
         if defects:
             candidates.append((task, defects))
     if exact_task_id:
@@ -555,11 +616,25 @@ def choose_defective_packet_task(
     return candidates[0] if candidates else None
 
 
-def route_task_packet_defect(queue: dict[str, Any], profile: dict[str, Any], worker_id: str, locked_ids: set[str], exact_task_id: str | None = None) -> dict[str, Any] | None:
+def route_task_packet_defect(
+    queue: dict[str, Any],
+    profile: dict[str, Any],
+    worker_id: str,
+    locked_ids: set[str],
+    exact_task_id: str | None = None,
+    project_root: Path | None = None,
+) -> dict[str, Any] | None:
     tasks = queue.get("tasks")
     if not isinstance(tasks, list):
         raise SystemExit("task_queue.json must contain tasks array")
-    selected = choose_defective_packet_task([task for task in tasks if isinstance(task, dict)], profile, worker_id, locked_ids, exact_task_id)
+    selected = choose_defective_packet_task(
+        [task for task in tasks if isinstance(task, dict)],
+        profile,
+        worker_id,
+        locked_ids,
+        exact_task_id,
+        project_root,
+    )
     if not selected:
         return None
     task, defects = selected
@@ -576,9 +651,9 @@ def route_task_packet_defect(queue: dict[str, Any], profile: dict[str, Any], wor
     task["next_owner"] = "Dispatcher"
     task["task_packet_defects"] = defects
     task["missing_packet_fields"] = defects
-    task["repair_request"] = "Complete Worker Packet v2 fields before worker claim."
+    task["repair_request"] = "Repair the listed Worker Packet v2 defects before worker claim."
     task["repair_owner"] = "dispatcher"
-    task["next_action"] = "Run dispatcher_packet_repair.py or create a Dispatcher repair task with complete worker_instructions, traceability, doc_refs, input_refs, output_contract and script_actions."
+    task["next_action"] = "Refresh stale input references or complete missing Worker Packet v2 fields, then rerun Dispatcher repair."
     task["dispatcher_next_review_at"] = now
     task["not_worker_ready_reason"] = "Worker Packet v2 is incomplete; Dispatcher must repair before worker execution"
     task["status_reason"] = task["not_worker_ready_reason"]
@@ -721,68 +796,6 @@ def choose_task(
     return candidates[0] if candidates else None
 
 
-def bind_execution_lease(target: dict[str, Any], lease: dict[str, Any] | None) -> None:
-    if not isinstance(lease, dict):
-        return
-    lease_id = str(lease.get("lease_id") or "").strip()
-    expires_at = str(lease.get("expires_at") or "").strip()
-    if not lease_id or not expires_at:
-        raise ValueError("execution lease requires lease_id and expires_at")
-    public_lease = {
-        key: lease.get(key)
-        for key in (
-            "lease_id",
-            "project_id",
-            "worker_id",
-            "model",
-            "created_at",
-            "heartbeat_at",
-            "expires_at",
-        )
-        if lease.get(key) is not None
-    }
-    target["lease"] = public_lease
-    target["lease_id"] = lease_id
-    target["execution_lease_id"] = lease_id
-    target["lease_expires_at"] = expires_at
-
-
-def resolve_execution_lease(
-    runtime_root: Path,
-    lease_id: str,
-    project_id: str,
-    worker_id: str,
-    model: str,
-) -> dict[str, Any]:
-    requested = str(lease_id or "").strip()
-    if not requested:
-        raise ValueError("execution lease id is empty")
-    state = execution_lease_manager.status(runtime_root)
-    lease = next(
-        (
-            item
-            for item in state.get("leases", [])
-            if isinstance(item, dict) and str(item.get("lease_id") or "") == requested
-        ),
-        None,
-    )
-    if lease is None:
-        raise ValueError("execution lease is missing or expired")
-    expected = {
-        "project_id": project_id,
-        "worker_id": worker_id,
-        "model": model,
-    }
-    mismatches = [
-        key
-        for key, value in expected.items()
-        if value and str(lease.get(key) or "") != str(value)
-    ]
-    if mismatches:
-        raise ValueError(f"execution lease binding mismatch: {', '.join(mismatches)}")
-    return lease
-
-
 def claim(
     queue: dict[str, Any],
     locks: dict[str, Any],
@@ -791,7 +804,6 @@ def claim(
     machine_id: str,
     ttl_hours: int,
     exact_task_id: str | None = None,
-    execution_lease: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     tasks = queue.get("tasks")
     if not isinstance(tasks, list):
@@ -821,7 +833,6 @@ def claim(
             task["started_at"] = now
             task["lock_expires_at"] = expires
             task["status_reason"] = "central runner claimed task before isolated worker launch"
-            bind_execution_lease(task, execution_lease)
             break
     queue["updated_at"] = now
 
@@ -829,23 +840,23 @@ def claim(
     if not isinstance(lock_list, list):
         lock_list = []
         locks["locks"] = lock_list
-    lock_entry = {
-        "task_id": chosen_id,
-        "state": "in_progress",
-        "by": worker_id,
-        "machine_id": machine_id,
-        "branch": branch,
-        "at": now,
-        "expires_at": expires,
-        "notes": "central runner claim",
-    }
-    bind_execution_lease(lock_entry, execution_lease)
-    lock_list.append(lock_entry)
+    lock_list.append(
+        {
+            "task_id": chosen_id,
+            "state": "in_progress",
+            "by": worker_id,
+            "machine_id": machine_id,
+            "branch": branch,
+            "at": now,
+            "expires_at": expires,
+            "notes": "central runner claim",
+        }
+    )
     locks["updated_at"] = now
     locks.setdefault("schema_version", 1)
     locks.setdefault("default_ttl_hours", ttl_hours)
 
-    result = {
+    return {
         "task_id": chosen_id,
         "title": chosen.get("title"),
         "worker_id": worker_id,
@@ -855,8 +866,6 @@ def claim(
         "claimed_at": now,
         "lock_expires_at": expires,
     }
-    bind_execution_lease(result, execution_lease)
-    return result
 
 
 def main() -> int:
@@ -870,7 +879,6 @@ def main() -> int:
     parser.add_argument("--task-id", help="Claim this exact task id if it is eligible for the selected worker profile.")
     parser.add_argument("--machine-id", default="aistudio")
     parser.add_argument("--runtime-root", default="~/agent-runtime")
-    parser.add_argument("--execution-lease-id", help="Active host execution lease to bind into the task and lock claim.")
     parser.add_argument("--ttl-hours", type=int, default=8)
     parser.add_argument("--push-retries", type=int, default=5, help="Retry claim from fresh GitHub state after a rejected push.")
     parser.add_argument("--push-retry-delay", type=float, default=1.0, help="Seconds to wait between rejected-push retries.")
@@ -902,7 +910,14 @@ def main() -> int:
             locks_relpath = task_relpath(worktree, "agent_locks.json")
             queue = load_json(queue_path)
             locks = load_json(locks_path)
-            repair_result = route_task_packet_defect(queue, profile, args.worker_id, active_lock_ids(locks), args.task_id)
+            repair_result = route_task_packet_defect(
+                queue,
+                profile,
+                args.worker_id,
+                active_lock_ids(locks),
+                args.task_id,
+                worktree,
+            )
             if repair_result:
                 repair_result.update({
                     "requested_task_id": args.task_id,
@@ -964,36 +979,7 @@ def main() -> int:
                     time.sleep(max(0.0, args.push_retry_delay))
                     continue
 
-            execution_lease = None
-            if args.execution_lease_id:
-                try:
-                    execution_lease = resolve_execution_lease(
-                        Path(args.runtime_root).expanduser(),
-                        args.execution_lease_id,
-                        project_root.name,
-                        args.worker_id,
-                        str((model_resolution or {}).get("resolved_model") or args.requested_model or ""),
-                    )
-                except ValueError as exc:
-                    result = {
-                        "claimed": False,
-                        "reason": "execution_lease_invalid",
-                        "detail": str(exc),
-                        "worker_id": args.worker_id,
-                        "requested_task_id": args.task_id,
-                    }
-                    print(json.dumps(result, ensure_ascii=False, indent=2))
-                    return 2
-            claim_result = claim(
-                queue,
-                locks,
-                profile,
-                args.worker_id,
-                args.machine_id,
-                args.ttl_hours,
-                args.task_id,
-                execution_lease,
-            )
+            claim_result = claim(queue, locks, profile, args.worker_id, args.machine_id, args.ttl_hours, args.task_id)
             if not claim_result:
                 result = {
                     "claimed": False,

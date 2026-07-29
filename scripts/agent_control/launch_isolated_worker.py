@@ -283,6 +283,47 @@ def task_context_prompt(task: dict[str, Any]) -> str:
         f"- allowed_paths: {json.dumps(allowed, ensure_ascii=False)}",
         f"- forbidden_paths: {json.dumps(forbidden, ensure_ascii=False)}",
     ]
+    packet_fields = (
+        "priority",
+        "complexity",
+        "type",
+        "summary",
+        "description",
+        "acceptance_criteria",
+        "checks",
+        "script_actions",
+        "deliverables",
+        "expected_output",
+        "source_refs",
+    )
+    packet_snapshot = {
+        field: task[field]
+        for field in packet_fields
+        if field in task and task[field] not in (None, "", [])
+    }
+    compact_input_refs = {
+        field: input_refs[field]
+        for field in ("base_branch", "source_candidate", "source_report", "evidence")
+        if field in input_refs and input_refs[field] not in (None, "", [])
+    }
+    if compact_input_refs:
+        packet_snapshot["input_refs"] = compact_input_refs
+    if packet_snapshot:
+        lines.extend(
+            [
+                f"- assigned_packet_snapshot: {json.dumps(packet_snapshot, ensure_ascii=False, separators=(',', ':'))}",
+                "- This injected snapshot satisfies the task_queue read for the assigned row. Do not scan or load the full task_queue.json unless the snapshot is missing a required field or conflicts with current Git evidence.",
+            ]
+        )
+    if str(task.get("complexity") or "").strip().upper() == "S":
+        lines.extend(
+            [
+                "- S-task resource budget: use the shortest direct path; do not perform architecture analysis, repository-wide review, broad discovery, scanner, repair, or backlog creation.",
+                "- Inspect only START_HERE plus the named evidence and target files needed for this packet. Prefer one bounded search over repeated file reads.",
+                "- Run only the packet checks (maximum 3). If a required target is absent, evidence already satisfies the contract, or no valid edit is possible, record that fact and stop immediately.",
+                "- Do not create additional work. End the run as soon as the accepted scope or the first concrete blocker is recorded.",
+            ]
+        )
     if paths:
         lines.append(f"- batch_evidence_paths: {json.dumps(paths, ensure_ascii=False)}")
     lines.extend(
@@ -303,15 +344,16 @@ def build_task_prompt(
     *,
     base_ref_sha: str | None = None,
 ) -> str:
+    task_data = task or {}
     title_line = f"\nAssigned task title: {task_title}" if task_title else ""
-    context = task_context_prompt(task or {})
+    context = task_context_prompt(task_data)
     execution_base = str(base_ref_sha or "").strip()
     freshness_contract = (
         f"Authorized immutable execution base: {execution_base}. "
         if execution_base
         else ""
     )
-    return (
+    prompt = (
         f"{base_prompt}\n\n"
         f"Assigned task: {task_id}{title_line}\n"
         f"{context}\n"
@@ -336,6 +378,18 @@ def build_task_prompt(
         "needs_task_packet, needs_human or needs_stronger_agent evidence. Always leave a concise worker result "
         "summary in your final answer; the runner will commit and push the worker branch after you exit."
     )
+    if str(task_data.get("complexity") or "").strip().upper() == "S":
+        prompt += (
+            "\n\nFINAL S-TASK EXECUTION LIMIT (higher priority than repository guidance): "
+            "use at most 8 total tool or shell calls. The runtime has already completed entry preflight, so do not "
+            "follow links from START_HERE or read .agent/general.md, .agent/project.md, .agent/workflows.md, "
+            ".agent/modules.md, AGENTS.md, doc/ai/**, or product documentation unless the assigned_packet_snapshot "
+            "names that exact file. First test the exact concrete target paths from allowed_paths. If a required "
+            "target is absent, do not search for substitutes: run the packet checks, report needs_dispatcher_repair, "
+            "and stop. Do not inspect batch evidence source files when the target is absent or already satisfies the "
+            "acceptance contract."
+        )
+    return prompt
 
 
 def codex_exec_command(

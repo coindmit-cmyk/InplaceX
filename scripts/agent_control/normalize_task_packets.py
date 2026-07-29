@@ -284,12 +284,16 @@ def reconcile_queue_dependencies(
     data: dict[str, Any],
     active_locks: set[str],
     now: str,
+    completed_tasks: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     result = deepcopy(data)
     tasks = result.get("tasks", [])
     if not isinstance(tasks, list):
         raise ValueError("task queue must contain a tasks array")
-    completed_ids = completed_dependency_ids([task for task in tasks if isinstance(task, dict)])
+    completed_ids = completed_dependency_ids(
+        [task for task in tasks if isinstance(task, dict)]
+        + [task for task in (completed_tasks or []) if isinstance(task, dict)]
+    )
     actions: list[dict[str, Any]] = []
     changed = False
     for index, task in enumerate(tasks):
@@ -915,9 +919,10 @@ def normalize_queue(
     project_root: Path,
     active_locks: set[str],
     task_delay_seconds: float = 0,
+    completed_tasks: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     now = utc_now()
-    result, actions = reconcile_queue_dependencies(data, active_locks, now)
+    result, actions = reconcile_queue_dependencies(data, active_locks, now, completed_tasks)
     tasks = result.get("tasks", [])
     if not isinstance(tasks, list):
         raise ValueError("task queue must contain a tasks array")
@@ -950,16 +955,26 @@ def run_once(
     apply: bool,
     task_delay_seconds: float = 0,
     dependencies_only: bool = False,
+    history_path: Path | None = None,
 ) -> dict[str, Any]:
     queue = load_json(queue_path)
     locks = load_json(locks_path) if locks_path.exists() else None
+    history_path = history_path or task_file(project_root, "task_history.json")
+    history = load_json(history_path) if history_path.exists() else {"tasks": []}
+    completed_tasks = history.get("tasks", []) if isinstance(history, dict) else []
     active_locks = active_lock_task_ids(locks)
     dependency_packet_repair = None
     if dependencies_only:
-        updated, actions = reconcile_queue_dependencies(queue, active_locks, utc_now())
+        updated, actions = reconcile_queue_dependencies(queue, active_locks, utc_now(), completed_tasks)
         updated, dependency_packet_repair = repair_reconciled_dependency_packets(updated, actions)
     else:
-        updated, actions = normalize_queue(queue, project_root, active_locks, task_delay_seconds)
+        updated, actions = normalize_queue(
+            queue,
+            project_root,
+            active_locks,
+            task_delay_seconds,
+            completed_tasks,
+        )
     worker_ready = [action for action in actions if action["action"] == "worker_ready"]
     needs_dispatcher = [action for action in actions if action["action"] == "needs_dispatcher"]
 
@@ -969,6 +984,7 @@ def run_once(
     return {
         "project_root": str(project_root),
         "queue": str(queue_path),
+        "history": str(history_path),
         "checked_at": utc_now(),
         "dry_run": not apply,
         "mode": "dependency_reconciliation" if dependencies_only else "packet_normalization",
@@ -1006,6 +1022,7 @@ def main() -> int:
     parser.add_argument("--project-root", required=True, help="Project root used for stack/path inference.")
     parser.add_argument("--queue", help="Path to task_queue.json. Defaults to <project-root>/AiStudio/Task_manager/task_queue.json.")
     parser.add_argument("--locks", help="Optional path to agent_locks.json. Defaults to <project-root>/AiStudio/Task_manager/agent_locks.json.")
+    parser.add_argument("--history", help="Optional path to task_history.json. Defaults to <project-root>/AiStudio/Task_manager/task_history.json.")
     parser.add_argument("--apply", action="store_true", help="Write changes. Default is dry-run.")
     parser.add_argument("--json", action="store_true", help="Emit JSON report.")
     parser.add_argument(
@@ -1022,6 +1039,7 @@ def main() -> int:
     project_root = Path(args.project_root).resolve()
     queue_path = Path(args.queue).resolve() if args.queue else task_file(project_root, "task_queue.json")
     locks_path = Path(args.locks).resolve() if args.locks else task_file(project_root, "agent_locks.json")
+    history_path = Path(args.history).resolve() if args.history else task_file(project_root, "task_history.json")
 
     if args.watch:
         task_delay = 1.0 if args.task_delay is None else max(0.0, args.task_delay)
@@ -1036,6 +1054,7 @@ def main() -> int:
                 args.apply,
                 task_delay,
                 dependencies_only=args.dependencies_only,
+                history_path=history_path,
             )
             report["cycle"] = cycles
             report["watch"] = True
@@ -1052,6 +1071,7 @@ def main() -> int:
         locks_path,
         args.apply,
         dependencies_only=args.dependencies_only,
+        history_path=history_path,
     )
     print_report(report, args.json)
     return 0

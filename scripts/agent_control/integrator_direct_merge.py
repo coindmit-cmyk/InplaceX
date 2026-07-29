@@ -876,8 +876,7 @@ LINE_PRESERVATION_PATHS = {
 UNION_CONFLICT_PATHS = {"CHANGELOG.md"}
 
 GENERIC_METHOD_BEHAVIOR_PATTERN = re.compile(
-    r"^\s*(?:(?:public|private|protected|internal|static|final|open|override|abstract|suspend)\s+)*"
-    r"\S[A-Za-z0-9_<>,.?\[\]\s]*\s+([A-Za-z_]\w*)\s*\("
+    r"^\s*(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z0-9_<>,.?\[\]\s]+\s+([A-Za-z_]\w*)\s*\("
 )
 
 BEHAVIOR_PATTERNS = (
@@ -1193,19 +1192,10 @@ def replaced_test_behaviors(
 
 def detect_behavior_regression(before: dict[str, list[str]], after: dict[str, list[str]]) -> dict[str, Any]:
     lost: dict[str, list[str]] = {}
-    after_tokens_global = {
-        token
-        for tokens in after.values()
-        for token in tokens
-    }
     for rel_path, tokens in before.items():
         before_tokens = set(tokens)
         after_tokens = set(after.get(rel_path, []))
         missing_tokens = before_tokens - after_tokens
-        # Refactors may move a class or method to another changed file without
-        # removing its behavior. The snapshot only contains candidate paths, so
-        # a token found elsewhere in `after` is evidence of an in-scope move.
-        missing_tokens -= after_tokens_global
         missing_tokens -= replaced_test_behaviors(
             rel_path,
             missing_tokens,
@@ -2141,30 +2131,6 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         results.append(add)
         status = run(["git", "status", "--porcelain", "--", *checkout_paths], worktree)
         results.append(status)
-        if (
-            add["exit_code"] == 0
-            and status["exit_code"] == 0
-            and not str(status.get("stdout") or "").strip()
-        ):
-            # A successful three-way apply can legitimately produce no diff
-            # when the exact task delta was already published by a previous
-            # integration attempt whose state commit failed. Finalize the task
-            # against the current base instead of sending it back to a worker.
-            current_head = run(["git", "rev-parse", "HEAD"], worktree)
-            results.append(current_head)
-            current_head_sha = str(current_head.get("stdout") or "").strip()
-            if current_head["exit_code"] == 0 and current_head_sha:
-                ready.append(task_id)
-                commits.append(current_head_sha)
-                ready_metadata[task_id] = item
-                results.append({
-                    "command": ["integrator", "already-applied-task-delta"],
-                    "cwd": str(worktree),
-                    "exit_code": 0,
-                    "stdout": task_id,
-                    "stderr": "",
-                })
-                continue
         if add["exit_code"] != 0 or status["exit_code"] != 0 or not str(status.get("stdout") or "").strip():
             routed.append({"task_id": task_id, "next_owner": "worker", "reason": "no usable task-scoped diff"})
             continue

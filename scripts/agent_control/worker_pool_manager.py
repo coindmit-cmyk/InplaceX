@@ -20,6 +20,7 @@ from typing import Any
 from codex_host_readiness import codex_host_readiness
 import claim_next_task
 import execution_lease_manager
+import fast_track_gate
 import model_resource_router
 import runner_readiness_report
 from process_log import append_log
@@ -33,10 +34,22 @@ DEFAULT_MODEL_FALLBACKS: dict[str, str | None] = {}
 SHARED_RECONCILIATION_PATHS = {
     "CHANGELOG.md",
     "README.md",
-    "AiStudio/Task_manager/task_queue.json",
     "AiStudio/Task_manager/clean_rebuild_plan.json",
     "docs/plans/allowed_paths_repair_plan.json",
 }
+
+FAST_TRACK_PROMPT = (
+    "Fast Track / Minimal First Execution: execute only the injected assigned packet. "
+    "Treat its assigned_packet_snapshot as the task_queue read for this run; do not scan the full queue. "
+    "Inspect only the named evidence and allowed paths, run only the 1-3 contract checks, "
+    "do not start broad review, scanners or unrelated repair, and stop after the accepted scope is complete."
+)
+
+
+def worker_prompt(worker_id: str, fast_track: dict[str, Any] | None) -> str:
+    if isinstance(fast_track, dict) and fast_track.get("eligible") is True:
+        return f"{worker_id}\n\n{FAST_TRACK_PROMPT}"
+    return worker_id
 
 
 def utc_now() -> str:
@@ -677,6 +690,8 @@ def main() -> int:
     planned_lock_ids = active_queue_lock_ids(project_root)
     planned_paths = active_locked_paths(project_root, planned_lock_ids)
     has_queue = queue_exists(project_root)
+    queue_data = load_json(task_file(project_root, "task_queue.json")) if has_queue else {"tasks": []}
+    locks_data = load_json(task_file(project_root, "agent_locks.json")) if has_queue else {"locks": []}
     potential_slot_limit = sum(
         max(1, int((profiles_by_id.get(profile) or {}).get("max_parallel_lanes") or 1))
         for profile in args.profiles
@@ -723,6 +738,17 @@ def main() -> int:
             continue
         routing_task = dict(planned_task or {})
         profile_config = profiles_by_id.get(profile) or {}
+        fast_track = (
+            fast_track_gate.evaluate(
+                planned_task_id,
+                queue_data,
+                locks_data,
+                profile,
+                profile_config,
+            )
+            if planned_task_id
+            else None
+        )
         if profile_config.get("model_candidates") and not routing_task.get("model_candidates"):
             routing_task["model_candidates"] = profile_config["model_candidates"]
         packet_repair_only = bool(routing_task.pop("_packet_repair_only", False))
@@ -775,6 +801,7 @@ def main() -> int:
             "packet_repair_only": packet_repair_only,
             "scheduling_class": scheduling_class,
             "scheduling_class_reason": scheduling_class_reason,
+            "fast_track": fast_track,
         })
     planned_lanes = planned_lanes[:available_capacity]
     if not args.apply and any(lane.get("task_id") for lane in planned_lanes) and not preflight.get("ok"):
@@ -795,10 +822,9 @@ def main() -> int:
         return 0
     launches: list[dict[str, Any]] = []
     started_processes: list[tuple[subprocess.Popen[Any], dict[str, Any], dict[str, Any] | None, float]] = []
-    execution_policy = execution_lease_manager.default_policy() if args.apply else None
+    execution_policy = None
     if args.execution_policy:
-        if execution_policy is None:
-            execution_policy = execution_lease_manager.default_policy()
+        execution_policy = execution_lease_manager.default_policy()
         execution_policy.update(load_json(Path(args.execution_policy).expanduser()))
 
     for lane in planned_lanes:
@@ -838,6 +864,8 @@ def main() -> int:
             cmd.extend(["--model", str(model)])
         if reasoning_effort:
             cmd.extend(["--reasoning-effort", str(reasoning_effort)])
+        if not packet_repair_only:
+            cmd.extend(["--prompt", worker_prompt(profile, lane.get("fast_track"))])
         if args.worker_base_ref and not packet_repair_only:
             cmd.extend(["--worker-base-ref", args.worker_base_ref])
         if args.worker_context_ref and not packet_repair_only:
@@ -893,6 +921,7 @@ def main() -> int:
             "routing": lane.get("routing"),
             "scheduling_class": lane.get("scheduling_class"),
             "scheduling_class_reason": lane.get("scheduling_class_reason"),
+            "fast_track": lane.get("fast_track"),
         }
         if args.apply:
             log_root.mkdir(parents=True, exist_ok=True)

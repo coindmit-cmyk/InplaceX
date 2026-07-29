@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,8 +17,16 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def process_log_dir(project_root: Path) -> Path:
+    runtime_root = str(os.environ.get("AISTUDIO_PROCESS_LOG_ROOT") or "").strip()
+    if not runtime_root:
+        return task_process_logs_dir(project_root)
+    project_id = re.sub(r"[^A-Za-z0-9._-]+", "-", project_root.resolve().name).strip("-") or "project"
+    return Path(runtime_root).expanduser() / project_id
+
+
 def append_log(project_root: Path, process: str, event: str, **fields: Any) -> None:
-    log_dir = task_process_logs_dir(project_root)
+    log_dir = process_log_dir(project_root)
     log_dir.mkdir(parents=True, exist_ok=True)
     record = {
         "timestamp": utc_now(),

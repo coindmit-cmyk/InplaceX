@@ -1055,6 +1055,18 @@ def choose_model(
             effort = raised
     if recommendation is None and role not in {"architect", "integrator"} and effort in {"max", "ultra"}:
         effort = "extra_high"
+    small_task_budget_applied = False
+    if (
+        recommendation is None
+        and role == "worker"
+        and complexity == "S"
+        and risk not in {"high", "critical"}
+        and attempts == 0
+        and not task.get("reasoning_effort_hint")
+        and not task.get("reasoning_effort")
+    ):
+        effort = "low"
+        small_task_budget_applied = True
     if recommendation is None:
         profile_name = PROFILE_BY_EFFORT[effort]
         profile = profiles.get(profile_name) or {}
@@ -1125,6 +1137,8 @@ def choose_model(
         "reason_code": (
             "fallback_selected"
             if lifecycle_status == "fallback_selected"
+            else "small_task_resource_budget"
+            if small_task_budget_applied
             else "legacy_effort_downgraded"
             if legacy_effort_downgraded
             else "route_selected"
