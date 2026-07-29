@@ -145,12 +145,6 @@ A runner may claim a task only when all are true:
 - for 5.5-family profiles, remaining model limit is at least 15% before claiming a new task.
 - `AiStudio/Task_manager/agent_activity_state.json` does not show a newer manual queue or role input that must be reconciled first.
 
-An applied worker-pool lane always acquires a host execution lease.
-`run_worker_cycle.py` forwards that exact lease id to `claim_next_task.py`.
-The claim validates the lease project, worker, model and expiry, then records
-the sanitized binding in both the task row and lock entry. A missing, expired
-or mismatched execution lease fails before the claim commit.
-
 Expired locks are not silently cleared. They are reported as stale and require owner or dedicated lock-maintenance handling.
 
 ## Apply-lock Behavior

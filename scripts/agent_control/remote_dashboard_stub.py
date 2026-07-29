@@ -7449,6 +7449,28 @@ def summarize_project(
             counts["postponed"] += 1
             counts["history_postponed"] += 1
         by_status[status] = by_status.get(status, 0) + 1
+        task_rows.append({
+            "id": task_id,
+            "title": str(task.get("title") or task.get("module") or task.get("name") or ""),
+            "status": status,
+            "status_raw": normalize_status(task.get("status") if task.get("status") is not None else status),
+            "status_source": "history",
+            "bucket": bucket,
+            "size": task_size(task),
+            "created_at": task_created_text(task),
+            "started_at": "",
+            "updated_at": task_updated_text(task, {}, None),
+            "lock_expires_at": "",
+            "completed_at": task_completed_text(task),
+            "priority": str(task.get("priority", "")),
+            "worker_id": task.get("worker_id"),
+            "reason": task_display_reason(task),
+            "lane": "completed",
+            "source_path": task.get("_source_path"),
+            "token_cost": None,
+            "token_run_count": 0,
+            "token_success_run_count": 0,
+        })
     recent_task_outcomes = task_outcomes_last_24h(completed_dates, latest_task_run)
     accumulate_event_role_outcomes(counts["role_outcomes"], agent_events, latest_task_run, completed_task_keys, queue_task_keys)
     queue_active_ids = {
@@ -11585,6 +11607,7 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
     infra_blocked_rows = []
     task_packet_rows = []
     postponed_rows = []
+    stale_rows = []
     completed_rows = []
     attention_action_by_task = {
         str(item.get("task_id") or ""): str(item.get("action") or "")
@@ -11636,7 +11659,10 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
             if task.get("bucket") == "task_packet":
                 task_packet_rows.append(row)
             elif task.get("bucket") == "postponed":
-                postponed_rows.append(row)
+                if normalize_status(status) in {"stale", "stale_or_superseded", "superseded", "deprecated"}:
+                    stale_rows.append(row)
+                else:
+                    postponed_rows.append(row)
             elif task.get("bucket") == "human":
                 if task.get("attention_suppressed"):
                     continue
@@ -11808,6 +11834,8 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
         f'{task_table(task_packet_rows, "Задач для подготовки диспетчером нет")}'
         f'<h2>Отложенные задачи ({len(postponed_rows)})</h2>'
         f'{task_table(postponed_rows, "Отложенных задач нет")}'
+        f'<h2>Устаревшие задачи ({len(stale_rows)})</h2>'
+        f'{task_table(stale_rows, "Устаревших задач нет")}'
         f'{worktrees_table(worktrees)}'
         f'<h2>Ненастоящие worktree ({len(stale_worktrees)})</h2>'
         f'{worktrees_stale_table(stale_worktrees)}'

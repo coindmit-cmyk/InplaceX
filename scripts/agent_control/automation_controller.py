@@ -24,6 +24,14 @@ from action_report import validate_report as validate_action_report
 
 ROLE_MODES = {"all", "architect", "dispatcher", "workers", "integrator", "finalizer", "model_limit_retries", "release_locks", "pr_intake", "result_handoff", "full_intake"}
 MODES = {"plan", "full", "project", "role", "one-task", "fast-track", "worktrees", "status"}
+LIFECYCLE_RECOVERABLE_READINESS_BLOCKERS = {
+    "active locks present",
+    "candidate tasks exist but are not worker-ready",
+    "expired queue locks present",
+}
+SAFE_STATE_COMMIT_PREFIX = "chore(agent): record manual "
+SAFE_STATE_COMMIT_SUFFIX = " state"
+SAFE_STATE_PATH_PREFIX = "AiStudio/Task_manager/"
 
 
 def now_utc() -> str:
@@ -54,6 +62,61 @@ def parse_json_object(text: str) -> dict[str, Any] | None:
     except (TypeError, json.JSONDecodeError):
         return None
     return data if isinstance(data, dict) else None
+
+
+def parse_utc(value: Any) -> dt.datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def explicit_model_tokens(value: Any) -> int:
+    if isinstance(value, dict):
+        own = value.get("model_tokens")
+        if isinstance(own, int) and not isinstance(own, bool):
+            return max(0, own)
+        return sum(explicit_model_tokens(item) for item in value.values())
+    if isinstance(value, list):
+        return sum(explicit_model_tokens(item) for item in value)
+    return 0
+
+
+def controller_resource_usage() -> dict[str, Any]:
+    try:
+        import resource
+    except ImportError:
+        return {
+            "available": False,
+            "controller_cpu_seconds": None,
+            "controller_max_rss_kb": None,
+            "child_cpu_seconds": None,
+            "child_max_rss_kb": None,
+        }
+    own = resource.getrusage(resource.RUSAGE_SELF)
+    children = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return {
+        "available": True,
+        "controller_cpu_seconds": round(float(own.ru_utime + own.ru_stime), 3),
+        "controller_max_rss_kb": int(own.ru_maxrss),
+        "child_cpu_seconds": round(float(children.ru_utime + children.ru_stime), 3),
+        "child_max_rss_kb": int(children.ru_maxrss),
+    }
+
+
+def enrich_runtime_metrics(payload: dict[str, Any]) -> None:
+    started_at = parse_utc(payload.get("started_at"))
+    finished_at = parse_utc(payload.get("finished_at") or payload.get("updated_at")) or dt.datetime.now(dt.timezone.utc)
+    payload["wall_time_seconds"] = (
+        round(max(0.0, (finished_at - started_at).total_seconds()), 3)
+        if started_at is not None
+        else None
+    )
+    payload["model_tokens"] = explicit_model_tokens(payload.get("results") or [])
+    payload["resource_usage"] = controller_resource_usage()
 
 
 def child_result_state(results: list[dict[str, Any]], returncode: int) -> str:
@@ -113,6 +176,145 @@ def project_ref_model(project: dict[str, Any]) -> dict[str, str]:
 
 def project_command_root(project: dict[str, Any]) -> Path:
     return Path(str(project.get("automation_path") or project.get("local_path") or "")).expanduser()
+
+
+def run_git(root: Path, args: list[str], *, timeout: int = 30) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+
+
+def recover_safe_unpushed_state_commits(project: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(project.get("project_id") or "")
+    root = project_command_root(project)
+    refs = project_ref_model(project)
+    base_ref = refs["code_base_ref"]
+    push_ref = refs["push_ref"]
+    report: dict[str, Any] = {
+        "project_id": project_id,
+        "state": "no_op",
+        "base_ref": base_ref,
+        "push_ref": push_ref,
+        "commit_count": 0,
+        "commits": [],
+        "changed_paths": [],
+    }
+    if not is_git_worktree(root):
+        return {**report, "state": "blocked", "reason": "not_git_worktree"}
+    status = run_git(root, ["status", "--porcelain"])
+    if status.returncode != 0:
+        return {**report, "state": "blocked", "reason": "status_failed", "stderr": status.stderr}
+    relation = run_git(root, ["rev-list", "--left-right", "--count", f"{base_ref}...HEAD"])
+    if relation.returncode != 0:
+        return {**report, "state": "blocked", "reason": "ahead_behind_failed", "stderr": relation.stderr}
+    counts = relation.stdout.strip().split()
+    if len(counts) != 2:
+        return {**report, "state": "blocked", "reason": "ahead_behind_invalid"}
+    behind, ahead = int(counts[0]), int(counts[1])
+    report.update({"behind": behind, "ahead": ahead})
+    if status.stdout.strip():
+        dirty_entries = [
+            (line[:2], line[3:].strip().replace("\\", "/"))
+            for line in status.stdout.splitlines()
+            if line.strip()
+        ]
+        dirty_paths = sorted({path for _code, path in dirty_entries if path})
+        report["dirty_paths"] = dirty_paths
+        if (
+            behind != 0
+            or ahead > 2
+            or not dirty_entries
+            or any(code != " M" for code, _path in dirty_entries)
+            or any(not path.startswith(SAFE_STATE_PATH_PREFIX) for path in dirty_paths)
+        ):
+            return {**report, "state": "blocked", "reason": "dirty_worktree"}
+        staged = run_git(root, ["add", "--", *dirty_paths])
+        committed = run_git(
+            root,
+            ["commit", "-m", "chore(agent): record manual recovered state"],
+        )
+        if staged.returncode != 0 or committed.returncode != 0:
+            return {
+                **report,
+                "state": "failed",
+                "reason": "safe_dirty_state_commit_failed",
+                "stderr": (staged.stderr + committed.stderr)[-2000:],
+            }
+        report["created_state_commit"] = committed.stdout.strip()
+        ahead += 1
+        report["ahead"] = ahead
+        clean_status = run_git(root, ["status", "--porcelain"])
+        if clean_status.returncode != 0 or clean_status.stdout.strip():
+            return {**report, "state": "failed", "reason": "post_commit_worktree_not_clean"}
+    if ahead == 0:
+        return report
+    if behind != 0 or ahead > 3:
+        return {**report, "state": "blocked", "reason": "unsafe_ahead_relation"}
+    log = run_git(root, ["log", "--format=%H%x00%s", f"{base_ref}..HEAD"])
+    paths = run_git(root, ["diff", "--name-only", f"{base_ref}..HEAD"])
+    if log.returncode != 0 or paths.returncode != 0:
+        return {**report, "state": "blocked", "reason": "state_commit_inspection_failed"}
+    commits = []
+    for line in log.stdout.splitlines():
+        sha, separator, subject = line.partition("\x00")
+        if not separator:
+            return {**report, "state": "blocked", "reason": "state_commit_log_invalid"}
+        commits.append({"sha": sha, "subject": subject})
+    changed_paths = sorted({line.strip().replace("\\", "/") for line in paths.stdout.splitlines() if line.strip()})
+    report.update({"commit_count": len(commits), "commits": commits, "changed_paths": changed_paths})
+    if (
+        len(commits) != ahead
+        or not commits
+        or any(
+            not item["subject"].startswith(SAFE_STATE_COMMIT_PREFIX)
+            or not item["subject"].endswith(SAFE_STATE_COMMIT_SUFFIX)
+            for item in commits
+        )
+        or not changed_paths
+        or any(not path.startswith(SAFE_STATE_PATH_PREFIX) for path in changed_paths)
+    ):
+        return {**report, "state": "blocked", "reason": "untrusted_unpushed_commits"}
+    push = run_git(root, ["push", "origin", f"HEAD:{push_ref}"], timeout=120)
+    if push.returncode != 0:
+        return {
+            **report,
+            "state": "failed",
+            "reason": "safe_state_push_failed",
+            "stderr": push.stderr[-2000:],
+        }
+    fetch = run_git(root, ["fetch", "origin", push_ref], timeout=120)
+    return {
+        **report,
+        "state": "recovered" if fetch.returncode == 0 else "failed",
+        "reason": "safe_state_commits_pushed" if fetch.returncode == 0 else "post_push_fetch_failed",
+        "push_stdout": push.stdout[-1000:],
+        "push_stderr": push.stderr[-1000:],
+        "fetch_stderr": fetch.stderr[-1000:],
+    }
+
+
+def recover_lifecycle_state_commits(
+    args: argparse.Namespace,
+    projects: list[dict[str, Any]],
+    authority: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if (
+        not args.apply
+        or not full_lifecycle_reconciliation_requested(args)
+        or authority is None
+        or not authority.get("ok")
+    ):
+        return []
+    return [
+        report
+        for project in projects
+        if (report := recover_safe_unpushed_state_commits(project)).get("state") != "no_op"
+    ]
 
 
 def is_git_worktree(path: Path) -> bool:
@@ -299,6 +501,14 @@ def worker_execution_requested(args: argparse.Namespace) -> bool:
     return args.mode == "role" and args.role in {"all", "workers"}
 
 
+def full_lifecycle_reconciliation_requested(args: argparse.Namespace) -> bool:
+    """Return whether Status Orchestrator can reconcile worker lock residue."""
+    return (
+        args.mode in {"full", "project"}
+        or (args.mode == "role" and args.role == "all")
+    )
+
+
 def entry_preflight_required(args: argparse.Namespace) -> bool:
     if not args.apply:
         return False
@@ -444,8 +654,12 @@ def worker_readiness_preflight_blockers(args: argparse.Namespace, projects: list
     for project in projects:
         readiness = runner_readiness_preflight(project)
         project_blockers = {str(blocker) for blocker in readiness.get("blockers") or []}
+        if full_lifecycle_reconciliation_requested(args):
+            project_blockers -= LIFECYCLE_RECOVERABLE_READINESS_BLOCKERS
         if project_blockers:
-            blockers.append(compact_runner_readiness(readiness))
+            compact = compact_runner_readiness(readiness)
+            compact["blockers"] = sorted(project_blockers)
+            blockers.append(compact)
     return blockers
 
 
@@ -577,6 +791,7 @@ def build_controller_action_report(payload: dict[str, Any], report_path: Path) -
 
 
 def write_controller_outputs(args: argparse.Namespace, report_path: Path, payload: dict[str, Any]) -> None:
+    enrich_runtime_metrics(payload)
     write_json(report_path, payload)
     action_report_output = getattr(args, "action_report_output", None)
     if action_report_output:
@@ -688,6 +903,8 @@ def main() -> int:
         write_controller_outputs(args, report_path, payload)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else payload["error"])
         return 2
+    recovery_authority = fleet_authority_preflight(args)
+    preflight_recoveries = recover_lifecycle_state_commits(args, projects, recovery_authority)
     worker_readiness_blockers = worker_readiness_preflight_blockers(args, projects)
     if worker_readiness_blockers and not isolate_preflight_failures:
         finished_at = now_utc()
@@ -810,7 +1027,7 @@ def main() -> int:
         if isolate_preflight_failures
         else (plan, [])
     )
-    payload = {"schema_version": "1.0", "run_id": run_id, "state": "planned" if not args.apply else "running", "mode": args.mode, "role": args.role, "project_id": args.project_id, "task_id": args.task_id, "worker_id": args.worker_id, "host_id": args.host_id, "apply": bool(args.apply), "model_limit_retry_limit": max(0, int(args.model_limit_retry_limit)), "started_at": started_at, "updated_at": started_at, "project_count": len(projects), "runnable_project_count": len(runnable_plan), "planned_commands": plan, "results": [], "isolated_projects": isolated_projects, "preflight": preflight, "fleet_authority": authority, "command_root_diagnostics": root_diagnostics, "command_root_blockers": root_blockers, "runner_readiness_blockers": worker_readiness_blockers, "entry_preflight_blockers": entry_blockers}
+    payload = {"schema_version": "1.0", "run_id": run_id, "state": "planned" if not args.apply else "running", "mode": args.mode, "role": args.role, "project_id": args.project_id, "task_id": args.task_id, "worker_id": args.worker_id, "host_id": args.host_id, "apply": bool(args.apply), "model_limit_retry_limit": max(0, int(args.model_limit_retry_limit)), "started_at": started_at, "updated_at": started_at, "project_count": len(projects), "runnable_project_count": len(runnable_plan), "planned_commands": plan, "results": [], "isolated_projects": isolated_projects, "preflight": preflight, "fleet_authority": authority, "preflight_recoveries": preflight_recoveries, "command_root_diagnostics": root_diagnostics, "command_root_blockers": root_blockers, "runner_readiness_blockers": worker_readiness_blockers, "entry_preflight_blockers": entry_blockers}
     write_controller_outputs(args, report_path, payload)
     if not args.apply and args.mode != "worktrees":
         finished_at = now_utc()

@@ -93,6 +93,62 @@ hosts do not have fresh activity leases. A terminal task status alone never prov
 that its source tip is integrated; unresolved unique tips go back to
 Dispatcher/Integrator through a stable recovery row.
 
+## Worktree Retirement And Cold Archive
+
+`scripts/agent_control/worktree_retirement.py` closes the gap between branch
+classification and deletion. Repository Hygiene includes its dry-run plan on
+every cycle.
+
+A worktree is old enough to retire only when its exact branch tip is already an
+ancestor of a canonical base, its retention window has expired, it is clean,
+and it has no open PR or protected/current classification. A registered
+worktree alone is not proof of live execution; current Codex activity, locks,
+process state and open PR evidence remain the liveness authority.
+
+Apply is explicit and bounded. It requires named branches and performs this
+order without shortcuts:
+
+1. create a Git bundle containing the exact source SHA;
+2. copy the bundle and manifest to the configured cold archive;
+3. verify the checksum and bundled head at the destination;
+4. remove the clean worktree without `--force`;
+5. delete the exact local branch only when requested;
+6. leave remote deletion to a separate flag or later hygiene cycle.
+
+The remote AiStudio HDD target is
+`/srv/aistudio-hdd/AiStudioData/archive/git-branches/`. It stores immutable
+bundles only; active worktrees must remain on M.2. Dirty, unmerged, open-PR,
+current, protected or changed-after-plan branches fail closed and stay live.
+
+`scripts/agent_control/branch_lifecycle_scanner.py` is the compact decision
+layer above branch inventory. It emits exactly one outcome per logical branch:
+`archive_ready`, `work_required`, or `keep`. Archive-ready tips are passed to
+verified cold storage, including explicitly selected branches that no longer
+have a worktree. Work-required tips use the deterministic
+`repository_hygiene_branch_recovery` key, so repeated scans update or cover one
+task instead of creating duplicates. Missing Codex host coverage blocks archive
+decisions but does not hide recovery work. New recovery tasks are staged in a
+bounded batch (ten per cycle by default); later scans continue from uncovered
+branches without duplicating existing tasks.
+
+When stale local refs exist only in a relay or release clone, use
+`--task-project-root` to write their recovery rows into a separate clean
+canonical Task Manager checkout. Branch evidence still comes from
+`--project-root`; archive actions never target the Task Manager checkout.
+
+Scheduled retirement requires the combined explicit gate
+`--apply --apply-safe-cleanup --apply-worktree-retirement`, a configured archive
+root, bounded count and complete fresh Codex host coverage. The cycle archives
+and retires the local worktree first; guarded remote-ref deletion is evaluated
+on the next fresh hygiene cycle.
+
+`full_intake_automation_cycle.py` passes the same gate from
+`AISTUDIO_APPLY_WORKTREE_RETIREMENT`, with the retention, archive root, optional
+SSH host, batch limit and Codex activity coverage supplied by the corresponding
+`AISTUDIO_WORKTREE_*` and `AISTUDIO_CODEX_*` environment settings. This keeps
+scheduled cleanup disabled unless the runtime operator explicitly configures
+the complete archive contract.
+
 The planner must use one ref inventory per namespace by default. Per-branch
 ahead/behind and changed-path metrics are diagnostic deep-scan behavior, not a
 requirement for every scheduled cycle. Local and remote copies of the same

@@ -18,6 +18,9 @@ from pathlib import Path
 from typing import Any
 
 from event_driven_scheduler import consume_events, update_activity
+from archive_terminal_tasks import archive as archive_terminal_tasks
+from archive_terminal_tasks import load_json as load_archive_json
+from archive_terminal_tasks import write_json as write_archive_json
 import llm_dispatch_tagger
 from process_log import append_log
 from project_paths import task_manager_dir
@@ -1230,10 +1233,13 @@ def is_integrator_direct_merge_command(command: list[str]) -> bool:
 
 
 def git_pathspec_has_matches(project_root: Path, pathspec: str) -> bool:
-    if (project_root / pathspec).exists():
+    tracked = git_run(project_root, ["ls-files", "--", pathspec])
+    if tracked.returncode == 0 and bool(tracked.stdout.strip()):
         return True
-    proc = git_run(project_root, ["ls-files", "--", pathspec])
-    return proc.returncode == 0 and bool(proc.stdout.strip())
+    if not (project_root / pathspec).exists():
+        return False
+    ignored = git_run(project_root, ["check-ignore", "-q", "--", pathspec])
+    return ignored.returncode != 0
 
 
 def existing_git_pathspecs(project_root: Path, pathspecs: list[str]) -> list[str]:
@@ -2964,6 +2970,8 @@ def dependency_reconciliation_command(project_root: Path, *, apply: bool) -> lis
         str(task_manager_dir(project_root) / "task_queue.json"),
         "--locks",
         str(task_manager_dir(project_root) / "agent_locks.json"),
+        "--history",
+        str(task_manager_dir(project_root) / "task_history.json"),
         "--dependencies-only",
         "--json",
     ]
@@ -3188,6 +3196,31 @@ def expired_locks_command(project_root: Path, *, apply: bool) -> list[str]:
     if apply:
         cmd.append("--apply")
     return cmd
+
+
+def archive_terminal_queue(project_root: Path, *, apply: bool) -> dict[str, Any]:
+    queue_path = task_manager_dir(project_root) / "task_queue.json"
+    history_path = task_manager_dir(project_root) / "task_history.json"
+    queue = load_archive_json(queue_path)
+    history = load_archive_json(history_path, {"schema_version": 1, "tasks": []})
+    result = archive_terminal_tasks(queue, history, archived_by="status_orchestrator.py")
+    changed = int(result.get("archived_count") or 0) + int(result.get("skipped_existing_count") or 0) > 0
+    if apply and changed:
+        write_archive_json(queue_path, queue)
+        write_archive_json(history_path, history)
+    return {
+        **result,
+        "queue": str(queue_path),
+        "history": str(history_path),
+        "applied": bool(apply and changed),
+    }
+
+
+def terminal_archive_has_action(payload: dict[str, Any] | None) -> bool:
+    return isinstance(payload, dict) and (
+        int(payload.get("archived_count") or 0) > 0
+        or int(payload.get("skipped_existing_count") or 0) > 0
+    )
 
 
 def expired_locks_has_action(payload: dict[str, Any] | None) -> bool:
@@ -3486,6 +3519,7 @@ def main() -> int:
     result_handoff_result = None
     expired_locks_result = None
     dead_worker_claims_result = None
+    terminal_archive_result = None
     runtime_worker_worktree_cleanup = None
     runtime_full_intake_cleanup = (
         cleanup_full_intake_runtime_output(args.runtime_root, project_root=project_root)
@@ -4150,6 +4184,46 @@ def main() -> int:
                 print(json.dumps(action, ensure_ascii=False, indent=2) if args.json else "dead_worker_claims_maintenance_applied")
                 return dead_code
 
+        try:
+            terminal_archive_dry_run = archive_terminal_queue(project_root, apply=False)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            append_log(project_root, "orchestrator", "terminal_archive_dry_run_failed", severity="error", error=str(exc))
+            if locked:
+                release_process_lock(project_root, "status_orchestrator", run_id)
+            result = {
+                "decision": {"should_run": False, "run_class": "scan_only", "reason": "terminal_archive_dry_run_failed"},
+                "terminal_archive": {"error": str(exc), "applied": False},
+                "exit_code": 1,
+            }
+            print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else "terminal_archive_dry_run_failed")
+            return 1
+        terminal_archive_result = {"dry_run": terminal_archive_dry_run}
+        if terminal_archive_has_action(terminal_archive_dry_run):
+            if not locked:
+                locked, holder = acquire_process_lock(project_root, "status_orchestrator", run_id, args.lock_ttl_minutes)
+                if not locked:
+                    result = {
+                        "decision": {"should_run": False, "run_class": "scan_only", "reason": "process_lock_active"},
+                        "blocked_by_run_id": holder,
+                        "terminal_archive": terminal_archive_result,
+                    }
+                    print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else f"process lock active: {holder}")
+                    return 0
+            try:
+                terminal_archive_result["apply"] = archive_terminal_queue(project_root, apply=True)
+            except (OSError, json.JSONDecodeError, ValueError) as exc:
+                terminal_archive_result["apply"] = {"error": str(exc), "applied": False}
+                append_log(project_root, "orchestrator", "terminal_archive_failed", severity="error", error=str(exc))
+                if locked:
+                    release_process_lock(project_root, "status_orchestrator", run_id)
+                result = {
+                    "decision": {"should_run": False, "run_class": "scan_only", "reason": "terminal_archive_failed"},
+                    "terminal_archive": terminal_archive_result,
+                    "exit_code": 1,
+                }
+                print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else "terminal_archive_failed")
+                return 1
+
     scheduler_cmd = [
         sys.executable,
         str(script_path("event_driven_scheduler.py")),
@@ -4232,6 +4306,8 @@ def main() -> int:
         action["expired_locks"] = expired_locks_result
     if dead_worker_claims_result is not None:
         action["dead_worker_claims"] = dead_worker_claims_result
+    if terminal_archive_result is not None:
+        action["terminal_archive"] = terminal_archive_result
     if runtime_worker_worktree_cleanup is not None:
         action["worker_worktree_cleanup"] = runtime_worker_worktree_cleanup
     if runtime_full_intake_cleanup is not None:

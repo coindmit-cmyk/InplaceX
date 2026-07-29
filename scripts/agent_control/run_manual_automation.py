@@ -927,7 +927,10 @@ def build_commands(args: argparse.Namespace) -> list[list[str]]:
 
 
 def worker_lock_preflight(args: argparse.Namespace, project_root: Path) -> dict[str, Any] | None:
-    if args.mode not in {"all", "workers"}:
+    # Full lifecycle reconciliation is owned by status_orchestrator, which
+    # consumes result handoffs and repairs recoverable locks before workers.
+    # Keep the strict guard for a direct workers-only launch.
+    if args.mode != "workers":
         return None
     cfg = {
         "project_id": args.project_id,

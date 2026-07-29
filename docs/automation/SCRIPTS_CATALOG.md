@@ -230,3 +230,5 @@ Generated from `templates/agent-control/automation_manifest.json`.
 | `worker_claim_guard` | `scripts/agent_control/worker_claim_guard.py` | `worker` | `false` | `true` | `active` |
 | `worker_integrator_bridge` | `scripts/agent_control/worker_integrator_bridge.py` | `integrator` | `true` | `true` | `active` |
 | `worker_result_contract_validator` | `scripts/agent_control/worker_result_contract_validator.py` | `integrator` | `false` | `true` | `active` |
+| `worktree_retirement` | `scripts/agent_control/worktree_retirement.py` | `dispatcher` | `true` | `true` | `active` |
+| `branch_lifecycle_scanner` | `scripts/agent_control/branch_lifecycle_scanner.py` | `dispatcher` | `true` | `true` | `active` |
