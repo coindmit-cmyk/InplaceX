@@ -5,6 +5,7 @@ data class BackendRuntimeConfig(
     val port: Int,
     val environment: String,
     val database: DatabaseRuntimeConfig? = null,
+    val online: OnlineRuntimeConfig? = null,
 ) {
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): BackendRuntimeConfig {
@@ -20,6 +21,7 @@ data class BackendRuntimeConfig(
                     ?.takeIf(String::isNotBlank)
                     ?: DefaultEnvironment,
                 database = DatabaseRuntimeConfig.fromEnvironmentOrNull(environment),
+                online = OnlineRuntimeConfig.fromEnvironmentOrNull(environment),
             )
         }
 

@@ -2,6 +2,81 @@
 
 ## Unreleased
 
+- Restored the configured online endpoint in the test-build workflow so the
+  preserved private-friend-duel code is no longer shipped as an offline UI.
+- Removed the nested Company room image and made `company_room_bg_v2` the
+  single shell background for both the campaign map and campaign matches.
+- Added the first banner placement policy: the shell reserves the game banner
+  only after provider acceptance, while remove-ads, PRO and PRO+ always skip
+  the provider and the slot.
+- Added a dedicated purple game-banner container with an explicit AD badge and
+  a stable Compose test tag, ready for the provider-owned banner view.
+- Hid the developer entry point from normal settings in test APKs and stopped
+  debug tooling from overriding premium ad suppression.
+- Reduced the duplicated in-game header to one compact row for mode, moves and
+  timers; global shell controls remain the sole back/settings navigation.
+- Increased the debug-only test wallet action to grant 10,000 coins per tap;
+  release builds still contain no developer currency grant.
+- Rebalanced campaign levels 1-10 after device playtesting: level 8 now allows
+  12 attempts and 4:00, while level 10 allows 10 attempts and 3:15.
+- Google challenge endpoints missing from an older server deployment now show
+  the truthful provider-not-enabled state instead of blaming Google for a
+  rejected account.
+- Removed the remaining shell-level white gameplay canvas: game panels now sit
+  directly on the shared scene background in every active game mode.
+- Added private friend duels for two phones: one authenticated guest creates an
+  eight-character expiring invite, another guest joins it, and both clients
+  automatically poll the same server-authoritative setup, turns, and result.
+- Added a fail-closed Mirkori Games Telegram distribution service template.
+  It serves only allowlisted, manifest-declared APKs whose SHA-256 is verified
+  immediately before delivery; bot credentials remain VPS-only.
+- Mirkori Games now returns a verified HTTPS download button instead of
+  uploading APK binaries through Telegram.
+- Removed the opaque white Company gameplay backdrop: campaign levels now
+  retain the same warm toy-room scene used by the campaign map.
+- Added real Google account authentication through Android Credential Manager
+  and the isolated identity process. The server verifies Google ID tokens and
+  one-time nonces, links the provider subject to the existing guest player,
+  stores the link in PostgreSQL, and returns ordinary rotating InplaceX
+  credentials without persisting raw provider tokens or email addresses.
+- Consolidated the independently preserved phone-regression/UX work and the
+  VPS online bot-fallback implementation into one integration branch while
+  retaining both source branches as recovery points.
+- Fixed two phone regressions: manual `YES` table marks now prefill every
+  following attempt until changed or removed; duel setup state now survives
+  the shell's transition into gameplay, while malformed restored secrets are
+  rejected before scoring instead of crashing on the first submission.
+- Brought the Company scene closer to the approved toy-room references with a
+  dedicated warm 3D study background, a larger game-logo treatment, and
+  clearer separation between the campaign route and decorative scenery.
+- Tightened the campaign difficulty curve after playtesting: four-digit levels
+  now fall from 14 attempts at level 1 to 10 at level 8 and 8 at level 10,
+  with shorter match timers; level 17 now uses 14 attempts and 4:30 instead of
+  the overly forgiving 19 attempts and 6:40.
+- Added a one-hour temporary PRO purchase for 60 profile coins. The entitlement
+  persists across restarts, extends from any remaining time, updates its
+  countdown live in Shop and Profile, enables auto-table assistance, and
+  suppresses ads without granting PRO+ infinite hints.
+- Made the first bot-duel turn fail safely: solver or restored-state errors no
+  longer escape the Compose coroutine and close the app; the duel stays open,
+  control returns to the player, and a localized recovery message is shown.
+  Added end-to-end coverage for both a normal first exchange and a first-guess
+  win, plus focused unit coverage for bot-turn failures and cancellation.
+- Completed the PvE Race terminal loop: exhausted moves now show a defeat
+  result, wins no longer silently restart, result details include attempts and
+  elapsed time, retry is explicit, and each win grants 10 profile coins.
+- Rebalanced campaign progression so the first block remains an onboarding
+  experience while level 11 starts a meaningful five-digit medium-difficulty
+  step; later code-length and tier bands now grow toward the intended
+  level-300 plateau instead of keeping levels 1 through 55 nearly identical.
+- Added the Toy Room UI v5 foundation from the approved visual references:
+  warm desk scenery, glossy blue resource chrome, cream raised cards, vivid
+  orange/purple/green mode hierarchy, compact top actions, and an illuminated
+  blue bottom navigation shared by Home, Friends, Company, Shop, and Profile.
+- Rebuilt the Company campaign map in the same toy-room language with a yellow
+  title plaque, compact chapter/reward dashboard, descending mission route,
+  numbered locked levels, cream code cards, selected-level gold emphasis, and
+  a green primary play action while preserving campaign behavior.
 - Added the Android online transport foundation for the versioned REST and
   WebSocket contracts: HTTPS/WSS enforcement, transport-owned bearer
   authentication, single-flight refresh, bounded deterministic retries,

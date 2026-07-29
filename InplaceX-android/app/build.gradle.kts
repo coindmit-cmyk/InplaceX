@@ -45,6 +45,8 @@ android {
 
     buildTypes {
         getByName("debug") {
+            buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
+            buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
@@ -63,6 +65,8 @@ android {
         }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.release.baseUrl", "")}\"")
+            buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "false")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"live\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
@@ -80,6 +84,17 @@ android {
                 "proguard-rules.pro"
             )
         }
+        create("internalDistribution") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+    }
+    sourceSets.getByName("internalDistribution") {
+        kotlin.srcDir("src/release/java")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -112,11 +127,17 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.websockets)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.identity.googleid)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(project(":InplaceX-test-support"))
+    testImplementation(project(":InplaceX-backend"))
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.mock)
+    testImplementation("com.h2database:h2:2.3.232")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

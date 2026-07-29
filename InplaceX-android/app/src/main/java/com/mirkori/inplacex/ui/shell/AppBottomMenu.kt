@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.ui.shell
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -35,19 +44,27 @@ fun AppBottomMenu(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxSize(),
-        shape = RoundedCornerShape(24.dp),
-        color = InplaceXColors.MidnightElevated.copy(alpha = 0.96f),
-        tonalElevation = 2.dp,
-        shadowElevation = 6.dp,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            InplaceXColors.Cyan.copy(alpha = 0.18f)
-        )
+        modifier = modifier
+            .fillMaxSize()
+            .shadow(10.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(2.dp, InplaceXColors.ToyCyan.copy(alpha = 0.62f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            InplaceXColors.ToyBlue,
+                            InplaceXColors.ToyBlueDeep,
+                            Color(0xFF062661),
+                        )
+                    )
+                )
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -77,12 +94,27 @@ private fun BottomMenuItem(
     val title = AppSectionCatalog.shortLabel(section, strings)
 
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .then(
+                if (selected) {
+                    Modifier.shadow(8.dp, RoundedCornerShape(18.dp))
+                } else {
+                    Modifier
+                }
+            )
+            .semantics {
+                role = Role.Tab
+                this.selected = selected
+            }
+            .clickable(
+                role = Role.Tab,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(18.dp),
-        color = if (selected) InplaceXColors.Cobalt.copy(alpha = 0.24f) else Color.Transparent,
+        color = if (selected) InplaceXColors.ToyBlueTop else Color.Transparent,
         tonalElevation = 0.dp,
         border = if (selected) {
-            androidx.compose.foundation.BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.72f))
+            BorderStroke(2.dp, InplaceXColors.ToyCyan)
         } else {
             null
         }
@@ -100,7 +132,7 @@ private fun BottomMenuItem(
                 Icon(
                     imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
                     contentDescription = title,
-                    tint = if (selected) InplaceXColors.Cyan else InplaceXColors.SurfaceMuted
+                    tint = if (selected) Color.White else InplaceXColors.ToyCream
                 )
             }
             Text(
@@ -110,7 +142,8 @@ private fun BottomMenuItem(
                     fontSize = 10.sp,
                     lineHeight = 11.sp
                 ),
-                color = if (selected) InplaceXColors.White else InplaceXColors.SurfaceMuted,
+                color = if (selected) Color.White else InplaceXColors.ToyCream,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
                 maxLines = 1
             )
         }

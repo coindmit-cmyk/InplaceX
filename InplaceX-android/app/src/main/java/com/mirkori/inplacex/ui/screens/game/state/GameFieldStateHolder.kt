@@ -150,7 +150,11 @@ class GameFieldStateHolder(
         update(
             createState(
                 snapshot = latestSnapshot,
-                input = if (acceptedAttempt == null) current.input else GameFieldInputState.empty(parameters.codeLength),
+                input = if (acceptedAttempt == null) {
+                    current.input
+                } else {
+                    inputFromManualConfirmations(current.manualMarks)
+                },
                 manualMarks = current.manualMarks,
                 provenFacts = current.evidence.provenFacts,
                 timers = if (acceptedAttempt == null) current.timers else current.timers.copy(turnElapsedSeconds = 0),
@@ -160,6 +164,18 @@ class GameFieldStateHolder(
                     ?: GameFieldStatus.EngineFeedback(latestSnapshot.feedback),
             ),
         )
+    }
+
+    private fun inputFromManualConfirmations(
+        manualMarks: Collection<GameFieldManualMark>,
+    ): GameFieldInputState {
+        val slots = MutableList<Char?>(parameters.codeLength) { null }
+        manualMarks
+            .asSequence()
+            .filter { it.type == GameFieldManualMarkType.YES }
+            .filter { it.position in slots.indices }
+            .forEach { mark -> slots[mark.position] = mark.symbol }
+        return GameFieldInputState(slots)
     }
 
     private fun restart() {
@@ -192,7 +208,27 @@ class GameFieldStateHolder(
         val marks = nextType?.let {
             retained + GameFieldManualMark(event.position, event.symbol, it)
         } ?: retained
-        update(current.copy(manualMarks = marks, status = GameFieldStatus.Idle))
+        val input = when {
+            nextType == GameFieldManualMarkType.YES -> current.input.withSlot(
+                position = event.position,
+                symbol = event.symbol,
+            )
+
+            existing?.type == GameFieldManualMarkType.YES &&
+                current.input.slots[event.position] == event.symbol -> current.input.withSlot(
+                    position = event.position,
+                    symbol = null,
+                )
+
+            else -> current.input
+        }
+        update(
+            current.copy(
+                input = input,
+                manualMarks = marks,
+                status = GameFieldStatus.Idle,
+            ),
+        )
     }
 
     private fun checkPosition(
@@ -332,6 +368,9 @@ class GameFieldStateHolder(
         _state.value = rebuildEvidence(state)
         persist()
     }
+
+    private fun GameFieldInputState.withSlot(position: Int, symbol: Char?): GameFieldInputState =
+        copy(slots = slots.toMutableList().apply { this[position] = symbol })
 
     private fun persist() {
         savedStateStore.save(_state.value, engine.checkpoint())

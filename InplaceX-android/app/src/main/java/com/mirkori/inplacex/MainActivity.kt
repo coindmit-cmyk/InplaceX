@@ -10,10 +10,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,12 +27,21 @@ import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.data.local.MonetizationProductType
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.GuestAuthResult
+import com.mirkori.inplacex.platform.online.GoogleChallengeResult
 import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.AdPlacementPolicy
+import com.mirkori.inplacex.platform.services.GAME_BANNER_SLOT_ID
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
+import com.mirkori.inplacex.platform.services.GoogleCredentialResult
+import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
 import com.mirkori.inplacex.platform.services.RewardedPlacement
@@ -51,7 +63,9 @@ import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -71,7 +85,13 @@ class MainActivity : ComponentActivity() {
                 }
                 val adService = providerServices.adService
                 val billingService = providerServices.billingService
-                val authService = providerServices.authService
+                val googleCredentialSignIn = remember {
+                    GoogleCredentialSignIn(
+                        context = applicationContext,
+                        config = AppConfigCatalog.platformConfig.providers.googlePlay,
+                    )
+                }
+                val coroutineScope = rememberCoroutineScope()
 
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
@@ -84,8 +104,20 @@ class MainActivity : ComponentActivity() {
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 var progressState by remember { mutableStateOf(progressRepository.loadState()) }
+                var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
+                var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
+                var profileAuthInProgress by rememberSaveable { mutableStateOf(false) }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
+
+                LaunchedEffect(progressState.temporaryProExpiresAtMs) {
+                    currentTimeMs = System.currentTimeMillis()
+                    while (progressState.temporaryProActiveAt(currentTimeMs)) {
+                        val remainingMs = progressState.temporaryProExpiresAtMs - currentTimeMs
+                        delay(minOf(1_000L, remainingMs.coerceAtLeast(1L)))
+                        currentTimeMs = System.currentTimeMillis()
+                    }
+                }
 
                 LaunchedEffect(
                     progressState.highestUnlockedCampaignLevel,
@@ -97,30 +129,54 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
+                val localPlayerProfile = remember(platformLocalRepository) {
+                    platformLocalRepository.loadPlayerProfile()
+                }
+                val onlineRuntime = remember(currentLanguage, localPlayerProfile.installationId) {
+                    OnlineRuntime.createOrNull(
+                        context = applicationContext,
+                        profile = localPlayerProfile,
+                        locale = if (currentLanguage == AppLanguage.RU) "ru-RU" else "en-US",
+                        regionCode = if (currentLanguage == AppLanguage.RU) "RU" else "US",
+                    )
+                }
+                DisposableEffect(onlineRuntime) {
+                    onDispose { onlineRuntime?.close() }
+                }
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
                 }
-                val entitlements = remember(progressState) {
+                val entitlements = remember(progressState, currentTimeMs) {
                     MonetizationEntitlements(
                         adFreePurchased = progressState.adFreePurchased,
-                        proSubscriptionActive = progressState.proSubscriptionActive,
+                        proSubscriptionActive = progressState.proSubscriptionActive ||
+                            progressState.temporaryProActiveAt(currentTimeMs),
                         proPlusSubscriptionActive = progressState.proPlusSubscriptionActive,
                     )
                 }
                 val isPremium = entitlements.adsDisabled
-                val useUnifiedSceneBackground = !isInGame
-                val shouldShowVariantBottomSlot =
-                    isInGame && variantToolsBottomSlotEnabled(variantToolsEnabled)
-                val appBackgroundStyle = if (useUnifiedSceneBackground) {
-                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.Dark)
-                } else {
-                    ScreenBackgroundStyle.ImageAsset(
+                val gameBannerEligible = AdPlacementPolicy.canRequestGameBanner(
+                    isInGame = isInGame,
+                    entitlements = entitlements,
+                )
+                val gameBannerAccepted = remember(adService, gameBannerEligible) {
+                    gameBannerEligible && adService.showBanner(GAME_BANNER_SLOT_ID)
+                }
+                val appBackgroundStyle = when {
+                    currentSection == AppSection.COMPANY -> ScreenBackgroundStyle.DrawableResource(
+                        resourceId = R.drawable.company_room_bg_v2,
+                        fallbackColor = InplaceXColors.ToyWood,
+                    )
+                    !isInGame -> ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.WarmWorkshop)
+                    else -> ScreenBackgroundStyle.ImageAsset(
                         assetPath = "image/background/app_bg.png",
-                        fallbackColor = InplaceXColors.Midnight,
+                        fallbackColor = InplaceXColors.ToyWood,
                     )
                 }
                 val bottomMode = when {
-                    isInGame -> if (isPremium && !shouldShowVariantBottomSlot) BottomLayerMode.NONE else BottomLayerMode.AD
+                    isInGame && isPremium -> BottomLayerMode.NONE
+                    isInGame && gameBannerAccepted -> BottomLayerMode.AD
+                    isInGame -> BottomLayerMode.NONE
                     else -> BottomLayerMode.MENU
                 }
 
@@ -134,18 +190,24 @@ class MainActivity : ComponentActivity() {
                         },
                         bottomMode = bottomMode,
                         topMode = TopLayerMode.OVERLAY,
-                        centerMode = if (useUnifiedSceneBackground) CenterLayerMode.TRANSPARENT else CenterLayerMode.SURFACE,
+                        centerMode = CenterLayerMode.TRANSPARENT,
                         backgroundStyle = appBackgroundStyle,
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
+                                energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
                                 showBack = isInGame || isVariantToolsOpen,
+                                showShop = !isInGame,
                                 onBackClick = {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
                                         else -> requestExitGame = true
                                     }
+                                },
+                                onShopClick = {
+                                    currentSection = AppSection.SHOP
+                                    isSettingsOpen = false
                                 },
                                 onSettingsClick = { isSettingsOpen = true },
                             )
@@ -153,7 +215,7 @@ class MainActivity : ComponentActivity() {
                         bottomAdContent = {
                             VariantBottomAdContent(
                                 inspectionValue = currentInspectionValue,
-                                adsDisabled = progressState.adsDisabled,
+                                adsDisabled = progressState.adsDisabledAt(currentTimeMs),
                                 toolsEnabled = variantToolsEnabled,
                             )
                         },
@@ -170,7 +232,7 @@ class MainActivity : ComponentActivity() {
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
                                     checkPositionHints = progressState.checkPositionHints,
-                                    autoModeAvailable = progressState.autoTableAssistEnabled,
+                                    autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
                                     infiniteHintsEnabled = progressState.infiniteHintsEnabled,
                                     onConsumeOpenPositionHint = {
                                         if (progressState.infiniteHintsEnabled) {
@@ -225,9 +287,14 @@ class MainActivity : ComponentActivity() {
                                             adService.showInterstitial(InterstitialPlacement.POST_MATCH)
                                         }
                                     },
+                                    onOpenCompany = {
+                                        currentSection = AppSection.COMPANY
+                                    },
                                 )
 
-                            currentSection == AppSection.SOCIAL -> SocialRootScreen()
+                            currentSection == AppSection.SOCIAL -> SocialRootScreen(
+                                onlineRuntime = onlineRuntime,
+                            )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
                                 progressState = progressState,
@@ -241,7 +308,7 @@ class MainActivity : ComponentActivity() {
                                 openPositionHints = progressState.openPositionHints,
                                 checkDigitHints = progressState.checkDigitHints,
                                 checkPositionHints = progressState.checkPositionHints,
-                                autoModeAvailable = progressState.autoTableAssistEnabled,
+                                autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
                                 infiniteHintsEnabled = progressState.infiniteHintsEnabled,
                                 extraMovesBoosts = progressState.extraMovesBoosts,
                                 extraTimeBoosts = progressState.extraTimeBoosts,
@@ -317,69 +384,166 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = progressState,
+                                nowMs = currentTimeMs,
                                 onWatchRewardedCoins = {
-                                    if (adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)) {
+                                    val rewarded = adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)
+                                    if (rewarded) {
                                         progressState = progressRepository.grantRewardedCoins(20)
                                     }
+                                    rewarded
                                 },
                                 onBuyOpenPositionHint = {
-                                    if (progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyCheckDigitHint = {
-                                    if (progressRepository.buyHint(HintStockType.CHECK_DIGIT, costCoins = 15)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.CHECK_DIGIT, costCoins = 15)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyCheckPositionHint = {
-                                    if (progressRepository.buyHint(HintStockType.CHECK_POSITION, costCoins = 25)) {
+                                    val purchased = progressRepository.buyHint(HintStockType.CHECK_POSITION, costCoins = 25)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyExtraMovesBoost = {
-                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_MOVES, costCoins = 30)) {
+                                    val purchased = progressRepository.buyBoost(BoostStockType.EXTRA_MOVES, costCoins = 30)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyExtraTimeBoost = {
-                                    if (progressRepository.buyBoost(BoostStockType.EXTRA_TIME, costCoins = 30)) {
+                                    val purchased = progressRepository.buyBoost(BoostStockType.EXTRA_TIME, costCoins = 30)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyEnergy = {
-                                    if (progressRepository.buyCampaignEnergy(costCoins = 25)) {
+                                    val purchased = progressRepository.buyCampaignEnergy(costCoins = 25)
+                                    if (purchased) {
                                         progressState = progressRepository.loadState()
                                     }
+                                    purchased
                                 },
                                 onBuyRemoveAds = {
-                                    if (billingService.purchase(BillingProductId.REMOVE_ADS)) {
+                                    val purchased = billingService.purchase(BillingProductId.REMOVE_ADS)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
                                     }
+                                    purchased
                                 },
                                 onBuyPro = {
-                                    if (billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)) {
+                                    val purchased = billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
                                     }
+                                    purchased
                                 },
                                 onBuyProPlus = {
-                                    if (billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)) {
+                                    val purchased = billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)
+                                    if (purchased) {
                                         progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
                                     }
+                                    purchased
+                                },
+                                onBuyTemporaryPro = {
+                                    val purchased = progressRepository.buyTemporaryPro()
+                                    if (purchased) {
+                                        progressState = progressRepository.loadState()
+                                        AppLog.info(
+                                            tag = "MainActivity",
+                                            message = "temporary Pro purchased",
+                                            attributes = mapOf(
+                                                "priceCoins" to TemporaryProPolicy.PRICE_COINS.toString(),
+                                                "durationMinutes" to
+                                                    (TemporaryProPolicy.DURATION_MS / 60_000L).toString(),
+                                            ),
+                                        )
+                                    }
+                                    purchased
                                 },
                             )
 
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
                                 progressState = progressState,
+                                nowMs = currentTimeMs,
+                                authResultKey = profileAuthResultKey,
+                                authInProgress = profileAuthInProgress,
                                 onGooglePlaySignIn = {
-                                    val session = authService.signInWithGooglePlay()
-                                    if (session.isSignedIn) {
-                                        progressState = progressRepository.signInWithGooglePlay(session.playerName)
+                                    if (!profileAuthInProgress) {
+                                        profileAuthInProgress = true
+                                        profileAuthResultKey = null
+                                        coroutineScope.launch {
+                                            val challenge = onlineRuntime?.createGoogleChallenge()
+                                            profileAuthResultKey = when (challenge) {
+                                                is GoogleChallengeResult.Ready -> {
+                                                    when (
+                                                        val providerResult = googleCredentialSignIn.signIn(
+                                                            activity = this@MainActivity,
+                                                            nonce = challenge.challenge.nonce,
+                                                        )
+                                                    ) {
+                                                        is GoogleCredentialResult.Success -> {
+                                                            when (
+                                                                val serverResult = onlineRuntime.authenticateWithGoogle(
+                                                                    idToken = providerResult.credential.idToken,
+                                                                    nonce = challenge.challenge.nonce,
+                                                                )
+                                                            ) {
+                                                                is GuestAuthResult.Authenticated -> {
+                                                                    progressState = progressRepository.signInWithGooglePlay(
+                                                                        providerResult.credential.playerName
+                                                                            ?: progressState.playerDisplayName,
+                                                                    )
+                                                                    "profile.auth.signed_in"
+                                                                }
+                                                                GuestAuthResult.Rejected ->
+                                                                    "profile.auth.rejected"
+                                                                GuestAuthResult.TemporarilyUnavailable ->
+                                                                    "profile.auth.unavailable"
+                                                            }
+                                                        }
+                                                        GoogleCredentialResult.Cancelled ->
+                                                            "profile.auth.cancelled"
+                                                        GoogleCredentialResult.Unavailable ->
+                                                            "profile.auth.not_configured"
+                                                        GoogleCredentialResult.Failed ->
+                                                            "profile.auth.rejected"
+                                                    }
+                                                }
+                                                GoogleChallengeResult.AuthenticationRequired,
+                                                GoogleChallengeResult.Rejected,
+                                                -> "profile.auth.rejected"
+                                                GoogleChallengeResult.ProviderUnavailable ->
+                                                    "profile.auth.not_configured"
+                                                GoogleChallengeResult.TemporarilyUnavailable,
+                                                null,
+                                                -> "profile.auth.unavailable"
+                                            }
+                                            profileAuthInProgress = false
+                                        }
                                     }
                                 },
                                 onGooglePlaySignOut = {
-                                    authService.signOut()
-                                    progressState = progressRepository.signOutFromGooglePlay()
+                                    if (!profileAuthInProgress) {
+                                        profileAuthInProgress = true
+                                        coroutineScope.launch {
+                                            googleCredentialSignIn.signOut()
+                                            onlineRuntime?.signOut()
+                                            progressState = progressRepository.signOutFromGooglePlay()
+                                            profileAuthResultKey = "profile.auth.signed_out"
+                                            profileAuthInProgress = false
+                                        }
+                                    }
                                 },
                             )
                         }

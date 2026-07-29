@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -18,14 +19,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,13 +43,13 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun SceneBackdrop(
     modifier: Modifier = Modifier,
     topColor: Color = InplaceXColors.NavySurface,
-    bottomColor: Color = InplaceXColors.Midnight,
+    bottomColor: Color = InplaceXColors.ToyWood,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(30.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(topColor, bottomColor)
@@ -54,7 +62,7 @@ fun SceneBackdrop(
                 .padding(top = 28.dp, end = 22.dp)
                 .size(124.dp)
                 .clip(CircleShape)
-                .background(InplaceXColors.Cyan.copy(alpha = 0.10f))
+                .background(InplaceXColors.ToyCream.copy(alpha = 0.12f))
         )
         Box(
             modifier = Modifier
@@ -62,7 +70,7 @@ fun SceneBackdrop(
                 .padding(start = 18.dp, bottom = 32.dp)
                 .size(156.dp)
                 .clip(CircleShape)
-                .background(InplaceXColors.Indigo.copy(alpha = 0.12f))
+                .background(InplaceXColors.ToyOrange.copy(alpha = 0.14f))
         )
         content()
     }
@@ -94,17 +102,18 @@ fun ScenePageColumn(
 @Composable
 fun SceneCard(
     modifier: Modifier = Modifier,
-    accentColor: Color = InplaceXColors.Surface.copy(alpha = 0.96f),
+    accentColor: Color = InplaceXColors.ToyCream.copy(alpha = 0.97f),
+    contentColor: Color = InplaceXColors.ToyBrown,
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.shadow(8.dp, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         color = accentColor,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 2.dp,
-        shadowElevation = 4.dp,
-        border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.16f)),
+        contentColor = contentColor,
+        tonalElevation = 0.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
     ) {
         Column(
             modifier = Modifier
@@ -126,11 +135,11 @@ fun SceneBadge(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = InplaceXColors.SurfaceMuted.copy(alpha = 0.96f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 1.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(1.dp, InplaceXColors.Cobalt.copy(alpha = 0.12f)),
+        color = InplaceXColors.ToyCream,
+        contentColor = InplaceXColors.ToyBrown,
+        tonalElevation = 0.dp,
+        shadowElevation = 4.dp,
+        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -140,7 +149,7 @@ fun SceneBadge(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = InplaceXColors.ToyBrown.copy(alpha = 0.72f)
             )
             Text(
                 text = value,
@@ -156,37 +165,94 @@ fun SceneActionTile(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    stateDescription: String? = null,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
     accentBrush: Brush = Brush.verticalGradient(
-        listOf(InplaceXColors.Cobalt, InplaceXColors.Indigo)
+        listOf(InplaceXColors.ToyBlueTop, InplaceXColors.ToyBlueDeep)
     ),
     onClick: () -> Unit,
 ) {
+    val semanticsModifier = Modifier.semantics {
+        role = Role.Button
+        stateDescription?.let { this.stateDescription = it }
+    }
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
+        modifier = modifier
+            .shadow(10.dp, RoundedCornerShape(26.dp))
+            .heightIn(min = 96.dp)
+            .then(semanticsModifier)
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        shape = RoundedCornerShape(26.dp),
         color = Color.Transparent,
         tonalElevation = 0.dp,
-        shadowElevation = 6.dp,
-        border = BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.36f)),
+        shadowElevation = 2.dp,
+        border = BorderStroke(3.dp, Color.White.copy(alpha = 0.34f)),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(accentBrush)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.88f)
-            )
+            leadingIcon?.let { icon ->
+                Surface(
+                    modifier = Modifier.size(58.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White.copy(alpha = 0.17f),
+                    contentColor = Color.White,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = if (enabled) 0.92f else 0.70f)
+                )
+            }
+            trailingIcon?.let { icon ->
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.16f),
+                    contentColor = Color.White,
+                    border = BorderStroke(2.dp, Color.White.copy(alpha = 0.36f)),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(30.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

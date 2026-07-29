@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.ui.background.ScreenBackground
@@ -95,10 +97,19 @@ private fun ShellBackground(
 
             val horizontalPadding = screenWidth * layoutConfig.shellHorizontalPaddingPercent
             val innerHorizontalPadding = screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
-            val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) 0.dp
-            else screenHeight * layoutConfig.topSlotHeightPercent
-            val bottomSlotHeight = if (bottomMode == BottomLayerMode.NONE) 0.dp
-            else screenHeight * layoutConfig.bottomSlotHeightPercent
+            val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
+                0.dp
+            } else {
+                maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
+            }
+            val bottomSlotHeight = when (bottomMode) {
+                BottomLayerMode.NONE -> 0.dp
+                BottomLayerMode.MENU -> maxOf(
+                    screenHeight * layoutConfig.bottomSlotHeightPercent,
+                    72.dp,
+                )
+                BottomLayerMode.AD -> screenHeight * layoutConfig.bottomSlotHeightPercent
+            }
 
             if (topMode != TopLayerMode.NONE && topContent != null) {
                 Box(
@@ -139,39 +150,31 @@ private fun ShellBackground(
                 .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
             when (centerMode) {
-                CenterLayerMode.SURFACE -> Surface(
-                    modifier = centerLayerModifier,
-                    tonalElevation = 0.dp,
-                    color = if (centerSurfaceColor != Color.Transparent) {
-                        centerSurfaceColor
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                    }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                horizontal = innerHorizontalPadding,
-                                vertical = 4.dp
-                            )
+                CenterLayerMode.SURFACE -> {
+                    Surface(
+                        modifier = centerLayerModifier.testTag("shell-center-surface"),
+                        tonalElevation = 0.dp,
+                        color = if (centerSurfaceColor != Color.Transparent) {
+                            centerSurfaceColor
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                        },
                     ) {
-                        content()
+                        ShellCenterContent(
+                            innerHorizontalPadding = innerHorizontalPadding,
+                            content = content,
+                        )
                     }
                 }
 
-                CenterLayerMode.TRANSPARENT -> Box(
-                    modifier = centerLayerModifier
-                ) {
+                CenterLayerMode.TRANSPARENT -> {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                horizontal = innerHorizontalPadding,
-                                vertical = 4.dp
-                            )
+                        modifier = centerLayerModifier.testTag("shell-center-transparent"),
                     ) {
-                        content()
+                        ShellCenterContent(
+                            innerHorizontalPadding = innerHorizontalPadding,
+                            content = content,
+                        )
                     }
                 }
             }
@@ -195,5 +198,22 @@ private fun ShellBackground(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ShellCenterContent(
+    innerHorizontalPadding: Dp,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                horizontal = innerHorizontalPadding,
+                vertical = 4.dp,
+            ),
+    ) {
+        content()
     }
 }

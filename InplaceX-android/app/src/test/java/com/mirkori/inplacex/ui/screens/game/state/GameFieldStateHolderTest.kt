@@ -128,6 +128,7 @@ class GameFieldStateHolderTest {
             listOf(GameFieldManualMark(2, '6', GameFieldManualMarkType.YES)),
             source.state.value.manualMarks,
         )
+        assertEquals('6', source.state.value.input.slots[2])
         assertEquals(1, source.state.value.evidence.hypotheses.size)
 
         source.dispatch(
@@ -139,7 +140,60 @@ class GameFieldStateHolderTest {
         )
 
         assertTrue(source.state.value.manualMarks.isEmpty())
+        assertEquals(null, source.state.value.input.slots[2])
         assertTrue(source.state.value.evidence.hypotheses.isEmpty())
+    }
+
+    @Test
+    fun `manual yes immediately fills and replaces the matching guess slot`() {
+        val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
+
+        source.dispatch(
+            GameFieldEvent.ManualMarkChanged(
+                position = 2,
+                symbol = '6',
+                type = GameFieldManualMarkType.YES,
+            ),
+        )
+
+        assertEquals('6', source.state.value.input.slots[2])
+
+        source.dispatch(
+            GameFieldEvent.ManualMarkChanged(
+                position = 2,
+                symbol = '7',
+                type = GameFieldManualMarkType.YES,
+            ),
+        )
+
+        assertEquals('7', source.state.value.input.slots[2])
+        assertEquals(
+            listOf(GameFieldManualMark(2, '7', GameFieldManualMarkType.YES)),
+            source.state.value.manualMarks,
+        )
+        assertTrue(source.state.value.evidence.provenFacts.isEmpty())
+    }
+
+    @Test
+    fun `manual yes prefills every next accepted attempt until removed`() {
+        val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
+        source.dispatch(GameFieldEvent.ManualMarkChanged(2, '6', GameFieldManualMarkType.YES))
+
+        "125".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals(listOf(null, null, '6', null), source.state.value.input.slots)
+        assertEquals(listOf("1265"), source.state.value.match.attempts.map { it.guess })
+
+        "127".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+
+        assertEquals(listOf(null, null, '6', null), source.state.value.input.slots)
+        assertEquals(listOf("1265", "1267"), source.state.value.match.attempts.map { it.guess })
+        assertEquals(
+            listOf(GameFieldManualMark(2, '6', GameFieldManualMarkType.YES)),
+            source.state.value.manualMarks,
+        )
     }
 
     @Test
@@ -236,7 +290,7 @@ class GameFieldStateHolderTest {
     }
 
     @Test
-    fun `manual yes does not become a fixed input fact`() {
+    fun `manual yes prefill remains editable and does not become a proven fact`() {
         val source = GameFieldStateHolder(
             SavedStateHandle(),
             parameters,
@@ -249,6 +303,12 @@ class GameFieldStateHolderTest {
                 type = GameFieldManualMarkType.YES,
             ),
         )
+        assertEquals('9', source.state.value.input.slots[0])
+        assertTrue(source.state.value.evidence.provenFacts.isEmpty())
+
+        source.dispatch(GameFieldEvent.BackspacePressed)
+        assertEquals(null, source.state.value.input.slots[0])
+
         "1234".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
         source.dispatch(GameFieldEvent.GuessSubmitted)
 

@@ -28,27 +28,23 @@ private val InplaceXDarkColorScheme = darkColorScheme(
 )
 
 private val InplaceXLightColorScheme = lightColorScheme(
-    primary = InplaceXColors.Cobalt,
+    primary = InplaceXColors.ToyBlue,
     onPrimary = InplaceXColors.White,
-    primaryContainer = ColorTokens.CobaltContainer,
-    onPrimaryContainer = InplaceXColors.Ink,
-    secondary = InplaceXColors.Indigo,
+    primaryContainer = InplaceXColors.ToyBlueTop,
+    onPrimaryContainer = InplaceXColors.White,
+    secondary = InplaceXColors.ToyPurple,
     onSecondary = InplaceXColors.White,
-    tertiary = InplaceXColors.Amber,
-    onTertiary = InplaceXColors.Ink,
-    background = InplaceXColors.Midnight,
-    onBackground = InplaceXColors.White,
-    surface = InplaceXColors.Surface,
-    onSurface = InplaceXColors.Ink,
-    surfaceVariant = InplaceXColors.SurfaceMuted,
-    onSurfaceVariant = InplaceXColors.InkMuted,
-    outline = InplaceXColors.Outline,
-    error = InplaceXColors.Coral,
+    tertiary = InplaceXColors.ToyOrange,
+    onTertiary = InplaceXColors.ToyBrown,
+    background = InplaceXColors.ToyWood,
+    onBackground = InplaceXColors.ToyCream,
+    surface = InplaceXColors.ToyCream,
+    onSurface = InplaceXColors.ToyBrown,
+    surfaceVariant = InplaceXColors.ToyCreamShadow.copy(alpha = 0.72f),
+    onSurfaceVariant = InplaceXColors.ToyBrown.copy(alpha = 0.74f),
+    outline = InplaceXColors.ToyCreamShadow,
+    error = InplaceXColors.ToyRed,
 )
-
-private object ColorTokens {
-    val CobaltContainer = androidx.compose.ui.graphics.Color(0xFFD8E7FF)
-}
 
 private val InplaceXShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),

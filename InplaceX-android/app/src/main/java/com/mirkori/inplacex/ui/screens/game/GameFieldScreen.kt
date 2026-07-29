@@ -59,15 +59,22 @@ fun GameFieldScreen(
     onMatchWon: () -> Unit = {},
     onMatchFinished: (MatchSessionSummary) -> Unit = {},
     onGuessResolved: (guess: String, score: Int, isWin: Boolean) -> Unit = { _, _, _ -> },
-    autoRestartOnWin: Boolean = true,
+    autoRestartOnWin: Boolean = false,
     extraMovesPerBoost: Int = 0,
     extraTimeSecondsPerBoost: Int = 0,
 ) {
     val matchParameters = remember(params, autoModeAvailable) {
         params.toMatchParameters(autoModeAvailable)
     }
-    val viewModel = remember(matchParameters, fixedSecret) {
-        GameFieldViewModel(SavedStateHandle(), matchParameters, fixedSecret)
+    val acceptedFixedSecret = remember(matchParameters, fixedSecret) {
+        fixedSecret?.takeIf { candidate ->
+            candidate.length == matchParameters.codeLength &&
+                candidate.all { symbol -> symbol in '0'..'9' } &&
+                (matchParameters.allowDuplicates || candidate.toSet().size == candidate.length)
+        }
+    }
+    val viewModel = remember(matchParameters, acceptedFixedSecret) {
+        GameFieldViewModel(SavedStateHandle(), matchParameters, acceptedFixedSecret)
     }
     val routeController = remember(viewModel) { GameFieldRouteController(viewModel) }
     val holderState by viewModel.uiState.collectAsState()
@@ -91,6 +98,16 @@ fun GameFieldScreen(
     val currentLifecycleCallbacks by rememberUpdatedState(lifecycleCallbacks)
 
     LaunchedEffect(viewModel) {
+        if (fixedSecret != null && acceptedFixedSecret == null) {
+            AppLog.warn(
+                tag = "GameFieldScreen",
+                message = "invalid fixed secret replaced with generated match secret",
+                attributes = mapOf(
+                    "configuredLength" to matchParameters.codeLength.toString(),
+                    "receivedLength" to fixedSecret.length.toString(),
+                ),
+            )
+        }
         AppLog.info(
             tag = "GameFieldScreen",
             message = "match route started",

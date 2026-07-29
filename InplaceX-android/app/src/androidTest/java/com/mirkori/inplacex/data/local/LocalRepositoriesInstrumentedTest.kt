@@ -10,6 +10,49 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LocalRepositoriesInstrumentedTest {
     @Test
+    fun temporaryProPurchasePersistsExtendsAndExpiresWithoutGrantingProPlus() {
+        var nowMs = FIXED_NOW_MS
+        withIsolatedDatabase("temporary_pro_repository", { nowMs }) { context, config ->
+            val repository = GameProgressRepository(context, config)
+
+            assertTrue(repository.buyTemporaryPro())
+            val firstPurchase = repository.loadState()
+            assertEquals(60, firstPurchase.coins)
+            assertEquals(FIXED_NOW_MS + 60 * 60_000L, firstPurchase.temporaryProExpiresAtMs)
+            assertTrue(firstPurchase.temporaryProActiveAt(nowMs))
+            assertTrue(firstPurchase.adsDisabledAt(nowMs))
+            assertTrue(firstPurchase.autoTableAssistEnabledAt(nowMs))
+            assertFalse(firstPurchase.infiniteHintsEnabled)
+
+            nowMs += 15 * 60_000L
+            assertTrue(repository.buyTemporaryPro())
+            val extended = GameProgressRepository(context, config).loadState()
+            assertEquals(0, extended.coins)
+            assertEquals(FIXED_NOW_MS + 2 * 60 * 60_000L, extended.temporaryProExpiresAtMs)
+
+            nowMs = extended.temporaryProExpiresAtMs
+            val expired = repository.loadState()
+            assertFalse(expired.temporaryProActiveAt(nowMs))
+            assertFalse(expired.adsDisabledAt(nowMs))
+            assertFalse(expired.autoTableAssistEnabledAt(nowMs))
+        }
+    }
+
+    @Test
+    fun permanentProPreventsTemporaryProFromSpendingCoins() {
+        withIsolatedDatabase("temporary_pro_permanent_guard", { FIXED_NOW_MS }) { context, config ->
+            val repository = GameProgressRepository(context, config)
+            repository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
+            val before = repository.loadState()
+
+            assertFalse(repository.buyTemporaryPro())
+            val after = repository.loadState()
+            assertEquals(before.coins, after.coins)
+            assertEquals(0L, after.temporaryProExpiresAtMs)
+        }
+    }
+
+    @Test
     fun gameProgressRepositoryRoundTripsProgressInventoryEntitlementsAndEnergy() {
         var nowMs = FIXED_NOW_MS
         withIsolatedDatabase("progress_repository", { nowMs }) { context, config ->
@@ -38,7 +81,7 @@ class LocalRepositoriesInstrumentedTest {
             assertEquals(3, state.checkPositionHints)
             assertEquals(3, state.extraMovesBoosts)
             assertEquals(4, state.extraTimeBoosts)
-            assertEquals(190, state.coins)
+            assertEquals(200, state.coins)
             assertEquals(4, state.campaignEnergy)
             assertEquals(1, state.matchesPlayed)
             assertEquals(2, state.matchesWon)
@@ -57,6 +100,10 @@ class LocalRepositoriesInstrumentedTest {
                 CampaignLevelProgress(levelNumber = 3, bestBackendRating = 8),
                 reloadedRepository.loadCampaignProgress(3),
             )
+
+            val coinsBeforeLoss = state.coins
+            reloadedRepository.recordModeResult(GameModeStatType.PVE_RACE, won = false)
+            assertEquals(coinsBeforeLoss, reloadedRepository.loadState().coins)
 
             nowMs += ENERGY_REFILL_MINUTES * 60_000L
             val regenerated = GameProgressRepository(context, config).loadState()

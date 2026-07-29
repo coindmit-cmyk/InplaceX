@@ -9,7 +9,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -17,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +33,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -35,14 +50,14 @@ import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameModeDefinition
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
-import com.mirkori.inplacex.ui.screens.shared.SceneCard
-import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -72,11 +87,16 @@ fun HomeRootScreen(
     onMatchStarted: () -> Unit = {},
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
+    onOpenCompany: () -> Unit = {},
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
+    var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
+    var raceResultElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
+    var pveSessionSeed by rememberSaveable { mutableIntStateOf(1) }
     var preMatchPhase by rememberSaveable { mutableStateOf(PreMatchPhase.SECRET_SELECTION) }
     var preMatchSecretInput by rememberSaveable { mutableStateOf("") }
     var preMatchTimeoutLeft by rememberSaveable { mutableIntStateOf(60) }
@@ -87,6 +107,7 @@ fun HomeRootScreen(
     var duelTurnOwner by rememberSaveable { mutableStateOf(DuelTurnOwner.PLAYER) }
     var botLastScore by rememberSaveable { mutableIntStateOf(-1) }
     var botConfirmedPositions by rememberSaveable { mutableIntStateOf(0) }
+    var duelTurnError by rememberSaveable { mutableStateOf<String?>(null) }
     var duelSessionSeed by rememberSaveable { mutableIntStateOf(1) }
 
     val pveMode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
@@ -133,6 +154,7 @@ fun HomeRootScreen(
                     duelTurnOwner = DuelTurnOwner.PLAYER
                     botLastScore = -1
                     botConfirmedPositions = 0
+                    duelTurnError = null
                     duelSessionSeed += 1
                     preMatchPhase = PreMatchPhase.READY_TO_START
                     showPreMatchDialog = false
@@ -153,9 +175,21 @@ fun HomeRootScreen(
         onExitGameConsumed()
     }
 
-    BackHandler(enabled = showExitDialog || showPreMatchDialog || showDuelResultDialog) {
+    fun closeRaceResultToHome() {
+        raceResultWon = null
+        onScreenStateChange(HomeScreenState.ROOT)
+        onDebugSecretChange(null)
+    }
+
+    BackHandler(
+        enabled = showExitDialog ||
+            showPreMatchDialog ||
+            showDuelResultDialog ||
+            raceResultWon != null,
+    ) {
         when {
             showExitDialog -> showExitDialog = false
+            raceResultWon != null -> closeRaceResultToHome()
             showDuelResultDialog -> showDuelResultDialog = false
             showPreMatchDialog -> {
                 showPreMatchDialog = false
@@ -171,7 +205,8 @@ fun HomeRootScreen(
         enabled = screenState != HomeScreenState.ROOT &&
             !showExitDialog &&
             !showPreMatchDialog &&
-            !showDuelResultDialog
+            !showDuelResultDialog &&
+            raceResultWon == null
     ) {
         showExitDialog = true
     }
@@ -189,30 +224,39 @@ fun HomeRootScreen(
                     preMatchSecretInput = ""
                     preMatchError = null
                     showPreMatchDialog = true
-                }
+                },
+                onOpenCompany = onOpenCompany,
             )
         }
 
         HomeScreenState.PVE_GAME -> {
-            GameFieldScreen(
-                title = "",
-                params = pveMode.toFieldParams(TypeGame.RaceMatch),
-                onBack = { showExitDialog = true },
-                onDebugSecretChange = onDebugSecretChange,
-                openPositionHints = openPositionHints,
-                checkDigitHints = checkDigitHints,
-                checkPositionHints = checkPositionHints,
-                autoModeAvailable = autoModeAvailable,
-                infiniteHintsEnabled = infiniteHintsEnabled,
-                onConsumeOpenPositionHint = onConsumeOpenPositionHint,
-                onConsumeCheckDigitHint = onConsumeCheckDigitHint,
-                onConsumeCheckPositionHint = onConsumeCheckPositionHint,
-                onWatchRewardedHintAd = onWatchRewardedHintAd,
-                onMatchStarted = onMatchStarted,
-                onMatchFinished = { summary ->
-                    onRecordPveResult(summary.won)
-                }
-            )
+            key(pveSessionSeed) {
+                GameFieldScreen(
+                    title = "",
+                    params = pveMode.toFieldParams(TypeGame.RaceMatch),
+                    onBack = { showExitDialog = true },
+                    onDebugSecretChange = onDebugSecretChange,
+                    openPositionHints = openPositionHints,
+                    checkDigitHints = checkDigitHints,
+                    checkPositionHints = checkPositionHints,
+                    autoModeAvailable = autoModeAvailable,
+                    infiniteHintsEnabled = infiniteHintsEnabled,
+                    onConsumeOpenPositionHint = onConsumeOpenPositionHint,
+                    onConsumeCheckDigitHint = onConsumeCheckDigitHint,
+                    onConsumeCheckPositionHint = onConsumeCheckPositionHint,
+                    onWatchRewardedHintAd = onWatchRewardedHintAd,
+                    onMatchStarted = {
+                        if (raceResultWon == null) onMatchStarted()
+                    },
+                    onMatchFinished = { summary ->
+                        onRecordPveResult(summary.won)
+                        raceResultWon = summary.won
+                        raceResultAttempts = summary.attemptsUsed
+                        raceResultElapsedSeconds = summary.elapsedSeconds
+                    },
+                    autoRestartOnWin = false,
+                )
+            }
         }
 
         HomeScreenState.PVP_GAME -> {
@@ -234,25 +278,46 @@ fun HomeRootScreen(
                 delay(2200)
 
                 val botTurn = withContext(Dispatchers.Default) {
-                    val decision = botSolver.nextTurn()
-                    val score = ScoreCalculator.countExactMatches(playerSecretForDuel, decision.guess)
-                    botSolver.registerFeedback(decision.guess, score)
-                    BotTurnResolution(
-                        score = score,
-                        confirmedPositions = botSolver.confirmedPositionsCount(),
+                    resolveDuelBotTurn(
+                        playerSecret = playerSecretForDuel,
+                        codeLength = pvpMode.config.codeLength,
+                        nextGuess = { botSolver.nextTurn().guess },
+                        registerFeedback = botSolver::registerFeedback,
+                        confirmedPositions = botSolver::confirmedPositionsCount,
                     )
                 }
-                botLastScore = botTurn.score
-                botConfirmedPositions = botTurn.confirmedPositions
 
-                if (botTurn.score == pvpMode.config.codeLength) {
-                    onRecordPvpResult(false)
-                    duelResultText = strings.homeDuelResultBotWin(botTurn.score)
-                    showDuelResultDialog = true
-                    onScreenStateChange(HomeScreenState.ROOT)
-                    onDebugSecretChange(null)
-                } else {
-                    duelTurnOwner = DuelTurnOwner.PLAYER
+                when (botTurn) {
+                    is DuelBotTurnResult.Completed -> {
+                        duelTurnError = null
+                        botLastScore = botTurn.score
+                        botConfirmedPositions = botTurn.confirmedPositions
+
+                        if (botTurn.score == pvpMode.config.codeLength) {
+                            onRecordPvpResult(false)
+                            duelResultText = strings.homeDuelResultBotWin(botTurn.score)
+                            showDuelResultDialog = true
+                            onScreenStateChange(HomeScreenState.ROOT)
+                            onDebugSecretChange(null)
+                        } else {
+                            duelTurnOwner = DuelTurnOwner.PLAYER
+                        }
+                    }
+
+                    is DuelBotTurnResult.Failed -> {
+                        AppLog.error(
+                            tag = "HomeRootScreen",
+                            message = "duel bot turn failed",
+                            attributes = mapOf(
+                                "codeLength" to pvpMode.config.codeLength.toString(),
+                                "inputLength" to playerSecretForDuel.length.toString(),
+                                "failureStage" to botTurn.stage.name,
+                            ),
+                            throwable = botTurn.cause,
+                        )
+                        duelTurnError = strings.text("home.duel.status.bot_turn_failed")
+                        duelTurnOwner = DuelTurnOwner.PLAYER
+                    }
                 }
             }
 
@@ -264,7 +329,7 @@ fun HomeRootScreen(
                 } else {
                     strings.text("home.duel.turn.opponent")
                 },
-                secondaryStatusText = if (botLastScore >= 0) {
+                secondaryStatusText = duelTurnError ?: if (botLastScore >= 0) {
                     strings.homeDuelStatus(botLastScore, botConfirmedPositions, pvpMode.config.codeLength)
                 } else {
                     strings.homeDuelWaiting(botConfirmedPositions, pvpMode.config.codeLength)
@@ -335,6 +400,20 @@ fun HomeRootScreen(
                     Text(strings.text("home.dialog.result.ok"))
                 }
             }
+        )
+    }
+
+    raceResultWon?.let { won ->
+        RaceResultDialog(
+            won = won,
+            attemptsUsed = raceResultAttempts,
+            attemptLimit = pveMode.config.attemptLimit,
+            elapsedSeconds = raceResultElapsedSeconds,
+            onRetry = {
+                raceResultWon = null
+                pveSessionSeed += 1
+            },
+            onHome = ::closeRaceResultToHome,
         )
     }
 
@@ -434,17 +513,63 @@ fun HomeRootScreen(
     }
 }
 
-private data class BotTurnResolution(
-    val score: Int,
-    val confirmedPositions: Int,
-)
+internal sealed interface DuelBotTurnResult {
+    data class Completed(
+        val score: Int,
+        val confirmedPositions: Int,
+    ) : DuelBotTurnResult
+
+    data class Failed(
+        val cause: Exception,
+        val stage: DuelBotTurnStage,
+    ) : DuelBotTurnResult
+}
+
+internal enum class DuelBotTurnStage {
+    VALIDATE_SECRET,
+    CREATE_GUESS,
+    SCORE_GUESS,
+    REGISTER_FEEDBACK,
+    READ_PROGRESS,
+}
+
+internal fun resolveDuelBotTurn(
+    playerSecret: String,
+    codeLength: Int,
+    nextGuess: () -> String,
+    registerFeedback: (String, Int) -> Unit,
+    confirmedPositions: () -> Int,
+): DuelBotTurnResult {
+    var stage = DuelBotTurnStage.VALIDATE_SECRET
+    return try {
+        require(playerSecret.length == codeLength) {
+            "Duel player secret length does not match the configured code length"
+        }
+        stage = DuelBotTurnStage.CREATE_GUESS
+        val guess = nextGuess()
+        stage = DuelBotTurnStage.SCORE_GUESS
+        val score = ScoreCalculator.countExactMatches(playerSecret, guess)
+        stage = DuelBotTurnStage.REGISTER_FEEDBACK
+        registerFeedback(guess, score)
+        stage = DuelBotTurnStage.READ_PROGRESS
+        DuelBotTurnResult.Completed(
+            score = score,
+            confirmedPositions = confirmedPositions(),
+        )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        DuelBotTurnResult.Failed(error, stage)
+    }
+}
 
 @Composable
 private fun HomeSelectionScreen(
     pveMode: GameModeDefinition,
     pvpMode: GameModeDefinition,
     onOpenPve: () -> Unit,
-    onOpenPvp: () -> Unit
+    onOpenPvp: () -> Unit,
+    onOpenCompany: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
 
@@ -453,74 +578,117 @@ private fun HomeSelectionScreen(
             .fillMaxSize()
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        val heroSpacing = maxHeight * 0.022f
+        val compact = maxWidth < 560.dp || maxHeight < 620.dp
+        val heroSpacing = if (compact) 10.dp else maxHeight * 0.022f
+        val scrollModifier = if (compact) {
+            Modifier.verticalScroll(rememberScrollState())
+        } else {
+            Modifier
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .then(scrollModifier)
                 .padding(horizontal = 10.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
-            SceneCard(
-                accentColor = InplaceXColors.Surface.copy(alpha = 0.96f)
-            ) {
-                Text(
-                    text = AppConfigCatalog.branding.appName,
-                    style = MaterialTheme.typography.displaySmall,
-                    color = InplaceXColors.Ink,
-                )
-                Text(
-                    text = strings.text("home.subtitle"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                SceneSplitStatRow(
-                    leftLabel = strings.text("mode.pve.title"),
-                    leftValue = strings.homeCodeLength(pveMode.config.codeLength),
-                    rightLabel = strings.text("mode.pvp.title"),
-                    rightValue = strings.text("home.duel.kind")
-                )
-            }
-
-            Row(
+            Text(
+                text = buildAnnotatedString {
+                    append("Inplace")
+                    withStyle(SpanStyle(color = InplaceXColors.ToyOrangeTop)) {
+                        append("X")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { heading() },
+                style = if (compact) {
+                    MaterialTheme.typography.displaySmall
+                } else {
+                    MaterialTheme.typography.displayMedium
+                },
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = strings.text("home.subtitle"),
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+                style = MaterialTheme.typography.titleMedium,
+                color = InplaceXColors.ToyCream,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+
+            if (compact) {
                 SceneActionTile(
                     title = strings.text(pveMode.titleKey),
                     subtitle = strings.text(pveMode.subtitleKey),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Outlined.Timer,
+                    trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.Cyan, InplaceXColors.Cobalt)
+                        listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
                     ),
                     onClick = onOpenPve
                 )
                 SceneActionTile(
                     title = strings.text(pvpMode.titleKey),
                     subtitle = strings.text(pvpMode.subtitleKey),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Outlined.Groups,
+                    trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.Indigo, Color(0xFF7B2FF2))
+                        listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
                     ),
                     onClick = onOpenPvp
                 )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SceneActionTile(
+                        title = strings.text(pveMode.titleKey),
+                        subtitle = strings.text(pveMode.subtitleKey),
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Outlined.Timer,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
+                        ),
+                        onClick = onOpenPve,
+                    )
+                    SceneActionTile(
+                        title = strings.text(pvpMode.titleKey),
+                        subtitle = strings.text(pvpMode.subtitleKey),
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Outlined.Groups,
+                        trailingIcon = Icons.Outlined.ChevronRight,
+                        accentBrush = Brush.verticalGradient(
+                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
+                        ),
+                        onClick = onOpenPvp,
+                    )
+                }
             }
 
-            SceneCard(
-                accentColor = InplaceXColors.Surface.copy(alpha = 0.94f)
-            ) {
-                Text(
-                    text = strings.text("section.company.short"),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = strings.text("home.company.teaser"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            SceneActionTile(
+                title = strings.text("home.company.continue"),
+                subtitle = strings.text("home.company.teaser"),
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = Icons.Outlined.Map,
+                trailingIcon = Icons.Outlined.ChevronRight,
+                accentBrush = Brush.verticalGradient(
+                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen)
+                ),
+                onClick = onOpenCompany,
+            )
 
-            Spacer(modifier = Modifier.weight(1f))
+            if (!compact) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

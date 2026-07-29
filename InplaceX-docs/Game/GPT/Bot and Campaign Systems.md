@@ -78,6 +78,46 @@ The generator uses:
 
 Difficulty should keep growing until about `300-500`, then flatten into a stable maximum band.
 
+### Onboarding Balance
+
+The first block keeps four-digit codes, but it must not use the general easy
+multiplier unchanged. Levels `1..10` use a dedicated descending move budget:
+
+- level `1`: `14` attempts and `300` seconds
+- level `8`: `12` attempts and `240` seconds
+- level `10`: `10` attempts and `195` seconds
+
+The exact first-block attempt sequence is
+`14, 14, 14, 13, 13, 13, 12, 12, 12, 10`.
+The matching time sequence is
+`300, 285, 285, 270, 270, 255, 255, 240, 225, 195` seconds.
+Spike and hardcore roles remain visible inside this curve.
+
+From level `11`, the medium multiplier starts at `2.8` before role and
+long-run adjustments. This prevents the five-digit block from returning to a
+nineteen-attempt tutorial budget.
+
+The generated campaign uses these deterministic tier boundaries:
+
+- `1..10`: `EASY`
+- `11..80`: `MEDIUM`
+- `81..220`: `HARD`
+- `221+`: `HARDCORE`
+
+Secret length grows independently so that early play does not stay flat:
+
+- `1..10`: 4 digits
+- `11..40`: 5 digits
+- `41..90`: 6 digits
+- `91..150`: 7 digits
+- `151..220`: 8 digits
+- `221..300`: 9 digits
+- `301+`: 10 digits
+
+This keeps the first 10-level block suitable for onboarding, makes the second
+block a real deduction step, and reaches the maximum code length inside the
+canonical `300-500` plateau window.
+
 ## Rating Policy
 
 Campaign rating uses:

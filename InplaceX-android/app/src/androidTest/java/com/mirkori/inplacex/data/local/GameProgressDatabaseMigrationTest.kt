@@ -12,8 +12,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GameProgressDatabaseMigrationTest {
     @Test
-    fun freshDatabaseCreatesCompleteV6Schema() {
-        withIsolatedDatabase("fresh_v6", ::fixedNowMs) { context, config ->
+    fun freshDatabaseCreatesCompleteV7Schema() {
+        withIsolatedDatabase("fresh_v7", ::fixedNowMs) { context, config ->
             GameProgressDatabase(context, config).use { helper ->
                 val db = helper.writableDatabase
 
@@ -24,28 +24,33 @@ class GameProgressDatabaseMigrationTest {
     }
 
     @Test
-    fun migrationFromV1ToV6PreservesSentinelData() {
+    fun migrationFromV1ToV7PreservesSentinelData() {
         assertMigrationFrom(1)
     }
 
     @Test
-    fun migrationFromV2ToV6PreservesSentinelData() {
+    fun migrationFromV2ToV7PreservesSentinelData() {
         assertMigrationFrom(2)
     }
 
     @Test
-    fun migrationFromV3ToV6PreservesSentinelData() {
+    fun migrationFromV3ToV7PreservesSentinelData() {
         assertMigrationFrom(3)
     }
 
     @Test
-    fun migrationFromV4ToV6PreservesSentinelData() {
+    fun migrationFromV4ToV7PreservesSentinelData() {
         assertMigrationFrom(4)
     }
 
     @Test
-    fun migrationFromV5ToV6PreservesSentinelData() {
+    fun migrationFromV5ToV7PreservesSentinelData() {
         assertMigrationFrom(5)
+    }
+
+    @Test
+    fun migrationFromV6ToV7PreservesSentinelData() {
+        assertMigrationFrom(6)
     }
 
     private fun assertMigrationFrom(oldVersion: Int) {
@@ -244,6 +249,7 @@ class GameProgressDatabaseMigrationTest {
             assertEquals(if (oldVersion >= 5) 1 else 0, it.int(GameProgressDatabase.COL_AD_FREE_PURCHASED))
             assertEquals(if (oldVersion >= 5) 1 else 0, it.int(GameProgressDatabase.COL_PRO_SUBSCRIPTION_ACTIVE))
             assertEquals(if (oldVersion >= 5) 1 else 0, it.int(GameProgressDatabase.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE))
+            assertEquals(0L, it.long(GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS))
         }
     }
 
@@ -315,7 +321,7 @@ class GameProgressDatabaseMigrationTest {
     private fun fixedNowMs(): Long = FIXED_NOW_MS
 
     companion object {
-        private const val CURRENT_DATABASE_VERSION = 6
+        private const val CURRENT_DATABASE_VERSION = 7
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val SENTINEL_ENERGY_UPDATED_AT = FIXED_NOW_MS - 60_000L
 

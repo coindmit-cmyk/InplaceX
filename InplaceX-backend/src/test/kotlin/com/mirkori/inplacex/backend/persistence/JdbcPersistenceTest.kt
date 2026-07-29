@@ -30,6 +30,8 @@ class JdbcPersistenceTest {
                     "DUEL_SESSIONS",
                     "DUEL_COMMANDS",
                     "DUEL_EVENTS",
+                    "PLAYER_IDENTITIES",
+                    "GOOGLE_AUTH_CHALLENGES",
                 ),
                 connection.metaData.getTables(null, null, "%", arrayOf("TABLE")).use { resultSet ->
                     buildSet {
@@ -38,11 +40,12 @@ class JdbcPersistenceTest {
                         setOf(
                             "PLAYERS", "SAVE_HEADS", "SAVE_REVISIONS", "MATCHMAKING_TICKETS",
                             "DUEL_SESSIONS", "DUEL_COMMANDS", "DUEL_EVENTS",
+                            "PLAYER_IDENTITIES", "GOOGLE_AUTH_CHALLENGES",
                         ),
                     )
                 },
             )
-            assertEquals(2, connection.createStatement().use { statement ->
+            assertEquals(3, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
@@ -56,7 +59,7 @@ class JdbcPersistenceTest {
         val dataSource = newDataSource()
         JdbcMigrationRunner().migrate(dataSource)
         val failingMigration = SqlMigration(
-            version = "3",
+            version = "999",
             description = "rollback test",
             sql = "INSERT INTO players(id, display_name) VALUES ('rolled-back', 'Rollback'); INSERT INTO absent_table VALUES (1)",
         )
@@ -67,7 +70,7 @@ class JdbcPersistenceTest {
 
         dataSource.connection.use { connection ->
             assertEquals(0, count(connection, "SELECT COUNT(*) FROM players WHERE id = 'rolled-back'"))
-            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '3'"))
+            assertEquals(0, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE version = '999'"))
         }
     }
 

@@ -15,6 +15,7 @@ subprojects {
 val verificationTasks = listOf(
     ":InplaceX-backend:test",
     ":InplaceX-bot-core:test",
+    ":InplaceX-identity:test",
     ":InplaceX-logging:test",
     ":InplaceX-test-support:test",
     ":app:testDebugUnitTest",

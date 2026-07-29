@@ -7,7 +7,7 @@ import com.mirkori.inplacex.logging.LogSink
 
 class AndroidLogSink(
     private val writer: (priority: Int, tag: String, message: String) -> Unit = { priority, tag, message ->
-        Log.println(priority, tag, message)
+        runCatching { Log.println(priority, tag, message) }
     },
 ) : LogSink {
     override fun emit(event: LogEvent) {

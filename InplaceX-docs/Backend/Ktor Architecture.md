@@ -380,6 +380,8 @@ Responsibilities:
 ## Security Rules
 
 - JWT for API auth
+- `RS256` access tokens with the private key isolated in the identity process;
+  the game API verifies with the public key only. See `Auth Process Boundary.md`.
 - refresh token rotation
 - never trust client-side scoring
 - never trust client-side entitlement flags

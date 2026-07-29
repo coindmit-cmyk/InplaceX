@@ -41,7 +41,8 @@ internal open class GameProgressDatabase(
                 $COL_COMPANY_LOSSES INTEGER NOT NULL DEFAULT 0,
                 $COL_AD_FREE_PURCHASED INTEGER NOT NULL DEFAULT 0,
                 $COL_PRO_SUBSCRIPTION_ACTIVE INTEGER NOT NULL DEFAULT 0,
-                $COL_PRO_PLUS_SUBSCRIPTION_ACTIVE INTEGER NOT NULL DEFAULT 0
+                $COL_PRO_PLUS_SUBSCRIPTION_ACTIVE INTEGER NOT NULL DEFAULT 0,
+                $COL_TEMPORARY_PRO_EXPIRES_AT_MS INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )
@@ -106,6 +107,13 @@ internal open class GameProgressDatabase(
 
         if (oldVersion < 6) {
             createPlatformTables(db)
+        }
+
+        if (oldVersion < 7) {
+            createPlatformTables(db)
+            db.execSQL(
+                "ALTER TABLE $TABLE_PROGRESS ADD COLUMN $COL_TEMPORARY_PRO_EXPIRES_AT_MS INTEGER NOT NULL DEFAULT 0"
+            )
         }
     }
 
@@ -293,7 +301,7 @@ internal open class GameProgressDatabase(
     }
 
     companion object {
-        private const val DB_VERSION = 6
+        private const val DB_VERSION = 7
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
@@ -330,6 +338,7 @@ internal open class GameProgressDatabase(
         const val COL_AD_FREE_PURCHASED = "ad_free_purchased"
         const val COL_PRO_SUBSCRIPTION_ACTIVE = "pro_subscription_active"
         const val COL_PRO_PLUS_SUBSCRIPTION_ACTIVE = "pro_plus_subscription_active"
+        const val COL_TEMPORARY_PRO_EXPIRES_AT_MS = "temporary_pro_expires_at_ms"
         const val COL_CAMPAIGN_LEVEL_NUMBER = "level_number"
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = "best_backend_rating"
         const val PROFILE_ID = 1

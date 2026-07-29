@@ -24,6 +24,10 @@ Shell visual tokens are configured in:
 - `coinsIcon`
 - `settingsIcon`
 
+The v5 runtime also exposes a Shop shortcut outside an active match and
+renders compact resource add actions. On narrow phones the Shop text may
+collapse to its icon, but its semantics and touch target remain available.
+
 Each layer/icon is currently configured as:
 
 - `imageAssetPath`
@@ -43,6 +47,7 @@ Top bar keys:
 - `top.energy`
 - `top.coins`
 - `top.settings`
+- `section.shop.short`
 
 ## Current limitation
 

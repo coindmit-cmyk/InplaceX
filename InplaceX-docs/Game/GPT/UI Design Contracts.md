@@ -17,14 +17,37 @@
 - A visual refactor must not duplicate match orchestration or change match rules.
 - Generated mockups are reference evidence, not runtime assets or implementation authority.
 
+## Toy Room v5 Visual Direction
+
+The owner-approved visual references define the current art direction for
+Home, Company, Friends/Online, Shop, Profile, and the Race game field.
+
+- The environment reads as a warm, softly lit tabletop or study room rather
+  than a dark digital dashboard.
+- Global chrome uses glossy cobalt-to-navy panels, bright cyan edge light,
+  white labels, gold resource symbols, and small green add actions.
+- Content cards use warm cream faces, caramel outlines, rounded corners, and
+  visible depth.
+- Primary mode identity is stable: Race is orange, Duel is purple, and Company
+  is green. Blue remains navigation and structural chrome.
+- Interactive controls should look like tactile game pieces while preserving
+  Compose semantics, minimum target sizes, localization, and adaptive layout.
+- Rich illustrations may be introduced as independent assets later. Screens
+  must remain functional with code-rendered gradients and Material icon
+  fallbacks.
+- Screenshots remain visual references only; they must not be embedded as
+  interactive screen backgrounds.
+
 ## State Semantics
 
-- primary action: cobalt
-- secondary competitive action: indigo
-- focus and live information: cyan
-- reward and currency: amber
-- confirmed success: mint
-- invalid, destructive, or failed state: coral
+- structural navigation and chrome: glossy blue
+- Race and urgency: orange
+- Duel and social competition: purple
+- Company and confirmed progression: green
+- focus and selected navigation: cyan edge light
+- reward and currency: gold
+- content surfaces: warm cream
+- invalid, destructive, or failed state: red
 
 Every state also requires at least one non-color signal such as text, icon, border, shape, or position.
 

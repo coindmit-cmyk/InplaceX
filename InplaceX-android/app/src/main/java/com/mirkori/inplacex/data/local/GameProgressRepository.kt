@@ -3,6 +3,8 @@ package com.mirkori.inplacex.data.local
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import com.mirkori.inplacex.core.match.RaceRewardPolicy
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 
 enum class HintStockType {
     OPEN_POSITION,
@@ -59,12 +61,22 @@ data class GameProgressState(
     val adFreePurchased: Boolean,
     val proSubscriptionActive: Boolean,
     val proPlusSubscriptionActive: Boolean,
+    val temporaryProExpiresAtMs: Long,
 ) {
+    fun temporaryProActiveAt(nowMs: Long): Boolean =
+        TemporaryProPolicy.isActive(temporaryProExpiresAtMs, nowMs)
+
+    fun adsDisabledAt(nowMs: Long): Boolean =
+        adFreePurchased || proSubscriptionActive || proPlusSubscriptionActive || temporaryProActiveAt(nowMs)
+
+    fun autoTableAssistEnabledAt(nowMs: Long): Boolean =
+        proSubscriptionActive || proPlusSubscriptionActive || temporaryProActiveAt(nowMs)
+
     val adsDisabled: Boolean
-        get() = adFreePurchased || proSubscriptionActive || proPlusSubscriptionActive
+        get() = adsDisabledAt(System.currentTimeMillis())
 
     val autoTableAssistEnabled: Boolean
-        get() = proSubscriptionActive || proPlusSubscriptionActive
+        get() = autoTableAssistEnabledAt(System.currentTimeMillis())
 
     val infiniteHintsEnabled: Boolean
         get() = proPlusSubscriptionActive
@@ -221,6 +233,26 @@ class GameProgressRepository(
         row.copy(campaignEnergy = (row.campaignEnergy + amount).coerceAtMost(MAX_CAMPAIGN_ENERGY))
     }
 
+    fun buyTemporaryPro(nowMs: Long = databaseConfig.nowMs()): Boolean {
+        val db = helper.writableDatabase
+        ensureDefaultRow(db)
+        val row = applyEnergyRegen(loadRow(db), nowMs)
+        if (row.proSubscriptionActive || row.proPlusSubscriptionActive) return false
+        if (row.coins < TemporaryProPolicy.PRICE_COINS) return false
+
+        writeRow(
+            db,
+            row.copy(
+                coins = row.coins - TemporaryProPolicy.PRICE_COINS,
+                temporaryProExpiresAtMs = TemporaryProPolicy.extendExpiration(
+                    currentExpiresAtMs = row.temporaryProExpiresAtMs,
+                    nowMs = nowMs,
+                ),
+            ),
+        )
+        return true
+    }
+
     fun addCoins(amount: Int): GameProgressState {
         require(amount >= 0) { "amount must be >= 0" }
         return mutate { row -> row.copy(coins = row.coins + amount) }
@@ -279,6 +311,7 @@ class GameProgressRepository(
                     pveWins = row.pveWins + if (won) 1 else 0,
                     pveLosses = row.pveLosses + if (won) 0 else 1,
                     matchesWon = row.matchesWon + if (won) 1 else 0,
+                    coins = row.coins + RaceRewardPolicy.coinsFor(won),
                 )
 
                 GameModeStatType.PVP_DUEL -> row.copy(
@@ -426,6 +459,7 @@ class GameProgressRepository(
             put(GameProgressDbHelper.COL_AD_FREE_PURCHASED, if (state.adFreePurchased) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE, if (state.proSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE, if (state.proPlusSubscriptionActive) 1 else 0)
+            put(GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS, state.temporaryProExpiresAtMs)
         }
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PROGRESS,
@@ -462,6 +496,7 @@ class GameProgressRepository(
                 GameProgressDbHelper.COL_AD_FREE_PURCHASED,
                 GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE,
                 GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE,
+                GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS,
             ),
             "${GameProgressDbHelper.COL_ID} = ?",
             arrayOf(GameProgressDbHelper.PROFILE_ID.toString()),
@@ -498,6 +533,7 @@ class GameProgressRepository(
                 adFreePurchased = it.getInt(20) != 0,
                 proSubscriptionActive = it.getInt(21) != 0,
                 proPlusSubscriptionActive = it.getInt(22) != 0,
+                temporaryProExpiresAtMs = it.getLong(23),
             )
         }
     }
@@ -528,6 +564,7 @@ class GameProgressRepository(
             put(GameProgressDbHelper.COL_AD_FREE_PURCHASED, if (row.adFreePurchased) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE, if (row.proSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE, if (row.proPlusSubscriptionActive) 1 else 0)
+            put(GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS, row.temporaryProExpiresAtMs)
         }
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PROGRESS,
@@ -561,6 +598,7 @@ class GameProgressRepository(
         val adFreePurchased: Boolean,
         val proSubscriptionActive: Boolean,
         val proPlusSubscriptionActive: Boolean,
+        val temporaryProExpiresAtMs: Long,
     ) {
         fun toState(): GameProgressState {
             return GameProgressState(
@@ -585,6 +623,7 @@ class GameProgressRepository(
                 adFreePurchased = adFreePurchased,
                 proSubscriptionActive = proSubscriptionActive,
                 proPlusSubscriptionActive = proPlusSubscriptionActive,
+                temporaryProExpiresAtMs = temporaryProExpiresAtMs,
             )
         }
 
@@ -614,6 +653,7 @@ class GameProgressRepository(
                     adFreePurchased = false,
                     proSubscriptionActive = false,
                     proPlusSubscriptionActive = false,
+                    temporaryProExpiresAtMs = 0L,
                 )
             }
         }
@@ -674,6 +714,7 @@ internal class GameProgressDbHelper(
         const val COL_AD_FREE_PURCHASED = GameProgressDatabase.COL_AD_FREE_PURCHASED
         const val COL_PRO_SUBSCRIPTION_ACTIVE = GameProgressDatabase.COL_PRO_SUBSCRIPTION_ACTIVE
         const val COL_PRO_PLUS_SUBSCRIPTION_ACTIVE = GameProgressDatabase.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE
+        const val COL_TEMPORARY_PRO_EXPIRES_AT_MS = GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS
         const val COL_CAMPAIGN_LEVEL_NUMBER = GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING
         const val PROFILE_ID = GameProgressDatabase.PROFILE_ID

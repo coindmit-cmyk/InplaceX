@@ -50,6 +50,10 @@ This is intentionally separate from permanent hint inventory.
 - no post-match ads in the first `20` matches
 - after that, post-match ad cadence is sparse
 - all ads are skipped when `adsDisabled == true`
+- the game banner slot is requested only during an active game
+- the shell reserves banner height only after the provider accepts the slot
+- `REMOVE_ADS`, `PRO`, and `PRO_PLUS` all suppress the banner before the
+  provider is called; debug tooling must never override this entitlement
 
 ## Integration Rule
 

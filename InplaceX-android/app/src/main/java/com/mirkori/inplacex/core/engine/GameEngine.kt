@@ -21,7 +21,9 @@ class GameEngine(
     private var extraAttemptBudget = 0
 
     override fun start(secretOverride: String?): MatchSnapshot {
-        secret = secretOverride ?: SecretGenerator.generate(config)
+        secret = secretOverride
+            ?.takeIf(::isValidSecret)
+            ?: SecretGenerator.generate(config)
         history.clear()
         phase = MatchPhase.ACTIVE
         extraAttemptBudget = 0
@@ -75,6 +77,13 @@ class GameEngine(
                 MatchFeedback.MatchFinished(phase)
             },
         )
+    }
+
+    private fun isValidSecret(candidate: String): Boolean {
+        if (candidate.length != config.codeLength || candidate.any { it !in '0'..'9' }) {
+            return false
+        }
+        return config.allowDuplicates || candidate.toSet().size == candidate.length
     }
 
     override fun snapshot(message: String?): MatchSnapshot {

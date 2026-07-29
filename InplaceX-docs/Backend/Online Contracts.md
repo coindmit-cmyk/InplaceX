@@ -64,9 +64,23 @@ unique token id. The client sends it as `Authorization: Bearer <token>` for
 REST and during the WebSocket handshake. Tokens are never accepted in a query
 parameter, WebSocket payload, path, or application log.
 
-Provider linking (for example Google) uses the authenticated player context and
-is not allowed to replace guest ownership silently. Logout revokes the active
-token family but does not delete cloud save data.
+Google linking uses the authenticated guest player context:
+
+1. `POST /api/v1/auth/google/challenge` creates a short-lived, single-use
+   server challenge for the authenticated player.
+2. Android passes that nonce to Credential Manager and receives a Google ID
+   token for the configured web client ID.
+3. `POST /api/v1/auth/google` submits the ID token and nonce over HTTPS.
+4. The identity process verifies the Google signature, issuer, audience,
+   expiry, subject, and nonce, consumes the challenge, and links the opaque
+   Google subject to the player.
+
+The database stores the provider name and opaque subject, never the raw Google
+ID token or email address. A provider subject already linked to a player
+restores that player after explicit Google sign-in; a new subject promotes the
+current guest player without replacing its progress. A player cannot silently
+link a second Google subject. Logout clears the local online session but does
+not delete cloud data or the server-side identity link.
 
 ## Common command rules
 
@@ -138,11 +152,16 @@ Every authenticated route checks that the player owns the referenced resource.
 | --- | --- | --- |
 | Guest bootstrap | `POST /api/v1/auth/bootstrap` | `AuthBootstrapRequest` → `AuthTokenResponse` |
 | Refresh | `POST /api/v1/auth/refresh` | `RefreshRequest` → `RefreshResponse` |
+| Create Google challenge | `POST /api/v1/auth/google/challenge` | authenticated empty request → nonce and expiry |
+| Authenticate with Google | `POST /api/v1/auth/google` | Google ID token + nonce → `AuthTokenResponse` |
 | Read cloud save | `GET /api/v1/me/save` | `CloudSaveSnapshot` |
 | Write cloud save | `PUT /api/v1/me/save` | `CloudSavePutCommand` → `CloudSaveSnapshot` |
 | Create matchmaking ticket | `POST /api/v1/matchmaking/tickets` | `MatchmakingCreateCommand` → `MatchmakingTicket` |
 | Read ticket | `GET /api/v1/matchmaking/tickets/{ticketId}` | `MatchmakingTicket` |
 | Cancel ticket | `DELETE /api/v1/matchmaking/tickets/{ticketId}` | idempotent empty response or `MatchmakingTicket` |
+| Create friend invite | `POST /api/v1/friends/invites` | `FriendInviteCreateCommand` → `FriendInvite` |
+| Read owned friend invite | `GET /api/v1/friends/invites/{inviteCode}` | `FriendInvite` |
+| Accept friend invite | `POST /api/v1/friends/invites/{inviteCode}/accept` | `FriendInviteAcceptCommand` → `FriendInvite` |
 | Read duel snapshot | `GET /api/v1/sessions/{sessionId}` | `SessionSnapshotResponse` |
 | Reconnect snapshot | `POST /api/v1/sessions/{sessionId}/reconnect` | `ReconnectRequest` → `ReconnectResponse` |
 | Submit secret | `POST /api/v1/sessions/{sessionId}/setup/secret` | `DuelSubmitSecretCommand` → `DuelSecretReceipt` |
@@ -174,6 +193,39 @@ bounded expiry and one terminal state. Matching creates a duel `sessionId`
 server-side; clients do not choose an opponent or session authority. A
 `matchmaking.matched` WebSocket event is an optimization, not the only way to
 discover a match; polling the ticket remains valid.
+
+The staging v1 policy first returns a `searching` ticket and pairs the oldest
+compatible ticket from a different authenticated player. If no peer is found
+within the server-configured bounded fallback interval (five seconds by
+default), the next ticket read atomically creates a server-bot session and
+returns `matched` with `matchedWithBot: true`. A searching ticket always has a
+null `sessionId`; a matched ticket always has a server-generated non-null
+`sessionId`. Replaying the create command returns the ticket's current state,
+including a later human or bot match, rather than creating another ticket.
+
+### Private friend invites
+
+A private friend invite is an authenticated, human-only alternative to public
+matchmaking:
+
+1. the owner creates an invite for one match mode;
+2. the server returns an eight-character code with at least 40 bits of
+   entropy and a bounded expiry;
+3. a different authenticated player accepts the code;
+4. the server atomically creates one human duel session and marks the invite
+   matched;
+5. the owner polls the invite until the shared `sessionId` appears.
+
+The owner cannot accept their own code. A matched or expired code cannot create
+another session. Before matching, only the owner can read the invite; after
+matching, only its two participants can read it. The code is a discovery
+capability, not an authentication credential: every route still requires a
+valid access token and all session routes enforce server-owned membership.
+
+The initial staging implementation keeps active invite/session state in the
+game runtime process. A process restart invalidates unfinished invitations and
+active staging matches; durable reconnect across server restarts requires the
+separate persistence milestone.
 
 ### Duel commands
 
@@ -331,6 +383,8 @@ The contract is testable without a running Ktor server:
    score is rejected with a typed error and no state transition.
 7. Assert that a full outbound queue closes only the affected socket and leaves
    the authoritative session state available through REST.
+8. Assert that a private invite cannot be self-accepted, reused by a third
+   player, or converted into more than one session.
 
 These checks apply to backend and client adapters. The Android S28 foundation
 implements a runtime client transport under `platform.online`, while the

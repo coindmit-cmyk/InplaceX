@@ -129,6 +129,14 @@ data class RemoteAuthBootstrapPayload(
         "RemoteAuthBootstrapPayload(installationId=[redacted], platform=$platform)"
 }
 
+data class RemoteGoogleAuthenticationPayload(
+    val idToken: String,
+    val nonce: String,
+) {
+    override fun toString(): String =
+        "RemoteGoogleAuthenticationPayload(idToken=[redacted], nonce=[redacted])"
+}
+
 data class RemoteCloudSavePayload(
     val commandId: String,
     val expectedRevision: Long,
@@ -156,6 +164,11 @@ data class RemoteSubmitSecretPayload(
             "expectedRevision=$expectedRevision, secret=[redacted])"
 }
 
+data class RemoteFriendInvitePayload(
+    val commandId: String,
+    val mode: RemoteMatchmakingMode,
+)
+
 data class RemoteSubmitGuessPayload(
     val sessionId: String,
     val commandId: String,
@@ -178,6 +191,15 @@ interface RemotePlatformGateway : MatchmakingStub {
         idempotencyKey: String = UUID.randomUUID().toString(),
     ): RemoteRequestSpec
 
+    fun prepareGoogleChallenge(
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
+    fun prepareGoogleAuthentication(
+        payload: RemoteGoogleAuthenticationPayload,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
     fun prepareReadCloudSave(): RemoteRequestSpec
 
     fun prepareWriteCloudSave(
@@ -191,6 +213,19 @@ interface RemotePlatformGateway : MatchmakingStub {
     ): RemoteRequestSpec
 
     fun prepareReadMatchmakingTicket(ticketId: String): RemoteRequestSpec
+
+    fun prepareCreateFriendInvite(
+        payload: RemoteFriendInvitePayload,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
+
+    fun prepareReadFriendInvite(inviteCode: String): RemoteRequestSpec
+
+    fun prepareAcceptFriendInvite(
+        inviteCode: String,
+        commandId: String,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
 
     fun prepareCancelMatchmakingTicket(
         ticketId: String,
@@ -272,6 +307,38 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
         )
     }
 
+    override fun prepareGoogleChallenge(
+        idempotencyKey: String,
+    ): RemoteRequestSpec =
+        RemoteRequestSpec(
+            operation = "auth.google.challenge",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/auth/google/challenge",
+            idempotencyKey = idempotencyKey,
+        )
+
+    override fun prepareGoogleAuthentication(
+        payload: RemoteGoogleAuthenticationPayload,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        require(payload.idToken.length in 1..8_192 && payload.idToken.none(Char::isWhitespace)) {
+            "Google ID token has an invalid format"
+        }
+        require(payload.nonce.matches(Regex("[A-Za-z0-9_-]{32,128}"))) {
+            "Google nonce has an invalid format"
+        }
+        return RemoteRequestSpec(
+            operation = "auth.google.exchange",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/auth/google",
+            bodyJson = jsonObject(
+                "idToken" to JsonPrimitive(payload.idToken),
+                "nonce" to JsonPrimitive(payload.nonce),
+            ),
+            idempotencyKey = idempotencyKey,
+        )
+    }
+
     override fun prepareReadCloudSave(): RemoteRequestSpec =
         RemoteRequestSpec(
             operation = "cloudsave.read",
@@ -324,6 +391,48 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
             operation = "matchmaking.read",
             method = RemoteHttpMethod.GET,
             path = "/api/v1/matchmaking/tickets/$ticketId",
+        )
+    }
+
+    override fun prepareCreateFriendInvite(
+        payload: RemoteFriendInvitePayload,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        requireSafeUuid(payload.commandId, "commandId")
+        return RemoteRequestSpec(
+            operation = "friends.invite.create",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/friends/invites",
+            bodyJson = jsonObject(
+                "commandId" to JsonPrimitive(payload.commandId),
+                "mode" to JsonPrimitive(payload.mode.name.lowercase()),
+            ),
+            idempotencyKey = idempotencyKey,
+        )
+    }
+
+    override fun prepareReadFriendInvite(inviteCode: String): RemoteRequestSpec {
+        requireFriendInviteCode(inviteCode)
+        return RemoteRequestSpec(
+            operation = "friends.invite.read",
+            method = RemoteHttpMethod.GET,
+            path = "/api/v1/friends/invites/${inviteCode.uppercase()}",
+        )
+    }
+
+    override fun prepareAcceptFriendInvite(
+        inviteCode: String,
+        commandId: String,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        requireFriendInviteCode(inviteCode)
+        requireSafeUuid(commandId, "commandId")
+        return RemoteRequestSpec(
+            operation = "friends.invite.accept",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/friends/invites/${inviteCode.uppercase()}/accept",
+            bodyJson = jsonObject("commandId" to JsonPrimitive(commandId)),
+            idempotencyKey = idempotencyKey,
         )
     }
 
@@ -445,6 +554,12 @@ private fun requireSafePathSegment(value: String, field: String) {
     }
     require(value != "." && value != "..") {
         "$field must not be a traversal segment"
+    }
+}
+
+private fun requireFriendInviteCode(value: String) {
+    require(value.uppercase().matches(Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}"))) {
+        "inviteCode has an invalid format"
     }
 }
 

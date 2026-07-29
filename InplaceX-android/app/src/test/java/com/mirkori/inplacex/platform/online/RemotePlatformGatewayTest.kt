@@ -48,6 +48,25 @@ class RemotePlatformGatewayTest {
     }
 
     @Test
+    fun `Google exchange is authenticated and redacts provider credentials`() {
+        val challenge = gateway.prepareGoogleChallenge(idempotencyKey = "google-challenge-1")
+        val exchange = gateway.prepareGoogleAuthentication(
+            payload = RemoteGoogleAuthenticationPayload(
+                idToken = "header.payload.signature",
+                nonce = "a".repeat(43),
+            ),
+            idempotencyKey = "google-exchange-1",
+        )
+
+        assertEquals("/api/v1/auth/google/challenge", challenge.path)
+        assertTrue(challenge.requiresAuthentication)
+        assertEquals("/api/v1/auth/google", exchange.path)
+        assertTrue(exchange.requiresAuthentication)
+        assertFalse(exchange.toString().contains("header.payload.signature"))
+        assertFalse(exchange.toString().contains("a".repeat(43)))
+    }
+
+    @Test
     fun `submit guess never sends player id score or winner`() {
         val request = gateway.prepareSubmitGuess(
             payload = RemoteSubmitGuessPayload(
