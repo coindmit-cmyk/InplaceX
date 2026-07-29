@@ -58,6 +58,17 @@ class KtorGoogleAuthApiTest {
 
     @Test
     fun `provider failures fail closed`() = runBlocking {
+        val disabledRoute = KtorGoogleAuthApi(
+            QueueBoundary(
+                ArrayDeque(
+                    listOf(
+                        RemoteCallResult.HttpFailure(
+                            RemoteResponse(404, emptyMap(), """{"error":"not_found"}"""),
+                        ),
+                    ),
+                ),
+            ),
+        ).challenge()
         val unavailable = KtorGoogleAuthApi(
             QueueBoundary(
                 ArrayDeque(
@@ -70,6 +81,7 @@ class KtorGoogleAuthApiTest {
             ),
         ).challenge()
 
+        assertEquals(GoogleChallengeResult.ProviderUnavailable, disabledRoute)
         assertEquals(GoogleChallengeResult.ProviderUnavailable, unavailable)
     }
 

@@ -1,7 +1,5 @@
 package com.mirkori.inplacex.ui.screens.company
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -24,13 +22,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.mirkori.inplacex.R
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 
@@ -70,8 +63,7 @@ internal fun CompanySceneScreen(
         selectedLevel = focusLevel
     }
 
-    CompanyRoomBackground {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val compact = maxHeight < 650.dp || maxWidth < 360.dp
             val landscape = maxWidth > maxHeight
             val horizontalPadding = if (compact) 7.dp else 11.dp
@@ -194,7 +186,6 @@ internal fun CompanySceneScreen(
                     compact = compact,
                 )
             }
-        }
     }
 
     if (showRules) {
@@ -203,44 +194,6 @@ internal fun CompanySceneScreen(
             level = selectedItem.definition,
             onDismiss = { showRules = false },
         )
-    }
-}
-
-@Composable
-internal fun CompanyRoomBackground(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("company-room-background"),
-    ) {
-        Image(
-            painter = painterResource(R.drawable.company_room_bg_v2),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0x33002A67),
-                            Color.Transparent,
-                            Color(0x1A5B2500),
-                        ),
-                    ),
-                ),
-        )
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            content()
-        }
     }
 }
 

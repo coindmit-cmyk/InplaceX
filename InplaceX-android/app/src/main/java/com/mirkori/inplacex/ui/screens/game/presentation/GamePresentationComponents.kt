@@ -90,11 +90,7 @@ fun GamePresentationLayout(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         PresentationCard {
-            GameTopPanel(
-                uiState = uiState,
-                onBack = callbacks.onBack,
-                onOpenSettings = callbacks.onOpenSettings,
-            )
+            GameTopPanel(uiState = uiState)
         }
 
         Row(
@@ -182,8 +178,6 @@ private fun PresentationCard(
 @Composable
 fun GameTopPanel(
     uiState: GameFieldUiState,
-    onBack: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
@@ -195,23 +189,28 @@ fun GameTopPanel(
     val mode = uiState.route.modeLabel?.takeIf(String::isNotBlank) ?: defaultMode
 
     Column(
-        modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         uiState.route.turnLabel?.let {
-            Text(it, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+            )
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text(strings.text("top.back")) }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
                 text = mode,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(0.82f),
                 style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
             )
-            TextButton(onClick = onOpenSettings) { Text(strings.text("top.settings")) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             GameInfoChip(
                 label = strings.text("game.top.moves"),
                 value = moveValue(
@@ -254,20 +253,20 @@ fun GameTopPanel(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
             fontWeight = if (isErrorStatus(uiState.status)) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 2,
+            maxLines = 1,
         )
     }
 }
 
 @Composable
 private fun GameInfoChip(label: String, value: String, modifier: Modifier) {
-    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), tonalElevation = 1.dp) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(12.dp), tonalElevation = 1.dp) {
         Column(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 3.dp, vertical = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(label, style = MaterialTheme.typography.labelSmall)
-            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.background
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 sealed interface ScreenBackgroundStyle {
@@ -22,6 +26,11 @@ sealed interface ScreenBackgroundStyle {
     data class ImageAsset(
         val assetPath: String,
         val fallbackColor: Color
+    ) : ScreenBackgroundStyle
+
+    data class DrawableResource(
+        val resourceId: Int,
+        val fallbackColor: Color,
     ) : ScreenBackgroundStyle
 
     data class SolidColor(
@@ -49,6 +58,16 @@ fun ScreenBackground(
             .fillMaxSize()
             .background(backgroundBrush(style))
     ) {
+        if (style is ScreenBackgroundStyle.DrawableResource) {
+            Image(
+                painter = painterResource(style.resourceId),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("screen-background-drawable"),
+                contentScale = ContentScale.Crop,
+            )
+        }
         BackgroundDecor(style)
         content()
     }
@@ -114,6 +133,9 @@ private fun backgroundBrush(
     return when (style) {
         is ScreenBackgroundStyle.Preset -> backgroundBrush(style.preset)
         is ScreenBackgroundStyle.ImageAsset -> Brush.verticalGradient(
+            colors = listOf(style.fallbackColor, style.fallbackColor)
+        )
+        is ScreenBackgroundStyle.DrawableResource -> Brush.verticalGradient(
             colors = listOf(style.fallbackColor, style.fallbackColor)
         )
         is ScreenBackgroundStyle.SolidColor -> Brush.verticalGradient(

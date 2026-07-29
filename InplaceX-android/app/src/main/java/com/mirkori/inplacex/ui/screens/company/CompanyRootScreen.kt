@@ -94,7 +94,7 @@ fun CompanyRootScreen(
     }
 
     when {
-        activeLevel != null -> CompanyRoomBackground {
+        activeLevel != null -> {
             GameFieldScreen(
                 title = "",
                 params = activeLevel.toFieldParams(),

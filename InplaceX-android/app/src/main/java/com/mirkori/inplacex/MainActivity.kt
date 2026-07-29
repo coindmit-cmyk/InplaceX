@@ -37,6 +37,8 @@ import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.GuestAuthResult
 import com.mirkori.inplacex.platform.online.GoogleChallengeResult
 import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.AdPlacementPolicy
+import com.mirkori.inplacex.platform.services.GAME_BANNER_SLOT_ID
 import com.mirkori.inplacex.platform.services.InterstitialPlacement
 import com.mirkori.inplacex.platform.services.GoogleCredentialResult
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
@@ -153,20 +155,28 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val isPremium = entitlements.adsDisabled
-                val useUnifiedSceneBackground =
-                    !isInGame || currentSection == AppSection.COMPANY
-                val shouldShowVariantBottomSlot =
-                    isInGame && variantToolsBottomSlotEnabled(variantToolsEnabled)
-                val appBackgroundStyle = if (useUnifiedSceneBackground) {
-                    ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.WarmWorkshop)
-                } else {
-                    ScreenBackgroundStyle.ImageAsset(
+                val gameBannerEligible = AdPlacementPolicy.canRequestGameBanner(
+                    isInGame = isInGame,
+                    entitlements = entitlements,
+                )
+                val gameBannerAccepted = remember(adService, gameBannerEligible) {
+                    gameBannerEligible && adService.showBanner(GAME_BANNER_SLOT_ID)
+                }
+                val appBackgroundStyle = when {
+                    currentSection == AppSection.COMPANY -> ScreenBackgroundStyle.DrawableResource(
+                        resourceId = R.drawable.company_room_bg_v2,
+                        fallbackColor = InplaceXColors.ToyWood,
+                    )
+                    !isInGame -> ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.WarmWorkshop)
+                    else -> ScreenBackgroundStyle.ImageAsset(
                         assetPath = "image/background/app_bg.png",
                         fallbackColor = InplaceXColors.ToyWood,
                     )
                 }
                 val bottomMode = when {
-                    isInGame -> if (isPremium && !shouldShowVariantBottomSlot) BottomLayerMode.NONE else BottomLayerMode.AD
+                    isInGame && isPremium -> BottomLayerMode.NONE
+                    isInGame && gameBannerAccepted -> BottomLayerMode.AD
+                    isInGame -> BottomLayerMode.NONE
                     else -> BottomLayerMode.MENU
                 }
 
@@ -180,7 +190,7 @@ class MainActivity : ComponentActivity() {
                         },
                         bottomMode = bottomMode,
                         topMode = TopLayerMode.OVERLAY,
-                        centerMode = if (useUnifiedSceneBackground) CenterLayerMode.TRANSPARENT else CenterLayerMode.SURFACE,
+                        centerMode = CenterLayerMode.TRANSPARENT,
                         backgroundStyle = appBackgroundStyle,
                         topContent = {
                             AppTopBar(

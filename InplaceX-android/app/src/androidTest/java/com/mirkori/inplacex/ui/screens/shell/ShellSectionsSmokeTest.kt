@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.shell
 
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +24,7 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
@@ -30,6 +32,12 @@ import com.mirkori.inplacex.ui.screens.home.RaceResultDialog
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
+import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
+import com.mirkori.inplacex.ui.shell.AppShell
+import com.mirkori.inplacex.ui.shell.AppBottomAd
+import com.mirkori.inplacex.ui.shell.BottomLayerMode
+import com.mirkori.inplacex.ui.shell.CenterLayerMode
+import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -38,6 +46,48 @@ import org.junit.Test
 class ShellSectionsSmokeTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+    @Test
+    fun transparentCenterPlacesContentDirectlyOnTheScene() {
+        setContent {
+            AppShell(
+                currentSection = AppSection.HOME,
+                onSectionChange = {},
+                bottomMode = BottomLayerMode.NONE,
+                topMode = TopLayerMode.NONE,
+                centerMode = CenterLayerMode.TRANSPARENT,
+            ) {
+                Text("Игровое поле")
+            }
+        }
+
+        composeRule.onNodeWithTag("shell-center-transparent").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("shell-center-surface").assertCountEquals(0)
+        composeRule.onNodeWithText("Игровое поле").assertIsDisplayed()
+    }
+
+    @Test
+    fun gameBannerUsesTheDedicatedAdBlock() {
+        setContent { AppBottomAd() }
+
+        composeRule.onNodeWithTag("game-banner-slot").assertIsDisplayed()
+        composeRule.onNodeWithText("AD").assertIsDisplayed()
+        composeRule.onNodeWithText("Рекламный слот игрового экрана").assertIsDisplayed()
+    }
+
+    @Test
+    fun debugBuildDoesNotExposeDeveloperModeInNormalSettings() {
+        setContent {
+            SettingsRootScreen(
+                currentLanguage = AppLanguage.RU,
+                onLanguageChange = {},
+                onOpenInternalTools = {},
+                onClose = {},
+            )
+        }
+
+        composeRule.onAllNodesWithText("Режим разработчика").assertCountEquals(0)
+    }
 
     @Test
     fun socialExplainsThatOnlineActionsAreNotAvailableYet() {
@@ -293,7 +343,7 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun companyGameKeepsTheToyRoomBackground() {
+    fun companyGameDoesNotDrawASecondRoomBackgroundInsideTheShell() {
         setContent {
             CompanyRootScreen(
                 progressState = progress(),
@@ -303,7 +353,7 @@ class ShellSectionsSmokeTest {
             )
         }
 
-        composeRule.onNodeWithTag("company-room-background").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("company-room-background").assertCountEquals(0)
     }
 
     private fun setContent(content: @androidx.compose.runtime.Composable () -> Unit) {

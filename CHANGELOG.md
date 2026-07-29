@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Restored the configured online endpoint in the test-build workflow so the
+  preserved private-friend-duel code is no longer shipped as an offline UI.
+- Removed the nested Company room image and made `company_room_bg_v2` the
+  single shell background for both the campaign map and campaign matches.
+- Added the first banner placement policy: the shell reserves the game banner
+  only after provider acceptance, while remove-ads, PRO and PRO+ always skip
+  the provider and the slot.
+- Added a dedicated purple game-banner container with an explicit AD badge and
+  a stable Compose test tag, ready for the provider-owned banner view.
+- Hid the developer entry point from normal settings in test APKs and stopped
+  debug tooling from overriding premium ad suppression.
+- Reduced the duplicated in-game header to one compact row for mode, moves and
+  timers; global shell controls remain the sole back/settings navigation.
+- Increased the debug-only test wallet action to grant 10,000 coins per tap;
+  release builds still contain no developer currency grant.
+- Rebalanced campaign levels 1-10 after device playtesting: level 8 now allows
+  12 attempts and 4:00, while level 10 allows 10 attempts and 3:15.
+- Google challenge endpoints missing from an older server deployment now show
+  the truthful provider-not-enabled state instead of blaming Google for a
+  rejected account.
+- Removed the remaining shell-level white gameplay canvas: game panels now sit
+  directly on the shared scene background in every active game mode.
 - Added private friend duels for two phones: one authenticated guest creates an
   eight-character expiring invite, another guest joins it, and both clients
   automatically poll the same server-authoritative setup, turns, and result.

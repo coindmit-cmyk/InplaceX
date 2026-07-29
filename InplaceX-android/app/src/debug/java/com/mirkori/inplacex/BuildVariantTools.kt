@@ -16,7 +16,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.screens.developer.DeveloperRootScreen
 import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 
-internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = toolsEnabled
+internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
 @Composable
 internal fun VariantBottomAdContent(
@@ -32,14 +32,7 @@ internal fun VariantBottomAdContent(
 }
 
 @Composable
-internal fun VariantSettingsToolsAction(onOpen: () -> Unit) {
-    TextButton(
-        onClick = onOpen,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(LocalAppStrings.current.text("settings.developer"))
-    }
-}
+internal fun VariantSettingsToolsAction(onOpen: () -> Unit) = Unit
 
 @Composable
 internal fun VariantToolsSurface(
@@ -57,7 +50,7 @@ internal fun VariantToolsSurface(
             progressState = progressState,
             platformSnapshot = platformLocalRepository.loadPlatformSnapshot(),
             onAddCoins = {
-                onProgressStateChange(progressRepository.addCoins(100))
+                onProgressStateChange(progressRepository.addCoins(DebugCoinGrantAmount))
             },
             onAddHelpers = {
                 onProgressStateChange(progressRepository.addAllHelpers(3))
@@ -109,3 +102,5 @@ internal fun VariantToolsSurface(
     }
     BackHandler(enabled = isOpen, onBack = onClose)
 }
+
+private const val DebugCoinGrantAmount = 10_000

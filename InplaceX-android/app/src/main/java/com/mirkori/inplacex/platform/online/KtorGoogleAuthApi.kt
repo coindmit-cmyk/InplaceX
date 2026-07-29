@@ -38,7 +38,7 @@ class KtorGoogleAuthApi(
             }.getOrDefault(GoogleChallengeResult.Rejected)
             is RemoteCallResult.HttpFailure -> when (result.response.statusCode) {
                 401 -> GoogleChallengeResult.AuthenticationRequired
-                503 -> GoogleChallengeResult.ProviderUnavailable
+                404, 503 -> GoogleChallengeResult.ProviderUnavailable
                 in 500..599 -> GoogleChallengeResult.TemporarilyUnavailable
                 else -> GoogleChallengeResult.Rejected
             }

@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.ui.background.ScreenBackground
@@ -147,28 +149,33 @@ private fun ShellBackground(
                 .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
                 .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
-            Surface(
-                modifier = centerLayerModifier,
-                tonalElevation = 0.dp,
-                color = if (centerMode == CenterLayerMode.SURFACE) {
-                    if (centerSurfaceColor != Color.Transparent) {
-                        centerSurfaceColor
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                    }
-                } else {
-                    Color.Transparent
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            horizontal = innerHorizontalPadding,
-                            vertical = 4.dp
+            when (centerMode) {
+                CenterLayerMode.SURFACE -> {
+                    Surface(
+                        modifier = centerLayerModifier.testTag("shell-center-surface"),
+                        tonalElevation = 0.dp,
+                        color = if (centerSurfaceColor != Color.Transparent) {
+                            centerSurfaceColor
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                        },
+                    ) {
+                        ShellCenterContent(
+                            innerHorizontalPadding = innerHorizontalPadding,
+                            content = content,
                         )
-                ) {
-                    content()
+                    }
+                }
+
+                CenterLayerMode.TRANSPARENT -> {
+                    Box(
+                        modifier = centerLayerModifier.testTag("shell-center-transparent"),
+                    ) {
+                        ShellCenterContent(
+                            innerHorizontalPadding = innerHorizontalPadding,
+                            content = content,
+                        )
+                    }
                 }
             }
 
@@ -191,5 +198,22 @@ private fun ShellBackground(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ShellCenterContent(
+    innerHorizontalPadding: Dp,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                horizontal = innerHorizontalPadding,
+                vertical = 4.dp,
+            ),
+    ) {
+        content()
     }
 }
