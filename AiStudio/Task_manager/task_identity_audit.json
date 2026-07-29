@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-28T15:31:50Z",
+  "created_at": "2026-07-29T00:30:50Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "readiness": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/pr_readiness_report.json",
   "clean_rebuild_recovery_count": 2,
   "counts": {
-    "identity_ok": 60,
-    "identity_conflict": 1
+    "identity_ok": 32
   },
   "items": [
     {
@@ -68,328 +67,6 @@
     {
       "kind": "queue_task",
       "index": 1,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S01",
-      "status": "identity_conflict",
-      "task_status": "done",
-      "branch": "develop",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [],
-      "inferred_task_ids": [],
-      "repository_pr_identity": null,
-      "issues": [
-        "branch missing task_id"
-      ],
-      "next_owner": "dispatcher"
-    },
-    {
-      "kind": "queue_task",
-      "index": 2,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s02/characterize-current-gameplay-behavior-retry-20260725T180333Z",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02_20260725T180739Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S02"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 3,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s03/typed-guess-validation-contract",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03_20260725T165516Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S03"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 4,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s04/pure-evidence-and-deduction-engine",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04_20260725T165906Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S04"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 5,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s05/typed-match-feedback-and-validated-checkpoint",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05_20260725T170913Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S05"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 6,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s06/gamefield-state-holder-and-savedstate-restoratio",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06_20260725T175709Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S06"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 7,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s07/stateless-gamescreen-presentation-components",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07_20260725T180845Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S07"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 8,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s08/thin-gamefield-route-and-active-ui-switch-retry-20260725T190800Z",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08_20260725T193017Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08_20260725T193118Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 9,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s09/typed-localization-catalogs-and-parity-tests",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09_20260725T171814Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S09"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 10,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s10/home-and-shell-localization-retry-20260725T234004Z",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10_20260725T233618Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10_20260725T233704Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10_20260725T234710Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10_20260725T234757Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S10"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 11,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s11/secondary-and-developer-screen-localization-retry-20260725T180336Z",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11_20260725T1752Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 12,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s12/game-localization-convergence-retry-20260725T204922Z",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md",
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T200607Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203717Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T203955Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210101Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12_20260725T210255Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 13,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s13/sqlite-schema-and-safe-test-seam-retry-20260725T181640Z",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S13"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 14,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/intake-design-pd-inplacex-final-20260725-v002-s14/sqlite-migrations-and-repository-tests",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14_20260725T184739Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14_20260725T184850Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S14"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 15,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s15/ci-foundation-and-artifact-identity",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15_20260725T173026Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S15"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 16,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s16/recreation-contradiction-and-regression-suite",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16_20260725T212653Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S16"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 17,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17",
       "status": "identity_ok",
@@ -414,152 +91,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 18,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s18/s18-expanded-debug-and-release-isolation-retry",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18_20260725T220719Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18_20260725T220907Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S18"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 19,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s19/retry-s19-variant-provider-config-wiring-and-rel-retry-20260725T225755Z",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19_20260725T230456Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19_20260725T230608Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 20,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s20/versioned-online-rest-websocket-and-security-con",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20_20260725T173430Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S20"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 21,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s21/modular-ktor-backend-and-health-contract",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21_20260725T182547Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S21"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 22,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s22/postgresql-persistence-and-migrations",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22_20260725T184835Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22_20260725T184909Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 23,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s23/guest-identity-profile-and-versioned-cloud-save",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23_20260725T190149Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23_20260725T190243Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 24,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s24/authoritative-duel-aggregate",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24_20260725T182231Z.md",
-      "report_paths": [],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 25,
+      "index": 2,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
       "status": "identity_ok",
@@ -585,7 +117,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 26,
+      "index": 3,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26",
       "status": "identity_ok",
@@ -601,7 +133,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 27,
+      "index": 4,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
       "status": "identity_ok",
@@ -617,28 +149,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 28,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s28/android-online-transport-foundation",
-      "github_pr": null,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 29,
+      "index": 5,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "status": "identity_ok",
@@ -659,7 +170,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 30,
+      "index": 6,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
       "status": "identity_ok",
@@ -675,29 +186,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 31,
-      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
-      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s31/local-containers-migrations-and-operations-runbo",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31_20260725T190700Z.md",
-        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31_20260725T190848Z.md"
-      ],
-      "inferred_task_ids": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 32,
+      "index": 7,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S32",
       "status": "identity_ok",
@@ -713,7 +202,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 33,
+      "index": 8,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S33",
       "status": "identity_ok",
@@ -729,7 +218,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 34,
+      "index": 9,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S34",
       "status": "identity_ok",
@@ -745,7 +234,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 35,
+      "index": 10,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
       "status": "identity_ok",
@@ -761,7 +250,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 36,
+      "index": 11,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S36",
       "status": "identity_ok",
@@ -777,7 +266,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 37,
+      "index": 12,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S37",
       "status": "identity_ok",
@@ -793,7 +282,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 38,
+      "index": 13,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S38",
       "status": "identity_ok",
@@ -809,7 +298,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 39,
+      "index": 14,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S39",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S39",
       "status": "identity_ok",
@@ -825,7 +314,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 40,
+      "index": 15,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S40",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S40",
       "status": "identity_ok",
@@ -841,7 +330,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 41,
+      "index": 16,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
       "status": "identity_ok",
@@ -857,33 +346,11 @@
     },
     {
       "kind": "queue_task",
-      "index": 42,
-      "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-      "canonical_target_id": "task:CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-intake-design-pd-inplacex-final-20260725-v002-s25-codec/s25a-strict-lexical-json-codec-retry",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC_20260725T221652Z.md"
-      ],
-      "inferred_task_ids": [
-        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 43,
+      "index": 17,
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "canonical_target_id": "task:CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",
       "status": "identity_ok",
-      "task_status": "planned",
+      "task_status": "blocked_by_dependency",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/crb-s25-prereq-a-auth-principal-membership/retry-s25-prerequisite-a-unforgeable-jvm-authent-retry-20260726T220324Z",
       "github_pr": null,
       "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
@@ -913,28 +380,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 44,
-      "task_id": "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "canonical_target_id": "task:CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-s25-prereq-b-mutable-duel-digits/s25-prerequisite-b-mutable-duel-digits-and-zeroi",
-      "github_pr": null,
-      "worker_report": null,
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS_20260725T232625Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS_20260725T232737Z.md"
-      ],
-      "inferred_task_ids": [
-        "CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 45,
+      "index": 18,
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
       "canonical_target_id": "task:CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
       "status": "identity_ok",
@@ -954,7 +400,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 46,
+      "index": 19,
       "task_id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
       "canonical_target_id": "task:CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC",
       "status": "identity_ok",
@@ -970,32 +416,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 47,
-      "task_id": "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "canonical_target_id": "task:CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
-      "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "github_pr": 4,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111236Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T111822Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120545Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T120645Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md"
-      ],
-      "inferred_task_ids": [
-        "CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 48,
+      "index": 20,
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
       "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S42",
       "status": "identity_ok",
@@ -1011,38 +432,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 49,
-      "task_id": "REPO-PR-3-6",
-      "canonical_target_id": "task:REPO-PR-3-6",
-      "status": "identity_ok",
-      "task_status": "stale_or_superseded",
-      "branch": "origin/codex/app-shell-ux-v4",
-      "github_pr": 6,
-      "worker_report": null,
-      "report_paths": [],
-      "inferred_task_ids": [],
-      "repository_pr_identity": {
-        "applicable": true,
-        "valid": true,
-        "task_id": "REPO-PR-3-6",
-        "pr_number": 6,
-        "branch": "codex/app-shell-ux-v4",
-        "expected_head_sha": "24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
-        "issues": [],
-        "evidence": [
-          "github_pr:6",
-          "pr_numbers:3,6",
-          "branch:codex/app-shell-ux-v4",
-          "head_sha:24bb01b225b1e800d46d7670dd74d2c0e0e9c9e2",
-          "https://github.com/coindmit-cmyk/InplaceX/pull/6"
-        ]
-      },
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 50,
+      "index": 21,
       "task_id": "REPO-PR-5",
       "canonical_target_id": "task:REPO-PR-5",
       "status": "identity_ok",
@@ -1076,7 +466,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 51,
+      "index": 22,
       "task_id": "REPO-PR-7",
       "canonical_target_id": "task:REPO-PR-7",
       "status": "identity_ok",
@@ -1110,7 +500,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 52,
+      "index": 23,
       "task_id": "REPO-PR-8",
       "canonical_target_id": "task:REPO-PR-8",
       "status": "identity_ok",
@@ -1143,7 +533,7 @@
     },
     {
       "kind": "queue_task",
-      "index": 53,
+      "index": 24,
       "task_id": "REPO-PR-3-9",
       "canonical_target_id": "task:REPO-PR-3-9",
       "status": "identity_ok",
@@ -1174,58 +564,35 @@
     },
     {
       "kind": "queue_task",
-      "index": 54,
-      "task_id": "CRB-REPO-PR-7",
-      "canonical_target_id": "task:CRB-REPO-PR-7",
+      "index": 25,
+      "task_id": "REPO-PR-4",
+      "canonical_target_id": "task:REPO-PR-4",
       "status": "identity_ok",
-      "task_status": "done",
-      "branch": "AiStudio/Agent/worker/aistudio-controller/auto-worker-5.3/crb-repo-pr-7/clean-rebuild-repo-pr-7-from-worker-result-retry-20260728T075359Z",
-      "github_pr": 16,
-      "worker_report": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
-      "report_paths": [
-        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
-        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md"
-      ],
-      "inferred_task_ids": [
-        "CRB-REPO-PR-7",
-        "REPO-PR-7"
-      ],
-      "repository_pr_identity": null,
-      "issues": [],
-      "next_owner": null
-    },
-    {
-      "kind": "queue_task",
-      "index": 55,
-      "task_id": "REPO-PR-13",
-      "canonical_target_id": "task:REPO-PR-13",
-      "status": "identity_ok",
-      "task_status": "stale_or_superseded",
-      "branch": "origin/automation/reclassify-crb-repo-pr-7-needs-human-20260728",
-      "github_pr": 13,
+      "task_status": "agent_done",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "github_pr": 4,
       "worker_report": null,
       "report_paths": [],
-      "inferred_task_ids": [
-        "CRB-REPO-PR-7",
-        "REPO-PR-7"
-      ],
+      "inferred_task_ids": [],
       "repository_pr_identity": {
         "applicable": true,
         "valid": true,
-        "task_id": "REPO-PR-13",
-        "pr_number": 13,
-        "branch": "automation/reclassify-crb-repo-pr-7-needs-human-20260728",
-        "expected_head_sha": "7fd5ddbc4b3fa03a5cfc194476637a78848208b1",
+        "task_id": "REPO-PR-4",
+        "pr_number": 4,
+        "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+        "expected_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
         "issues": [],
         "evidence": [
-          "github_pr:13",
-          "pr_numbers:13",
-          "branch:automation/reclassify-crb-repo-pr-7-needs-human-20260728",
-          "head_sha:7fd5ddbc4b3fa03a5cfc194476637a78848208b1",
-          "https://github.com/coindmit-cmyk/InplaceX/pull/13"
+          "github_pr:4",
+          "pr_numbers:4",
+          "branch:AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+          "head_sha:4e721c31fb9f438d09c4ac322084c3fcd2832977",
+          "https://github.com/coindmit-cmyk/InplaceX/pull/4"
         ]
       },
-      "issues": [],
+      "issues": [
+        "completed/review task has no worker report evidence"
+      ],
       "next_owner": null
     },
     {
@@ -1290,6 +657,39 @@
     {
       "kind": "integration_candidate",
       "index": 2,
+      "task_id": "REPO-PR-4",
+      "canonical_target_id": "task:REPO-PR-4",
+      "status": "identity_ok",
+      "classification": "coordination_only",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "pr": 4,
+      "report_paths": [],
+      "inferred_task_ids": [],
+      "identity_recovered_from": null,
+      "source_task_id": null,
+      "repository_pr_identity": {
+        "applicable": true,
+        "valid": true,
+        "task_id": "REPO-PR-4",
+        "pr_number": 4,
+        "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+        "expected_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+        "issues": [],
+        "evidence": [
+          "github_pr:4",
+          "pr_numbers:4",
+          "branch:AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+          "head_sha:4e721c31fb9f438d09c4ac322084c3fcd2832977",
+          "https://github.com/coindmit-cmyk/InplaceX/pull/4"
+        ]
+      },
+      "identity_superseded_task_ids": [],
+      "issues": [],
+      "next_owner": null
+    },
+    {
+      "kind": "integration_candidate",
+      "index": 3,
       "task_id": "REPO-PR-8",
       "canonical_target_id": "task:REPO-PR-8",
       "status": "identity_ok",
@@ -1322,7 +722,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 3,
+      "index": 4,
       "task_id": "REPO-PR-7",
       "canonical_target_id": "task:REPO-PR-7",
       "status": "identity_ok",
@@ -1359,7 +759,7 @@
     },
     {
       "kind": "integration_candidate",
-      "index": 4,
+      "index": 5,
       "task_id": "REPO-PR-3-9",
       "canonical_target_id": "task:REPO-PR-3-9",
       "status": "identity_ok",

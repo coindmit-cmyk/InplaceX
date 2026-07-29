@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-28T15:31:44Z",
+  "generated_at": "2026-07-29T00:30:45Z",
   "candidates": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -185,6 +185,29 @@
         "InplaceX-docs/Game/Human/assets/company-v3-concept.png",
         "InplaceX-docs/Game/Human/assets/company-v3-phone-landscape.png",
         "InplaceX-docs/Game/Human/assets/company-v3-phone-portrait.png"
+      ],
+      "migration_sensitive": false,
+      "migration_compatibility_policy": null,
+      "integrator_must_adapt_migrations": false,
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ]
+    },
+    {
+      "task_id": "REPO-PR-4",
+      "title": "Integrate open PR #4",
+      "status": "agent_done",
+      "integration_status": "needs_integrator_review",
+      "worker_check_evidence": null,
+      "integrator_must_run_checks": false,
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "head_sha": null,
+      "pr": 4,
+      "changed_paths": [
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
       ],
       "migration_sensitive": false,
       "migration_compatibility_policy": null,

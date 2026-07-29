@@ -1,10 +1,37 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-28T15:31:50Z",
+  "created_at": "2026-07-29T00:30:51Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "decisions": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/rebuild_decision_report.json",
   "events_file": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl",
   "apply": true,
-  "event_count": 0,
-  "events": []
+  "event_count": 1,
+  "events": [
+    {
+      "schema_version": 1,
+      "event_id": "evt-20260729T003051Z-f286f33b",
+      "created_at": "2026-07-29T00:30:51Z",
+      "project": "inplacex",
+      "source": "route_rebuild_and_integration_results.py",
+      "event": "cleanup_requested",
+      "role": "router",
+      "next_owner": "cleanup_script",
+      "next_role": "cleanup_script",
+      "task_id": "REPO-PR-4",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "pr": 4,
+      "severity": "info",
+      "reason": "coordination_only is not product payload for current package",
+      "consumed_by": null,
+      "consumed_at": null,
+      "payload": {
+        "decision": "cleanup_candidate",
+        "source_status": "coordination_only",
+        "risk_class": "medium",
+        "changed_paths": [],
+        "module_scopes": [],
+        "reason": "coordination_only is not product payload for current package"
+      }
+    }
+  ]
 }

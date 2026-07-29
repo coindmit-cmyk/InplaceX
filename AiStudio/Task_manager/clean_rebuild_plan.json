@@ -1,16 +1,17 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-28T15:31:50Z",
+  "created_at": "2026-07-29T00:30:51Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "clean_rebuild_planner.py",
   "policy": "plan clean rebuild routes only; do not mutate product code",
   "small_auto_paths": 8,
   "medium_auto_paths": 25,
-  "item_count": 5,
+  "item_count": 6,
   "needs_clean_rebuild_count": 5,
   "counts": {
     "needs_dispatcher_rebuild": 1,
     "needs_human_rebuild": 2,
+    "not_clean_rebuild": 1,
     "auto_clean_rebuild_medium": 1,
     "auto_clean_rebuild_large": 1
   },
@@ -48,7 +49,7 @@
       "allowed_paths_sample": [],
       "path_source": "merge_base_to_head",
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
-      "behind_base": 319,
+      "behind_base": 330,
       "reason": "requires exactly one task_id",
       "blocking_reasons": [
         "requires exactly one task_id"
@@ -100,7 +101,7 @@
       "allowed_paths_sample": [],
       "path_source": "merge_base_to_head",
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "behind_base": 356,
+      "behind_base": 367,
       "reason": "requires exactly one task_id; contains high-risk paths: .github/workflows/ci.yml",
       "blocking_reasons": [
         "requires exactly one task_id",
@@ -111,6 +112,23 @@
       ],
       "recommended_next_action": "human_review_before_rebuild",
       "source_reason": "branch is behind current base; requires rebase or clean package rebuild before merge"
+    },
+    {
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "source_classification": "cleanup_candidate",
+      "rebuild_route": "not_clean_rebuild",
+      "task_ids": [
+        "REPO-PR-4"
+      ],
+      "changed_paths": [],
+      "path_count": 0,
+      "size_tier": "small",
+      "module_scopes": [],
+      "allowed_paths_covered": false,
+      "reason": "source item is not needs_clean_rebuild",
+      "blocking_reasons": [],
+      "warnings": [],
+      "recommended_next_action": "ignore_in_clean_rebuild_planner"
     },
     {
       "branch": "origin/feature/backend-auth-boundary-v1",
@@ -147,7 +165,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "behind_base": 342,
+      "behind_base": 353,
       "reason": "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
       "blocking_reasons": [
         "contains high-risk paths: InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt, InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt"
@@ -203,7 +221,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
-      "behind_base": 342,
+      "behind_base": 353,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],
@@ -288,7 +306,7 @@
       ],
       "path_source": "merge_base_to_head",
       "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
-      "behind_base": 377,
+      "behind_base": 388,
       "reason": "eligible for automatic clean rebuild",
       "blocking_reasons": [],
       "warnings": [],

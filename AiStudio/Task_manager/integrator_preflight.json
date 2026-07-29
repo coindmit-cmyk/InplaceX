@@ -1,13 +1,14 @@
 {
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
-  "checked_at": "2026-07-28T15:31:48Z",
+  "checked_at": "2026-07-29T00:30:49Z",
   "base_branch": "origin/develop",
-  "base_sha": "20e5440f95cb38585f9d0cceaa9aec5463ff59a4",
+  "base_sha": "4a7993cd6aff826e254fc7d6c4cf60838c6306ee",
   "fetch": true,
   "queue": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
   "locks": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_locks.json",
   "git_status": [
     "## develop...origin/develop",
+    " M AiStudio/Task_manager/agent_events.jsonl",
     " M AiStudio/Task_manager/agent_process_state.json",
     " M AiStudio/Task_manager/integration_candidates.json",
     " M AiStudio/Task_manager/integrator_llm_advice.json",
@@ -32,8 +33,8 @@
   "repository_hygiene_valid": true,
   "repository_hygiene_candidate_count": 0,
   "candidate_ref_fetch": {
-    "requested_count": 5,
-    "fetched_count": 5,
+    "requested_count": 6,
+    "fetched_count": 6,
     "invalid_count": 0,
     "unavailable_count": 0,
     "requested": [
@@ -41,19 +42,21 @@
       "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "feature/online-foundation-v1",
       "feature/backend-auth-boundary-v1",
-      "feature/toy-room-ui-v5"
+      "feature/toy-room-ui-v5",
+      "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z"
     ],
     "fetched": [
       "origin/AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
       "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "origin/feature/online-foundation-v1",
       "origin/feature/backend-auth-boundary-v1",
-      "origin/feature/toy-room-ui-v5"
+      "origin/feature/toy-room-ui-v5",
+      "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z"
     ],
     "invalid": [],
     "unavailable": []
   },
-  "candidate_count": 5,
+  "candidate_count": 6,
   "candidates": [
     {
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
@@ -61,7 +64,7 @@
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "merge_base_sha": "29a8ae5f92d8cb7287e080e4256cac11ba84d079",
       "ahead_of_base": 1,
-      "behind_base": 319,
+      "behind_base": 330,
       "changed_paths": [
         ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -88,6 +91,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -128,6 +132,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -150,12 +155,12 @@
       ],
       "pr": null,
       "repository_pr_identity": null,
-      "path_count": 38,
-      "stored_path_count": 38,
+      "path_count": 39,
+      "stored_path_count": 39,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 34,
+      "coordination_path_count": 35,
       "integration_path_count": 4
     },
     {
@@ -164,7 +169,7 @@
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "merge_base_sha": "dffa710e286e0ad66e9f79ad9de6f922a504e1e9",
       "ahead_of_base": 1,
-      "behind_base": 356,
+      "behind_base": 367,
       "changed_paths": [
         ".agent/worker_profiles.json",
         ".github/workflows/ci.yml",
@@ -193,6 +198,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -256,6 +262,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -316,21 +323,21 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/5"
         ]
       },
-      "path_count": 62,
-      "stored_path_count": 62,
+      "path_count": 63,
+      "stored_path_count": 63,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 44,
+      "coordination_path_count": 45,
       "integration_path_count": 18
     },
     {
-      "branch": "origin/feature/backend-auth-boundary-v1",
-      "normalized_branch": "feature/backend-auth-boundary-v1",
-      "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "merge_base_sha": "e99d56826ded2853cabfcd2a70ea89884f0f1f7b",
       "ahead_of_base": 1,
-      "behind_base": 342,
+      "behind_base": 371,
       "changed_paths": [
         ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -358,6 +365,140 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
+        "AiStudio/Task_manager/task_identity_audit.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
+      ],
+      "coordination_changed_paths": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/rebuild_decision_report.json",
+        "AiStudio/Task_manager/repository_hygiene_state.json",
+        "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
+        "AiStudio/Task_manager/task_identity_audit.json",
+        "AiStudio/Task_manager/task_queue.json",
+        "AiStudio/Task_manager/worker_candidates.json",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260727T215614Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-7_20260728T075718Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204320Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T204806Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210452Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T210640Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220604Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T220643Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S28_20260726T204841Z.md",
+        "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md"
+      ],
+      "integration_changed_paths": [],
+      "agent_version_integration_decision": null,
+      "task_ids": [
+        "REPO-PR-4"
+      ],
+      "pr": 4,
+      "repository_pr_identity": {
+        "applicable": true,
+        "valid": true,
+        "task_id": "REPO-PR-4",
+        "pr_number": 4,
+        "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+        "expected_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+        "issues": [],
+        "evidence": [
+          "github_pr:4",
+          "pr_numbers:4",
+          "branch:AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+          "head_sha:4e721c31fb9f438d09c4ac322084c3fcd2832977",
+          "https://github.com/coindmit-cmyk/InplaceX/pull/4"
+        ]
+      },
+      "path_count": 46,
+      "stored_path_count": 46,
+      "path_source": "merge_base_to_head_excluding_current_base_matches",
+      "path_list_truncated": false,
+      "omitted_path_count": 0,
+      "coordination_path_count": 46,
+      "integration_path_count": 0
+    },
+    {
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "normalized_branch": "feature/backend-auth-boundary-v1",
+      "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
+      "ahead_of_base": 1,
+      "behind_base": 353,
+      "changed_paths": [
+        ".agent/worker_profiles.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
+        "AiStudio/Task_manager/pr_readiness_report.identity_filtered.json",
+        "AiStudio/Task_manager/pr_readiness_report.json",
+        "AiStudio/Task_manager/pre_integrator_repair.json",
+        "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/rebuild_decision_report.json",
+        "AiStudio/Task_manager/repository_hygiene_state.json",
+        "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -405,6 +546,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -448,12 +590,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/8"
         ]
       },
-      "path_count": 45,
-      "stored_path_count": 45,
+      "path_count": 46,
+      "stored_path_count": 46,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 39,
+      "coordination_path_count": 40,
       "integration_path_count": 6
     },
     {
@@ -462,7 +604,7 @@
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "merge_base_sha": "1629a01398f2d296c3a637ab7d15b56fb3f3994d",
       "ahead_of_base": 1,
-      "behind_base": 342,
+      "behind_base": 353,
       "changed_paths": [
         ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -490,6 +632,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -534,6 +677,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -574,12 +718,12 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/7"
         ]
       },
-      "path_count": 42,
-      "stored_path_count": 42,
+      "path_count": 43,
+      "stored_path_count": 43,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 39,
+      "coordination_path_count": 40,
       "integration_path_count": 3
     },
     {
@@ -588,7 +732,7 @@
       "head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
       "merge_base_sha": "af415d48a91ce28582c5a74fc96e5b148886d5c4",
       "ahead_of_base": 6,
-      "behind_base": 377,
+      "behind_base": 388,
       "changed_paths": [
         ".agent/worker_profiles.json",
         "AiStudio/Task_manager/agent_activity_state.json",
@@ -616,6 +760,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -720,6 +865,7 @@
         "AiStudio/Task_manager/rebuild_decision_report.json",
         "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
+        "AiStudio/Task_manager/task_history.json",
         "AiStudio/Task_manager/task_identity_audit.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
@@ -820,16 +966,16 @@
           "https://github.com/coindmit-cmyk/InplaceX/pull/9"
         ]
       },
-      "path_count": 102,
-      "stored_path_count": 102,
+      "path_count": 103,
+      "stored_path_count": 103,
       "path_source": "merge_base_to_head_excluding_current_base_matches",
       "path_list_truncated": false,
       "omitted_path_count": 0,
-      "coordination_path_count": 59,
+      "coordination_path_count": 60,
       "integration_path_count": 43
     }
   ],
-  "integration_task_count": 5,
+  "integration_task_count": 6,
   "integration_tasks": [
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
@@ -870,6 +1016,14 @@
       "pr": 9,
       "worker_ready": false,
       "dispatcher_decision": "integration_ready"
+    },
+    {
+      "task_id": "REPO-PR-4",
+      "status": "agent_done",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "pr": 4,
+      "worker_ready": false,
+      "dispatcher_decision": "needs_integrator_review"
     }
   ],
   "integration_task_refs": [
@@ -877,7 +1031,8 @@
     "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
     "origin/feature/online-foundation-v1",
     "origin/feature/backend-auth-boundary-v1",
-    "origin/feature/toy-room-ui-v5"
+    "origin/feature/toy-room-ui-v5",
+    "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z"
   ],
   "active_lock_count": 1,
   "active_locks": [
@@ -922,7 +1077,7 @@
       "severity": "warning"
     }
   ],
-  "blocker_count": 8,
+  "blocker_count": 9,
   "blockers": [
     {
       "code": "dirty_worktree",
@@ -933,31 +1088,37 @@
       "code": "stale_branch",
       "severity": "warning",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
-      "behind_base": 319
+      "behind_base": 330
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "behind_base": 356
+      "behind_base": 367
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "behind_base": 371
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/backend-auth-boundary-v1",
-      "behind_base": 342
+      "behind_base": 353
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/online-foundation-v1",
-      "behind_base": 342
+      "behind_base": 353
     },
     {
       "code": "stale_branch",
       "severity": "warning",
       "branch": "origin/feature/toy-room-ui-v5",
-      "behind_base": 377
+      "behind_base": 388
     },
     {
       "code": "changed_path_overlap",
