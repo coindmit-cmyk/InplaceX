@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "project_id": "inplacex",
+  "documents": [
+    {
+      "path": "PROJECT_INDEX.md",
+      "kind": "navigation",
+      "status": "current",
+      "owner": "architect",
+      "applies_to_branch_roles": ["develop", "codex", "release"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "README.md",
+      "kind": "repository_overview",
+      "status": "current",
+      "owner": "architect",
+      "applies_to_branch_roles": ["develop", "codex", "release"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "agent_entrypoint",
+      "status": "current",
+      "owner": "architect",
+      "applies_to_branch_roles": ["develop", "codex", "release"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": ".agent/START_HERE.md",
+      "kind": "orientation_gate",
+      "status": "current",
+      "owner": "architect",
+      "applies_to_branch_roles": ["develop", "codex", "release"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "docs/architecture.md",
+      "kind": "architecture",
+      "status": "current",
+      "owner": "architect",
+      "applies_to_branch_roles": ["develop", "codex", "release"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "PROJECT_MAP.md",
+      "kind": "project_map",
+      "status": "current",
+      "owner": "project-map-planner",
+      "applies_to_branch_roles": ["develop", "codex"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "InplaceX-docs/README.md",
+      "kind": "product_documentation",
+      "status": "current",
+      "owner": "product-design",
+      "applies_to_branch_roles": ["develop", "codex"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    },
+    {
+      "path": "tests/README.md",
+      "kind": "testing",
+      "status": "current",
+      "owner": "qa",
+      "applies_to_branch_roles": ["develop", "codex"],
+      "source_task": "PROJECT-DOCUMENTATION-MANIFEST-20260729"
+    }
+  ]
+}
