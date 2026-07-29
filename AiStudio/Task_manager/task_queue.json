@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T00:00:39Z",
+  "updated_at": "2026-07-29T00:11:19Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -701,7 +701,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T22:25:48Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1202,7 +1202,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T19:25:45Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1592,7 +1592,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T19:43:06Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1675,7 +1675,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T19:25:45Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1919,7 +1919,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T21:09:35Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2168,7 +2168,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-25T18:32:57Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2828,7 +2828,7 @@
         "README.md",
         "AiStudio/Task_manager/task_queue.json"
       ],
-      "packet_normalized_at": "2026-07-26T22:08:11Z",
+      "packet_normalized_at": "2026-07-29T00:11:19Z",
       "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
       "task_packet_defects": [
         "missing_input_ref:InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/AuthenticatedPrincipal.kt",
@@ -2861,8 +2861,10 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-29T00:00:39Z",
-      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      "dependency_state_checked_at": "2026-07-29T00:11:19Z",
+      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
       "id": "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
@@ -2957,7 +2959,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-26T20:31:59Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3175,7 +3177,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-29T00:00:39Z",
+      "dependency_state_checked_at": "2026-07-29T00:11:19Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3264,7 +3266,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-29T00:00:39Z",
+      "dependency_state_checked_at": "2026-07-29T00:11:19Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3358,7 +3360,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-26T20:31:59Z",
+      "dependency_reconciled_at": "2026-07-29T00:11:19Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -3954,6 +3956,88 @@
           "next_owner": "integrator"
         }
       ]
+    },
+    {
+      "id": "REPO-PR-4",
+      "title": "Integrate open PR #4",
+      "status": "agent_done",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "repository_hygiene_integration",
+      "recommended_agent": "Dispatcher",
+      "requires_human_attention": false,
+      "worker_ready": false,
+      "packet_status": "integrator_review",
+      "normalization_status": "repository_hygiene_routed",
+      "dispatcher_decision": "needs_integrator_review",
+      "integration_status": "needs_integrator_review",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "base_branch": "develop",
+      "github_pr": 4,
+      "pr_numbers": [
+        4
+      ],
+      "repository_hygiene_key": "repository-pr-group:fe149e972f1c58b562ba",
+      "repository_hygiene_topology": "linear",
+      "repository_hygiene_route": "dispatcher_integration",
+      "repository_hygiene_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_draft_prs": [
+        4
+      ],
+      "repository_hygiene_ci_state": "failed",
+      "source_lane": "repository_hygiene_cycle",
+      "source_summary": "direct PR can be routed through Dispatcher and Integrator",
+      "provenance": [
+        {
+          "source_type": "github_pull_request_topology",
+          "source_item_id": "repository-pr-group:fe149e972f1c58b562ba",
+          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/4",
+          "captured_at": "2026-07-29T00:11:11Z",
+          "summary": "direct PR can be routed through Dispatcher and Integrator"
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve existing behavior unless the PR explicitly replaces it.",
+        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
+        "Run project-required tests and git diff --check before finalization.",
+        "Close or delete source PR branches only after merge evidence exists."
+      ],
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ],
+      "lock": "free",
+      "next_owner": "Integrator",
+      "next_role": "integrator_review",
+      "discovered_at": "2026-07-29T00:11:11Z",
+      "updated_at": "2026-07-29T00:11:11Z",
+      "changed_paths": [
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
+      ],
+      "integration_changed_paths": [
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
+      ],
+      "coordination_changed_paths": [
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md"
+      ],
+      "allowed_paths": [
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
+        "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
+        "scripts/agent_control/capability_preservation_check.py",
+        "scripts/agent_control/test_capability_preservation_check.py"
+      ],
+      "dispatcher_repaired_at": "2026-07-29T00:11:13Z",
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
+      "owner": "integrator",
+      "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "status_reason": "Draft PR requires explicit Integrator review before finalization."
     }
   ],
   "design_handoff_intake_import": {
@@ -3965,7 +4049,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-25T17:03:11Z",
+    "generated_at": "2026-07-29T00:11:13Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
