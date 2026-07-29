@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T23:29:23Z",
+  "updated_at": "2026-07-29T23:44:49Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -700,7 +700,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1200,7 +1200,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1607,7 +1607,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1689,7 +1689,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1932,7 +1932,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2180,7 +2180,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2873,9 +2873,9 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-29T23:28:58Z",
+      "dependency_state_checked_at": "2026-07-29T23:44:44Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "dependency_reconciled_at": "2026-07-29T23:28:57Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:43Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2971,7 +2971,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:43Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3189,7 +3189,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-29T23:28:58Z",
+      "dependency_state_checked_at": "2026-07-29T23:44:44Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3278,7 +3278,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-29T23:28:58Z",
+      "dependency_state_checked_at": "2026-07-29T23:44:44Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3371,7 +3371,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T23:28:58Z",
+      "dependency_reconciled_at": "2026-07-29T23:44:44Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -3935,17 +3935,17 @@
     {
       "id": "REPO-PR-21",
       "title": "Integrate open PR #21",
-      "status": "blocked_by_dependency",
+      "status": "done",
       "priority": "P1",
       "complexity": "M",
       "type": "repository_hygiene_integration",
       "recommended_agent": "Dispatcher",
       "requires_human_attention": false,
       "worker_ready": false,
-      "packet_status": "split_into_children",
-      "normalization_status": "repository_pr_decomposed",
-      "dispatcher_decision": "split_into_children",
-      "integration_status": "repair_in_progress",
+      "packet_status": "done",
+      "normalization_status": "finalized",
+      "dispatcher_decision": "done",
+      "integration_status": "finalized",
       "branch": "origin/feature/online-duel-choice-v1",
       "base_branch": "develop",
       "github_pr": 21,
@@ -3982,10 +3982,10 @@
         "capability preservation comparison"
       ],
       "lock": "free",
-      "next_owner": "worker_pool",
-      "next_role": "auto_workers",
+      "next_owner": "none",
+      "next_role": "none",
       "discovered_at": "2026-07-29T23:28:56Z",
-      "updated_at": "2026-07-29T23:28:56Z",
+      "updated_at": "2026-07-29T23:44:42Z",
       "changed_paths": [
         "CHANGELOG.md",
         "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
@@ -4167,12 +4167,32 @@
       "reasoning_effort_hint": "max",
       "repair_owner": "Worker",
       "next_action": "Run every independent slice, integrate finalized child results, then close the source PR.",
-      "status_reason": "Dispatcher created model-aware decomposition slices for the large source PR."
+      "status_reason": "source pull request merge commit is an ancestor of the integration base",
+      "closed_at": "2026-07-29T23:44:42Z",
+      "closed_by": "repository_hygiene_cycle",
+      "finalization_status": "finalized",
+      "merge_commit": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+      "source_pr_close_status": "closed",
+      "source_pr_closed_numbers": [
+        21
+      ],
+      "finalized_at": "2026-07-29T23:44:42Z",
+      "finalized_by": "repository_hygiene_cycle",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "github_merge_commit_ancestor",
+        "source_head_sha": "37cab7231be12b2ac3c7885445259a8326b1db75",
+        "merge_commit": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+        "merged_at": "2026-07-29T23:37:54Z",
+        "base_ref": "origin/develop",
+        "base_sha": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+        "checked_at": "2026-07-29T23:44:42Z"
+      }
     },
     {
       "id": "CRB-REPO-PR-21-S01",
       "title": "REPO-PR-21 implementation slice 1: docs, tests",
-      "status": "blocked_by_dependency",
+      "status": "stale_or_superseded",
       "priority": "P1",
       "complexity": "S",
       "type": "clean-rebuild",
@@ -4263,12 +4283,7 @@
         "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
         "Any intentional replacement requires explicit owner evidence and Integrator review."
       ],
-      "lock": {
-        "state": "free",
-        "by": null,
-        "at": null,
-        "expires_at": null
-      },
+      "lock": "free",
       "created_at": "2026-07-29T23:28:58Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -4390,28 +4405,44 @@
         "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
         "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
       ],
-      "packet_status": "blocked_by_dependency",
-      "normalization_status": "blocked_by_dependency",
-      "dispatcher_decision": "blocked_by_dependency",
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
       "dispatcher_decision_reason": "worker packet waits for unresolved dependencies: CRB-REPO-PR-21-S02",
-      "next_owner": "Dispatcher",
-      "next_role": "auto_dispatcher",
+      "next_owner": "none",
+      "next_role": "none",
       "repaired_packet_at": "2026-07-29T23:28:58Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "status_reason": "ready for independent repository PR slice implementation",
+      "status_reason": "source task was already finalized into develop",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-REPO-PR-21-S02",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
       "blocked_by": [
         "CRB-REPO-PR-21-S02"
       ],
       "resolved_dependencies": [],
       "dependency_state_checked_at": "2026-07-29T23:28:58Z",
-      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "37cab7231be12b2ac3c7885445259a8326b1db75",
+        "parent_task_id": "REPO-PR-21",
+        "parent_merge_commit": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+        "base_ref": "origin/develop",
+        "base_sha": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+        "checked_at": "2026-07-29T23:44:42Z"
+      },
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-29T23:44:42Z",
+      "updated_at": "2026-07-29T23:44:42Z",
+      "superseded_by_task_id": "REPO-PR-21",
+      "superseded_by_merge_commit": "2138ba8151fa28386ac125ad8349e06c267ceb96"
     },
     {
       "id": "CRB-REPO-PR-21-S02",
       "title": "REPO-PR-21 implementation slice 2: asset, code",
-      "status": "in_progress",
+      "status": "planned",
       "priority": "P1",
       "complexity": "M",
       "type": "clean-rebuild",
@@ -4507,7 +4538,7 @@
         "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
         "Any intentional replacement requires explicit owner evidence and Integrator review."
       ],
-      "lock": "locked",
+      "lock": "free",
       "created_at": "2026-07-29T23:28:58Z",
       "base_branch": "develop",
       "packet_schema_version": 2,
@@ -4642,15 +4673,22 @@
       "next_role": "auto_workers",
       "repaired_packet_at": "2026-07-29T23:28:58Z",
       "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "repaired_packet_metadata_at": "2026-07-29T23:28:58Z",
+      "repaired_packet_metadata_at": "2026-07-29T23:44:43Z",
       "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "worker_id": "auto-worker-5.3",
-      "machine_id": "aistudio-manual",
-      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/crb-repo-pr-21-s02/repo-pr-21-implementation-slice-2-asset-code",
-      "github_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/crb-repo-pr-21-s02/repo-pr-21-implementation-slice-2-asset-code",
       "started_at": "2026-07-29T23:29:23Z",
-      "lock_expires_at": "2026-07-30T07:29:23Z",
-      "status_reason": "central runner claimed task before isolated worker launch"
+      "abandoned_claims": [
+        {
+          "released_at": "2026-07-29T23:44:49Z",
+          "reason": "worker pool finished without a live worker process or worker result",
+          "status": "in_progress",
+          "worker_id": "auto-worker-5.3",
+          "machine_id": "aistudio-manual",
+          "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/crb-repo-pr-21-s02/repo-pr-21-implementation-slice-2-asset-code",
+          "lock_expires_at": "2026-07-30T07:29:23Z"
+        }
+      ],
+      "status_reason": "worker pool finished without a live worker process or worker result",
+      "claim_released_at": "2026-07-29T23:44:49Z"
     }
   ],
   "design_handoff_intake_import": {
@@ -4662,7 +4700,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-29T23:28:58Z",
+    "generated_at": "2026-07-29T23:44:44Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
