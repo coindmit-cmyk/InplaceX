@@ -104,9 +104,14 @@ class OnlineDuelClientTest {
                         {
                           "inviteCode":"$inviteCode",
                           "status":"matched",
-                          "sessionId":"$sessionId",
-                          "createdAtEpochMs":1000,
-                          "expiresAtEpochMs":601000
+                           "sessionId":"$sessionId",
+                           "createdAtEpochMs":1000,
+                           "expiresAtEpochMs":601000,
+                           "playStyle":"race",
+                           "codeLength":6,
+                           "allowDuplicates":true,
+                           "maxConsecutiveDuplicateDigits":3,
+                           "matchDurationSeconds":600
                         }
                     """.trimIndent(),
                 ),
@@ -122,6 +127,8 @@ class OnlineDuelClientTest {
                     status = OnlineFriendInviteStatus.MATCHED,
                     sessionId = sessionId,
                     expiresAtEpochMs = 601000,
+                    playStyle = RemoteFriendPlayStyle.RACE,
+                    codeLength = 6,
                 ),
             ),
             result,
@@ -134,6 +141,43 @@ class OnlineDuelClientTest {
             .jsonPrimitive
             .content
         assertEquals(commandId, request.idempotencyKey)
+    }
+
+    @Test
+    fun `friend room creation sends owner selected style and length`() = runBlocking {
+        val boundary = QueueBoundary(
+            RemoteCallResult.Success(
+                RemoteResponse(
+                    200,
+                    emptyMap(),
+                    """
+                        {
+                          "inviteCode":"7KMQ3NWP",
+                          "status":"waiting",
+                          "sessionId":null,
+                          "createdAtEpochMs":1000,
+                          "expiresAtEpochMs":601000,
+                          "playStyle":"turn_based",
+                          "codeLength":8,
+                          "allowDuplicates":true,
+                          "maxConsecutiveDuplicateDigits":3,
+                          "matchDurationSeconds":600
+                        }
+                    """.trimIndent(),
+                ),
+            ),
+        )
+
+        val result = OnlineDuelClient(boundary).createFriendInvite(
+            RemoteFriendPlayStyle.TURN_BASED,
+            8,
+        )
+
+        assertTrue(result is OnlineClientResult.Success)
+        val request = boundary.requests.single()
+        val body = Json.parseToJsonElement(requireNotNull(request.bodyJson)).jsonObject
+        assertEquals("turn_based", body.getValue("playStyle").jsonPrimitive.content)
+        assertEquals("8", body.getValue("codeLength").jsonPrimitive.content)
     }
 
     @Test
@@ -174,8 +218,8 @@ class OnlineDuelClientTest {
     fun `malformed server snapshot fails closed`() = runBlocking {
         val sessionId = UUID.randomUUID().toString()
         val malformed = snapshot(sessionId).replace(
-            "\"participants\":[]",
-            "\"participants\":[],\"secret\":\"1234\"",
+            "\"participants\":[",
+            "\"secret\":\"1234\",\"participants\":[",
         )
 
         assertEquals(
@@ -211,14 +255,23 @@ class OnlineDuelClientTest {
           "phase":"active",
           "currentTurn":"player",
           "winner":null,
+          "finishReason":null,
+          "playStyle":"turn_based",
           "codeLength":4,
           "attemptLimit":9,
           "allowDuplicates":false,
+          "maxConsecutiveDuplicateDigits":null,
+          "startedAtEpochMs":1000,
+          "deadlineAtEpochMs":601000,
+          "serverTimeEpochMs":2000,
           "attempts":[
             {"actor":"player","exactMatches":1,"number":1},
             {"actor":"opponent","exactMatches":0,"number":2}
           ],
-          "participants":[]
+          "participants":[
+            {"actor":"player","secretConfigured":true,"attemptsUsed":1,"attemptsLeft":8},
+            {"actor":"opponent","secretConfigured":true,"attemptsUsed":1,"attemptsLeft":8}
+          ]
         }
     """.trimIndent()
 }

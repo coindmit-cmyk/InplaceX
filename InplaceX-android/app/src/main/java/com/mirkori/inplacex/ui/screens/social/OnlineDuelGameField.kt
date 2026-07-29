@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,6 +28,7 @@ import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
+import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.GameScreen
 import com.mirkori.inplacex.ui.screens.game.presentation.GamePresentationCallbacks
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldCounters
@@ -43,6 +45,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldTimers
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldTool
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldToolsState
+import kotlinx.coroutines.delay
 
 /**
  * Adapts the authoritative online snapshot to the same game field used by local duel and race.
@@ -63,6 +66,31 @@ internal fun OnlineDuelGameField(
     ) {
         mutableStateOf(OnlineDuelEditorState.empty(snapshot.codeLength))
     }
+    val receivedAtEpochMs = remember(snapshot.revision, snapshot.serverTimeEpochMs) {
+        System.currentTimeMillis()
+    }
+    var localNowEpochMs by remember(snapshot.sessionId) {
+        mutableStateOf(System.currentTimeMillis())
+    }
+    LaunchedEffect(snapshot.sessionId, snapshot.deadlineAtEpochMs) {
+        while (snapshot.phase == "active") {
+            localNowEpochMs = System.currentTimeMillis()
+            delay(1_000L)
+        }
+    }
+    val estimatedServerNowEpochMs =
+        snapshot.serverTimeEpochMs + (localNowEpochMs - receivedAtEpochMs).coerceAtLeast(0L)
+    val elapsedSeconds = snapshot.startedAtEpochMs?.let { startedAt ->
+        ((estimatedServerNowEpochMs - startedAt).coerceAtLeast(0L) / 1_000L).toInt()
+    } ?: 0
+    val totalTimeLimitSeconds = if (
+        snapshot.startedAtEpochMs != null &&
+        snapshot.deadlineAtEpochMs != null
+    ) {
+        ((snapshot.deadlineAtEpochMs - snapshot.startedAtEpochMs) / 1_000L).toInt()
+    } else {
+        0
+    }
     val playerAttemptCount = snapshot.attempts.count { it.actor == PLAYER_ACTOR }
 
     LaunchedEffect(playerAttemptCount) {
@@ -75,13 +103,23 @@ internal fun OnlineDuelGameField(
         snapshot = snapshot,
         knownPlayerGuesses = knownPlayerGuesses,
         editor = editor,
-        inputEnabled = snapshot.currentTurn == PLAYER_ACTOR && !submitting,
-        modeLabel = strings.text("social.duel.online_title"),
-        turnLabel = if (snapshot.currentTurn == PLAYER_ACTOR) {
-            strings.text("social.duel.your_turn")
+        inputEnabled = (
+            snapshot.playStyle == RemoteFriendPlayStyle.RACE ||
+                snapshot.currentTurn == PLAYER_ACTOR
+            ) && !submitting,
+        modeLabel = if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
+            "Онлайн-гонка"
         } else {
-            strings.text("social.duel.opponent_turn")
+            strings.text("social.duel.online_title")
         },
+        turnLabel = when {
+            snapshot.playStyle == RemoteFriendPlayStyle.RACE ->
+                "Оба игрока разгадывают одновременно"
+            snapshot.currentTurn == PLAYER_ACTOR -> strings.text("social.duel.your_turn")
+            else -> strings.text("social.duel.opponent_turn")
+        },
+        elapsedSeconds = elapsedSeconds,
+        totalTimeLimitSeconds = totalTimeLimitSeconds,
     )
 
     fun submitCurrentGuess() {
@@ -96,7 +134,8 @@ internal fun OnlineDuelGameField(
             config = GameConfig(
                 codeLength = snapshot.codeLength,
                 allowDuplicates = snapshot.allowDuplicates,
-                attemptLimit = snapshot.attemptLimit,
+                attemptLimit = snapshot.attemptLimit ?: UnlimitedAttemptCapacity,
+                maxConsecutiveDuplicateDigits = snapshot.maxConsecutiveDuplicateDigits,
             ),
         )
         if (reason != null) {
@@ -252,6 +291,8 @@ internal fun buildOnlineDuelGameFieldState(
     inputEnabled: Boolean,
     modeLabel: String,
     turnLabel: String,
+    elapsedSeconds: Int = 0,
+    totalTimeLimitSeconds: Int = 0,
 ): com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState {
     val playerAttempts = snapshot.attempts
         .filter { it.actor == PLAYER_ACTOR }
@@ -291,10 +332,15 @@ internal fun buildOnlineDuelGameFieldState(
     )
     return com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState(
         parameters = GameFieldMatchParameters(
-            mode = GameFieldMode.DUEL,
+            mode = if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
+                GameFieldMode.RACE
+            } else {
+                GameFieldMode.DUEL
+            },
             codeLength = snapshot.codeLength,
-            attemptLimit = snapshot.attemptLimit,
+            attemptLimit = snapshot.attemptLimit ?: UnlimitedAttemptCapacity,
             allowDuplicates = snapshot.allowDuplicates,
+            totalTimeLimitSeconds = totalTimeLimitSeconds,
             hintsEnabled = false,
             boostsEnabled = false,
             autoModeAvailable = true,
@@ -302,7 +348,9 @@ internal fun buildOnlineDuelGameFieldState(
         match = GameFieldMatchState(
             phase = MatchPhase.ACTIVE,
             attempts = playerAttempts,
-            attemptsLeft = (snapshot.attemptLimit - playerAttempts.size).coerceAtLeast(0),
+            attemptsLeft = snapshot.attemptLimit
+                ?.let { (it - playerAttempts.size).coerceAtLeast(0) }
+                ?: UnlimitedAttemptCapacity,
             debugSecret = "",
         ),
         input = editor.input,
@@ -313,7 +361,7 @@ internal fun buildOnlineDuelGameFieldState(
             deduction = deduction,
         ),
         manualMarks = editor.manualMarks,
-        timers = GameFieldTimers(),
+        timers = GameFieldTimers(elapsedSeconds = elapsedSeconds),
         tools = GameFieldToolsState(
             selectedTool = editor.selectedTool,
             autoExcludeEnabled = editor.autoExcludeEnabled,
@@ -326,6 +374,7 @@ internal fun buildOnlineDuelGameFieldState(
             secondaryStatusText = null,
             inputEnabled = inputEnabled,
             configuredMoveLimit = snapshot.attemptLimit,
+            movesUnlimited = snapshot.attemptLimit == null,
         ),
     )
 }
@@ -383,3 +432,4 @@ private const val PLAYER_ACTOR = "player"
 private const val UNKNOWN_GUESS = "·"
 private const val EMPTY_SLOT = "_"
 private const val MARK_SEPARATOR = ";"
+private const val UnlimitedAttemptCapacity = 1_000

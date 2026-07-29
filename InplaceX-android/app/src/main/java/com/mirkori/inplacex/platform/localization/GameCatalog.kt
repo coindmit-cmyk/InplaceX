@@ -32,6 +32,10 @@ internal object GameCatalog {
             localizationEntry("game.validation.duplicate_digits", "Повторяющиеся цифры запрещены"),
             localizationEntry("game.validation.adjacent_duplicates", "Одинаковые цифры подряд запрещены"),
             localizationEntry("game.validation.triple_duplicates", "Три одинаковые цифры подряд запрещены"),
+            localizationEntry(
+                "game.validation.too_many_consecutive_duplicates",
+                "Нельзя вводить больше трёх одинаковых цифр подряд",
+            ),
             localizationEntry("game.validation.only_digits", "Можно вводить только цифры"),
             localizationEntry("game.status.auto_enabled", "Авто режим включен"),
             localizationEntry("game.status.auto_disabled", "Авто режим выключен"),
@@ -136,6 +140,10 @@ internal object GameCatalog {
             localizationEntry("game.validation.duplicate_digits", "Duplicate digits are forbidden"),
             localizationEntry("game.validation.adjacent_duplicates", "Adjacent duplicate digits are forbidden"),
             localizationEntry("game.validation.triple_duplicates", "Three identical digits in a row are forbidden"),
+            localizationEntry(
+                "game.validation.too_many_consecutive_duplicates",
+                "No more than three identical digits may appear in a row",
+            ),
             localizationEntry("game.validation.only_digits", "Only digits are allowed"),
             localizationEntry("game.status.auto_enabled", "Auto mode enabled"),
             localizationEntry("game.status.auto_disabled", "Auto mode disabled"),

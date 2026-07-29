@@ -110,6 +110,7 @@ data class GameFieldRouteUiState(
     val secondaryStatusText: String? = null,
     val inputEnabled: Boolean = true,
     val configuredMoveLimit: Int? = null,
+    val movesUnlimited: Boolean = false,
     val openPositionHints: Int = 0,
     val checkDigitHints: Int = 0,
     val checkPositionHints: Int = 0,

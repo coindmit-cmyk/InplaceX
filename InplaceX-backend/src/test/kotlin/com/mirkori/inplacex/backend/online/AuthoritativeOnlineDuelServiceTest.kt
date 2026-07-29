@@ -116,12 +116,14 @@ class AuthoritativeOnlineDuelServiceTest {
         val created = service.createPrivateInvite(
             playerId,
             createCommand,
-            OnlineMatchMode.CLASSIC,
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
         )
         val replayed = service.createPrivateInvite(
             playerId,
             createCommand,
-            OnlineMatchMode.CLASSIC,
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
         )
 
         assertEquals(created, replayed)
@@ -164,7 +166,8 @@ class AuthoritativeOnlineDuelServiceTest {
         val invite = service.createPrivateInvite(
             playerId,
             UUID.randomUUID().toString(),
-            OnlineMatchMode.CLASSIC,
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
         )
 
         assertThrows(OnlineInviteUnavailableException::class.java) {
@@ -203,6 +206,142 @@ class AuthoritativeOnlineDuelServiceTest {
         assertEquals(MatchmakingStatus.SEARCHING, first.status)
         assertEquals(MatchmakingStatus.SEARCHING, second.status)
         assertNotEquals(first.ticketId, second.ticketId)
+    }
+
+    @Test
+    fun `friend race uses creator length allows repeats and accepts simultaneous guesses`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val invite = service.createPrivateInvite(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineFriendPlayStyle.RACE,
+            6,
+        )
+        assertEquals(6, invite.codeLength)
+        assertTrue(invite.allowDuplicates)
+        assertEquals(3, invite.maxConsecutiveDuplicateDigits)
+
+        val accepted = service.acceptPrivateInvite(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            invite.inviteCode,
+        )
+        val sessionId = requireNotNull(accepted.sessionId)
+        val secondReady = service.submitSecret(
+            secondPlayer,
+            sessionId,
+            UUID.randomUUID().toString(),
+            0,
+            "111234",
+        )
+        val active = service.submitSecret(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            secondReady.revision,
+            "998877",
+        )
+
+        assertEquals("race", active.playStyle)
+        assertNull(active.currentTurn)
+        assertNull(active.attemptLimit)
+        assertTrue(active.deadlineAtEpochMs != null)
+
+        val guestGuess = service.submitGuess(
+            secondPlayer,
+            sessionId,
+            UUID.randomUUID().toString(),
+            active.revision,
+            "001001",
+        )
+        val solved = service.submitGuess(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            active.revision,
+            "111234",
+        )
+        assertEquals("finished", solved.phase)
+        assertEquals("player", solved.winner)
+        assertEquals("solved", solved.finishReason)
+    }
+
+    @Test
+    fun `friend duel has no move limit and server clock ends the match`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val invite = service.createPrivateInvite(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
+        )
+        val accepted = service.acceptPrivateInvite(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            invite.inviteCode,
+        )
+        val sessionId = requireNotNull(accepted.sessionId)
+        var snapshot = service.submitSecret(
+            secondPlayer,
+            sessionId,
+            UUID.randomUUID().toString(),
+            0,
+            "5678",
+        )
+        snapshot = service.submitSecret(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            snapshot.revision,
+            "1234",
+        )
+        repeat(20) { index ->
+            val actor = if (index % 2 == 0) playerId else secondPlayer
+            snapshot = service.submitGuess(
+                actor,
+                sessionId,
+                UUID.randomUUID().toString(),
+                snapshot.revision,
+                "0001",
+            )
+        }
+        assertEquals("active", snapshot.phase)
+        assertNull(snapshot.attemptLimit)
+
+        clock.advance(Duration.ofMinutes(10))
+        val timedOut = service.readSession(playerId, sessionId)
+        assertEquals("finished", timedOut.phase)
+        assertNull(timedOut.winner)
+        assertEquals("time_expired", timedOut.finishReason)
+        assertTrue(timedOut.revision > snapshot.revision)
+    }
+
+    @Test
+    fun `friend secret rejects four equal digits in a row`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val invite = service.createPrivateInvite(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineFriendPlayStyle.RACE,
+            6,
+        )
+        val accepted = service.acceptPrivateInvite(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            invite.inviteCode,
+        )
+
+        assertThrows(
+            com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException::class.java,
+        ) {
+            service.submitSecret(
+                playerId,
+                requireNotNull(accepted.sessionId),
+                UUID.randomUUID().toString(),
+                0,
+                "111123",
+            )
+        }
     }
 
     @Test

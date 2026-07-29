@@ -137,12 +137,16 @@ class OnlineRoutesTest {
             bearer(playerToken)
             header("Idempotency-Key", createCommand)
             contentType(ContentType.Application.Json)
-            setBody("""{"commandId":"$createCommand","mode":"classic"}""")
+            setBody(
+                """{"commandId":"$createCommand","playStyle":"race","codeLength":6}""",
+            )
         }
         assertEquals(HttpStatusCode.OK, createdResponse.status)
         val created = json(createdResponse.bodyAsText())
         val inviteCode = created.getValue("inviteCode").jsonPrimitive.content
         assertEquals("waiting", created.getValue("status").jsonPrimitive.content)
+        assertEquals("race", created.getValue("playStyle").jsonPrimitive.content)
+        assertEquals(6, created.getValue("codeLength").jsonPrimitive.content.toInt())
 
         val acceptCommand = UUID.randomUUID().toString()
         val acceptedResponse = client.post("/api/v1/friends/invites/$inviteCode/accept") {

@@ -208,11 +208,13 @@ including a later human or bot match, rather than creating another ticket.
 A private friend invite is an authenticated, human-only alternative to public
 matchmaking:
 
-1. the owner creates an invite for one match mode;
+1. the owner chooses the private play style (`race` or `turn_based`) and a
+   secret length from 4 through 10 digits;
 2. the server returns an eight-character code with at least 40 bits of
    entropy and a bounded expiry;
 3. a different authenticated player accepts the code;
-4. the server atomically creates one human duel session and marks the invite
+4. the server atomically creates one human session with the owner's immutable
+   room configuration and marks the invite
    matched;
 5. the owner polls the invite until the shared `sessionId` appears.
 
@@ -221,6 +223,24 @@ another session. Before matching, only the owner can read the invite; after
 matching, only its two participants can read it. The code is a discovery
 capability, not an authentication credential: every route still requires a
 valid access token and all session routes enforce server-owned membership.
+
+Private room rules are server-owned:
+
+- digits may repeat, but four identical digits in one consecutive run are
+  rejected; runs of one, two, or three are valid;
+- private matches have no move limit (`attemptLimit` is `null`);
+- a race accepts guesses from both participants while active and the first
+  participant to solve the opponent's secret wins;
+- a turn-based duel accepts exactly one participant at a time and alternates
+  the current actor after each accepted miss;
+- the active match has a ten-minute authoritative deadline. Snapshots expose
+  `startedAtEpochMs`, `deadlineAtEpochMs`, and `serverTimeEpochMs`; after the
+  deadline the server finishes the match with `finishReason=time_expired` and
+  no winner.
+
+The invite response repeats `playStyle`, `codeLength`, `allowDuplicates`,
+`maxConsecutiveDuplicateDigits`, and `matchDurationSeconds`, so the guest can
+show the exact owner-selected rules before entering setup.
 
 The initial staging implementation keeps active invite/session state in the
 game runtime process. A process restart invalidates unfinished invitations and

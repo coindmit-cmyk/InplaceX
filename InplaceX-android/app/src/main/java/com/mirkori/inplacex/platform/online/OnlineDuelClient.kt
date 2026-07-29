@@ -34,6 +34,11 @@ data class OnlineFriendInvite(
     val status: OnlineFriendInviteStatus,
     val sessionId: String?,
     val expiresAtEpochMs: Long,
+    val playStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.TURN_BASED,
+    val codeLength: Int = 4,
+    val allowDuplicates: Boolean = true,
+    val maxConsecutiveDuplicateDigits: Int = 3,
+    val matchDurationSeconds: Long = 600,
 )
 
 data class OnlineDuelAttemptState(
@@ -48,10 +53,17 @@ data class OnlineDuelSnapshotState(
     val phase: String,
     val currentTurn: String?,
     val winner: String?,
+    val finishReason: String? = null,
+    val playStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.TURN_BASED,
     val codeLength: Int,
-    val attemptLimit: Int,
+    val attemptLimit: Int?,
     val allowDuplicates: Boolean,
+    val maxConsecutiveDuplicateDigits: Int? = null,
+    val startedAtEpochMs: Long? = null,
+    val deadlineAtEpochMs: Long? = null,
+    val serverTimeEpochMs: Long = 0,
     val attempts: List<OnlineDuelAttemptState>,
+    val playerSecretConfigured: Boolean = false,
 )
 
 sealed interface OnlineClientResult<out T> {
@@ -83,12 +95,13 @@ class OnlineDuelClient(
         transport.execute(gateway.prepareReadMatchmakingTicket(ticketId)).decode(codec::ticket)
 
     suspend fun createFriendInvite(
-        mode: RemoteMatchmakingMode,
+        playStyle: RemoteFriendPlayStyle,
+        codeLength: Int,
     ): OnlineClientResult<OnlineFriendInvite> {
         val commandId = UUID.randomUUID().toString()
         return transport.execute(
             gateway.prepareCreateFriendInvite(
-                payload = RemoteFriendInvitePayload(commandId, mode),
+                payload = RemoteFriendInvitePayload(commandId, playStyle, codeLength),
                 idempotencyKey = commandId,
             ),
         ).decode(codec::friendInvite)
@@ -199,9 +212,19 @@ private class OnlineDuelResponseCodec {
             phase = value.string("phase", 16).also { require(it in AllowedPhases) },
             currentTurn = value.nullableActor("currentTurn"),
             winner = value.nullableActor("winner"),
+            finishReason = value.nullableString("finishReason", 32)?.also {
+                require(it in AllowedFinishReasons)
+            },
+            playStyle = value.playStyle("playStyle"),
             codeLength = codeLength,
-            attemptLimit = value.positiveInt("attemptLimit"),
+            attemptLimit = value.nullablePositiveInt("attemptLimit"),
             allowDuplicates = value.boolean("allowDuplicates"),
+            maxConsecutiveDuplicateDigits = value.nullablePositiveInt(
+                "maxConsecutiveDuplicateDigits",
+            ),
+            startedAtEpochMs = value.nullableNonNegativeLong("startedAtEpochMs"),
+            deadlineAtEpochMs = value.nullableNonNegativeLong("deadlineAtEpochMs"),
+            serverTimeEpochMs = value.nonNegativeLong("serverTimeEpochMs"),
             attempts = value.array("attempts").map { element ->
                 val attempt = element as? JsonObject ?: throw IllegalArgumentException("attempt must be an object")
                 require(attempt.keys == AttemptFields)
@@ -211,13 +234,35 @@ private class OnlineDuelResponseCodec {
                     number = attempt.positiveInt("number"),
                 )
             },
+            playerSecretConfigured = value.array("participants")
+                .map { element ->
+                    element as? JsonObject
+                        ?: throw IllegalArgumentException("participant must be an object")
+                }
+                .also { participants ->
+                    require(participants.size == 2)
+                    require(participants.all { it.keys == ParticipantFields })
+                }
+                .first { it.string("actor", 16) == "player" }
+                .boolean("secretConfigured"),
         )
     }
 
     fun friendInvite(source: String): OnlineFriendInvite {
         val value = objectValue(
             source,
-            setOf("inviteCode", "status", "sessionId", "createdAtEpochMs", "expiresAtEpochMs"),
+            setOf(
+                "inviteCode",
+                "status",
+                "sessionId",
+                "createdAtEpochMs",
+                "expiresAtEpochMs",
+                "playStyle",
+                "codeLength",
+                "allowDuplicates",
+                "maxConsecutiveDuplicateDigits",
+                "matchDurationSeconds",
+            ),
         )
         val status = when (value.string("status", 16)) {
             "waiting" -> OnlineFriendInviteStatus.WAITING
@@ -234,6 +279,14 @@ private class OnlineDuelResponseCodec {
             status = status,
             sessionId = sessionId,
             expiresAtEpochMs = value.nonNegativeLong("expiresAtEpochMs"),
+            playStyle = value.playStyle("playStyle"),
+            codeLength = value.positiveInt("codeLength").also { require(it in 4..10) },
+            allowDuplicates = value.boolean("allowDuplicates"),
+            maxConsecutiveDuplicateDigits = value.positiveInt(
+                "maxConsecutiveDuplicateDigits",
+            ),
+            matchDurationSeconds = value.nonNegativeLong("matchDurationSeconds")
+                .also { require(it > 0) },
         ).also {
             require(value.nonNegativeLong("createdAtEpochMs") <= it.expiresAtEpochMs)
         }
@@ -297,6 +350,31 @@ private class OnlineDuelResponseCodec {
         return string(name, 16).also { require(it in AllowedActors) }
     }
 
+    private fun JsonObject.nullableString(name: String, maximum: Int): String? {
+        val value = this[name] ?: throw IllegalArgumentException("$name is required")
+        if (value is JsonNull) return null
+        return string(name, maximum)
+    }
+
+    private fun JsonObject.nullablePositiveInt(name: String): Int? {
+        val value = this[name] ?: throw IllegalArgumentException("$name is required")
+        if (value is JsonNull) return null
+        return positiveInt(name)
+    }
+
+    private fun JsonObject.nullableNonNegativeLong(name: String): Long? {
+        val value = this[name] ?: throw IllegalArgumentException("$name is required")
+        if (value is JsonNull) return null
+        return nonNegativeLong(name)
+    }
+
+    private fun JsonObject.playStyle(name: String): RemoteFriendPlayStyle =
+        when (string(name, 16)) {
+            "race" -> RemoteFriendPlayStyle.RACE
+            "turn_based" -> RemoteFriendPlayStyle.TURN_BASED
+            else -> throw IllegalArgumentException("$name is invalid")
+        }
+
     private fun JsonObject.array(name: String): JsonArray =
         this[name] as? JsonArray ?: throw IllegalArgumentException("$name is invalid")
 
@@ -307,15 +385,28 @@ private class OnlineDuelResponseCodec {
             "phase",
             "currentTurn",
             "winner",
+            "finishReason",
+            "playStyle",
             "codeLength",
             "attemptLimit",
             "allowDuplicates",
+            "maxConsecutiveDuplicateDigits",
+            "startedAtEpochMs",
+            "deadlineAtEpochMs",
+            "serverTimeEpochMs",
             "attempts",
             "participants",
         )
         val AttemptFields = setOf("actor", "exactMatches", "number")
+        val ParticipantFields = setOf(
+            "actor",
+            "secretConfigured",
+            "attemptsUsed",
+            "attemptsLeft",
+        )
         val AllowedActors = setOf("player", "opponent")
         val AllowedPhases = setOf("setup", "active", "finished")
+        val AllowedFinishReasons = setOf("solved", "attempts_exhausted", "time_expired")
         const val MaximumOnlineResponseBytes = 64 * 1024
     }
 }

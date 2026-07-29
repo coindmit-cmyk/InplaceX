@@ -7,11 +7,15 @@ data class GameConfig(
     val forbidAllSameDigitsGuess: Boolean = true,
     val forbidAdjacentDuplicates: Boolean = false,
     val forbidTripleDuplicates: Boolean = false,
+    val maxConsecutiveDuplicateDigits: Int? = null,
     val turnTimeLimitSeconds: Int? = null,
     val seed: Long? = null,
 ) {
     init {
         require(codeLength in 4..20) { "codeLength must be in 4..20" }
         require(attemptLimit > 0) { "attemptLimit must be > 0" }
+        require(maxConsecutiveDuplicateDigits == null || maxConsecutiveDuplicateDigits in 1..codeLength) {
+            "maxConsecutiveDuplicateDigits must be null or in 1..codeLength"
+        }
     }
 }

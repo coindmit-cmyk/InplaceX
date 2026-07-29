@@ -228,6 +228,88 @@
         }
       }
     },
+    "FriendInviteCreateCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "playStyle", "codeLength"],
+      "properties": {
+        "commandId": {
+          "$ref": "common.schema.json#/$defs/CommandId"
+        },
+        "playStyle": {
+          "type": "string",
+          "enum": ["race", "turn_based"]
+        },
+        "codeLength": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 10
+        }
+      }
+    },
+    "FriendInvite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inviteCode",
+        "status",
+        "sessionId",
+        "createdAtEpochMs",
+        "expiresAtEpochMs",
+        "playStyle",
+        "codeLength",
+        "allowDuplicates",
+        "maxConsecutiveDuplicateDigits",
+        "matchDurationSeconds"
+      ],
+      "properties": {
+        "inviteCode": {
+          "type": "string",
+          "pattern": "^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "matched", "expired"]
+        },
+        "sessionId": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAtEpochMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expiresAtEpochMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "playStyle": {
+          "type": "string",
+          "enum": ["race", "turn_based"]
+        },
+        "codeLength": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 10
+        },
+        "allowDuplicates": {
+          "const": true
+        },
+        "maxConsecutiveDuplicateDigits": {
+          "const": 3
+        },
+        "matchDurationSeconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "DuelSubmitSecretCommand": {
       "type": "object",
       "additionalProperties": false,
@@ -414,6 +496,12 @@
     },
     {
       "$ref": "#/$defs/MatchmakingTicket"
+    },
+    {
+      "$ref": "#/$defs/FriendInviteCreateCommand"
+    },
+    {
+      "$ref": "#/$defs/FriendInvite"
     },
     {
       "$ref": "#/$defs/DuelSubmitSecretCommand"
