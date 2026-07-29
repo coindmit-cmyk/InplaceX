@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T14:55:53Z",
+  "created_at": "2026-07-29T18:28:31Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "source": "candidate_salvage_audit.py",
   "policy": "old candidates are classified before Integrator; no product code mutation",
@@ -58,7 +58,7 @@
         "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json"
       ],
       "product_path_count": 4,
-      "current_product_path_count": 149,
+      "current_product_path_count": 154,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -73,7 +73,7 @@
       "identity_issues": [],
       "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
       "ahead_of_base": 1,
-      "behind_base": 530,
+      "behind_base": 559,
       "path_source": "merge_base_to_head"
     },
     {
@@ -142,7 +142,7 @@
         "AiStudio/Task_manager/agent_events.jsonl"
       ],
       "product_path_count": 17,
-      "current_product_path_count": 170,
+      "current_product_path_count": 175,
       "coordination_or_noise_path_count": 2,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -160,12 +160,12 @@
         "scripts/ci/contract_mutations/fail_kvm_skipped.yml"
       ],
       "noisy_paths_sample": [],
-      "source_classification": "ready_candidate",
+      "source_classification": "needs_rebase",
       "identity_valid": true,
       "identity_issues": [],
       "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
       "ahead_of_base": 1,
-      "behind_base": 567,
+      "behind_base": 596,
       "path_source": "merge_base_to_head"
     },
     {
@@ -204,17 +204,17 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 0,
-      "current_product_path_count": 158,
+      "current_product_path_count": 163,
       "coordination_or_noise_path_count": 4,
       "noisy_path_count": 0,
       "product_paths_sample": [],
       "noisy_paths_sample": [],
-      "source_classification": "ready_candidate",
+      "source_classification": "needs_rebase",
       "identity_valid": true,
       "identity_issues": [],
       "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
       "ahead_of_base": 1,
-      "behind_base": 571,
+      "behind_base": 600,
       "path_source": "merge_base_to_head"
     },
     {
@@ -261,7 +261,7 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 5,
-      "current_product_path_count": 159,
+      "current_product_path_count": 164,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -277,7 +277,7 @@
       "identity_issues": [],
       "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
       "ahead_of_base": 1,
-      "behind_base": 553,
+      "behind_base": 582,
       "path_source": "merge_base_to_head"
     },
     {
@@ -334,7 +334,7 @@
         "AiStudio/Task_manager/agent_locks.json"
       ],
       "product_path_count": 10,
-      "current_product_path_count": 155,
+      "current_product_path_count": 160,
       "coordination_or_noise_path_count": 1,
       "noisy_path_count": 0,
       "product_paths_sample": [
@@ -350,12 +350,12 @@
         "gradle/libs.versions.toml"
       ],
       "noisy_paths_sample": [],
-      "source_classification": "ready_candidate",
+      "source_classification": "needs_rebase",
       "identity_valid": true,
       "identity_issues": [],
       "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
       "ahead_of_base": 1,
-      "behind_base": 553,
+      "behind_base": 582,
       "path_source": "merge_base_to_head"
     }
   ]

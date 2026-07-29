@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "created_at": "2026-07-29T14:55:52Z",
+  "created_at": "2026-07-29T18:28:30Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "base_branch": "origin/develop",
-  "base_sha": "7d2e7f2690ffb11751b065117576477b66e2c2c8",
-  "preflight_checked_at": "2026-07-29T14:55:51Z",
+  "base_sha": "4844166347385f569351b9ca2f1f08cf91a59f3b",
+  "preflight_checked_at": "2026-07-29T18:28:29Z",
   "policy": {
     "require_checks": false,
     "block_drafts": false,
-    "strict_fresh_base": false,
+    "strict_fresh_base": true,
     "max_task_ids": 5,
     "strict_product_conflicts": false,
     "clean_rebuild_recovery": true
@@ -133,15 +133,16 @@
         "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter"
       ],
       "ahead_of_base": 1,
-      "behind_base": 530,
+      "behind_base": 559,
       "check_state": "unknown",
       "merge_state": null,
       "is_draft": null,
       "source_artifact": false,
       "merge_target_allowed": true,
-      "reason": "high-risk paths require owner/strong review",
+      "reason": "high-risk paths require owner/strong review; behind base by 559 commits",
       "blocking_reasons": [
-        "high-risk paths require owner/strong review"
+        "high-risk paths require owner/strong review",
+        "behind base by 559 commits"
       ],
       "next_owner": "auto-integrator",
       "evidence": [
@@ -160,9 +161,9 @@
         "REPO-PR-5"
       ],
       "identity_recovered_from": null,
-      "classification": "ready_candidate",
-      "readiness_blocker_type": null,
-      "code_payload_status": "candidate",
+      "classification": "needs_rebase",
+      "readiness_blocker_type": "integration_rebase",
+      "code_payload_status": "unverified_candidate",
       "risk_class": "medium",
       "module_scope": "multi:.github+InplaceX-android+docs+scripts",
       "changed_paths": [
@@ -311,20 +312,19 @@
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z"
       ],
       "ahead_of_base": 1,
-      "behind_base": 567,
+      "behind_base": 596,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
       "source_artifact": true,
       "merge_target_allowed": false,
-      "reason": "traceable candidate with no blocking product overlap",
-      "blocking_reasons": [],
-      "next_owner": "integration_batch_builder",
+      "reason": "behind base by 596 commits",
+      "blocking_reasons": [
+        "behind base by 596 commits"
+      ],
+      "next_owner": "worker",
       "evidence": [],
-      "warnings": [
-        "behind base by 567; Integrator should update/rebase before final handoff",
-        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target"
-      ]
+      "warnings": []
     },
     {
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
@@ -337,9 +337,9 @@
         "REPO-PR-4"
       ],
       "identity_recovered_from": null,
-      "classification": "ready_candidate",
-      "readiness_blocker_type": null,
-      "code_payload_status": "candidate",
+      "classification": "needs_rebase",
+      "readiness_blocker_type": "integration_rebase",
+      "code_payload_status": "unverified_candidate",
       "risk_class": "low",
       "module_scope": "scripts",
       "changed_paths": [
@@ -460,20 +460,19 @@
         "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z"
       ],
       "ahead_of_base": 1,
-      "behind_base": 571,
+      "behind_base": 600,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
       "source_artifact": true,
       "merge_target_allowed": false,
-      "reason": "traceable candidate with no blocking product overlap",
-      "blocking_reasons": [],
-      "next_owner": "integration_batch_builder",
+      "reason": "behind base by 600 commits",
+      "blocking_reasons": [
+        "behind base by 600 commits"
+      ],
+      "next_owner": "worker",
       "evidence": [],
-      "warnings": [
-        "behind base by 571; Integrator should update/rebase before final handoff",
-        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target"
-      ]
+      "warnings": []
     },
     {
       "branch": "origin/feature/backend-auth-boundary-v1",
@@ -607,15 +606,16 @@
         "origin/feature/backend-auth-boundary-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 553,
+      "behind_base": 582,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
       "source_artifact": true,
       "merge_target_allowed": false,
-      "reason": "high-risk paths require owner/strong review",
+      "reason": "high-risk paths require owner/strong review; behind base by 582 commits",
       "blocking_reasons": [
-        "high-risk paths require owner/strong review"
+        "high-risk paths require owner/strong review",
+        "behind base by 582 commits"
       ],
       "next_owner": "auto-integrator",
       "evidence": [
@@ -634,9 +634,9 @@
         "REPO-PR-7"
       ],
       "identity_recovered_from": null,
-      "classification": "ready_candidate",
-      "readiness_blocker_type": null,
-      "code_payload_status": "candidate",
+      "classification": "needs_rebase",
+      "readiness_blocker_type": "integration_rebase",
+      "code_payload_status": "unverified_candidate",
       "risk_class": "medium",
       "module_scope": "multi:CHANGELOG.md+InplaceX-android+InplaceX-docs+gradle",
       "changed_paths": [
@@ -759,28 +759,26 @@
         "origin/feature/online-foundation-v1"
       ],
       "ahead_of_base": 1,
-      "behind_base": 553,
+      "behind_base": 582,
       "check_state": "passed",
       "merge_state": "UNKNOWN",
       "is_draft": true,
       "source_artifact": true,
       "merge_target_allowed": false,
-      "reason": "traceable candidate with no blocking product overlap",
-      "blocking_reasons": [],
-      "next_owner": "integration_batch_builder",
+      "reason": "behind base by 582 commits",
+      "blocking_reasons": [
+        "behind base by 582 commits"
+      ],
+      "next_owner": "worker",
       "evidence": [
         "product_conflicts=1"
       ],
-      "warnings": [
-        "behind base by 553; Integrator should update/rebase before final handoff",
-        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
-        "product path overlaps another candidate; batch builder must isolate by module/path"
-      ]
+      "warnings": []
     }
   ],
   "counts": {
     "needs_integrator_review": 2,
-    "ready_candidate": 3
+    "needs_rebase": 3
   },
   "risk_counts": {
     "high": 2,

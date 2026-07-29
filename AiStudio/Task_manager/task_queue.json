@@ -1206,7 +1206,7 @@
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "title": "Android guest auth and cloud-save adapter",
-      "status": "integration_requested",
+      "status": "needs_human",
       "priority": "P1",
       "complexity": "L",
       "type": "design-handoff-intake",
@@ -1256,14 +1256,14 @@
         "bash gradlew verifyProject",
         "git diff --check"
       ],
-      "lock": "review",
+      "lock": "free",
       "worker_ready": false,
       "packet_status": "worker_ready",
       "normalization_status": "worker_ready",
       "dispatcher_decision": "needs_integrator_review",
       "dispatcher_decision_reason": "worker packet v2 repaired and eligible for worker claim",
-      "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_owner": "human",
+      "next_role": "human",
       "source_package_id": "PD-INPLACEX-FINAL-20260725-v002",
       "source_candidate_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "source_item_id": "INPX-AND-421",
@@ -1503,7 +1503,25 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "stale_lock_released_at": "2026-07-27T17:28:42Z",
       "stale_lock_released_by": "status_orchestrator.py",
-      "stale_lock_previous_status": "integration_requested"
+      "stale_lock_previous_status": "integration_requested",
+      "requires_human_attention": true,
+      "repair_request": "manual integrator review required: high-risk paths require owner/strong review; behind base by 559 commits",
+      "missing_packet_fields": [
+        "behavior_preservation"
+      ],
+      "repair_owner": "Integrator",
+      "next_action": "Integrator must manually preserve current target-branch behavior and add only useful candidate changes.",
+      "status_history": [
+        {
+          "at": "2026-07-29T18:28:32Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "needs_human",
+          "reason": "manual integrator review required: high-risk paths require owner/strong review; behind base by 559 commits",
+          "event": "integration_routed",
+          "next_owner": "human"
+        }
+      ]
     },
     {
       "id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S30",
@@ -3368,8 +3386,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "integration_ready",
-      "integration_status": "pending_required_ci",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "integration_status": "needs_dispatcher",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
       "base_branch": "develop",
       "github_pr": 5,
@@ -3410,8 +3428,8 @@
         "capability preservation comparison"
       ],
       "lock": "free",
-      "next_owner": "Integrator",
-      "next_role": "auto_integrator",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-29T11:47:57Z",
       "changed_paths": [
@@ -3484,10 +3502,12 @@
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
       "status_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
-      "missing_packet_fields": [],
-      "repair_owner": "Integrator",
-      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "repair_request": "classification needs_rebase is not batch-ready",
+      "missing_packet_fields": [
+        "integration_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must rebuild or update the worker packet with a valid source branch and changed_paths before integration.",
       "status_history": [
         {
           "at": "2026-07-26T20:33:19Z",
@@ -3515,8 +3535,18 @@
           "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
           "event": "integration_routed",
           "next_owner": "integrator"
+        },
+        {
+          "at": "2026-07-29T18:28:32Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "integration_requested",
+          "reason": "classification needs_rebase is not batch-ready",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "Dispatcher repair is required before this integration route can return to worker execution."
     },
     {
       "id": "REPO-PR-7",
@@ -3530,8 +3560,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "integration_ready",
-      "integration_status": "pending_required_ci",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "integration_status": "needs_dispatcher",
       "branch": "origin/feature/online-foundation-v1",
       "base_branch": "develop",
       "github_pr": 7,
@@ -3572,8 +3602,8 @@
         "capability preservation comparison"
       ],
       "lock": "free",
-      "next_owner": "Integrator",
-      "next_role": "auto_integrator",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-26T20:57:54Z",
       "changed_paths": [
@@ -3621,10 +3651,12 @@
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
       "status_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
-      "missing_packet_fields": [],
-      "repair_owner": "Integrator",
-      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "repair_request": "classification needs_rebase is not batch-ready",
+      "missing_packet_fields": [
+        "integration_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must rebuild or update the worker packet with a valid source branch and changed_paths before integration.",
       "status_history": [
         {
           "at": "2026-07-26T20:33:19Z",
@@ -3634,18 +3666,28 @@
           "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
           "event": "integration_routed",
           "next_owner": "integrator"
+        },
+        {
+          "at": "2026-07-29T18:28:32Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "integration_requested",
+          "reason": "classification needs_rebase is not batch-ready",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "Dispatcher repair is required before this integration route can return to worker execution."
     },
     {
       "id": "REPO-PR-8",
       "title": "Integrate open PR #8",
-      "status": "agent_done",
+      "status": "needs_human",
       "priority": "P1",
       "complexity": "L",
       "type": "repository_hygiene_integration",
       "recommended_agent": "Dispatcher",
-      "requires_human_attention": false,
+      "requires_human_attention": true,
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
@@ -3691,8 +3733,8 @@
         "capability preservation comparison"
       ],
       "lock": "free",
-      "next_owner": "Integrator",
-      "next_role": "integrator_review",
+      "next_owner": "human",
+      "next_role": "human",
       "discovered_at": "2026-07-26T20:31:58Z",
       "updated_at": "2026-07-28T08:27:25Z",
       "changed_paths": [
@@ -3724,7 +3766,24 @@
       "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization."
+      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
+      "repair_request": "manual integrator review required: high-risk paths require owner/strong review; behind base by 582 commits",
+      "missing_packet_fields": [
+        "behavior_preservation"
+      ],
+      "repair_owner": "Integrator",
+      "next_action": "Integrator must manually preserve current target-branch behavior and add only useful candidate changes.",
+      "status_history": [
+        {
+          "at": "2026-07-29T18:28:32Z",
+          "by": "integrator_direct_merge",
+          "from": "agent_done",
+          "to": "needs_human",
+          "reason": "manual integrator review required: high-risk paths require owner/strong review; behind base by 582 commits",
+          "event": "integration_routed",
+          "next_owner": "human"
+        }
+      ]
     },
     {
       "id": "REPO-PR-4",
@@ -3738,8 +3797,8 @@
       "worker_ready": false,
       "packet_status": "integrator_review",
       "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "integration_ready",
-      "integration_status": "pending_required_ci",
+      "dispatcher_decision": "needs_dispatcher_repair",
+      "integration_status": "needs_dispatcher",
       "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
       "base_branch": "develop",
       "github_pr": 4,
@@ -3780,8 +3839,8 @@
         "capability preservation comparison"
       ],
       "lock": "free",
-      "next_owner": "Integrator",
-      "next_role": "auto_integrator",
+      "next_owner": "Dispatcher",
+      "next_role": "auto_dispatcher",
       "discovered_at": "2026-07-29T00:11:11Z",
       "updated_at": "2026-07-29T14:26:30Z",
       "changed_paths": [
@@ -3809,10 +3868,12 @@
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
       "status_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "repair_request": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
-      "missing_packet_fields": [],
-      "repair_owner": "Integrator",
-      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
+      "repair_request": "classification needs_rebase is not batch-ready",
+      "missing_packet_fields": [
+        "integration_packet"
+      ],
+      "repair_owner": "Dispatcher",
+      "next_action": "Dispatcher must rebuild or update the worker packet with a valid source branch and changed_paths before integration.",
       "status_history": [
         {
           "at": "2026-07-29T14:40:45Z",
@@ -3822,8 +3883,18 @@
           "reason": "repository hygiene source PR is draft; repository hygiene exact-head required CI is not complete and green",
           "event": "integration_routed",
           "next_owner": "integrator"
+        },
+        {
+          "at": "2026-07-29T18:28:32Z",
+          "by": "integrator_direct_merge",
+          "from": "integration_requested",
+          "to": "integration_requested",
+          "reason": "classification needs_rebase is not batch-ready",
+          "event": "integration_routed",
+          "next_owner": "dispatcher"
         }
-      ]
+      ],
+      "not_worker_ready_reason": "Dispatcher repair is required before this integration route can return to worker execution."
     },
     {
       "id": "REPO-PR-9",

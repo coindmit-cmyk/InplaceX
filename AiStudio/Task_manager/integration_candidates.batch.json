@@ -1,96 +1,58 @@
 {
-  "generated_at": "2026-07-29T14:55:53Z",
-  "batch_id": "BATCH-20260729-145553",
+  "generated_at": "2026-07-29T18:28:31Z",
+  "batch_id": "BATCH-20260729-182831",
   "candidates": [
     {
-      "task_id": "REPO-PR-4",
+      "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
       "task_ids": [
-        "REPO-PR-4"
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29"
       ],
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
-      "pr": 4,
-      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
-      "canonical_target_id": "task:REPO-PR-4",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "pr": null,
+      "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
+      "canonical_target_id": "task:INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
+      "identity_status": "identity_ok",
+      "identity_valid": true,
+      "identity_provisional": null,
+      "worker_report": "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29_20260726T211001Z.md",
+      "source_artifact_id": null,
+      "source_artifact": false,
+      "risk_class": "high",
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+      ],
+      "classification": "needs_integrator_review",
+      "reason": "high-risk paths require owner/strong review; behind base by 559 commits",
+      "source": "integration_batch_builder"
+    },
+    {
+      "task_id": "REPO-PR-8",
+      "task_ids": [
+        "REPO-PR-8"
+      ],
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "pr": 8,
+      "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "canonical_target_id": "task:REPO-PR-8",
       "identity_status": "repository_pr_identity",
       "identity_valid": true,
       "identity_provisional": null,
       "worker_report": null,
       "source_artifact_id": null,
       "source_artifact": true,
-      "risk_class": "low",
-      "changed_paths": [
-        "scripts/agent_control/capability_preservation_check.py"
-      ],
-      "classification": "ready_candidate",
-      "reason": "traceable candidate with no blocking product overlap",
-      "source": "integration_batch_builder"
-    },
-    {
-      "task_id": "REPO-PR-7",
-      "task_ids": [
-        "REPO-PR-7"
-      ],
-      "branch": "origin/feature/online-foundation-v1",
-      "pr": 7,
-      "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
-      "canonical_target_id": "task:REPO-PR-7",
-      "identity_status": "repository_pr_identity",
-      "identity_valid": true,
-      "identity_provisional": null,
-      "worker_report": "AiStudio/Task_manager/clean_rebuild_plan.json",
-      "source_artifact_id": null,
-      "source_artifact": true,
-      "risk_class": "medium",
+      "risk_class": "high",
       "changed_paths": [
         "CHANGELOG.md",
-        "InplaceX-android/app/build.gradle.kts",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
-        "InplaceX-docs/Backend/Online Contracts.md",
-        "gradle/libs.versions.toml"
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-docs/Backend/Ktor Architecture.md"
       ],
-      "classification": "ready_candidate",
-      "reason": "traceable candidate with no blocking product overlap",
-      "source": "integration_batch_builder"
-    },
-    {
-      "task_id": "REPO-PR-5",
-      "task_ids": [
-        "REPO-PR-5"
-      ],
-      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
-      "pr": 5,
-      "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "canonical_target_id": "task:REPO-PR-5",
-      "identity_status": "repository_pr_identity",
-      "identity_valid": true,
-      "identity_provisional": null,
-      "worker_report": null,
-      "source_artifact_id": null,
-      "source_artifact": true,
-      "risk_class": "medium",
-      "changed_paths": [
-        ".github/workflows/ci.yml",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "docs/automation/CI_FOUNDATION.md",
-        "scripts/ci/artifact_identity.sh",
-        "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
-        "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
-        "scripts/ci/contract_mutations/fail_connected_noop.yml",
-        "scripts/ci/contract_mutations/fail_continue_on_error.yml",
-        "scripts/ci/contract_mutations/fail_emulator_noop.yml",
-        "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
-        "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
-        "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
-        "scripts/ci/contract_mutations/fail_short_circuit.yml",
-        "scripts/ci/contract_mutations/pass_artifact.yml",
-        "scripts/ci/contract_mutations/pass_baseline.yml",
-        "scripts/ci/validate_ci_contract.py"
-      ],
-      "classification": "ready_candidate",
-      "reason": "traceable candidate with no blocking product overlap",
+      "classification": "needs_integrator_review",
+      "reason": "high-risk paths require owner/strong review; behind base by 582 commits",
       "source": "integration_batch_builder"
     }
   ]
