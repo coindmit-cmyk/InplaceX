@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T11:32:46Z",
+  "updated_at": "2026-07-29T11:48:04Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -700,7 +700,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1200,7 +1200,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1589,7 +1589,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1671,7 +1671,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1914,7 +1914,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2162,7 +2162,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2855,9 +2855,9 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-29T11:32:46Z",
+      "dependency_state_checked_at": "2026-07-29T11:47:58Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2953,7 +2953,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3171,7 +3171,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-29T11:32:46Z",
+      "dependency_state_checked_at": "2026-07-29T11:47:58Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3260,7 +3260,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-29T11:32:46Z",
+      "dependency_state_checked_at": "2026-07-29T11:47:58Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3353,7 +3353,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-29T11:32:46Z",
+      "dependency_reconciled_at": "2026-07-29T11:47:58Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -3380,7 +3380,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        5
+      ],
       "repository_hygiene_draft_prs": [
         5
       ],
@@ -3411,7 +3413,7 @@
       "next_owner": "Integrator",
       "next_role": "auto_integrator",
       "discovered_at": "2026-07-26T20:31:58Z",
-      "updated_at": "2026-07-26T20:31:58Z",
+      "updated_at": "2026-07-29T11:47:57Z",
       "changed_paths": [
         ".github/workflows/ci.yml",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
@@ -3725,241 +3727,6 @@
       "status_reason": "Draft PR requires explicit Integrator review before finalization."
     },
     {
-      "id": "REPO-PR-3-9",
-      "title": "Integrate open PR stack #3-#9",
-      "status": "integration_requested",
-      "priority": "P1",
-      "complexity": "L",
-      "type": "repository_hygiene_integration",
-      "recommended_agent": "Dispatcher",
-      "requires_human_attention": false,
-      "worker_ready": false,
-      "packet_status": "integrator_review",
-      "normalization_status": "repository_hygiene_routed",
-      "dispatcher_decision": "integration_ready",
-      "integration_status": "pending_required_ci",
-      "branch": "origin/feature/toy-room-ui-v5",
-      "base_branch": "develop",
-      "github_pr": 9,
-      "pr_numbers": [
-        3,
-        6,
-        9
-      ],
-      "repository_hygiene_key": "repository-pr-group:68e14e22500b79124072",
-      "repository_hygiene_topology": "linear",
-      "repository_hygiene_route": "dispatcher_integration",
-      "repository_hygiene_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
-      "repository_hygiene_dirty_prs": [],
-      "repository_hygiene_draft_prs": [
-        3,
-        6,
-        9
-      ],
-      "repository_hygiene_ci_state": "failed",
-      "source_lane": "repository_hygiene_cycle",
-      "source_summary": "linear PR stack can be reviewed as one cumulative leaf candidate",
-      "provenance": [
-        {
-          "source_type": "github_pull_request_topology",
-          "source_item_id": "repository-pr-group:68e14e22500b79124072",
-          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/9",
-          "captured_at": "2026-07-26T21:07:56Z",
-          "summary": "linear PR stack can be reviewed as one cumulative leaf candidate"
-        }
-      ],
-      "acceptance_criteria": [
-        "Preserve existing behavior unless the PR explicitly replaces it.",
-        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
-        "Run project-required tests and git diff --check before finalization.",
-        "Close or delete source PR branches only after merge evidence exists."
-      ],
-      "checks": [
-        "project-required tests",
-        "git diff --check",
-        "capability preservation comparison"
-      ],
-      "lock": "free",
-      "next_owner": "Integrator",
-      "next_role": "auto_integrator",
-      "discovered_at": "2026-07-26T21:07:56Z",
-      "updated_at": "2026-07-26T22:58:02Z",
-      "changed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppBottomMenu.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppShell.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppTopBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Color.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Theme.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/LocalizationCatalogTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogicTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponentsTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/profile/ProfilePresentationTest.kt",
-        "InplaceX-docs/Game/GPT/Shell Appearance Contracts.md",
-        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "InplaceX-docs/Game/Human/Company UX v3.md",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-friends-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-home-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-compact.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-shop-tall.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-concept.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-landscape.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-portrait.png"
-      ],
-      "integration_changed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppBottomMenu.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppShell.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppTopBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Color.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Theme.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/LocalizationCatalogTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogicTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponentsTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/profile/ProfilePresentationTest.kt",
-        "InplaceX-docs/Game/GPT/Shell Appearance Contracts.md",
-        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "InplaceX-docs/Game/Human/Company UX v3.md",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-friends-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-home-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-compact.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-shop-tall.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-concept.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-landscape.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-portrait.png"
-      ],
-      "coordination_changed_paths": [],
-      "allowed_paths": [
-        "CHANGELOG.md",
-        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/background/ScreenBackground.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CampaignHistoryScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyActionBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyHeaderComponents.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyMissionTimeline.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanySceneScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolder.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppBottomMenu.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppShell.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppTopBar.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Color.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Theme.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/LocalizationCatalogTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogicTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/GamePresentationComponentsTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/state/GameFieldStateHolderTest.kt",
-        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/profile/ProfilePresentationTest.kt",
-        "InplaceX-docs/Game/GPT/Shell Appearance Contracts.md",
-        "InplaceX-docs/Game/GPT/UI Design Contracts.md",
-        "InplaceX-docs/Game/Human/App Shell UX v4.md",
-        "InplaceX-docs/Game/Human/Company UX v3.md",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-friends-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-home-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-compact.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-tall.png",
-        "InplaceX-docs/Game/Human/assets/app-shell-v4-shop-tall.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-concept.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-landscape.png",
-        "InplaceX-docs/Game/Human/assets/company-v3-phone-portrait.png"
-      ],
-      "dispatcher_repaired_at": "2026-07-26T21:07:58Z",
-      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
-      "owner": "integrator",
-      "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "status_reason": "Draft PR requires explicit Integrator review before finalization.",
-      "repair_request": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/app-shell-ux-v4' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
-      "missing_packet_fields": [],
-      "repair_owner": "Integrator",
-      "next_action": "Auto Integrator must retry after the source PR exact-head required CI is complete and green.",
-      "status_history": [
-        {
-          "at": "2026-07-26T21:18:24Z",
-          "by": "integrator_direct_merge",
-          "from": "agent_done",
-          "to": "integration_requested",
-          "reason": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/app-shell-ux-v4' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
-          "event": "integration_routed",
-          "next_owner": "integrator"
-        },
-        {
-          "at": "2026-07-26T21:54:04Z",
-          "by": "integrator_direct_merge",
-          "from": "integration_requested",
-          "to": "integration_requested",
-          "reason": "repository hygiene live required-CI lookup failed",
-          "event": "integration_routed",
-          "next_owner": "integrator"
-        },
-        {
-          "at": "2026-07-26T21:58:21Z",
-          "by": "integrator_direct_merge",
-          "from": "integration_requested",
-          "to": "integration_requested",
-          "reason": "repository hygiene source PR is draft; repository hygiene live PR target 'codex/app-shell-ux-v4' does not match Integrator base 'develop'; repository hygiene exact-head required CI is not complete and green",
-          "event": "integration_routed",
-          "next_owner": "integrator"
-        }
-      ]
-    },
-    {
       "id": "REPO-PR-4",
       "title": "Integrate open PR #4",
       "status": "agent_done",
@@ -4040,6 +3807,65 @@
       "owner": "integrator",
       "dispatcher_decision_reason": "Draft PR requires explicit Integrator review before finalization.",
       "status_reason": "Draft PR requires explicit Integrator review before finalization."
+    },
+    {
+      "id": "REPO-PR-6-9",
+      "title": "Integrate open PR stack #6-#9",
+      "status": "needs_human",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "repository_hygiene_integration",
+      "recommended_agent": "human",
+      "requires_human_attention": true,
+      "worker_ready": false,
+      "packet_status": "needs_human",
+      "normalization_status": "needs_human",
+      "dispatcher_decision": "needs_human",
+      "integration_status": "needs_human",
+      "branch": "origin/feature/toy-room-ui-v5",
+      "base_branch": "codex/make-human/company-ux-v3",
+      "github_pr": 9,
+      "pr_numbers": [
+        6,
+        9
+      ],
+      "repository_hygiene_key": "repository-pr-group:088c26ab7131a311ce46",
+      "repository_hygiene_topology": "linear",
+      "repository_hygiene_route": "needs_human",
+      "repository_hygiene_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
+      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_draft_prs": [
+        6,
+        9
+      ],
+      "repository_hygiene_ci_state": "failed",
+      "source_lane": "repository_hygiene_cycle",
+      "source_summary": "PR topology or target base does not match this integration lane",
+      "provenance": [
+        {
+          "source_type": "github_pull_request_topology",
+          "source_item_id": "repository-pr-group:088c26ab7131a311ce46",
+          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/9",
+          "captured_at": "2026-07-29T11:47:57Z",
+          "summary": "PR topology or target base does not match this integration lane"
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve existing behavior unless the PR explicitly replaces it.",
+        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
+        "Run project-required tests and git diff --check before finalization.",
+        "Close or delete source PR branches only after merge evidence exists."
+      ],
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ],
+      "lock": "free",
+      "next_owner": "human",
+      "next_role": "human",
+      "discovered_at": "2026-07-29T11:47:57Z",
+      "updated_at": "2026-07-29T11:47:57Z"
     }
   ],
   "design_handoff_intake_import": {
@@ -4051,7 +3877,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-29T11:32:46Z",
+    "generated_at": "2026-07-29T11:47:58Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
