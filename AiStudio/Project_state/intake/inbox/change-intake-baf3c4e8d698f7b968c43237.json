@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-baf3c4e8d698f7b968c43237",
+  "type": "change",
+  "subtype": "queue",
+  "status": "new",
+  "created_at": "2026-07-29T20:12:52Z",
+  "updated_at": "2026-07-29T20:12:52Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "feat(campaign): rebalance stars and add test friend",
+  "pr_number": 19,
+  "route": "queue",
+  "event_name": "queue_changed",
+  "event_id": "change-intake-baf3c4e8d698f7b968c43237",
+  "next_owner": "Dispatcher",
+  "next_action": null,
+  "handoff": null,
+  "changed_paths": [
+    "AiStudio/Task_manager/automation_bridge_state.json",
+    "AiStudio/Task_manager/process_locks.json",
+    "AiStudio/Task_manager/task_queue.json",
+    "CHANGELOG.md",
+    "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/BuildVariantTools.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/campaign/CampaignLevelGenerator.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogic.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
+    "InplaceX-android/app/src/release/java/com/mirkori/inplacex/BuildVariantTools.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/core/campaign/CampaignLevelGeneratorTest.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/CompanyCampaignLogicTest.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreenLogicTest.kt",
+    "InplaceX-docs/Game/GPT/Bot and Campaign Systems.md",
+    "InplaceX-docs/Game/Human/App Shell UX v4.md",
+    "InplaceX-docs/Game/Human/PvP Bot and Campaign.md"
+  ],
+  "source_refs": [
+    "origin/feature/campaign-stars-friends-v1"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260729T201252Z/CHANGE_INTAKE_CYCLE_20260729T201252Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}
