@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T18:58:00Z",
+  "updated_at": "2026-07-29T23:29:23Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -1077,6 +1077,16 @@
       "released_at": "2026-07-28T08:27:33Z",
       "released_by": "release_dead_worker_claims.py",
       "release_reason": "terminal/free task row lock cleanup"
+    },
+    {
+      "task_id": "CRB-REPO-PR-21-S02",
+      "state": "in_progress",
+      "by": "auto-worker-5.3",
+      "machine_id": "aistudio-manual",
+      "branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/crb-repo-pr-21-s02/repo-pr-21-implementation-slice-2-asset-code",
+      "at": "2026-07-29T23:29:23Z",
+      "expires_at": "2026-07-30T07:29:23Z",
+      "notes": "central runner claim"
     }
   ]
 }
