@@ -83,14 +83,14 @@ Difficulty should keep growing until about `300-500`, then flatten into a stable
 The first block keeps four-digit codes, but it must not use the general easy
 multiplier unchanged. Levels `1..10` use a dedicated descending move budget:
 
-- level `1`: `14` attempts and `300` seconds
-- level `8`: `12` attempts and `240` seconds
-- level `10`: `10` attempts and `195` seconds
+- level `1`: `15` attempts and `360` seconds
+- level `8`: `14` attempts and `300` seconds
+- level `10`: `12` attempts and `270` seconds
 
 The exact first-block attempt sequence is
-`14, 14, 14, 13, 13, 13, 12, 12, 12, 10`.
+`15, 15, 15, 15, 14, 14, 14, 14, 13, 12`.
 The matching time sequence is
-`300, 285, 285, 270, 270, 255, 255, 240, 225, 195` seconds.
+`360, 345, 330, 330, 315, 315, 300, 300, 285, 270` seconds.
 Spike and hardcore roles remain visible inside this curve.
 
 From level `11`, the medium multiplier starts at `2.8` before role and

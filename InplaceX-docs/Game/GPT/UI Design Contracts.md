@@ -15,7 +15,8 @@
 - Shared visual behavior belongs in theme, shell, or shared scene primitives.
 - `Duel` and `Race` remain the only base game-field families.
 - A visual refactor must not duplicate match orchestration or change match rules.
-- Generated mockups are reference evidence, not runtime assets or implementation authority.
+- Generated full-screen mockups are reference evidence, not runtime screens. Approved independent
+  decorative assets derived from them may ship when they contain no controls, labels, or game state.
 
 ## Toy Room v5 Visual Direction
 
@@ -32,9 +33,11 @@ Home, Company, Friends/Online, Shop, Profile, and the Race game field.
   is green. Blue remains navigation and structural chrome.
 - Interactive controls should look like tactile game pieces while preserving
   Compose semantics, minimum target sizes, localization, and adaptive layout.
-- Rich illustrations may be introduced as independent assets later. Screens
-  must remain functional with code-rendered gradients and Material icon
-  fallbacks.
+- `toy_room_bg_v6.png` is the canonical shared environment for shell and active matches. Screens
+  place native Compose content directly over this environment and must not add a second
+  full-viewport cream or white background.
+- Rich illustrations remain independent decorative assets. Interactive controls, labels, live
+  values, focus, accessibility, and game state stay native Compose.
 - Screenshots remain visual references only; they must not be embedded as
   interactive screen backgrounds.
 
@@ -75,4 +78,6 @@ For each redesigned screen:
 
 ## Migration Rule
 
-Do not replace all screens in one patch. Migrate shell, home, `Race`, `Duel`, and secondary sections as independently reviewable slices with behavior-preservation evidence.
+New work starts from the current `develop`, uses one scoped `feature/*` branch, and returns to
+`develop` only after its behavior-preservation checks pass. Stacked product branches are not a
+substitute for an integrated acceptance build.

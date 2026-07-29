@@ -18,6 +18,17 @@ import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 
 internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
+internal fun initialProgressState(
+    progressRepository: GameProgressRepository,
+): GameProgressState {
+    val current = progressRepository.loadState()
+    return if (current.coins < DebugInitialCoinFloor) {
+        progressRepository.addCoins(DebugInitialCoinFloor - current.coins)
+    } else {
+        current
+    }
+}
+
 @Composable
 internal fun VariantBottomAdContent(
     inspectionValue: String?,
@@ -104,3 +115,4 @@ internal fun VariantToolsSurface(
 }
 
 private const val DebugCoinGrantAmount = 10_000
+private const val DebugInitialCoinFloor = 10_000

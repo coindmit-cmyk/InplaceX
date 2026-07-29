@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,9 @@ internal fun OnlineDuelScreen(
     var state by remember { mutableStateOf<OnlineDuelUiState>(OnlineDuelUiState.Ready) }
     var digits by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
+    var guessHistorySessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var guessHistoryEntries by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var guessSubmitting by rememberSaveable { mutableStateOf(false) }
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
         when (result) {
@@ -122,6 +126,65 @@ internal fun OnlineDuelScreen(
 
             else -> Unit
         }
+    }
+
+    val playing = state as? OnlineDuelUiState.Playing
+    if (playing?.snapshot?.phase == "active") {
+        val snapshot = playing.snapshot
+        val knownPlayerGuesses = if (guessHistorySessionId == snapshot.sessionId) {
+            guessHistoryEntries.toKnownGuessMap()
+        } else {
+            emptyMap()
+        }
+        OnlineDuelGameField(
+            snapshot = snapshot,
+            knownPlayerGuesses = knownPlayerGuesses,
+            submitting = guessSubmitting,
+            onSubmitGuess = { submitted ->
+                if (!guessSubmitting) {
+                    guessSubmitting = true
+                    scope.launch {
+                        val result = runtime.submitGuess(
+                            snapshot.sessionId,
+                            snapshot.revision,
+                            submitted,
+                        )
+                        if (result is OnlineClientResult.Success) {
+                            val previousNumbers = snapshot.attempts
+                                .asSequence()
+                                .filter { it.actor == "player" }
+                                .mapTo(mutableSetOf()) { it.number }
+                            result.value.attempts
+                                .firstOrNull {
+                                    it.actor == "player" && it.number !in previousNumbers
+                                }
+                                ?.let { accepted ->
+                                    if (guessHistorySessionId != snapshot.sessionId) {
+                                        guessHistoryEntries = emptyList()
+                                    }
+                                    guessHistorySessionId = snapshot.sessionId
+                                    guessHistoryEntries = (
+                                        guessHistoryEntries.filterNot {
+                                            it.substringBefore('=') == accepted.number.toString()
+                                        } + "${accepted.number}=$submitted"
+                                    )
+                                }
+                        }
+                        state = if (result == OnlineClientResult.RevisionConflict) {
+                            snapshotState(runtime.readSession(snapshot.sessionId))
+                        } else {
+                            snapshotState(result)
+                        }
+                        guessSubmitting = false
+                    }
+                }
+            },
+            onBack = {
+                guessSubmitting = false
+                state = OnlineDuelUiState.Ready
+            },
+        )
+        return
     }
 
     ScenePageColumn(
@@ -356,12 +419,6 @@ internal fun OnlineDuelScreen(
             }
         }
 
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onBack,
-        ) {
-            Text("Назад")
-        }
     }
 }
 
@@ -376,3 +433,11 @@ private sealed interface OnlineDuelUiState {
 private const val SynchronizationPollMillis = 750L
 private const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+private fun List<String>.toKnownGuessMap(): Map<Int, String> =
+    mapNotNull { entry ->
+        val number = entry.substringBefore('=').toIntOrNull() ?: return@mapNotNull null
+        val guess = entry.substringAfter('=', missingDelimiterValue = "")
+        if (guess.isEmpty() || !guess.all(Char::isDigit)) return@mapNotNull null
+        number to guess
+    }.toMap()

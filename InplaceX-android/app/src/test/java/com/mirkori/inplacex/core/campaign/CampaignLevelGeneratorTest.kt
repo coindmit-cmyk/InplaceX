@@ -14,14 +14,14 @@ class CampaignLevelGeneratorTest {
 
         assertEquals(CampaignDifficultyTier.EASY, firstLevel.difficultyTier)
         assertEquals(4, firstLevel.config.codeLength)
-        assertEquals(14, firstLevel.config.attemptLimit)
-        assertEquals(300, firstLevel.raceTimeLimitSeconds)
-        assertEquals(12, levelEight.config.attemptLimit)
-        assertEquals(240, levelEight.raceTimeLimitSeconds)
+        assertEquals(15, firstLevel.config.attemptLimit)
+        assertEquals(360, firstLevel.raceTimeLimitSeconds)
+        assertEquals(14, levelEight.config.attemptLimit)
+        assertEquals(300, levelEight.raceTimeLimitSeconds)
         assertEquals(CampaignBlockRole.HARDCORE, firstHardcore.blockRole)
         assertEquals(4, firstHardcore.config.codeLength)
-        assertEquals(10, firstHardcore.config.attemptLimit)
-        assertEquals(195, firstHardcore.raceTimeLimitSeconds)
+        assertEquals(12, firstHardcore.config.attemptLimit)
+        assertEquals(270, firstHardcore.raceTimeLimitSeconds)
     }
 
     @Test
@@ -41,8 +41,8 @@ class CampaignLevelGeneratorTest {
 
     @Test
     fun onboardingAttemptCurveMatchesThePlayableBudget() {
-        val expectedAttempts = listOf(14, 14, 14, 13, 13, 13, 12, 12, 12, 10)
-        val expectedSeconds = listOf(300, 285, 285, 270, 270, 255, 255, 240, 225, 195)
+        val expectedAttempts = listOf(15, 15, 15, 15, 14, 14, 14, 14, 13, 12)
+        val expectedSeconds = listOf(360, 345, 330, 330, 315, 315, 300, 300, 285, 270)
 
         (1..10).forEach { level ->
             val definition = CampaignLevelGenerator.generate(level)

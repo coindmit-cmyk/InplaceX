@@ -4,7 +4,8 @@
 
 The Company screen becomes a native Compose mission console instead of a narrow decorative stone path. The redesign keeps the existing campaign progression, energy, history, match launch, result, rating, and unlock behavior.
 
-The visual reference is `assets/company-v3-concept.png`. It defines direction only; the shipped UI uses semantic theme tokens and adaptive Compose layout.
+The owner-provided Toy Room references and the shared `toy_room_bg_v6.png` environment define the
+shipped direction. Mission controls remain semantic, adaptive Compose components.
 
 ## Preserved behavior
 
@@ -26,7 +27,10 @@ The visual reference is `assets/company-v3-concept.png`. It defines direction on
 
 ## Visual and accessibility contract
 
-- Midnight/Navy surfaces with Cobalt and Cyan focus, Mint completion, Amber progress/rewards, and Coral only for high difficulty or errors.
+- A single warm study/toy-room environment sits behind the route. The Company screen must not draw
+  a second white or cream full-screen background.
+- Glossy cobalt navigation and chapter chrome, warm cream mission cards, green completion,
+  amber progress/rewards, cyan focus, and coral only for high difficulty or errors.
 - State is never communicated by color alone: completed, selected, and locked missions also use text, icons, borders, and controls.
 - Primary controls are at least 48 dp; the launch action is at least 56 dp.
 - Compact phones use reduced spacing and labels while preserving the same information hierarchy.

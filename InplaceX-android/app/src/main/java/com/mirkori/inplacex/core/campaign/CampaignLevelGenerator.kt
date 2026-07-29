@@ -187,6 +187,6 @@ object CampaignLevelGenerator {
         return tierSlack + roleSlack
     }
 
-    private val OnboardingAttemptLimits = listOf(14, 14, 14, 13, 13, 13, 12, 12, 12, 10)
-    private val OnboardingTimeLimitsSeconds = listOf(300, 285, 285, 270, 270, 255, 255, 240, 225, 195)
+    private val OnboardingAttemptLimits = listOf(15, 15, 15, 15, 14, 14, 14, 14, 13, 12)
+    private val OnboardingTimeLimitsSeconds = listOf(360, 345, 330, 330, 315, 315, 300, 300, 285, 270)
 }

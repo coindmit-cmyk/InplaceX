@@ -22,6 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,9 +46,25 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
+    requestExitGame: Boolean = false,
+    onExitGameConsumed: () -> Unit = {},
+    onInGameChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var onlineDuelOpen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(onlineDuelOpen) {
+        onInGameChange(onlineDuelOpen)
+    }
+    LaunchedEffect(requestExitGame) {
+        if (requestExitGame) {
+            onlineDuelOpen = false
+            onExitGameConsumed()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { onInGameChange(false) }
+    }
 
     if (onlineDuelOpen && onlineRuntime != null) {
         OnlineDuelScreen(
@@ -162,24 +180,6 @@ fun SocialRootScreen(
             }
         }
 
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f)) {
-            Text(
-                text = strings.text("social.online.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = strings.text("social.online.description"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = strings.text("social.online.safety"),
-                style = MaterialTheme.typography.bodySmall,
-                color = InplaceXColors.InkMuted,
-            )
-        }
     }
 }
 
@@ -208,12 +208,16 @@ private fun SocialAvailabilityBanner(
             )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = if (onlineConfigured) "Онлайн доступен" else strings.text("social.status.preparing"),
+                    text = if (onlineConfigured) {
+                        strings.text("social.status.available")
+                    } else {
+                        strings.text("social.status.preparing")
+                    },
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = if (onlineConfigured) {
-                        "Приватные коды и серверные дуэли доступны"
+                        strings.text("social.status.available.description")
                     } else {
                         strings.text("social.status.preparing.description")
                     },

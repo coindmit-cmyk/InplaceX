@@ -45,7 +45,6 @@ import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
 import com.mirkori.inplacex.platform.services.RewardedPlacement
-import com.mirkori.inplacex.ui.background.ScreenBackgroundPreset
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
@@ -103,7 +102,7 @@ class MainActivity : ComponentActivity() {
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
-                var progressState by remember { mutableStateOf(progressRepository.loadState()) }
+                var progressState by remember { mutableStateOf(initialProgressState(progressRepository)) }
                 var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -162,17 +161,10 @@ class MainActivity : ComponentActivity() {
                 val gameBannerAccepted = remember(adService, gameBannerEligible) {
                     gameBannerEligible && adService.showBanner(GAME_BANNER_SLOT_ID)
                 }
-                val appBackgroundStyle = when {
-                    currentSection == AppSection.COMPANY -> ScreenBackgroundStyle.DrawableResource(
-                        resourceId = R.drawable.company_room_bg_v2,
-                        fallbackColor = InplaceXColors.ToyWood,
-                    )
-                    !isInGame -> ScreenBackgroundStyle.Preset(ScreenBackgroundPreset.WarmWorkshop)
-                    else -> ScreenBackgroundStyle.ImageAsset(
-                        assetPath = "image/background/app_bg.png",
-                        fallbackColor = InplaceXColors.ToyWood,
-                    )
-                }
+                val appBackgroundStyle = ScreenBackgroundStyle.DrawableResource(
+                    resourceId = R.drawable.toy_room_bg_v6,
+                    fallbackColor = InplaceXColors.ToyWood,
+                )
                 val bottomMode = when {
                     isInGame && isPremium -> BottomLayerMode.NONE
                     isInGame && gameBannerAccepted -> BottomLayerMode.AD
@@ -294,6 +286,9 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                requestExitGame = requestExitGame,
+                                onExitGameConsumed = { requestExitGame = false },
+                                onInGameChange = { inGame -> isInGame = inGame },
                             )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
