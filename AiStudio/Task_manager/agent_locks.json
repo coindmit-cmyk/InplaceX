@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-28T08:27:33Z",
+  "updated_at": "2026-07-29T18:58:00Z",
   "default_ttl_hours": 8,
   "locks": [
     {
@@ -1026,14 +1026,17 @@
     },
     {
       "task_id": "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
-      "state": "review",
+      "state": "released",
       "by": "auto-worker-5.5",
       "machine_id": "aistudio",
       "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
       "at": "2026-07-26T21:03:27Z",
       "expires_at": "2026-07-27T05:03:27Z",
-      "notes": "worker result already synced for integrator review",
-      "review_at": "2026-07-26T21:18:03Z"
+      "notes": "terminal/free task row lock cleanup",
+      "review_at": "2026-07-26T21:18:03Z",
+      "released_at": "2026-07-29T18:58:00Z",
+      "released_by": "release_dead_worker_claims.py",
+      "release_reason": "terminal/free task row lock cleanup"
     },
     {
       "task_id": "CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP",

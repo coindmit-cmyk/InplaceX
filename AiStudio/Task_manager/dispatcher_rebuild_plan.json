@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-29T18:58:01Z",
+  "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
+  "source": "dispatcher_rebuild_planner.py",
+  "task_count": 2,
+  "counts": {
+    "dispatcher_rebuild": 1,
+    "crb_auto_task": 1
+  },
+  "tasks": [
+    {
+      "id": "CRB-REPO-PR-4",
+      "title": "Clean rebuild route for origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "route": "dispatcher_rebuild",
+      "operation": "dispatcher_split_or_repacketize",
+      "status": "planned",
+      "next_owner": "auto-dispatcher",
+      "next_event": "dispatcher_rebuild_requested",
+      "reason": "behind base by 600 commits",
+      "source_branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "source_task_ids": [
+        "REPO-PR-4"
+      ],
+      "risk_class": "low",
+      "module_scopes": [
+        "scripts"
+      ],
+      "suggested_allowed_paths": [
+        "scripts/agent_control/capability_preservation_check.py"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets/**",
+        "production credentials"
+      ],
+      "acceptance_criteria": [
+        "Rebuild on current develop/release base instead of merging stale worker branch directly.",
+        "Preserve only the intended payload paths listed in suggested_allowed_paths.",
+        "Do not copy runtime, nested worktree, queue noise or unrelated coordination files.",
+        "Return precise needs_worker_fix/needs_human reason if rebuild cannot be made safe."
+      ],
+      "checks": [
+        "git diff --check",
+        "run targeted checks for changed paths"
+      ],
+      "provenance": {
+        "source": "dispatcher_rebuild_planner.py",
+        "decision": "dispatcher_rebuild",
+        "created_from": "rebuild_decision_report",
+        "source_status": "needs_rebase"
+      }
+    },
+    {
+      "id": "CRB-REPO-PR-7",
+      "title": "Clean rebuild route for origin/feature/online-foundation-v1",
+      "route": "crb_auto_task",
+      "operation": "promote_clean_rebuild_queue_bridge",
+      "status": "planned",
+      "next_owner": "auto-dispatcher",
+      "next_event": "crb_task_created",
+      "reason": "auto_clean_rebuild_medium can be promoted through clean_rebuild_queue_bridge",
+      "source_branch": "origin/feature/online-foundation-v1",
+      "source_task_ids": [
+        "REPO-PR-7"
+      ],
+      "risk_class": "medium",
+      "module_scopes": [
+        "InplaceX-android",
+        "InplaceX-docs",
+        "InplaceX-logging",
+        "gradle"
+      ],
+      "suggested_allowed_paths": [
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+        "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+        "gradle/libs.versions.toml"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets/**",
+        "production credentials"
+      ],
+      "acceptance_criteria": [
+        "Rebuild on current develop/release base instead of merging stale worker branch directly.",
+        "Preserve only the intended payload paths listed in suggested_allowed_paths.",
+        "Do not copy runtime, nested worktree, queue noise or unrelated coordination files.",
+        "Return precise needs_worker_fix/needs_human reason if rebuild cannot be made safe."
+      ],
+      "checks": [
+        "git diff --check",
+        "run targeted checks for changed paths"
+      ],
+      "provenance": {
+        "source": "dispatcher_rebuild_planner.py",
+        "decision": "crb_auto_task",
+        "created_from": "rebuild_decision_report",
+        "source_status": "auto_clean_rebuild_medium"
+      }
+    }
+  ]
+}
