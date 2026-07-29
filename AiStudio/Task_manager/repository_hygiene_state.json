@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T23:44:42Z",
+  "generated_at": "2026-07-29T23:59:04Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -197,13 +197,11 @@
   ],
   "task_routing": {
     "staged_count": 0,
-    "updated_count": 1,
+    "updated_count": 0,
     "covered_count": 5,
-    "superseded_count": 2,
+    "superseded_count": 1,
     "staged_task_ids": [],
-    "updated_task_ids": [
-      "REPO-PR-21"
-    ],
+    "updated_task_ids": [],
     "covered_task_ids": [
       "REPO-PR-4",
       "REPO-PR-5",
@@ -212,31 +210,28 @@
       "REPO-PR-9"
     ],
     "superseded_task_ids": [
-      "CRB-REPO-PR-21-S01",
-      "REPO-PR-21"
+      "CRB-REPO-PR-21-S02"
     ],
     "changed": true,
     "merged_parent_reconciliation": {
-      "reconciled_count": 1,
-      "reconciled_task_ids": [
-        "REPO-PR-21"
-      ],
+      "reconciled_count": 0,
+      "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "2138ba8151fa28386ac125ad8349e06c267ceb96",
-      "changed": true
+      "base_sha": "7d667273e3f3fb81d3f96756cea16df52d702f74",
+      "changed": false
     },
     "integrated_descendant_reconciliation": {
       "resolved_count": 1,
       "resolved_task_ids": [
-        "CRB-REPO-PR-21-S01"
+        "CRB-REPO-PR-21-S02"
       ],
       "protected_task_ids": [
-        "CRB-REPO-PR-21-S02"
+        "CRB-REPO-PR-21-S01"
       ],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "2138ba8151fa28386ac125ad8349e06c267ceb96",
+      "base_sha": "7d667273e3f3fb81d3f96756cea16df52d702f74",
       "changed": true
     },
     "repair_parent_reconciliation": {
@@ -264,7 +259,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-5f1a10a1bacf1d8f2e5b",
+    "event_id": "repository-hygiene-b5e26522f49a5d6f5da1",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -316,7 +311,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-29T23:44:43Z",
+    "generated_at": "2026-07-29T23:59:05Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -334,6 +329,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "177f6fa92b6ab6209fee1b9cb5f6109a396e8386970ec71e76a2b5d85f83e587",
+  "state_signature": "d2fb66ebc3630e7dda71d4c17d3a64dea939a0f4f743e242537011199626c744",
   "state_written": true
 }
