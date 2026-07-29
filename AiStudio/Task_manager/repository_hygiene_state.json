@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T20:43:14Z",
+  "generated_at": "2026-07-29T22:14:35Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -9,11 +9,11 @@
   "fetch": {
     "skipped": true
   },
-  "open_pr_count": 5,
-  "group_count": 5,
+  "open_pr_count": 6,
+  "group_count": 6,
   "stack_group_count": 0,
-  "direct_group_count": 5,
-  "dispatcher_group_count": 4,
+  "direct_group_count": 6,
+  "dispatcher_group_count": 5,
   "needs_human_group_count": 1,
   "groups": [
     {
@@ -193,17 +193,49 @@
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "PR topology or target base does not match this integration lane"
+    },
+    {
+      "group_key": "repository-pr-group:359e292333b41a2607a1",
+      "task_id": "REPO-PR-20",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "dispatcher_integration",
+      "target_base": "develop",
+      "protected_target": true,
+      "integration_base": "develop",
+      "automatic_target": true,
+      "pr_numbers": [
+        20
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/20"
+      ],
+      "root_pr": 20,
+      "leaf_pr": 20,
+      "candidate_branch": "origin/feature/friend-modes-config-v1",
+      "candidate_head_sha": "dd113491a5af348484898ac6ab2c441a567df080",
+      "roots": [
+        20
+      ],
+      "leaves": [
+        20
+      ],
+      "draft_prs": [],
+      "dirty_prs": [],
+      "candidate_ci_state": "pending",
+      "requires_reconstruction": false,
+      "reason": "direct PR can be routed through Dispatcher and Integrator"
     }
   ],
   "task_routing": {
-    "staged_count": 0,
-    "updated_count": 1,
+    "staged_count": 1,
+    "updated_count": 0,
     "covered_count": 5,
-    "superseded_count": 1,
-    "staged_task_ids": [],
-    "updated_task_ids": [
-      "REPO-PR-19"
+    "superseded_count": 0,
+    "staged_task_ids": [
+      "REPO-PR-20"
     ],
+    "updated_task_ids": [],
     "covered_task_ids": [
       "REPO-PR-4",
       "REPO-PR-5",
@@ -211,19 +243,15 @@
       "REPO-PR-8",
       "REPO-PR-9"
     ],
-    "superseded_task_ids": [
-      "REPO-PR-19"
-    ],
+    "superseded_task_ids": [],
     "changed": true,
     "merged_parent_reconciliation": {
-      "reconciled_count": 1,
-      "reconciled_task_ids": [
-        "REPO-PR-19"
-      ],
+      "reconciled_count": 0,
+      "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "048d58e0fcee99a2393e0913f7a344f2f9706a62",
-      "changed": true
+      "base_sha": "706a5fe364bdb954c5f4db06790a2a9e906ca97e",
+      "changed": false
     },
     "integrated_descendant_reconciliation": {
       "resolved_count": 0,
@@ -231,7 +259,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "048d58e0fcee99a2393e0913f7a344f2f9706a62",
+      "base_sha": "706a5fe364bdb954c5f4db06790a2a9e906ca97e",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -259,7 +287,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-e3bfd445479f4390bb15",
+    "event_id": "repository-hygiene-965ad953eb7a92df0cea",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -311,7 +339,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-29T20:43:15Z",
+    "generated_at": "2026-07-29T22:14:36Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -329,6 +357,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "8e8e513e4beb98e0464170da220e2e05b0cd50d2aacbdc794f71a69dc9b19681",
+  "state_signature": "9f428f2844900e0a037457ea75e32460d826d453f61e0d3f33209f1e34e9a663",
   "state_written": true
 }
