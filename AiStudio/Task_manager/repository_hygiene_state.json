@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T11:47:57Z",
+  "generated_at": "2026-07-29T14:26:30Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -9,10 +9,10 @@
   "fetch": {
     "skipped": true
   },
-  "open_pr_count": 6,
+  "open_pr_count": 5,
   "group_count": 5,
-  "stack_group_count": 1,
-  "direct_group_count": 4,
+  "stack_group_count": 0,
+  "direct_group_count": 5,
   "dispatcher_group_count": 4,
   "needs_human_group_count": 1,
   "groups": [
@@ -45,7 +45,9 @@
       "draft_prs": [
         4
       ],
-      "dirty_prs": [],
+      "dirty_prs": [
+        4
+      ],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -85,43 +87,6 @@
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
-    },
-    {
-      "group_key": "repository-pr-group:088c26ab7131a311ce46",
-      "task_id": "REPO-PR-6-9",
-      "classification": "stacked_pr_bundle",
-      "topology": "linear",
-      "route": "needs_human",
-      "target_base": "codex/make-human/company-ux-v3",
-      "protected_target": false,
-      "integration_base": "develop",
-      "automatic_target": false,
-      "pr_numbers": [
-        6,
-        9
-      ],
-      "pr_urls": [
-        "https://github.com/coindmit-cmyk/InplaceX/pull/6",
-        "https://github.com/coindmit-cmyk/InplaceX/pull/9"
-      ],
-      "root_pr": 6,
-      "leaf_pr": 9,
-      "candidate_branch": "origin/feature/toy-room-ui-v5",
-      "candidate_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
-      "roots": [
-        6
-      ],
-      "leaves": [
-        9
-      ],
-      "draft_prs": [
-        6,
-        9
-      ],
-      "dirty_prs": [],
-      "candidate_ci_state": "failed",
-      "requires_reconstruction": true,
-      "reason": "PR topology or target base does not match this integration lane"
     },
     {
       "group_key": "repository-pr-group:a61cc190aa06e5db919b",
@@ -194,6 +159,40 @@
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
+    },
+    {
+      "group_key": "repository-pr-group:acb365203a625d763e7c",
+      "task_id": "REPO-PR-9",
+      "classification": "direct_pr_candidate",
+      "topology": "linear",
+      "route": "needs_human",
+      "target_base": "codex/app-shell-ux-v4",
+      "protected_target": false,
+      "integration_base": "develop",
+      "automatic_target": false,
+      "pr_numbers": [
+        9
+      ],
+      "pr_urls": [
+        "https://github.com/coindmit-cmyk/InplaceX/pull/9"
+      ],
+      "root_pr": 9,
+      "leaf_pr": 9,
+      "candidate_branch": "origin/feature/toy-room-ui-v5",
+      "candidate_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
+      "roots": [
+        9
+      ],
+      "leaves": [
+        9
+      ],
+      "draft_prs": [
+        9
+      ],
+      "dirty_prs": [],
+      "candidate_ci_state": "failed",
+      "requires_reconstruction": true,
+      "reason": "PR topology or target base does not match this integration lane"
     }
   ],
   "task_routing": {
@@ -202,10 +201,10 @@
     "covered_count": 4,
     "superseded_count": 1,
     "staged_task_ids": [
-      "REPO-PR-6-9"
+      "REPO-PR-9"
     ],
     "updated_task_ids": [
-      "REPO-PR-5"
+      "REPO-PR-4"
     ],
     "covered_task_ids": [
       "REPO-PR-4",
@@ -214,7 +213,7 @@
       "REPO-PR-8"
     ],
     "superseded_task_ids": [
-      "REPO-PR-3-9"
+      "REPO-PR-6-9"
     ],
     "changed": true,
     "merged_parent_reconciliation": {
@@ -222,7 +221,7 @@
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "4e3dbcf648cc1705859999f9828dcc09584f4770",
+      "base_sha": "32048f6cebe783d68bf625c5712aef5f8d934268",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -231,7 +230,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "4e3dbcf648cc1705859999f9828dcc09584f4770",
+      "base_sha": "32048f6cebe783d68bf625c5712aef5f8d934268",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -259,7 +258,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-44cd051ff812be62b717",
+    "event_id": "repository-hygiene-4fea10c0b5cdeaced01e",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -311,7 +310,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-29T11:47:58Z",
+    "generated_at": "2026-07-29T14:26:32Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -329,6 +328,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "bfd2f9b6f71d97a06ee9f46228e09d2e6472b280e606c5119c0444bf4de49ea2",
+  "state_signature": "b427c808fff3384bb13720393b185e9f60352e7ccbc54474b8004e9d14c872b4",
   "state_written": true
 }
