@@ -110,7 +110,7 @@ fun SocialRootScreen(
             SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
         }
 
-        if (showTestFriendBot && onlineRuntime != null) {
+        if (showTestFriendBot) {
             SceneCard(
                 accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f),
             ) {
@@ -140,12 +140,21 @@ fun SocialRootScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = strings.text("social.test_friend.subtitle"),
+                            text = strings.text(
+                                if (onlineRuntime != null) {
+                                    "social.test_friend.subtitle"
+                                } else {
+                                    "social.test_friend.offline"
+                                },
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Button(onClick = { openOnline(autoStart = true) }) {
+                    Button(
+                        onClick = { openOnline(autoStart = true) },
+                        enabled = onlineRuntime != null,
+                    ) {
                         Text(strings.text("social.test_friend.play"))
                     }
                 }

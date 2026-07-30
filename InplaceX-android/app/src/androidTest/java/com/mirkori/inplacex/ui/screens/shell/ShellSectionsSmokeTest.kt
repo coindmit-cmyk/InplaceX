@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -91,9 +92,12 @@ class ShellSectionsSmokeTest {
 
     @Test
     fun unconfiguredSocialSectionShowsTruthfulOfflineStateAndCurrentActions() {
-        setContent { SocialRootScreen() }
+        setContent { SocialRootScreen(showTestFriendBot = true) }
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
+        composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
+        composeRule.onNodeWithText("Тестовый друг · онлайн сейчас недоступен").assertIsDisplayed()
+        composeRule.onNodeWithText("Играть").assertIsNotEnabled()
         composeRule.onNodeWithText("Список друзей пока пуст.").assertIsDisplayed()
         composeRule.onNodeWithText("Создайте код и отправьте его другу.").assertIsDisplayed()
     }
@@ -115,9 +119,16 @@ class ShellSectionsSmokeTest {
             ),
         )
         try {
-            setContent { SocialRootScreen(onlineRuntime = runtime) }
+            setContent {
+                SocialRootScreen(
+                    onlineRuntime = runtime,
+                    showTestFriendBot = true,
+                )
+            }
 
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
+            composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
+            composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
             composeRule.onNodeWithText("Друзья").performClick()
             composeRule.onNodeWithText("Онлайн-матч").assertIsDisplayed()
             composeRule.onNodeWithText("На время").assertIsDisplayed()

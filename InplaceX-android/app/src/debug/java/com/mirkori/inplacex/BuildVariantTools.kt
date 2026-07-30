@@ -1,5 +1,6 @@
 package com.mirkori.inplacex
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,14 +22,39 @@ internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = fal
 internal fun testFriendBotEnabled(): Boolean = true
 
 internal fun initialProgressState(
+    context: Context,
     progressRepository: GameProgressRepository,
 ): GameProgressState {
     val current = progressRepository.loadState()
-    return if (current.coins < DebugInitialCoinFloor) {
-        progressRepository.addCoins(DebugInitialCoinFloor - current.coins)
+    val bootstrapPreferences = context.getSharedPreferences(
+        DebugBootstrapPreferences,
+        Context.MODE_PRIVATE,
+    )
+    val grantApplied = bootstrapPreferences.getBoolean(DebugInitialCoinGrantKey, false)
+    val topUp = debugInitialCoinTopUp(
+        currentCoins = current.coins,
+        grantApplied = grantApplied,
+    )
+    val state = if (topUp > 0) {
+        progressRepository.addCoins(topUp)
     } else {
         current
     }
+    if (!grantApplied) {
+        bootstrapPreferences.edit()
+            .putBoolean(DebugInitialCoinGrantKey, true)
+            .apply()
+    }
+    return state
+}
+
+internal fun debugInitialCoinTopUp(
+    currentCoins: Int,
+    grantApplied: Boolean,
+): Int = if (!grantApplied && currentCoins < DebugInitialCoinGrantAmount) {
+    DebugInitialCoinGrantAmount - currentCoins
+} else {
+    0
 }
 
 @Composable
@@ -117,4 +143,6 @@ internal fun VariantToolsSurface(
 }
 
 private const val DebugCoinGrantAmount = 10_000
-private const val DebugInitialCoinFloor = 10_000
+private const val DebugInitialCoinGrantAmount = 10_000
+private const val DebugBootstrapPreferences = "debug_bootstrap"
+private const val DebugInitialCoinGrantKey = "initial_coin_grant_v1"

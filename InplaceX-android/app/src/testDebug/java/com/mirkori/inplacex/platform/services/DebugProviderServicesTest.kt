@@ -4,12 +4,13 @@ import android.content.ContextWrapper
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.config.PlatformConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DebugProviderServicesTest {
     @Test
-    fun `debug factory provides sandbox success adapters`() {
+    fun `debug factory keeps unavailable monetization providers fail closed`() {
         val services = ProviderServicesFactory.create(
             context = ContextWrapper(null),
             platformConfig = PlatformConfig(navigationItems = emptyList()),
@@ -20,7 +21,7 @@ class DebugProviderServicesTest {
         assertTrue(services.adService is StubAdService)
         assertTrue(services.billingService is StubBillingService)
         assertTrue(services.authService.signInWithGooglePlay().isSignedIn)
-        assertTrue(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
-        assertTrue(services.billingService.purchase(BillingProductId.REMOVE_ADS))
+        assertFalse(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
+        assertFalse(services.billingService.purchase(BillingProductId.REMOVE_ADS))
     }
 }
