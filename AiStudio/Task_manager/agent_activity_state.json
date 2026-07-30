@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-29T23:59:13Z",
+  "updated_at": "2026-07-30T00:45:21Z",
   "purpose": "Phase 2.1 scheduler freshness state. This is not a task queue; it records role inputs, outputs and skip reasons so scheduled agents run only when upstream state changed.",
   "last_inputs": {
     "director": {
@@ -53,13 +53,11 @@
       "last_input_seen_at": null,
       "last_result": null,
       "last_skip_reason": null,
-      "last_checked_at": "2026-07-29T23:59:11Z",
+      "last_checked_at": "2026-07-30T00:45:18Z",
       "last_run_decision": true,
       "last_trigger_event_ids": [
-        "change-intake-2e9e1da68a167eb24a2d6db5",
-        "repository-hygiene-4680266030810f06965f",
-        "repository-hygiene-5f1a10a1bacf1d8f2e5b",
-        "repository-hygiene-b5e26522f49a5d6f5da1"
+        "change-intake-b7256571bc128c14ef3179a7",
+        "repository-hygiene-dfba7daf9a7d970bae5e"
       ]
     },
     "auto_workers": {
