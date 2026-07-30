@@ -5,6 +5,7 @@ import com.maxmind.db.MaxMindDbParameter
 import com.maxmind.db.Reader
 import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.call
@@ -246,6 +247,12 @@ fun Application.configureAdMarketRoutes(
                 trustedHeaderValue = config?.let { call.request.header(it.trustedHeader) },
             )
             call.response.cacheControl(CacheControl.NoStore(null))
+            if (config?.source == AdMarketSource.LOCAL_IP_DATABASE) {
+                call.response.headers.append(
+                    HttpHeaders.Link,
+                    """<https://db-ip.com>; rel="via"""",
+                )
+            }
             call.respondText(
                 text = """{"market":"${market.name}"}""",
                 contentType = ContentType.Application.Json,

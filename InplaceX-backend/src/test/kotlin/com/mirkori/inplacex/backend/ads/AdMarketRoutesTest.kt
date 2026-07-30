@@ -96,6 +96,27 @@ class AdMarketRoutesTest {
         )
     }
 
+    @Test
+    fun `local database route preserves bounded response and exposes attribution`() = testApplication {
+        val config = databaseConfig(setOf("localhost"))
+        application {
+            configureAdMarketRoutes(
+                config = config,
+                resolver = LocalDatabaseAdMarketResolver(
+                    config = config,
+                    lookup = CountryByIpLookup { "RU" },
+                ),
+            )
+        }
+
+        val response = client.get("/api/v1/runtime/ad-market") {
+            header(AdMarketRuntimeConfig.DefaultClientIpHeader, "198.51.100.20")
+        }
+
+        assertEquals("{\"market\":\"RUSSIA\"}", response.bodyAsText())
+        assertEquals("""<https://db-ip.com>; rel="via"""", response.headers[HttpHeaders.Link])
+    }
+
     private fun trustedCountryConfig(proxyHosts: Set<String>) = AdMarketRuntimeConfig(
         source = AdMarketSource.TRUSTED_COUNTRY_HEADER,
         trustedProxyHosts = proxyHosts,
