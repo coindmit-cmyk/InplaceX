@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.app
 
+import com.mirkori.inplacex.backend.ads.configureAdMarketRoutes
 import com.mirkori.inplacex.backend.persistence.PostgresDatabase
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
@@ -69,4 +70,5 @@ fun Application.backendModule(
         ),
     )
     configureHealthRoutes(readinessProbe)
+    configureAdMarketRoutes(config.adMarket)
 }

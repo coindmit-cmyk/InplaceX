@@ -110,4 +110,24 @@ class BackendRuntimeConfigTest {
             mapOf(OnlineRuntimeConfig.IssuerKey to "inplacex-identity"),
         )
     }
+
+    @Test
+    fun `ad market accepts only a complete trusted proxy configuration`() {
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+                "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1, 10.0.0.5",
+            ),
+        )
+
+        assertEquals("CF-IPCountry", config.adMarket?.trustedCountryHeader)
+        assertEquals(setOf("127.0.0.1", "10.0.0.5"), config.adMarket?.trustedProxyHosts)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `partial ad market configuration fails closed`() {
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf("INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry"),
+        )
+    }
 }

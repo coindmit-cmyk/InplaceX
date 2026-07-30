@@ -42,7 +42,7 @@ class AndroidAdRuntime(
     private val configuredProviders: List<AdProviderId>,
     private val providerAvailability: AdProviderAvailability =
         AllConfiguredAdProviderAvailability,
-) {
+) : AutoCloseable {
     suspend fun preload(request: AdRequest): List<AdPreloadAttempt> = coroutineScope {
         val context = runtimeContext()
         router.plan(context, request).providers
@@ -81,6 +81,10 @@ class AndroidAdRuntime(
             market = marketResolver.resolveMarket(),
             availableProviders = available,
         )
+    }
+
+    override fun close() {
+        (marketResolver as? AutoCloseable)?.close()
     }
 }
 

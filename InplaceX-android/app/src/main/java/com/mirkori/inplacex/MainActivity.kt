@@ -91,6 +91,9 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val coroutineScope = rememberCoroutineScope()
+                DisposableEffect(providerServices) {
+                    onDispose { providerServices.adRuntime.close() }
+                }
 
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }

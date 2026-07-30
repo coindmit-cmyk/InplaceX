@@ -1,6 +1,8 @@
 package com.mirkori.inplacex.platform.services
 
 import android.content.Context
+import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.platform.ads.createBackendAdMarketResolverOrUnknown
 import com.mirkori.inplacex.platform.ads.createFailClosedAdRuntime
 import com.mirkori.inplacex.platform.config.PlatformConfig
 
@@ -63,7 +65,13 @@ object ProviderServicesFactory {
             authService = auth,
             profileService = auth,
             adService = StubAdService(),
-            adRuntime = createFailClosedAdRuntime(platformConfig.providers.ads),
+            adRuntime = createFailClosedAdRuntime(
+                config = platformConfig.providers.ads,
+                marketResolver = createBackendAdMarketResolverOrUnknown(
+                    baseUrl = BuildConfig.ONLINE_BASE_URL,
+                    allowCleartextLoopback = BuildConfig.ONLINE_ALLOW_CLEARTEXT_LOOPBACK,
+                ),
+            ),
             billingService = StubBillingService(),
         )
     }
