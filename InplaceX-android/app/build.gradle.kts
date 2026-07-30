@@ -6,7 +6,10 @@ plugins {
 }
 
 val localProps = Properties().apply {
-    val file = rootProject.file("local.properties")
+    val file = providers.gradleProperty("inplacexProviderConfigFile")
+        .orNull
+        ?.let(rootProject::file)
+        ?: rootProject.file("local.properties")
     if (file.exists()) {
         file.inputStream().use(::load)
     }

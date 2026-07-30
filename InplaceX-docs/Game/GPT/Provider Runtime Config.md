@@ -3,6 +3,8 @@
 ## Source of Provider IDs
 
 - provider ids are resolved from `local.properties` during Android build and are scoped to a build variant
+- an isolated worktree or CI runner may point to the same private-format file
+  with `-PinplacexProviderConfigFile=<absolute-path>`; the file remains outside Git
 - debug reads `provider.debug.*` keys and supplies Google test ad ids plus sandbox product defaults when those keys are absent
 - release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
 - `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields

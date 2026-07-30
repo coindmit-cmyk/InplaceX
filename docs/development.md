@@ -31,6 +31,14 @@ InplaceX-android/provider-config.example.properties
 отсутствующих release-полей, проверяет HTTPS origin backend и запрещает
 частичную конфигурацию AdMob/Huawei.
 
+В изолированном worktree можно использовать уже существующий приватный файл
+настроек без копирования:
+
+```powershell
+.\gradlew.bat :app:validateReleaseAdsConfig `
+  -PinplacexProviderConfigFile=D:\private\inplacex-provider.properties
+```
+
 На Unix-like shell используйте `./gradlew`.
 
 ## Git-ветки
