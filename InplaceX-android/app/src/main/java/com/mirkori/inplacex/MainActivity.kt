@@ -692,6 +692,7 @@ class MainActivity : ComponentActivity() {
                                                                 }
                                                                 GuestAuthResult.Rejected ->
                                                                     "profile.auth.rejected"
+                                                                GuestAuthResult.Offline,
                                                                 GuestAuthResult.TemporarilyUnavailable ->
                                                                     "profile.auth.unavailable"
                                                             }

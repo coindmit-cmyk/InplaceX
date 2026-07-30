@@ -85,6 +85,15 @@ class KtorGuestAuthApiTest {
         assertEquals(GuestAuthResult.Rejected, unauthorized)
     }
 
+    @Test
+    fun `offline bootstrap remains distinguishable from rejected credentials`() {
+        val result = KtorGuestAuthApi(
+            RecordingBoundary(RemoteCallResult.Offline),
+        ).bootstrap(GuestInstallation("install-1", "ru-RU", "RU"))
+
+        assertEquals(GuestAuthResult.Offline, result)
+    }
+
     private class RecordingBoundary(
         private val result: RemoteCallResult,
     ) : TransportBoundary {

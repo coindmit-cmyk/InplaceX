@@ -57,6 +57,22 @@ class GuestAuthSessionManagerTest {
         assertNull(store.value)
     }
 
+    @Test
+    fun `transport keeps a session when refresh is offline`() = runBlocking {
+        val existing = session(accessExpiresAt = Now - 1)
+        val store = MemorySessionStore(existing)
+        val manager = GuestAuthSessionManager(
+            api = RecordingGuestAuthApi(refreshResult = GuestAuthResult.Offline),
+            store = store,
+            clockMs = { Now },
+        )
+
+        val refreshed = manager.refreshAccessToken(AccessToken.from("access-current"))
+
+        assertNull(refreshed)
+        assertEquals(existing, store.value)
+    }
+
     private class RecordingGuestAuthApi(
         private val refreshResult: GuestAuthResult = GuestAuthResult.TemporarilyUnavailable,
     ) : GuestAuthApi {
