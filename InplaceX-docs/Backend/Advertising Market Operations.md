@@ -112,4 +112,26 @@ sudo systemctl restart <inplacex-backend-service>
 Имя backend service определяется фактическим production-развёртыванием и не
 зашивается в скрипт репозитория.
 
+## Автоматическое ежемесячное обновление
+
+Production unit и timer находятся в `ops/ads/systemd/`. Скрипты из `ops/ads/`
+устанавливаются вместе в `/usr/local/libexec/inplacex/ads/`, после чего:
+
+```bash
+sudo install -m 0644 \
+  ops/ads/systemd/inplacex-geoip-update.service \
+  /etc/systemd/system/inplacex-geoip-update.service
+sudo install -m 0644 \
+  ops/ads/systemd/inplacex-geoip-update.timer \
+  /etc/systemd/system/inplacex-geoip-update.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now inplacex-geoip-update.timer
+```
+
+Timer запускается пятого числа каждого месяца с задержкой до шести часов, чтобы
+не зависеть от точного времени публикации новой базы. Wrapper обновляет MMDB,
+перезапускает backend, проверяет health/readiness, обе ветки рынка, заголовки
+кэша и атрибуцию. При ошибке он автоматически возвращает `.previous`,
+перезапускает backend ещё раз и оставляет unit в failed для внимания оператора.
+
 В репозиторий не коммитятся MMDB, `.env`, SDK IDs или доступы сервера.

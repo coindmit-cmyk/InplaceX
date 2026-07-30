@@ -1,0 +1,11 @@
+[Unit]
+Description=Monthly InplaceX DB-IP Country Lite refresh
+
+[Timer]
+OnCalendar=*-*-05 04:00:00 UTC
+RandomizedDelaySec=6h
+Persistent=true
+Unit=inplacex-geoip-update.service
+
+[Install]
+WantedBy=timers.target
