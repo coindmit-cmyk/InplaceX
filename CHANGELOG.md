@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Moved the pure match lifecycle/contracts, campaign rules, rating, progression,
+  and mode definitions out of the Android app into `InplaceX-bot-core`; local
+  Android and backend matches now consume one physical source of truth.
+- Closed core rule gaps: impossible unique-digit configurations and non-positive
+  turn limits fail early; fixed, generated, and restored secrets use the exact
+  same validation; malformed winning checkpoints fail closed.
+- Preserved every duplicate/run rule across mode-to-route conversion and
+  Android process recreation, and made configured turn timeout terminate the
+  match explicitly.
+- Rebased campaign budgets on deterministic measured solver performance,
+  centralized rating/progression in core, and guaranteed zero stars for losses
+  and one star for a last-attempt win.
 - Added provider-neutral `InplaceX-auth-core` security rules for Google,
   passwordless email codes, opaque provider subjects, and signed/fresh Telegram
   login payloads; provider secrets remain outside Android and Git.

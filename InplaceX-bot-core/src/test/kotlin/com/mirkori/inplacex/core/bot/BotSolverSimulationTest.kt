@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.core.bot
 
 import com.mirkori.inplacex.core.engine.SecretGenerator
+import com.mirkori.inplacex.core.engine.ScoreCalculator
 import com.mirkori.inplacex.core.model.GameConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -173,6 +174,43 @@ class BotSolverSimulationTest {
         assertEquals("0536", result.secret)
         assertTrue("easy bot still stalled on 0536 with seed=4", result.won)
         assertTrue("easy bot used too many moves: ${result.moves}", result.moves < 40)
+    }
+
+    @Test(timeout = 30_000)
+    fun mediumBotTerminatesTheDeterministicTenDigitRegression() {
+        val config = GameConfig(
+            codeLength = 10,
+            allowDuplicates = true,
+            attemptLimit = 100,
+            forbidAllSameDigitsGuess = true,
+        )
+        val secret = SecretGenerator.generate(config.copy(seed = 22_584L))
+        val solver = BotSolver(
+            config = config,
+            difficulty = BotDifficulty.MEDIUM,
+            seed = 22_585L,
+        )
+        val guesses = mutableListOf<String>()
+        var won = false
+        for (move in 0 until 100) {
+            val turn = solver.nextTurn()
+            guesses += turn.guess
+            val score = ScoreCalculator.countExactMatches(secret, turn.guess)
+            solver.registerFeedback(turn.guess, score)
+            if (score == config.codeLength) {
+                won = true
+                break
+            }
+        }
+        val state = solver.snapshot()
+
+        assertTrue(
+            "medium bot stalled for benchmark seeds 22584:22585; " +
+                "stage=${state.stage}, resolved=${state.resolvedPositions.size}, " +
+                "candidateSizes=${state.candidates.map(Set<Char>::size)}, " +
+                "distinctGuesses=${guesses.distinct().size}",
+            won,
+        )
     }
 
     private fun simulationConfig(): GameConfig {

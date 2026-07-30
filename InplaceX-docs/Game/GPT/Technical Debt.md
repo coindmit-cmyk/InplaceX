@@ -2,12 +2,17 @@
 
 ## Known Gaps
 
-- physical Gradle module split is not done yet
-- some UI still uses legacy match models
-- `GameFieldScreen` still contains local game orchestration and should later be aligned with canonical match contracts
+- Android still owns state-holder orchestration, route adaptation, and timer
+  lifecycle around the shared pure engine
+- the bounded evidence solver intentionally stops exhaustive enumeration above
+  its search budget and then exposes only sound local deductions
+- online authoritative sessions are currently in-memory; durable session
+  recovery is a later backend stage, not part of local engine correctness
 - strings are only partially centralized
 - platform config is still static code, not external assets/resources
 
 ## Why This Is Acceptable Now
 
-This iteration establishes canonical contracts and documentation without pretending the refactor is finished.
+These gaps are explicit boundaries. Core behavior is accepted through
+`Core Engine Acceptance.md`; persistence, provider integration, and visual
+completion have separate delivery gates.

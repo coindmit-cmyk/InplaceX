@@ -90,11 +90,12 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun socialExplainsThatOnlineActionsAreNotAvailableYet() {
+    fun unconfiguredSocialSectionShowsTruthfulOfflineStateAndCurrentActions() {
         setContent { SocialRootScreen() }
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
-        composeRule.onNodeWithText("Новых приглашений нет.").assertIsDisplayed()
+        composeRule.onNodeWithText("Список друзей пока пуст.").assertIsDisplayed()
+        composeRule.onNodeWithText("Создайте код и отправьте его другу.").assertIsDisplayed()
     }
 
     @Test
@@ -187,15 +188,14 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun profileReportsFailedSignIn() {
+    fun profileDisplaysTheExternallyOwnedFailedSignInState() {
         setContent {
             ProfileRootScreen(
                 progressState = progress(),
-                onGooglePlaySignIn = { false },
+                authResultKey = "profile.auth.unavailable",
             )
         }
 
-        composeRule.onNodeWithText("Войти через Google Play").performClick()
         composeRule.onNodeWithText(
             "Вход сейчас недоступен. Вы остаётесь в гостевом режиме, прогресс не потерян.",
         ).assertIsDisplayed()

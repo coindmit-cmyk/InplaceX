@@ -28,6 +28,10 @@ internal class GameFieldSavedStateStore(
             state.parameters.codeLength.toString(),
             state.parameters.attemptLimit.toString(),
             state.parameters.allowDuplicates.toString(),
+            state.parameters.forbidAllSameDigitsGuess.toString(),
+            state.parameters.forbidAdjacentDuplicates.toString(),
+            state.parameters.forbidTripleDuplicates.toString(),
+            state.parameters.maxConsecutiveDuplicateDigits?.toString().orEmpty(),
             state.parameters.totalTimeLimitSeconds.toString(),
             state.parameters.turnTimeLimitSeconds.toString(),
             state.parameters.hintsEnabled.toString(),
@@ -64,7 +68,10 @@ internal class GameFieldSavedStateStore(
     }
 
     fun restore(parameters: GameFieldMatchParameters): RestoredGameFieldState? {
-        if (savedStateHandle.get<Int>(VERSION) != STATE_VERSION || restoredParameters() != parameters) {
+        val stateVersion = savedStateHandle.get<Int>(VERSION) ?: return null
+        if (stateVersion !in MIN_SUPPORTED_STATE_VERSION..STATE_VERSION ||
+            restoredParameters(stateVersion) != parameters
+        ) {
             return null
         }
 
@@ -109,18 +116,27 @@ internal class GameFieldSavedStateStore(
         }.getOrNull()
     }
 
-    private fun restoredParameters(): GameFieldMatchParameters? = runCatching {
-        values(PARAMETERS, 9).let {
+    private fun restoredParameters(stateVersion: Int): GameFieldMatchParameters? = runCatching {
+        val expectedSize = if (stateVersion == 1) LEGACY_PARAMETER_COUNT else PARAMETER_COUNT
+        values(PARAMETERS, expectedSize).let {
             GameFieldMatchParameters(
                 mode = GameFieldMode.valueOf(it[0]),
                 codeLength = it[1].toInt(),
                 attemptLimit = it[2].toInt(),
                 allowDuplicates = it[3].toBooleanStrict(),
-                totalTimeLimitSeconds = it[4].toInt(),
-                turnTimeLimitSeconds = it[5].toInt(),
-                hintsEnabled = it[6].toBooleanStrict(),
-                boostsEnabled = it[7].toBooleanStrict(),
-                autoModeAvailable = it[8].toBooleanStrict(),
+                forbidAllSameDigitsGuess = if (stateVersion == 1) true else it[4].toBooleanStrict(),
+                forbidAdjacentDuplicates = if (stateVersion == 1) false else it[5].toBooleanStrict(),
+                forbidTripleDuplicates = if (stateVersion == 1) false else it[6].toBooleanStrict(),
+                maxConsecutiveDuplicateDigits = if (stateVersion == 1) {
+                    null
+                } else {
+                    it[7].takeIf(String::isNotEmpty)?.toInt()
+                },
+                totalTimeLimitSeconds = it[if (stateVersion == 1) 4 else 8].toInt(),
+                turnTimeLimitSeconds = it[if (stateVersion == 1) 5 else 9].toInt(),
+                hintsEnabled = it[if (stateVersion == 1) 6 else 10].toBooleanStrict(),
+                boostsEnabled = it[if (stateVersion == 1) 7 else 11].toBooleanStrict(),
+                autoModeAvailable = it[if (stateVersion == 1) 8 else 12].toBooleanStrict(),
             )
         }
     }.getOrNull()
@@ -164,7 +180,10 @@ internal class GameFieldSavedStateStore(
     }
 
     private companion object {
-        const val STATE_VERSION = 1
+        const val STATE_VERSION = 2
+        const val MIN_SUPPORTED_STATE_VERSION = 1
+        const val LEGACY_PARAMETER_COUNT = 9
+        const val PARAMETER_COUNT = 13
         const val SEPARATOR = "|"
         const val VERSION = "game_field_state_version"
         const val PARAMETERS = "game_field_parameters"

@@ -13,9 +13,17 @@ data class GameConfig(
 ) {
     init {
         require(codeLength in 4..20) { "codeLength must be in 4..20" }
+        require(allowDuplicates || codeLength <= DIGIT_ALPHABET_SIZE) {
+            "codeLength must not exceed $DIGIT_ALPHABET_SIZE when duplicate digits are disabled"
+        }
         require(attemptLimit > 0) { "attemptLimit must be > 0" }
         require(maxConsecutiveDuplicateDigits == null || maxConsecutiveDuplicateDigits in 1..codeLength) {
             "maxConsecutiveDuplicateDigits must be null or in 1..codeLength"
         }
+        require(turnTimeLimitSeconds == null || turnTimeLimitSeconds > 0) {
+            "turnTimeLimitSeconds must be null or > 0"
+        }
     }
 }
+
+private const val DIGIT_ALPHABET_SIZE = 10

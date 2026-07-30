@@ -34,10 +34,14 @@ Do not duplicate long canonical documents in root docs. Link to them and summari
 Current physical modules:
 
 - `:app` at `InplaceX-android/app`: Android UI, shell, navigation, Android integration, and current local game runtime wiring.
-- `:InplaceX-bot-core` at `InplaceX-bot-core`: shared bot, match rules, validation, scoring, secret generation, and `GameConfig`.
+- `:InplaceX-bot-core` at `InplaceX-bot-core`: shared match lifecycle and
+  contracts, campaign rules, evidence deduction, bot logic, validation,
+  scoring, secret generation, mode definitions, and `GameConfig`.
 - `:InplaceX-logging` at `InplaceX-logging`: shared logging contract, sinks, levels, and sanitization.
 - `:InplaceX-test-support` at `InplaceX-test-support`: shared JVM test sinks and test-only helper infrastructure.
-- `:InplaceX-backend` at `InplaceX-backend`: backend-facing JVM runtime, currently server-side bot player contracts and adapter.
+- `:InplaceX-backend` at `InplaceX-backend`: authoritative JVM duel/session
+  runtime, matchmaking, private invites, membership, persistence, transport,
+  identity routes, and server-side bot participation.
 - `InplaceX-docs`: canonical documentation, not application runtime code.
 
 Allowed dependency direction:
@@ -63,10 +67,13 @@ The canonical match lifecycle is:
 Important invariants:
 
 - `codeLength` is expected to stay in `4..20`.
+- no-duplicates games cannot exceed the ten-symbol decimal alphabet.
 - `attemptLimit` must be positive.
+- configured turn limits must be positive.
 - Win condition is exact-position score equal to code length.
 - Lose condition is exhausting the attempt limit.
-- Validation rules come from `GameConfig` / mode-specific configuration.
+- Fixed, generated, restored, and submitted secrets use the same validation
+  rules from `GameConfig` / mode-specific configuration.
 
 New modes should be added through `GameModeDefinition`, `OpponentProvider`, shell/UX configuration, and orchestration. Do not copy the engine for a new mode.
 

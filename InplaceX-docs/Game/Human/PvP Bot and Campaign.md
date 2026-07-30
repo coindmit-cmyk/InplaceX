@@ -56,14 +56,16 @@ The campaign generator can change:
 - attempt limit
 - time limit
 
-Attempt limits use the expert bot's target plus an explicit safety reserve:
+Attempt limits use a fixed deterministic expert-solver benchmark plus an
+explicit safety reserve:
 
 `attemptLimit = expertSolverTarget(codeLength) + reserve(tier, role)`
 
-Easy standard levels receive `+10` moves, while the hardest hardcore
-checkpoints receive only `+2`. This keeps onboarding forgiving and makes later
-budgets track the best available repository solver instead of an arbitrary
-multiplier.
+The measured reference is `13, 14, 15, 17, 19, 21, 24` attempts for secret
+lengths `4..10`. Easy standard levels receive `+7` moves, while the hardest
+hardcore checkpoints receive `+1`. This keeps onboarding forgiving and makes
+later budgets track the repository solver without coupling campaign balance to
+the opponent's personality or animation delay.
 
 ### Block Structure
 
@@ -82,8 +84,8 @@ length then grows in controlled bands until it reaches 10 digits at level 301.
 This makes the second campaign block noticeably harder without removing the
 10-level pattern of standard, spike, and hardcore missions.
 
-Внутри первого блока обычные уровни имеют `19` попыток, пятый уровень — `17`,
-а контрольный десятый — `13`. Лимит времени
+Внутри первого блока обычные уровни имеют `20` попыток, пятый уровень — `18`,
+а контрольный десятый — `16`. Лимит времени
 снижается с `6:00` до `5:00` на восьмом и `4:30` на десятом. Четыре цифры
 сохраняются как понятный обучающий формат с большим запасом, но десятый уровень
 остаётся заметно сложнее.

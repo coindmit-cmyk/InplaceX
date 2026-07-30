@@ -22,7 +22,7 @@ class GameEngine(
 
     override fun start(secretOverride: String?): MatchSnapshot {
         secret = secretOverride
-            ?.takeIf(::isValidSecret)
+            ?.takeIf { GuessValidator.validate(it, config) }
             ?: SecretGenerator.generate(config)
         history.clear()
         phase = MatchPhase.ACTIVE
@@ -77,13 +77,6 @@ class GameEngine(
                 MatchFeedback.MatchFinished(phase)
             },
         )
-    }
-
-    private fun isValidSecret(candidate: String): Boolean {
-        if (candidate.length != config.codeLength || candidate.any { it !in '0'..'9' }) {
-            return false
-        }
-        return config.allowDuplicates || candidate.toSet().size == candidate.length
     }
 
     override fun snapshot(message: String?): MatchSnapshot {
@@ -232,9 +225,7 @@ class GameEngine(
                 checkpoint.extraAttemptBudget == 0
         }
 
-        if (checkpoint.secret.length != config.codeLength ||
-            checkpoint.secret.any { it !in '0'..'9' }
-        ) {
+        if (!GuessValidator.validate(checkpoint.secret, config)) {
             return false
         }
 
@@ -254,11 +245,13 @@ class GameEngine(
             }
         }
 
-        val hasWinningAttempt = checkpoint.attempts.any { it.isWin }
+        val winningAttemptIndexes = checkpoint.attempts
+            .mapIndexedNotNull { index, attempt -> index.takeIf { attempt.isWin } }
         return when (checkpoint.phase) {
-            MatchPhase.ACTIVE -> checkpoint.attempts.size < maximumAttempts && !hasWinningAttempt
-            MatchPhase.WON -> checkpoint.attempts.lastOrNull()?.isWin == true
-            MatchPhase.LOST -> !hasWinningAttempt
+            MatchPhase.ACTIVE -> checkpoint.attempts.size < maximumAttempts &&
+                winningAttemptIndexes.isEmpty()
+            MatchPhase.WON -> winningAttemptIndexes == listOf(checkpoint.attempts.lastIndex)
+            MatchPhase.LOST -> winningAttemptIndexes.isEmpty()
             MatchPhase.NOT_STARTED -> false
         }
     }

@@ -80,15 +80,16 @@ Difficulty should keep growing until about `300-500`, then flatten into a stable
 
 ### Onboarding Balance
 
-The first block keeps four-digit codes. Its budget is the expert solver target
-(`9` attempts for four digits) plus an explicit role reserve:
+The first block keeps four-digit codes. Its budget is the measured deterministic
+expert solver reference (`13` attempts for four digits) plus an explicit role
+reserve:
 
-- standard level: `+10`, giving `19` attempts
-- spike level: `+8`, giving `17` attempts
-- hardcore checkpoint: `+4`, giving `13` attempts
+- standard level: `+7`, giving `20` attempts
+- spike level: `+5`, giving `18` attempts
+- hardcore checkpoint: `+3`, giving `16` attempts
 
 The exact first-block attempt sequence is
-`19, 19, 19, 19, 17, 19, 19, 19, 19, 13`.
+`20, 20, 20, 20, 18, 20, 20, 20, 20, 16`.
 The matching time sequence is
 `360, 345, 330, 330, 315, 315, 300, 300, 285, 270` seconds.
 This keeps a forgiving onboarding reserve while making level `10` a visible
@@ -98,14 +99,27 @@ All later levels use the same authoritative formula:
 
 `attemptLimit = expertSolverTarget(codeLength) + reserve(tier, role)`
 
-The expert target is `max(6, ceil(codeLength * 2.0) + 1)`. Reserve values are:
+The reference is versioned in `CampaignSolverBudget`. It is derived from a
+fixed-seed 200-match benchmark and rounded to a playable deterministic budget:
+
+| Code length | Reference attempts |
+|---:|---:|
+| 4 | 13 |
+| 5 | 14 |
+| 6 | 15 |
+| 7 | 17 |
+| 8 | 19 |
+| 9 | 21 |
+| 10 | 24 |
+
+Reserve values are:
 
 | Tier | Standard | Spike | Hardcore |
 |---|---:|---:|---:|
-| Easy | `+10` | `+8` | `+4` |
-| Medium | `+7` | `+5` | `+4` |
-| Hard | `+5` | `+4` | `+3` |
-| Hardcore | `+4` | `+3` | `+2` |
+| Easy | `+7` | `+5` | `+3` |
+| Medium | `+4` | `+3` | `+2` |
+| Hard | `+3` | `+2` | `+1` |
+| Hardcore | `+2` | `+1` | `+1` |
 
 The generated campaign uses these deterministic tier boundaries:
 
