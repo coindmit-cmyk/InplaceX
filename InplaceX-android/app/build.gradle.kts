@@ -35,6 +35,25 @@ fun localLongProp(
         ?.takeIf(range::contains)
         ?: default
 
+fun requiredReleaseAdPropertyKeys(): List<String> = listOf(
+    "online.release.baseUrl",
+    "provider.release.ads.yandex.owner.banner.game",
+    "provider.release.ads.yandex.owner.rewarded.general",
+    "provider.release.ads.yandex.owner.interstitial.postMatch",
+)
+
+fun validateOptionalProviderGroup(
+    providerName: String,
+    keys: List<String>,
+): List<String> {
+    val configured = keys.filter { localProps.getProperty(it).orEmpty().isNotBlank() }
+    return if (configured.isEmpty() || configured.size == keys.size) {
+        emptyList()
+    } else {
+        listOf("$providerName must be configured completely or left disabled: ${keys.joinToString()}")
+    }
+}
+
 android {
     namespace = "com.mirkori.inplacex"
     compileSdk {
@@ -113,7 +132,7 @@ android {
             buildConfigField("String", "HUAWEI_COMPANY_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.rewarded.general", "")}\"")
             buildConfigField("String", "HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.interstitial.postMatch", "")}\"")
             buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.release.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
-            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.release.ads.interstitial.minimumForegroundSeconds", 0, 0L..2_592_000L)}L")
+            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.release.ads.interstitial.minimumForegroundSeconds", 1_800, 0L..2_592_000L)}L")
             buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.release.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
@@ -142,6 +161,48 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+tasks.register("validateReleaseAdsConfig") {
+    group = "verification"
+    description = "Validates the release backend endpoint and complete advertising SDK id groups without printing values."
+    doLast {
+        val errors = mutableListOf<String>()
+        val missing = requiredReleaseAdPropertyKeys()
+            .filter { localProps.getProperty(it).orEmpty().isBlank() }
+        if (missing.isNotEmpty()) {
+            errors += "Missing required release properties: ${missing.joinToString()}"
+        }
+        localProps.getProperty("online.release.baseUrl")
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+            ?.let { baseUrl ->
+                if (!baseUrl.matches(Regex("https://[^/]+(:[0-9]+)?"))) {
+                    errors += "online.release.baseUrl must be an HTTPS origin without a path"
+                }
+            }
+        errors += validateOptionalProviderGroup(
+            providerName = "company AdMob",
+            keys = listOf(
+                "provider.release.ads.admob.company.appId",
+                "provider.release.ads.admob.company.banner.game",
+                "provider.release.ads.admob.company.rewarded.general",
+                "provider.release.ads.admob.company.interstitial.postMatch",
+            ),
+        )
+        errors += validateOptionalProviderGroup(
+            providerName = "company Huawei",
+            keys = listOf(
+                "provider.release.ads.huawei.company.appId",
+                "provider.release.ads.huawei.company.banner.game",
+                "provider.release.ads.huawei.company.rewarded.general",
+                "provider.release.ads.huawei.company.interstitial.postMatch",
+            ),
+        )
+        if (errors.isNotEmpty()) {
+            throw GradleException(errors.joinToString(separator = "\n"))
+        }
     }
 }
 
