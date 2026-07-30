@@ -233,11 +233,11 @@ object AdPolicy {
         entitlements: AdEntitlements,
         interstitialPolicy: PostMatchInterstitialPolicy = PostMatchInterstitialPolicy(),
     ): AdDecision {
-        if (entitlements.adsDisabled) {
-            return AdDecision.Blocked(AdBlockReason.ENTITLEMENT)
-        }
         if (expectedFormat(request.placement) != request.format) {
             return AdDecision.Blocked(AdBlockReason.PLACEMENT_FORMAT_MISMATCH)
+        }
+        if (entitlements.adsDisabled && request.format != AdFormat.REWARDED) {
+            return AdDecision.Blocked(AdBlockReason.ENTITLEMENT)
         }
         if (request.placement == AdPlacement.POST_MATCH_INTERSTITIAL) {
             if (request.matchesPlayed < interstitialPolicy.minimumCompletedMatches) {

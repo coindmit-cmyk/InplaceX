@@ -101,8 +101,7 @@ class MainActivity : ComponentActivity() {
                     AppConfigCatalog.platformConfig
                         .providers
                         .ads
-                        .ownerYandex
-                        .hasAllPlacements
+                        .isConfigured
                 }
                 val googleCredentialSignIn = remember {
                     GoogleCredentialSignIn(
@@ -277,18 +276,25 @@ class MainActivity : ComponentActivity() {
                         placement = AdPlacement.GAME_BANNER,
                         format = AdFormat.BANNER,
                     )
-                    val readyProviders = providerServices.adRuntime.preload(request)
-                        .filter {
-                            it.result == AdPreloadResult.READY ||
-                                it.result == AdPreloadResult.ALREADY_READY
+                    while (true) {
+                        selectedBannerProviderName = providerServices.adRuntime.preload(request)
+                            .firstOrNull {
+                                (
+                                    it.result == AdPreloadResult.READY ||
+                                        it.result == AdPreloadResult.ALREADY_READY
+                                    ) &&
+                                    it.providerId.name !in failedBannerProviderNames
+                            }
+                            ?.providerId
+                            ?.name
+                        if (selectedBannerProviderName != null) {
+                            return@LaunchedEffect
                         }
-                        .map { it.providerId }
-                    selectedBannerProviderName = providerServices.adRuntime.plan(request)
-                        .providers
-                        .firstOrNull {
-                            it in readyProviders && it.name !in failedBannerProviderNames
+                        delay(BannerRetryDelayMillis)
+                        if (failedBannerProviderNames.isNotEmpty()) {
+                            failedBannerProviderNames = emptySet()
                         }
-                        ?.name
+                    }
                 }
                 val appBackgroundStyle = ScreenBackgroundStyle.DrawableResource(
                     resourceId = R.drawable.toy_room_bg_v6,
@@ -343,6 +349,7 @@ class MainActivity : ComponentActivity() {
                                         .gameBannerAdUnitId,
                                     onLoaded = {},
                                     onFailed = {
+                                        selectedBannerProviderName = null
                                         failedBannerProviderNames += AdProviderId.OWNER_YANDEX.name
                                     },
                                 )
@@ -355,6 +362,7 @@ class MainActivity : ComponentActivity() {
                                     consentDecision = providerServices.adConsent.currentDecision(),
                                     onLoaded = {},
                                     onFailed = {
+                                        selectedBannerProviderName = null
                                         failedBannerProviderNames += AdProviderId.COMPANY_ADMOB.name
                                     },
                                 )
@@ -367,6 +375,7 @@ class MainActivity : ComponentActivity() {
                                     consentDecision = providerServices.adConsent.currentDecision(),
                                     onLoaded = {},
                                     onFailed = {
+                                        selectedBannerProviderName = null
                                         failedBannerProviderNames += AdProviderId.COMPANY_HUAWEI.name
                                     },
                                 )
@@ -820,3 +829,5 @@ private fun rewardedHintRequest(hintType: HintStockType): AdRequest =
         },
         format = AdFormat.REWARDED,
     )
+
+private const val BannerRetryDelayMillis = 30_000L

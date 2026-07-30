@@ -68,12 +68,13 @@ This is intentionally separate from permanent hint inventory.
 - no post-match ads in the first `20` matches
 - after that, post-match ads are eligible every fourth match
 - post-match policy can additionally require accumulated foreground-use time;
-  the current compatibility default is `0` seconds until the owner selects the
-  live threshold
+  the shared compatibility default remains `0`, while the release variant
+  defaults to `1800` seconds
 - once the runtime persists the last successful interstitial, cadence is
   measured as completed matches since that impression; a failed/no-fill
   attempt must not reset cadence
-- all ads are skipped when `adsDisabled == true`
+- `adsDisabled == true` suppresses forced banner and post-match ads; opt-in
+  rewarded offers remain available because they grant a player-requested item
 - the game banner slot is requested only during an active game
 - the shell reserves banner height only after the provider accepts the slot
 - `REMOVE_ADS`, `PRO`, and `PRO_PLUS` all suppress the banner before the
@@ -130,11 +131,18 @@ This is intentionally separate from permanent hint inventory.
 - `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`;
   production resolves the current numeric IP through a local MMDB database and
   accepts the proxy-overwritten client IP only from configured proxy hosts
-- the Android resolver caches only the coarse result for five minutes and
-  fails closed on invalid response, network failure, or missing HTTPS endpoint
+- the Android resolver caches only a known coarse result for five minutes;
+  `UNKNOWN` is not cached, so a later request can recover after connectivity
+  returns, while invalid response, network failure, or missing HTTPS endpoint
+  still fail closed
 - AdMob 25 and Huawei Ads Kit 13 are active company fallback adapters for
   banner, rewarded, and post-match interstitial placements
+- the AdMob startup provider is disabled when the optional company AdMob group
+  is empty, preventing a missing app id from crashing an owner-only release
 - AdMob initialization is additionally gated by Google UMP; the settings
   privacy entry reopens the UMP privacy-options form when Google requires it
 - declined app consent builds non-personalized AdMob and Huawei requests;
   rewarded completion still comes only from each SDK reward callback
+- `preReleaseBuild` and `preInternalDistributionBuild` depend on
+  `validateReleaseAdsConfig`, so a production-like artifact cannot bypass the
+  complete provider-group gate

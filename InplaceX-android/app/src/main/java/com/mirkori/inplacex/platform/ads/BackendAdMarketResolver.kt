@@ -64,7 +64,9 @@ class BackendAdMarketResolver(
             is RemoteCallResult.NetworkFailure,
             -> AdMarket.UNKNOWN
         }
-        cachedMarket = CachedMarket(resolved, now)
+        cachedMarket = resolved
+            .takeIf { it != AdMarket.UNKNOWN }
+            ?.let { CachedMarket(it, now) }
         resolved
     }
 

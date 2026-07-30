@@ -59,6 +59,25 @@ class BackendAdMarketResolverTest {
         assertEquals(2, transport.requests.size)
     }
 
+    @Test
+    fun `unknown market is retried so network recovery can restore routing`() = runBlocking {
+        val transport = FakeTransport(
+            listOf(
+                RemoteCallResult.Offline,
+                success("""{"market":"GLOBAL"}"""),
+            ),
+        )
+        val resolver = BackendAdMarketResolver(
+            transport = transport,
+            nowMillis = { 100L },
+            cacheDurationMillis = 5 * 60 * 1_000L,
+        )
+
+        assertEquals(AdMarket.UNKNOWN, resolver.resolveMarket())
+        assertEquals(AdMarket.GLOBAL, resolver.resolveMarket())
+        assertEquals(2, transport.requests.size)
+    }
+
     private fun success(body: String): RemoteCallResult =
         RemoteCallResult.Success(RemoteResponse(200, emptyMap(), body))
 

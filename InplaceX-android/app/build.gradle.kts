@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -61,6 +62,37 @@ fun validateOptionalProviderGroup(
         listOf("$providerName must be configured completely or left disabled: ${keys.joinToString()}")
     }
 }
+
+fun validateDistinctProviderPlacements(
+    providerName: String,
+    keys: List<String>,
+): List<String> {
+    val configuredValues = keys
+        .map { localProps.getProperty(it).orEmpty().trim() }
+        .filter(String::isNotEmpty)
+    return if (
+        configuredValues.size == keys.size &&
+        configuredValues.distinct().size != configuredValues.size
+    ) {
+        listOf("$providerName placement ids must be distinct: ${keys.joinToString()}")
+    } else {
+        emptyList()
+    }
+}
+
+fun isHttpsOrigin(value: String): Boolean =
+    runCatching { URI(value) }
+        .getOrNull()
+        ?.let { uri ->
+            uri.scheme.equals("https", ignoreCase = true) &&
+                !uri.host.isNullOrBlank() &&
+                uri.userInfo == null &&
+                uri.rawPath.isNullOrEmpty() &&
+                uri.rawQuery == null &&
+                uri.rawFragment == null &&
+                (uri.port == -1 || uri.port in 1..65_535)
+        }
+        ?: false
 
 abstract class ValidateReleaseAdsConfigTask : DefaultTask() {
     @get:Input
@@ -132,6 +164,7 @@ android {
                 "provider.debug.ads.admob.company.appId",
                 "ca-app-pub-3940256099942544~3347511713",
             )
+            manifestPlaceholders["admobInitProviderEnabled"] = true
         }
         release {
             isMinifyEnabled = false
@@ -162,6 +195,10 @@ android {
                 "provider.release.ads.admob.company.appId",
                 "",
             )
+            manifestPlaceholders["admobInitProviderEnabled"] = localProps
+                .getProperty("provider.release.ads.admob.company.appId")
+                .orEmpty()
+                .isNotBlank()
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -185,7 +222,9 @@ android {
     }
 }
 
-tasks.register<ValidateReleaseAdsConfigTask>("validateReleaseAdsConfig") {
+val validateReleaseAdsConfig = tasks.register<ValidateReleaseAdsConfigTask>(
+    "validateReleaseAdsConfig",
+) {
     group = "verification"
     description = "Validates the release backend endpoint and complete advertising SDK id groups without printing values."
     validationErrors.set(
@@ -199,15 +238,37 @@ tasks.register<ValidateReleaseAdsConfigTask>("validateReleaseAdsConfig") {
                 ?.trim()
                 ?.takeIf(String::isNotEmpty)
                 ?.let { baseUrl ->
-                    if (!baseUrl.matches(Regex("https://[^/]+(:[0-9]+)?"))) {
-                        add("online.release.baseUrl must be an HTTPS origin without a path")
+                    if (!isHttpsOrigin(baseUrl)) {
+                        add(
+                            "online.release.baseUrl must be an HTTPS origin without user info, path, query, or fragment",
+                        )
                     }
                 }
+            addAll(
+                validateDistinctProviderPlacements(
+                    providerName = "owner Yandex",
+                    keys = listOf(
+                        "provider.release.ads.yandex.owner.banner.game",
+                        "provider.release.ads.yandex.owner.rewarded.general",
+                        "provider.release.ads.yandex.owner.interstitial.postMatch",
+                    ),
+                ),
+            )
             addAll(
                 validateOptionalProviderGroup(
                     providerName = "company AdMob",
                     keys = listOf(
                         "provider.release.ads.admob.company.appId",
+                        "provider.release.ads.admob.company.banner.game",
+                        "provider.release.ads.admob.company.rewarded.general",
+                        "provider.release.ads.admob.company.interstitial.postMatch",
+                    ),
+                ),
+            )
+            addAll(
+                validateDistinctProviderPlacements(
+                    providerName = "company AdMob",
+                    keys = listOf(
                         "provider.release.ads.admob.company.banner.game",
                         "provider.release.ads.admob.company.rewarded.general",
                         "provider.release.ads.admob.company.interstitial.postMatch",
@@ -225,8 +286,24 @@ tasks.register<ValidateReleaseAdsConfigTask>("validateReleaseAdsConfig") {
                     ),
                 ),
             )
+            addAll(
+                validateDistinctProviderPlacements(
+                    providerName = "company Huawei",
+                    keys = listOf(
+                        "provider.release.ads.huawei.company.banner.game",
+                        "provider.release.ads.huawei.company.rewarded.general",
+                        "provider.release.ads.huawei.company.interstitial.postMatch",
+                    ),
+                ),
+            )
         },
     )
+}
+
+tasks.matching {
+    it.name == "preReleaseBuild" || it.name == "preInternalDistributionBuild"
+}.configureEach {
+    dependsOn(validateReleaseAdsConfig)
 }
 
 androidComponents {

@@ -38,6 +38,8 @@ class YandexAdProvider(
     override val id: AdProviderId = AdProviderId.OWNER_YANDEX
 
     private val initializationMutex = Mutex()
+    private val rewardedLoadMutex = Mutex()
+    private val interstitialLoadMutex = Mutex()
     private var initialized = false
     private var rewardedLoader: RewardedAdLoader? = null
     private var rewardedAd: RewardedAd? = null
@@ -97,7 +99,7 @@ class YandexAdProvider(
         }
     }
 
-    private suspend fun preloadRewarded(): AdPreloadResult =
+    private suspend fun preloadRewarded(): AdPreloadResult = rewardedLoadMutex.withLock {
         withContext(Dispatchers.Main.immediate) {
             if (rewardedAd != null) return@withContext AdPreloadResult.ALREADY_READY
             val adUnitId = config.rewardedAdUnitId.takeIf(String::isNotBlank)
@@ -113,8 +115,9 @@ class YandexAdProvider(
                 is RewardedAdLoadResult.Failure -> AdPreloadResult.FAILED
             }
         }
+    }
 
-    private suspend fun preloadInterstitial(): AdPreloadResult =
+    private suspend fun preloadInterstitial(): AdPreloadResult = interstitialLoadMutex.withLock {
         withContext(Dispatchers.Main.immediate) {
             if (interstitialAd != null) return@withContext AdPreloadResult.ALREADY_READY
             val adUnitId = config.postMatchInterstitialAdUnitId.takeIf(String::isNotBlank)
@@ -130,6 +133,7 @@ class YandexAdProvider(
                 is InterstitialAdLoadResult.Failure -> AdPreloadResult.FAILED
             }
         }
+    }
 
     private suspend fun showRewarded(): AdPresentationResult =
         withContext(Dispatchers.Main.immediate) {

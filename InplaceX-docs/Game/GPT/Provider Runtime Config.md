@@ -9,6 +9,8 @@
 - release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
 - `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields
 - the ads app id also flows into `AndroidManifest.xml` via variant-specific `manifestPlaceholders`
+- the AdMob startup provider is enabled only when the variant has an AdMob app
+  id; an owner-only release keeps the provider disabled
 - shared `defaultConfig` contains no sandbox provider mode, test ad id, or mock billing product default
 
 ## Canonical BuildConfig Fields
@@ -95,6 +97,8 @@ resolved without a header. `INPLACEX_AD_MARKET_REQUIRED=true` makes missing or
 ambiguous production configuration fail at startup. The older trusted country
 header remains an exclusive compatibility mode.
 
-Run `:app:validateReleaseAdsConfig` before a release. It checks the HTTPS backend
-origin, requires all live Yandex placement IDs, and rejects partially configured
-AdMob or Huawei groups without printing any configured value.
+`preReleaseBuild` and `preInternalDistributionBuild` automatically depend on
+`:app:validateReleaseAdsConfig`. It checks a strict HTTPS backend origin,
+requires all live Yandex placement IDs, requires distinct banner/rewarded/
+interstitial IDs per SDK, and rejects partially configured AdMob or Huawei
+groups without printing any configured value.

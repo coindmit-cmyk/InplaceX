@@ -20,5 +20,7 @@ class AdActivityHost {
 
     @Synchronized
     fun currentActivity(): Activity? =
-        activityReference.get()?.takeUnless { it.isFinishing || it.isDestroyed }
+        activityReference.get()?.takeUnless {
+            it.isFinishing || it.isDestroyed || !it.hasWindowFocus()
+        }
 }

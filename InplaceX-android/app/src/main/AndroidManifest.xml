@@ -21,6 +21,12 @@
             android:name="com.yandex.mobile.ads.AUTOMATIC_SDK_INITIALIZATION"
             android:value="false" />
 
+        <provider
+            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
+            android:authorities="${applicationId}.mobileadsinitprovider"
+            android:enabled="${admobInitProviderEnabled}"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

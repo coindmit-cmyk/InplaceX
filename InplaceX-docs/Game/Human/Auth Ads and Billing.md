@@ -46,6 +46,8 @@
   the current market/device; AdMob is excluded in Russia
 - if the owner ad was shown and then dismissed, company fallback is not used
 - an unknown market shows no ad
+- an unknown market is not cached; an active game retries an unavailable
+  banner with a bounded delay so routing can recover after connectivity returns
 - SDKs may prepare ads in parallel after privacy consent so fallback does not
   add avoidable waiting
 - the first configured launch asks whether personalized advertising is
@@ -100,6 +102,11 @@
   unavailable and only in a supported market/device
 - AdMob also runs Google's UMP privacy flow, and both company SDKs use
   non-personalized requests after a declined personalization choice
+- if the optional AdMob group is empty, its Android startup-provider is
+  disabled and cannot break an owner-only build
+- release and internal-distribution builds automatically validate the HTTPS
+  backend origin, all distinct owner Yandex placements, and complete optional
+  company groups with distinct placement IDs before compilation
 - billing remains a local/debug stub and fails closed in release
 - UI and local persistence use asynchronous provider callbacks; dismissal
   without the Yandex reward callback never grants coins or a hint

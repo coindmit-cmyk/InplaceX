@@ -10,21 +10,37 @@ import kotlin.coroutines.startCoroutine
 
 class AdPolicyTest {
     @Test
-    fun `entitlements block every format before provider invocation`() {
+    fun `ad-free entitlements block forced ads but keep opt-in rewards available`() {
         AdPlacement.values().forEach { placement ->
             val format = when (placement) {
                 AdPlacement.GAME_BANNER -> AdFormat.BANNER
                 AdPlacement.POST_MATCH_INTERSTITIAL -> AdFormat.INTERSTITIAL
                 else -> AdFormat.REWARDED
             }
-            assertEquals(
-                AdDecision.Blocked(AdBlockReason.ENTITLEMENT),
-                AdPolicy.evaluate(
-                    AdRequest(placement, format, matchesPlayed = 24),
-                    AdEntitlements(adsDisabled = true),
-                ),
+            val decision = AdPolicy.evaluate(
+                AdRequest(placement, format, matchesPlayed = 24),
+                AdEntitlements(adsDisabled = true),
             )
+            if (format == AdFormat.REWARDED) {
+                assertEquals(AdDecision.Allowed, decision)
+            } else {
+                assertEquals(AdDecision.Blocked(AdBlockReason.ENTITLEMENT), decision)
+            }
         }
+    }
+
+    @Test
+    fun `format mismatch remains blocked for ad-free rewarded placements`() {
+        assertEquals(
+            AdDecision.Blocked(AdBlockReason.PLACEMENT_FORMAT_MISMATCH),
+            AdPolicy.evaluate(
+                request = AdRequest(
+                    placement = AdPlacement.SHOP_COINS_REWARD,
+                    format = AdFormat.BANNER,
+                ),
+                entitlements = AdEntitlements(adsDisabled = true),
+            ),
+        )
     }
 
     @Test
