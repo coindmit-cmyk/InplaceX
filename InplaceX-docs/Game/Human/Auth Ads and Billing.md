@@ -32,7 +32,22 @@
 - players with `Remove Ads`, temporary `Pro`, permanent `Pro`, or `Pro+` do not see banner ads
 - post-match ads are rare and delayed:
   - never in the first `20` matches
-  - later only on some matches, not every game
+  - only after the configured minimum active-use time
+  - later after every configured `N` completed games, not every game
+  - a failed/no-fill attempt does not count as an impression
+
+## Advertising Networks And Revenue Priority
+
+- the current network location is resolved to a coarse `Russia`, `Global`, or
+  `Unknown` market; the store used to install the app does not define location
+- the owner's Yandex inventory always has first display priority
+- a configured company provider may be used only when the owner's provider is
+  not ready, unavailable, or returns a failure and that company SDK supports
+  the current market/device; AdMob is excluded in Russia
+- if the owner ad was shown and then dismissed, company fallback is not used
+- an unknown market shows no ad
+- SDKs may prepare ads in parallel after privacy consent so fallback does not
+  add avoidable waiting
 
 ## Paid Products
 
@@ -70,6 +85,9 @@
 - the shared advertising policy is implemented and used by Android; the real
   network SDK and ad inventory are not active, so release presentation still
   fails closed
+- the asynchronous owner-first router, fixed owner/company provider identities,
+  device availability filter, and coarse-market resolver contract are prepared;
+  the backend IP-to-market adapter is not active yet
 - billing remains a local/debug stub and fails closed in release
 - UI and local persistence use the provider contracts
 - temporary `Pro` is a local coin purchase rather than a billing-provider product

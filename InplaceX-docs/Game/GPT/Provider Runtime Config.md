@@ -19,6 +19,13 @@
 - `ADMOB_GAME_BANNER_AD_UNIT_ID`
 - `ADMOB_REWARDED_AD_UNIT_ID`
 - `ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID`
+- `YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID`
+- `YANDEX_OWNER_REWARDED_AD_UNIT_ID`
+- `YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID`
+- `HUAWEI_COMPANY_APP_ID`
+- `HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID`
+- `HUAWEI_COMPANY_REWARDED_AD_UNIT_ID`
+- `HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID`
 - `BILLING_REMOVE_ADS_PRODUCT_ID`
 - `BILLING_PRO_SUBSCRIPTION_ID`
 - `BILLING_PRO_PLUS_SUBSCRIPTION_ID`
@@ -30,12 +37,18 @@
     - `environment`
     - `googlePlay`
     - `ads`
+      - `ownerYandex`
+      - `companyAdMob`
+      - `companyHuawei`
+      - `postMatchInterstitialPolicy`
     - `billing`
 
 ## Design Rule
 
 - UI, repository, and gameplay depend on contracts and entitlements only
 - provider ids are data, not hardcoded behavior
+- beneficiary ownership is code-level policy, not local configuration:
+  Yandex belongs to the owner, while AdMob and Huawei belong to the company
 - real SDK services must consume `PlatformConfig.providers` and preserve the current contract surface
 
 ## Runtime Adapter Layer
@@ -47,9 +60,13 @@
   client ID and online endpoint are configured; the returned ID token is not a
   local success and becomes authenticated only after the identity process
   verifies it and returns InplaceX credentials
-- release returns `GooglePlayAuthService`, `AdMobService`, and
+- release returns `GooglePlayAuthService`, `CompanyAdMobService`, and
   `GooglePlayBillingService`; ads and billing continue to fail closed until
   their SDK integrations exist
+- `AndroidAdRuntime` prepares provider-neutral asynchronous preload/show
+  routing, but its release market resolver is `UNKNOWN` and every SDK adapter
+  remains unavailable until the backend market endpoint, consent boundary, and
+  real SDK implementations are integrated
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
 Absent provider configuration, Credential Manager cancellation, server

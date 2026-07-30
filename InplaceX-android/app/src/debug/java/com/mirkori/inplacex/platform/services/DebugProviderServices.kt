@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.platform.services
 
 import android.content.Context
+import com.mirkori.inplacex.platform.ads.createFailClosedAdRuntime
 import com.mirkori.inplacex.platform.config.PlatformConfig
 
 class StubAdService(
@@ -62,6 +63,7 @@ object ProviderServicesFactory {
             authService = auth,
             profileService = auth,
             adService = StubAdService(),
+            adRuntime = createFailClosedAdRuntime(platformConfig.providers.ads),
             billingService = StubBillingService(),
         )
     }

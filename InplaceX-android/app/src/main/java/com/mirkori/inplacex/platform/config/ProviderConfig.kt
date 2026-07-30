@@ -1,5 +1,8 @@
 package com.mirkori.inplacex.platform.config
 
+import com.mirkori.inplacex.ads.AdProviderId
+import com.mirkori.inplacex.ads.PostMatchInterstitialPolicy
+
 enum class ProviderEnvironment {
     SANDBOX,
     LIVE,
@@ -14,14 +17,39 @@ data class GooglePlayProviderConfig(
         get() = webClientId.isNotBlank()
 }
 
-data class AdsProviderConfig(
-    val admobAppId: String = "",
+data class AdSdkConfig(
+    val applicationId: String = "",
     val gameBannerAdUnitId: String = "",
     val rewardedAdUnitId: String = "",
     val postMatchInterstitialAdUnitId: String = "",
 ) {
+    val hasAllPlacements: Boolean
+        get() = gameBannerAdUnitId.isNotBlank() &&
+            rewardedAdUnitId.isNotBlank() &&
+            postMatchInterstitialAdUnitId.isNotBlank()
+}
+
+data class AdsProviderConfig(
+    val ownerYandex: AdSdkConfig = AdSdkConfig(),
+    val companyAdMob: AdSdkConfig = AdSdkConfig(),
+    val companyHuawei: AdSdkConfig = AdSdkConfig(),
+    val postMatchInterstitialPolicy: PostMatchInterstitialPolicy =
+        PostMatchInterstitialPolicy(),
+) {
     val isConfigured: Boolean
-        get() = admobAppId.isNotBlank()
+        get() = configuredProviderIds().isNotEmpty()
+
+    fun configuredProviderIds(): List<AdProviderId> = buildList {
+        if (ownerYandex.hasAllPlacements) {
+            add(AdProviderId.OWNER_YANDEX)
+        }
+        if (companyAdMob.applicationId.isNotBlank() && companyAdMob.hasAllPlacements) {
+            add(AdProviderId.COMPANY_ADMOB)
+        }
+        if (companyHuawei.applicationId.isNotBlank() && companyHuawei.hasAllPlacements) {
+            add(AdProviderId.COMPANY_HUAWEI)
+        }
+    }
 }
 
 data class BillingProviderConfig(

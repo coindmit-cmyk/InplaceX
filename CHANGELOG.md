@@ -14,6 +14,12 @@
 - Rebased campaign budgets on deterministic measured solver performance,
   centralized rating/progression in core, and guaranteed zero stars for losses
   and one star for a last-attempt win.
+- Prepared the multi-network advertising runtime without enabling live ads:
+  fixed Yandex as owner inventory and AdMob/Huawei as company fallback,
+  introduced coarse IP-market and SDK-availability contracts, owner-first
+  routing, concurrent preload support, callback-rich results, configurable
+  foreground-time/post-match cadence, variant-specific provider config, and
+  fail-closed Android adapters with focused tests.
 - Added provider-neutral `InplaceX-auth-core` security rules for Google,
   passwordless email codes, opaque provider subjects, and signed/fresh Telegram
   login payloads; provider secrets remain outside Android and Git.

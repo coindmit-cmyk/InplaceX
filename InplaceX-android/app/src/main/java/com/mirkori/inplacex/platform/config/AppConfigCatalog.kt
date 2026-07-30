@@ -41,10 +41,26 @@ object AppConfigCatalog {
                 gamesProjectId = BuildConfig.GOOGLE_PLAY_GAMES_PROJECT_ID,
             ),
             ads = AdsProviderConfig(
-                admobAppId = BuildConfig.ADMOB_APP_ID,
-                gameBannerAdUnitId = BuildConfig.ADMOB_GAME_BANNER_AD_UNIT_ID,
-                rewardedAdUnitId = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID,
-                postMatchInterstitialAdUnitId = BuildConfig.ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ownerYandex = AdSdkConfig(
+                    gameBannerAdUnitId = BuildConfig.YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID,
+                    rewardedAdUnitId = BuildConfig.YANDEX_OWNER_REWARDED_AD_UNIT_ID,
+                    postMatchInterstitialAdUnitId =
+                        BuildConfig.YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ),
+                companyAdMob = AdSdkConfig(
+                    applicationId = BuildConfig.ADMOB_APP_ID,
+                    gameBannerAdUnitId = BuildConfig.ADMOB_GAME_BANNER_AD_UNIT_ID,
+                    rewardedAdUnitId = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID,
+                    postMatchInterstitialAdUnitId =
+                        BuildConfig.ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ),
+                companyHuawei = AdSdkConfig(
+                    applicationId = BuildConfig.HUAWEI_COMPANY_APP_ID,
+                    gameBannerAdUnitId = BuildConfig.HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID,
+                    rewardedAdUnitId = BuildConfig.HUAWEI_COMPANY_REWARDED_AD_UNIT_ID,
+                    postMatchInterstitialAdUnitId =
+                        BuildConfig.HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ),
             ),
             billing = BillingProviderConfig(
                 removeAdsProductId = BuildConfig.BILLING_REMOVE_ADS_PRODUCT_ID,

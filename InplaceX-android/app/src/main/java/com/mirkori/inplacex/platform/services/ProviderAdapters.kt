@@ -1,7 +1,8 @@
 package com.mirkori.inplacex.platform.services
 
 import android.content.Context
-import com.mirkori.inplacex.platform.config.AdsProviderConfig
+import com.mirkori.inplacex.platform.ads.AndroidAdRuntime
+import com.mirkori.inplacex.platform.config.AdSdkConfig
 import com.mirkori.inplacex.platform.config.BillingProviderConfig
 import com.mirkori.inplacex.platform.config.GooglePlayProviderConfig
 
@@ -9,6 +10,7 @@ data class ProviderServices(
     val authService: AuthService,
     val profileService: ProfileService,
     val adService: AdService,
+    val adRuntime: AndroidAdRuntime,
     val billingService: BillingService,
 )
 
@@ -35,9 +37,9 @@ class GooglePlayAuthService(
     }
 }
 
-class AdMobService(
+class CompanyAdMobService(
     private val appContext: Context,
-    private val config: AdsProviderConfig,
+    private val config: AdSdkConfig,
 ) : AdService {
     override fun showBanner(slotId: String): Boolean {
         return false

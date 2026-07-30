@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.platform.services
 
 import android.content.Context
+import com.mirkori.inplacex.platform.ads.createFailClosedAdRuntime
 import com.mirkori.inplacex.platform.config.PlatformConfig
 
 object ProviderServicesFactory {
@@ -13,7 +14,8 @@ object ProviderServicesFactory {
         return ProviderServices(
             authService = auth,
             profileService = auth,
-            adService = AdMobService(context, providers.ads),
+            adService = CompanyAdMobService(context, providers.ads.companyAdMob),
+            adRuntime = createFailClosedAdRuntime(providers.ads),
             billingService = GooglePlayBillingService(context, providers.billing),
         )
     }

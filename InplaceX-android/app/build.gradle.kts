@@ -51,15 +51,22 @@ android {
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.serverClientId", "")}\"")
-            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.debug.ads.admobAppId", "ca-app-pub-3940256099942544~3347511713")}\"")
-            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.banner.game", "ca-app-pub-3940256099942544/6300978111")}\"")
-            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.rewarded.general", "ca-app-pub-3940256099942544/5224354917")}\"")
-            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.interstitial.postMatch", "ca-app-pub-3940256099942544/1033173712")}\"")
+            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.debug.ads.admob.company.appId", "ca-app-pub-3940256099942544~3347511713")}\"")
+            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.admob.company.banner.game", "ca-app-pub-3940256099942544/6300978111")}\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.admob.company.rewarded.general", "ca-app-pub-3940256099942544/5224354917")}\"")
+            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.admob.company.interstitial.postMatch", "ca-app-pub-3940256099942544/1033173712")}\"")
+            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.banner.game", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.rewarded.general", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_APP_ID", "\"${localProp("provider.debug.ads.huawei.company.appId", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.banner.game", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.rewarded.general", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.interstitial.postMatch", "")}\"")
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.debug.billing.removeAdsProductId", "remove_ads")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proSubscriptionId", "pro_subscription")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
             manifestPlaceholders["admobAppId"] = localProp(
-                "provider.debug.ads.admobAppId",
+                "provider.debug.ads.admob.company.appId",
                 "ca-app-pub-3940256099942544~3347511713",
             )
         }
@@ -71,14 +78,24 @@ android {
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.release.googlePlay.serverClientId", "")}\"")
-            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.release.ads.admobAppId", "")}\"")
-            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.banner.game", "")}\"")
-            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.rewarded.general", "")}\"")
-            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.release.ads.admob.company.appId", "")}\"")
+            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.admob.company.banner.game", "")}\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.admob.company.rewarded.general", "")}\"")
+            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.admob.company.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.banner.game", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.rewarded.general", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_APP_ID", "\"${localProp("provider.release.ads.huawei.company.appId", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.banner.game", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.rewarded.general", "")}\"")
+            buildConfigField("String", "HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.interstitial.postMatch", "")}\"")
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proPlusSubscriptionId", "")}\"")
-            manifestPlaceholders["admobAppId"] = localProp("provider.release.ads.admobAppId", "")
+            manifestPlaceholders["admobAppId"] = localProp(
+                "provider.release.ads.admob.company.appId",
+                "",
+            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -2,6 +2,7 @@ package com.mirkori.inplacex.platform.services
 
 import android.content.ContextWrapper
 import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.platform.config.AdSdkConfig
 import com.mirkori.inplacex.platform.config.AdsProviderConfig
 import com.mirkori.inplacex.platform.config.BillingProviderConfig
 import com.mirkori.inplacex.platform.config.GooglePlayProviderConfig
@@ -23,7 +24,14 @@ class ReleaseProviderServicesTest {
                 providers = ProviderConfig(
                     environment = ProviderEnvironment.SANDBOX,
                     googlePlay = GooglePlayProviderConfig(webClientId = "configured-id"),
-                    ads = AdsProviderConfig(admobAppId = "configured-id"),
+                    ads = AdsProviderConfig(
+                        companyAdMob = AdSdkConfig(
+                            applicationId = "configured-id",
+                            gameBannerAdUnitId = "banner-id",
+                            rewardedAdUnitId = "rewarded-id",
+                            postMatchInterstitialAdUnitId = "interstitial-id",
+                        ),
+                    ),
                     billing = BillingProviderConfig(
                         removeAdsProductId = "remove_ads",
                         proSubscriptionId = "pro",
