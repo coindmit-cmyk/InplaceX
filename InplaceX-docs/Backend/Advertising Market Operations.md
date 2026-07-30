@@ -46,12 +46,14 @@ sudo ./ops/ads/update-dbip-country-lite.sh \
 INPLACEX_AD_MARKET_REQUIRED=true
 INPLACEX_AD_MARKET_DB_PATH=/var/lib/inplacex/geoip/dbip-country-lite.mmdb
 INPLACEX_AD_MARKET_CLIENT_IP_HEADER=X-InplaceX-Client-IP
-INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS=127.0.0.1,::1
+INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS=localhost,127.0.0.1,::1
 ```
 
-Значения `127.0.0.1,::1` подходят, когда nginx и backend работают на одном
-сервере, а backend слушает только loopback. Для контейнерной сети нужно указать
-фактический адрес доверенного proxy после проверки runtime-сети.
+Значения `localhost,127.0.0.1,::1` подходят, когда nginx и backend работают на
+одном сервере, а backend слушает только loopback. Нужно перечислить и имя, и
+числовые варианты: фактический Ktor runtime может представить loopback peer как
+`localhost`. Для контейнерной сети нужно указать фактический адрес доверенного
+proxy после проверки runtime-сети.
 
 `INPLACEX_AD_MARKET_REQUIRED=true` обязателен для production: неполная
 конфигурация или отсутствующая MMDB останавливает запуск вместо молчаливого
