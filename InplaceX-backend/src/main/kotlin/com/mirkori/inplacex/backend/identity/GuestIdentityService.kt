@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.identity
 
+import com.mirkori.inplacex.auth.AuthProvider
 import com.mirkori.inplacex.backend.persistence.IdempotencyKeyReusedException
 import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
 import com.mirkori.inplacex.backend.persistence.RevisionConflictException
@@ -209,7 +210,7 @@ class GuestIdentityService(
         )
         return GuestBootstrapResult(
             playerId = player.playerId,
-            accountKind = "google",
+            accountKind = AuthProvider.GOOGLE.wireName,
             credentials = credentials,
         )
     }
@@ -496,12 +497,13 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         connection.prepareStatement(
             """
             INSERT INTO player_identities(provider, provider_subject, player_id, last_seen_at)
-            VALUES ('google', ?, ?, ?)
+            VALUES (?, ?, ?, ?)
             """.trimIndent(),
         ).use { statement ->
-            statement.setString(1, providerSubject)
-            statement.setString(2, currentPlayerId)
-            statement.setInstant(3, now)
+            statement.setString(1, AuthProvider.GOOGLE.wireName)
+            statement.setString(2, providerSubject)
+            statement.setString(3, currentPlayerId)
+            statement.setInstant(4, now)
             statement.executeUpdate()
         }
         connection.prepareStatement(
@@ -563,9 +565,10 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
 
     private fun findGooglePlayerId(connection: Connection, providerSubject: String): String? =
         connection.prepareStatement(
-            "SELECT player_id FROM player_identities WHERE provider = 'google' AND provider_subject = ?",
+            "SELECT player_id FROM player_identities WHERE provider = ? AND provider_subject = ?",
         ).use { statement ->
-            statement.setString(1, providerSubject)
+            statement.setString(1, AuthProvider.GOOGLE.wireName)
+            statement.setString(2, providerSubject)
             statement.executeQuery().use { resultSet ->
                 if (resultSet.next()) resultSet.getString("player_id") else null
             }
@@ -573,9 +576,10 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
 
     private fun findGoogleSubjectForPlayer(connection: Connection, playerId: String): String? =
         connection.prepareStatement(
-            "SELECT provider_subject FROM player_identities WHERE provider = 'google' AND player_id = ?",
+            "SELECT provider_subject FROM player_identities WHERE provider = ? AND player_id = ?",
         ).use { statement ->
-            statement.setString(1, playerId)
+            statement.setString(1, AuthProvider.GOOGLE.wireName)
+            statement.setString(2, playerId)
             statement.executeQuery().use { resultSet ->
                 if (resultSet.next()) resultSet.getString("provider_subject") else null
             }
@@ -586,11 +590,12 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             """
             UPDATE player_identities
             SET last_seen_at = ?
-            WHERE provider = 'google' AND provider_subject = ?
+            WHERE provider = ? AND provider_subject = ?
             """.trimIndent(),
         ).use { statement ->
             statement.setInstant(1, now)
-            statement.setString(2, providerSubject)
+            statement.setString(2, AuthProvider.GOOGLE.wireName)
+            statement.setString(3, providerSubject)
             statement.executeUpdate()
         }
     }

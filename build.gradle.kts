@@ -13,6 +13,8 @@ subprojects {
 }
 
 val verificationTasks = listOf(
+    ":InplaceX-ads-core:test",
+    ":InplaceX-auth-core:test",
     ":InplaceX-backend:test",
     ":InplaceX-bot-core:test",
     ":InplaceX-identity:test",
@@ -44,6 +46,8 @@ tasks.register<Delete>("clean") {
     description = "Cleans backend, shared modules, Android app, and root build outputs."
     delete(layout.buildDirectory)
     dependsOn(":InplaceX-backend:clean")
+    dependsOn(":InplaceX-ads-core:clean")
+    dependsOn(":InplaceX-auth-core:clean")
     dependsOn(":InplaceX-bot-core:clean")
     dependsOn(":InplaceX-logging:clean")
     dependsOn(":InplaceX-test-support:clean")

@@ -22,6 +22,25 @@
   - `core.engine`
   - `core.model`
 
+## `:InplaceX-auth-core`
+
+- Path: `InplaceX-auth-core`
+- Type: JVM shared library.
+- Owns: provider identifiers, opaque provider-subject derivation, passwordless
+  email-code policy, and Telegram login signature/freshness verification.
+- Does not own: HTTP routes, SMTP delivery, provider secrets, Android UI, or
+  player persistence.
+- Tests: `InplaceX-auth-core/src/test`.
+
+## `:InplaceX-ads-core`
+
+- Path: `InplaceX-ads-core`
+- Type: JVM shared library.
+- Owns: provider-neutral ad placements, formats, entitlement-first eligibility,
+  post-match cadence, and reward-completion policy.
+- Does not own: an ad network SDK, Android views, or reward persistence.
+- Tests: `InplaceX-ads-core/src/test`.
+
 ## `:InplaceX-backend`
 
 - Path: `InplaceX-backend`

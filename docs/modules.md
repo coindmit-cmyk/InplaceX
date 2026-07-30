@@ -27,6 +27,34 @@
 
 Дополнительные benchmark и diagnostic runner'ы находятся в модуле и относятся к dev/test инфраструктуре.
 
+## `:InplaceX-auth-core`
+
+Путь: `InplaceX-auth-core`
+
+Назначение: общие безопасные правила авторизации для Google, passwordless email
+и Telegram. Модуль не отправляет письма, не хранит игроков и не содержит
+секреты провайдеров.
+
+Проверки:
+
+```powershell
+.\gradlew.bat :InplaceX-auth-core:test
+```
+
+## `:InplaceX-ads-core`
+
+Путь: `InplaceX-ads-core`
+
+Назначение: единые placement-контракты и правила показа рекламы. Сначала
+проверяются entitlement'ы, затем формат и частота; конкретный рекламный SDK
+остаётся в Android-адаптере.
+
+Проверки:
+
+```powershell
+.\gradlew.bat :InplaceX-ads-core:test
+```
+
 ## `:InplaceX-logging`
 
 Путь: `InplaceX-logging`

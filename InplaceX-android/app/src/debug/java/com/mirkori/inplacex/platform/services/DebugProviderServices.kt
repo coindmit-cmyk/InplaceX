@@ -13,11 +13,8 @@ class StubAdService(
     override fun shouldShowPostGameInterstitial(
         matchesPlayed: Int,
         entitlements: MonetizationEntitlements,
-    ): Boolean {
-        if (entitlements.adsDisabled) return false
-        if (matchesPlayed < 20) return false
-        return matchesPlayed % 4 == 0
-    }
+    ): Boolean =
+        AdPlacementPolicy.shouldShowPostMatchInterstitial(matchesPlayed, entitlements)
 
     override fun showInterstitial(placement: InterstitialPlacement): Boolean = true
 }

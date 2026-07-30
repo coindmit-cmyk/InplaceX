@@ -2,13 +2,16 @@
 
 ## Goal
 
-Prepare the client so real Google Play auth, ads, and billing can be enabled later by adding ids and keys, without rewriting UI or game logic.
+Prepare provider adapters so Google, email, Telegram, ads, and billing can be
+enabled without rewriting UI or game logic.
 
 ## Current Model
 
 - provider ids are read from `local.properties`
 - fallback defaults keep the app working in stub mode
 - the canonical example file is `provider-config.example.properties`
+- email and Telegram credentials are server-only environment secrets and never
+  belong in `local.properties`, Android resources, or Git
 
 ## Keys To Add Later
 
@@ -31,6 +34,11 @@ Prepare the client so real Google Play auth, ads, and billing can be enabled lat
   - `provider.billing.proSubscriptionId`
   - `provider.billing.proPlusSubscriptionId`
 
+- Identity service / VPS secret store
+  - Google OAuth web client ID
+  - email delivery provider credentials and the email-code HMAC key
+  - Telegram bot token and the provider-subject HMAC key
+
 ## Android Preparation Already Done
 
 - `BuildConfig` fields are generated for provider ids
@@ -43,3 +51,7 @@ Prepare the client so real Google Play auth, ads, and billing can be enabled lat
 2. switch `provider.environment` to `live`
 3. fill the SDK-ready adapter classes with real platform calls
 4. keep the same UI flows and repository contracts
+
+Email and Telegram activation additionally requires identity-service routes,
+one-time challenge persistence, rate limiting, and a configured delivery
+adapter. The shared verifier alone must not be presented as a live sign-in.

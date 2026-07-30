@@ -50,9 +50,8 @@ class AdMobService(
     override fun shouldShowPostGameInterstitial(
         matchesPlayed: Int,
         entitlements: MonetizationEntitlements,
-    ): Boolean {
-        return false
-    }
+    ): Boolean =
+        AdPlacementPolicy.shouldShowPostMatchInterstitial(matchesPlayed, entitlements)
 
     override fun showInterstitial(placement: InterstitialPlacement): Boolean {
         return false

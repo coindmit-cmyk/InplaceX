@@ -109,6 +109,7 @@ androidComponents {
 }
 
 dependencies {
+    implementation(project(":InplaceX-ads-core"))
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))
     implementation(libs.androidx.appcompat)
