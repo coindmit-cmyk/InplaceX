@@ -21,6 +21,7 @@ import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.localization.AppLanguage
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.online.OnlineRuntime
@@ -80,7 +81,9 @@ class ShellSectionsSmokeTest {
         setContent {
             SettingsRootScreen(
                 currentLanguage = AppLanguage.RU,
+                adConsentDecision = AdConsentDecision.DECLINED,
                 onLanguageChange = {},
+                onOpenAdPrivacy = {},
                 onOpenInternalTools = {},
                 onClose = {},
             )

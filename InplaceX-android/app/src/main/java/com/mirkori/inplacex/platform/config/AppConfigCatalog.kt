@@ -2,6 +2,7 @@ package com.mirkori.inplacex.platform.config
 
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.core.bot.BotDifficulty
+import com.mirkori.inplacex.ads.PostMatchInterstitialPolicy
 import com.mirkori.inplacex.core.campaign.CampaignLevelGenerator
 import com.mirkori.inplacex.core.match.OpponentKind
 import com.mirkori.inplacex.core.match.PreMatchConfig
@@ -60,6 +61,14 @@ object AppConfigCatalog {
                     rewardedAdUnitId = BuildConfig.HUAWEI_COMPANY_REWARDED_AD_UNIT_ID,
                     postMatchInterstitialAdUnitId =
                         BuildConfig.HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ),
+                postMatchInterstitialPolicy = PostMatchInterstitialPolicy(
+                    minimumCompletedMatches =
+                        BuildConfig.ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES,
+                    minimumForegroundUsageSeconds =
+                        BuildConfig.ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS,
+                    gamesBetweenImpressions =
+                        BuildConfig.ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS,
                 ),
             ),
             billing = BillingProviderConfig(

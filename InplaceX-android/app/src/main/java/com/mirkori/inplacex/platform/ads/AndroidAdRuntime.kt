@@ -9,6 +9,7 @@ import com.mirkori.inplacex.ads.AdProviderId
 import com.mirkori.inplacex.ads.AdRequest
 import com.mirkori.inplacex.ads.AdRouter
 import com.mirkori.inplacex.ads.AdRuntimeContext
+import com.mirkori.inplacex.ads.AdRoutePlan
 import com.mirkori.inplacex.ads.RoutedAdPresentation
 import com.mirkori.inplacex.platform.config.AdsProviderConfig
 import com.mirkori.inplacex.platform.logging.AppLog
@@ -40,8 +41,10 @@ class AndroidAdRuntime(
     private val router: AdRouter,
     private val marketResolver: AdMarketResolver,
     private val configuredProviders: List<AdProviderId>,
+    private val consentProvider: AdConsentProvider = AcceptedAdConsentProvider,
     private val providerAvailability: AdProviderAvailability =
         AllConfiguredAdProviderAvailability,
+    private val resources: List<AutoCloseable> = emptyList(),
 ) : AutoCloseable {
     suspend fun preload(request: AdRequest): List<AdPreloadAttempt> = coroutineScope {
         val context = runtimeContext()
@@ -72,7 +75,18 @@ class AndroidAdRuntime(
         }
     }
 
+    suspend fun plan(request: AdRequest): AdRoutePlan {
+        val context = runtimeContext()
+        return router.plan(context, request)
+    }
+
     private suspend fun runtimeContext(): AdRuntimeContext {
+        if (consentProvider.currentDecision() == AdConsentDecision.UNDECIDED) {
+            return AdRuntimeContext(
+                market = AdMarket.UNKNOWN,
+                availableProviders = emptyList(),
+            )
+        }
         val available = providerAvailability
             .availableProviders(configuredProviders)
             .filter { it in configuredProviders }
@@ -84,8 +98,27 @@ class AndroidAdRuntime(
     }
 
     override fun close() {
+        resources.forEach { resource ->
+            runCatching(resource::close)
+        }
         (marketResolver as? AutoCloseable)?.close()
     }
+}
+
+fun createAdRuntime(
+    config: AdsProviderConfig,
+    providers: List<AdProvider>,
+    marketResolver: AdMarketResolver,
+    consentProvider: AdConsentProvider,
+): AndroidAdRuntime {
+    val providerIds = providers.map(AdProvider::id).toSet()
+    return AndroidAdRuntime(
+        router = AdRouter(providers),
+        marketResolver = marketResolver,
+        configuredProviders = config.configuredProviderIds().filter(providerIds::contains),
+        consentProvider = consentProvider,
+        resources = providers.filterIsInstance<AutoCloseable>(),
+    )
 }
 
 class FailClosedAdProvider(
@@ -101,11 +134,13 @@ class FailClosedAdProvider(
 fun createFailClosedAdRuntime(
     config: AdsProviderConfig,
     marketResolver: AdMarketResolver = UnknownAdMarketResolver,
+    consentProvider: AdConsentProvider = UndecidedAdConsentProvider,
 ): AndroidAdRuntime {
     val providers = AdProviderId.values().map(::FailClosedAdProvider)
     return AndroidAdRuntime(
         router = AdRouter(providers),
         marketResolver = marketResolver,
         configuredProviders = config.configuredProviderIds(),
+        consentProvider = consentProvider,
     )
 }

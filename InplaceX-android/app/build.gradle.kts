@@ -15,6 +15,26 @@ val localProps = Properties().apply {
 fun localProp(key: String, default: String): String =
     (localProps.getProperty(key) ?: default).replace("\"", "\\\"")
 
+fun localIntProp(
+    key: String,
+    default: Int,
+    range: IntRange,
+): Int =
+    localProps.getProperty(key)
+        ?.toIntOrNull()
+        ?.takeIf(range::contains)
+        ?: default
+
+fun localLongProp(
+    key: String,
+    default: Long,
+    range: LongRange,
+): Long =
+    localProps.getProperty(key)
+        ?.toLongOrNull()
+        ?.takeIf(range::contains)
+        ?: default
+
 android {
     namespace = "com.mirkori.inplacex"
     compileSdk {
@@ -62,6 +82,9 @@ android {
             buildConfigField("String", "HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.banner.game", "")}\"")
             buildConfigField("String", "HUAWEI_COMPANY_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.rewarded.general", "")}\"")
             buildConfigField("String", "HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.huawei.company.interstitial.postMatch", "")}\"")
+            buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.debug.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
+            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.debug.ads.interstitial.minimumForegroundSeconds", 0, 0L..2_592_000L)}L")
+            buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.debug.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.debug.billing.removeAdsProductId", "remove_ads")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proSubscriptionId", "pro_subscription")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
@@ -89,6 +112,9 @@ android {
             buildConfigField("String", "HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.banner.game", "")}\"")
             buildConfigField("String", "HUAWEI_COMPANY_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.rewarded.general", "")}\"")
             buildConfigField("String", "HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.huawei.company.interstitial.postMatch", "")}\"")
+            buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.release.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
+            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.release.ads.interstitial.minimumForegroundSeconds", 0, 0L..2_592_000L)}L")
+            buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.release.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proPlusSubscriptionId", "")}\"")
@@ -148,6 +174,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.google.identity.googleid)
+    implementation(libs.yandex.mobileads)
+    implementation(libs.yandex.mobileads.compose)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)

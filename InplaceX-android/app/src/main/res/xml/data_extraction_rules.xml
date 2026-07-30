@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
-    <cloud-backup />
+    <cloud-backup>
+        <exclude
+            domain="sharedpref"
+            path="inplacex_ad_privacy.xml" />
+        <exclude
+            domain="sharedpref"
+            path="inplacex_ad_usage.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude
+            domain="sharedpref"
+            path="inplacex_ad_privacy.xml" />
+        <exclude
+            domain="sharedpref"
+            path="inplacex_ad_usage.xml" />
+    </device-transfer>
 </data-extraction-rules>

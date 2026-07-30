@@ -2,6 +2,8 @@ package com.mirkori.inplacex.platform.services
 
 import android.content.ContextWrapper
 import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.platform.ads.AdConsentController
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.config.AdSdkConfig
 import com.mirkori.inplacex.platform.config.AdsProviderConfig
 import com.mirkori.inplacex.platform.config.BillingProviderConfig
@@ -39,6 +41,7 @@ class ReleaseProviderServicesTest {
                     ),
                 ),
             ),
+            adConsentController = TestAdConsentController,
         )
 
         val beforeSignIn = services.authService.currentSession()
@@ -54,5 +57,11 @@ class ReleaseProviderServicesTest {
                 "com/mirkori/inplacex/platform/services/StubGooglePlayAuthService.class",
             ),
         )
+    }
+
+    private object TestAdConsentController : AdConsentController {
+        override fun currentDecision(): AdConsentDecision = AdConsentDecision.ACCEPTED
+
+        override fun updateDecision(decision: AdConsentDecision) = Unit
     }
 }

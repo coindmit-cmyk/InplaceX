@@ -2,6 +2,8 @@ package com.mirkori.inplacex.platform.services
 
 import android.content.ContextWrapper
 import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.platform.ads.AdConsentController
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.config.PlatformConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -13,6 +15,7 @@ class DebugProviderServicesTest {
         val services = ProviderServicesFactory.create(
             context = ContextWrapper(null),
             platformConfig = PlatformConfig(navigationItems = emptyList()),
+            adConsentController = TestAdConsentController,
         )
 
         assertEquals("sandbox", BuildConfig.PROVIDER_ENVIRONMENT)
@@ -22,5 +25,11 @@ class DebugProviderServicesTest {
         assertTrue(services.authService.signInWithGooglePlay().isSignedIn)
         assertTrue(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
         assertTrue(services.billingService.purchase(BillingProductId.REMOVE_ADS))
+    }
+
+    private object TestAdConsentController : AdConsentController {
+        override fun currentDecision(): AdConsentDecision = AdConsentDecision.ACCEPTED
+
+        override fun updateDecision(decision: AdConsentDecision) = Unit
     }
 }
