@@ -25,9 +25,10 @@ sudo install -d -m 0755 /var/lib/inplacex/geoip
 sudo ./ops/ads/update-dbip-country-lite.sh
 ```
 
-Скрипт скачивает только по HTTPS, проверяет gzip и допустимый размер, затем
-атомарно заменяет MMDB. После обновления backend нужно перезапустить, потому что
-читатель открывает базу один раз при старте.
+Скрипт скачивает только по HTTPS с ограниченными timeout, проверяет gzip и
+допустимый размер, сохраняет текущую базу как `.previous`, затем атомарно
+заменяет MMDB. После обновления backend нужно перезапустить, потому что читатель
+открывает базу один раз при старте.
 
 Месяц релиза можно указать явно для воспроизводимой установки:
 
@@ -85,9 +86,11 @@ Backend-порт остаётся закрытым снаружи. Публич�
 ./ops/ads/verify-ad-market.sh https://backend.example RUSSIA
 ```
 
-Smoke проверяет `/health`, `/ready`, точную JSON-схему market и
-`Cache-Control: no-store`. Проверку `RUSSIA` и `GLOBAL` нужно выполнить из
-двух сетей; store-аккаунт и locale на результат не влияют.
+Smoke проверяет `/health`, `/ready`, точную JSON-схему market,
+`Content-Type`, `Cache-Control: no-store` и обязательную DB-IP attribution в
+HTTP `Link`. Все сетевые вызовы имеют ограниченные timeout. Проверку `RUSSIA`
+и `GLOBAL` нужно выполнить из двух сетей; store-аккаунт и locale на результат
+не влияют.
 
 ## Обновление
 
@@ -96,6 +99,15 @@ DB-IP Lite обновляется ежемесячно. Операционный
 1. запустить `update-dbip-country-lite.sh`;
 2. перезапустить backend только после успешной установки;
 3. выполнить `verify-ad-market.sh`;
-4. при ошибке сохранить предыдущий backend image и MMDB для отката.
+4. при ошибке вернуть предыдущий backend image и MMDB:
+
+```bash
+sudo ./ops/ads/rollback-dbip-country-lite.sh
+sudo systemctl restart <inplacex-backend-service>
+./ops/ads/verify-ad-market.sh https://backend.example
+```
+
+Имя backend service определяется фактическим production-развёртыванием и не
+зашивается в скрипт репозитория.
 
 В репозиторий не коммитятся MMDB, `.env`, SDK IDs или доступы сервера.

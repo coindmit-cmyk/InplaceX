@@ -13,9 +13,9 @@ if [[ -n "$expected_market" && ! "$expected_market" =~ ^(RUSSIA|GLOBAL|UNKNOWN)$
     exit 2
 fi
 
-curl --fail --silent --show-error "${base_url}/health" \
+curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}/health" \
     | grep -qx '{"status":"ok"}'
-curl --fail --silent --show-error "${base_url}/ready" \
+curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}/ready" \
     | grep -qx '{"status":"ready"}'
 
 headers_file="$(mktemp)"
@@ -29,6 +29,8 @@ curl \
     --fail \
     --silent \
     --show-error \
+    --connect-timeout 5 \
+    --max-time 15 \
     --dump-header "$headers_file" \
     --output "$body_file" \
     "${base_url}/api/v1/runtime/ad-market"
@@ -40,6 +42,14 @@ if [[ -z "$market" ]]; then
 fi
 if ! grep -iq '^cache-control:.*no-store' "$headers_file"; then
     echo "Ad market response is missing Cache-Control: no-store." >&2
+    exit 1
+fi
+if ! grep -iq '^content-type:.*application/json' "$headers_file"; then
+    echo "Ad market response is missing the JSON content type." >&2
+    exit 1
+fi
+if ! grep -iq '^link:.*<https://db-ip.com>;[[:space:]]*rel="via"' "$headers_file"; then
+    echo "Ad market response is missing DB-IP attribution." >&2
     exit 1
 fi
 if [[ -n "$expected_market" && "$market" != "$expected_market" ]]; then

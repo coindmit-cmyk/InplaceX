@@ -22,7 +22,15 @@
   IP-derived coarse-market routing through a trusted proxy boundary and local
   MMDB, persisted foreground/completed-game cadence, callback-verified rewards,
   banner fallback, variant-specific thresholds, release-config validation, and
-  production GeoIP/nginx scripts.
+  production GeoIP/nginx scripts. Production-like builds now run the provider
+  validation automatically, optional AdMob cannot crash an owner-only release,
+  and ad-free entitlements suppress forced ads without removing voluntary
+  rewarded offers. Unknown market results are retried after connectivity
+  recovery, including a bounded active-game banner retry loop. GeoIP updates
+  retain a rollback copy, and production smoke checks now enforce timeouts,
+  JSON headers, no-store, and DB-IP attribution. The release validator also
+  rejects malformed backend origins and reused placement IDs without exposing
+  their values.
 - Added provider-neutral `InplaceX-auth-core` security rules for Google,
   passwordless email codes, opaque provider subjects, and signed/fresh Telegram
   login payloads; provider secrets remain outside Android and Git.

@@ -11,6 +11,7 @@ fi
 
 target_directory="$(dirname "$target_path")"
 target_name="$(basename "$target_path")"
+previous_path="${target_path}.previous"
 download_url="https://download.db-ip.com/free/dbip-country-lite-${release_month}.mmdb.gz"
 temporary_directory="$(mktemp -d)"
 archive_path="$temporary_directory/dbip-country-lite.mmdb.gz"
@@ -26,6 +27,8 @@ curl \
     --fail \
     --location \
     --proto '=https' \
+    --connect-timeout 10 \
+    --max-time 120 \
     --retry 3 \
     --retry-all-errors \
     --silent \
@@ -43,7 +46,15 @@ fi
 
 chmod 0644 "$database_path"
 mv -- "$database_path" "$target_directory/.${target_name}.new"
+if [[ -f "$target_path" ]]; then
+    cp -- "$target_path" "$target_directory/.${target_name}.previous.new"
+    chmod 0644 "$target_directory/.${target_name}.previous.new"
+    mv -- "$target_directory/.${target_name}.previous.new" "$previous_path"
+fi
 mv -- "$target_directory/.${target_name}.new" "$target_path"
 
 echo "Installed DB-IP Country Lite ${release_month} at ${target_path}."
+if [[ -f "$previous_path" ]]; then
+    echo "Previous database is available at ${previous_path}."
+fi
 echo "Restart the InplaceX backend so the new database is opened."
