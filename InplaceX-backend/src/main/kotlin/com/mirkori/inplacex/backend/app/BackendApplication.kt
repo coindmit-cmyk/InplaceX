@@ -67,6 +67,8 @@ fun Application.backendModule(
             "port" to config.port.toString(),
             "databaseConfigured" to (database != null).toString(),
             "onlineConfigured" to (onlineService != null).toString(),
+            "adMarketConfigured" to (config.adMarket != null).toString(),
+            "adMarketSource" to (config.adMarket?.source?.name ?: "NONE"),
         ),
     )
     configureHealthRoutes(readinessProbe)
