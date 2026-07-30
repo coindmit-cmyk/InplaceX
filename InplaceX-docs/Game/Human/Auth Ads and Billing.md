@@ -89,16 +89,21 @@
   rewarded, and post-match formats; it becomes active only when the build has
   all three owner placement IDs, the player has made a privacy choice, and the
   backend returns a known market
-- the backend market endpoint is implemented and returns only a coarse market;
-  deployment must configure a trusted reverse-proxy country header
+- the backend market endpoint resolves the current numeric IP through a local
+  country database and returns only a coarse market; nginx overwrites the
+  client-IP header and the backend trusts it only from the configured proxy
 - active-use time, completed matches, and games since the last presented
   interstitial are persisted locally and are not transferred through Android
   backup
-- AdMob and Huawei company fallback adapters are not connected yet and
-  therefore fail closed
+- AdMob and Huawei company fallback adapters are connected for banner,
+  rewarded, and post-match formats; they are used only after owner Yandex is
+  unavailable and only in a supported market/device
+- AdMob also runs Google's UMP privacy flow, and both company SDKs use
+  non-personalized requests after a declined personalization choice
 - billing remains a local/debug stub and fails closed in release
 - UI and local persistence use asynchronous provider callbacks; dismissal
   without the Yandex reward callback never grants coins or a hint
 - temporary `Pro` is a local coin purchase rather than a billing-provider product
-- the remaining advertising work is company fallback SDK integration and
-  release account/deployment configuration
+- code integration is complete; activation needs the remaining provider app/ad
+  unit IDs, the separate Yandex post-match interstitial ID, and production
+  deployment of the prepared backend/nginx configuration

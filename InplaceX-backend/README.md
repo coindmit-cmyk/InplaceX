@@ -34,11 +34,20 @@ Current state:
   versions in `inplacex_schema_history`
 - JDBC repositories use database constraints, transactional writes, and optimistic
   revisions for cloud saves; session commands are idempotent per client command id
-- advertising market resolution trusts a country header only when both
-  `INPLACEX_AD_MARKET_COUNTRY_HEADER` and
-  `INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS` are configured. The edge proxy must
-  derive and overwrite the header from the current connection IP. Otherwise
-  the endpoint fails closed with `UNKNOWN`.
+- preferred advertising market resolution uses a local MMDB country database
+  configured by `INPLACEX_AD_MARKET_DB_PATH`. Direct connections are resolved
+  from their numeric remote address. Behind nginx, the backend accepts
+  `INPLACEX_AD_MARKET_CLIENT_IP_HEADER` only from
+  `INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS`; nginx must overwrite that header.
+- the legacy trusted-country-header mode remains available through
+  `INPLACEX_AD_MARKET_COUNTRY_HEADER` plus trusted proxy hosts. The two source
+  modes are mutually exclusive.
+- `INPLACEX_AD_MARKET_REQUIRED=true` makes startup fail when neither safe
+  source is configured. Missing database files also fail during startup,
+  preventing a falsely ready production process.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.
+
+Production GeoIP setup and verification:
+[`InplaceX-docs/Backend/Advertising Market Operations.md`](../InplaceX-docs/Backend/Advertising%20Market%20Operations.md).

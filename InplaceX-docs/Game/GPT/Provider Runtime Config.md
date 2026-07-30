@@ -72,8 +72,12 @@
   online HTTPS base URL, routes owner-first, and drives real Yandex callbacks
 - banner, rewarded, and post-match UI call sites use `AndroidAdRuntime`; reward
   state changes only after the provider reports completion
-- AdMob and Huawei still have configuration identities but no live Android SDK
-  adapters, so they remain unavailable fallback targets
+- AdMob and Huawei have live Android fallback adapters for banner, rewarded,
+  and post-match interstitial formats
+- AdMob uses Google Mobile Ads 25 plus UMP 4; SDK initialization and any
+  required consent form complete before its first preload
+- Huawei uses Ads Kit 13 and receives the persisted personalization decision
+  plus `requestLocation=false`
 - billing continues to fail closed until its SDK integration exists
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
@@ -81,8 +85,14 @@ Absent provider configuration, Credential Manager cancellation, server
 rejection, or network failure leaves the player in guest mode. Debug provider
 stubs remain isolated tooling and are not used by the real Profile sign-in flow.
 
-The backend market route is enabled safely only when both
-`INPLACEX_AD_MARKET_COUNTRY_HEADER` and
-`INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS` are set. The reverse proxy must derive
-and overwrite the country header from the current connection IP. Partial or
-untrusted configuration returns `UNKNOWN`.
+The preferred backend market source is a local MMDB configured through
+`INPLACEX_AD_MARKET_DB_PATH`. A reverse proxy must overwrite
+`INPLACEX_AD_MARKET_CLIENT_IP_HEADER`, and the backend accepts it only from
+`INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS`. Direct numeric remote addresses are
+resolved without a header. `INPLACEX_AD_MARKET_REQUIRED=true` makes missing or
+ambiguous production configuration fail at startup. The older trusted country
+header remains an exclusive compatibility mode.
+
+Run `:app:validateReleaseAdsConfig` before a release. It checks the HTTPS backend
+origin, requires all live Yandex placement IDs, and rejects partially configured
+AdMob or Huawei groups without printing any configured value.

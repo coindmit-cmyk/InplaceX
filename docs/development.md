@@ -23,8 +23,13 @@ InplaceX-android/provider-config.example.properties
 ```powershell
 .\gradlew.bat verifyProject
 .\gradlew.bat assembleDebug
+.\gradlew.bat :app:validateReleaseAdsConfig
 .\gradlew.bat cleanLocalDiagnostics
 ```
+
+`validateReleaseAdsConfig` не печатает значения: он сообщает только имена
+отсутствующих release-полей, проверяет HTTPS origin backend и запрещает
+частичную конфигурацию AdMob/Huawei.
 
 На Unix-like shell используйте `./gradlew`.
 

@@ -127,10 +127,14 @@ This is intentionally separate from permanent hint inventory.
   that callback never grants a reward
 - the UI uses the asynchronous runtime; `AdService` is no longer the live game
   presentation path
-- `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`
-  and trusts a country code only from a configured reverse-proxy host
+- `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`;
+  production resolves the current numeric IP through a local MMDB database and
+  accepts the proxy-overwritten client IP only from configured proxy hosts
 - the Android resolver caches only the coarse result for five minutes and
   fails closed on invalid response, network failure, or missing HTTPS endpoint
-- AdMob and Huawei remain unavailable SDK adapters; routing may name them in
-  configuration, but the runtime cannot present them until their real adapters
-  are added
+- AdMob 25 and Huawei Ads Kit 13 are active company fallback adapters for
+  banner, rewarded, and post-match interstitial placements
+- AdMob initialization is additionally gated by Google UMP; the settings
+  privacy entry reopens the UMP privacy-options form when Google requires it
+- declined app consent builds non-personalized AdMob and Huawei requests;
+  rewarded completion still comes only from each SDK reward callback

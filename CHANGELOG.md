@@ -15,12 +15,14 @@
   centralized rating/progression in core, and guaranteed zero stars for losses
   and one star for a last-attempt win.
 - Added the owner-first advertising runtime and activated Yandex Mobile Ads SDK
-  8 for owner banner, rewarded, and post-match inventory. The implementation
+  8 for owner banner, rewarded, and post-match inventory, Google Mobile Ads 25
+  plus UMP 4 for company fallback, and Huawei Ads Kit 13 for company fallback.
+  The implementation
   includes explicit privacy choice before SDK initialization, backend
-  IP-derived coarse-market routing through a trusted proxy boundary, persisted
-  foreground/completed-game cadence, callback-verified rewards, and
-  variant-specific thresholds. AdMob and Huawei company adapters remain
-  fail-closed until their SDK integrations are added.
+  IP-derived coarse-market routing through a trusted proxy boundary and local
+  MMDB, persisted foreground/completed-game cadence, callback-verified rewards,
+  banner fallback, variant-specific thresholds, release-config validation, and
+  production GeoIP/nginx scripts.
 - Added provider-neutral `InplaceX-auth-core` security rules for Google,
   passwordless email codes, opaque provider subjects, and signed/fresh Telegram
   login payloads; provider secrets remain outside Android and Git.
