@@ -1,114 +1,12 @@
 {
-  "generated_at": "2026-07-30T00:45:21Z",
+  "generated_at": "2026-07-30T00:59:43Z",
   "summary": {
-    "candidate_count": 4,
-    "scheduling_class_counts": {
-      "integration_continuation": 4
-    },
-    "integration_continuation_count": 4,
+    "candidate_count": 0,
+    "scheduling_class_counts": {},
+    "integration_continuation_count": 0,
     "primary_candidate_count": 0,
     "background_candidate_count": 0,
     "primary_slot_reservation_required": false
   },
-  "candidates": [
-    {
-      "task_id": "CRB-REPO-PR-22-S01",
-      "title": "REPO-PR-22 implementation slice 1: asset, code",
-      "priority": "P1",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5",
-        "auto-worker-5.5max"
-      ],
-      "allowed_paths": [
-        "InplaceX-ads-core/build.gradle.kts",
-        "InplaceX-android/app/build.gradle.kts",
-        "InplaceX-auth-core/build.gradle.kts",
-        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
-        "InplaceX-backend/build.gradle.kts",
-        "build.gradle.kts",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "scheduling_class": "integration_continuation",
-      "scheduling_class_reason": "in_flight_integration_repair"
-    },
-    {
-      "task_id": "CRB-REPO-PR-22-S03",
-      "title": "REPO-PR-22 implementation slice 3: asset, code",
-      "priority": "P1",
-      "complexity": "M",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
-        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
-        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
-        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
-        "InplaceX-docs/Game/Human/Provider Setup.md",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "scheduling_class": "integration_continuation",
-      "scheduling_class_reason": "in_flight_integration_repair"
-    },
-    {
-      "task_id": "CRB-REPO-PR-22-S04",
-      "title": "REPO-PR-22 implementation slice 4: asset, code, tests",
-      "priority": "P1",
-      "complexity": "L",
-      "eligible_worker_profiles": [
-        "auto-worker-5.5",
-        "auto-worker-5.5max"
-      ],
-      "allowed_paths": [
-        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
-        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
-        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
-        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
-        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
-        "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "scheduling_class": "integration_continuation",
-      "scheduling_class_reason": "in_flight_integration_repair"
-    },
-    {
-      "task_id": "CRB-REPO-PR-22-S05",
-      "title": "REPO-PR-22 implementation slice 5: asset",
-      "priority": "P1",
-      "complexity": "M",
-      "eligible_worker_profiles": [
-        "auto-worker-5.3",
-        "auto-worker-5.5"
-      ],
-      "allowed_paths": [
-        "settings.gradle.kts",
-        "docs/reports/**",
-        "CHANGELOG.md",
-        "AiStudio/Task_manager/task_queue.json",
-        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
-        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
-        "README.md"
-      ],
-      "scheduling_class": "integration_continuation",
-      "scheduling_class_reason": "in_flight_integration_repair"
-    }
-  ]
+  "candidates": []
 }

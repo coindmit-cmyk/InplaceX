@@ -12418,7 +12418,1796 @@
       "final_status": "stale_or_superseded",
       "archived_at": "2026-07-29T23:59:11Z",
       "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "REPO-PR-22",
+      "title": "Integrate open PR #22",
+      "status": "done",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "repository_hygiene_integration",
+      "recommended_agent": "Dispatcher",
+      "requires_human_attention": false,
+      "worker_ready": false,
+      "packet_status": "done",
+      "normalization_status": "finalized",
+      "dispatcher_decision": "done",
+      "integration_status": "finalized",
+      "branch": "origin/feature/provider-modules-v1",
+      "base_branch": "develop",
+      "github_pr": 22,
+      "pr_numbers": [
+        22
+      ],
+      "repository_hygiene_key": "repository-pr-group:0e8c297acce033670beb",
+      "repository_hygiene_topology": "linear",
+      "repository_hygiene_route": "dispatcher_integration",
+      "repository_hygiene_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_draft_prs": [],
+      "repository_hygiene_ci_state": "pending",
+      "source_lane": "repository_hygiene_cycle",
+      "source_summary": "direct PR can be routed through Dispatcher and Integrator",
+      "provenance": [
+        {
+          "source_type": "github_pull_request_topology",
+          "source_item_id": "repository-pr-group:0e8c297acce033670beb",
+          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/22",
+          "captured_at": "2026-07-30T00:45:01Z",
+          "summary": "direct PR can be routed through Dispatcher and Integrator"
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve existing behavior unless the PR explicitly replaces it.",
+        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
+        "Run project-required tests and git diff --check before finalization.",
+        "Close or delete source PR branches only after merge evidence exists."
+      ],
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ],
+      "lock": "free",
+      "next_owner": "none",
+      "next_role": "none",
+      "discovered_at": "2026-07-30T00:45:01Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "changed_paths": [
+        ".agent/modules.md",
+        "CHANGELOG.md",
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
+        "InplaceX-docs/Game/Human/Provider Setup.md",
+        "build.gradle.kts",
+        "docs/modules.md",
+        "settings.gradle.kts"
+      ],
+      "integration_changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
+        "InplaceX-docs/Game/Human/Provider Setup.md",
+        "build.gradle.kts",
+        "docs/modules.md",
+        "settings.gradle.kts"
+      ],
+      "coordination_changed_paths": [
+        ".agent/modules.md"
+      ],
+      "allowed_paths": [
+        ".agent/modules.md",
+        "CHANGELOG.md",
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
+        "InplaceX-docs/Game/Human/Provider Setup.md",
+        "build.gradle.kts",
+        "docs/modules.md",
+        "settings.gradle.kts"
+      ],
+      "dispatcher_repaired_at": "2026-07-30T00:45:02Z",
+      "dispatcher_repaired_by": "scripts/agent_control/dispatcher_integration_repair.py",
+      "dispatcher_decision_reason": "large repository PR decomposed into independent Worker Packet v2 slices",
+      "blocked_by": [
+        "CRB-REPO-PR-22-S01",
+        "CRB-REPO-PR-22-S02",
+        "CRB-REPO-PR-22-S03",
+        "CRB-REPO-PR-22-S04",
+        "CRB-REPO-PR-22-S05"
+      ],
+      "split_into": [
+        "CRB-REPO-PR-22-S01",
+        "CRB-REPO-PR-22-S02",
+        "CRB-REPO-PR-22-S03",
+        "CRB-REPO-PR-22-S04",
+        "CRB-REPO-PR-22-S05"
+      ],
+      "integration_repair_child_ids": [
+        "CRB-REPO-PR-22-S01",
+        "CRB-REPO-PR-22-S02",
+        "CRB-REPO-PR-22-S03",
+        "CRB-REPO-PR-22-S04",
+        "CRB-REPO-PR-22-S05"
+      ],
+      "repository_pr_decomposition": {
+        "schema_version": "1.0",
+        "planner_id": "repository_pr_decomposition_planner",
+        "task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "changed_paths": [
+          "CHANGELOG.md",
+          "InplaceX-ads-core/build.gradle.kts",
+          "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+          "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+          "InplaceX-android/app/build.gradle.kts",
+          "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+          "InplaceX-auth-core/build.gradle.kts",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+          "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+          "InplaceX-backend/build.gradle.kts",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+          "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+          "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
+          "InplaceX-docs/Game/Human/Provider Setup.md",
+          "build.gradle.kts",
+          "docs/modules.md",
+          "settings.gradle.kts"
+        ],
+        "path_count": 23,
+        "feature_family_count": 19,
+        "decomposition_reasons": [
+          "large_changed_path_set",
+          "multiple_feature_families",
+          "cross_surface_change"
+        ],
+        "routing_authority": "central_model_router",
+        "deterministic_parent_gates": [
+          "git diff --check",
+          "capability preservation comparison",
+          "project-required tests"
+        ],
+        "status": "decomposed",
+        "should_decompose": true,
+        "reason": "large_repository_pr_split_into_independent_worker_packets",
+        "blocked_paths": [],
+        "slice_count": 5,
+        "slices": [
+          {
+            "slice_key": "S01",
+            "title": "REPO-PR-22 implementation slice 1: asset, code",
+            "paths": [
+              "InplaceX-ads-core/build.gradle.kts",
+              "InplaceX-android/app/build.gradle.kts",
+              "InplaceX-auth-core/build.gradle.kts",
+              "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+              "InplaceX-backend/build.gradle.kts",
+              "build.gradle.kts"
+            ],
+            "categories": [
+              "asset",
+              "code"
+            ],
+            "execution_kind": "llm_write",
+            "deterministic_checks": [
+              "git diff --check"
+            ],
+            "depends_on": [],
+            "execution_lane": "llm_deep",
+            "complexity": "L",
+            "capability_profile_hint": "deep",
+            "recommended_agent": "auto-worker-5.5",
+            "eligible_worker_profiles": [
+              "auto-worker-5.5",
+              "auto-worker-5.5max"
+            ],
+            "model_candidates": [
+              "gpt-5.6-terra",
+              "gpt-5.6-sol",
+              "gpt-5.6-luna"
+            ],
+            "reasoning_effort_hint": "extra_high"
+          },
+          {
+            "slice_key": "S02",
+            "title": "REPO-PR-22 implementation slice 2: docs, tests",
+            "paths": [
+              "CHANGELOG.md",
+              "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+              "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+              "docs/modules.md"
+            ],
+            "categories": [
+              "docs",
+              "tests"
+            ],
+            "execution_kind": "llm_write",
+            "deterministic_checks": [
+              "git diff --check"
+            ],
+            "depends_on": [
+              "S01",
+              "S03",
+              "S04",
+              "S05"
+            ],
+            "execution_lane": "llm_efficient",
+            "complexity": "S",
+            "capability_profile_hint": "efficient",
+            "recommended_agent": "auto-worker-5.3-mini",
+            "eligible_worker_profiles": [
+              "auto-worker-5.3-mini",
+              "auto-worker-5.3"
+            ],
+            "model_candidates": [
+              "gpt-5.3-codex-spark",
+              "gpt-5.6-luna"
+            ],
+            "reasoning_effort_hint": "medium"
+          },
+          {
+            "slice_key": "S03",
+            "title": "REPO-PR-22 implementation slice 3: asset, code",
+            "paths": [
+              "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+              "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+              "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+              "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+              "InplaceX-docs/Game/Human/Provider Setup.md"
+            ],
+            "categories": [
+              "asset",
+              "code"
+            ],
+            "execution_kind": "llm_write",
+            "deterministic_checks": [
+              "git diff --check"
+            ],
+            "depends_on": [],
+            "execution_lane": "llm_balanced",
+            "complexity": "M",
+            "capability_profile_hint": "balanced",
+            "recommended_agent": "auto-worker-5.3",
+            "eligible_worker_profiles": [
+              "auto-worker-5.3",
+              "auto-worker-5.5"
+            ],
+            "model_candidates": [
+              "gpt-5.6-luna",
+              "gpt-5.6-terra",
+              "gpt-5.3-codex-spark"
+            ],
+            "reasoning_effort_hint": "high"
+          },
+          {
+            "slice_key": "S04",
+            "title": "REPO-PR-22 implementation slice 4: asset, code, tests",
+            "paths": [
+              "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+              "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+              "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+              "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+              "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+              "InplaceX-docs/Game/Human/Auth Ads and Billing.md"
+            ],
+            "categories": [
+              "asset",
+              "code",
+              "tests"
+            ],
+            "execution_kind": "llm_write",
+            "deterministic_checks": [
+              "git diff --check"
+            ],
+            "depends_on": [],
+            "execution_lane": "llm_deep",
+            "complexity": "L",
+            "capability_profile_hint": "deep",
+            "recommended_agent": "auto-worker-5.5",
+            "eligible_worker_profiles": [
+              "auto-worker-5.5",
+              "auto-worker-5.5max"
+            ],
+            "model_candidates": [
+              "gpt-5.6-terra",
+              "gpt-5.6-sol",
+              "gpt-5.6-luna"
+            ],
+            "reasoning_effort_hint": "extra_high"
+          },
+          {
+            "slice_key": "S05",
+            "title": "REPO-PR-22 implementation slice 5: asset",
+            "paths": [
+              "settings.gradle.kts"
+            ],
+            "categories": [
+              "asset"
+            ],
+            "execution_kind": "llm_write",
+            "deterministic_checks": [
+              "git diff --check"
+            ],
+            "depends_on": [],
+            "execution_lane": "llm_balanced",
+            "complexity": "M",
+            "capability_profile_hint": "balanced",
+            "recommended_agent": "auto-worker-5.3",
+            "eligible_worker_profiles": [
+              "auto-worker-5.3",
+              "auto-worker-5.5"
+            ],
+            "model_candidates": [
+              "gpt-5.6-luna",
+              "gpt-5.6-terra",
+              "gpt-5.3-codex-spark"
+            ],
+            "reasoning_effort_hint": "high"
+          }
+        ],
+        "integration": {
+          "strategy": "merge_finalized_children_then_close_source_pr",
+          "required_child_keys": [
+            "S01",
+            "S02",
+            "S03",
+            "S04",
+            "S05"
+          ],
+          "synthesis_required": true,
+          "read_only_synthesis": {
+            "capability_profile": "delegated_deep",
+            "model_candidates": [
+              "gpt-5.6-sol",
+              "gpt-5.6-terra"
+            ],
+            "reasoning_effort": "ultra",
+            "mutation_allowed": false,
+            "authority_effect": "none"
+          },
+          "write_integrator": {
+            "capability_profile": "maximum_coherent",
+            "model_candidates": [
+              "gpt-5.6-sol",
+              "gpt-5.6-terra"
+            ],
+            "reasoning_effort": "max",
+            "merge_authority": "integrator_only"
+          }
+        }
+      },
+      "independent_work_units": 5,
+      "synthesis_required": true,
+      "capability_profile_hint": "maximum_coherent",
+      "model_candidates": [
+        "gpt-5.6-sol",
+        "gpt-5.6-terra"
+      ],
+      "reasoning_effort_hint": "max",
+      "repair_owner": "Worker",
+      "next_action": "Run every independent slice, integrate finalized child results, then close the source PR.",
+      "status_reason": "source pull request merge commit is an ancestor of the integration base",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "closed_by": "repository_hygiene_cycle",
+      "finalization_status": "finalized",
+      "merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "source_pr_close_status": "closed",
+      "source_pr_closed_numbers": [
+        22
+      ],
+      "finalized_at": "2026-07-30T00:59:34Z",
+      "finalized_by": "repository_hygiene_cycle",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "github_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "merged_at": "2026-07-30T00:51:52Z",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "final_status": "done",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "CRB-REPO-PR-22-S01",
+      "title": "REPO-PR-22 implementation slice 1: asset, code",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "worker_ready": false,
+      "recommended_agent": "auto-worker-5.5",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
+      ],
+      "model_candidates": [
+        "gpt-5.6-terra",
+        "gpt-5.6-sol",
+        "gpt-5.6-luna"
+      ],
+      "capability_profile_hint": "deep",
+      "reasoning_effort_hint": "extra_high",
+      "delegation_hint": "forbidden",
+      "independent_work_units": 1,
+      "synthesis_required": false,
+      "execution_kind": "llm_write",
+      "execution_lane": "llm_deep",
+      "allowed_paths": [
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "build.gradle.kts",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "AiStudio/Task_manager/task_queue.json",
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+        "README.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets",
+        "production config"
+      ],
+      "changed_paths": [
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "build.gradle.kts"
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Rebuild only this decomposition slice from the source PR intent on current develop.",
+        "Do not copy or modify paths owned by sibling decomposition slices.",
+        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
+        "Pass every deterministic check and return a normal Worker result for Integrator review."
+      ],
+      "context_docs": [
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+      ],
+      "source_file": "AiStudio/Task_manager/task_queue.json",
+      "source_task_id": "REPO-PR-22",
+      "parent_task_id": "REPO-PR-22",
+      "repair_source_task_id": "REPO-PR-22",
+      "integration_repair_parent_id": "REPO-PR-22",
+      "integration_repair_kind": "proactive_pr_decomposition",
+      "source_branch": "origin/feature/provider-modules-v1",
+      "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_source_branch": "origin/feature/provider-modules-v1",
+      "clean_rebuild_source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_route": "repository_pr_decomposition",
+      "decomposition_slice_key": "S01",
+      "decomposition_categories": [
+        "asset",
+        "code"
+      ],
+      "source_lane": "dispatcher_integration_repair",
+      "provenance": {
+        "source": "repository_pr_decomposition_planner.py",
+        "source_task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "slice_key": "S01",
+        "created_at": "2026-07-30T00:45:02Z"
+      },
+      "worker_instructions": [
+        "Verify that source_branch still resolves to source_head_sha before using it.",
+        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
+        "Compare every slice path with current develop and preserve newer target behavior.",
+        "Run every script_action and record the actual model selected by the central Router.",
+        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
+      ],
+      "existing_behavior": [
+        "Current develop is the behavior baseline for every decomposition slice.",
+        "Sibling slices own disjoint paths and must remain independently integrable."
+      ],
+      "preserve_contract": [
+        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
+        "Any intentional replacement requires explicit owner evidence and Integrator review."
+      ],
+      "lock": "free",
+      "created_at": "2026-07-30T00:45:02Z",
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "traceability": {
+        "task_id": "CRB-REPO-PR-22-S01",
+        "canonical_task_id": "CRB-REPO-PR-22-S01",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "provenance": {
+          "source": "repository_pr_decomposition_planner.py",
+          "source_task_id": "REPO-PR-22",
+          "source_branch": "origin/feature/provider-modules-v1",
+          "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+          "slice_key": "S01",
+          "created_at": "2026-07-30T00:45:02Z"
+        },
+        "derived_from": null,
+        "repaired_at": "2026-07-30T00:45:02Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-ads-core/build.gradle.kts",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-auth-core/build.gradle.kts",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+        "InplaceX-backend/build.gradle.kts",
+        "build.gradle.kts"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-ads-core/build.gradle.kts",
+          "InplaceX-android/app/build.gradle.kts",
+          "InplaceX-auth-core/build.gradle.kts",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+          "InplaceX-backend/build.gradle.kts",
+          "build.gradle.kts"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-REPO-PR-22-S01",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-ads-core/build.gradle.kts",
+          "InplaceX-android/app/build.gradle.kts",
+          "InplaceX-auth-core/build.gradle.kts",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/AuthProvider.kt",
+          "InplaceX-backend/build.gradle.kts",
+          "build.gradle.kts"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".env.*",
+          "secrets",
+          "production config"
+        ],
+        "context_docs": [
+          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-22-S01_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "next_owner": "none",
+      "next_role": "none",
+      "repaired_packet_at": "2026-07-30T00:45:02Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_metadata_at": "2026-07-30T00:45:03Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "packet_normalized_at": "2026-07-30T00:45:20Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "parent_task_id": "REPO-PR-22",
+        "parent_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "status_reason": "source task was already finalized into develop",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "superseded_by_task_id": "REPO-PR-22",
+      "superseded_by_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "CRB-REPO-PR-22-S02",
+      "title": "REPO-PR-22 implementation slice 2: docs, tests",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "S",
+      "type": "clean-rebuild",
+      "worker_ready": false,
+      "recommended_agent": "auto-worker-5.3-mini",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3-mini",
+        "auto-worker-5.3"
+      ],
+      "model_candidates": [
+        "gpt-5.3-codex-spark",
+        "gpt-5.6-luna"
+      ],
+      "capability_profile_hint": "efficient",
+      "reasoning_effort_hint": "medium",
+      "delegation_hint": "forbidden",
+      "independent_work_units": 1,
+      "synthesis_required": false,
+      "execution_kind": "llm_write",
+      "execution_lane": "llm_efficient",
+      "allowed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "docs/modules.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets",
+        "production config"
+      ],
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "docs/modules.md"
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "depends_on": [
+        "CRB-REPO-PR-22-S01",
+        "CRB-REPO-PR-22-S03",
+        "CRB-REPO-PR-22-S04",
+        "CRB-REPO-PR-22-S05"
+      ],
+      "acceptance_criteria": [
+        "Rebuild only this decomposition slice from the source PR intent on current develop.",
+        "Do not copy or modify paths owned by sibling decomposition slices.",
+        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
+        "Pass every deterministic check and return a normal Worker result for Integrator review."
+      ],
+      "context_docs": [
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+      ],
+      "source_file": "AiStudio/Task_manager/task_queue.json",
+      "source_task_id": "REPO-PR-22",
+      "parent_task_id": "REPO-PR-22",
+      "repair_source_task_id": "REPO-PR-22",
+      "integration_repair_parent_id": "REPO-PR-22",
+      "integration_repair_kind": "proactive_pr_decomposition",
+      "source_branch": "origin/feature/provider-modules-v1",
+      "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_source_branch": "origin/feature/provider-modules-v1",
+      "clean_rebuild_source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_route": "repository_pr_decomposition",
+      "decomposition_slice_key": "S02",
+      "decomposition_categories": [
+        "docs",
+        "tests"
+      ],
+      "source_lane": "dispatcher_integration_repair",
+      "provenance": {
+        "source": "repository_pr_decomposition_planner.py",
+        "source_task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "slice_key": "S02",
+        "created_at": "2026-07-30T00:45:02Z"
+      },
+      "worker_instructions": [
+        "Verify that source_branch still resolves to source_head_sha before using it.",
+        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
+        "Compare every slice path with current develop and preserve newer target behavior.",
+        "Run every script_action and record the actual model selected by the central Router.",
+        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
+      ],
+      "existing_behavior": [
+        "Current develop is the behavior baseline for every decomposition slice.",
+        "Sibling slices own disjoint paths and must remain independently integrable."
+      ],
+      "preserve_contract": [
+        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
+        "Any intentional replacement requires explicit owner evidence and Integrator review."
+      ],
+      "lock": "free",
+      "created_at": "2026-07-30T00:45:02Z",
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "traceability": {
+        "task_id": "CRB-REPO-PR-22-S02",
+        "canonical_task_id": "CRB-REPO-PR-22-S02",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "provenance": {
+          "source": "repository_pr_decomposition_planner.py",
+          "source_task_id": "REPO-PR-22",
+          "source_branch": "origin/feature/provider-modules-v1",
+          "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+          "slice_key": "S02",
+          "created_at": "2026-07-30T00:45:02Z"
+        },
+        "derived_from": null,
+        "repaired_at": "2026-07-30T00:45:02Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "CHANGELOG.md",
+        "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+        "docs/modules.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "CHANGELOG.md",
+          "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+          "docs/modules.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-REPO-PR-22-S02",
+            "purpose": "task context"
+          },
+          {
+            "id": "CRB-REPO-PR-22-S01",
+            "purpose": "task context"
+          },
+          {
+            "id": "CRB-REPO-PR-22-S03",
+            "purpose": "task context"
+          },
+          {
+            "id": "CRB-REPO-PR-22-S04",
+            "purpose": "task context"
+          },
+          {
+            "id": "CRB-REPO-PR-22-S05",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "CHANGELOG.md",
+          "InplaceX-ads-core/src/test/kotlin/com/mirkori/inplacex/ads/AdPolicyTest.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/services/AdPlacementPolicyTest.kt",
+          "docs/modules.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".env.*",
+          "secrets",
+          "production config"
+        ],
+        "context_docs": [
+          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-22-S02_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "dispatcher_decision_reason": "worker packet waits for unresolved dependencies: CRB-REPO-PR-22-S01, CRB-REPO-PR-22-S03, CRB-REPO-PR-22-S04, CRB-REPO-PR-22-S05",
+      "next_owner": "none",
+      "next_role": "none",
+      "repaired_packet_at": "2026-07-30T00:45:02Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "status_reason": "source task was already finalized into develop",
+      "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
+      "resolved_dependencies": [],
+      "dependency_state_checked_at": "2026-07-30T00:45:20Z",
+      "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "blocked_by": [
+        "CRB-REPO-PR-22-S01",
+        "CRB-REPO-PR-22-S03",
+        "CRB-REPO-PR-22-S04",
+        "CRB-REPO-PR-22-S05"
+      ],
+      "dependency_reconciled_at": "2026-07-30T00:45:20Z",
+      "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "parent_task_id": "REPO-PR-22",
+        "parent_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "superseded_by_task_id": "REPO-PR-22",
+      "superseded_by_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "CRB-REPO-PR-22-S03",
+      "title": "REPO-PR-22 implementation slice 3: asset, code",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "clean-rebuild",
+      "worker_ready": false,
+      "recommended_agent": "auto-worker-5.3",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3",
+        "auto-worker-5.5"
+      ],
+      "model_candidates": [
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gpt-5.3-codex-spark"
+      ],
+      "capability_profile_hint": "balanced",
+      "reasoning_effort_hint": "high",
+      "delegation_hint": "forbidden",
+      "independent_work_units": 1,
+      "synthesis_required": false,
+      "execution_kind": "llm_write",
+      "execution_lane": "llm_balanced",
+      "allowed_paths": [
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/Human/Provider Setup.md",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "AiStudio/Task_manager/task_queue.json",
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+        "README.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets",
+        "production config"
+      ],
+      "changed_paths": [
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/Human/Provider Setup.md"
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Rebuild only this decomposition slice from the source PR intent on current develop.",
+        "Do not copy or modify paths owned by sibling decomposition slices.",
+        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
+        "Pass every deterministic check and return a normal Worker result for Integrator review."
+      ],
+      "context_docs": [
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+      ],
+      "source_file": "AiStudio/Task_manager/task_queue.json",
+      "source_task_id": "REPO-PR-22",
+      "parent_task_id": "REPO-PR-22",
+      "repair_source_task_id": "REPO-PR-22",
+      "integration_repair_parent_id": "REPO-PR-22",
+      "integration_repair_kind": "proactive_pr_decomposition",
+      "source_branch": "origin/feature/provider-modules-v1",
+      "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_source_branch": "origin/feature/provider-modules-v1",
+      "clean_rebuild_source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_route": "repository_pr_decomposition",
+      "decomposition_slice_key": "S03",
+      "decomposition_categories": [
+        "asset",
+        "code"
+      ],
+      "source_lane": "dispatcher_integration_repair",
+      "provenance": {
+        "source": "repository_pr_decomposition_planner.py",
+        "source_task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "slice_key": "S03",
+        "created_at": "2026-07-30T00:45:02Z"
+      },
+      "worker_instructions": [
+        "Verify that source_branch still resolves to source_head_sha before using it.",
+        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
+        "Compare every slice path with current develop and preserve newer target behavior.",
+        "Run every script_action and record the actual model selected by the central Router.",
+        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
+      ],
+      "existing_behavior": [
+        "Current develop is the behavior baseline for every decomposition slice.",
+        "Sibling slices own disjoint paths and must remain independently integrable."
+      ],
+      "preserve_contract": [
+        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
+        "Any intentional replacement requires explicit owner evidence and Integrator review."
+      ],
+      "lock": "free",
+      "created_at": "2026-07-30T00:45:02Z",
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "traceability": {
+        "task_id": "CRB-REPO-PR-22-S03",
+        "canonical_task_id": "CRB-REPO-PR-22-S03",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "provenance": {
+          "source": "repository_pr_decomposition_planner.py",
+          "source_task_id": "REPO-PR-22",
+          "source_branch": "origin/feature/provider-modules-v1",
+          "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+          "slice_key": "S03",
+          "created_at": "2026-07-30T00:45:02Z"
+        },
+        "derived_from": null,
+        "repaired_at": "2026-07-30T00:45:02Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+        "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-docs/Game/Human/Provider Setup.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+          "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+          "InplaceX-docs/Game/Human/Provider Setup.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-REPO-PR-22-S03",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-ads-core/src/main/kotlin/com/mirkori/inplacex/ads/AdContracts.kt",
+          "InplaceX-android/app/src/debug/java/com/mirkori/inplacex/platform/services/DebugProviderServices.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/AdPlacementPolicy.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/services/ProviderAdapters.kt",
+          "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+          "InplaceX-docs/Game/Human/Provider Setup.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".env.*",
+          "secrets",
+          "production config"
+        ],
+        "context_docs": [
+          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-22-S03_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "next_owner": "none",
+      "next_role": "none",
+      "repaired_packet_at": "2026-07-30T00:45:02Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_metadata_at": "2026-07-30T00:45:03Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "packet_normalized_at": "2026-07-30T00:45:20Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "parent_task_id": "REPO-PR-22",
+        "parent_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "status_reason": "source task was already finalized into develop",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "superseded_by_task_id": "REPO-PR-22",
+      "superseded_by_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "CRB-REPO-PR-22-S04",
+      "title": "REPO-PR-22 implementation slice 4: asset, code, tests",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "clean-rebuild",
+      "worker_ready": false,
+      "recommended_agent": "auto-worker-5.5",
+      "eligible_worker_profiles": [
+        "auto-worker-5.5",
+        "auto-worker-5.5max"
+      ],
+      "model_candidates": [
+        "gpt-5.6-terra",
+        "gpt-5.6-sol",
+        "gpt-5.6-luna"
+      ],
+      "capability_profile_hint": "deep",
+      "reasoning_effort_hint": "extra_high",
+      "delegation_hint": "forbidden",
+      "independent_work_units": 1,
+      "synthesis_required": false,
+      "execution_kind": "llm_write",
+      "execution_lane": "llm_deep",
+      "allowed_paths": [
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "AiStudio/Task_manager/task_queue.json",
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+        "README.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets",
+        "production config"
+      ],
+      "changed_paths": [
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md"
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Rebuild only this decomposition slice from the source PR intent on current develop.",
+        "Do not copy or modify paths owned by sibling decomposition slices.",
+        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
+        "Pass every deterministic check and return a normal Worker result for Integrator review."
+      ],
+      "context_docs": [
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+      ],
+      "source_file": "AiStudio/Task_manager/task_queue.json",
+      "source_task_id": "REPO-PR-22",
+      "parent_task_id": "REPO-PR-22",
+      "repair_source_task_id": "REPO-PR-22",
+      "integration_repair_parent_id": "REPO-PR-22",
+      "integration_repair_kind": "proactive_pr_decomposition",
+      "source_branch": "origin/feature/provider-modules-v1",
+      "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_source_branch": "origin/feature/provider-modules-v1",
+      "clean_rebuild_source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_route": "repository_pr_decomposition",
+      "decomposition_slice_key": "S04",
+      "decomposition_categories": [
+        "asset",
+        "code",
+        "tests"
+      ],
+      "source_lane": "dispatcher_integration_repair",
+      "provenance": {
+        "source": "repository_pr_decomposition_planner.py",
+        "source_task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "slice_key": "S04",
+        "created_at": "2026-07-30T00:45:02Z"
+      },
+      "worker_instructions": [
+        "Verify that source_branch still resolves to source_head_sha before using it.",
+        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
+        "Compare every slice path with current develop and preserve newer target behavior.",
+        "Run every script_action and record the actual model selected by the central Router.",
+        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
+      ],
+      "existing_behavior": [
+        "Current develop is the behavior baseline for every decomposition slice.",
+        "Sibling slices own disjoint paths and must remain independently integrable."
+      ],
+      "preserve_contract": [
+        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
+        "Any intentional replacement requires explicit owner evidence and Integrator review."
+      ],
+      "lock": "free",
+      "created_at": "2026-07-30T00:45:02Z",
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "traceability": {
+        "task_id": "CRB-REPO-PR-22-S04",
+        "canonical_task_id": "CRB-REPO-PR-22-S04",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "provenance": {
+          "source": "repository_pr_decomposition_planner.py",
+          "source_task_id": "REPO-PR-22",
+          "source_branch": "origin/feature/provider-modules-v1",
+          "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+          "slice_key": "S04",
+          "created_at": "2026-07-30T00:45:02Z"
+        },
+        "derived_from": null,
+        "repaired_at": "2026-07-30T00:45:02Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+        "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+        "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+        "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+        "InplaceX-docs/Game/Human/Auth Ads and Billing.md"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+          "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+          "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+          "InplaceX-docs/Game/Human/Auth Ads and Billing.md"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-REPO-PR-22-S04",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/PasswordlessEmailCodePolicy.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/ProviderSubjectDeriver.kt",
+          "InplaceX-auth-core/src/main/kotlin/com/mirkori/inplacex/auth/TelegramLoginVerifier.kt",
+          "InplaceX-auth-core/src/test/kotlin/com/mirkori/inplacex/auth/AuthProviderSecurityTest.kt",
+          "InplaceX-docs/Game/GPT/Auth Ads Billing Contracts.md",
+          "InplaceX-docs/Game/Human/Auth Ads and Billing.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".env.*",
+          "secrets",
+          "production config"
+        ],
+        "context_docs": [
+          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-22-S04_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "next_owner": "none",
+      "next_role": "none",
+      "repaired_packet_at": "2026-07-30T00:45:02Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_metadata_at": "2026-07-30T00:45:03Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "packet_normalized_at": "2026-07-30T00:45:20Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "parent_task_id": "REPO-PR-22",
+        "parent_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "status_reason": "source task was already finalized into develop",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "superseded_by_task_id": "REPO-PR-22",
+      "superseded_by_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "CRB-REPO-PR-22-S05",
+      "title": "REPO-PR-22 implementation slice 5: asset",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "M",
+      "type": "clean-rebuild",
+      "worker_ready": false,
+      "recommended_agent": "auto-worker-5.3",
+      "eligible_worker_profiles": [
+        "auto-worker-5.3",
+        "auto-worker-5.5"
+      ],
+      "model_candidates": [
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gpt-5.3-codex-spark"
+      ],
+      "capability_profile_hint": "balanced",
+      "reasoning_effort_hint": "high",
+      "delegation_hint": "forbidden",
+      "independent_work_units": 1,
+      "synthesis_required": false,
+      "execution_kind": "llm_write",
+      "execution_lane": "llm_balanced",
+      "allowed_paths": [
+        "settings.gradle.kts",
+        "docs/reports/**",
+        "CHANGELOG.md",
+        "AiStudio/Task_manager/task_queue.json",
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+        "README.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".env.*",
+        "secrets",
+        "production config"
+      ],
+      "changed_paths": [
+        "settings.gradle.kts"
+      ],
+      "checks": [
+        "git diff --check"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Rebuild only this decomposition slice from the source PR intent on current develop.",
+        "Do not copy or modify paths owned by sibling decomposition slices.",
+        "Preserve current develop behavior unless the source PR explicitly adds compatible behavior.",
+        "Pass every deterministic check and return a normal Worker result for Integrator review."
+      ],
+      "context_docs": [
+        "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+        "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+      ],
+      "source_file": "AiStudio/Task_manager/task_queue.json",
+      "source_task_id": "REPO-PR-22",
+      "parent_task_id": "REPO-PR-22",
+      "repair_source_task_id": "REPO-PR-22",
+      "integration_repair_parent_id": "REPO-PR-22",
+      "integration_repair_kind": "proactive_pr_decomposition",
+      "source_branch": "origin/feature/provider-modules-v1",
+      "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_source_branch": "origin/feature/provider-modules-v1",
+      "clean_rebuild_source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+      "clean_rebuild_route": "repository_pr_decomposition",
+      "decomposition_slice_key": "S05",
+      "decomposition_categories": [
+        "asset"
+      ],
+      "source_lane": "dispatcher_integration_repair",
+      "provenance": {
+        "source": "repository_pr_decomposition_planner.py",
+        "source_task_id": "REPO-PR-22",
+        "source_branch": "origin/feature/provider-modules-v1",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "slice_key": "S05",
+        "created_at": "2026-07-30T00:45:02Z"
+      },
+      "worker_instructions": [
+        "Verify that source_branch still resolves to source_head_sha before using it.",
+        "Review the complete source PR for intent, but edit only this slice's allowed_paths.",
+        "Compare every slice path with current develop and preserve newer target behavior.",
+        "Run every script_action and record the actual model selected by the central Router.",
+        "Stop with needs_worker_fix if the slice requires a sibling path not present in allowed_paths."
+      ],
+      "existing_behavior": [
+        "Current develop is the behavior baseline for every decomposition slice.",
+        "Sibling slices own disjoint paths and must remain independently integrable."
+      ],
+      "preserve_contract": [
+        "Do not remove current commands, schemas, public functions, tests, docs contracts or automation entrypoints.",
+        "Any intentional replacement requires explicit owner evidence and Integrator review."
+      ],
+      "lock": "free",
+      "created_at": "2026-07-30T00:45:02Z",
+      "base_branch": "develop",
+      "packet_schema_version": 2,
+      "traceability": {
+        "task_id": "CRB-REPO-PR-22-S05",
+        "canonical_task_id": "CRB-REPO-PR-22-S05",
+        "canonical_target_id": null,
+        "source_lane": "dispatcher_integration_repair",
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "provenance": {
+          "source": "repository_pr_decomposition_planner.py",
+          "source_task_id": "REPO-PR-22",
+          "source_branch": "origin/feature/provider-modules-v1",
+          "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+          "slice_key": "S05",
+          "created_at": "2026-07-30T00:45:02Z"
+        },
+        "derived_from": null,
+        "repaired_at": "2026-07-30T00:45:02Z",
+        "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py"
+      },
+      "doc_refs": [
+        {
+          "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+          "purpose": "required context"
+        },
+        {
+          "path": "AiStudio/Task_manager/task_queue.json",
+          "purpose": "required context"
+        }
+      ],
+      "code_refs": [
+        "settings.gradle.kts"
+      ],
+      "context_inventory": {
+        "base_ref": "origin/develop",
+        "code_refs": [
+          "settings.gradle.kts"
+        ],
+        "doc_refs": [
+          {
+            "path": "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "docs/automation/REPOSITORY_PR_DECOMPOSITION.md",
+            "purpose": "required context"
+          },
+          {
+            "path": "AiStudio/Task_manager/task_queue.json",
+            "purpose": "required context"
+          }
+        ],
+        "task_refs": [
+          {
+            "id": "CRB-REPO-PR-22-S05",
+            "purpose": "task context"
+          }
+        ],
+        "task_queue_ref": "AiStudio/Task_manager/task_queue.json",
+        "review_policy": "Use current target-branch code, task queue state, and docs as context; integrate compatible additions instead of treating drift as an automatic blocker."
+      },
+      "input_refs": {
+        "base_branch": "develop",
+        "base_ref": "origin/develop",
+        "allowed_paths": [
+          "settings.gradle.kts"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".env.*",
+          "secrets",
+          "production config"
+        ],
+        "context_docs": [
+          "docs/automation/REPOSITORY_HYGIENE_CYCLE.md",
+          "docs/automation/REPOSITORY_PR_DECOMPOSITION.md"
+        ],
+        "source_file": "AiStudio/Task_manager/task_queue.json",
+        "worker_source_branch": null
+      },
+      "output_contract": {
+        "changed_paths_must_match_allowed_paths": true,
+        "required_checks": [
+          "git diff --check"
+        ],
+        "worker_report_required": true,
+        "worker_report_path": "docs/reports/workers/WORKER_RESULT_CRB-REPO-PR-22-S05_<timestamp>.md",
+        "event_required": "integration_requested",
+        "task_state_on_success": "agent_done",
+        "task_state_on_blocker": "needs_worker_fix",
+        "preserve_existing_behavior": true
+      },
+      "script_actions": [
+        {
+          "command": "git diff --check",
+          "required": true,
+          "purpose": "worker validation evidence",
+          "on_failure": "stop and return needs_worker_fix with command output"
+        }
+      ],
+      "regression_guards": [
+        "Compare changed code against current develop before finalizing.",
+        "Document any intentional behavior removal in the worker report and integration_notes."
+      ],
+      "integration_notes": [
+        "Integrator must preserve current develop behavior and cherry-pick only useful candidate additions.",
+        "If candidate code was built on stale context, adapt it to current code instead of rejecting the migration only because surrounding code changed.",
+        "If preserving behavior requires non-trivial design work, route to needs_integrator_review, needs_dispatcher_repair, needs_architect, or needs_worker_fix with a concrete next owner."
+      ],
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "stale_or_superseded",
+      "dispatcher_decision": "stale_or_superseded",
+      "dispatcher_decision_reason": "complete packet auto-normalized from queue metadata",
+      "next_owner": "none",
+      "next_role": "none",
+      "repaired_packet_at": "2026-07-30T00:45:02Z",
+      "repaired_packet_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "repaired_packet_metadata_at": "2026-07-30T00:45:03Z",
+      "repaired_packet_metadata_by": "scripts/agent_control/dispatcher_packet_repair.py",
+      "packet_normalized_at": "2026-07-30T00:45:20Z",
+      "packet_normalized_by": "scripts/agent_control/normalize_task_packets.py",
+      "integration_status": "already_integrated",
+      "repository_hygiene_integration_evidence": {
+        "status": "integrated",
+        "proof": "parent_merge_commit_ancestor",
+        "source_head_sha": "85d32eb53f80c617761103215e02f751b742344e",
+        "parent_task_id": "REPO-PR-22",
+        "parent_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+        "base_ref": "origin/develop",
+        "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
+        "checked_at": "2026-07-30T00:59:34Z"
+      },
+      "status_reason": "source task was already finalized into develop",
+      "not_worker_ready_reason": "source parent merge commit is already an ancestor of develop",
+      "closed_by": "repository_hygiene_cycle",
+      "closed_at": "2026-07-30T00:59:34Z",
+      "updated_at": "2026-07-30T00:59:34Z",
+      "superseded_by_task_id": "REPO-PR-22",
+      "superseded_by_merge_commit": "705506520b0736ec0e507974beb1b03e06034d77",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T00:59:41Z",
+      "archived_by": "status_orchestrator.py"
     }
   ],
-  "updated_at": "2026-07-29T23:59:11Z"
+  "updated_at": "2026-07-30T00:59:41Z"
 }
