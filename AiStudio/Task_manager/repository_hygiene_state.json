@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-30T02:01:10Z",
+  "generated_at": "2026-07-30T06:19:06Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -165,7 +165,7 @@
     "staged_count": 0,
     "updated_count": 0,
     "covered_count": 4,
-    "superseded_count": 1,
+    "superseded_count": 0,
     "staged_task_ids": [],
     "updated_task_ids": [],
     "covered_task_ids": [
@@ -174,16 +174,14 @@
       "REPO-PR-7",
       "REPO-PR-8"
     ],
-    "superseded_task_ids": [
-      "REPO-PR-9"
-    ],
-    "changed": true,
+    "superseded_task_ids": [],
+    "changed": false,
     "merged_parent_reconciliation": {
       "reconciled_count": 0,
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "1bda8cba24ad1b3abbc3446ff09606dcce0c4e85",
+      "base_sha": "56164ab5925e96e6e8356bf4e0c5507579766608",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -192,7 +190,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "1bda8cba24ad1b3abbc3446ff09606dcce0c4e85",
+      "base_sha": "56164ab5925e96e6e8356bf4e0c5507579766608",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -219,9 +217,8 @@
     }
   },
   "event": {
-    "event_appended": true,
-    "event_id": "repository-hygiene-84095b668699423b3a0f",
-    "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
+    "event_appended": false,
+    "reason": "no_task_changes"
   },
   "repair_parent_events": {
     "event_count": 0,
@@ -272,7 +269,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-30T02:01:11Z",
+    "generated_at": "2026-07-30T06:19:07Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -290,6 +287,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "167a6efe2759dc7b551242d281f1e61d7110ff92ed02f8e5392320571f68ac06",
+  "state_signature": "26cee664659bc526db5616799928cc2755deb09e5bff692015c823456029f83e",
   "state_written": true
 }
