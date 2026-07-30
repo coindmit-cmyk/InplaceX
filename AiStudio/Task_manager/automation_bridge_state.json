@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-30T07:34:49Z",
+  "updated_at": "2026-07-30T07:49:58Z",
   "source_report": "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/FULL_INTAKE_AUTOMATION_CYCLE.json",
   "state": "succeeded",
   "apply": true,
@@ -165,7 +165,7 @@
     "packet_cleaned": 0,
     "packet_cleanup_selected": 0,
     "packet_selected": 0,
-    "pr_checked": 3950,
+    "pr_checked": 3994,
     "pr_events_applied": 12,
     "pr_failed": 0,
     "pr_missing": 24,
@@ -181,19 +181,19 @@
     "repository_cleanup_failed": 0,
     "repository_grace_branches": 0,
     "repository_hygiene_unhealthy": 0,
-    "repository_open_prs": 1640,
-    "repository_pr_groups": 1290,
+    "repository_open_prs": 1648,
+    "repository_pr_groups": 1298,
     "repository_salvage_branches": 0,
     "repository_tasks_staged": 26,
     "repository_tasks_superseded": 35,
-    "repository_tasks_updated": 35,
+    "repository_tasks_updated": 43,
     "task_docs_imported": 0,
     "task_docs_updated": 0,
     "worker_ready_delta": -8
   },
   "cumulative_conversion": {
     "incoming": {
-      "pr_checked": 3950,
+      "pr_checked": 3994,
       "pr_events_applied": 12,
       "pr_failed": 0,
       "pr_missing": 24,
@@ -201,12 +201,12 @@
       "project_state_intake_written": 12,
       "repository_cleanup_deleted": 0,
       "repository_cleanup_failed": 0,
-      "repository_open_prs": 1640,
-      "repository_pr_groups": 1290,
+      "repository_open_prs": 1648,
+      "repository_pr_groups": 1298,
       "repository_salvage_branches": 0,
       "repository_tasks_staged": 26,
       "repository_tasks_superseded": 35,
-      "repository_tasks_updated": 35
+      "repository_tasks_updated": 43
     },
     "documentation": {
       "design_blocked_by_dependency": 0,
@@ -228,15 +228,15 @@
       "packet_selected": 0
     },
     "worker_queue": {
-      "queue_after_total": 10637,
-      "queue_before_total": 10624,
+      "queue_after_total": 10687,
+      "queue_before_total": 10674,
       "queue_total_delta": 13,
       "worker_queue_updates": 0,
       "worker_ready_after": 195,
       "worker_ready_before": 203,
       "worker_ready_delta": -8
     },
-    "material_update_count": 144,
+    "material_update_count": 152,
     "noop_cycle_count": 61
   },
   "cumulative_convergence": {
@@ -245,16 +245,16 @@
       "artifact_findings": 0,
       "artifact_inventory": 0,
       "design_packages_seen": 0,
-      "documentation_classified": 68068,
+      "documentation_classified": 68600,
       "documentation_manifest_errors": 348,
-      "documentation_orphans": 67364,
-      "pr_checked": 3950,
+      "documentation_orphans": 67880,
+      "pr_checked": 3994,
       "pr_failed": 0,
       "project_rules_gaps": 0,
       "repository_branch_refs": 0,
       "repository_logical_branches": 0,
-      "repository_open_prs": 1640,
-      "repository_pr_groups": 1290,
+      "repository_open_prs": 1648,
+      "repository_pr_groups": 1298,
       "task_docs_seen": 0
     },
     "normalize": {
@@ -263,20 +263,20 @@
       "artifact_worker_ready_rows": 0,
       "design_candidates": 0,
       "design_imported": 0,
-      "documentation_debt_candidates": 3580,
+      "documentation_debt_candidates": 3606,
       "pending_approval": 0,
       "project_rules_candidates": 0,
       "project_rules_staged": 0,
       "repository_tasks_staged": 26,
       "repository_tasks_superseded": 35,
-      "repository_tasks_updated": 35,
-      "review_required": 67364,
+      "repository_tasks_updated": 43,
+      "review_required": 67880,
       "task_docs_imported": 0,
       "task_docs_updated": 0
     },
     "cleanup": {
-      "documentation_debt_candidates": 3580,
-      "documentation_orphan_count": 67364,
+      "documentation_debt_candidates": 3606,
+      "documentation_orphan_count": 67880,
       "owner_gap_count": 0,
       "packet_cleaned": 0,
       "packet_cleanup_selected": 0,
@@ -291,24 +291,24 @@
       "worker_ready_delta": -8
     },
     "documentation_code_tasks": {
-      "code_prs_checked": 3950,
+      "code_prs_checked": 3994,
       "docs_to_queue": 26,
       "owner_gap_count": 0,
       "task_docs_updated": 0,
-      "task_queue_total": 10637,
+      "task_queue_total": 10687,
       "worker_ready_total": 195
     },
-    "cycle_count": 262,
+    "cycle_count": 264,
     "blocking_count": 176,
     "policy": "documentation = code + tasks",
     "status": "needs_review",
     "statuses": {
       "needs_repair": 174,
-      "needs_review": 88
+      "needs_review": 90
     },
     "ok": true
   },
-  "last_material_update_at": "2026-07-30T07:34:49Z",
+  "last_material_update_at": "2026-07-30T07:49:58Z",
   "last_material_counters": {
     "pr_checked": 22,
     "pr_missing": 0,

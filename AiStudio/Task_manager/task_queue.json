@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-30T07:35:00Z",
+  "updated_at": "2026-07-30T07:50:01Z",
   "base_branch": "develop",
   "queue_model": "shared",
   "note": "Project-local InplaceX queue. Visible rows are not automatically worker-ready; Dispatcher must validate dependencies and Worker Packet v2 before every claim.",
@@ -606,14 +606,13 @@
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
+        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-JDBC"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S22",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S24",
-        "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC"
-      ],
+      "resolved_dependencies": [],
       "split_into": [
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC",
         "CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-TRANSITION",
@@ -701,7 +700,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "base_branch": "develop",
       "eligible_worker_profiles": [
@@ -1143,12 +1142,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S26"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S23"
-      ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-backend/**",
@@ -1202,7 +1200,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1552,11 +1550,10 @@
       ],
       "blocked_by": [
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
@@ -1610,7 +1607,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1637,11 +1634,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S27",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S31"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "ops/**",
@@ -1693,7 +1689,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -1880,12 +1876,11 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
       ],
       "blocked_by": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17"
       ],
-      "resolved_dependencies": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S08",
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S12"
-      ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-docs/Game/Human/**",
@@ -1937,7 +1932,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2127,11 +2122,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S35",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S11"
       ],
+      "resolved_dependencies": [],
       "summary": "Design handoff task candidate. Dispatcher must review/split before worker-ready.",
       "allowed_paths": [
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
@@ -2186,7 +2180,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2879,9 +2873,9 @@
           "next_owner": "Dispatcher"
         }
       ],
-      "dependency_state_checked_at": "2026-07-30T07:35:00Z",
+      "dependency_state_checked_at": "2026-07-30T07:50:01Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py",
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:00Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -2977,7 +2971,7 @@
       },
       "direct_merge_authorized": false,
       "requires_strong_review": true,
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py",
       "worker_instructions": [
         "Read docs/reports/integration/S25_REPAIR_SPEC_20260725.md, Online Contracts.md and Ktor Architecture.md completely before editing.",
@@ -3195,7 +3189,7 @@
       "status_reason": "production remained unchanged; blocker report 192e419 verified missing auth principal membership and mutable no-plaintext duel prerequisites",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
       "not_worker_ready_reason": "worker packet waits for unresolved dependencies: CRB-INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S25-CODEC, CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP, CRB-S25-PREREQ-B-MUTABLE-DUEL-DIGITS",
-      "dependency_state_checked_at": "2026-07-30T07:35:00Z",
+      "dependency_state_checked_at": "2026-07-30T07:50:01Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3284,7 +3278,7 @@
       "requires_strong_review": true,
       "next_role": "auto_dispatcher",
       "next_action": "Wait for the listed dependencies to reach an accepted terminal state, then rerun dispatcher_packet_repair.py.",
-      "dependency_state_checked_at": "2026-07-30T07:35:00Z",
+      "dependency_state_checked_at": "2026-07-30T07:50:01Z",
       "dependency_state_checked_by": "scripts/agent_control/dispatcher_packet_repair.py"
     },
     {
@@ -3311,11 +3305,10 @@
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
       "blocked_by": [
-        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41"
-      ],
-      "resolved_dependencies": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S41",
         "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S19"
       ],
+      "resolved_dependencies": [],
       "summary": "Integrator-only container. Dispatcher must split implementation fixes before any Worker claim.",
       "allowed_paths": [
         "InplaceX-android/**",
@@ -3378,7 +3371,7 @@
           "captured_at": "2026-07-25T16:21:21Z"
         }
       ],
-      "dependency_reconciled_at": "2026-07-30T07:35:00Z",
+      "dependency_reconciled_at": "2026-07-30T07:50:01Z",
       "dependency_reconciled_by": "scripts/agent_control/normalize_task_packets.py"
     },
     {
@@ -3405,7 +3398,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        5
+      ],
       "repository_hygiene_draft_prs": [
         5
       ],
@@ -3436,7 +3431,7 @@
       "next_owner": "Integrator",
       "next_role": "integrator_review",
       "discovered_at": "2026-07-26T20:31:58Z",
-      "updated_at": "2026-07-30T07:34:49Z",
+      "updated_at": "2026-07-30T07:49:59Z",
       "changed_paths": [
         ".github/workflows/ci.yml",
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
@@ -3570,7 +3565,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        7
+      ],
       "repository_hygiene_draft_prs": [
         7
       ],
@@ -3601,7 +3598,7 @@
       "next_owner": "Integrator",
       "next_role": "integrator_review",
       "discovered_at": "2026-07-26T20:31:58Z",
-      "updated_at": "2026-07-30T07:34:49Z",
+      "updated_at": "2026-07-30T07:49:59Z",
       "changed_paths": [
         "CHANGELOG.md",
         "InplaceX-android/app/build.gradle.kts",
@@ -3692,7 +3689,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        8
+      ],
       "repository_hygiene_draft_prs": [
         8
       ],
@@ -3723,7 +3722,7 @@
       "next_owner": "human",
       "next_role": "human",
       "discovered_at": "2026-07-26T20:31:58Z",
-      "updated_at": "2026-07-30T07:34:49Z",
+      "updated_at": "2026-07-30T07:49:59Z",
       "changed_paths": [
         "CHANGELOG.md",
         "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
@@ -3796,7 +3795,9 @@
       "repository_hygiene_topology": "linear",
       "repository_hygiene_route": "dispatcher_integration",
       "repository_hygiene_head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
-      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_dirty_prs": [
+        4
+      ],
       "repository_hygiene_draft_prs": [
         4
       ],
@@ -3827,7 +3828,7 @@
       "next_owner": "Integrator",
       "next_role": "integrator_review",
       "discovered_at": "2026-07-29T00:11:11Z",
-      "updated_at": "2026-07-30T07:34:49Z",
+      "updated_at": "2026-07-30T07:49:59Z",
       "changed_paths": [
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122626Z.md",
         "docs/reports/workers/WORKER_RESULT_CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK_20260726T122732Z.md",
@@ -3884,7 +3885,7 @@
     "dependency_updated_count": 0
   },
   "legacy_queue_normalization": {
-    "generated_at": "2026-07-30T07:34:51Z",
+    "generated_at": "2026-07-30T07:50:01Z",
     "source": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/task_queue.json",
     "change_count": 0
   }
