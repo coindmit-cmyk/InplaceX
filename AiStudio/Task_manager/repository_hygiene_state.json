@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-30T06:19:06Z",
+  "generated_at": "2026-07-30T07:34:49Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -45,9 +45,7 @@
       "draft_prs": [
         4
       ],
-      "dirty_prs": [
-        4
-      ],
+      "dirty_prs": [],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -81,9 +79,7 @@
       "draft_prs": [
         5
       ],
-      "dirty_prs": [
-        5
-      ],
+      "dirty_prs": [],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -117,9 +113,7 @@
       "draft_prs": [
         7
       ],
-      "dirty_prs": [
-        7
-      ],
+      "dirty_prs": [],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -153,9 +147,7 @@
       "draft_prs": [
         8
       ],
-      "dirty_prs": [
-        8
-      ],
+      "dirty_prs": [],
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
@@ -163,11 +155,16 @@
   ],
   "task_routing": {
     "staged_count": 0,
-    "updated_count": 0,
+    "updated_count": 4,
     "covered_count": 4,
     "superseded_count": 0,
     "staged_task_ids": [],
-    "updated_task_ids": [],
+    "updated_task_ids": [
+      "REPO-PR-4",
+      "REPO-PR-5",
+      "REPO-PR-7",
+      "REPO-PR-8"
+    ],
     "covered_task_ids": [
       "REPO-PR-4",
       "REPO-PR-5",
@@ -175,13 +172,13 @@
       "REPO-PR-8"
     ],
     "superseded_task_ids": [],
-    "changed": false,
+    "changed": true,
     "merged_parent_reconciliation": {
       "reconciled_count": 0,
       "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "56164ab5925e96e6e8356bf4e0c5507579766608",
+      "base_sha": "6135829ea1b92e7618f809d9afd0af3b06f19e2e",
       "changed": false
     },
     "integrated_descendant_reconciliation": {
@@ -190,7 +187,7 @@
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "56164ab5925e96e6e8356bf4e0c5507579766608",
+      "base_sha": "6135829ea1b92e7618f809d9afd0af3b06f19e2e",
       "changed": false
     },
     "repair_parent_reconciliation": {
@@ -217,8 +214,9 @@
     }
   },
   "event": {
-    "event_appended": false,
-    "reason": "no_task_changes"
+    "event_appended": true,
+    "event_id": "repository-hygiene-69b9d58df9f6d4dc915f",
+    "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
     "event_count": 0,
@@ -269,7 +267,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-30T06:19:07Z",
+    "generated_at": "2026-07-30T07:34:51Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -287,6 +285,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "26cee664659bc526db5616799928cc2755deb09e5bff692015c823456029f83e",
+  "state_signature": "1744e0c60874e719b11c56fe951a5c4fe4934b684c46a7442da6a3ff06b793a8",
   "state_written": true
 }
