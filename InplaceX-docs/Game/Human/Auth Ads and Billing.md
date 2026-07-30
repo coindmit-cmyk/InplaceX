@@ -48,6 +48,9 @@
 - an unknown market shows no ad
 - SDKs may prepare ads in parallel after privacy consent so fallback does not
   add avoidable waiting
+- the first configured launch asks whether personalized advertising is
+  allowed; declining keeps advertising non-personalized, while closing the app
+  before making a choice causes no advertising request
 
 ## Paid Products
 
@@ -82,13 +85,20 @@
   client ID in the Android build and identity-service environment
 - common email and Telegram verification rules are implemented and tested, but
   their delivery adapters and public endpoints are intentionally not active yet
-- the shared advertising policy is implemented and used by Android; the real
-  network SDK and ad inventory are not active, so release presentation still
-  fails closed
-- the asynchronous owner-first router, fixed owner/company provider identities,
-  device availability filter, and coarse-market resolver contract are prepared;
-  the backend IP-to-market adapter is not active yet
+- Yandex Mobile Ads SDK is connected as the owner's live adapter for banner,
+  rewarded, and post-match formats; it becomes active only when the build has
+  all three owner placement IDs, the player has made a privacy choice, and the
+  backend returns a known market
+- the backend market endpoint is implemented and returns only a coarse market;
+  deployment must configure a trusted reverse-proxy country header
+- active-use time, completed matches, and games since the last presented
+  interstitial are persisted locally and are not transferred through Android
+  backup
+- AdMob and Huawei company fallback adapters are not connected yet and
+  therefore fail closed
 - billing remains a local/debug stub and fails closed in release
-- UI and local persistence use the provider contracts
+- UI and local persistence use asynchronous provider callbacks; dismissal
+  without the Yandex reward callback never grants coins or a hint
 - temporary `Pro` is a local coin purchase rather than a billing-provider product
-- real SDK integration comes later without changing the game flow again
+- the remaining advertising work is company fallback SDK integration and
+  release account/deployment configuration

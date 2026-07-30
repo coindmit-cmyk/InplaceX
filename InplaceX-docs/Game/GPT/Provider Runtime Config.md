@@ -26,6 +26,9 @@
 - `HUAWEI_COMPANY_GAME_BANNER_AD_UNIT_ID`
 - `HUAWEI_COMPANY_REWARDED_AD_UNIT_ID`
 - `HUAWEI_COMPANY_POST_MATCH_INTERSTITIAL_AD_UNIT_ID`
+- `ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES`
+- `ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS`
+- `ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS`
 - `BILLING_REMOVE_ADS_PRODUCT_ID`
 - `BILLING_PRO_SUBSCRIPTION_ID`
 - `BILLING_PRO_PLUS_SUBSCRIPTION_ID`
@@ -60,15 +63,26 @@
   client ID and online endpoint are configured; the returned ID token is not a
   local success and becomes authenticated only after the identity process
   verifies it and returns InplaceX credentials
-- release returns `GooglePlayAuthService`, `CompanyAdMobService`, and
-  `GooglePlayBillingService`; ads and billing continue to fail closed until
-  their SDK integrations exist
-- `AndroidAdRuntime` prepares provider-neutral asynchronous preload/show
-  routing, but its release market resolver is `UNKNOWN` and every SDK adapter
-  remains unavailable until the backend market endpoint, consent boundary, and
-  real SDK implementations are integrated
+- debug and release create the same real Yandex owner adapter when all three
+  variant-specific Yandex placement ids are present
+- Yandex Mobile Ads SDK automatic initialization is disabled in the manifest;
+  initialization occurs only after a persisted `ACCEPTED` or `DECLINED`
+  privacy choice
+- `AndroidAdRuntime` resolves `/api/v1/runtime/ad-market` through the configured
+  online HTTPS base URL, routes owner-first, and drives real Yandex callbacks
+- banner, rewarded, and post-match UI call sites use `AndroidAdRuntime`; reward
+  state changes only after the provider reports completion
+- AdMob and Huawei still have configuration identities but no live Android SDK
+  adapters, so they remain unavailable fallback targets
+- billing continues to fail closed until its SDK integration exists
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
 Absent provider configuration, Credential Manager cancellation, server
 rejection, or network failure leaves the player in guest mode. Debug provider
 stubs remain isolated tooling and are not used by the real Profile sign-in flow.
+
+The backend market route is enabled safely only when both
+`INPLACEX_AD_MARKET_COUNTRY_HEADER` and
+`INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS` are set. The reverse proxy must derive
+and overwrite the country header from the current connection IP. Partial or
+untrusted configuration returns `UNKNOWN`.

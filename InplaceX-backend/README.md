@@ -20,6 +20,8 @@ Current state:
 - `GET /health` returns `200 {"status":"ok"}` when the process is alive
 - `GET /ready` returns `200 {"status":"ready"}` when configured modules are ready;
   startup applies database migrations before the module is ready when a database is configured
+- `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`
+  for Android advertising routing and never returns the client IP
 - runtime host, port, and deployment label are read from `INPLACEX_BACKEND_HOST`,
   `INPLACEX_BACKEND_PORT` (or conventional `PORT`), and
   `INPLACEX_BACKEND_ENVIRONMENT`
@@ -32,6 +34,11 @@ Current state:
   versions in `inplacex_schema_history`
 - JDBC repositories use database constraints, transactional writes, and optimistic
   revisions for cloud saves; session commands are idempotent per client command id
+- advertising market resolution trusts a country header only when both
+  `INPLACEX_AD_MARKET_COUNTRY_HEADER` and
+  `INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS` are configured. The edge proxy must
+  derive and overwrite the header from the current connection IP. Otherwise
+  the endpoint fails closed with `UNKNOWN`.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.

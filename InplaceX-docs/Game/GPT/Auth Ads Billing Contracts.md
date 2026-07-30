@@ -7,11 +7,12 @@
   - `signInWithGooglePlay()`
   - `signOut()`
 
-- `AdService`
-  - `showBanner(slotId): Boolean`
-  - `showRewardedAd(placement): Boolean`
-  - `shouldShowPostGameInterstitial(matchesPlayed, entitlements): Boolean`
-  - `showInterstitial(placement): Boolean`
+- `AndroidAdRuntime`
+  - `plan(request)`
+  - `preload(request)`
+  - `show(request)`
+- legacy synchronous `AdService` remains only as a compatibility boundary for
+  variant tooling and code not yet removed
 
 - `BillingService`
   - `purchase(productId): Boolean`
@@ -55,8 +56,10 @@
 
 1. player taps a hint with zero stock
 2. UI opens a reward dialog
-3. if `showRewardedAd(...) == true`, the selected hint gets one immediate-use allowance
-4. the allowance is consumed on the next actual hint application
+3. Android awaits `AndroidAdRuntime.show(...)`
+4. only `AdPresentationResult.Completed`, produced by the SDK reward callback,
+   grants the selected hint one immediate-use allowance
+5. the allowance is consumed on the next actual hint application
 
 This is intentionally separate from permanent hint inventory.
 
@@ -97,8 +100,11 @@ This is intentionally separate from permanent hint inventory.
   runtime market/device availability filter
 - provider availability is a separate Android/runtime capability filter so a
   build or device can exclude an SDK without changing beneficiary ownership
-- providers may preload concurrently after consent, but display attempts keep
-  owner-first order
+- providers may preload concurrently only after the player has made an
+  explicit privacy choice; accepted and declined are both decisions, while
+  `UNDECIDED` performs no SDK initialization or network request
+- a declined choice is passed to the SDK as no personalization; it does not
+  fabricate a successful impression
 - `Completed` and `Dismissed` mean an ad was presented and stop fallback;
   `NotReady`, `ProviderUnavailable`, and `Failed` may advance to the next
   eligible provider
@@ -113,11 +119,18 @@ This is intentionally separate from permanent hint inventory.
 - Android ad adapters use `InplaceX-ads-core`
 - debug builds use `StubGooglePlayAuthService`, `StubAdService`, and `StubBillingService`
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
-- until the actual provider SDK integration is complete, release adapters fail closed: sign-in stays signed out, purchases return `false`, and ad methods return `false`; caller state must change only after a successful contract result
-- later SDK integration must preserve these interfaces and may enable release operations only after the SDK proves the provider result
-- the new asynchronous `AndroidAdRuntime` is the migration target for real SDK
-  adapters; the synchronous `AdService` remains a compatibility boundary until
-  the UI call sites are migrated without fake success
-- the initial `AdMarketResolver` is fail-closed; a later backend adapter must
-  supply the IP-derived coarse market through an authenticated/trusted network
-  boundary before live routing is enabled
+- Yandex Mobile Ads SDK 8 is the active owner adapter for banner, rewarded, and
+  post-match interstitial placements when all owner placement ids are present
+- Yandex automatic initialization is disabled; Android passes the persisted
+  consent choice and initializes the SDK manually before preload
+- rewarded completion is accepted only from `onRewarded`; dismissal without
+  that callback never grants a reward
+- the UI uses the asynchronous runtime; `AdService` is no longer the live game
+  presentation path
+- `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`
+  and trusts a country code only from a configured reverse-proxy host
+- the Android resolver caches only the coarse result for five minutes and
+  fails closed on invalid response, network failure, or missing HTTPS endpoint
+- AdMob and Huawei remain unavailable SDK adapters; routing may name them in
+  configuration, but the runtime cannot present them until their real adapters
+  are added
