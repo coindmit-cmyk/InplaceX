@@ -1,4 +1,9 @@
 import java.util.Properties
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
 
 plugins {
     id("com.android.application")
@@ -54,6 +59,19 @@ fun validateOptionalProviderGroup(
         emptyList()
     } else {
         listOf("$providerName must be configured completely or left disabled: ${keys.joinToString()}")
+    }
+}
+
+abstract class ValidateReleaseAdsConfigTask : DefaultTask() {
+    @get:Input
+    abstract val validationErrors: ListProperty<String>
+
+    @TaskAction
+    fun validate() {
+        val errors = validationErrors.get()
+        if (errors.isNotEmpty()) {
+            throw GradleException(errors.joinToString(separator = "\n"))
+        }
     }
 }
 
@@ -167,46 +185,48 @@ android {
     }
 }
 
-tasks.register("validateReleaseAdsConfig") {
+tasks.register<ValidateReleaseAdsConfigTask>("validateReleaseAdsConfig") {
     group = "verification"
     description = "Validates the release backend endpoint and complete advertising SDK id groups without printing values."
-    doLast {
-        val errors = mutableListOf<String>()
-        val missing = requiredReleaseAdPropertyKeys()
-            .filter { localProps.getProperty(it).orEmpty().isBlank() }
-        if (missing.isNotEmpty()) {
-            errors += "Missing required release properties: ${missing.joinToString()}"
-        }
-        localProps.getProperty("online.release.baseUrl")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-            ?.let { baseUrl ->
-                if (!baseUrl.matches(Regex("https://[^/]+(:[0-9]+)?"))) {
-                    errors += "online.release.baseUrl must be an HTTPS origin without a path"
-                }
+    validationErrors.set(
+        buildList {
+            val missing = requiredReleaseAdPropertyKeys()
+                .filter { localProps.getProperty(it).orEmpty().isBlank() }
+            if (missing.isNotEmpty()) {
+                add("Missing required release properties: ${missing.joinToString()}")
             }
-        errors += validateOptionalProviderGroup(
-            providerName = "company AdMob",
-            keys = listOf(
-                "provider.release.ads.admob.company.appId",
-                "provider.release.ads.admob.company.banner.game",
-                "provider.release.ads.admob.company.rewarded.general",
-                "provider.release.ads.admob.company.interstitial.postMatch",
-            ),
-        )
-        errors += validateOptionalProviderGroup(
-            providerName = "company Huawei",
-            keys = listOf(
-                "provider.release.ads.huawei.company.appId",
-                "provider.release.ads.huawei.company.banner.game",
-                "provider.release.ads.huawei.company.rewarded.general",
-                "provider.release.ads.huawei.company.interstitial.postMatch",
-            ),
-        )
-        if (errors.isNotEmpty()) {
-            throw GradleException(errors.joinToString(separator = "\n"))
-        }
-    }
+            localProps.getProperty("online.release.baseUrl")
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+                ?.let { baseUrl ->
+                    if (!baseUrl.matches(Regex("https://[^/]+(:[0-9]+)?"))) {
+                        add("online.release.baseUrl must be an HTTPS origin without a path")
+                    }
+                }
+            addAll(
+                validateOptionalProviderGroup(
+                    providerName = "company AdMob",
+                    keys = listOf(
+                        "provider.release.ads.admob.company.appId",
+                        "provider.release.ads.admob.company.banner.game",
+                        "provider.release.ads.admob.company.rewarded.general",
+                        "provider.release.ads.admob.company.interstitial.postMatch",
+                    ),
+                ),
+            )
+            addAll(
+                validateOptionalProviderGroup(
+                    providerName = "company Huawei",
+                    keys = listOf(
+                        "provider.release.ads.huawei.company.appId",
+                        "provider.release.ads.huawei.company.banner.game",
+                        "provider.release.ads.huawei.company.rewarded.general",
+                        "provider.release.ads.huawei.company.interstitial.postMatch",
+                    ),
+                ),
+            )
+        },
+    )
 }
 
 androidComponents {
