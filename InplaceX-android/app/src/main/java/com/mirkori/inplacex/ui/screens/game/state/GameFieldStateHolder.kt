@@ -345,8 +345,14 @@ class GameFieldStateHolder(
         val totalLimit = parameters.totalTimeLimitSeconds
             .takeIf { it > 0 }
             ?.plus(timers.bonusTimeSeconds)
-        if (totalLimit != null && timers.elapsedSeconds >= totalLimit) {
-            latestSnapshot = engine.fail("Time is over")
+        val turnLimit = parameters.turnTimeLimitSeconds.takeIf { it > 0 }
+        val timeoutMessage = when {
+            totalLimit != null && timers.elapsedSeconds >= totalLimit -> "Time is over"
+            turnLimit != null && timers.turnElapsedSeconds >= turnLimit -> "Turn time is over"
+            else -> null
+        }
+        if (timeoutMessage != null) {
+            latestSnapshot = engine.fail(timeoutMessage)
             update(
                 createState(
                     snapshot = latestSnapshot,
@@ -449,13 +455,6 @@ class GameFieldStateHolder(
         GameFieldHintMode.CHECK_DIGIT -> copy(checkDigitHintUses = checkDigitHintUses + 1)
         GameFieldHintMode.CHECK_POSITION -> copy(checkPositionHintUses = checkPositionHintUses + 1)
     }
-
-    private fun GameFieldMatchParameters.toGameConfig(): GameConfig = GameConfig(
-        codeLength = codeLength,
-        allowDuplicates = allowDuplicates,
-        attemptLimit = attemptLimit,
-        turnTimeLimitSeconds = turnTimeLimitSeconds.takeIf { it > 0 },
-    )
 
     private fun MatchSnapshot.toState(): GameFieldMatchState = GameFieldMatchState(
         phase = phase,

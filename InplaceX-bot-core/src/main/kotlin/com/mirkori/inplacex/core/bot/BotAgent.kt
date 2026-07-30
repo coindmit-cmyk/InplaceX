@@ -92,6 +92,9 @@ class BotAgent(
         val isolationGuess = if (usesSplitIsolation()) planIsolationGuess() else null
         if (isolationGuess != null) return isolationGuess
 
+        val differentialGuess = planDifferentialRecoveryGuess()
+        if (differentialGuess != null) return differentialGuess
+
         val groupGuess = if (usesGroupProbe()) planGroupProbeGuess() else null
         if (groupGuess != null) return groupGuess
 
@@ -201,6 +204,15 @@ class BotAgent(
                     else -> {
                         stage = BotSolveStage.SAFE_BASE_SEARCH
                     }
+                }
+            }
+
+            is PendingAction.DifferentialProbe -> {
+                when (score) {
+                    pending.baseScore + 1 -> markResolved(pending.position, pending.candidate)
+                    pending.baseScore - 1 -> markResolved(pending.position, pending.baselineSymbol)
+                    pending.baseScore -> markImpossible(pending.position, pending.candidate)
+                    else -> stage = BotSolveStage.SAFE_BASE_SEARCH
                 }
             }
 
@@ -384,6 +396,56 @@ class BotAgent(
             baseScore = resolvedPositions.size,
         )
         return guess
+    }
+
+    /**
+     * A Latin grid can rarely return a positive score for every row. In that
+     * case there is no known-safe filler symbol and ordinary isolation cannot
+     * start. Change exactly one position of a scored baseline: the score delta
+     * proves the replacement, the baseline symbol, or that the replacement is
+     * impossible without exposing or guessing the secret.
+     */
+    private fun planDifferentialRecoveryGuess(): String? {
+        if (
+            difficulty != BotDifficulty.MEDIUM ||
+            !rules.allowDuplicates ||
+            safeBaseGuess != null
+        ) {
+            return null
+        }
+        val unresolved = (0 until rules.codeLength).filterNot(resolvedPositions::containsKey)
+        if (unresolved.none { position -> safeSymbols[position].isEmpty() }) return null
+        val baseline = actualHistory.firstOrNull() ?: return null
+        val orderedPositions = unresolved.sortedWith(
+            compareBy<Int> { candidates[it].size }.thenBy { it },
+        )
+
+        orderedPositions.forEach { position ->
+            val baselineSymbol = baseline.guess[position]
+            val options = orderSymbols(
+                candidates[position].filter { symbol ->
+                    symbol != baselineSymbol && symbol !in testedCandidates[position]
+                },
+            )
+            options.forEach { candidate ->
+                val guess = baseline.guess.toCharArray()
+                    .also { it[position] = candidate }
+                    .concatToString()
+                if (guess in attemptedGuesses || !rules.isValidCode(guess)) return@forEach
+
+                testedCandidates[position] += candidate
+                attemptedGuesses += guess
+                pendingAction = PendingAction.DifferentialProbe(
+                    guess = guess,
+                    position = position,
+                    baselineSymbol = baselineSymbol,
+                    candidate = candidate,
+                    baseScore = baseline.score,
+                )
+                return guess
+            }
+        }
+        return null
     }
 
     private fun planExpertTailGuess(): String? {
@@ -971,6 +1033,14 @@ class BotAgent(
         data class GroupProbe(
             override val guess: String,
             val positions: List<Int>,
+            val baseScore: Int,
+        ) : PendingAction
+
+        data class DifferentialProbe(
+            override val guess: String,
+            val position: Int,
+            val baselineSymbol: Char,
+            val candidate: Char,
             val baseScore: Int,
         ) : PendingAction
 

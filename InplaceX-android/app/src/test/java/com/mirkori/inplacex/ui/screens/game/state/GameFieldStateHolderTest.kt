@@ -290,6 +290,21 @@ class GameFieldStateHolderTest {
     }
 
     @Test
+    fun `turn timer limit finishes match instead of leaving an unwinnable board`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters.copy(totalTimeLimitSeconds = 60, turnTimeLimitSeconds = 5),
+            initialSecret = "1234",
+        )
+
+        source.dispatch(GameFieldEvent.TimerTicked(seconds = 5))
+
+        assertEquals(MatchPhase.LOST, source.state.value.match.phase)
+        assertEquals(GameFieldStatus.TimedOut, source.state.value.status)
+        assertEquals(5, source.state.value.timers.turnElapsedSeconds)
+    }
+
+    @Test
     fun `manual yes prefill remains editable and does not become a proven fact`() {
         val source = GameFieldStateHolder(
             SavedStateHandle(),

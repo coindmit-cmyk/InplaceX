@@ -118,6 +118,7 @@ object AppConfigCatalog {
                 codeLength = 6,
                 allowDuplicates = true,
                 attemptLimit = 12,
+                maxConsecutiveDuplicateDigits = 3,
                 turnTimeLimitSeconds = 30,
             ),
             opponentKind = OpponentKind.BOT,

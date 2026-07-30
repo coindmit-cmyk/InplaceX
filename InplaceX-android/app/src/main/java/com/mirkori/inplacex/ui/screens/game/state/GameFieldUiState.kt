@@ -7,6 +7,7 @@ import com.mirkori.inplacex.core.analysis.ProvenFact
 import com.mirkori.inplacex.core.match.MatchAttempt
 import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
+import com.mirkori.inplacex.core.model.GameConfig
 
 enum class GameFieldMode {
     RACE,
@@ -18,6 +19,10 @@ data class GameFieldMatchParameters(
     val codeLength: Int = 6,
     val attemptLimit: Int = 12,
     val allowDuplicates: Boolean = true,
+    val forbidAllSameDigitsGuess: Boolean = true,
+    val forbidAdjacentDuplicates: Boolean = false,
+    val forbidTripleDuplicates: Boolean = false,
+    val maxConsecutiveDuplicateDigits: Int? = null,
     val totalTimeLimitSeconds: Int = 0,
     val turnTimeLimitSeconds: Int = 0,
     val hintsEnabled: Boolean = true,
@@ -26,11 +31,24 @@ data class GameFieldMatchParameters(
 ) {
     init {
         require(codeLength in 4..20)
+        require(allowDuplicates || codeLength <= 10)
         require(attemptLimit > 0)
+        require(maxConsecutiveDuplicateDigits == null || maxConsecutiveDuplicateDigits in 1..codeLength)
         require(totalTimeLimitSeconds >= 0)
         require(turnTimeLimitSeconds >= 0)
     }
 }
+
+internal fun GameFieldMatchParameters.toGameConfig(): GameConfig = GameConfig(
+    codeLength = codeLength,
+    allowDuplicates = allowDuplicates,
+    attemptLimit = attemptLimit,
+    forbidAllSameDigitsGuess = forbidAllSameDigitsGuess,
+    forbidAdjacentDuplicates = forbidAdjacentDuplicates,
+    forbidTripleDuplicates = forbidTripleDuplicates,
+    maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
+    turnTimeLimitSeconds = turnTimeLimitSeconds.takeIf { it > 0 },
+)
 
 enum class GameFieldTool {
     NO,

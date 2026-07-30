@@ -1,8 +1,6 @@
 package com.mirkori.inplacex.core.campaign
 
-import com.mirkori.inplacex.core.bot.BotProfiles
 import com.mirkori.inplacex.core.model.GameConfig
-import kotlin.math.ceil
 import kotlin.math.max
 
 object CampaignLevelGenerator {
@@ -15,7 +13,7 @@ object CampaignLevelGenerator {
         val difficultyTier = tierForLevel(levelNumber)
         val blockRole = roleForPosition(positionInBlock)
         val codeLength = codeLengthForLevel(levelNumber)
-        val solverTargetAttempts = BotProfiles.expert.targetMovesForCodeLength(codeLength)
+        val solverTargetAttempts = CampaignSolverBudget.expertReferenceAttempts(codeLength)
         val attemptLimit = solverTargetAttempts + attemptReserveFor(difficultyTier, blockRole)
         val moveMultiplier = attemptLimit.toDouble() / codeLength.toDouble()
         val raceTimeLimitSeconds = timeLimitFor(codeLength, difficultyTier, blockRole, levelNumber)
@@ -81,24 +79,24 @@ object CampaignLevelGenerator {
     ): Int {
         return when (tier) {
             CampaignDifficultyTier.EASY -> when (role) {
-                CampaignBlockRole.STANDARD -> 10
-                CampaignBlockRole.SPIKE -> 8
-                CampaignBlockRole.HARDCORE -> 4
-            }
-            CampaignDifficultyTier.MEDIUM -> when (role) {
                 CampaignBlockRole.STANDARD -> 7
                 CampaignBlockRole.SPIKE -> 5
-                CampaignBlockRole.HARDCORE -> 4
-            }
-            CampaignDifficultyTier.HARD -> when (role) {
-                CampaignBlockRole.STANDARD -> 5
-                CampaignBlockRole.SPIKE -> 4
                 CampaignBlockRole.HARDCORE -> 3
             }
-            CampaignDifficultyTier.HARDCORE -> when (role) {
+            CampaignDifficultyTier.MEDIUM -> when (role) {
                 CampaignBlockRole.STANDARD -> 4
                 CampaignBlockRole.SPIKE -> 3
                 CampaignBlockRole.HARDCORE -> 2
+            }
+            CampaignDifficultyTier.HARD -> when (role) {
+                CampaignBlockRole.STANDARD -> 3
+                CampaignBlockRole.SPIKE -> 2
+                CampaignBlockRole.HARDCORE -> 1
+            }
+            CampaignDifficultyTier.HARDCORE -> when (role) {
+                CampaignBlockRole.STANDARD -> 2
+                CampaignBlockRole.SPIKE -> 1
+                CampaignBlockRole.HARDCORE -> 1
             }
         }
     }

@@ -10,6 +10,7 @@ data class BotMatchRules(
     val forbidAllSameDigitsGuess: Boolean,
     val forbidAdjacentDuplicates: Boolean,
     val forbidTripleDuplicates: Boolean,
+    val maxConsecutiveDuplicateDigits: Int? = null,
 ) {
     fun toGameConfig(seed: Long? = null): GameConfig {
         return GameConfig(
@@ -19,6 +20,7 @@ data class BotMatchRules(
             forbidAllSameDigitsGuess = forbidAllSameDigitsGuess,
             forbidAdjacentDuplicates = forbidAdjacentDuplicates,
             forbidTripleDuplicates = forbidTripleDuplicates,
+            maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
             seed = seed,
         )
     }
@@ -40,5 +42,6 @@ fun GameConfig.toBotMatchRules(): BotMatchRules {
         forbidAllSameDigitsGuess = forbidAllSameDigitsGuess,
         forbidAdjacentDuplicates = forbidAdjacentDuplicates,
         forbidTripleDuplicates = forbidTripleDuplicates,
+        maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
     )
 }

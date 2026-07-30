@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.core.engine
 
 import com.mirkori.inplacex.core.match.MatchCheckpoint
+import com.mirkori.inplacex.core.match.MatchAttempt
 import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.core.model.GameConfig
@@ -44,6 +45,20 @@ class GameEngineTest {
     }
 
     @Test
+    fun `fixed secret must satisfy the same maximum run rule as a guess`() {
+        val strictConfig = config.copy(
+            maxConsecutiveDuplicateDigits = 3,
+            seed = 17L,
+        )
+        val engine = GameEngine(strictConfig)
+
+        val started = engine.start(secretOverride = "1111")
+
+        assertFalse(started.debugSecret == "1111")
+        assertTrue(GuessValidator.validate(started.debugSecret, strictConfig))
+    }
+
+    @Test
     fun `extra moves feedback uses repaired text and typed amount`() {
         val engine = GameEngine(config)
         engine.start(secretOverride = "1234")
@@ -83,6 +98,43 @@ class GameEngineTest {
             secret = "12x4",
             phase = MatchPhase.ACTIVE,
             attempts = before.attempts,
+            extraAttemptBudget = 0,
+        )
+
+        assertFalse(engine.restoreCheckpoint(invalid))
+        assertEquals(before, engine.snapshot())
+    }
+
+    @Test
+    fun `checkpoint secret must satisfy the exact active rules`() {
+        val strictConfig = config.copy(maxConsecutiveDuplicateDigits = 3)
+        val engine = GameEngine(strictConfig)
+        engine.start(secretOverride = "1234")
+        val before = engine.snapshot()
+
+        val invalid = MatchCheckpoint(
+            secret = "1111",
+            phase = MatchPhase.ACTIVE,
+            attempts = emptyList(),
+            extraAttemptBudget = 0,
+        )
+
+        assertFalse(engine.restoreCheckpoint(invalid))
+        assertEquals(before, engine.snapshot())
+    }
+
+    @Test
+    fun `won checkpoint rejects attempts after an earlier win`() {
+        val engine = GameEngine(config)
+        engine.start(secretOverride = "1234")
+        val before = engine.snapshot()
+        val invalid = MatchCheckpoint(
+            secret = "1234",
+            phase = MatchPhase.WON,
+            attempts = listOf(
+                MatchAttempt(guess = "1234", score = 4, number = 1, isWin = true),
+                MatchAttempt(guess = "1235", score = 3, number = 2, isWin = false),
+            ),
             extraAttemptBudget = 0,
         )
 

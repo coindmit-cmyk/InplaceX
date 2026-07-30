@@ -340,6 +340,7 @@ internal fun buildOnlineDuelGameFieldState(
             codeLength = snapshot.codeLength,
             attemptLimit = snapshot.attemptLimit ?: UnlimitedAttemptCapacity,
             allowDuplicates = snapshot.allowDuplicates,
+            maxConsecutiveDuplicateDigits = snapshot.maxConsecutiveDuplicateDigits,
             totalTimeLimitSeconds = totalTimeLimitSeconds,
             hintsEnabled = false,
             boostsEnabled = false,

@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.SavedStateHandle
 import com.mirkori.inplacex.data.local.HintStockType
+import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.GameScreen
 import com.mirkori.inplacex.ui.screens.game.presentation.GameAttemptList
@@ -20,6 +21,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldNotice
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldRouteUiState
+import com.mirkori.inplacex.ui.screens.game.state.toGameConfig
 import com.mirkori.inplacex.ui.viewmodel.GameFieldHintInventory
 import com.mirkori.inplacex.ui.viewmodel.GameFieldLifecycleCallbacks
 import com.mirkori.inplacex.ui.viewmodel.GameFieldRouteController
@@ -68,9 +70,7 @@ fun GameFieldScreen(
     }
     val acceptedFixedSecret = remember(matchParameters, fixedSecret) {
         fixedSecret?.takeIf { candidate ->
-            candidate.length == matchParameters.codeLength &&
-                candidate.all { symbol -> symbol in '0'..'9' } &&
-                (matchParameters.allowDuplicates || candidate.toSet().size == candidate.length)
+            GuessValidator.validate(candidate, matchParameters.toGameConfig())
         }
     }
     val viewModel = remember(matchParameters, acceptedFixedSecret) {
@@ -225,7 +225,7 @@ internal fun AttemptsModule(
     GameAttemptList(attempts = attempts, modifier = modifier)
 }
 
-private fun GameFieldParams.toMatchParameters(autoModeAvailable: Boolean): GameFieldMatchParameters =
+internal fun GameFieldParams.toMatchParameters(autoModeAvailable: Boolean): GameFieldMatchParameters =
     GameFieldMatchParameters(
         mode = when (typeGame) {
             TypeGame.RaceMatch -> GameFieldMode.RACE
@@ -233,6 +233,11 @@ private fun GameFieldParams.toMatchParameters(autoModeAvailable: Boolean): GameF
         },
         codeLength = lenSecret,
         attemptLimit = if (limitMoves > 0) limitMoves else 999,
+        allowDuplicates = allowDuplicates,
+        forbidAllSameDigitsGuess = forbidAllSameDigitsGuess,
+        forbidAdjacentDuplicates = forbidAdjacentDuplicates,
+        forbidTripleDuplicates = forbidTripleDuplicates,
+        maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
         totalTimeLimitSeconds = timeAll,
         turnTimeLimitSeconds = timeMove,
         hintsEnabled = useHints,

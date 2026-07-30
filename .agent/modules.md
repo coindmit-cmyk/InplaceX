@@ -8,18 +8,22 @@
 - Tests: `InplaceX-android/app/src/test` and `InplaceX-android/app/src/androidTest`.
 - Important packages:
   - `ui.*` for Compose screens, shell, navigation, theme, and layout.
-  - `core.*` for Android-local game contracts still living inside the app.
   - `platform.*` for configuration, localization, online boundaries, navigation, and services.
 
 ## `:InplaceX-bot-core`
 
 - Path: `InplaceX-bot-core`
 - Type: JVM shared library.
-- Owns: transport-agnostic bot brain, bot rules, grid catalog, scoring, validation, secret generation, and shared `GameConfig`.
+- Owns: transport-agnostic match lifecycle and contracts, campaign generation,
+  rating and progression, evidence deduction, bot brain and rules, grid
+  catalog, scoring, validation, secret generation, mode definitions, and
+  shared `GameConfig`.
 - Tests: `InplaceX-bot-core/src/test`.
 - Important packages:
   - `core.bot`
+  - `core.campaign`
   - `core.engine`
+  - `core.match`
   - `core.model`
 
 ## `:InplaceX-auth-core`
@@ -45,10 +49,15 @@
 
 - Path: `InplaceX-backend`
 - Type: JVM backend module.
-- Owns: backend-facing runtime contracts and the server-side bot participant adapter.
+- Owns: backend-facing runtime, authoritative duel/session state, matchmaking,
+  private invites, membership, persistence, transport, identity routes, and the
+  server-side bot participant adapter.
 - Tests: `InplaceX-backend/src/test`.
-- Important package:
+- Important packages:
   - `backend.bot`
+  - `backend.domain`
+  - `backend.online`
+  - `backend.session`
 
 ## `:InplaceX-logging`
 

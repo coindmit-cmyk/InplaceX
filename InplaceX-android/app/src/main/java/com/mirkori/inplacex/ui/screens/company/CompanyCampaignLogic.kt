@@ -2,12 +2,13 @@ package com.mirkori.inplacex.ui.screens.company
 
 import com.mirkori.inplacex.core.campaign.CampaignLevelDefinition
 import com.mirkori.inplacex.core.campaign.CampaignLevelGenerator
+import com.mirkori.inplacex.core.campaign.CampaignPerformance
 import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
+import com.mirkori.inplacex.core.campaign.CampaignRatingCalculator
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
-import kotlin.math.ceil
 
 internal data class CompanyMatchResult(
     val levelNumber: Int,
@@ -36,18 +37,7 @@ internal fun buildCampaignLevelItems(
 }
 
 internal fun computeUnlockedBlock(completedLevelsCount: Int, totalStars: Int): Int {
-    var unlockedBlock = 1
-    while (true) {
-        val nextBlock = unlockedBlock + 1
-        val requiredCompleted = unlockedBlock * 10
-        val requiredStars = CampaignProgressionRules.requiredStarsForNextBlock(
-            nextBlock,
-            requiredCompleted,
-        )
-        if (completedLevelsCount < requiredCompleted || totalStars < requiredStars) break
-        unlockedBlock = nextBlock
-    }
-    return unlockedBlock
+    return CampaignProgressionRules.computeUnlockedBlock(completedLevelsCount, totalStars)
 }
 
 internal fun CampaignLevelDefinition.toFieldParams(): GameFieldParams {
@@ -59,6 +49,11 @@ internal fun CampaignLevelDefinition.toFieldParams(): GameFieldParams {
         timeMove = 0,
         limitMoves = config.attemptLimit,
         lenSecret = config.codeLength,
+        allowDuplicates = config.allowDuplicates,
+        forbidAllSameDigitsGuess = config.forbidAllSameDigitsGuess,
+        forbidAdjacentDuplicates = config.forbidAdjacentDuplicates,
+        forbidTripleDuplicates = config.forbidTripleDuplicates,
+        maxConsecutiveDuplicateDigits = config.maxConsecutiveDuplicateDigits,
     )
 }
 
@@ -66,36 +61,20 @@ internal fun rateCampaignMatch(
     level: CampaignLevelDefinition,
     summary: MatchSessionSummary,
 ): Int {
-    var score = level.ratingPolicy.maxBackendPoints.toDouble()
-    val targetAttempts = level.ratingPolicy.targetAttemptsForPerfect
-    val attemptReserve = (level.config.attemptLimit - targetAttempts).coerceAtLeast(1)
-    val reserveSpent = (summary.attemptsUsed - targetAttempts).coerceAtLeast(0)
-    val maximumAttemptPenalty = level.ratingPolicy.maxBackendPoints - 1
-    score -= ceil(
-        reserveSpent.toDouble() * maximumAttemptPenalty.toDouble() / attemptReserve.toDouble(),
+    return CampaignRatingCalculator.rate(
+        level = level,
+        performance = CampaignPerformance(
+            won = summary.won,
+            attemptsUsed = summary.attemptsUsed,
+            elapsedSeconds = summary.elapsedSeconds,
+            hintUses = summary.hintUses,
+            boostUses = summary.boostUses,
+        ),
     )
-    score -= ceil(
-        ((summary.elapsedSeconds - level.ratingPolicy.targetTimeSecondsForPerfect)
-            .coerceAtLeast(0)) / 30.0,
-    )
-
-    level.ratingPolicy.assistsBudget.perfectHintsBudget?.let { hintsBudget ->
-        score -= (summary.hintUses - hintsBudget).coerceAtLeast(0)
-    }
-    level.ratingPolicy.assistsBudget.perfectBoostsBudget?.let { boostsBudget ->
-        score -= (summary.boostUses - boostsBudget).coerceAtLeast(0)
-    }
-
-    return score.toInt().coerceIn(1, level.ratingPolicy.maxBackendPoints)
 }
 
 internal fun starsForRating(rating: Int): Int {
-    return when {
-        rating >= 8 -> 3
-        rating >= 4 -> 2
-        rating >= 1 -> 1
-        else -> 0
-    }
+    return CampaignRatingCalculator.starsForRating(rating)
 }
 
 internal fun starsLabel(stars: Int): String {

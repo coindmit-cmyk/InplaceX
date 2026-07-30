@@ -701,6 +701,11 @@ private fun GameModeDefinition.toFieldParams(typeGame: TypeGame): GameFieldParam
         timeAll = if (typeGame == TypeGame.DuelMatch) 0 else (totalTimeLimitSeconds ?: 0),
         timeMove = turnTimeLimitSeconds ?: 0,
         limitMoves = if (typeGame == TypeGame.DuelMatch) 0 else config.attemptLimit,
-        lenSecret = config.codeLength
+        lenSecret = config.codeLength,
+        allowDuplicates = config.allowDuplicates,
+        forbidAllSameDigitsGuess = config.forbidAllSameDigitsGuess,
+        forbidAdjacentDuplicates = config.forbidAdjacentDuplicates,
+        forbidTripleDuplicates = config.forbidTripleDuplicates,
+        maxConsecutiveDuplicateDigits = config.maxConsecutiveDuplicateDigits,
     )
 }

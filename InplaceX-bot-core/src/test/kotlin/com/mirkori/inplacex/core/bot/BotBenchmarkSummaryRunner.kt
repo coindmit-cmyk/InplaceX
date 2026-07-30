@@ -14,12 +14,14 @@ import kotlin.system.measureNanoTime
 
 private const val SUMMARY_RUN_TIMEOUT_MINUTES = 1L
 private const val DEFAULT_SUMMARY_SAMPLES_PER_BUCKET = 10
+private const val DEFAULT_SUMMARY_SEED = 17_000L
 private const val SUMMARY_LOG_TAG = "BotBenchmarkSummaryRunner"
 
 private data class SummaryRun(
     val difficulty: BotDifficulty,
     val codeLength: Int,
-    val secret: String,
+    val secretSeed: Long,
+    val runSeed: Long,
     val won: Boolean,
     val attempts: Int,
     val elapsedMillis: Long,
@@ -50,9 +52,14 @@ fun main() {
         BotDifficulty.HARD,
         BotDifficulty.EXPERT,
     )
-    val codeLengths = listOf(4, 6, 8, 10)
+    val codeLengths = (4..10).toList()
 
-    var seedCursor = System.currentTimeMillis()
+    var seedCursor = (
+        System.getProperty("bot.summary.seed")
+            ?: System.getenv("BOT_SUMMARY_SEED")
+        )
+        ?.toLongOrNull()
+        ?: DEFAULT_SUMMARY_SEED
     val buckets = mutableListOf<SummaryBucket>()
 
     difficulties.forEach { difficulty ->
@@ -71,6 +78,7 @@ fun main() {
                     difficulty = difficulty,
                     config = config,
                     secret = secret,
+                    secretSeed = secretSeed,
                     runSeed = runSeed,
                 )
             }
@@ -88,8 +96,16 @@ fun main() {
         val averageTimeMs = bucket.runs.map { it.elapsedMillis }.average()
         val wins = bucket.runs.count { it.won }
         val timeouts = bucket.runs.count { it.timedOut }
+        val sortedAttempts = bucket.runs.map { it.attempts }.sorted()
+        val p95Attempts = sortedAttempts[((sortedAttempts.size - 1) * 0.95).toInt()]
+        val maximumAttempts = sortedAttempts.last()
 
-        "${index + 1}. ${bucket.difficulty.name} | len=${bucket.codeLength} | wins=${wins}/${bucket.runs.size} | avgAttempts=${"%.2f".format(averageAttempts)} | avgN=${"%.2f".format(averageN)} | avgTimeMs=${"%.2f".format(averageTimeMs)} | timeouts=${timeouts}"
+        val failures = bucket.runs
+            .filterNot(SummaryRun::won)
+            .joinToString(separator = ",") { run -> "${run.secretSeed}:${run.runSeed}" }
+            .ifEmpty { "none" }
+
+        "${index + 1}. ${bucket.difficulty.name} | len=${bucket.codeLength} | wins=${wins}/${bucket.runs.size} | avgAttempts=${"%.2f".format(averageAttempts)} | p95Attempts=$p95Attempts | maxAttempts=$maximumAttempts | avgN=${"%.2f".format(averageN)} | avgTimeMs=${"%.2f".format(averageTimeMs)} | timeouts=${timeouts} | failureSeeds=$failures"
     }
 
     val reportDir = File("build/reports")
@@ -111,6 +127,7 @@ private fun runSummaryBenchmark(
     difficulty: BotDifficulty,
     config: GameConfig,
     secret: String,
+    secretSeed: Long,
     runSeed: Long,
 ): SummaryRun {
     val executor = Executors.newSingleThreadExecutor()
@@ -130,7 +147,8 @@ private fun runSummaryBenchmark(
             SummaryRun(
                 difficulty = difficulty,
                 codeLength = config.codeLength,
-                secret = secret,
+                secretSeed = secretSeed,
+                runSeed = runSeed,
                 won = run.won,
                 attempts = run.moves,
                 elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
@@ -143,7 +161,8 @@ private fun runSummaryBenchmark(
         SummaryRun(
             difficulty = difficulty,
             codeLength = config.codeLength,
-            secret = secret,
+            secretSeed = secretSeed,
+            runSeed = runSeed,
             won = false,
             attempts = config.codeLength * 10,
             elapsedMillis = TimeUnit.MINUTES.toMillis(SUMMARY_RUN_TIMEOUT_MINUTES),

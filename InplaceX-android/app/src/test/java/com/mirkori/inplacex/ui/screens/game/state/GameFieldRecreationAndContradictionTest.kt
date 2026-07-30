@@ -50,6 +50,54 @@ class GameFieldRecreationAndContradictionTest {
     }
 
     @Test
+    fun `legacy saved state migrates with canonical rule defaults`() {
+        val savedState = SavedStateHandle()
+        GameFieldStateHolder(savedState, parameters, initialSecret = "1234")
+        savedState["game_field_state_version"] = 1
+        savedState["game_field_parameters"] = arrayListOf(
+            GameFieldMode.RACE.name,
+            "4",
+            "12",
+            "true",
+            "60",
+            "30",
+            "true",
+            "false",
+            "true",
+        )
+
+        val restored = GameFieldSavedStateStore(savedState.detachedCopy()).restore(parameters)
+
+        assertTrue(restored != null)
+        assertEquals("1234", restored?.checkpoint?.secret)
+    }
+
+    @Test
+    fun `changed rule contract refuses an incompatible saved match`() {
+        val savedState = SavedStateHandle()
+        GameFieldStateHolder(savedState, parameters, initialSecret = "1234")
+        val changedRules = parameters.copy(maxConsecutiveDuplicateDigits = 3)
+
+        val restored = GameFieldSavedStateStore(savedState.detachedCopy()).restore(changedRules)
+
+        assertEquals(null, restored)
+    }
+
+    @Test
+    fun `state holder enforces the configured maximum digit run`() {
+        val strictParameters = parameters.copy(maxConsecutiveDuplicateDigits = 3)
+
+        val state = GameFieldStateHolder(
+            SavedStateHandle(),
+            strictParameters,
+            initialSecret = "1111",
+        ).state.value
+
+        assertFalse(state.match.debugSecret == "1111")
+        assertEquals(4, state.match.debugSecret.length)
+    }
+
+    @Test
     fun `manual contradiction is reported without becoming an authoritative fact`() {
         val source = GameFieldStateHolder(
             SavedStateHandle(),
