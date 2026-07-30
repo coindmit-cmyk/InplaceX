@@ -133,14 +133,14 @@ data class AdMarketRuntimeConfig(
 
 fun interface AdMarketResolver {
     fun resolve(
-        remoteHost: String,
+        remoteAddress: String,
         trustedHeaderValue: String?,
     ): PublicAdMarket
 }
 
 object UnknownAdMarketResolver : AdMarketResolver {
     override fun resolve(
-        remoteHost: String,
+        remoteAddress: String,
         trustedHeaderValue: String?,
     ): PublicAdMarket = PublicAdMarket.UNKNOWN
 }
@@ -153,10 +153,10 @@ class TrustedProxyAdMarketResolver(
     }
 
     override fun resolve(
-        remoteHost: String,
+        remoteAddress: String,
         trustedHeaderValue: String?,
     ): PublicAdMarket {
-        if (remoteHost !in config.trustedProxyHosts) return PublicAdMarket.UNKNOWN
+        if (remoteAddress !in config.trustedProxyHosts) return PublicAdMarket.UNKNOWN
         return marketForCountryCode(trustedHeaderValue)
     }
 }
@@ -208,13 +208,13 @@ class LocalDatabaseAdMarketResolver(
     }
 
     override fun resolve(
-        remoteHost: String,
+        remoteAddress: String,
         trustedHeaderValue: String?,
     ): PublicAdMarket {
-        val rawAddress = if (remoteHost in config.trustedProxyHosts) {
+        val rawAddress = if (remoteAddress in config.trustedProxyHosts) {
             trustedHeaderValue
         } else {
-            remoteHost
+            remoteAddress
         } ?: return PublicAdMarket.UNKNOWN
         val address = parseNumericAddress(rawAddress) ?: return PublicAdMarket.UNKNOWN
         return marketForCountryCode(
@@ -243,7 +243,7 @@ fun Application.configureAdMarketRoutes(
     routing {
         get("/api/v1/runtime/ad-market") {
             val market = resolver.resolve(
-                remoteHost = call.request.local.remoteHost,
+                remoteAddress = call.request.local.remoteAddress,
                 trustedHeaderValue = config?.let { call.request.header(it.trustedHeader) },
             )
             call.response.cacheControl(CacheControl.NoStore(null))

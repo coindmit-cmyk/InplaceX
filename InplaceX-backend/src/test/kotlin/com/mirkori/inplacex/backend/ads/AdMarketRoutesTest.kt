@@ -29,7 +29,7 @@ class AdMarketRoutesTest {
 
     @Test
     fun `trusted proxy country is reduced to coarse market`() = testApplication {
-        val config = trustedCountryConfig(setOf("localhost"))
+        val config = trustedCountryConfig(setOf("localhost", "127.0.0.1"))
         application {
             configureAdMarketRoutes(config)
         }
@@ -98,7 +98,7 @@ class AdMarketRoutesTest {
 
     @Test
     fun `local database route preserves bounded response and exposes attribution`() = testApplication {
-        val config = databaseConfig(setOf("localhost"))
+        val config = databaseConfig(setOf("localhost", "127.0.0.1"))
         application {
             configureAdMarketRoutes(
                 config = config,
