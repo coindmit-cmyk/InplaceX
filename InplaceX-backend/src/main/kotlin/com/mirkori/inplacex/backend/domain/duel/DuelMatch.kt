@@ -171,8 +171,20 @@ class DuelMatch private constructor(
 
         when {
             exactMatches == config.codeLength -> finish(attacker, DuelFinishReason.SOLVED)
-            attemptLimit != null && attemptsFor(attacker) >= attemptLimit ->
-                finish(attacker.opponent(), DuelFinishReason.ATTEMPTS_EXHAUSTED)
+            attemptLimit != null && attemptsFor(attacker) >= attemptLimit -> {
+                when (playStyle) {
+                    DuelPlayStyle.RACE ->
+                        finish(attacker.opponent(), DuelFinishReason.ATTEMPTS_EXHAUSTED)
+
+                    DuelPlayStyle.TURN_BASED -> {
+                        if (attemptsFor(attacker.opponent()) >= attemptLimit) {
+                            finish(null, DuelFinishReason.ATTEMPTS_EXHAUSTED)
+                        } else {
+                            currentTurn = attacker.opponent()
+                        }
+                    }
+                }
+            }
             playStyle == DuelPlayStyle.TURN_BASED -> currentTurn = attacker.opponent()
         }
         snapshot()
@@ -240,7 +252,7 @@ class DuelMatch private constructor(
     private fun attemptsFor(participant: DuelParticipant): Int = attempts.count { it.attacker == participant }
 
     private fun finish(
-        winningParticipant: DuelParticipant,
+        winningParticipant: DuelParticipant?,
         reason: DuelFinishReason,
     ) {
         phase = DuelPhase.FINISHED

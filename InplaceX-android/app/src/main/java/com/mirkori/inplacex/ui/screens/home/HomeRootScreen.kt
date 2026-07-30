@@ -143,13 +143,10 @@ fun HomeRootScreen(
                 if (showPreMatchDialog && preMatchPhase == PreMatchPhase.WAITING_OPPONENT_SECRET && botWaitLeft <= 0) {
                     playerSecretForDuel = preMatchSecretInput
                     botSecretForDuel = SecretGenerator.generate(
-                        GameConfig(
-                            codeLength = pvpMode.config.codeLength,
-                            allowDuplicates = pvpMode.config.allowDuplicates,
-                            attemptLimit = 999,
-                            forbidAllSameDigitsGuess = true,
+                        localBotDuelConfig(
+                            mode = pvpMode,
                             seed = duelSessionSeed.toLong() * 37L,
-                        )
+                        ),
                     )
                     duelTurnOwner = DuelTurnOwner.PLAYER
                     botLastScore = -1
@@ -262,12 +259,7 @@ fun HomeRootScreen(
         HomeScreenState.PVP_GAME -> {
             val botSolver = remember(duelSessionSeed, playerSecretForDuel) {
                 BotSolver(
-                    config = GameConfig(
-                        codeLength = pvpMode.config.codeLength,
-                        allowDuplicates = pvpMode.config.allowDuplicates,
-                        attemptLimit = 999,
-                        forbidAllSameDigitsGuess = true,
-                    ),
+                    config = localBotDuelConfig(pvpMode),
                     difficulty = pvpMode.botDifficulty ?: com.mirkori.inplacex.core.bot.BotDifficulty.MEDIUM,
                     seed = duelSessionSeed.toLong(),
                 )
@@ -464,12 +456,7 @@ fun HomeRootScreen(
                     PreMatchPhase.SECRET_SELECTION -> {
                         TextButton(
                             onClick = {
-                                val preMatchConfig = GameConfig(
-                                    codeLength = pvpMode.config.codeLength,
-                                    allowDuplicates = pvpMode.config.allowDuplicates,
-                                    attemptLimit = 999,
-                                    forbidAllSameDigitsGuess = true,
-                                )
+                                val preMatchConfig = localBotDuelConfig(pvpMode)
                                 if (preMatchSecretInput.length != pvpMode.config.codeLength) {
                                     preMatchError = strings.homeEnterDigits(pvpMode.config.codeLength)
                                 } else if (!GuessValidator.validate(preMatchSecretInput, preMatchConfig)) {
@@ -562,6 +549,16 @@ internal fun resolveDuelBotTurn(
         DuelBotTurnResult.Failed(error, stage)
     }
 }
+
+internal fun localBotDuelConfig(
+    mode: GameModeDefinition,
+    seed: Long? = null,
+): GameConfig = mode.config.copy(
+    attemptLimit = LOCAL_DUEL_ATTEMPT_CAPACITY,
+    seed = seed,
+)
+
+private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
 
 @Composable
 private fun HomeSelectionScreen(

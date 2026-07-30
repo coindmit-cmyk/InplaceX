@@ -55,6 +55,10 @@ publishing, or production infrastructure activation.
 
 - Turn-based duels enforce current turn; races accept concurrent stale
   revisions while retaining idempotent command IDs.
+- A finite turn-based duel gives both participants the same number of attempts:
+  the second participant may solve on the matching final turn, otherwise the
+  exhausted match ends in an explicit draw. A race still ends as soon as one
+  participant exhausts their own attempt budget.
 - Secrets and raw guesses never appear in public snapshots.
 - Human matchmaking prefers a waiting player and falls back to a server bot
   only after the configured delay.

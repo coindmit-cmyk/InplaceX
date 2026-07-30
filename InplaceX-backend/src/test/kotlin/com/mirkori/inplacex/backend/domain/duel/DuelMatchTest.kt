@@ -65,14 +65,58 @@ class DuelMatchTest {
     }
 
     @Test
-    fun attemptLimitAwardsWinToOpponent() {
+    fun turnBasedAttemptLimitGivesBothPlayersEqualTurnsAndEndsInDraw() {
         val match = readyDuel(attemptLimit = 1)
+
+        val equalizingTurn = submitGuess(match, DuelParticipant.FIRST, "5670")
+
+        assertEquals(DuelPhase.ACTIVE, equalizingTurn.phase)
+        assertEquals(DuelParticipant.SECOND, equalizingTurn.currentTurn)
+        assertNull(equalizingTurn.winner)
+        assertEquals(0, equalizingTurn.participants.first {
+            it.participant == DuelParticipant.FIRST
+        }.attemptsLeft)
+
+        val finished = submitGuess(match, DuelParticipant.SECOND, "1230")
+        assertEquals(DuelPhase.FINISHED, finished.phase)
+        assertNull(finished.winner)
+        assertEquals(DuelFinishReason.ATTEMPTS_EXHAUSTED, finished.finishReason)
+        assertTrue(finished.participants.all { it.attemptsLeft == 0 })
+    }
+
+    @Test
+    fun turnBasedSecondPlayerCanWinOnItsEqualFinalTurn() {
+        val match = readyDuel(attemptLimit = 1)
+
+        val equalizingTurn = submitGuess(match, DuelParticipant.FIRST, "5670")
+        assertEquals(DuelPhase.ACTIVE, equalizingTurn.phase)
+
+        val finished = submitGuess(match, DuelParticipant.SECOND, "1234")
+
+        assertEquals(DuelPhase.FINISHED, finished.phase)
+        assertEquals(DuelParticipant.SECOND, finished.winner)
+        assertEquals(DuelFinishReason.SOLVED, finished.finishReason)
+    }
+
+    @Test
+    fun raceAttemptLimitAwardsWinToOpponentImmediately() {
+        val match = DuelMatch.create(
+            config = GameConfig(
+                codeLength = 4,
+                allowDuplicates = true,
+                attemptLimit = 1,
+                forbidAllSameDigitsGuess = true,
+            ),
+            playStyle = DuelPlayStyle.RACE,
+            attemptLimit = 1,
+        )
+        ready(match)
 
         val finished = submitGuess(match, DuelParticipant.FIRST, "5670")
 
         assertEquals(DuelPhase.FINISHED, finished.phase)
         assertEquals(DuelParticipant.SECOND, finished.winner)
-        assertEquals(0, finished.participants.first { it.participant == DuelParticipant.FIRST }.attemptsLeft)
+        assertEquals(DuelFinishReason.ATTEMPTS_EXHAUSTED, finished.finishReason)
     }
 
     @Test

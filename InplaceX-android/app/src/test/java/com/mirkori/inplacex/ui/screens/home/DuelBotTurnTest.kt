@@ -2,7 +2,11 @@ package com.mirkori.inplacex.ui.screens.home
 
 import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.core.bot.BotSolver
+import com.mirkori.inplacex.core.engine.GuessValidationReason
+import com.mirkori.inplacex.core.engine.GuessValidator
+import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -10,6 +14,26 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DuelBotTurnTest {
+
+    @Test
+    fun localBotDuelPreservesEveryConfiguredDigitRule() {
+        val mode = AppConfigCatalog.gameModes.first { it.id == "pvp_bot_duel" }
+        val config = localBotDuelConfig(mode, seed = 42L)
+
+        assertEquals(mode.config.codeLength, config.codeLength)
+        assertEquals(mode.config.allowDuplicates, config.allowDuplicates)
+        assertEquals(mode.config.forbidAllSameDigitsGuess, config.forbidAllSameDigitsGuess)
+        assertEquals(mode.config.forbidAdjacentDuplicates, config.forbidAdjacentDuplicates)
+        assertEquals(mode.config.forbidTripleDuplicates, config.forbidTripleDuplicates)
+        assertEquals(mode.config.maxConsecutiveDuplicateDigits, config.maxConsecutiveDuplicateDigits)
+        assertEquals(mode.config.turnTimeLimitSeconds, config.turnTimeLimitSeconds)
+        assertEquals(
+            GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES,
+            GuessValidator.validateOrReason("111123", config),
+        )
+        assertTrue(GuessValidator.validate("111223", config))
+        assertTrue(GuessValidator.validate(SecretGenerator.generate(config), config))
+    }
 
     @Test
     fun productionSixDigitBotCompletesItsFirstTurn() {
