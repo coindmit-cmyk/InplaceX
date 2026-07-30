@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-30T00:59:34Z",
+  "generated_at": "2026-07-30T02:01:10Z",
   "project_root": "/mnt/d/agent-runtime/managed-checkouts/inplacex",
   "repo": "coindmit-cmyk/InplaceX",
   "remote": "origin",
@@ -9,12 +9,12 @@
   "fetch": {
     "skipped": true
   },
-  "open_pr_count": 5,
-  "group_count": 5,
+  "open_pr_count": 4,
+  "group_count": 4,
   "stack_group_count": 0,
-  "direct_group_count": 5,
+  "direct_group_count": 4,
   "dispatcher_group_count": 4,
-  "needs_human_group_count": 1,
+  "needs_human_group_count": 0,
   "groups": [
     {
       "group_key": "repository-pr-group:fe149e972f1c58b562ba",
@@ -159,91 +159,41 @@
       "candidate_ci_state": "failed",
       "requires_reconstruction": true,
       "reason": "direct PR can be routed through Dispatcher and Integrator"
-    },
-    {
-      "group_key": "repository-pr-group:acb365203a625d763e7c",
-      "task_id": "REPO-PR-9",
-      "classification": "direct_pr_candidate",
-      "topology": "linear",
-      "route": "needs_human",
-      "target_base": "codex/app-shell-ux-v4",
-      "protected_target": false,
-      "integration_base": "develop",
-      "automatic_target": false,
-      "pr_numbers": [
-        9
-      ],
-      "pr_urls": [
-        "https://github.com/coindmit-cmyk/InplaceX/pull/9"
-      ],
-      "root_pr": 9,
-      "leaf_pr": 9,
-      "candidate_branch": "origin/feature/toy-room-ui-v5",
-      "candidate_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
-      "roots": [
-        9
-      ],
-      "leaves": [
-        9
-      ],
-      "draft_prs": [
-        9
-      ],
-      "dirty_prs": [],
-      "candidate_ci_state": "failed",
-      "requires_reconstruction": true,
-      "reason": "PR topology or target base does not match this integration lane"
     }
   ],
   "task_routing": {
     "staged_count": 0,
-    "updated_count": 1,
-    "covered_count": 5,
-    "superseded_count": 6,
+    "updated_count": 0,
+    "covered_count": 4,
+    "superseded_count": 1,
     "staged_task_ids": [],
-    "updated_task_ids": [
-      "REPO-PR-22"
-    ],
+    "updated_task_ids": [],
     "covered_task_ids": [
       "REPO-PR-4",
       "REPO-PR-5",
       "REPO-PR-7",
-      "REPO-PR-8",
-      "REPO-PR-9"
+      "REPO-PR-8"
     ],
     "superseded_task_ids": [
-      "CRB-REPO-PR-22-S01",
-      "CRB-REPO-PR-22-S02",
-      "CRB-REPO-PR-22-S03",
-      "CRB-REPO-PR-22-S04",
-      "CRB-REPO-PR-22-S05",
-      "REPO-PR-22"
+      "REPO-PR-9"
     ],
     "changed": true,
     "merged_parent_reconciliation": {
-      "reconciled_count": 1,
-      "reconciled_task_ids": [
-        "REPO-PR-22"
-      ],
+      "reconciled_count": 0,
+      "reconciled_task_ids": [],
       "protected_task_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
-      "changed": true
+      "base_sha": "1bda8cba24ad1b3abbc3446ff09606dcce0c4e85",
+      "changed": false
     },
     "integrated_descendant_reconciliation": {
-      "resolved_count": 5,
-      "resolved_task_ids": [
-        "CRB-REPO-PR-22-S01",
-        "CRB-REPO-PR-22-S02",
-        "CRB-REPO-PR-22-S03",
-        "CRB-REPO-PR-22-S04",
-        "CRB-REPO-PR-22-S05"
-      ],
+      "resolved_count": 0,
+      "resolved_task_ids": [],
       "protected_task_ids": [],
       "unproven_parent_ids": [],
       "base_ref": "origin/develop",
-      "base_sha": "705506520b0736ec0e507974beb1b03e06034d77",
-      "changed": true
+      "base_sha": "1bda8cba24ad1b3abbc3446ff09606dcce0c4e85",
+      "changed": false
     },
     "repair_parent_reconciliation": {
       "reconciled_count": 0,
@@ -270,7 +220,7 @@
   },
   "event": {
     "event_appended": true,
-    "event_id": "repository-hygiene-762676d6079465e97e41",
+    "event_id": "repository-hygiene-84095b668699423b3a0f",
     "path": "/mnt/d/agent-runtime/managed-checkouts/inplacex/AiStudio/Task_manager/agent_events.jsonl"
   },
   "repair_parent_events": {
@@ -322,7 +272,7 @@
   },
   "branch_lifecycle_scan": {
     "schema_version": "1.0",
-    "generated_at": "2026-07-30T00:59:35Z",
+    "generated_at": "2026-07-30T02:01:11Z",
     "stale_days": 14,
     "codex_activity_coverage_complete": false,
     "counts": {
@@ -340,6 +290,6 @@
     "error": "refusing destructive cleanup: Codex activity coverage is incomplete or stale"
   },
   "ok": true,
-  "state_signature": "ea0a152839f37bb20b0921c4da8f61132fc35918e517b03a561e0d2f3e7d73cf",
+  "state_signature": "167a6efe2759dc7b551242d281f1e61d7110ff92ed02f8e5392320571f68ac06",
   "state_written": true
 }

@@ -14207,7 +14207,70 @@
       "final_status": "stale_or_superseded",
       "archived_at": "2026-07-30T00:59:41Z",
       "archived_by": "status_orchestrator.py"
+    },
+    {
+      "id": "REPO-PR-9",
+      "title": "Integrate open PR #9",
+      "status": "stale_or_superseded",
+      "priority": "P1",
+      "complexity": "L",
+      "type": "repository_hygiene_integration",
+      "recommended_agent": "human",
+      "requires_human_attention": true,
+      "worker_ready": false,
+      "packet_status": "stale_or_superseded",
+      "normalization_status": "needs_human",
+      "dispatcher_decision": "stale_or_superseded",
+      "integration_status": "stale_or_superseded",
+      "branch": "origin/feature/toy-room-ui-v5",
+      "base_branch": "codex/app-shell-ux-v4",
+      "github_pr": 9,
+      "pr_numbers": [
+        9
+      ],
+      "repository_hygiene_key": "repository-pr-group:acb365203a625d763e7c",
+      "repository_hygiene_topology": "linear",
+      "repository_hygiene_route": "needs_human",
+      "repository_hygiene_head_sha": "1e508f938af8d5438262eb34385a0c348dcab467",
+      "repository_hygiene_dirty_prs": [],
+      "repository_hygiene_draft_prs": [
+        9
+      ],
+      "repository_hygiene_ci_state": "failed",
+      "source_lane": "repository_hygiene_cycle",
+      "source_summary": "PR topology or target base does not match this integration lane",
+      "provenance": [
+        {
+          "source_type": "github_pull_request_topology",
+          "source_item_id": "repository-pr-group:acb365203a625d763e7c",
+          "source_url": "https://github.com/coindmit-cmyk/InplaceX/pull/9",
+          "captured_at": "2026-07-29T14:26:30Z",
+          "summary": "PR topology or target base does not match this integration lane"
+        }
+      ],
+      "acceptance_criteria": [
+        "Preserve existing behavior unless the PR explicitly replaces it.",
+        "Integrate stacked commits in recorded PR order and retain migration compatibility.",
+        "Run project-required tests and git diff --check before finalization.",
+        "Close or delete source PR branches only after merge evidence exists."
+      ],
+      "checks": [
+        "project-required tests",
+        "git diff --check",
+        "capability preservation comparison"
+      ],
+      "lock": "free",
+      "next_owner": "none",
+      "next_role": "human",
+      "discovered_at": "2026-07-29T14:26:30Z",
+      "updated_at": "2026-07-29T14:26:30Z",
+      "closed_at": "2026-07-30T02:01:10Z",
+      "closed_by": "repository_hygiene_cycle",
+      "status_reason": "source pull request is no longer open",
+      "final_status": "stale_or_superseded",
+      "archived_at": "2026-07-30T02:01:17Z",
+      "archived_by": "status_orchestrator.py"
     }
   ],
-  "updated_at": "2026-07-30T00:59:41Z"
+  "updated_at": "2026-07-30T02:01:17Z"
 }
