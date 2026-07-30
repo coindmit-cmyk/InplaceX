@@ -18,8 +18,7 @@ class OnlineRuntime private constructor(
     suspend fun createMatch(
         mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
     ): OnlineClientResult<OnlineMatchTicket> {
-        val authenticated = ensureAuthenticatedSession()
-        if (authenticated == null) return OnlineClientResult.AuthenticationRequired
+        ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
         val created = duel.createMatch(mode)
         if (created !is OnlineClientResult.Success) return created
         if (created.value.status == OnlineMatchStatus.MATCHED) return created
@@ -38,8 +37,12 @@ class OnlineRuntime private constructor(
     }
 
     suspend fun createGoogleChallenge(): GoogleChallengeResult {
-        if (ensureAuthenticatedSession() == null) {
-            return GoogleChallengeResult.AuthenticationRequired
+        when (ensureAuthenticatedSession()) {
+            is GuestAuthResult.Authenticated -> Unit
+            GuestAuthResult.Rejected -> return GoogleChallengeResult.AuthenticationRequired
+            GuestAuthResult.Offline,
+            GuestAuthResult.TemporarilyUnavailable,
+            -> return GoogleChallengeResult.TemporarilyUnavailable
         }
         return withContext(Dispatchers.IO) { googleAuth.challenge() }
     }
@@ -48,21 +51,21 @@ class OnlineRuntime private constructor(
         playStyle: RemoteFriendPlayStyle,
         codeLength: Int,
     ): OnlineClientResult<OnlineFriendInvite> {
-        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
         return duel.createFriendInvite(playStyle, codeLength)
     }
 
     suspend fun readFriendInvite(
         inviteCode: String,
     ): OnlineClientResult<OnlineFriendInvite> {
-        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
         return duel.readFriendInvite(inviteCode)
     }
 
     suspend fun acceptFriendInvite(
         inviteCode: String,
     ): OnlineClientResult<OnlineFriendInvite> {
-        if (ensureAuthenticatedSession() == null) return OnlineClientResult.AuthenticationRequired
+        ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
         return duel.acceptFriendInvite(inviteCode)
     }
 
@@ -98,15 +101,11 @@ class OnlineRuntime private constructor(
         client.close()
     }
 
-    private suspend fun ensureAuthenticatedSession(): GuestSession? =
+    private suspend fun ensureAuthenticatedSession(): GuestAuthResult =
         withContext(Dispatchers.IO) {
             auth.sessionWithFreshAccessTokenOrNull()
-                ?: when (val result = auth.bootstrap(installation)) {
-                    is GuestAuthResult.Authenticated -> result.session
-                    GuestAuthResult.Rejected,
-                    GuestAuthResult.TemporarilyUnavailable,
-                    -> null
-                }
+                ?.let(GuestAuthResult::Authenticated)
+                ?: auth.bootstrap(installation)
         }
 
     companion object {
@@ -124,10 +123,12 @@ class OnlineRuntime private constructor(
             if (baseUrl.isBlank()) return null
             val endpoint = OnlineEndpoint(baseUrl, allowCleartextLoopback)
             val client = createOnlineHttpClient()
+            val connectivity = AndroidConnectivityGate(context)
             val unauthenticatedTransport = KtorOnlineTransport(
                 client = client,
                 endpoint = endpoint,
                 tokenProvider = EmptyAccessTokenProvider,
+                connectivity = connectivity,
             )
             val auth = GuestAuthSessionManager(
                 api = KtorGuestAuthApi(unauthenticatedTransport),
@@ -137,6 +138,7 @@ class OnlineRuntime private constructor(
                 client = client,
                 endpoint = endpoint,
                 tokenProvider = auth,
+                connectivity = connectivity,
             )
             return OnlineRuntime(
                 client = client,
@@ -152,6 +154,13 @@ class OnlineRuntime private constructor(
             )
         }
     }
+}
+
+private fun GuestAuthResult.onlineFailureOrNull(): OnlineClientResult<Nothing>? = when (this) {
+    is GuestAuthResult.Authenticated -> null
+    GuestAuthResult.Rejected -> OnlineClientResult.AuthenticationRequired
+    GuestAuthResult.Offline -> OnlineClientResult.Offline
+    GuestAuthResult.TemporarilyUnavailable -> OnlineClientResult.TemporarilyUnavailable
 }
 
 private object EmptyAccessTokenProvider : AccessTokenProvider {

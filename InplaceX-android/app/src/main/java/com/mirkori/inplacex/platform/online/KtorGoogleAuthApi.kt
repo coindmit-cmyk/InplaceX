@@ -67,7 +67,7 @@ class KtorGoogleAuthApi(
                     GuestAuthResult.TemporarilyUnavailable
                 }
             }
-            RemoteCallResult.Offline,
+            RemoteCallResult.Offline -> GuestAuthResult.Offline
             RemoteCallResult.TimedOut,
             is RemoteCallResult.NetworkFailure,
             -> GuestAuthResult.TemporarilyUnavailable

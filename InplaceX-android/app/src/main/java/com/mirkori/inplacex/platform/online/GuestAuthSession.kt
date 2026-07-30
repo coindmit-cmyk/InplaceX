@@ -38,6 +38,8 @@ sealed interface GuestAuthResult {
 
     data object Rejected : GuestAuthResult
 
+    data object Offline : GuestAuthResult
+
     data object TemporarilyUnavailable : GuestAuthResult
 }
 
@@ -115,6 +117,7 @@ class GuestAuthSessionManager(
                 store.clear()
                 null
             }
+            GuestAuthResult.Offline,
             GuestAuthResult.TemporarilyUnavailable -> null
         }
     }
@@ -144,6 +147,7 @@ class GuestAuthSessionManager(
             result
         }
         GuestAuthResult.Rejected,
+        GuestAuthResult.Offline,
         GuestAuthResult.TemporarilyUnavailable,
         -> result
     }
