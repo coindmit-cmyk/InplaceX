@@ -52,6 +52,21 @@ class AdPlacementPolicyTest {
         }
     }
 
+    @Test
+    fun `post match interstitial uses the shared onboarding and cadence policy`() {
+        val free = entitlements()
+
+        assertFalse(AdPlacementPolicy.shouldShowPostMatchInterstitial(19, free))
+        assertTrue(AdPlacementPolicy.shouldShowPostMatchInterstitial(20, free))
+        assertFalse(AdPlacementPolicy.shouldShowPostMatchInterstitial(21, free))
+        assertFalse(
+            AdPlacementPolicy.shouldShowPostMatchInterstitial(
+                matchesPlayed = 24,
+                entitlements = entitlements(proPlus = true),
+            ),
+        )
+    }
+
     private fun entitlements(
         adFree: Boolean = false,
         pro: Boolean = false,

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added provider-neutral `InplaceX-auth-core` security rules for Google,
+  passwordless email codes, opaque provider subjects, and signed/fresh Telegram
+  login payloads; provider secrets remain outside Android and Git.
+- Added `InplaceX-ads-core` as the single entitlement-first policy for banner,
+  rewarded, and post-match placements, and wired Android banner/interstitial
+  eligibility to it without falsely enabling an unavailable ad SDK.
 - Renamed the private online room choices to the player-facing formats
   `На время` and `По очереди`, added concise rule explanations in Russian and
   English, and kept the stable `race`/`turn_based` server contract unchanged.

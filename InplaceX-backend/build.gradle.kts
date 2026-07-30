@@ -18,6 +18,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":InplaceX-auth-core"))
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))
     implementation("com.zaxxer:HikariCP:5.1.0")
