@@ -37,6 +37,10 @@ object UnknownAdMarketResolver : AdMarketResolver {
     override suspend fun resolveMarket(): AdMarket = AdMarket.UNKNOWN
 }
 
+fun interface AdPrivacyOptionsHandler {
+    suspend fun showPrivacyOptions(): Boolean
+}
+
 class AndroidAdRuntime(
     private val router: AdRouter,
     private val marketResolver: AdMarketResolver,
@@ -45,6 +49,7 @@ class AndroidAdRuntime(
     private val providerAvailability: AdProviderAvailability =
         AllConfiguredAdProviderAvailability,
     private val resources: List<AutoCloseable> = emptyList(),
+    private val privacyOptionsHandlers: List<AdPrivacyOptionsHandler> = emptyList(),
 ) : AutoCloseable {
     suspend fun preload(request: AdRequest): List<AdPreloadAttempt> = coroutineScope {
         val context = runtimeContext()
@@ -78,6 +83,14 @@ class AndroidAdRuntime(
     suspend fun plan(request: AdRequest): AdRoutePlan {
         val context = runtimeContext()
         return router.plan(context, request)
+    }
+
+    suspend fun showProviderPrivacyOptions(): Boolean {
+        var shown = false
+        privacyOptionsHandlers.forEach { handler ->
+            shown = handler.showPrivacyOptions() || shown
+        }
+        return shown
     }
 
     private suspend fun runtimeContext(): AdRuntimeContext {
@@ -118,6 +131,7 @@ fun createAdRuntime(
         configuredProviders = config.configuredProviderIds().filter(providerIds::contains),
         consentProvider = consentProvider,
         resources = providers.filterIsInstance<AutoCloseable>(),
+        privacyOptionsHandlers = providers.filterIsInstance<AdPrivacyOptionsHandler>(),
     )
 }
 

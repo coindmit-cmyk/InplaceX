@@ -23,3 +23,7 @@
 # Ktor depends on the SLF4J API but Android uses the project logging boundary
 # instead of the optional JVM StaticLoggerBinder implementation.
 -dontwarn org.slf4j.impl.StaticLoggerBinder
+
+# Required by the current HUAWEI Ads Kit integration guide.
+-keep class com.huawei.openalliance.ad.** { *; }
+-keep class com.huawei.hms.ads.** { *; }

@@ -237,6 +237,9 @@ dependencies {
     implementation(libs.google.identity.googleid)
     implementation(libs.yandex.mobileads)
     implementation(libs.yandex.mobileads.compose)
+    implementation(libs.google.mobileads)
+    implementation(libs.google.ump)
+    implementation(libs.huawei.ads.lite)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)

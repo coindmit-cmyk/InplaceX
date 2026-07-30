@@ -40,6 +40,8 @@ import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.ads.YandexGameBanner
+import com.mirkori.inplacex.platform.ads.AdMobGameBanner
+import com.mirkori.inplacex.platform.ads.HuaweiGameBanner
 import com.mirkori.inplacex.platform.ads.AdUsageTracker
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -123,6 +125,9 @@ class MainActivity : ComponentActivity() {
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by rememberSaveable {
                     mutableStateOf<String?>(null)
+                }
+                var failedBannerProviderNames by remember {
+                    mutableStateOf(emptySet<String>())
                 }
                 var adConsentDecisionName by rememberSaveable {
                     mutableStateOf(providerServices.adConsent.currentDecision().name)
@@ -261,9 +266,11 @@ class MainActivity : ComponentActivity() {
                     gameBannerEligible,
                     adConsentDecisionName,
                     providerServices,
+                    failedBannerProviderNames,
                 ) {
                     if (!gameBannerEligible) {
                         selectedBannerProviderName = null
+                        failedBannerProviderNames = emptySet()
                         return@LaunchedEffect
                     }
                     val request = AdRequest(
@@ -278,7 +285,9 @@ class MainActivity : ComponentActivity() {
                         .map { it.providerId }
                     selectedBannerProviderName = providerServices.adRuntime.plan(request)
                         .providers
-                        .firstOrNull(readyProviders::contains)
+                        .firstOrNull {
+                            it in readyProviders && it.name !in failedBannerProviderNames
+                        }
                         ?.name
                 }
                 val appBackgroundStyle = ScreenBackgroundStyle.DrawableResource(
@@ -334,7 +343,31 @@ class MainActivity : ComponentActivity() {
                                         .gameBannerAdUnitId,
                                     onLoaded = {},
                                     onFailed = {
-                                        selectedBannerProviderName = null
+                                        failedBannerProviderNames += AdProviderId.OWNER_YANDEX.name
+                                    },
+                                )
+                                AdProviderId.COMPANY_ADMOB.name -> AdMobGameBanner(
+                                    adUnitId = AppConfigCatalog.platformConfig
+                                        .providers
+                                        .ads
+                                        .companyAdMob
+                                        .gameBannerAdUnitId,
+                                    consentDecision = providerServices.adConsent.currentDecision(),
+                                    onLoaded = {},
+                                    onFailed = {
+                                        failedBannerProviderNames += AdProviderId.COMPANY_ADMOB.name
+                                    },
+                                )
+                                AdProviderId.COMPANY_HUAWEI.name -> HuaweiGameBanner(
+                                    adUnitId = AppConfigCatalog.platformConfig
+                                        .providers
+                                        .ads
+                                        .companyHuawei
+                                        .gameBannerAdUnitId,
+                                    consentDecision = providerServices.adConsent.currentDecision(),
+                                    onLoaded = {},
+                                    onFailed = {
+                                        failedBannerProviderNames += AdProviderId.COMPANY_HUAWEI.name
                                     },
                                 )
                                 else -> VariantBottomAdContent(
@@ -708,7 +741,10 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onOpenAdPrivacy = {
                                     isSettingsOpen = false
-                                    isAdPrivacyOpen = true
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.showProviderPrivacyOptions()
+                                        isAdPrivacyOpen = true
+                                    }
                                 },
                                 onOpenInternalTools = {
                                     isSettingsOpen = false

@@ -16,6 +16,9 @@ kotlinxSerializationJson = "1.8.1"
 credentials = "1.6.0"
 googleId = "1.2.0"
 yandexMobileAds = "8.2.0"
+googleMobileAds = "25.4.0"
+googleUmp = "4.0.0"
+huaweiAds = "13.4.90.300"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -50,6 +53,9 @@ androidx-credentials-play-services-auth = { group = "androidx.credentials", name
 google-identity-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 yandex-mobileads = { group = "com.yandex.android", name = "mobileads", version.ref = "yandexMobileAds" }
 yandex-mobileads-compose = { group = "com.yandex.android", name = "mobileads-compose", version.ref = "yandexMobileAds" }
+google-mobileads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "googleMobileAds" }
+google-ump = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "googleUmp" }
+huawei-ads-lite = { group = "com.huawei.hms", name = "ads-lite", version.ref = "huaweiAds" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -79,6 +79,25 @@ class AndroidAdRuntimeTest {
         assertEquals(0, owner.showCalls)
     }
 
+    @Test
+    fun `runtime delegates provider privacy options without changing routing`() = runBlocking {
+        var calls = 0
+        val runtime = AndroidAdRuntime(
+            router = AdRouter(emptyList()),
+            marketResolver = AdMarketResolver { AdMarket.UNKNOWN },
+            configuredProviders = emptyList(),
+            privacyOptionsHandlers = listOf(
+                AdPrivacyOptionsHandler {
+                    calls += 1
+                    true
+                },
+            ),
+        )
+
+        assertEquals(true, runtime.showProviderPrivacyOptions())
+        assertEquals(1, calls)
+    }
+
     private fun configuredSdk(applicationId: String = ""): AdSdkConfig =
         AdSdkConfig(
             applicationId = applicationId,

@@ -3,7 +3,9 @@ package com.mirkori.inplacex.platform.services
 import android.content.Context
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.ads.AdConsentController
+import com.mirkori.inplacex.platform.ads.AdMobAdProvider
 import com.mirkori.inplacex.platform.ads.AdActivityHost
+import com.mirkori.inplacex.platform.ads.HuaweiAdProvider
 import com.mirkori.inplacex.platform.ads.YandexAdProvider
 import com.mirkori.inplacex.platform.ads.createAdRuntime
 import com.mirkori.inplacex.platform.ads.SharedPreferencesAdConsentController
@@ -78,13 +80,25 @@ object ProviderServicesFactory {
             consentProvider = adConsent,
             activityHost = adActivityHost,
         )
+        val adMob = AdMobAdProvider(
+            appContext = context,
+            config = platformConfig.providers.ads.companyAdMob,
+            consentProvider = adConsent,
+            activityHost = adActivityHost,
+        )
+        val huawei = HuaweiAdProvider(
+            appContext = context,
+            config = platformConfig.providers.ads.companyHuawei,
+            consentProvider = adConsent,
+            activityHost = adActivityHost,
+        )
         return ProviderServices(
             authService = auth,
             profileService = auth,
             adService = StubAdService(),
             adRuntime = createAdRuntime(
                 config = platformConfig.providers.ads,
-                providers = listOf(yandex),
+                providers = listOf(yandex, adMob, huawei),
                 marketResolver = marketResolver,
                 consentProvider = adConsent,
             ),
