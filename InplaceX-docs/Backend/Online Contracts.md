@@ -406,8 +406,11 @@ The contract is testable without a running Ktor server:
 8. Assert that a private invite cannot be self-accepted, reused by a third
    player, or converted into more than one session.
 
-These checks apply to backend and client adapters. The Android S28 foundation
-implements a runtime client transport under `platform.online`, while the
-authoritative backend routes remain a separate gated delivery. This contract
-does not authorize exposing production credentials or real provider
-configuration.
+These checks apply to backend and client adapters. The Android runtime has one
+canonical transport boundary: `KtorOnlineTransport`, composed by
+`OnlineRuntime`. Authentication headers, refresh serialization, retry policy,
+idempotency headers, WebSocket reconnect cursors, and frame-size limits must
+remain inside that boundary; features must not introduce a parallel transport
+client with independent security or retry rules. The authoritative backend
+routes remain a separate gated delivery. This contract does not authorize
+exposing production credentials or real provider configuration.
