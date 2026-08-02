@@ -432,8 +432,10 @@ def match_any(path: str, patterns: list[str]) -> bool:
         pattern = pattern.replace("\\", "/")
         if fnmatch.fnmatch(normalized, pattern) or normalized == pattern.rstrip("/"):
             return True
-        if pattern.endswith("/**") and normalized.startswith(pattern[:-3]):
-            return True
+        if pattern.endswith("/**"):
+            directory = pattern[:-3].rstrip("/")
+            if normalized == directory or normalized.startswith(f"{directory}/"):
+                return True
     return False
 
 
