@@ -79,6 +79,25 @@ class BehaviorMoveRegressionTests(unittest.TestCase):
             detect_behavior_regression(before, after),
         )
 
+    def test_existing_duplicate_does_not_mask_removed_symbol(self) -> None:
+        before = {
+            "Source.kt": ["shared"],
+            "Existing.kt": ["shared"],
+        }
+        after = {
+            "Source.kt": [],
+            "Existing.kt": ["shared"],
+        }
+
+        self.assertEqual(
+            {
+                "ok": False,
+                "lost_behavior": {"Source.kt": ["shared"]},
+                "lost_count": 1,
+            },
+            detect_behavior_regression(before, after),
+        )
+
 
 class RetryBranchRegressionTests(unittest.TestCase):
     def test_design_handoff_integration_retry_gets_fresh_branch(self) -> None:

@@ -876,7 +876,7 @@ LINE_PRESERVATION_PATHS = {
 UNION_CONFLICT_PATHS = {"CHANGELOG.md"}
 
 GENERIC_METHOD_BEHAVIOR_PATTERN = re.compile(
-    r"^\s*(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z0-9_<>,.?\[\]\s]+\s+([A-Za-z_]\w*)\s*\("
+    r"^\s*(?:(?:public|private|protected|internal|static|suspend|override|final|open|abstract|inline|operator|external|native|synchronized)\s+)*(?:fun\s+|[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*\s+)([A-Za-z_]\w*)\s*\("
 )
 
 BEHAVIOR_PATTERNS = (
@@ -1192,10 +1192,16 @@ def replaced_test_behaviors(
 
 def detect_behavior_regression(before: dict[str, list[str]], after: dict[str, list[str]]) -> dict[str, Any]:
     lost: dict[str, list[str]] = {}
+    newly_added = {
+        token
+        for rel_path, tokens in after.items()
+        for token in set(tokens) - set(before.get(rel_path, []))
+    }
     for rel_path, tokens in before.items():
         before_tokens = set(tokens)
         after_tokens = set(after.get(rel_path, []))
         missing_tokens = before_tokens - after_tokens
+        missing_tokens -= newly_added
         missing_tokens -= replaced_test_behaviors(
             rel_path,
             missing_tokens,
