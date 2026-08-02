@@ -40,7 +40,8 @@ Staging remains disabled until all of the following are proven together:
 1. identity and game API run as separate processes;
 2. only the identity process can read the private key;
 3. the game API starts with the public key and fails closed when it is absent;
-4. hostile-key, malformed UTF-8, expiry, issuer, audience, and membership tests
-   pass;
+4. hostile-key, exact Bearer-header, malformed UTF-8, duplicate/unknown claim,
+   canonical ID, expiry, issuer, audience, concurrent verification, public JVM
+   surface, and membership tests pass;
 5. authenticated matchmaking, reconnect, and WebSocket E2E pass on the exact
    server and Android revisions selected for staging.
