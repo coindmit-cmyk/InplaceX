@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
@@ -141,9 +142,9 @@ class ShellSectionsSmokeTest {
             composeRule.onNodeWithText(
                 "Игроки делают по одному ходу. После принятого хода очередь переходит сопернику.",
             ).assertIsDisplayed()
-            composeRule.onNodeWithText("Создать код").assertIsDisplayed()
-            composeRule.onNodeWithText("Войти по коду").assertIsDisplayed()
             composeRule.onNodeWithText("Найти матч").assertIsDisplayed()
+            composeRule.onNodeWithText("Создать код").assertIsDisplayed()
+            composeRule.onNodeWithText("Войти по коду").performScrollTo().assertIsDisplayed()
         } finally {
             runtime.close()
         }
