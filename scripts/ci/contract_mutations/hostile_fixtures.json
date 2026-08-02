@@ -1,0 +1,72 @@
+[
+  {
+    "name": "lint_echo",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew lint",
+    "replacement": "        run: echo ./gradlew lint",
+    "expected": "step.verify.lint.exact-run"
+  },
+  {
+    "name": "lint_comment",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew lint",
+    "replacement": "        # run: ./gradlew lint",
+    "expected": "step.verify.lint.exact-run"
+  },
+  {
+    "name": "lint_heredoc",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew lint",
+    "replacement": "        run: |\n          cat <<'EOF'\n          ./gradlew lint\n          EOF",
+    "expected": "step.verify.lint.exact-run"
+  },
+  {
+    "name": "lint_short_circuit",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew lint",
+    "replacement": "        run: true || ./gradlew lint",
+    "expected": "step.verify.lint.exact-run"
+  },
+  {
+    "name": "instrumentation_non_blocking",
+    "target": "workflow",
+    "anchor": "  instrumentation:\n    name: API 35 emulator instrumentation",
+    "replacement": "  instrumentation:\n    continue-on-error: true\n    name: API 35 emulator instrumentation",
+    "expected": "job.instrumentation.continue-on-error"
+  },
+  {
+    "name": "instrumentation_raw_text",
+    "target": "workflow",
+    "anchor": "          script: bash scripts/ci/run_instrumentation.sh",
+    "replacement": "          script: echo bash scripts/ci/run_instrumentation.sh",
+    "expected": "step.instrumentation.emulator.input.script"
+  },
+  {
+    "name": "emulator_unpinned",
+    "target": "workflow",
+    "anchor": "ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d",
+    "replacement": "ReactiveCircus/android-emulator-runner@v2",
+    "expected": "step.instrumentation.emulator.pinned-action"
+  },
+  {
+    "name": "release_short_circuit",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew :app:assembleRelease",
+    "replacement": "        run: ./gradlew :app:assembleRelease || true",
+    "expected": "step.release.assemble.exact-run"
+  },
+  {
+    "name": "artifact_script_noop",
+    "target": "artifact_script",
+    "anchor": "set -euo pipefail",
+    "replacement": "set +e",
+    "expected": "script.artifact.sha256"
+  },
+  {
+    "name": "instrumentation_script_noop",
+    "target": "instrumentation_script",
+    "anchor": "./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest --no-configuration-cache",
+    "replacement": "echo ./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest --no-configuration-cache",
+    "expected": "script.instrumentation.sha256"
+  }
+]
