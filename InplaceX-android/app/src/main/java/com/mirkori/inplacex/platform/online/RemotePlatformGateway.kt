@@ -156,6 +156,8 @@ data class RemoteCloudSavePayload(
 data class RemoteMatchmakingPayload(
     val commandId: String,
     val mode: RemoteMatchmakingMode,
+    val playStyle: RemoteFriendPlayStyle,
+    val codeLength: Int,
 )
 
 data class RemoteSubmitSecretPayload(
@@ -379,6 +381,7 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
         idempotencyKey: String,
     ): RemoteRequestSpec {
         requireSafeUuid(payload.commandId, "commandId")
+        require(payload.codeLength in 4..10) { "online code length must be in 4..10" }
         return RemoteRequestSpec(
             operation = "matchmaking.create",
             method = RemoteHttpMethod.POST,
@@ -386,6 +389,8 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
             bodyJson = jsonObject(
                 "commandId" to JsonPrimitive(payload.commandId),
                 "mode" to JsonPrimitive(payload.mode.name.lowercase()),
+                "playStyle" to JsonPrimitive(payload.playStyle.name.lowercase()),
+                "codeLength" to JsonPrimitive(payload.codeLength),
             ),
             idempotencyKey = idempotencyKey,
         )

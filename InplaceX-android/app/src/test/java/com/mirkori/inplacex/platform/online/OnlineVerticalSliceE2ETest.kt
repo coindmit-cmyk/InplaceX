@@ -94,7 +94,11 @@ class OnlineVerticalSliceE2ETest {
             tokenProvider = auth,
         )
         val duel = OnlineDuelClient(authenticatedTransport)
-        val searching = duel.createMatch(RemoteMatchmakingMode.CLASSIC)
+        val searching = duel.createMatch(
+            mode = RemoteMatchmakingMode.CLASSIC,
+            playStyle = RemoteFriendPlayStyle.RACE,
+            codeLength = 6,
+        )
         val createdTicket = (searching as OnlineClientResult.Success).value
         assertEquals(OnlineMatchStatus.SEARCHING, createdTicket.status)
         matchmakingClock.advance(Duration.ofSeconds(5))
@@ -106,12 +110,12 @@ class OnlineVerticalSliceE2ETest {
         val active = duel.submitSecret(
             sessionId,
             initial.value.revision,
-            "1234",
+            "111234",
         ) as OnlineClientResult.Success
         val turn = duel.submitGuess(
             sessionId,
             active.value.revision,
-            "0123",
+            "001001",
         ) as OnlineClientResult.Success
 
         assertEquals("active", active.value.phase)

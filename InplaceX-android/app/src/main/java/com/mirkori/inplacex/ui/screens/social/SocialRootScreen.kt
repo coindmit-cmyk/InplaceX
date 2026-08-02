@@ -55,10 +55,8 @@ fun SocialRootScreen(
 ) {
     val strings = LocalAppStrings.current
     var onlineDuelOpen by remember { mutableStateOf(false) }
-    var autoStartQuickMatch by remember { mutableStateOf(false) }
 
-    fun openOnline(autoStart: Boolean = false) {
-        autoStartQuickMatch = autoStart
+    fun openOnline() {
         onlineDuelOpen = true
     }
 
@@ -78,10 +76,8 @@ fun SocialRootScreen(
     if (onlineDuelOpen && onlineRuntime != null) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
-            autoStartQuickMatch = autoStartQuickMatch,
             onBack = {
                 onlineDuelOpen = false
-                autoStartQuickMatch = false
             },
         )
         return
@@ -152,7 +148,7 @@ fun SocialRootScreen(
                         )
                     }
                     Button(
-                        onClick = { openOnline(autoStart = true) },
+                        onClick = { openOnline() },
                         enabled = onlineRuntime != null,
                     ) {
                         Text(strings.text("social.test_friend.play"))

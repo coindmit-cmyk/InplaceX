@@ -17,9 +17,11 @@ class OnlineRuntime private constructor(
 ) : AutoCloseable {
     suspend fun createMatch(
         mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
+        playStyle: RemoteFriendPlayStyle,
+        codeLength: Int,
     ): OnlineClientResult<OnlineMatchTicket> {
         ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
-        val created = duel.createMatch(mode)
+        val created = duel.createMatch(mode, playStyle, codeLength)
         if (created !is OnlineClientResult.Success) return created
         if (created.value.status == OnlineMatchStatus.MATCHED) return created
 

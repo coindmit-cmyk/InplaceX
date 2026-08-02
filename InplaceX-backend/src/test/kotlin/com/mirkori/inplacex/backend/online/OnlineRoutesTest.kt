@@ -64,7 +64,11 @@ class OnlineRoutesTest {
             bearer(playerToken)
         }
         assertEquals(HttpStatusCode.OK, initial.status)
-        assertEquals("setup", json(initial.bodyAsText()).getValue("phase").jsonPrimitive.content)
+        val initialJson = json(initial.bodyAsText())
+        assertEquals("setup", initialJson.getValue("phase").jsonPrimitive.content)
+        assertEquals("race", initialJson.getValue("playStyle").jsonPrimitive.content)
+        assertEquals(6, initialJson.getValue("codeLength").jsonPrimitive.content.toInt())
+        assertEquals("null", initialJson.getValue("attemptLimit").toString())
 
         val secretCommand = UUID.randomUUID().toString()
         val active = client.post("/api/v1/sessions/$sessionId/setup/secret") {
@@ -72,7 +76,7 @@ class OnlineRoutesTest {
             header("Idempotency-Key", secretCommand)
             contentType(ContentType.Application.Json)
             setBody(
-                """{"commandId":"$secretCommand","expectedRevision":0,"secret":"1234"}""",
+                """{"commandId":"$secretCommand","expectedRevision":0,"secret":"111234"}""",
             )
         }
         assertEquals(HttpStatusCode.OK, active.status)
@@ -86,13 +90,13 @@ class OnlineRoutesTest {
             header("Idempotency-Key", guessCommand)
             contentType(ContentType.Application.Json)
             setBody(
-                """{"commandId":"$guessCommand","expectedRevision":$activeRevision,"guess":"0123"}""",
+                """{"commandId":"$guessCommand","expectedRevision":$activeRevision,"guess":"001001"}""",
             )
         }
         assertEquals(HttpStatusCode.OK, turn.status)
         val turnBody = turn.bodyAsText()
         assertTrue(json(turnBody).getValue("revision").jsonPrimitive.content.toLong() > activeRevision)
-        assertFalse(turnBody.contains("1234"))
+        assertFalse(turnBody.contains("111234"))
     }
 
     @Test
@@ -214,7 +218,9 @@ class OnlineRoutesTest {
             val commandId = UUID.randomUUID().toString()
             header("Idempotency-Key", commandId)
             contentType(ContentType.Application.Json)
-            setBody("""{"commandId":"$commandId","mode":"classic"}""")
+            setBody(
+                """{"commandId":"$commandId","mode":"classic","playStyle":"race","codeLength":6}""",
+            )
         }.let { response ->
             assertEquals(HttpStatusCode.OK, response.status)
             json(response.bodyAsText())

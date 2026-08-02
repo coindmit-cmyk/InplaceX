@@ -28,6 +28,11 @@
 - lose iff `attempts.size >= attemptLimit`
 - validation rules come from `GameConfig`
 
+Online duel orchestration may pass a nullable duel attempt limit while keeping
+the underlying `GameConfig.attemptLimit` positive. A null duel limit means that
+move count cannot end the match; the server clock or a solved secret is the
+authoritative terminal condition.
+
 ## Current Note
 
 There are still legacy model shapes in the repo (`MatchState`, `GuessResult`, `GameStatus`) used by older UI flows. They are transitional and should converge toward the canonical match contracts over time.

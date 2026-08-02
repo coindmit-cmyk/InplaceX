@@ -52,7 +52,12 @@ fun Application.configureOnlineRoutes(
             }
             if (!call.hasMatchingIdempotencyKey(command.commandId)) return@post
             val result = runOnlineCommand(call) {
-                service.createTicket(principal.playerId, command.commandId, command.mode)
+                service.createTicket(
+                    playerId = principal.playerId,
+                    commandId = command.commandId,
+                    mode = command.mode,
+                    rules = command.rules,
+                )
             } ?: return@post
             call.respondJson(HttpStatusCode.OK, codec.encodeTicket(result))
         }
@@ -204,6 +209,7 @@ fun Application.configureOnlineRoutes(
 private data class TicketCommand(
     val commandId: String,
     val mode: OnlineMatchMode,
+    val rules: OnlineMatchRules,
 )
 
 private data class SessionCommand(
@@ -233,7 +239,16 @@ private class OnlineJsonCodec {
     }
 
     fun decodeTicket(source: String): TicketCommand {
-        val value = decodeObject(source, setOf("commandId", "mode"))
+        val value = decodeObject(
+            source,
+            requiredFields = setOf("commandId", "mode"),
+            allowedFields = setOf("commandId", "mode", "playStyle", "codeLength"),
+        )
+        val hasPlayStyle = "playStyle" in value
+        val hasCodeLength = "codeLength" in value
+        require(hasPlayStyle == hasCodeLength) {
+            "playStyle and codeLength must be provided together"
+        }
         return TicketCommand(
             commandId = value.uuid("commandId"),
             mode = when (value.string("mode", 16)) {
@@ -241,6 +256,21 @@ private class OnlineJsonCodec {
                 "pro" -> OnlineMatchMode.PRO
                 "pro_plus" -> OnlineMatchMode.PRO_PLUS
                 else -> throw IllegalArgumentException("unsupported mode")
+            },
+            rules = if (hasPlayStyle) {
+                OnlineMatchRules(
+                    playStyle = when (value.string("playStyle", 16)) {
+                        "race" -> OnlineFriendPlayStyle.RACE
+                        "turn_based" -> OnlineFriendPlayStyle.TURN_BASED
+                        else -> throw IllegalArgumentException("unsupported play style")
+                    },
+                    codeLength = value.intInRange("codeLength", 4..10),
+                )
+            } else {
+                OnlineMatchRules(
+                    playStyle = OnlineFriendPlayStyle.TURN_BASED,
+                    codeLength = 4,
+                )
             },
         )
     }

@@ -46,7 +46,6 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
-    autoStartQuickMatch: Boolean = false,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -58,13 +57,12 @@ internal fun OnlineDuelScreen(
     var guessHistorySessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var guessHistoryEntries by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var guessSubmitting by rememberSaveable { mutableStateOf(false) }
-    var autoStartConsumed by rememberSaveable { mutableStateOf(false) }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
-    var friendPlayStyleName by rememberSaveable {
+    var selectedPlayStyleName by rememberSaveable {
         mutableStateOf(RemoteFriendPlayStyle.RACE.name)
     }
-    var friendCodeLength by rememberSaveable { mutableStateOf(4) }
-    val friendPlayStyle = RemoteFriendPlayStyle.valueOf(friendPlayStyleName)
+    var selectedCodeLength by rememberSaveable { mutableStateOf(4) }
+    val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
         when (result) {
@@ -106,7 +104,12 @@ internal fun OnlineDuelScreen(
 
     suspend fun startQuickMatch() {
         state = OnlineDuelUiState.Loading(strings.text("social.online.searching"))
-        state = when (val ticket = runtime.createMatch()) {
+        state = when (
+            val ticket = runtime.createMatch(
+                playStyle = selectedPlayStyle,
+                codeLength = selectedCodeLength,
+            )
+        ) {
             is OnlineClientResult.Success -> {
                 val sessionId = ticket.value.sessionId
                 if (sessionId == null) {
@@ -116,13 +119,6 @@ internal fun OnlineDuelScreen(
                 }
             }
             else -> inviteError(ticket)
-        }
-    }
-
-    LaunchedEffect(autoStartQuickMatch) {
-        if (autoStartQuickMatch && !autoStartConsumed) {
-            autoStartConsumed = true
-            startQuickMatch()
         }
     }
 
@@ -248,19 +244,7 @@ internal fun OnlineDuelScreen(
 
         when (val current = state) {
             OnlineDuelUiState.Ready -> SceneCard {
-                Text("Быстрый матч", fontWeight = FontWeight.SemiBold)
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        scope.launch {
-                            startQuickMatch()
-                        }
-                    },
-                ) {
-                    Text("Найти матч")
-                }
-
-                Text("Играть с другом", fontWeight = FontWeight.SemiBold)
+                Text("Настройки онлайн-матча", fontWeight = FontWeight.SemiBold)
                 Text(
                     strings.text("social.match.format"),
                     style = MaterialTheme.typography.labelLarge,
@@ -270,22 +254,22 @@ internal fun OnlineDuelScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     FriendPlayStyleButton(
-                        selected = friendPlayStyle == RemoteFriendPlayStyle.RACE,
+                        selected = selectedPlayStyle == RemoteFriendPlayStyle.RACE,
                         text = strings.text("social.match.timed"),
                         modifier = Modifier.weight(1f),
-                        onClick = { friendPlayStyleName = RemoteFriendPlayStyle.RACE.name },
+                        onClick = { selectedPlayStyleName = RemoteFriendPlayStyle.RACE.name },
                     )
                     FriendPlayStyleButton(
-                        selected = friendPlayStyle == RemoteFriendPlayStyle.TURN_BASED,
+                        selected = selectedPlayStyle == RemoteFriendPlayStyle.TURN_BASED,
                         text = strings.text("social.match.turn_based"),
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            friendPlayStyleName = RemoteFriendPlayStyle.TURN_BASED.name
+                            selectedPlayStyleName = RemoteFriendPlayStyle.TURN_BASED.name
                         },
                     )
                 }
                 Text(
-                    if (friendPlayStyle == RemoteFriendPlayStyle.RACE) {
+                    if (selectedPlayStyle == RemoteFriendPlayStyle.RACE) {
                         strings.text("social.match.timed.description")
                     } else {
                         strings.text("social.match.turn_based.description")
@@ -299,20 +283,20 @@ internal fun OnlineDuelScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     OutlinedButton(
-                        enabled = friendCodeLength > MinimumFriendCodeLength,
-                        onClick = { friendCodeLength -= 1 },
+                        enabled = selectedCodeLength > MinimumOnlineCodeLength,
+                        onClick = { selectedCodeLength -= 1 },
                     ) {
                         Text("−")
                     }
                     Text(
-                        text = "$friendCodeLength цифр",
+                        text = "$selectedCodeLength цифр",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                     OutlinedButton(
-                        enabled = friendCodeLength < MaximumFriendCodeLength,
-                        onClick = { friendCodeLength += 1 },
+                        enabled = selectedCodeLength < MaximumOnlineCodeLength,
+                        onClick = { selectedCodeLength += 1 },
                     ) {
                         Text("+")
                     }
@@ -322,6 +306,23 @@ internal fun OnlineDuelScreen(
                         "Лимита ходов нет, время матча — 10 минут.",
                     style = MaterialTheme.typography.bodySmall,
                 )
+                Text("Найти соперника", fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Если другого игрока с такими же настройками нет, сервер подключит бота.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        scope.launch {
+                            startQuickMatch()
+                        }
+                    },
+                ) {
+                    Text("Найти матч")
+                }
+
+                Text("Играть с другом", fontWeight = FontWeight.SemiBold)
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
@@ -329,8 +330,8 @@ internal fun OnlineDuelScreen(
                         scope.launch {
                             state = when (
                                 val result = runtime.createFriendInvite(
-                                    playStyle = friendPlayStyle,
-                                    codeLength = friendCodeLength,
+                                    playStyle = selectedPlayStyle,
+                                    codeLength = selectedCodeLength,
                                 )
                             ) {
                                 is OnlineClientResult.Success ->
@@ -635,8 +636,8 @@ private fun String.maximumConsecutiveRun(): Int {
 private const val SynchronizationPollMillis = 750L
 private const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-private const val MinimumFriendCodeLength = 4
-private const val MaximumFriendCodeLength = 10
+private const val MinimumOnlineCodeLength = 4
+private const val MaximumOnlineCodeLength = 10
 
 internal fun normalizeFriendInviteCode(value: String): String =
     value
