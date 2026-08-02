@@ -42,6 +42,17 @@ enum class OnlineFriendPlayStyle {
     TURN_BASED,
 }
 
+data class OnlineMatchRules(
+    val playStyle: OnlineFriendPlayStyle,
+    val codeLength: Int,
+) {
+    init {
+        require(codeLength in OnlineCodeLengthRange) {
+            "codeLength must be in $OnlineCodeLengthRange"
+        }
+    }
+}
+
 data class MatchmakingTicket(
     val ticketId: String,
     val ownerPlayerId: String,
@@ -141,13 +152,17 @@ class AuthoritativeOnlineDuelService(
         playerId: String,
         commandId: String,
         mode: OnlineMatchMode,
+        rules: OnlineMatchRules = OnlineMatchRules(
+            playStyle = OnlineFriendPlayStyle.TURN_BASED,
+            codeLength = 4,
+        ),
     ): MatchmakingTicket {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(commandId, "commandId")
         synchronized(lock) {
             val replayKey = "$playerId:$commandId"
             ticketReplays[replayKey]?.let { replay ->
-                if (replay.mode != mode) throw OnlineCommandIdReusedException()
+                if (replay.mode != mode || replay.rules != rules) throw OnlineCommandIdReusedException()
                 return tickets.getValue(replay.ticketId).ticket
             }
 
@@ -156,6 +171,7 @@ class AuthoritativeOnlineDuelService(
                 .asSequence()
                 .filter { record ->
                     record.mode == mode &&
+                        record.rules == rules &&
                         record.ticket.status == MatchmakingStatus.SEARCHING &&
                         record.ticket.ownerPlayerId != playerId
                 }
@@ -174,7 +190,7 @@ class AuthoritativeOnlineDuelService(
                 )
             } else {
                 val session = createHumanSession(
-                    mode = mode,
+                    rules = rules,
                     firstPlayerId = waitingPeer.ticket.ownerPlayerId,
                     secondPlayerId = playerId,
                 )
@@ -188,8 +204,8 @@ class AuthoritativeOnlineDuelService(
                     createdAt = createdAt,
                 )
             }
-            tickets[ticketId] = TicketRecord(mode, ticket)
-            ticketReplays[replayKey] = TicketReplay(mode, ticketId)
+            tickets[ticketId] = TicketRecord(mode, rules, ticket)
+            ticketReplays[replayKey] = TicketReplay(mode, rules, ticketId)
             return ticket
         }
     }
@@ -214,9 +230,7 @@ class AuthoritativeOnlineDuelService(
     ): PrivateDuelInvite {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(commandId, "commandId")
-        require(codeLength in FriendCodeLengthRange) {
-            "codeLength must be in $FriendCodeLengthRange"
-        }
+        val rules = OnlineMatchRules(playStyle, codeLength)
         synchronized(lock) {
             val replayKey = "$playerId:$commandId"
             privateInviteCreateReplays[replayKey]?.let { replay ->
@@ -237,7 +251,7 @@ class AuthoritativeOnlineDuelService(
                 playStyle = playStyle,
                 codeLength = codeLength,
                 allowDuplicates = true,
-                maxConsecutiveDuplicateDigits = FriendMaximumConsecutiveDuplicateDigits,
+                maxConsecutiveDuplicateDigits = OnlineMaximumConsecutiveDuplicateDigits,
                 matchDurationSeconds = privateMatchDuration.seconds,
             )
             privateInvites[inviteCode] = PrivateInviteRecord(
@@ -290,8 +304,7 @@ class AuthoritativeOnlineDuelService(
                 throw OnlineInviteUnavailableException()
             }
             val session = createHumanSession(
-                config = record.invite.friendGameConfig(),
-                playStyle = record.invite.playStyle.toDomainPlayStyle(),
+                rules = record.invite.onlineRules(),
                 attemptLimit = null,
                 matchDuration = privateMatchDuration,
                 firstPlayerId = record.ownerPlayerId,
@@ -373,13 +386,17 @@ class AuthoritativeOnlineDuelService(
         if (record.ticket.status != MatchmakingStatus.SEARCHING) return
         val deadline = record.ticket.createdAt.plus(botFallbackDelay)
         if (now.isBefore(deadline)) return
-        val session = createBotSession(record.mode, record.ticket.ownerPlayerId)
+        val session = createBotSession(record.mode, record.rules, record.ticket.ownerPlayerId)
         record.ticket = record.ticket.matched(session.sessionId, withBot = true)
     }
 
-    private fun createBotSession(mode: OnlineMatchMode, playerId: String): SessionRecord {
+    private fun createBotSession(
+        mode: OnlineMatchMode,
+        rules: OnlineMatchRules,
+        playerId: String,
+    ): SessionRecord {
         val sessionId = UUID.randomUUID().toString()
-        val config = mode.gameConfig()
+        val config = rules.gameConfig()
         val bot = ServerBotPlayer.create(
             config = config,
             difficulty = mode.botDifficulty(),
@@ -388,30 +405,32 @@ class AuthoritativeOnlineDuelService(
         )
         return SessionRecord(
             sessionId = sessionId,
-            match = DuelMatch.create(config),
+            match = DuelMatch.create(
+                config = config,
+                playStyle = rules.playStyle.toDomainPlayStyle(),
+                attemptLimit = null,
+            ),
             memberships = mapOf(playerId to DuelParticipant.FIRST),
             bot = bot,
             clock = clock,
-            matchDuration = null,
+            matchDuration = privateMatchDuration,
         ).also { sessions[sessionId] = it }
     }
 
     private fun createHumanSession(
-        mode: OnlineMatchMode,
+        rules: OnlineMatchRules,
         firstPlayerId: String,
         secondPlayerId: String,
     ): SessionRecord = createHumanSession(
-        config = mode.gameConfig(),
-        playStyle = DuelPlayStyle.TURN_BASED,
-        attemptLimit = mode.gameConfig().attemptLimit,
-        matchDuration = null,
+        rules = rules,
+        attemptLimit = null,
+        matchDuration = privateMatchDuration,
         firstPlayerId = firstPlayerId,
         secondPlayerId = secondPlayerId,
     )
 
     private fun createHumanSession(
-        config: GameConfig,
-        playStyle: DuelPlayStyle,
+        rules: OnlineMatchRules,
         attemptLimit: Int?,
         matchDuration: Duration?,
         firstPlayerId: String,
@@ -420,7 +439,11 @@ class AuthoritativeOnlineDuelService(
         val sessionId = UUID.randomUUID().toString()
         return SessionRecord(
             sessionId = sessionId,
-            match = DuelMatch.create(config, playStyle, attemptLimit),
+            match = DuelMatch.create(
+                config = rules.gameConfig(),
+                playStyle = rules.playStyle.toDomainPlayStyle(),
+                attemptLimit = attemptLimit,
+            ),
             memberships = mapOf(
                 firstPlayerId to DuelParticipant.FIRST,
                 secondPlayerId to DuelParticipant.SECOND,
@@ -455,11 +478,13 @@ class AuthoritativeOnlineDuelService(
 
     private data class TicketReplay(
         val mode: OnlineMatchMode,
+        val rules: OnlineMatchRules,
         val ticketId: String,
     )
 
     private data class TicketRecord(
         val mode: OnlineMatchMode,
+        val rules: OnlineMatchRules,
         var ticket: MatchmakingTicket,
     )
 
@@ -698,25 +723,12 @@ private fun DuelSnapshot.toOnlineSnapshot(
 private fun DuelParticipant.publicActorFor(viewer: DuelParticipant): String =
     if (this == viewer) "player" else "opponent"
 
-private fun OnlineMatchMode.gameConfig(): GameConfig = when (this) {
-    OnlineMatchMode.CLASSIC -> GameConfig(
-        codeLength = 4,
-        allowDuplicates = false,
-        attemptLimit = 9,
-    )
-    OnlineMatchMode.PRO -> GameConfig(
-        codeLength = 6,
-        allowDuplicates = false,
-        attemptLimit = 11,
-        forbidAdjacentDuplicates = true,
-    )
-    OnlineMatchMode.PRO_PLUS -> GameConfig(
-        codeLength = 8,
-        allowDuplicates = false,
-        attemptLimit = 13,
-        forbidAdjacentDuplicates = true,
-    )
-}
+private fun OnlineMatchRules.gameConfig(): GameConfig = GameConfig(
+    codeLength = codeLength,
+    allowDuplicates = true,
+    attemptLimit = OnlineInternalAttemptCapacity,
+    maxConsecutiveDuplicateDigits = OnlineMaximumConsecutiveDuplicateDigits,
+)
 
 private fun OnlineMatchMode.botDifficulty(): BotDifficulty = when (this) {
     OnlineMatchMode.CLASSIC -> BotDifficulty.MEDIUM
@@ -724,12 +736,8 @@ private fun OnlineMatchMode.botDifficulty(): BotDifficulty = when (this) {
     OnlineMatchMode.PRO_PLUS -> BotDifficulty.EXPERT
 }
 
-private fun PrivateDuelInvite.friendGameConfig(): GameConfig = GameConfig(
-    codeLength = codeLength,
-    allowDuplicates = allowDuplicates,
-    attemptLimit = FriendInternalAttemptCapacity,
-    maxConsecutiveDuplicateDigits = maxConsecutiveDuplicateDigits,
-)
+private fun PrivateDuelInvite.onlineRules(): OnlineMatchRules =
+    OnlineMatchRules(playStyle, codeLength)
 
 private fun OnlineFriendPlayStyle.toDomainPlayStyle(): DuelPlayStyle = when (this) {
     OnlineFriendPlayStyle.RACE -> DuelPlayStyle.RACE
@@ -757,6 +765,6 @@ private const val CLEARED_DIGIT: Char = '\u0000'
 private const val PrivateInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val PrivateInviteCodeLength = 8
 private const val MaximumInviteCodeAttempts = 32
-private val FriendCodeLengthRange = 4..10
-private const val FriendMaximumConsecutiveDuplicateDigits = 3
-private const val FriendInternalAttemptCapacity = 1_000
+private val OnlineCodeLengthRange = 4..10
+private const val OnlineMaximumConsecutiveDuplicateDigits = 3
+private const val OnlineInternalAttemptCapacity = 1_000

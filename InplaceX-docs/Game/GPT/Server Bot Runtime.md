@@ -38,6 +38,18 @@ The backend bot must support:
 4. registering score feedback for the current pending bot guess
 5. exposing a backend snapshot without leaking the hidden secret by default
 
+## Online Match Rules
+
+Matchmaking, private friend rooms, and server-bot fallback use the same
+`OnlineMatchRules` selected before search starts. The bot must inherit the
+selected play style and code length; it must not replace them with a
+difficulty-specific game preset.
+
+Current online rules allow repeated digits, reject runs longer than three
+identical digits, and expose no move limit. `GameConfig.attemptLimit` remains an
+internal positive capacity required by the core model and is not a player loss
+condition for an online duel.
+
 ## Pending Turn Rule
 
 `nextTurnOrNull()` is intentionally idempotent while feedback is still missing.

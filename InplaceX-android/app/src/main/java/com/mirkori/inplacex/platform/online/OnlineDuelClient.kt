@@ -82,10 +82,14 @@ class OnlineDuelClient(
 ) {
     private val codec = OnlineDuelResponseCodec()
 
-    suspend fun createMatch(mode: RemoteMatchmakingMode): OnlineClientResult<OnlineMatchTicket> {
+    suspend fun createMatch(
+        mode: RemoteMatchmakingMode,
+        playStyle: RemoteFriendPlayStyle,
+        codeLength: Int,
+    ): OnlineClientResult<OnlineMatchTicket> {
         val commandId = UUID.randomUUID().toString()
         val request = gateway.prepareCreateMatchmakingTicket(
-            payload = RemoteMatchmakingPayload(commandId, mode),
+            payload = RemoteMatchmakingPayload(commandId, mode, playStyle, codeLength),
             idempotencyKey = commandId,
         )
         return transport.execute(request).decode(codec::ticket)

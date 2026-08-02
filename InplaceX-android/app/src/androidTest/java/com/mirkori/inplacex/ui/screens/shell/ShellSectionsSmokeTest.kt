@@ -103,7 +103,7 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun configuredSocialSectionOpensPrivateFriendDuel() {
+    fun testBotOpensSharedOnlineConfigurationBeforeSearching() {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
                 context = composeRule.activity,
@@ -129,8 +129,10 @@ class ShellSectionsSmokeTest {
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
             composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
             composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
-            composeRule.onNodeWithText("Друзья").performClick()
+            composeRule.onNodeWithText("Играть").performClick()
             composeRule.onNodeWithText("Онлайн-матч").assertIsDisplayed()
+            composeRule.onNodeWithText("Настройки онлайн-матча").assertIsDisplayed()
+            composeRule.onNodeWithText("4 цифр").assertIsDisplayed()
             composeRule.onNodeWithText("На время").assertIsDisplayed()
             composeRule.onNodeWithText(
                 "Оба игрока разгадывают одновременно. Побеждает тот, кто первым найдёт код.",
@@ -141,6 +143,7 @@ class ShellSectionsSmokeTest {
             ).assertIsDisplayed()
             composeRule.onNodeWithText("Создать код").assertIsDisplayed()
             composeRule.onNodeWithText("Войти по коду").assertIsDisplayed()
+            composeRule.onNodeWithText("Найти матч").assertIsDisplayed()
         } finally {
             runtime.close()
         }

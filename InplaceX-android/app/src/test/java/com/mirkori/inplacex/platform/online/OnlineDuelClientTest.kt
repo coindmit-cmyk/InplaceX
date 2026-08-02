@@ -32,7 +32,11 @@ class OnlineDuelClientTest {
             ),
         )
 
-        val result = OnlineDuelClient(boundary).createMatch(RemoteMatchmakingMode.CLASSIC)
+        val result = OnlineDuelClient(boundary).createMatch(
+            mode = RemoteMatchmakingMode.CLASSIC,
+            playStyle = RemoteFriendPlayStyle.RACE,
+            codeLength = 6,
+        )
 
         assertEquals(
             OnlineClientResult.Success(
@@ -46,12 +50,11 @@ class OnlineDuelClientTest {
             result,
         )
         val request = requireNotNull(boundary.requests.single())
-        val bodyCommandId = Json.parseToJsonElement(requireNotNull(request.bodyJson))
-            .jsonObject
-            .getValue("commandId")
-            .jsonPrimitive
-            .content
+        val body = Json.parseToJsonElement(requireNotNull(request.bodyJson)).jsonObject
+        val bodyCommandId = body.getValue("commandId").jsonPrimitive.content
         assertEquals(bodyCommandId, request.idempotencyKey)
+        assertEquals("race", body.getValue("playStyle").jsonPrimitive.content)
+        assertEquals("6", body.getValue("codeLength").jsonPrimitive.content)
     }
 
     @Test

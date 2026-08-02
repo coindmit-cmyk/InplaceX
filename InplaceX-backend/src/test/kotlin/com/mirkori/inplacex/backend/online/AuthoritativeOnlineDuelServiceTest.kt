@@ -23,11 +23,20 @@ class AuthoritativeOnlineDuelServiceTest {
     )
 
     @Test
-    fun `ticket searches first and becomes a server bot match only after timeout`() {
+    fun `ticket preserves selected rules when it becomes a server bot match`() {
         val commandId = UUID.randomUUID().toString()
+        val rules = OnlineMatchRules(
+            playStyle = OnlineFriendPlayStyle.RACE,
+            codeLength = 6,
+        )
 
-        val created = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
-        val replayWhileSearching = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
+        val created = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC, rules)
+        val replayWhileSearching = service.createTicket(
+            playerId,
+            commandId,
+            OnlineMatchMode.CLASSIC,
+            rules,
+        )
 
         assertEquals(created, replayWhileSearching)
         assertEquals(MatchmakingStatus.SEARCHING, created.status)
@@ -39,15 +48,41 @@ class AuthoritativeOnlineDuelServiceTest {
 
         clock.advance(Duration.ofSeconds(1))
         val matched = service.readTicket(playerId, created.ticketId)
-        val replayAfterPromotion = service.createTicket(playerId, commandId, OnlineMatchMode.CLASSIC)
+        val replayAfterPromotion = service.createTicket(
+            playerId,
+            commandId,
+            OnlineMatchMode.CLASSIC,
+            rules,
+        )
         val snapshot = service.readSession(playerId, requireNotNull(matched.sessionId))
 
         assertEquals(matched, replayAfterPromotion)
         assertEquals(MatchmakingStatus.MATCHED, matched.status)
         assertTrue(matched.matchedWithBot)
         assertEquals("setup", snapshot.phase)
+        assertEquals("race", snapshot.playStyle)
+        assertEquals(6, snapshot.codeLength)
+        assertNull(snapshot.attemptLimit)
+        assertTrue(snapshot.allowDuplicates)
+        assertEquals(3, snapshot.maxConsecutiveDuplicateDigits)
         assertEquals(0, snapshot.revision)
         assertTrue(snapshot.attempts.isEmpty())
+
+        val active = service.submitSecret(
+            playerId = playerId,
+            sessionId = snapshot.sessionId,
+            commandId = UUID.randomUUID().toString(),
+            expectedRevision = snapshot.revision,
+            secret = "111234",
+        )
+        val turn = service.submitGuess(
+            playerId = playerId,
+            sessionId = snapshot.sessionId,
+            commandId = UUID.randomUUID().toString(),
+            expectedRevision = active.revision,
+            guess = "001001",
+        )
+        assertTrue(turn.attempts.any { it.actor == "player" })
     }
 
     @Test
@@ -107,6 +142,28 @@ class AuthoritativeOnlineDuelServiceTest {
         assertEquals("opponent", firstTurn.currentTurn)
         assertEquals("player", secondView.currentTurn)
         assertEquals("opponent", secondView.attempts.single().actor)
+    }
+
+    @Test
+    fun `matchmaking only pairs players with identical selected rules`() {
+        val secondPlayer = UUID.randomUUID().toString()
+        val first = service.createTicket(
+            playerId = playerId,
+            commandId = UUID.randomUUID().toString(),
+            mode = OnlineMatchMode.CLASSIC,
+            rules = OnlineMatchRules(OnlineFriendPlayStyle.RACE, 4),
+        )
+        val second = service.createTicket(
+            playerId = secondPlayer,
+            commandId = UUID.randomUUID().toString(),
+            mode = OnlineMatchMode.CLASSIC,
+            rules = OnlineMatchRules(OnlineFriendPlayStyle.RACE, 6),
+        )
+
+        assertEquals(MatchmakingStatus.SEARCHING, first.status)
+        assertEquals(MatchmakingStatus.SEARCHING, second.status)
+        assertNull(first.sessionId)
+        assertNull(second.sessionId)
     }
 
     @Test
