@@ -48,6 +48,22 @@ class CapabilityPreservationCheckTests(unittest.TestCase):
         self.assertEqual("preserved", first["status"])
         self.assertEqual(first, second)
 
+    def test_additive_compare_text_api_remains_available(self) -> None:
+        preserved = check.compare_text(
+            "def keep():\n    return 1\n",
+            "def keep():\n    return 2\n",
+            path_hint="tool.py",
+        )
+        warning = check.compare_text(
+            "def removed():\n    return 1\n",
+            "pass\n",
+            path_hint="tool.py",
+        )
+
+        self.assertEqual(check.STATUS_OK, preserved["status"])
+        self.assertEqual(check.STATUS_WARNING, warning["status"])
+        self.assertIn("function:removed", warning["removed_capabilities"])
+
     def test_symbols_moved_to_renamed_file_are_preserved(self) -> None:
         self.commit(
             {"old.py": "class Guard:\n    pass\n\ndef keep():\n    pass\n"},
