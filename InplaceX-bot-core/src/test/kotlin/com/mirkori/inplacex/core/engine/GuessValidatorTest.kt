@@ -81,14 +81,48 @@ class GuessValidatorTest {
     }
 
     @Test
-    fun messageBridgePreservesExistingMessagesWithoutDrivingValidation() {
-        val config = config(forbidAdjacentDuplicates = true)
-
-        assertEquals("Adjacent duplicates are forbidden", GuessValidator.validateOrMessage("112345", config))
-        assertEquals(
-            GuessValidationReason.ADJACENT_DUPLICATES,
-            GuessValidator.validateOrReason("112345", config),
+    fun messageBridgeReturnsForAllTypedRejections() {
+        val cases = listOf(
+            Triple("12345", config(), GuessValidationReason.INVALID_LENGTH),
+            Triple("1234a6", config(), GuessValidationReason.NON_DIGIT),
+            Triple("112345", config(allowDuplicates = false), GuessValidationReason.DUPLICATE_DIGITS),
+            Triple("111111", config(), GuessValidationReason.ALL_SAME_DIGITS),
+            Triple("112345", config(forbidAdjacentDuplicates = true), GuessValidationReason.ADJACENT_DUPLICATES),
+            Triple("111234", config(forbidTripleDuplicates = true), GuessValidationReason.TRIPLE_DUPLICATES),
+            Triple("111123", config(maxConsecutiveDuplicateDigits = 3), GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES),
         )
+        val compatibilityMessages = mapOf(
+            GuessValidationReason.INVALID_LENGTH to "Need 6 digits",
+            GuessValidationReason.NON_DIGIT to "Only digits are allowed",
+            GuessValidationReason.DUPLICATE_DIGITS to "Duplicate digits are forbidden",
+            GuessValidationReason.ALL_SAME_DIGITS to "All digits cannot be the same",
+            GuessValidationReason.ADJACENT_DUPLICATES to "Adjacent duplicates are forbidden",
+            GuessValidationReason.TRIPLE_DUPLICATES to "Triple duplicates are forbidden",
+            GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES to "Too many identical digits in a row",
+        )
+
+        cases.forEach { (guess, gameConfig, reason) ->
+            val message = GuessValidator.validateOrMessage(guess, gameConfig)
+
+            assertEquals(
+                "Unexpected typed reason for $guess",
+                reason,
+                GuessValidator.validateOrReason(guess, gameConfig),
+            )
+            assertEquals(
+                "Unexpected compatibility message for $reason",
+                compatibilityMessages.getValue(reason),
+                message,
+            )
+        }
+    }
+
+    @Test
+    fun messageBridgeReturnsNullForValidGuess() {
+        val valid = "123456"
+
+        assertEquals(null, GuessValidator.validateOrMessage(valid, config()))
+        assertEquals(null, GuessValidator.validateOrReason(valid, config()))
     }
 
     @Test
