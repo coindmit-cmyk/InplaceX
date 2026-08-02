@@ -1,5 +1,6 @@
 package com.mirkori.inplacex
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +16,10 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
-internal fun testFriendBotEnabled(): Boolean = false
+internal fun testFriendBotEnabled(): Boolean = true
 
 internal fun initialProgressState(
+    context: Context,
     progressRepository: GameProgressRepository,
 ): GameProgressState = progressRepository.loadState()
 

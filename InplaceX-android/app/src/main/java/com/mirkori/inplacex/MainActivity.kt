@@ -102,7 +102,13 @@ class MainActivity : ComponentActivity() {
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
-                var progressState by remember { mutableStateOf(initialProgressState(progressRepository)) }
+                val initialProgressState = remember {
+                    initialProgressState(
+                        context = applicationContext,
+                        progressRepository = progressRepository,
+                    )
+                }
+                var progressState by remember { mutableStateOf(initialProgressState) }
                 var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }

@@ -4,9 +4,9 @@ import android.content.Context
 import com.mirkori.inplacex.platform.config.PlatformConfig
 
 class StubAdService(
-    private val rewardedResult: Boolean = true,
+    private val rewardedResult: Boolean = false,
 ) : AdService {
-    override fun showBanner(slotId: String): Boolean = true
+    override fun showBanner(slotId: String): Boolean = false
 
     override fun showRewardedAd(placement: RewardedPlacement): Boolean = rewardedResult
 
@@ -16,7 +16,7 @@ class StubAdService(
     ): Boolean =
         AdPlacementPolicy.shouldShowPostMatchInterstitial(matchesPlayed, entitlements)
 
-    override fun showInterstitial(placement: InterstitialPlacement): Boolean = true
+    override fun showInterstitial(placement: InterstitialPlacement): Boolean = false
 }
 
 class StubGooglePlayAuthService(
@@ -49,7 +49,7 @@ class StubGooglePlayAuthService(
 }
 
 class StubBillingService : BillingService {
-    override fun purchase(productId: BillingProductId): Boolean = true
+    override fun purchase(productId: BillingProductId): Boolean = false
 }
 
 object ProviderServicesFactory {
