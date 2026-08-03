@@ -15,11 +15,13 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import com.mirkori.inplacex.data.local.GameProgressState
+import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.localization.AppLanguage
@@ -96,11 +98,10 @@ class ShellSectionsSmokeTest {
         setContent { SocialRootScreen(showTestFriendBot = true) }
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
+        composeRule.onNodeWithText("Друзья").performClick()
         composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
         composeRule.onNodeWithText("Тестовый друг · онлайн сейчас недоступен").assertIsDisplayed()
         composeRule.onNodeWithText("Играть").assertIsNotEnabled()
-        composeRule.onNodeWithText("Список друзей пока пуст.").assertIsDisplayed()
-        composeRule.onNodeWithText("Создайте код и отправьте его другу.").assertIsDisplayed()
     }
 
     @Test
@@ -143,8 +144,36 @@ class ShellSectionsSmokeTest {
                 "Игроки делают по одному ходу. После принятого хода очередь переходит сопернику.",
             ).assertIsDisplayed()
             composeRule.onNodeWithText("Найти матч").assertIsDisplayed()
-            composeRule.onNodeWithText("Создать код").assertIsDisplayed()
+            composeRule.onAllNodesWithText("Создать код").assertCountEquals(0)
+            composeRule.onAllNodesWithText("Войти по коду").assertCountEquals(0)
+        } finally {
+            runtime.close()
+        }
+    }
+
+    @Test
+    fun invitationsContainPrivateCodeActionsWithoutRandomMatchmaking() {
+        val runtime = requireNotNull(
+            OnlineRuntime.createOrNull(
+                context = composeRule.activity,
+                profile = LocalPlayerProfile(
+                    playerId = "instrumented-player",
+                    installationId = "instrumented-installation-invites",
+                    displayName = "Instrumented",
+                ),
+                locale = "ru-RU",
+                regionCode = "RU",
+                baseUrl = "http://127.0.0.1:65535",
+                allowCleartextLoopback = true,
+            ),
+        )
+        try {
+            setContent { SocialRootScreen(onlineRuntime = runtime) }
+
+            composeRule.onNodeWithText("Приглашения").performClick()
+            composeRule.onNodeWithText("Создать код").performScrollTo().assertIsDisplayed()
             composeRule.onNodeWithText("Войти по коду").performScrollTo().assertIsDisplayed()
+            composeRule.onAllNodesWithText("Найти матч").assertCountEquals(0)
         } finally {
             runtime.close()
         }
@@ -363,6 +392,40 @@ class ShellSectionsSmokeTest {
             .assertIsDisplayed()
             .assertIsSelected()
         composeRule.onNodeWithTag("company-play").assertIsDisplayed()
+    }
+
+    @Test
+    fun companyHistoryHasAnExplicitBackAction() {
+        setContent {
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = listOf(CampaignLevelProgress(1, 10)),
+                activeLevelNumber = null,
+                onActiveLevelNumberChange = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("company-history").performClick()
+        composeRule.onNodeWithText("История").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.onNodeWithText("Компания").assertIsDisplayed()
+    }
+
+    @Test
+    fun lockedChapterRewardExplainsHowToUnlockIt() {
+        setContent {
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = emptyList(),
+                activeLevelNumber = null,
+                onActiveLevelNumberChange = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("company-chapter-reward").performClick()
+        composeRule.onNodeWithText(
+            "Пройдите все 10 уровней этой главы, чтобы получить награду.",
+        ).assertIsDisplayed()
     }
 
     @Test

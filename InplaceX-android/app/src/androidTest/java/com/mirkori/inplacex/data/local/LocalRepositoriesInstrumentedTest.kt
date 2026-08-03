@@ -10,6 +10,28 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LocalRepositoriesInstrumentedTest {
     @Test
+    fun campaignChapterRewardRequiresCompletionAndCanOnlyBeClaimedOnce() {
+        withIsolatedDatabase("campaign_chapter_reward", { FIXED_NOW_MS }) { context, config ->
+            val repository = GameProgressRepository(context, config)
+
+            assertEquals(null, repository.claimCampaignChapterReward(1))
+            (1..10).forEach { level ->
+                repository.recordCampaignCompletion(levelNumber = level, backendRating = 10)
+            }
+
+            val claimed = requireNotNull(repository.claimCampaignChapterReward(1))
+            assertEquals(270, claimed.coins)
+            assertEquals(1, claimed.openPositionHints)
+            assertEquals(1, claimed.checkDigitHints)
+            assertEquals(1, claimed.checkPositionHints)
+            assertEquals(setOf(1), repository.loadClaimedCampaignChapters())
+
+            assertEquals(null, repository.claimCampaignChapterReward(1))
+            assertEquals(270, repository.loadState().coins)
+        }
+    }
+
+    @Test
     fun temporaryProPurchasePersistsExtendsAndExpiresWithoutGrantingProPlus() {
         var nowMs = FIXED_NOW_MS
         withIsolatedDatabase("temporary_pro_repository", { nowMs }) { context, config ->

@@ -26,6 +26,7 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 fun CompanyRootScreen(
     progressState: GameProgressState,
     campaignProgress: List<CampaignLevelProgress>,
+    claimedChapterNumbers: Set<Int> = emptySet(),
     activeLevelNumber: Int?,
     onActiveLevelNumberChange: (Int?) -> Unit,
     requestExitGame: Boolean = false,
@@ -47,6 +48,7 @@ fun CompanyRootScreen(
     onConsumeExtraTimeBoost: () -> Boolean = { false },
     onBuyEnergy: () -> Unit = {},
     onRecordCampaignCompletion: (Int, Int) -> Unit = { _, _ -> },
+    onClaimChapterReward: (Int) -> Boolean = { false },
     onRecordCompanyLoss: () -> Unit = {},
     onMatchStarted: () -> Unit = {},
 ) {
@@ -190,12 +192,14 @@ fun CompanyRootScreen(
                 strings = strings,
                 progressState = progressState,
                 levelItems = levelItems,
+                claimedChapterNumbers = claimedChapterNumbers,
                 focusLevel = focusLevel,
                 accessibleMaxLevel = accessibleMaxLevel,
                 totalStars = totalStars,
                 requiredStarsForNextBlock = requiredStarsForNextBlock,
                 nextBlockLocked = nextBlockLocked,
                 onHistory = { showHistory = true },
+                onClaimChapterReward = onClaimChapterReward,
                 onBuyEnergy = onBuyEnergy,
                 onPlay = { levelNumber ->
                     AppLog.info(

@@ -3,6 +3,7 @@ package com.mirkori.inplacex.data.local
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
 import com.mirkori.inplacex.core.match.RaceRewardPolicy
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 
@@ -380,6 +381,75 @@ class GameProgressRepository(
         }
     }
 
+    fun loadClaimedCampaignChapters(): Set<Int> {
+        val db = helper.readableDatabase
+        val claimed = linkedSetOf<Int>()
+        db.query(
+            GameProgressDbHelper.TABLE_CAMPAIGN_CHAPTER_REWARDS,
+            arrayOf(GameProgressDbHelper.COL_CAMPAIGN_CHAPTER_NUMBER),
+            null,
+            null,
+            null,
+            null,
+            "${GameProgressDbHelper.COL_CAMPAIGN_CHAPTER_NUMBER} ASC",
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                claimed += cursor.getInt(0)
+            }
+        }
+        return claimed
+    }
+
+    fun claimCampaignChapterReward(chapterNumber: Int): GameProgressState? {
+        val levels = CampaignChapterRewardPolicy.levelRange(chapterNumber)
+        val reward = CampaignChapterRewardPolicy.rewardFor(chapterNumber)
+        val db = helper.writableDatabase
+        ensureDefaultRow(db)
+
+        db.beginTransaction()
+        return try {
+            val completedLevels = db.rawQuery(
+                """
+                SELECT COUNT(*)
+                FROM ${GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS}
+                WHERE ${GameProgressDbHelper.COL_CAMPAIGN_LEVEL_NUMBER} BETWEEN ? AND ?
+                  AND ${GameProgressDbHelper.COL_CAMPAIGN_BEST_BACKEND_RATING} > 0
+                """.trimIndent(),
+                arrayOf(levels.first.toString(), levels.last.toString()),
+            ).use { cursor ->
+                if (cursor.moveToFirst()) cursor.getInt(0) else 0
+            }
+            if (completedLevels != CampaignChapterRewardPolicy.LEVELS_PER_CHAPTER) {
+                null
+            } else {
+                val inserted = db.insertWithOnConflict(
+                    GameProgressDbHelper.TABLE_CAMPAIGN_CHAPTER_REWARDS,
+                    null,
+                    ContentValues().apply {
+                        put(GameProgressDbHelper.COL_CAMPAIGN_CHAPTER_NUMBER, chapterNumber)
+                    },
+                    SQLiteDatabase.CONFLICT_IGNORE,
+                )
+                if (inserted == -1L) {
+                    null
+                } else {
+                    val row = applyEnergyRegen(loadRow(db), databaseConfig.nowMs())
+                    val updated = row.copy(
+                        coins = row.coins + reward.coins,
+                        hintOpenPosition = row.hintOpenPosition + reward.openPositionHints,
+                        hintCheckDigit = row.hintCheckDigit + reward.checkDigitHints,
+                        hintCheckPosition = row.hintCheckPosition + reward.checkPositionHints,
+                    )
+                    writeRow(db, updated)
+                    db.setTransactionSuccessful()
+                    updated.toState()
+                }
+            }
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     private fun consumeResource(
         currentValue: (ProgressRow) -> Int,
         updater: (ProgressRow) -> ProgressRow,
@@ -681,6 +751,7 @@ internal class GameProgressDbHelper(
     companion object {
         const val TABLE_PROGRESS = GameProgressDatabase.TABLE_PROGRESS
         const val TABLE_CAMPAIGN_PROGRESS = GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS
+        const val TABLE_CAMPAIGN_CHAPTER_REWARDS = GameProgressDatabase.TABLE_CAMPAIGN_CHAPTER_REWARDS
         const val TABLE_PLAYER_PROFILE = GameProgressDatabase.TABLE_PLAYER_PROFILE
         const val TABLE_IDENTITY_LINKS = GameProgressDatabase.TABLE_IDENTITY_LINKS
         const val TABLE_SOCIAL_RELATIONSHIPS = GameProgressDatabase.TABLE_SOCIAL_RELATIONSHIPS
@@ -717,6 +788,7 @@ internal class GameProgressDbHelper(
         const val COL_TEMPORARY_PRO_EXPIRES_AT_MS = GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS
         const val COL_CAMPAIGN_LEVEL_NUMBER = GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING
+        const val COL_CAMPAIGN_CHAPTER_NUMBER = GameProgressDatabase.COL_CAMPAIGN_CHAPTER_NUMBER
         const val PROFILE_ID = GameProgressDatabase.PROFILE_ID
     }
 }

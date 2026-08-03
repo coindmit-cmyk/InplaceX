@@ -141,6 +141,12 @@ falls to two stars, and solving on the final allowed attempt gives one star.
 
 Perfect play should remain possible even on hard content.
 
+## Chapter Rewards
+
+После прохождения всех десяти уровней главы игрок может один раз забрать
+награду главы: `50` монет и по одной подсказке каждого аналитического типа.
+Получение сохраняется локально и не повторяется после перезапуска приложения.
+
 Help penalties by tier:
 
 - `Easy`: no rating penalty

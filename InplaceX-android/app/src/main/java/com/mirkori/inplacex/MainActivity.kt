@@ -27,6 +27,8 @@ import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.data.local.MonetizationProductType
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
+import com.mirkori.inplacex.data.local.LocalRelationshipStatus
+import com.mirkori.inplacex.data.local.LocalRelationshipType
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.AppLanguage
@@ -111,9 +113,17 @@ class MainActivity : ComponentActivity() {
                 var progressState by remember { mutableStateOf(initialProgressState) }
                 var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
+                var claimedCampaignChapters by remember {
+                    mutableStateOf(progressRepository.loadClaimedCampaignChapters())
+                }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 var profileAuthInProgress by rememberSaveable { mutableStateOf(false) }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
+                val savedFriends = remember(platformLocalRepository) {
+                    platformLocalRepository
+                        .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                }
 
                 LaunchedEffect(progressState.temporaryProExpiresAtMs) {
                     currentTimeMs = System.currentTimeMillis()
@@ -292,6 +302,7 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                friends = savedFriends,
                                 showTestFriendBot = testFriendBotEnabled(),
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
@@ -301,6 +312,7 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
                                 progressState = progressState,
                                 campaignProgress = campaignProgress,
+                                claimedChapterNumbers = claimedCampaignChapters,
                                 activeLevelNumber = companyActiveLevelNumber,
                                 onActiveLevelNumberChange = { companyActiveLevelNumber = it },
                                 requestExitGame = requestExitGame,
@@ -375,6 +387,21 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onRecordCampaignCompletion = { level, rating ->
                                     progressState = progressRepository.recordCampaignCompletion(level, rating)
+                                    val recorded = progressRepository.loadCampaignProgress(level)
+                                    campaignProgress = campaignProgress.map { existing ->
+                                        if (existing.levelNumber == level) recorded else existing
+                                    }
+                                },
+                                onClaimChapterReward = { chapterNumber ->
+                                    val claimedState = progressRepository
+                                        .claimCampaignChapterReward(chapterNumber)
+                                    if (claimedState != null) {
+                                        progressState = claimedState
+                                        claimedCampaignChapters = claimedCampaignChapters + chapterNumber
+                                        true
+                                    } else {
+                                        false
+                                    }
                                 },
                                 onRecordCompanyLoss = {
                                     progressState = progressRepository.recordCompanyLoss()

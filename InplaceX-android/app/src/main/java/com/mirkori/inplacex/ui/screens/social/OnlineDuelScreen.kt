@@ -43,10 +43,15 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+internal enum class OnlineDuelEntryPoint {
+    INVITES,
+    QUICK_MATCH,
+}
+
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
-    onBack: () -> Unit,
+    entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -231,13 +236,24 @@ internal fun OnlineDuelScreen(
             contentColor = androidx.compose.ui.graphics.Color.White,
         ) {
             Text(
-                text = strings.text("social.match.title"),
+                text = strings.text(
+                    if (entryPoint == OnlineDuelEntryPoint.INVITES) {
+                        "social.invites"
+                    } else {
+                        "social.match.title"
+                    },
+                ),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Создайте приватный код для друга или найдите общего соперника. " +
-                    "Секреты и результаты проверяет сервер.",
+                text = strings.text(
+                    if (entryPoint == OnlineDuelEntryPoint.INVITES) {
+                        "social.invites.screen_description"
+                    } else {
+                        "social.online.screen_description"
+                    },
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -306,67 +322,71 @@ internal fun OnlineDuelScreen(
                         "Лимита ходов нет, время матча — 10 минут.",
                     style = MaterialTheme.typography.bodySmall,
                 )
-                Text("Найти соперника", fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Если другого игрока с такими же настройками нет, сервер подключит бота.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        scope.launch {
-                            startQuickMatch()
-                        }
-                    },
-                ) {
-                    Text("Найти матч")
+                if (entryPoint == OnlineDuelEntryPoint.QUICK_MATCH) {
+                    Text("Найти соперника", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Если другого игрока с такими же настройками нет, сервер подключит бота.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            scope.launch {
+                                startQuickMatch()
+                            }
+                        },
+                    ) {
+                        Text("Найти матч")
+                    }
                 }
 
-                Text("Играть с другом", fontWeight = FontWeight.SemiBold)
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        state = OnlineDuelUiState.Loading("Создаём приглашение…")
-                        scope.launch {
-                            state = when (
-                                val result = runtime.createFriendInvite(
-                                    playStyle = selectedPlayStyle,
-                                    codeLength = selectedCodeLength,
-                                )
-                            ) {
-                                is OnlineClientResult.Success ->
-                                    OnlineDuelUiState.WaitingForFriend(result.value)
-                                else -> inviteError(result)
+                if (entryPoint == OnlineDuelEntryPoint.INVITES) {
+                    Text("Играть с другом", fontWeight = FontWeight.SemiBold)
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            state = OnlineDuelUiState.Loading("Создаём приглашение…")
+                            scope.launch {
+                                state = when (
+                                    val result = runtime.createFriendInvite(
+                                        playStyle = selectedPlayStyle,
+                                        codeLength = selectedCodeLength,
+                                    )
+                                ) {
+                                    is OnlineClientResult.Success ->
+                                        OnlineDuelUiState.WaitingForFriend(result.value)
+                                    else -> inviteError(result)
+                                }
                             }
-                        }
-                    },
-                ) {
-                    Text("Создать код")
-                }
-                OutlinedTextField(
-                    value = inviteCode,
-                    onValueChange = { value ->
-                        inviteCode = normalizeFriendInviteCode(value)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Код друга") },
-                    singleLine = true,
-                )
-                OutlinedButton(
-                    enabled = inviteCode.length == FriendInviteCodeLength,
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        val submittedCode = inviteCode
-                        state = OnlineDuelUiState.Loading("Подключаемся к другу…")
-                        scope.launch {
-                            when (val result = runtime.acceptFriendInvite(submittedCode)) {
-                                is OnlineClientResult.Success -> openInviteSession(result.value)
-                                else -> state = inviteError(result)
+                        },
+                    ) {
+                        Text("Создать код")
+                    }
+                    OutlinedTextField(
+                        value = inviteCode,
+                        onValueChange = { value ->
+                            inviteCode = normalizeFriendInviteCode(value)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Код друга") },
+                        singleLine = true,
+                    )
+                    OutlinedButton(
+                        enabled = inviteCode.length == FriendInviteCodeLength,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            val submittedCode = inviteCode
+                            state = OnlineDuelUiState.Loading("Подключаемся к другу…")
+                            scope.launch {
+                                when (val result = runtime.acceptFriendInvite(submittedCode)) {
+                                    is OnlineClientResult.Success -> openInviteSession(result.value)
+                                    else -> state = inviteError(result)
+                                }
                             }
-                        }
-                    },
-                ) {
-                    Text("Войти по коду")
+                        },
+                    ) {
+                        Text("Войти по коду")
+                    }
                 }
             }
 

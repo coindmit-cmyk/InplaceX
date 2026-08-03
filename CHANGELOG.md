@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Разделены сценарии `Друзья`, `Приглашения` и `Онлайн-матчи`; добавлен явный
+  возврат из истории кампании и исправлено размещение настроек и переносы
+  заголовков на компактных экранах.
+- Добавлена однократная сохраняемая награда за завершение десяти уровней главы:
+  50 монет и по одной подсказке каждого типа.
 - Moved the pure match lifecycle/contracts, campaign rules, rating, progression,
   and mode definitions out of the Android app into `InplaceX-bot-core`; local
   Android and backend matches now consume one physical source of truth.

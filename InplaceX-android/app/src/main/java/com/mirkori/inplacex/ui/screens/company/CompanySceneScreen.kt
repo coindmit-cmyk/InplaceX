@@ -13,6 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 
@@ -32,12 +36,14 @@ internal fun CompanySceneScreen(
     strings: LocalizationProvider,
     progressState: GameProgressState,
     levelItems: List<CampaignLevelListItem>,
+    claimedChapterNumbers: Set<Int>,
     focusLevel: Int,
     accessibleMaxLevel: Int,
     totalStars: Int,
     requiredStarsForNextBlock: Int,
     nextBlockLocked: Boolean,
     onHistory: () -> Unit,
+    onClaimChapterReward: (Int) -> Boolean,
     onBuyEnergy: () -> Unit,
     onPlay: (Int) -> Unit,
 ) {
@@ -45,10 +51,22 @@ internal fun CompanySceneScreen(
     val displayItems = levelItems.asReversed()
     var selectedLevel by rememberSaveable { mutableIntStateOf(focusLevel) }
     var showRules by rememberSaveable { mutableStateOf(false) }
+    var rewardDialogState by rememberSaveable {
+        mutableStateOf<ChapterRewardDialogState?>(null)
+    }
     val selectedItem =
         levelItems.firstOrNull { it.definition.levelNumber == selectedLevel }
             ?: levelItems.first { it.definition.levelNumber == focusLevel }
     val selectedCompleted = selectedItem.progress.bestBackendRating > 0
+    val selectedChapter = selectedItem.definition.blockNumber
+    val selectedChapterLevels = CampaignChapterRewardPolicy.levelRange(selectedChapter)
+    val selectedChapterCompleted = selectedChapterLevels.all { levelNumber ->
+        levelItems.firstOrNull { it.definition.levelNumber == levelNumber }
+            ?.progress
+            ?.bestBackendRating
+            ?.let { it > 0 } == true
+    }
+    val selectedChapterRewardClaimed = selectedChapter in claimedChapterNumbers
     val selectedPlayable =
         selectedCompleted ||
             (
@@ -103,6 +121,16 @@ internal fun CompanySceneScreen(
                         totalStars = totalStars,
                         requiredStars = requiredStarsForNextBlock,
                         nextBlockLocked = nextBlockLocked,
+                        rewardAvailable = selectedChapterCompleted,
+                        rewardClaimed = selectedChapterRewardClaimed,
+                        onRewardClick = {
+                            rewardDialogState = when {
+                                selectedChapterRewardClaimed -> ChapterRewardDialogState.CLAIMED
+                                !selectedChapterCompleted -> ChapterRewardDialogState.LOCKED
+                                onClaimChapterReward(selectedChapter) -> ChapterRewardDialogState.COLLECTED
+                                else -> ChapterRewardDialogState.CLAIMED
+                            }
+                        },
                         compact = compact,
                     )
                     Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
@@ -195,6 +223,38 @@ internal fun CompanySceneScreen(
             onDismiss = { showRules = false },
         )
     }
+
+    rewardDialogState?.let { dialogState ->
+        val reward = CampaignChapterRewardPolicy.rewardFor(selectedChapter)
+        AlertDialog(
+            onDismissRequest = { rewardDialogState = null },
+            title = { Text(strings.text("company.reward.dialog.title")) },
+            text = {
+                Text(
+                    when (dialogState) {
+                        ChapterRewardDialogState.LOCKED ->
+                            strings.text("company.reward.dialog.locked")
+                        ChapterRewardDialogState.CLAIMED ->
+                            strings.text("company.reward.dialog.claimed")
+                        ChapterRewardDialogState.COLLECTED ->
+                            strings.text("company.reward.dialog.collected")
+                                .replace("{coins}", reward.coins.toString())
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { rewardDialogState = null }) {
+                    Text(strings.text("company.action.close"))
+                }
+            },
+        )
+    }
+}
+
+private enum class ChapterRewardDialogState {
+    LOCKED,
+    CLAIMED,
+    COLLECTED,
 }
 
 @Composable
