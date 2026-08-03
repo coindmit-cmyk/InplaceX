@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
 import com.mirkori.inplacex.core.match.RaceRewardPolicy
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
+import com.mirkori.inplacex.platform.logging.AppLog
 
 enum class HintStockType {
     OPEN_POSITION,
@@ -28,6 +29,13 @@ enum class MonetizationProductType {
     REMOVE_ADS,
     PRO_SUBSCRIPTION,
     PRO_PLUS_SUBSCRIPTION,
+}
+
+enum class CampaignChapterRewardClaimOutcome {
+    CLAIMED,
+    INCOMPLETE,
+    ALREADY_CLAIMED,
+    FAILED,
 }
 
 data class CampaignLevelProgress(
@@ -86,6 +94,16 @@ data class GameProgressState(
 class GameProgressRepository(
     context: Context,
     private val databaseConfig: LocalDatabaseConfig = LocalDatabaseConfig(),
+    private val chapterRewardLog: (Int, CampaignChapterRewardClaimOutcome) -> Unit = { chapter, outcome ->
+        AppLog.info(
+            tag = "CampaignReward",
+            message = "Campaign chapter reward claim finished",
+            attributes = mapOf(
+                "chapter" to chapter.toString(),
+                "outcome" to outcome.name.lowercase(),
+            ),
+        )
+    },
 ) {
     private val helper = GameProgressDbHelper(context.applicationContext, databaseConfig)
 
@@ -406,47 +424,57 @@ class GameProgressRepository(
         val db = helper.writableDatabase
         ensureDefaultRow(db)
 
-        db.beginTransaction()
         return try {
-            val completedLevels = db.rawQuery(
-                """
-                SELECT COUNT(*)
-                FROM ${GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS}
-                WHERE ${GameProgressDbHelper.COL_CAMPAIGN_LEVEL_NUMBER} BETWEEN ? AND ?
-                  AND ${GameProgressDbHelper.COL_CAMPAIGN_BEST_BACKEND_RATING} > 0
-                """.trimIndent(),
-                arrayOf(levels.first.toString(), levels.last.toString()),
-            ).use { cursor ->
-                if (cursor.moveToFirst()) cursor.getInt(0) else 0
-            }
-            if (completedLevels != CampaignChapterRewardPolicy.LEVELS_PER_CHAPTER) {
-                null
-            } else {
-                val inserted = db.insertWithOnConflict(
-                    GameProgressDbHelper.TABLE_CAMPAIGN_CHAPTER_REWARDS,
-                    null,
-                    ContentValues().apply {
-                        put(GameProgressDbHelper.COL_CAMPAIGN_CHAPTER_NUMBER, chapterNumber)
-                    },
-                    SQLiteDatabase.CONFLICT_IGNORE,
-                )
-                if (inserted == -1L) {
+            var outcome = CampaignChapterRewardClaimOutcome.INCOMPLETE
+            db.beginTransaction()
+            val result = try {
+                val completedLevels = db.rawQuery(
+                    """
+                    SELECT COUNT(*)
+                    FROM ${GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS}
+                    WHERE ${GameProgressDbHelper.COL_CAMPAIGN_LEVEL_NUMBER} BETWEEN ? AND ?
+                      AND ${GameProgressDbHelper.COL_CAMPAIGN_BEST_BACKEND_RATING} > 0
+                    """.trimIndent(),
+                    arrayOf(levels.first.toString(), levels.last.toString()),
+                ).use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
+                if (completedLevels != CampaignChapterRewardPolicy.LEVELS_PER_CHAPTER) {
                     null
                 } else {
-                    val row = applyEnergyRegen(loadRow(db), databaseConfig.nowMs())
-                    val updated = row.copy(
-                        coins = row.coins + reward.coins,
-                        hintOpenPosition = row.hintOpenPosition + reward.openPositionHints,
-                        hintCheckDigit = row.hintCheckDigit + reward.checkDigitHints,
-                        hintCheckPosition = row.hintCheckPosition + reward.checkPositionHints,
+                    val inserted = db.insertWithOnConflict(
+                        GameProgressDbHelper.TABLE_CAMPAIGN_CHAPTER_REWARDS,
+                        null,
+                        ContentValues().apply {
+                            put(GameProgressDbHelper.COL_CAMPAIGN_CHAPTER_NUMBER, chapterNumber)
+                        },
+                        SQLiteDatabase.CONFLICT_IGNORE,
                     )
-                    writeRow(db, updated)
-                    db.setTransactionSuccessful()
-                    updated.toState()
+                    if (inserted == -1L) {
+                        outcome = CampaignChapterRewardClaimOutcome.ALREADY_CLAIMED
+                        null
+                    } else {
+                        val row = applyEnergyRegen(loadRow(db), databaseConfig.nowMs())
+                        val updated = row.copy(
+                            coins = row.coins + reward.coins,
+                            hintOpenPosition = row.hintOpenPosition + reward.openPositionHints,
+                            hintCheckDigit = row.hintCheckDigit + reward.checkDigitHints,
+                            hintCheckPosition = row.hintCheckPosition + reward.checkPositionHints,
+                        )
+                        writeRow(db, updated)
+                        db.setTransactionSuccessful()
+                        outcome = CampaignChapterRewardClaimOutcome.CLAIMED
+                        updated.toState()
+                    }
                 }
+            } finally {
+                db.endTransaction()
             }
-        } finally {
-            db.endTransaction()
+            chapterRewardLog(chapterNumber, outcome)
+            result
+        } catch (error: Throwable) {
+            chapterRewardLog(chapterNumber, CampaignChapterRewardClaimOutcome.FAILED)
+            throw error
         }
     }
 

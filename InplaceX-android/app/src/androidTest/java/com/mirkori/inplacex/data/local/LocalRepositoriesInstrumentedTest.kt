@@ -12,7 +12,10 @@ class LocalRepositoriesInstrumentedTest {
     @Test
     fun campaignChapterRewardRequiresCompletionAndCanOnlyBeClaimedOnce() {
         withIsolatedDatabase("campaign_chapter_reward", { FIXED_NOW_MS }) { context, config ->
-            val repository = GameProgressRepository(context, config)
+            val outcomes = mutableListOf<Pair<Int, CampaignChapterRewardClaimOutcome>>()
+            val repository = GameProgressRepository(context, config) { chapter, outcome ->
+                outcomes += chapter to outcome
+            }
 
             assertEquals(null, repository.claimCampaignChapterReward(1))
             (1..10).forEach { level ->
@@ -28,6 +31,14 @@ class LocalRepositoriesInstrumentedTest {
 
             assertEquals(null, repository.claimCampaignChapterReward(1))
             assertEquals(270, repository.loadState().coins)
+            assertEquals(
+                listOf(
+                    1 to CampaignChapterRewardClaimOutcome.INCOMPLETE,
+                    1 to CampaignChapterRewardClaimOutcome.CLAIMED,
+                    1 to CampaignChapterRewardClaimOutcome.ALREADY_CLAIMED,
+                ),
+                outcomes,
+            )
         }
     }
 
