@@ -14,14 +14,19 @@ data class BackendRuntimeConfig(
                 ?.takeIf { it in 1..65535 }
                 ?: throw IllegalArgumentException("Backend port must be an integer in 1..65535")
 
+            val database = DatabaseRuntimeConfig.fromEnvironmentOrNull(environment)
+            val online = OnlineRuntimeConfig.fromEnvironmentOrNull(environment)
+            require(database == null || online == null || online.stateEncryptionKey != null) {
+                "${OnlineRuntimeConfig.StateEncryptionKey} is required when PostgreSQL online runtime is enabled"
+            }
             return BackendRuntimeConfig(
                 host = environment["INPLACEX_BACKEND_HOST"]?.takeIf(String::isNotBlank) ?: DefaultHost,
                 port = port,
                 environment = environment["INPLACEX_BACKEND_ENVIRONMENT"]
                     ?.takeIf(String::isNotBlank)
                     ?: DefaultEnvironment,
-                database = DatabaseRuntimeConfig.fromEnvironmentOrNull(environment),
-                online = OnlineRuntimeConfig.fromEnvironmentOrNull(environment),
+                database = database,
+                online = online,
             )
         }
 

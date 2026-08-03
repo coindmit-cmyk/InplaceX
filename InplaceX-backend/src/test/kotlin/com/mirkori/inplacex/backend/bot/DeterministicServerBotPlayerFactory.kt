@@ -25,6 +25,7 @@ internal object DeterministicServerBotPlayerFactory {
         ),
         config = config,
         hiddenSecret = secret ?: SecretGenerator.generate(config.copy(seed = secretSeed)),
+        brainSeed = brainSeed,
         solver = BotSolver(
             config = config,
             difficulty = difficulty,

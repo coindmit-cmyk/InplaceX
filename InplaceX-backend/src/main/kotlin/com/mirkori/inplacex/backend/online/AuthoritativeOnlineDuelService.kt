@@ -8,6 +8,8 @@ import com.mirkori.inplacex.backend.domain.duel.DuelParticipant
 import com.mirkori.inplacex.backend.domain.duel.DuelPhase
 import com.mirkori.inplacex.backend.domain.duel.DuelPlayStyle
 import com.mirkori.inplacex.backend.domain.duel.DuelSnapshot
+import com.mirkori.inplacex.backend.online.persistence.DurableOnlineSession
+import com.mirkori.inplacex.backend.online.persistence.OnlineSessionRepository
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -138,6 +140,7 @@ class AuthoritativeOnlineDuelService(
     sweepInterval: Duration? = null,
     private val secureRandom: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
+    private val sessionRepository: OnlineSessionRepository? = null,
 ) : AutoCloseable {
     private val lock = Any()
     private val tickets = mutableMapOf<String, TicketRecord>()
@@ -162,6 +165,18 @@ class AuthoritativeOnlineDuelService(
         require(!finishedSessionRetention.isNegative) { "finishedSessionRetention must not be negative" }
         require(!ticketRetention.isNegative && !ticketRetention.isZero) { "ticketRetention must be positive" }
         require(!inviteRetention.isNegative && !inviteRetention.isZero) { "inviteRetention must be positive" }
+        sessionRepository?.loadRecoverable(clock.instant())?.forEach { stored ->
+            val memento = OnlineSessionMementoCodec.decode(stored.stateJson)
+            check(memento.sessionId == stored.sessionId && memento.revision == stored.revision) {
+                "Durable online session metadata does not match encrypted state"
+            }
+            sessions[stored.sessionId] = SessionRecord.restore(
+                memento = memento,
+                clock = clock,
+                finishedSessionRetention = finishedSessionRetention,
+                repository = sessionRepository,
+            )
+        }
         sweeper = sweepInterval?.let { interval ->
             require(!interval.isNegative && !interval.isZero) { "sweepInterval must be positive" }
             Executors.newSingleThreadScheduledExecutor { task ->
@@ -447,7 +462,12 @@ class AuthoritativeOnlineDuelService(
             matchDuration = privateMatchDuration,
             setupTimeout = setupTimeout,
             createdAt = clock.instant(),
-        ).also { sessions[sessionId] = it }
+            finishedSessionRetention = finishedSessionRetention,
+            repository = sessionRepository,
+        ).also { record ->
+            record.persistNew()
+            sessions[sessionId] = record
+        }
     }
 
     private fun createHumanSession(
@@ -486,7 +506,12 @@ class AuthoritativeOnlineDuelService(
             matchDuration = matchDuration,
             setupTimeout = setupTimeout,
             createdAt = clock.instant(),
-        ).also { sessions[sessionId] = it }
+            finishedSessionRetention = finishedSessionRetention,
+            repository = sessionRepository,
+        ).also { record ->
+            record.persistNew()
+            sessions[sessionId] = record
+        }
     }
 
     private fun sessionFor(playerId: String, sessionId: String): SessionRecord {
@@ -509,7 +534,10 @@ class AuthoritativeOnlineDuelService(
                 val finishedAt = record.expireAndFinishedAt(now) ?: return@mapNotNull null
                 sessionId.takeIf { !now.isBefore(finishedAt.plus(finishedSessionRetention)) }
             }
-            expiredSessionIds.forEach { sessionId -> sessions.remove(sessionId)?.close() }
+            expiredSessionIds.forEach { sessionId ->
+                sessions.remove(sessionId)?.close()
+                sessionRepository?.delete(sessionId)
+            }
 
             val expiredTicketIds = tickets.values
                 .filter { !now.isBefore(it.ticket.createdAt.plus(ticketRetention)) }
@@ -538,6 +566,7 @@ class AuthoritativeOnlineDuelService(
             privateInvites.clear()
             privateInviteCreateReplays.clear()
             privateInviteAcceptReplays.clear()
+            sessionRepository?.close()
         }
     }
 
@@ -571,22 +600,27 @@ class AuthoritativeOnlineDuelService(
 
     private class SessionRecord(
         val sessionId: String,
-        val match: DuelMatch,
+        private val match: DuelMatch,
         private val memberships: Map<String, DuelParticipant>,
         private val bot: ServerBotPlayer?,
         private val clock: Clock,
         private val matchDuration: Duration?,
         setupTimeout: Duration,
-        createdAt: Instant,
+        private val createdAt: Instant,
+        private val finishedSessionRetention: Duration,
+        private val repository: OnlineSessionRepository?,
+        restoredSetupDeadlineAt: Instant? = null,
     ) : AutoCloseable {
         private var revision: Long = 0
         private val commandReplays = mutableMapOf<String, CommandReplay>()
         private val pendingSecrets = mutableMapOf<DuelParticipant, CharArray>()
+        private val durableSecrets = mutableMapOf<DuelParticipant, CharArray>()
         private val acceptedGuesses = mutableMapOf<Int, AcceptedGuess>()
         private var startedAt: Instant? = null
         private var deadlineAt: Instant? = null
-        private val setupDeadlineAt: Instant = createdAt.plus(setupTimeout)
+        private val setupDeadlineAt: Instant = restoredSetupDeadlineAt ?: createdAt.plus(setupTimeout)
         private var finishedAt: Instant? = null
+        private var finishedByTimeout: Boolean = false
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
 
@@ -615,9 +649,12 @@ class AuthoritativeOnlineDuelService(
             if (validationReason != null) {
                 throw DuelCommandRejectedException(DuelCommandRejection.INVALID_SECRET, validationReason)
             }
+            durableSecrets[participant]?.fill(CLEARED_DIGIT)
+            durableSecrets[participant] = secret.toCharArray()
             pendingSecrets[participant] = secret.toCharArray()
             if (bot != null) {
                 check(participant == DuelParticipant.FIRST)
+                durableSecrets[DuelParticipant.SECOND] = bot.revealSecret().toCharArray()
                 configureSecret(DuelParticipant.FIRST, pendingSecrets.remove(DuelParticipant.FIRST)!!)
                 configureSecret(DuelParticipant.SECOND, bot.revealSecret().toCharArray())
             } else if (pendingSecrets.keys.containsAll(DuelParticipant.entries)) {
@@ -657,6 +694,11 @@ class AuthoritativeOnlineDuelService(
                 val afterBot = match.submitGuess(
                     DuelParticipant.SECOND,
                     MutableDuelCommand.guess(turn.guess.toCharArray()),
+                )
+                val botAttempt = afterBot.attempts.last()
+                acceptedGuesses[botAttempt.number] = AcceptedGuess(
+                    DuelParticipant.SECOND,
+                    turn.guess.toCharArray(),
                 )
                 bot.registerTurnFeedback(turn.guess, afterBot.attempts.last().exactMatches)
                 revision += 1
@@ -703,8 +745,15 @@ class AuthoritativeOnlineDuelService(
                 expectedRevision == revision
             }
             if (!revisionAccepted) throw OnlineRevisionConflictException(snapshotFor(playerId))
+            val storedRevision = revision
             val result = operation(participant)
             commandReplays[replayKey] = CommandReplay(fingerprint, result)
+            try {
+                persistUpdate(storedRevision)
+            } catch (failure: Throwable) {
+                close()
+                throw failure
+            }
             return result
         }
 
@@ -737,10 +786,18 @@ class AuthoritativeOnlineDuelService(
                 DuelPhase.FINISHED -> false
             }
             if (expired) {
+                val storedRevision = revision
                 wipePendingSecrets()
                 match.finishDueToTimeout()
                 revision += 1
                 finishedAt = now
+                finishedByTimeout = true
+                try {
+                    persistUpdate(storedRevision)
+                } catch (failure: Throwable) {
+                    close()
+                    throw failure
+                }
             }
         }
 
@@ -755,13 +812,154 @@ class AuthoritativeOnlineDuelService(
             pendingSecrets.clear()
         }
 
+        fun persistNew() {
+            repository?.create(durableState())
+        }
+
+        private fun persistUpdate(expectedRevision: Long) {
+            repository?.update(durableState(), expectedRevision)
+        }
+
+        private fun durableState(): DurableOnlineSession {
+            val snapshot = match.snapshot()
+            val memento = OnlineSessionMemento(
+                sessionId = sessionId,
+                revision = revision,
+                config = match.config,
+                playStyle = match.playStyle,
+                attemptLimit = match.attemptLimit,
+                memberships = memberships,
+                bot = bot?.let { DurableBot(it.profile, it.brainSeed) },
+                secrets = durableSecrets.mapValues { (_, secret) -> secret.concatToString() },
+                guesses = acceptedGuesses.toSortedMap().values.map { guess ->
+                    DurableGuess(guess.participant, guess.guess.concatToString())
+                },
+                commandReplays = commandReplays.map { (key, replay) ->
+                    val separator = key.lastIndexOf(':')
+                    DurableCommandReplay(
+                        playerId = key.substring(0, separator),
+                        commandId = key.substring(separator + 1),
+                        fingerprint = replay.fingerprint,
+                        snapshot = replay.snapshot,
+                    )
+                },
+                createdAt = createdAt,
+                setupDeadlineAt = setupDeadlineAt,
+                matchDurationMillis = matchDuration?.toMillis(),
+                startedAt = startedAt,
+                deadlineAt = deadlineAt,
+                finishedAt = finishedAt,
+                finishedByTimeout = finishedByTimeout,
+            )
+            return DurableOnlineSession(
+                sessionId = sessionId,
+                revision = revision,
+                status = snapshot.phase.name,
+                stateJson = OnlineSessionMementoCodec.encode(memento),
+                createdAt = createdAt,
+                startedAt = startedAt,
+                finishedAt = finishedAt,
+                expiresAt = finishedAt?.plus(finishedSessionRetention),
+            )
+        }
+
         @Synchronized
         override fun close() {
             wipePendingSecrets()
             acceptedGuesses.values.forEach { it.guess.fill(CLEARED_DIGIT) }
             acceptedGuesses.clear()
+            durableSecrets.values.forEach { it.fill(CLEARED_DIGIT) }
+            durableSecrets.clear()
             commandReplays.clear()
             match.close()
+        }
+
+        companion object {
+            fun restore(
+                memento: OnlineSessionMemento,
+                clock: Clock,
+                finishedSessionRetention: Duration,
+                repository: OnlineSessionRepository,
+            ): SessionRecord {
+                val match = DuelMatch.create(
+                    config = memento.config,
+                    playStyle = memento.playStyle,
+                    attemptLimit = memento.attemptLimit,
+                )
+                val bot = memento.bot?.let { durableBot ->
+                    val secret = requireNotNull(memento.secrets[DuelParticipant.SECOND]) {
+                        "Recovered bot match is missing the encrypted bot secret"
+                    }
+                    ServerBotPlayer.restore(
+                        profile = durableBot.profile,
+                        config = memento.config,
+                        hiddenSecret = secret,
+                        brainSeed = durableBot.brainSeed,
+                    )
+                }
+                val record = SessionRecord(
+                    sessionId = memento.sessionId,
+                    match = match,
+                    memberships = memento.memberships,
+                    bot = bot,
+                    clock = clock,
+                    matchDuration = memento.matchDurationMillis?.let(Duration::ofMillis),
+                    setupTimeout = Duration.ofSeconds(1),
+                    createdAt = memento.createdAt,
+                    finishedSessionRetention = finishedSessionRetention,
+                    repository = repository,
+                    restoredSetupDeadlineAt = memento.setupDeadlineAt,
+                )
+                memento.secrets.forEach { (participant, secret) ->
+                    record.durableSecrets[participant] = secret.toCharArray()
+                }
+                if (memento.secrets.keys.containsAll(DuelParticipant.entries)) {
+                    DuelParticipant.entries.forEach { participant ->
+                        record.configureSecret(participant, memento.secrets.getValue(participant).toCharArray())
+                    }
+                } else {
+                    memento.secrets.forEach { (participant, secret) ->
+                        record.pendingSecrets[participant] = secret.toCharArray()
+                    }
+                }
+                memento.guesses.forEachIndexed { index, durableGuess ->
+                    if (bot != null && durableGuess.participant == DuelParticipant.FIRST) {
+                        bot.scoreIncomingGuess(durableGuess.guess)
+                    }
+                    if (bot != null && durableGuess.participant == DuelParticipant.SECOND) {
+                        val turn = bot.nextTurn()
+                        check(turn.guess == durableGuess.guess) {
+                            "Recovered server bot history does not match its durable seed"
+                        }
+                    }
+                    val after = match.submitGuess(
+                        durableGuess.participant,
+                        MutableDuelCommand.guess(durableGuess.guess.toCharArray()),
+                    )
+                    val attempt = after.attempts.last()
+                    check(attempt.number == index + 1)
+                    record.acceptedGuesses[attempt.number] = AcceptedGuess(
+                        durableGuess.participant,
+                        durableGuess.guess.toCharArray(),
+                    )
+                    if (bot != null && durableGuess.participant == DuelParticipant.SECOND) {
+                        bot.registerTurnFeedback(durableGuess.guess, attempt.exactMatches)
+                    }
+                }
+                if (memento.finishedByTimeout && match.snapshot().phase != DuelPhase.FINISHED) {
+                    match.finishDueToTimeout()
+                }
+                record.revision = memento.revision
+                record.startedAt = memento.startedAt
+                record.deadlineAt = memento.deadlineAt
+                record.finishedAt = memento.finishedAt
+                record.finishedByTimeout = memento.finishedByTimeout
+                memento.commandReplays.forEach { replay ->
+                    record.commandReplays["${replay.playerId}:${replay.commandId}"] =
+                        CommandReplay(replay.fingerprint, replay.snapshot)
+                }
+                return record
+            }
         }
     }
 

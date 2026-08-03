@@ -110,4 +110,39 @@ class BackendRuntimeConfigTest {
             mapOf(OnlineRuntimeConfig.IssuerKey to "inplacex-identity"),
         )
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `PostgreSQL online runtime requires durable state encryption key`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
+                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+            ),
+        )
+    }
+
+    @Test
+    fun `PostgreSQL online runtime accepts a redacted 256 bit state key`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val encodedStateKey = Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() })
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
+                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+                OnlineRuntimeConfig.StateEncryptionKey to encodedStateKey,
+            ),
+        )
+
+        assertNotNull(config.online?.stateEncryptionKey)
+        assertFalse(config.toString().contains(encodedStateKey))
+    }
 }
