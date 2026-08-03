@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.ui.screens.social
 
+import com.mirkori.inplacex.platform.localization.AppLanguage
+import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -26,5 +28,16 @@ class OnlineDuelScreenLogicTest {
                 code = "ABCD2345",
             ),
         )
+    }
+
+    @Test
+    fun codeLengthUsesLocalizedGrammar() {
+        val russian = StaticLocalizationProvider.forLanguage(AppLanguage.RU)
+        val english = StaticLocalizationProvider.forLanguage(AppLanguage.EN)
+
+        assertEquals("4 цифры", formatOnlineCodeLength(russian, 4))
+        assertEquals("5 цифр", formatOnlineCodeLength(russian, 5))
+        assertEquals("4 digits", formatOnlineCodeLength(english, 4))
+        assertEquals("10 digits", formatOnlineCodeLength(english, 10))
     }
 }

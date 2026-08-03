@@ -57,6 +57,8 @@ class LocalizationCatalogTest {
     fun secondaryScreenKeysResolveForBothLanguages() {
         val keys = listOf(
             "social.description",
+            "social.online.error.offline",
+            "social.online.new_match",
             "shop.hints.subtitle",
             "profile.match_stats.result",
             "company.dialog.exit_title",
