@@ -168,12 +168,20 @@ class IdentityRoutesTest {
         }
         assertEquals(HttpStatusCode.Unauthorized, unauthorized.status)
 
+        val challengeKey = UUID.randomUUID().toString()
         val challenge = client.post("/api/v1/auth/google/challenge") {
-            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Idempotency-Key", challengeKey)
             header("Authorization", "Bearer $accessToken")
         }
         assertEquals(HttpStatusCode.OK, challenge.status)
-        val nonce = Json.parseToJsonElement(challenge.bodyAsText())
+        val challengeBody = challenge.bodyAsText()
+        val challengeReplay = client.post("/api/v1/auth/google/challenge") {
+            header("Idempotency-Key", challengeKey)
+            header("Authorization", "Bearer $accessToken")
+        }
+        assertEquals(HttpStatusCode.OK, challengeReplay.status)
+        assertEquals(challengeBody, challengeReplay.bodyAsText())
+        val nonce = Json.parseToJsonElement(challengeBody)
             .jsonObject
             .getValue("nonce")
             .jsonPrimitive

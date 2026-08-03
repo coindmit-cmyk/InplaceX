@@ -84,7 +84,8 @@ fun Application.configureIdentityRoutes(
         }
 
         post("/api/v1/auth/google/challenge") {
-            if (!call.hasValidIdempotencyKey()) {
+            val idempotencyKey = call.validIdempotencyKeyOrNull()
+            if (idempotencyKey == null) {
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
                 return@post
             }
@@ -94,7 +95,10 @@ fun Application.configureIdentityRoutes(
                 return@post
             }
             val challenge = try {
-                service.createGoogleChallenge(principal.playerId)
+                service.createGoogleChallenge(principal.playerId, idempotencyKey)
+            } catch (_: IdempotencyKeyReusedException) {
+                call.respondIdentityError(HttpStatusCode.Conflict, "idempotency_key_reused")
+                return@post
             } catch (_: GoogleIdentityUnavailableException) {
                 call.respondIdentityError(HttpStatusCode.ServiceUnavailable, "provider_unavailable")
                 return@post

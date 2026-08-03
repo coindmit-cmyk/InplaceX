@@ -81,7 +81,11 @@ parameter, WebSocket payload, path, or application log.
 Google linking uses the authenticated guest player context:
 
 1. `POST /api/v1/auth/google/challenge` creates a short-lived, single-use
-   server challenge for the authenticated player.
+   server challenge for the authenticated player. The challenge and its exact
+   response are committed atomically under the authenticated player and
+   `Idempotency-Key`; retries, concurrent duplicates, and retries after a
+   backend restart return the same nonce and expiry while the challenge is
+   valid.
 2. Android passes that nonce to Credential Manager and receives a Google ID
    token for the configured web client ID.
 3. `POST /api/v1/auth/google` submits the ID token and nonce over HTTPS.
@@ -104,6 +108,10 @@ Every state-changing REST request requires an `Idempotency-Key` header. The
 value is 1–128 characters from `[A-Za-z0-9._~-]`. The key is scoped to the
 authenticated player, route, and resource. The server stores a request
 fingerprint and final response for at least 24 hours.
+
+The Google challenge is the bounded exception: its idempotency result expires
+with the five-minute challenge because the nonce must not outlive the operation
+it authorizes.
 
 - Same key and same request fingerprint returns the original result, including
   after a timeout or reconnect.
