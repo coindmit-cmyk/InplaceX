@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Transient sign-in and online-submit operations now reset safely across recreation/cancellation, and Android backup is disabled until authenticated cloud reconciliation is available.
+
 - Campaign completion now persists progress and economy atomically, rewards only personal-best rating improvements, and keeps chapter rewards accessible in landscape.
 
 - Разделены сценарии `Друзья`, `Приглашения` и `Онлайн-матчи`; добавлен явный
