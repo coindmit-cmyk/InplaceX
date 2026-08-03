@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "agent_repository": "coindmit-cmyk/ai-project-agent",
-  "agent_version": "v0.4.22.384",
-  "agent_commit": "9f11df3d60ef0f963573a5d0229f71b4b0e165d4",
+  "agent_version": "v0.4.22.387",
+  "agent_commit": "10e3495827ecfa3716205d3fdb5c5072efc530d7",
   "adopted_at": "2026-07-25T16:08:02Z",
-  "updated_at": "2026-08-03T04:10:20Z",
+  "updated_at": "2026-08-03T05:11:13Z",
   "update_source": "ai-project-agent",
   "agent_source_branch": "release/main",
   "update_mode": "pr_based",
@@ -47,5 +47,5 @@
     "production config",
     "secrets"
   ],
-  "upstream_snapshot": "origin/release/main@9f11df3d60ef0f963573a5d0229f71b4b0e165d4"
+  "upstream_snapshot": "origin/release/main@10e3495827ecfa3716205d3fdb5c5072efc530d7"
 }

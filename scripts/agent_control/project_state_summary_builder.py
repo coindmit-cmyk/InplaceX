@@ -194,6 +194,12 @@ def build_report(project_root: Path, output: Path | None = None, *, apply: bool 
     if apply:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+        stabilized = markdown(project_root, generated_at=generated_at)
+        if normalize_generated_at(stabilized) != normalize_generated_at(content):
+            content = stabilized
+            target.write_text(content, encoding="utf-8")
+            if output:
+                output.write_text(content, encoding="utf-8")
     return {
         "schema_version": "1.0",
         "mode": "project_state_summary_builder",

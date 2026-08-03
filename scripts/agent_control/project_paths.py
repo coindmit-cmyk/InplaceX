@@ -50,4 +50,3 @@ def task_reports_relpath(project_root: Path) -> str:
 
 def task_process_logs_dir(project_root: Path) -> Path:
     return task_manager_dir(project_root) / "process-logs"
-
