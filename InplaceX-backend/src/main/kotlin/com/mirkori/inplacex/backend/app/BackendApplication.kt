@@ -13,6 +13,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import java.time.Duration
 
 fun main() {
     val config = BackendRuntimeConfig.fromEnvironment()
@@ -41,6 +42,8 @@ fun Application.backendModule(
     val onlineService = config.online?.let { onlineConfig ->
         AuthoritativeOnlineDuelService(
             botFallbackDelay = onlineConfig.botFallbackDelay,
+            sweepInterval = Duration.ofSeconds(30),
+            logger = logger,
         ).also { service ->
             environment.monitor.subscribe(ApplicationStopped) {
                 service.close()

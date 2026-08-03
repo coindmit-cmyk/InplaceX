@@ -23,6 +23,92 @@ class AuthoritativeOnlineDuelServiceTest {
     )
 
     @Test
+    fun `setup timeout wipes pending secrets and sweeper removes the finished session`() {
+        val localClock = MutableClock(Instant.parse("2026-07-27T12:00:00Z"))
+        val localService = AuthoritativeOnlineDuelService(
+            clock = localClock,
+            botFallbackDelay = Duration.ofSeconds(5),
+            setupTimeout = Duration.ofMinutes(1),
+            finishedSessionRetention = Duration.ofMinutes(1),
+        )
+        val secondPlayer = UUID.randomUUID().toString()
+        val firstTicket = localService.createTicket(
+            playerId,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+        val secondTicket = localService.createTicket(
+            secondPlayer,
+            UUID.randomUUID().toString(),
+            OnlineMatchMode.CLASSIC,
+        )
+        val sessionId = requireNotNull(secondTicket.sessionId)
+        assertEquals(sessionId, localService.readTicket(playerId, firstTicket.ticketId).sessionId)
+        localService.submitSecret(
+            playerId,
+            sessionId,
+            UUID.randomUUID().toString(),
+            0,
+            "1234",
+        )
+
+        localClock.advance(Duration.ofMinutes(1))
+        localService.sweepExpiredState()
+        val expired = localService.readSession(playerId, sessionId)
+        assertEquals("finished", expired.phase)
+        assertEquals("time_expired", expired.finishReason)
+        assertTrue(expired.participants.none { it.secretConfigured })
+
+        localClock.advance(Duration.ofMinutes(1))
+        localService.sweepExpiredState()
+        assertThrows(NoSuchElementException::class.java) {
+            localService.readSession(playerId, sessionId)
+        }
+        localService.close()
+    }
+
+    @Test
+    fun `sweeper removes expired ticket invite and their replay records`() {
+        val localClock = MutableClock(Instant.parse("2026-07-27T12:00:00Z"))
+        val localService = AuthoritativeOnlineDuelService(
+            clock = localClock,
+            botFallbackDelay = Duration.ofSeconds(5),
+            privateInviteLifetime = Duration.ofMinutes(1),
+            ticketRetention = Duration.ofMinutes(2),
+            inviteRetention = Duration.ofMinutes(1),
+        )
+        val ticketCommand = UUID.randomUUID().toString()
+        val inviteCommand = UUID.randomUUID().toString()
+        val ticket = localService.createTicket(playerId, ticketCommand, OnlineMatchMode.CLASSIC)
+        val invite = localService.createPrivateInvite(
+            playerId,
+            inviteCommand,
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
+        )
+
+        localClock.advance(Duration.ofMinutes(2))
+        localService.sweepExpiredState()
+        assertThrows(NoSuchElementException::class.java) {
+            localService.readTicket(playerId, ticket.ticketId)
+        }
+        assertThrows(NoSuchElementException::class.java) {
+            localService.readPrivateInvite(playerId, invite.inviteCode)
+        }
+
+        val replacementTicket = localService.createTicket(playerId, ticketCommand, OnlineMatchMode.CLASSIC)
+        val replacementInvite = localService.createPrivateInvite(
+            playerId,
+            inviteCommand,
+            OnlineFriendPlayStyle.TURN_BASED,
+            4,
+        )
+        assertNotEquals(ticket.ticketId, replacementTicket.ticketId)
+        assertNotEquals(invite.inviteCode, replacementInvite.inviteCode)
+        localService.close()
+    }
+
+    @Test
     fun `ticket preserves selected rules when it becomes a server bot match`() {
         val commandId = UUID.randomUUID().toString()
         val rules = OnlineMatchRules(

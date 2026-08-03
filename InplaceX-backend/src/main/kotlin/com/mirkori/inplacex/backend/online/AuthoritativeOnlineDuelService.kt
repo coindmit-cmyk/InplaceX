@@ -12,12 +12,16 @@ import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.model.GameConfig
+import com.mirkori.inplacex.logging.InplaceXLogger
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 enum class OnlineMatchMode {
     CLASSIC,
@@ -127,7 +131,13 @@ class AuthoritativeOnlineDuelService(
     private val botFallbackDelay: Duration = Duration.ofSeconds(5),
     private val privateInviteLifetime: Duration = Duration.ofMinutes(10),
     private val privateMatchDuration: Duration = Duration.ofMinutes(10),
+    private val setupTimeout: Duration = Duration.ofMinutes(5),
+    private val finishedSessionRetention: Duration = Duration.ofMinutes(15),
+    private val ticketRetention: Duration = Duration.ofMinutes(30),
+    private val inviteRetention: Duration = Duration.ofMinutes(15),
+    sweepInterval: Duration? = null,
     private val secureRandom: SecureRandom = SecureRandom(),
+    private val logger: InplaceXLogger = InplaceXLogger(),
 ) : AutoCloseable {
     private val lock = Any()
     private val tickets = mutableMapOf<String, TicketRecord>()
@@ -136,6 +146,7 @@ class AuthoritativeOnlineDuelService(
     private val privateInviteCreateReplays = mutableMapOf<String, PrivateInviteCreateReplay>()
     private val privateInviteAcceptReplays = mutableMapOf<String, PrivateInviteAcceptReplay>()
     private val sessions = mutableMapOf<String, SessionRecord>()
+    private val sweeper: ScheduledExecutorService?
 
     init {
         require(!botFallbackDelay.isNegative && !botFallbackDelay.isZero) {
@@ -146,6 +157,27 @@ class AuthoritativeOnlineDuelService(
         }
         require(!privateMatchDuration.isNegative && !privateMatchDuration.isZero) {
             "privateMatchDuration must be positive"
+        }
+        require(!setupTimeout.isNegative && !setupTimeout.isZero) { "setupTimeout must be positive" }
+        require(!finishedSessionRetention.isNegative) { "finishedSessionRetention must not be negative" }
+        require(!ticketRetention.isNegative && !ticketRetention.isZero) { "ticketRetention must be positive" }
+        require(!inviteRetention.isNegative && !inviteRetention.isZero) { "inviteRetention must be positive" }
+        sweeper = sweepInterval?.let { interval ->
+            require(!interval.isNegative && !interval.isZero) { "sweepInterval must be positive" }
+            Executors.newSingleThreadScheduledExecutor { task ->
+                Thread(task, "inplacex-online-sweeper").apply { isDaemon = true }
+            }.also { executor ->
+                executor.scheduleWithFixedDelay(
+                    {
+                        runCatching(::sweepExpiredState).onFailure { failure ->
+                            logger.error("OnlineRetention", "online state sweep failed", throwable = failure)
+                        }
+                    },
+                    interval.toMillis(),
+                    interval.toMillis(),
+                    TimeUnit.MILLISECONDS,
+                )
+            }
         }
     }
 
@@ -413,6 +445,8 @@ class AuthoritativeOnlineDuelService(
             bot = bot,
             clock = clock,
             matchDuration = privateMatchDuration,
+            setupTimeout = setupTimeout,
+            createdAt = clock.instant(),
         ).also { sessions[sessionId] = it }
     }
 
@@ -450,6 +484,8 @@ class AuthoritativeOnlineDuelService(
             bot = null,
             clock = clock,
             matchDuration = matchDuration,
+            setupTimeout = setupTimeout,
+            createdAt = clock.instant(),
         ).also { sessions[sessionId] = it }
     }
 
@@ -463,7 +499,37 @@ class AuthoritativeOnlineDuelService(
         }
     }
 
+    internal fun sweepExpiredState() {
+        synchronized(lock) {
+            val now = clock.instant()
+            promoteExpiredTickets(now)
+            expirePrivateInvites(now)
+
+            val expiredSessionIds = sessions.entries.mapNotNull { (sessionId, record) ->
+                val finishedAt = record.expireAndFinishedAt(now) ?: return@mapNotNull null
+                sessionId.takeIf { !now.isBefore(finishedAt.plus(finishedSessionRetention)) }
+            }
+            expiredSessionIds.forEach { sessionId -> sessions.remove(sessionId)?.close() }
+
+            val expiredTicketIds = tickets.values
+                .filter { !now.isBefore(it.ticket.createdAt.plus(ticketRetention)) }
+                .map { it.ticket.ticketId }
+                .toSet()
+            expiredTicketIds.forEach(tickets::remove)
+            ticketReplays.entries.removeIf { it.value.ticketId in expiredTicketIds }
+
+            val expiredInviteCodes = privateInvites.values
+                .filter { !now.isBefore(it.invite.expiresAt.plus(inviteRetention)) }
+                .map { it.invite.inviteCode }
+                .toSet()
+            expiredInviteCodes.forEach(privateInvites::remove)
+            privateInviteCreateReplays.entries.removeIf { it.value.inviteCode in expiredInviteCodes }
+            privateInviteAcceptReplays.entries.removeIf { it.value.inviteCode in expiredInviteCodes }
+        }
+    }
+
     override fun close() {
+        sweeper?.shutdownNow()
         synchronized(lock) {
             sessions.values.forEach(SessionRecord::close)
             sessions.clear()
@@ -510,6 +576,8 @@ class AuthoritativeOnlineDuelService(
         private val bot: ServerBotPlayer?,
         private val clock: Clock,
         private val matchDuration: Duration?,
+        setupTimeout: Duration,
+        createdAt: Instant,
     ) : AutoCloseable {
         private var revision: Long = 0
         private val commandReplays = mutableMapOf<String, CommandReplay>()
@@ -517,6 +585,8 @@ class AuthoritativeOnlineDuelService(
         private val acceptedGuesses = mutableMapOf<Int, AcceptedGuess>()
         private var startedAt: Instant? = null
         private var deadlineAt: Instant? = null
+        private val setupDeadlineAt: Instant = createdAt.plus(setupTimeout)
+        private var finishedAt: Instant? = null
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
 
@@ -591,12 +661,13 @@ class AuthoritativeOnlineDuelService(
                 bot.registerTurnFeedback(turn.guess, afterBot.attempts.last().exactMatches)
                 revision += 1
             }
+            markFinishedIfNeeded()
             snapshotFor(playerId)
         }
 
         @Synchronized
         fun snapshotFor(playerId: String): OnlineDuelSnapshot {
-            expireIfNeeded()
+            expireIfNeeded(clock.instant())
             val viewer = memberships[playerId] ?: throw OnlineMembershipRejectedException()
             return match.snapshot().toOnlineSnapshot(
                 sessionId = sessionId,
@@ -620,7 +691,7 @@ class AuthoritativeOnlineDuelService(
         ): OnlineDuelSnapshot {
             requireCanonicalUuid(commandId, "commandId")
             val participant = memberships[playerId] ?: throw OnlineMembershipRejectedException()
-            expireIfNeeded()
+            expireIfNeeded(clock.instant())
             val replayKey = "$playerId:$commandId"
             commandReplays[replayKey]?.let { replay ->
                 if (replay.fingerprint != fingerprint) throw OnlineCommandIdReusedException()
@@ -652,21 +723,41 @@ class AuthoritativeOnlineDuelService(
             deadlineAt = matchDuration?.let(started::plus)
         }
 
-        private fun expireIfNeeded() {
-            val deadline = deadlineAt ?: return
-            if (
-                match.snapshot().phase == DuelPhase.ACTIVE &&
-                !clock.instant().isBefore(deadline)
-            ) {
+        @Synchronized
+        fun expireAndFinishedAt(now: Instant): Instant? {
+            expireIfNeeded(now)
+            return finishedAt
+        }
+
+        private fun expireIfNeeded(now: Instant) {
+            val snapshot = match.snapshot()
+            val expired = when (snapshot.phase) {
+                DuelPhase.SETUP -> !now.isBefore(setupDeadlineAt)
+                DuelPhase.ACTIVE -> deadlineAt?.let { !now.isBefore(it) } == true
+                DuelPhase.FINISHED -> false
+            }
+            if (expired) {
+                wipePendingSecrets()
                 match.finishDueToTimeout()
                 revision += 1
+                finishedAt = now
             }
+        }
+
+        private fun markFinishedIfNeeded() {
+            if (finishedAt == null && match.snapshot().phase == DuelPhase.FINISHED) {
+                finishedAt = clock.instant()
+            }
+        }
+
+        private fun wipePendingSecrets() {
+            pendingSecrets.values.forEach { it.fill(CLEARED_DIGIT) }
+            pendingSecrets.clear()
         }
 
         @Synchronized
         override fun close() {
-            pendingSecrets.values.forEach { it.fill(CLEARED_DIGIT) }
-            pendingSecrets.clear()
+            wipePendingSecrets()
             acceptedGuesses.values.forEach { it.guess.fill(CLEARED_DIGIT) }
             acceptedGuesses.clear()
             commandReplays.clear()
