@@ -401,8 +401,6 @@ class AuthoritativeOnlineDuelService(
         val bot = ServerBotPlayer.create(
             config = config,
             difficulty = mode.botDifficulty(),
-            secretSeed = sessionId.hashCode().toLong(),
-            brainSeed = playerId.hashCode().toLong() xor sessionId.hashCode().toLong(),
         )
         return SessionRecord(
             sessionId = sessionId,

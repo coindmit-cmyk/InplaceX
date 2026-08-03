@@ -58,6 +58,13 @@ If a room handler asks for the bot move twice before registering score feedback,
 
 This avoids accidental double-advance of the bot brain on retries or reconnect flows.
 
+## Production Entropy
+
+Production bot creation does not accept deterministic seeds or a caller-provided secret.
+The backend generates both the hidden secret and the bot-brain seed from `SecureRandom`.
+Public match identifiers such as `sessionId` and `playerId` must never participate in
+either value. Deterministic seeds belong only to the backend test factory.
+
 ## Dependency Direction
 
 Allowed:

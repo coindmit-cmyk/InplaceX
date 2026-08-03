@@ -60,6 +60,13 @@ If the previous bot guess has not received score feedback yet, the backend shoul
 
 That makes the bot safe to use inside room state machines and retrying message handlers.
 
+## Непредсказуемость production-бота
+
+Секрет и случайность решений серверного бота создаются через `SecureRandom`.
+Открытые клиенту `sessionId`, `playerId` и правила комнаты не используются как seed,
+поэтому клиент не может заранее воспроизвести секрет по данным matchmaking.
+Детерминированные seed разрешены только тестовой фабрике backend.
+
 ## Future Layers
 
 This is only the first server slice.
