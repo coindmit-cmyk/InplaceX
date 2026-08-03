@@ -119,6 +119,7 @@ internal open class GameProgressDatabase(
         }
 
         if (oldVersion < 8) {
+            createPlatformTables(db)
             createCampaignChapterRewardsTable(db)
         }
     }

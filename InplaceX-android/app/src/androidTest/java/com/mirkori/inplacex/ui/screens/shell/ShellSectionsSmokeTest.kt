@@ -129,6 +129,7 @@ class ShellSectionsSmokeTest {
             }
 
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
+            composeRule.onNodeWithText("Друзья").performClick()
             composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
             composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
             composeRule.onNodeWithText("Играть").performClick()

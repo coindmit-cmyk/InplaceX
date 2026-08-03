@@ -12,8 +12,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GameProgressDatabaseMigrationTest {
     @Test
-    fun freshDatabaseCreatesCompleteV7Schema() {
-        withIsolatedDatabase("fresh_v7", ::fixedNowMs) { context, config ->
+    fun freshDatabaseCreatesCompleteV8Schema() {
+        withIsolatedDatabase("fresh_v8", ::fixedNowMs) { context, config ->
             GameProgressDatabase(context, config).use { helper ->
                 val db = helper.writableDatabase
 
@@ -24,33 +24,38 @@ class GameProgressDatabaseMigrationTest {
     }
 
     @Test
-    fun migrationFromV1ToV7PreservesSentinelData() {
+    fun migrationFromV1ToV8PreservesSentinelData() {
         assertMigrationFrom(1)
     }
 
     @Test
-    fun migrationFromV2ToV7PreservesSentinelData() {
+    fun migrationFromV2ToV8PreservesSentinelData() {
         assertMigrationFrom(2)
     }
 
     @Test
-    fun migrationFromV3ToV7PreservesSentinelData() {
+    fun migrationFromV3ToV8PreservesSentinelData() {
         assertMigrationFrom(3)
     }
 
     @Test
-    fun migrationFromV4ToV7PreservesSentinelData() {
+    fun migrationFromV4ToV8PreservesSentinelData() {
         assertMigrationFrom(4)
     }
 
     @Test
-    fun migrationFromV5ToV7PreservesSentinelData() {
+    fun migrationFromV5ToV8PreservesSentinelData() {
         assertMigrationFrom(5)
     }
 
     @Test
-    fun migrationFromV6ToV7PreservesSentinelData() {
+    fun migrationFromV6ToV8PreservesSentinelData() {
         assertMigrationFrom(6)
+    }
+
+    @Test
+    fun migrationFromV7ToV8PreservesSentinelData() {
+        assertMigrationFrom(7)
     }
 
     private fun assertMigrationFrom(oldVersion: Int) {
@@ -141,6 +146,9 @@ class GameProgressDatabaseMigrationTest {
             columns += "${GameProgressDatabase.COL_AD_FREE_PURCHASED} INTEGER NOT NULL DEFAULT 0"
             columns += "${GameProgressDatabase.COL_PRO_SUBSCRIPTION_ACTIVE} INTEGER NOT NULL DEFAULT 0"
             columns += "${GameProgressDatabase.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE} INTEGER NOT NULL DEFAULT 0"
+        }
+        if (version >= 7) {
+            columns += "${GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS} INTEGER NOT NULL DEFAULT 0"
         }
 
         return """
@@ -297,6 +305,7 @@ class GameProgressDatabaseMigrationTest {
                 setOf(
                     GameProgressDatabase.TABLE_PROGRESS,
                     GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS,
+                    GameProgressDatabase.TABLE_CAMPAIGN_CHAPTER_REWARDS,
                     GameProgressDatabase.TABLE_PLAYER_PROFILE,
                     GameProgressDatabase.TABLE_IDENTITY_LINKS,
                     GameProgressDatabase.TABLE_SOCIAL_RELATIONSHIPS,
@@ -321,7 +330,7 @@ class GameProgressDatabaseMigrationTest {
     private fun fixedNowMs(): Long = FIXED_NOW_MS
 
     companion object {
-        private const val CURRENT_DATABASE_VERSION = 7
+        private const val CURRENT_DATABASE_VERSION = 8
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val SENTINEL_ENERGY_UPDATED_AT = FIXED_NOW_MS - 60_000L
 
