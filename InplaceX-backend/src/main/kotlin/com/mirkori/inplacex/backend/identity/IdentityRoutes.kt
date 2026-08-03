@@ -29,7 +29,8 @@ fun Application.configureIdentityRoutes(
     val codec = IdentityJsonCodec()
     routing {
         post("/api/v1/auth/bootstrap") {
-            if (!call.hasValidIdempotencyKey()) {
+            val idempotencyKey = call.validIdempotencyKeyOrNull()
+            if (idempotencyKey == null) {
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
                 return@post
             }
@@ -37,7 +38,12 @@ fun Application.configureIdentityRoutes(
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
             }
-            val result = runCatching { service.bootstrap(command) }.getOrElse {
+            val result = try {
+                service.bootstrap(command, idempotencyKey)
+            } catch (_: IdempotencyKeyReusedException) {
+                call.respondIdentityError(HttpStatusCode.Conflict, "idempotency_key_reused")
+                return@post
+            } catch (_: IllegalArgumentException) {
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
             }

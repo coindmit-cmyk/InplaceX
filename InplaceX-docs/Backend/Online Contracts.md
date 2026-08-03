@@ -50,6 +50,13 @@ create duplicate player identities. The server may require an
 `Idempotency-Key` for an initial request, but the installation ownership and
 rate-limit policy remain server-side.
 
+Bootstrap stores its final player and credential response under
+`operation + installation hash + Idempotency-Key` in the same transaction that
+creates the guest identity and refresh family. Same-key retries after response
+loss or backend restart return the exact original response. Concurrent
+duplicates create one player and one credential family; a changed payload with
+the same key returns `409 idempotency_key_reused`.
+
 ### Refresh
 
 `POST /api/v1/auth/refresh` accepts the current refresh token and returns a new

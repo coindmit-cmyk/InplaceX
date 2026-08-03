@@ -12,6 +12,7 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.SQLException
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -134,19 +135,39 @@ class GuestIdentityService(
     private val random: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
 ) {
-    fun bootstrap(command: GuestBootstrapCommand): GuestBootstrapResult {
+    fun bootstrap(command: GuestBootstrapCommand, idempotencyKey: String): GuestBootstrapResult {
         validateBootstrap(command)
-        val player = identities.findOrCreateGuest(
-            installationHash = sha256(command.installationId),
+        require(idempotencyKey.matches(IdempotencyKeyPattern))
+        val now = clock.instant()
+        val refreshToken = newOpaqueToken()
+        val refreshExpiresAt = now.plus(policy.refreshTtl)
+        val installationHash = sha256(command.installationId)
+        val result = identities.bootstrapGuestIdempotent(
+            idempotencyKey = idempotencyKey,
+            requestFingerprint = bootstrapFingerprint(command),
+            installationHash = installationHash,
             generatedPlayerId = UUID.randomUUID().toString(),
             platform = command.platform,
             appVersion = command.appVersion,
             locale = command.locale,
             regionHint = command.regionHint,
+            familyId = UUID.randomUUID().toString(),
+            tokenHash = sha256(refreshToken),
+            refreshExpiresAt = refreshExpiresAt,
+            now = now,
+            createResult = { player ->
+                val credentials = credentialsFor(player.playerId, refreshToken, refreshExpiresAt)
+                val bootstrap = GuestBootstrapResult(player.playerId, accountKind = "guest", credentials)
+                SerializedIdentityResult(bootstrap, encodeBootstrapResult(bootstrap))
+            },
+            restoreResult = ::decodeBootstrapResult,
         )
-        val credentials = issueCredentials(player.playerId)
-        logger.info("GuestIdentity", "guest bootstrap completed", mapOf("playerId" to player.playerId))
-        return GuestBootstrapResult(player.playerId, accountKind = "guest", credentials = credentials)
+        logger.info(
+            "GuestIdentity",
+            "guest bootstrap completed",
+            mapOf("replayed" to result.replayed.toString()),
+        )
+        return result.value
     }
 
     fun refresh(refreshToken: String, idempotencyKey: String): RenewableCredentials {
@@ -316,6 +337,22 @@ class GuestIdentityService(
         put("refreshExpiresAt", credentials.refreshExpiresAt.toString())
     }.toString()
 
+    private fun encodeBootstrapResult(result: GuestBootstrapResult): String = buildJsonObject {
+        put("playerId", result.playerId)
+        put("accountKind", result.accountKind)
+        put("credentials", Json.parseToJsonElement(encodeCredentials(result.credentials)))
+    }.toString()
+
+    private fun decodeBootstrapResult(source: String): GuestBootstrapResult {
+        val value = Json.parseToJsonElement(source).jsonObject
+        check(value.keys == BootstrapResultFields) { "Invalid stored bootstrap idempotency result" }
+        return GuestBootstrapResult(
+            playerId = value.getValue("playerId").jsonPrimitive.content,
+            accountKind = value.getValue("accountKind").jsonPrimitive.content,
+            credentials = decodeCredentials(value.getValue("credentials").toString()),
+        )
+    }
+
     private fun decodeCredentials(source: String): RenewableCredentials {
         val value = Json.parseToJsonElement(source).jsonObject
         check(value.keys == CredentialResultFields) { "Invalid stored refresh idempotency result" }
@@ -333,6 +370,18 @@ class GuestIdentityService(
         validateOptional(command.locale, 16, minimum = 2)
         validateOptional(command.regionHint, 16, minimum = 2)
     }
+
+    private fun bootstrapFingerprint(command: GuestBootstrapCommand): String = sha256(
+        listOf(
+            command.installationId,
+            command.platform.name,
+            command.appVersion,
+            command.locale,
+            command.regionHint,
+        ).joinToString(separator = "|") { value ->
+            if (value == null) "-1:" else "${value.length}:$value"
+        },
+    )
 
     private fun validateProfile(command: ProfileUpdateCommand) {
         require(command.expectedRevision >= 0)
@@ -368,18 +417,99 @@ class GuestIdentityService(
             "accessExpiresAt",
             "refreshExpiresAt",
         )
+        val BootstrapResultFields = setOf("playerId", "accountKind", "credentials")
     }
 }
 
 class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
-    fun findOrCreateGuest(
+    fun <T> bootstrapGuestIdempotent(
+        idempotencyKey: String,
+        requestFingerprint: String,
         installationHash: String,
         generatedPlayerId: String,
         platform: GuestPlatform,
         appVersion: String?,
         locale: String?,
         regionHint: String?,
-    ): StoredGuestIdentity = dataSource.transaction { connection ->
+        familyId: String,
+        tokenHash: String,
+        refreshExpiresAt: Instant,
+        now: Instant,
+        createResult: (StoredGuestIdentity) -> SerializedIdentityResult<T>,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T> {
+        repeat(MaxBootstrapAttempts) {
+            try {
+                return dataSource.transaction { connection ->
+                    existingAuthResult(
+                        connection = connection,
+                        operation = BootstrapOperation,
+                        actorKey = installationHash,
+                        idempotencyKey = idempotencyKey,
+                        now = now,
+                    )?.let { existing ->
+                        return@transaction restoreIdentityResult(
+                            existing = existing,
+                            requestFingerprint = requestFingerprint,
+                            restoreResult = restoreResult,
+                        )
+                    }
+                    insertBootstrapReservation(
+                        connection = connection,
+                        installationHash = installationHash,
+                        idempotencyKey = idempotencyKey,
+                        requestFingerprint = requestFingerprint,
+                        expiresAt = refreshExpiresAt,
+                    )
+                    val player = findOrCreateGuest(
+                        connection = connection,
+                        installationHash = installationHash,
+                        generatedPlayerId = generatedPlayerId,
+                        platform = platform,
+                        appVersion = appVersion,
+                        locale = locale,
+                        regionHint = regionHint,
+                    )
+                    createRefreshFamily(
+                        connection = connection,
+                        familyId = familyId,
+                        playerId = player.playerId,
+                        tokenHash = tokenHash,
+                        refreshExpiresAt = refreshExpiresAt,
+                    )
+                    val created = createResult(player)
+                    completeBootstrapReservation(
+                        connection,
+                        installationHash,
+                        idempotencyKey,
+                        created.responseJson,
+                    )
+                    IdempotentIdentityResult(created.value, replayed = false)
+                }
+            } catch (error: SQLException) {
+                if (!error.isConstraintViolation()) throw error
+                replayAuthResult(
+                    operation = BootstrapOperation,
+                    actorKey = installationHash,
+                    idempotencyKey = idempotencyKey,
+                    requestFingerprint = requestFingerprint,
+                    now = now,
+                    restoreResult = restoreResult,
+                )?.let { return it }
+            }
+        }
+        error("Unable to serialize guest bootstrap")
+    }
+
+    private fun findOrCreateGuest(
+        connection: Connection,
+        installationHash: String,
+        generatedPlayerId: String,
+        platform: GuestPlatform,
+        appVersion: String?,
+        locale: String?,
+        regionHint: String?,
+    ): StoredGuestIdentity {
         findPlayerId(connection, installationHash)?.let { playerId ->
             connection.prepareStatement(
                 "UPDATE guest_installations SET last_seen_at = CURRENT_TIMESTAMP, app_version = ? WHERE installation_hash = ?",
@@ -388,7 +518,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
                 statement.setString(2, installationHash)
                 statement.executeUpdate()
             }
-            return@transaction StoredGuestIdentity(playerId)
+            return StoredGuestIdentity(playerId)
         }
         connection.prepareStatement("INSERT INTO players(id, display_name) VALUES (?, ?)").use { statement ->
             statement.setString(1, generatedPlayerId)
@@ -416,28 +546,38 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             statement.setString(4, appVersion)
             statement.executeUpdate()
         }
-        StoredGuestIdentity(generatedPlayerId)
+        return StoredGuestIdentity(generatedPlayerId)
     }
 
     fun createRefreshFamily(familyId: String, playerId: String, tokenHash: String, refreshExpiresAt: Instant) =
         dataSource.transaction { connection ->
-            connection.prepareStatement(
-                "INSERT INTO refresh_token_families(id, player_id, expires_at) VALUES (?, ?, ?)",
-            ).use { statement ->
-                statement.setString(1, familyId)
-                statement.setString(2, playerId)
-                statement.setInstant(3, refreshExpiresAt)
-                statement.executeUpdate()
-            }
-            connection.prepareStatement(
-                "INSERT INTO refresh_tokens(token_hash, family_id, expires_at) VALUES (?, ?, ?)",
-            ).use { statement ->
-                statement.setString(1, tokenHash)
-                statement.setString(2, familyId)
-                statement.setInstant(3, refreshExpiresAt)
-                statement.executeUpdate()
-            }
+            createRefreshFamily(connection, familyId, playerId, tokenHash, refreshExpiresAt)
         }
+
+    private fun createRefreshFamily(
+        connection: Connection,
+        familyId: String,
+        playerId: String,
+        tokenHash: String,
+        refreshExpiresAt: Instant,
+    ) {
+        connection.prepareStatement(
+            "INSERT INTO refresh_token_families(id, player_id, expires_at) VALUES (?, ?, ?)",
+        ).use { statement ->
+            statement.setString(1, familyId)
+            statement.setString(2, playerId)
+            statement.setInstant(3, refreshExpiresAt)
+            statement.executeUpdate()
+        }
+        connection.prepareStatement(
+            "INSERT INTO refresh_tokens(token_hash, family_id, expires_at) VALUES (?, ?, ?)",
+        ).use { statement ->
+            statement.setString(1, tokenHash)
+            statement.setString(2, familyId)
+            statement.setInstant(3, refreshExpiresAt)
+            statement.executeUpdate()
+        }
+    }
 
     fun <T> rotateRefreshTokenIdempotent(
         presentedTokenHash: String,
@@ -739,6 +879,76 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         }
     }
 
+    private fun insertBootstrapReservation(
+        connection: Connection,
+        installationHash: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
+        expiresAt: Instant,
+    ) {
+        connection.prepareStatement(
+            """
+            INSERT INTO auth_idempotency_results(
+                operation, actor_key, idempotency_key, request_fingerprint,
+                state, response_json, expires_at
+            ) VALUES (?, ?, ?, ?, 'completed', '{}', ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, BootstrapOperation)
+            statement.setString(2, installationHash)
+            statement.setString(3, idempotencyKey)
+            statement.setString(4, requestFingerprint)
+            statement.setInstant(5, expiresAt)
+            statement.executeUpdate()
+        }
+    }
+
+    private fun completeBootstrapReservation(
+        connection: Connection,
+        installationHash: String,
+        idempotencyKey: String,
+        responseJson: String,
+    ) {
+        val changed = connection.prepareStatement(
+            """
+            UPDATE auth_idempotency_results
+            SET response_json = ?
+            WHERE operation = ? AND actor_key = ? AND idempotency_key = ?
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, responseJson)
+            statement.setString(2, BootstrapOperation)
+            statement.setString(3, installationHash)
+            statement.setString(4, idempotencyKey)
+            statement.executeUpdate()
+        }
+        check(changed == 1) { "Missing bootstrap idempotency reservation" }
+    }
+
+    private fun <T> replayAuthResult(
+        operation: String,
+        actorKey: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
+        now: Instant,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T>? = dataSource.transaction { connection ->
+        existingAuthResult(connection, operation, actorKey, idempotencyKey, now)?.let { existing ->
+            restoreIdentityResult(existing, requestFingerprint, restoreResult)
+        }
+    }
+
+    private fun <T> restoreIdentityResult(
+        existing: StoredAuthIdempotencyResult,
+        requestFingerprint: String,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T> {
+        if (existing.requestFingerprint != requestFingerprint) {
+            throw IdempotencyKeyReusedException()
+        }
+        return IdempotentIdentityResult(restoreResult(existing.responseJson), replayed = true)
+    }
+
     private fun revokeFamily(connection: Connection, familyId: String, now: Instant) {
         connection.prepareStatement(
             "UPDATE refresh_token_families SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
@@ -789,7 +999,9 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
     )
 
     private companion object {
+        const val BootstrapOperation = "bootstrap"
         const val RefreshOperation = "refresh"
+        const val MaxBootstrapAttempts = 3
     }
 }
 
@@ -821,3 +1033,5 @@ private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
 private fun PreparedStatement.setInstant(index: Int, value: Instant) {
     setObject(index, value.atOffset(ZoneOffset.UTC))
 }
+
+private fun SQLException.isConstraintViolation(): Boolean = sqlState?.startsWith("23") == true
