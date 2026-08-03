@@ -1034,6 +1034,14 @@ KOTLIN_TYPE_BEHAVIOR_PATTERN = re.compile(
     r"^\s*(?:(?:public|private|protected|internal|open|abstract|final|actual|expect|data|sealed|enum|annotation|value|inner)\s+)*"
     r"(?:class|interface|object)\s+([A-Za-z_]\w*)\b"
 )
+KOTLIN_ENUM_BODY_PATTERN = re.compile(
+    r"\benum\s+class\s+[A-Za-z_]\w*[^\{]*\{(?P<body>.*?)(?:;|\})",
+    re.DOTALL,
+)
+KOTLIN_ENUM_ENTRY_PATTERN = re.compile(
+    r"(?:^|,)\s*(?:@[A-Za-z_]\w*(?:\([^)]*\))?\s*)*"
+    r"([A-Za-z_]\w*)\s*(?=\(|,|\{|$)",
+)
 
 BEHAVIOR_PATTERNS = (
     re.compile(r"^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\("),
@@ -1360,6 +1368,12 @@ def behavior_patterns_for_path(rel_path: str | None) -> tuple[re.Pattern[str], .
 def behavior_tokens(text: str, rel_path: str | None = None) -> set[str]:
     tokens: set[str] = set()
     suffix = Path(str(rel_path or "")).suffix.lower()
+    if suffix == ".kt":
+        for enum_match in KOTLIN_ENUM_BODY_PATTERN.finditer(text):
+            tokens.update(
+                match.group(1)
+                for match in KOTLIN_ENUM_ENTRY_PATTERN.finditer(enum_match.group("body"))
+            )
     java_block_comment = False
     java_text_block = False
     java_declaration_lines: list[str] = []
@@ -1378,6 +1392,7 @@ def behavior_tokens(text: str, rel_path: str | None = None) -> set[str]:
             )
             line_in_java_text_block = line_in_java_text_block or java_text_block
             scanner_fragment = scanner_line.strip()
+            behavior_line = line if line_in_java_text_block else scanner_line
             if scanner_fragment:
                 java_declaration_lines.append(scanner_fragment)
                 declaration_text = " ".join(java_declaration_lines)

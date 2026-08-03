@@ -41,16 +41,16 @@
     {
       "id": "agent-core-standard",
       "kind": "automation",
-      "version": "v0.4.22.389",
+      "version": "v0.4.22.390",
       "path": ".agent,scripts/agent_control",
       "owner": "agent-update-manager",
-      "updated_at": "2026-08-03T09:53:00Z",
+      "updated_at": "2026-08-03T10:44:00Z",
       "updated_by": "codex/sql-task-control-adoption-v001",
-      "source_ref": "coindmit-cmyk/ai-project-agent:release/main@710a2d154f6073b62f43c81d3da19109f62b91b4"
+      "source_ref": "coindmit-cmyk/ai-project-agent:release/main@b5b8a88115bb7ce0d208f63474563b11e4afdb5a"
     }
   ],
   "source_of_truth": "github",
-  "updated_at": "2026-08-03T09:53:00Z",
+  "updated_at": "2026-08-03T10:44:00Z",
   "updated_by": "codex/sql-task-control-adoption-v001",
   "project_index": "README.md",
   "documentation_manifest": "DOCUMENTATION_MANIFEST.json",

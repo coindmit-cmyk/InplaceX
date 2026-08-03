@@ -279,7 +279,11 @@ def process_automatic_queue(
     approved_by: str = "scripts/agent_control/authorize_model_limit_retries.py",
     reason: str = DEFAULT_REASON,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], dict[str, int]]:
-    now = now or None
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    else:
+        current = current.astimezone(timezone.utc)
     runtime_root = Path(evidence_root)
     result = deepcopy(data)
     tasks = result.get("tasks", [])
@@ -302,9 +306,9 @@ def process_automatic_queue(
         runtime_root,
         min_remaining_percent=min_remaining_percent,
         max_age_minutes=max_age_minutes,
-        now=now,
+        now=current,
     )
-    approved_at = utc_now()
+    approved_at = current.isoformat(timespec="seconds").replace("+00:00", "Z")
 
     for index, task in enumerate(tasks):
         if not isinstance(task, dict):
@@ -314,7 +318,7 @@ def process_automatic_queue(
             continue
         counters["waiting"] += 1
 
-        blocker = next_retry_blocker(task, active_locks, max(1, max_attempts), cooldown_seconds, now)
+        blocker = next_retry_blocker(task, active_locks, max(1, max_attempts), cooldown_seconds, current)
         if blocker:
             if blocker == "retry_cooldown":
                 counters["cooldown"] += 1

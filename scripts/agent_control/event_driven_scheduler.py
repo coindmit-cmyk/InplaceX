@@ -1732,7 +1732,6 @@ def apply_model_limit_recovery(
         authorized_queue,
         active_locks,
     )
-    promoted_at = authorize_model_limit_retries.utc_now()
     auto_promotion_summary: list[str] = []
     for index, task in enumerate(tasks(promoted_queue)):
         if not isinstance(task, dict):
@@ -1745,20 +1744,6 @@ def apply_model_limit_recovery(
         if task.get("status") == "planned" and task.get("worker_ready") is True and task.get("dispatcher_decision") == "worker_ready":
             if tid not in {entry["task_id"] for entry in promoted}:
                 auto_promotion_summary.append(tid)
-            continue
-        task["status"] = "planned"
-        task["worker_ready"] = True
-        task["dispatcher_decision"] = "worker_ready"
-        task["integration_status"] = "worker_ready"
-        task["packet_status"] = "worker_ready"
-        task["normalization_status"] = "worker_ready"
-        task["worker_ready_promoted_at"] = promoted_at
-        task["worker_ready_promoted_by"] = "scripts/agent_control/event_driven_scheduler.py"
-        task["model_limit_retry_recovered"] = True
-        promoted.append({"task_id": tid, "status": "planned", "worker_ready": True})
-        auto_promotion_summary.append(tid)
-        if task.get("not_worker_ready_reason"):
-            task["not_worker_ready_reason"] = None
 
     changed = promoted_queue != queue
     if auto_promotion_summary:
@@ -1878,8 +1863,6 @@ def is_worker_ready(task: dict[str, Any], completed_ids: set[str] | None = None)
         return False
     if task.get("requires_current_context_review") is True and not has_current_context_verification(task):
         return False
-    if task.get("model_limit_retry_source") == "automatic_capacity_recovery" and task.get("model_limit_retry_allowed") is True:
-        return True
     return (
         has_value(task, "complexity")
         and has_list(task, "allowed_paths")

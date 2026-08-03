@@ -44,22 +44,48 @@ def git_show_optional(ref: str, path: str) -> str:
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
     )
-    return result.stdout if result.returncode == 0 else ""
+    return result.stdout.decode("utf-8", errors="replace") if result.returncode == 0 else ""
+
+
+def git_path_type(ref: str, path: str) -> str | None:
+    result = subprocess.run(
+        ["git", "cat-file", "-t", f"{ref}:{path}"],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("ascii", errors="replace").strip() or None
+
+
+def git_path_exists(ref: str, path: str) -> bool:
+    return git_path_type(ref, path) is not None
+
+
+def git_ref_exists(ref: str) -> bool:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0
 
 
 def git_changed_paths(base_ref: str, head_ref: str) -> list[str]:
     result = subprocess.run(
-        ["git", "diff", "--name-only", "--diff-filter=ACDMRT", base_ref, head_ref, "--"],
+        ["git", "diff", "--name-only", "-z", "--diff-filter=ACDMRT", base_ref, head_ref, "--"],
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
     )
-    return [line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()]
+    return [
+        raw_path.decode("utf-8", errors="replace")
+        for raw_path in result.stdout.split(b"\0")
+        if raw_path
+    ]
 
 
 def capability(kind: str, name: str) -> str:
@@ -192,16 +218,54 @@ def compare_text(before: str, after: str, *, path_hint: str = "") -> dict[str, A
     }
 
 
+def file_removed_report(path: str) -> dict[str, Any]:
+    removed = [capability("file_removed", path)]
+    return {
+        "status": STATUS_WARNING,
+        "path": path,
+        "before_capability_count": 0,
+        "after_capability_count": 0,
+        "removed_capabilities": removed,
+        "added_capabilities": [],
+        "rewrite_similarity_ratio": 0.0,
+        "rewrite_risk": False,
+        "file_removed": True,
+        "policy_findings": policy_findings(removed, False),
+        "required_evidence": required_evidence(removed, False),
+    }
+
+
+def input_error_report(path: str, finding: str) -> dict[str, Any]:
+    return {
+        "status": STATUS_WARNING,
+        "path": path,
+        "before_capability_count": 0,
+        "after_capability_count": 0,
+        "removed_capabilities": [],
+        "added_capabilities": [],
+        "rewrite_similarity_ratio": 0.0,
+        "rewrite_risk": False,
+        "input_error": finding,
+        "policy_findings": [finding],
+        "required_evidence": ["provide valid refs and a path present in at least one ref"],
+    }
+
+
+def compare_ref_path(base_ref: str, head_ref: str, path: str) -> dict[str, Any]:
+    base_type = git_path_type(base_ref, path)
+    head_type = git_path_type(head_ref, path)
+    if base_type is None and head_type is None:
+        return input_error_report(path, "path_missing_from_both_refs")
+    before = git_show_optional(base_ref, path)
+    after = git_show_optional(head_ref, path)
+    if base_type == "blob" and head_type != "blob":
+        return file_removed_report(path)
+    return compare_text(before, after, path_hint=path)
+
+
 def compare_refs(base_ref: str, head_ref: str, paths: list[str] | None = None) -> dict[str, Any]:
     selected_paths = paths or git_changed_paths(base_ref, head_ref)
-    reports = [
-        compare_text(
-            git_show_optional(base_ref, path),
-            git_show_optional(head_ref, path),
-            path_hint=path,
-        )
-        for path in selected_paths
-    ]
+    reports = [compare_ref_path(base_ref, head_ref, path) for path in selected_paths]
     risky = [report for report in reports if report["status"] == STATUS_RISK]
     warnings = [report for report in reports if report["status"] == STATUS_WARNING]
     status = STATUS_RISK if risky else (STATUS_WARNING if warnings else STATUS_OK)
@@ -259,12 +323,13 @@ def main() -> int:
     if args.base_ref:
         if not args.head_ref or (not args.path and not args.all_changed):
             raise SystemExit("--base-ref requires --head-ref and either --path or --all-changed")
-        if args.all_changed:
+        invalid_refs = [ref for ref in (args.base_ref, args.head_ref) if not git_ref_exists(ref)]
+        if invalid_refs:
+            report = input_error_report(args.path or "", f"invalid_git_ref:{','.join(invalid_refs)}")
+        elif args.all_changed:
             report = compare_refs(args.base_ref, args.head_ref)
         else:
-            before = git_show(args.base_ref, args.path)
-            after = git_show(args.head_ref, args.path)
-            report = compare_text(before, after, path_hint=args.path)
+            report = compare_ref_path(args.base_ref, args.head_ref, args.path)
     else:
         if not args.after:
             raise SystemExit("--before requires --after")
