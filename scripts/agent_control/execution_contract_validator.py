@@ -13,6 +13,7 @@ import datetime as dt
 import hashlib
 import hmac
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Iterable
@@ -39,6 +40,7 @@ ID_RE = re.compile(r"^[a-z][a-z0-9._:-]{2,127}$")
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 HMAC_PROOF_RE = re.compile(r"^hmac-sha256:[0-9a-f]{64}$")
 MIN_PROVENANCE_KEY_BYTES = 32
+ROUTER_PROVENANCE_KEY_ENV = "AISTUDIO_ROUTER_PROVENANCE_KEY"
 TERMINAL_INVOCATION_STATUSES = {
     "completed",
     "partial",
@@ -2751,6 +2753,7 @@ def main() -> int:
             project_root=Path(args.project_root),
             mode=args.mode,
             now=args.now,
+            provenance_key=os.environ.get(ROUTER_PROVENANCE_KEY_ENV),
         )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))

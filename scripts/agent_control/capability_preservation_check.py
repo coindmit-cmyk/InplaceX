@@ -275,8 +275,18 @@ def main() -> int:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         print(report["status"])
-        for item in report["removed_capabilities"]:
-            print(f"removed: {item}")
+        removed = report.get("removed_capabilities")
+        if isinstance(removed, list):
+            for item in removed:
+                print(f"removed: {item}")
+        else:
+            for path_report in report.get("reports") or []:
+                if not isinstance(path_report, dict):
+                    continue
+                path = str(path_report.get("path") or "")
+                for item in path_report.get("removed_capabilities") or []:
+                    prefix = f"removed[{path}]" if path else "removed"
+                    print(f"{prefix}: {item}")
     return 0 if report["status"] == STATUS_OK else 2
 
 
