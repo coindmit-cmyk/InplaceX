@@ -235,36 +235,62 @@ class GuestIdentityService(
         currentPlayerId: String,
         idToken: String,
         nonce: String,
+        idempotencyKey: String,
     ): GuestBootstrapResult {
         requireCanonicalPlayerId(currentPlayerId)
         require(idToken.length in 1..MaximumGoogleIdTokenCharacters)
         require(nonce.matches(GoogleNoncePattern))
+        require(idempotencyKey.matches(IdempotencyKeyPattern))
+        val requestFingerprint = googleAuthenticationFingerprint(idToken, nonce)
+        val now = clock.instant()
+        identities.replayGoogleAuthentication(
+            currentPlayerId = currentPlayerId,
+            idempotencyKey = idempotencyKey,
+            requestFingerprint = requestFingerprint,
+            now = now,
+            restoreResult = ::decodeBootstrapResult,
+        )?.let { replayed ->
+            logger.info(
+                "GuestIdentity",
+                "Google identity authentication replayed",
+                mapOf("playerId" to replayed.value.playerId),
+            )
+            return replayed.value
+        }
         val verifier = googleIdentityVerifier ?: throw GoogleIdentityUnavailableException()
         val verified = verifier.verify(idToken, nonce) ?: throw GoogleIdentityRejectedException()
-        val now = clock.instant()
-        if (!identities.consumeGoogleChallenge(currentPlayerId, sha256(nonce), now)) {
-            throw GoogleIdentityRejectedException()
-        }
-        val player = identities.resolveOrLinkGoogleIdentity(
+        val refreshToken = newOpaqueToken()
+        val refreshExpiresAt = now.plus(policy.refreshTtl)
+        val result = identities.authenticateWithGoogleIdempotent(
             currentPlayerId = currentPlayerId,
+            idempotencyKey = idempotencyKey,
+            requestFingerprint = requestFingerprint,
+            nonceHash = sha256(nonce),
             providerSubject = verified.subject,
             displayName = verified.displayName,
             now = now,
+            familyId = UUID.randomUUID().toString(),
+            tokenHash = sha256(refreshToken),
+            refreshExpiresAt = refreshExpiresAt,
+            createResult = { player ->
+                val authenticated = GuestBootstrapResult(
+                    playerId = player.playerId,
+                    accountKind = AuthProvider.GOOGLE.wireName,
+                    credentials = credentialsFor(player.playerId, refreshToken, refreshExpiresAt),
+                )
+                SerializedIdentityResult(authenticated, encodeBootstrapResult(authenticated))
+            },
+            restoreResult = ::decodeBootstrapResult,
         )
-        val credentials = issueCredentials(player.playerId)
-        logger.info(
-            "GuestIdentity",
-            "Google identity authenticated",
-            mapOf(
-                "playerId" to player.playerId,
-                "restoredExistingPlayer" to player.restoredExistingPlayer.toString(),
-            ),
+        val authenticationDetails = mutableMapOf(
+            "playerId" to result.value.playerId,
+            "replayed" to result.replayed.toString(),
         )
-        return GuestBootstrapResult(
-            playerId = player.playerId,
-            accountKind = AuthProvider.GOOGLE.wireName,
-            credentials = credentials,
-        )
+        result.subjectPlayerRestored?.let { restored ->
+            authenticationDetails["restoredExistingPlayer"] = restored.toString()
+        }
+        logger.info("GuestIdentity", "Google identity authenticated", authenticationDetails)
+        return result.value
     }
 
     fun profile(playerId: String): PlayerProfile = identities.profile(playerId)
@@ -306,19 +332,6 @@ class GuestIdentityService(
             logger.info("GuestIdentity", "cloud save revision conflict", mapOf("playerId" to playerId))
             CloudSaveWriteResult.Conflict(command.expectedRevision, current)
         }
-    }
-
-    private fun issueCredentials(playerId: String): RenewableCredentials {
-        val refreshToken = newOpaqueToken()
-        val now = clock.instant()
-        val refreshExpiresAt = now.plus(policy.refreshTtl)
-        identities.createRefreshFamily(
-            familyId = UUID.randomUUID().toString(),
-            playerId = playerId,
-            tokenHash = sha256(refreshToken),
-            refreshExpiresAt = refreshExpiresAt,
-        )
-        return credentialsFor(playerId, refreshToken, refreshExpiresAt)
     }
 
     private fun credentialsFor(playerId: String, refreshToken: String, refreshExpiresAt: Instant): RenewableCredentials {
@@ -406,6 +419,9 @@ class GuestIdentityService(
             if (value == null) "-1:" else "${value.length}:$value"
         },
     )
+
+    private fun googleAuthenticationFingerprint(idToken: String, nonce: String): String =
+        sha256("${idToken.length}:$idToken|${nonce.length}:$nonce")
 
     private fun validateProfile(command: ProfileUpdateCommand) {
         require(command.expectedRevision >= 0)
@@ -575,11 +591,6 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         return StoredGuestIdentity(generatedPlayerId)
     }
 
-    fun createRefreshFamily(familyId: String, playerId: String, tokenHash: String, refreshExpiresAt: Instant) =
-        dataSource.transaction { connection ->
-            createRefreshFamily(connection, familyId, playerId, tokenHash, refreshExpiresAt)
-        }
-
     private fun createRefreshFamily(
         connection: Connection,
         familyId: String,
@@ -733,11 +744,106 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         error("Unable to serialize Google auth challenge")
     }
 
-    fun consumeGoogleChallenge(
+    fun <T> replayGoogleAuthentication(
+        currentPlayerId: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
+        now: Instant,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T>? = replayAuthResult(
+        operation = GoogleAuthenticationOperation,
+        actorKey = currentPlayerId,
+        idempotencyKey = idempotencyKey,
+        requestFingerprint = requestFingerprint,
+        now = now,
+        restoreResult = restoreResult,
+    )
+
+    fun <T> authenticateWithGoogleIdempotent(
+        currentPlayerId: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
+        nonceHash: String,
+        providerSubject: String,
+        displayName: String?,
+        now: Instant,
+        familyId: String,
+        tokenHash: String,
+        refreshExpiresAt: Instant,
+        createResult: (StoredGoogleIdentity) -> SerializedIdentityResult<T>,
+        restoreResult: (String) -> T,
+    ): GoogleAuthenticationResult<T> {
+        try {
+            return dataSource.transaction { connection ->
+                existingAuthResult(
+                    connection,
+                    GoogleAuthenticationOperation,
+                    currentPlayerId,
+                    idempotencyKey,
+                    now,
+                )?.let { existing ->
+                    val restored = restoreIdentityResult(existing, requestFingerprint, restoreResult)
+                    return@transaction GoogleAuthenticationResult(
+                        value = restored.value,
+                        replayed = true,
+                        subjectPlayerRestored = null,
+                    )
+                }
+                insertCompletedAuthResult(
+                    connection = connection,
+                    operation = GoogleAuthenticationOperation,
+                    actorKey = currentPlayerId,
+                    idempotencyKey = idempotencyKey,
+                    requestFingerprint = requestFingerprint,
+                    responseJson = "{}",
+                    expiresAt = refreshExpiresAt,
+                )
+                if (!consumeGoogleChallenge(connection, currentPlayerId, nonceHash, now)) {
+                    throw GoogleIdentityRejectedException()
+                }
+                val player = resolveOrLinkGoogleIdentity(
+                    connection = connection,
+                    currentPlayerId = currentPlayerId,
+                    providerSubject = providerSubject,
+                    displayName = displayName,
+                    now = now,
+                )
+                createRefreshFamily(connection, familyId, player.playerId, tokenHash, refreshExpiresAt)
+                val created = createResult(player)
+                completeAuthResult(
+                    connection = connection,
+                    operation = GoogleAuthenticationOperation,
+                    actorKey = currentPlayerId,
+                    idempotencyKey = idempotencyKey,
+                    responseJson = created.responseJson,
+                )
+                GoogleAuthenticationResult(
+                    value = created.value,
+                    replayed = false,
+                    subjectPlayerRestored = player.restoredExistingPlayer,
+                )
+            }
+        } catch (error: SQLException) {
+            if (!error.isConstraintViolation()) throw error
+            replayGoogleAuthentication(
+                currentPlayerId,
+                idempotencyKey,
+                requestFingerprint,
+                now,
+                restoreResult,
+            )?.let { replayed ->
+                return GoogleAuthenticationResult(replayed.value, replayed = true, subjectPlayerRestored = null)
+            }
+            throw error
+        }
+    }
+
+    private fun consumeGoogleChallenge(
+        connection: Connection,
         playerId: String,
         nonceHash: String,
         now: Instant,
-    ): Boolean = dataSource.transaction { connection ->
+    ): Boolean =
         connection.prepareStatement(
             """
             UPDATE google_auth_challenges
@@ -751,14 +857,14 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             statement.setInstant(4, now)
             statement.executeUpdate() == 1
         }
-    }
 
-    fun resolveOrLinkGoogleIdentity(
+    private fun resolveOrLinkGoogleIdentity(
+        connection: Connection,
         currentPlayerId: String,
         providerSubject: String,
         displayName: String?,
         now: Instant,
-    ): StoredGoogleIdentity = dataSource.transaction { connection ->
+    ): StoredGoogleIdentity {
         findGooglePlayerId(connection, providerSubject)?.let { linkedPlayerId ->
             touchGoogleIdentity(connection, providerSubject, now)
             connection.prepareStatement(
@@ -767,7 +873,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
                 statement.setString(1, linkedPlayerId)
                 statement.executeUpdate()
             }
-            return@transaction StoredGoogleIdentity(
+            return StoredGoogleIdentity(
                 playerId = linkedPlayerId,
                 restoredExistingPlayer = linkedPlayerId != currentPlayerId,
             )
@@ -809,7 +915,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             statement.setString(3, currentPlayerId)
             statement.executeUpdate()
         }
-        StoredGoogleIdentity(playerId = currentPlayerId, restoredExistingPlayer = false)
+        return StoredGoogleIdentity(playerId = currentPlayerId, restoredExistingPlayer = false)
     }
 
     fun profile(playerId: String): PlayerProfile = dataSource.connection.use { connection ->
@@ -1020,6 +1126,29 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         check(changed == 1) { "Missing bootstrap idempotency reservation" }
     }
 
+    private fun completeAuthResult(
+        connection: Connection,
+        operation: String,
+        actorKey: String,
+        idempotencyKey: String,
+        responseJson: String,
+    ) {
+        val changed = connection.prepareStatement(
+            """
+            UPDATE auth_idempotency_results
+            SET response_json = ?
+            WHERE operation = ? AND actor_key = ? AND idempotency_key = ?
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, responseJson)
+            statement.setString(2, operation)
+            statement.setString(3, actorKey)
+            statement.setString(4, idempotencyKey)
+            statement.executeUpdate()
+        }
+        check(changed == 1) { "Missing auth idempotency reservation" }
+    }
+
     private fun <T> replayAuthResult(
         operation: String,
         actorKey: String,
@@ -1097,6 +1226,7 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         const val BootstrapOperation = "bootstrap"
         const val RefreshOperation = "refresh"
         const val GoogleChallengeOperation = "google_challenge"
+        const val GoogleAuthenticationOperation = "google_authenticate"
         const val MaxBootstrapAttempts = 3
         const val MaxGoogleChallengeAttempts = 3
     }
@@ -1114,6 +1244,12 @@ data class SerializedIdentityResult<T>(
 data class IdempotentIdentityResult<T>(
     val value: T,
     val replayed: Boolean,
+)
+
+data class GoogleAuthenticationResult<T>(
+    val value: T,
+    val replayed: Boolean,
+    val subjectPlayerRestored: Boolean?,
 )
 
 private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
