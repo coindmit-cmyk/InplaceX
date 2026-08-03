@@ -34,12 +34,13 @@ class IdentityRoutesTest {
     fun `bootstrap and refresh expose the Android contract over HTTP`() = testApplication {
         application { configureIdentityRoutes(service()) }
 
+        val bootstrapKey = UUID.randomUUID().toString()
+        val bootstrapBody =
+            """{"installationId":"install-1","platform":"android","appVersion":"1.0","locale":"ru-RU"}"""
         val bootstrap = client.post("/api/v1/auth/bootstrap") {
-            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Idempotency-Key", bootstrapKey)
             contentType(ContentType.Application.Json)
-            setBody(
-                """{"installationId":"install-1","platform":"android","appVersion":"1.0","locale":"ru-RU"}""",
-            )
+            setBody(bootstrapBody)
         }
 
         assertEquals(HttpStatusCode.OK, bootstrap.status)
@@ -48,6 +49,24 @@ class IdentityRoutesTest {
         val accessToken = credentials.getValue("accessToken").jsonPrimitive.content
         val refreshToken = credentials.getValue("refreshToken").jsonPrimitive.content
         assertEquals(3, accessToken.split('.').size)
+
+        val bootstrapReplay = client.post("/api/v1/auth/bootstrap") {
+            header("Idempotency-Key", bootstrapKey)
+            contentType(ContentType.Application.Json)
+            setBody(bootstrapBody)
+        }
+        assertEquals(HttpStatusCode.OK, bootstrapReplay.status)
+        assertEquals(bootstrap.bodyAsText(), bootstrapReplay.bodyAsText())
+
+        val bootstrapConflict = client.post("/api/v1/auth/bootstrap") {
+            header("Idempotency-Key", bootstrapKey)
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"installationId":"install-1","platform":"android","appVersion":"1.0","locale":"en-US"}""",
+            )
+        }
+        assertEquals(HttpStatusCode.Conflict, bootstrapConflict.status)
+        assertEquals("idempotency_key_reused", errorCode(bootstrapConflict.bodyAsText()))
 
         val refreshKey = UUID.randomUUID().toString()
         val refresh = client.post("/api/v1/auth/refresh") {

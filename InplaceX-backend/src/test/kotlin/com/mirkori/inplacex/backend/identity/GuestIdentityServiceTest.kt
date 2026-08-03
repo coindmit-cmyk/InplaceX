@@ -23,12 +23,86 @@ import javax.sql.DataSource
 
 class GuestIdentityServiceTest {
     @Test
+    fun `bootstrap replay survives restart and rejects a changed payload`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = testDataSource("bootstrap-replay")
+        val command = bootstrap("installation-bootstrap-replay")
+        val idempotencyKey = "00000000-0000-4000-8000-000000000020"
+        val first = service(clock, dataSource = dataSource).bootstrap(command, idempotencyKey)
+        val replayed = service(clock, dataSource = dataSource).bootstrap(command, idempotencyKey)
+
+        assertEquals(first.playerId, replayed.playerId)
+        assertEquals(first.credentials.accessToken, replayed.credentials.accessToken)
+        assertEquals(first.credentials.refreshToken, replayed.credentials.refreshToken)
+        assertEquals(first.credentials.accessExpiresAt, replayed.credentials.accessExpiresAt)
+        assertEquals(first.credentials.refreshExpiresAt, replayed.credentials.refreshExpiresAt)
+        assertThrows(IdempotencyKeyReusedException::class.java) {
+            service(clock, dataSource = dataSource).bootstrap(
+                command.copy(locale = "en"),
+                idempotencyKey,
+            )
+        }
+    }
+
+    @Test
+    fun `concurrent duplicate bootstrap creates one identity and credential family`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = testDataSource("bootstrap-concurrent")
+        val service = service(clock, dataSource = dataSource)
+        val command = bootstrap("installation-bootstrap-concurrent")
+        val idempotencyKey = "00000000-0000-4000-8000-000000000021"
+        val ready = CountDownLatch(2)
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val futures = List(2) {
+                executor.submit<GuestBootstrapResult> {
+                    ready.countDown()
+                    start.await(5, TimeUnit.SECONDS)
+                    service.bootstrap(command, idempotencyKey)
+                }
+            }
+            assertTrue(ready.await(5, TimeUnit.SECONDS))
+            start.countDown()
+            val results = futures.map { it.get(10, TimeUnit.SECONDS) }
+
+            assertEquals(results[0].playerId, results[1].playerId)
+            assertEquals(results[0].credentials.accessToken, results[1].credentials.accessToken)
+            assertEquals(results[0].credentials.refreshToken, results[1].credentials.refreshToken)
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { statement ->
+                    listOf(
+                        "players",
+                        "guest_installations",
+                        "refresh_token_families",
+                        "refresh_tokens",
+                    ).forEach { table ->
+                        statement.executeQuery("SELECT COUNT(*) FROM $table").use { result ->
+                            result.next()
+                            assertEquals("unexpected rows in $table", 1, result.getInt(1))
+                        }
+                    }
+                    statement.executeQuery(
+                        "SELECT COUNT(*) FROM auth_idempotency_results WHERE operation = 'bootstrap'",
+                    ).use { result ->
+                        result.next()
+                        assertEquals(1, result.getInt(1))
+                    }
+                }
+            }
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `bootstrap reuses guest identity and returns bounded renewable credentials`() {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val service = service(clock)
 
-        val first = service.bootstrap(bootstrap("installation-a"))
-        val repeated = service.bootstrap(bootstrap("installation-a"))
+        val first = service.bootstrapForTest(bootstrap("installation-a"))
+        val repeated = service.bootstrapForTest(bootstrap("installation-a"))
 
         assertEquals(first.playerId, repeated.playerId)
         assertEquals("guest", first.accountKind)
@@ -44,7 +118,7 @@ class GuestIdentityServiceTest {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val dataSource = testDataSource("refresh-replay")
         val service = service(clock, dataSource = dataSource)
-        val bootstrap = service.bootstrap(bootstrap("installation-b"))
+        val bootstrap = service.bootstrapForTest(bootstrap("installation-b"))
         val idempotencyKey = "00000000-0000-4000-8000-000000000010"
 
         val rotated = service.refresh(bootstrap.credentials.refreshToken, idempotencyKey)
@@ -80,7 +154,7 @@ class GuestIdentityServiceTest {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val dataSource = testDataSource("refresh-concurrent")
         val service = service(clock, dataSource = dataSource)
-        val bootstrap = service.bootstrap(bootstrap("installation-concurrent"))
+        val bootstrap = service.bootstrapForTest(bootstrap("installation-concurrent"))
         val idempotencyKey = "00000000-0000-4000-8000-000000000015"
         val ready = CountDownLatch(2)
         val start = CountDownLatch(1)
@@ -102,7 +176,9 @@ class GuestIdentityServiceTest {
             assertEquals(results[0].refreshToken, results[1].refreshToken)
             dataSource.connection.use { connection ->
                 connection.createStatement().use { statement ->
-                    statement.executeQuery("SELECT COUNT(*) FROM auth_idempotency_results").use { result ->
+                    statement.executeQuery(
+                        "SELECT COUNT(*) FROM auth_idempotency_results WHERE operation = 'refresh'",
+                    ).use { result ->
                         result.next()
                         assertEquals(1, result.getInt(1))
                     }
@@ -121,7 +197,7 @@ class GuestIdentityServiceTest {
     fun `expired refresh token is rejected`() {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val service = service(clock)
-        val bootstrap = service.bootstrap(bootstrap("installation-c"))
+        val bootstrap = service.bootstrapForTest(bootstrap("installation-c"))
         clock.advanceSeconds(31L * 24 * 60 * 60)
 
         assertThrows(RefreshTokenRejectedException::class.java) {
@@ -136,7 +212,7 @@ class GuestIdentityServiceTest {
     fun `profile and cloud save return current snapshots on optimistic conflicts and replay saves`() {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val service = service(clock)
-        val playerId = service.bootstrap(bootstrap("installation-d")).playerId
+        val playerId = service.bootstrapForTest(bootstrap("installation-d")).playerId
 
         val changed = service.updateProfile(
             playerId,
@@ -178,7 +254,7 @@ class GuestIdentityServiceTest {
         val sink = RecordingLogSink()
         val service = service(clock, sink)
         val installation = "installation-private-marker"
-        val bootstrap = service.bootstrap(bootstrap(installation))
+        val bootstrap = service.bootstrapForTest(bootstrap(installation))
         service.refresh(
             bootstrap.credentials.refreshToken,
             "00000000-0000-4000-8000-000000000014",
@@ -217,7 +293,7 @@ class GuestIdentityServiceTest {
             }
         }
         val service = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
-        val firstGuest = service.bootstrap(bootstrap("google-installation-a"))
+        val firstGuest = service.bootstrapForTest(bootstrap("google-installation-a"))
         val firstChallenge = service.createGoogleChallenge(firstGuest.playerId)
 
         val linked = service.authenticateWithGoogle(
@@ -236,7 +312,7 @@ class GuestIdentityServiceTest {
             )
         }
 
-        val secondGuest = service.bootstrap(bootstrap("google-installation-b"))
+        val secondGuest = service.bootstrapForTest(bootstrap("google-installation-b"))
         val secondChallenge = service.createGoogleChallenge(secondGuest.playerId)
         val restored = service.authenticateWithGoogle(
             currentPlayerId = secondGuest.playerId,
@@ -269,6 +345,9 @@ class GuestIdentityServiceTest {
         locale = "ru",
         regionHint = "RU",
     )
+
+    private fun GuestIdentityService.bootstrapForTest(command: GuestBootstrapCommand): GuestBootstrapResult =
+        bootstrap(command, java.util.UUID.randomUUID().toString())
 
     private fun service(
         clock: Clock,
