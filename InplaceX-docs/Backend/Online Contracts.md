@@ -287,6 +287,13 @@ game runtime process. A process restart invalidates unfinished invitations and
 active staging matches; durable reconnect across server restarts requires the
 separate persistence milestone.
 
+Migration v5 reserves the normalized PostgreSQL boundary for participants,
+encrypted secrets, turns, private invites, command results, and encrypted
+aggregate state. Recoverable state uses AES-256-GCM with a unique 96-bit IV and
+session-bound authenticated data; tampering or loading ciphertext under a
+different session fails closed. Runtime recovery is enabled only after the
+repository integration supplies its key through managed production secrets.
+
 The process-local state is nevertheless bounded: production runs a sweeper
 every 30 seconds, completed sessions remain readable for 15 minutes, tickets
 for 30 minutes, and expired invites for 15 minutes after their expiry. Removal

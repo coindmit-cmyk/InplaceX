@@ -224,6 +224,9 @@ Recommended session rules:
   - `finished_at`
   - `winner_player_id`
   - `version`
+  - `state_iv`
+  - `state_ciphertext`
+  - `expires_at`
 - `duel_participants`
   - `id`
   - `session_id`
@@ -255,6 +258,14 @@ Recommended session rules:
   - `event_type`
   - `payload_json`
   - `created_at`
+- `private_duel_invites`
+  - owner/guest player IDs
+  - create/accept command IDs
+  - immutable rules JSON
+  - status, session ID, and expiry
+- `online_command_results`
+  - operation, actor, command ID, and request fingerprint
+  - exact response JSON and expiry
 
 ### Billing and ads
 

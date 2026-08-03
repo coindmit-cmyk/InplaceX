@@ -32,6 +32,11 @@ object DatabaseMigrations {
             description = "add persistent auth idempotency results",
             sql = readResource("db/migration/V4__add_auth_idempotency_results.sql"),
         ),
+        SqlMigration(
+            version = "5",
+            description = "add durable online state storage",
+            sql = readResource("db/migration/V5__add_durable_online_state.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(
