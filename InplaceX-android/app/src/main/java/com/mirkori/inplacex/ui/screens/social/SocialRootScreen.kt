@@ -48,6 +48,8 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
+    initialActiveSessionId: String? = null,
+    onActiveSessionChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     showTestFriendBot: Boolean = false,
     requestExitGame: Boolean = false,
@@ -55,13 +57,24 @@ fun SocialRootScreen(
     onInGameChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var activeDestination by remember { mutableStateOf<SocialDestination?>(null) }
+    var activeDestination by remember {
+        mutableStateOf<SocialDestination?>(
+            if (initialActiveSessionId == null) null else SocialDestination.ONLINE_MATCH,
+        )
+    }
 
     LaunchedEffect(activeDestination) {
         onInGameChange(activeDestination != null)
     }
+    LaunchedEffect(onlineRuntime, initialActiveSessionId) {
+        if (initialActiveSessionId != null && onlineRuntime == null) {
+            onActiveSessionChange(null)
+            activeDestination = null
+        }
+    }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
+            onActiveSessionChange(null)
             activeDestination = null
             onExitGameConsumed()
         }
@@ -86,6 +99,8 @@ fun SocialRootScreen(
     ) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
+            initialSessionId = initialActiveSessionId,
+            onActiveSessionChange = onActiveSessionChange,
             entryPoint = if (activeDestination == SocialDestination.INVITES) {
                 OnlineDuelEntryPoint.INVITES
             } else {

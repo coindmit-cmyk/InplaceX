@@ -52,12 +52,22 @@ internal enum class OnlineDuelEntryPoint {
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
+    initialSessionId: String? = null,
+    onActiveSessionChange: (String?) -> Unit = {},
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
-    var state by remember { mutableStateOf<OnlineDuelUiState>(OnlineDuelUiState.Ready) }
+    var state by remember {
+        mutableStateOf<OnlineDuelUiState>(
+            if (initialSessionId == null) {
+                OnlineDuelUiState.Ready
+            } else {
+                OnlineDuelUiState.Loading("Восстанавливаем матч…")
+            },
+        )
+    }
     var digits by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
     val guessSubmission = remember { TransientOperationGate() }
@@ -84,6 +94,25 @@ internal fun OnlineDuelScreen(
                 OnlineDuelUiState.Error("Сервер вернул некорректный ответ")
         }
 
+    fun applySnapshotResult(
+        result: OnlineClientResult<OnlineDuelSnapshotState>,
+    ): OnlineDuelUiState {
+        when (result) {
+            is OnlineClientResult.Success -> onActiveSessionChange(
+                result.value.sessionId.takeUnless { result.value.phase == "finished" },
+            )
+            OnlineClientResult.AuthenticationRequired,
+            OnlineClientResult.MembershipRejected,
+            OnlineClientResult.InvalidResponse,
+            -> onActiveSessionChange(null)
+            OnlineClientResult.RevisionConflict,
+            OnlineClientResult.Offline,
+            OnlineClientResult.TemporarilyUnavailable,
+            -> Unit
+        }
+        return snapshotState(result)
+    }
+
     fun inviteError(result: OnlineClientResult<*>): OnlineDuelUiState.Error =
         OnlineDuelUiState.Error(
             when (result) {
@@ -102,7 +131,8 @@ internal fun OnlineDuelScreen(
         state = if (sessionId == null) {
             OnlineDuelUiState.Error("Сервер не создал комнату")
         } else {
-            snapshotState(runtime.readSession(sessionId))
+            onActiveSessionChange(sessionId)
+            applySnapshotResult(runtime.readSession(sessionId))
         }
     }
 
@@ -119,10 +149,17 @@ internal fun OnlineDuelScreen(
                 if (sessionId == null) {
                     OnlineDuelUiState.Error("Сервер не создал матч")
                 } else {
-                    snapshotState(runtime.readSession(sessionId))
+                    onActiveSessionChange(sessionId)
+                    applySnapshotResult(runtime.readSession(sessionId))
                 }
             }
             else -> inviteError(ticket)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        initialSessionId?.let { sessionId ->
+            state = applySnapshotResult(runtime.readSession(sessionId))
         }
     }
 
@@ -151,6 +188,9 @@ internal fun OnlineDuelScreen(
                     delay(SynchronizationPollMillis)
                     when (val result = runtime.readSession(current.snapshot.sessionId)) {
                         is OnlineClientResult.Success -> {
+                            onActiveSessionChange(
+                                result.value.sessionId.takeUnless { result.value.phase == "finished" },
+                            )
                             if (result.value.revision != current.snapshot.revision) {
                                 state = OnlineDuelUiState.Playing(result.value)
                             }
@@ -158,7 +198,7 @@ internal fun OnlineDuelScreen(
                         OnlineClientResult.Offline,
                         OnlineClientResult.TemporarilyUnavailable,
                         -> Unit
-                        else -> state = snapshotState(result)
+                        else -> state = applySnapshotResult(result)
                     }
                 }
             }
@@ -186,9 +226,9 @@ internal fun OnlineDuelScreen(
                             )
                             if (!guessSubmission.isCurrent(operationId)) return@launch
                             state = if (result == OnlineClientResult.RevisionConflict) {
-                                snapshotState(runtime.readSession(snapshot.sessionId))
+                                applySnapshotResult(runtime.readSession(snapshot.sessionId))
                             } else {
-                                snapshotState(result)
+                                applySnapshotResult(result)
                             }
                         } finally {
                             guessSubmission.finish(operationId)
@@ -198,6 +238,7 @@ internal fun OnlineDuelScreen(
             },
             onBack = {
                 guessSubmission.cancel()
+                onActiveSessionChange(null)
                 state = OnlineDuelUiState.Ready
             },
         )
@@ -454,7 +495,17 @@ internal fun OnlineDuelScreen(
                 Text(current.message, color = MaterialTheme.colorScheme.error)
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { state = OnlineDuelUiState.Ready },
+                    onClick = {
+                        val sessionId = initialSessionId
+                        if (sessionId == null) {
+                            state = OnlineDuelUiState.Ready
+                        } else {
+                            state = OnlineDuelUiState.Loading("Восстанавливаем матч…")
+                            scope.launch {
+                                state = applySnapshotResult(runtime.readSession(sessionId))
+                            }
+                        }
+                    },
                 ) {
                     Text("Попробовать снова")
                 }
@@ -545,9 +596,9 @@ internal fun OnlineDuelScreen(
                                         runtime.submitGuess(snapshot.sessionId, snapshot.revision, submitted)
                                     }
                                     state = if (result == OnlineClientResult.RevisionConflict) {
-                                        snapshotState(runtime.readSession(snapshot.sessionId))
+                                        applySnapshotResult(runtime.readSession(snapshot.sessionId))
                                     } else {
-                                        snapshotState(result)
+                                        applySnapshotResult(result)
                                     }
                                 }
                             },
@@ -576,7 +627,10 @@ internal fun OnlineDuelScreen(
                 if (snapshot.phase == "finished") {
                     Button(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = { state = OnlineDuelUiState.Ready },
+                        onClick = {
+                            onActiveSessionChange(null)
+                            state = OnlineDuelUiState.Ready
+                        },
                     ) {
                         Text("Новый матч")
                     }
