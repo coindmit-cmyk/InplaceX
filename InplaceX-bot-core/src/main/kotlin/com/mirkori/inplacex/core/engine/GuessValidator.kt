@@ -109,8 +109,11 @@ object GuessValidator {
      * Новые компоненты должны использовать [validateOrReason] и локализовать причину.
      */
     fun validateOrMessage(guess: String, config: GameConfig): String? {
-        return when (val reason = validateOrReason(guess, config)) {
-            null -> null
+        return validateOrReason(guess, config)?.toCompatibilityMessage(config)
+    }
+
+    private fun GuessValidationReason.toCompatibilityMessage(config: GameConfig): String {
+        return when (this) {
             GuessValidationReason.INVALID_LENGTH -> "Need ${config.codeLength} digits"
             GuessValidationReason.NON_DIGIT -> "Only digits are allowed"
             GuessValidationReason.DUPLICATE_DIGITS -> "Duplicate digits are forbidden"
