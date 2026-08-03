@@ -59,6 +59,13 @@ short-lived (15 minutes is the default target) and refresh tokens must have a
 bounded lifetime. The exact lifetime may be configured per environment without
 changing the contract.
 
+Refresh rotation is committed in the same database transaction as its
+idempotency result. A retry with the same `Idempotency-Key` and refresh token
+returns the exact committed access/refresh pair, including after a backend
+restart, and is not treated as token theft. Reusing that key with a different
+refresh token returns `409 idempotency_key_reused` without revoking the token
+family. The stored result expires with the refresh family.
+
 The access token carries an issuer, audience, subject (`playerId`), expiry and
 unique token id. The client sends it as `Authorization: Bearer <token>` for
 REST and during the WebSocket handshake. Tokens are never accepted in a query

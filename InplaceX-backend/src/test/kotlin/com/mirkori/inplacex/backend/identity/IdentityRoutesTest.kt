@@ -49,16 +49,34 @@ class IdentityRoutesTest {
         val refreshToken = credentials.getValue("refreshToken").jsonPrimitive.content
         assertEquals(3, accessToken.split('.').size)
 
+        val refreshKey = UUID.randomUUID().toString()
         val refresh = client.post("/api/v1/auth/refresh") {
-            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Idempotency-Key", refreshKey)
             contentType(ContentType.Application.Json)
             setBody("""{"refreshToken":"$refreshToken"}""")
         }
 
         assertEquals(HttpStatusCode.OK, refresh.status)
         val refreshed = Json.parseToJsonElement(refresh.bodyAsText()).jsonObject
-        assertNotEquals(refreshToken, refreshed.getValue("refreshToken").jsonPrimitive.content)
+        val rotatedRefreshToken = refreshed.getValue("refreshToken").jsonPrimitive.content
+        assertNotEquals(refreshToken, rotatedRefreshToken)
         assertEquals(3, refreshed.getValue("accessToken").jsonPrimitive.content.split('.').size)
+
+        val replay = client.post("/api/v1/auth/refresh") {
+            header("Idempotency-Key", refreshKey)
+            contentType(ContentType.Application.Json)
+            setBody("""{"refreshToken":"$refreshToken"}""")
+        }
+        assertEquals(HttpStatusCode.OK, replay.status)
+        assertEquals(refresh.bodyAsText(), replay.bodyAsText())
+
+        val conflictingReuse = client.post("/api/v1/auth/refresh") {
+            header("Idempotency-Key", refreshKey)
+            contentType(ContentType.Application.Json)
+            setBody("""{"refreshToken":"$rotatedRefreshToken"}""")
+        }
+        assertEquals(HttpStatusCode.Conflict, conflictingReuse.status)
+        assertEquals("idempotency_key_reused", errorCode(conflictingReuse.bodyAsText()))
     }
 
     @Test
@@ -184,4 +202,10 @@ class IdentityRoutesTest {
             clock = Clock.fixed(now, ZoneOffset.UTC),
         )
     }
+
+    private fun errorCode(source: String): String = Json.parseToJsonElement(source)
+        .jsonObject
+        .getValue("error")
+        .jsonPrimitive
+        .content
 }

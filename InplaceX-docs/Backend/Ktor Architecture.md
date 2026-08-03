@@ -383,6 +383,9 @@ Responsibilities:
 - `RS256` access tokens with the private key isolated in the identity process;
   the game API verifies with the public key only. See `Auth Process Boundary.md`.
 - refresh token rotation
+- persistent refresh idempotency in the same transaction as token rotation;
+  response payloads are retained only until the refresh family expires and
+  must be protected as credentials at the database boundary
 - never trust client-side scoring
 - never trust client-side entitlement flags
 - never expose opponent secret in setup or active snapshots

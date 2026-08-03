@@ -19,6 +19,11 @@ import java.time.ZoneOffset
 import java.util.Base64
 import java.util.UUID
 import javax.sql.DataSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 enum class GuestPlatform { ANDROID, IOS, DESKTOP, UNKNOWN }
 
@@ -144,21 +149,37 @@ class GuestIdentityService(
         return GuestBootstrapResult(player.playerId, accountKind = "guest", credentials = credentials)
     }
 
-    fun refresh(refreshToken: String): RenewableCredentials {
+    fun refresh(refreshToken: String, idempotencyKey: String): RenewableCredentials {
         require(refreshToken.isNotBlank())
+        require(idempotencyKey.matches(IdempotencyKeyPattern))
         val now = clock.instant()
         val nextRefreshToken = newOpaqueToken()
-        val rotation = identities.rotateRefreshToken(
-            presentedTokenHash = sha256(refreshToken),
+        val presentedTokenHash = sha256(refreshToken)
+        val result = identities.rotateRefreshTokenIdempotent(
+            presentedTokenHash = presentedTokenHash,
             replacementTokenHash = sha256(nextRefreshToken),
+            idempotencyKey = idempotencyKey,
+            requestFingerprint = presentedTokenHash,
             now = now,
+            createResult = { rotation ->
+                val credentials = credentialsFor(
+                    rotation.playerId,
+                    nextRefreshToken,
+                    rotation.refreshExpiresAt,
+                )
+                SerializedIdentityResult(credentials, encodeCredentials(credentials))
+            },
+            restoreResult = ::decodeCredentials,
         ) ?: run {
             logger.warn("GuestIdentity", "refresh token rejected", mapOf("outcome" to "unauthorized"))
             throw RefreshTokenRejectedException()
         }
-        val credentials = credentialsFor(rotation.playerId, nextRefreshToken, rotation.refreshExpiresAt)
-        logger.info("GuestIdentity", "refresh token rotated", mapOf("playerId" to rotation.playerId))
-        return credentials
+        logger.info(
+            "GuestIdentity",
+            "refresh token rotated",
+            mapOf("replayed" to result.replayed.toString()),
+        )
+        return result.value
     }
 
     fun createGoogleChallenge(playerId: String): GoogleAuthChallenge {
@@ -288,6 +309,24 @@ class GuestIdentityService(
         Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
 
+    private fun encodeCredentials(credentials: RenewableCredentials): String = buildJsonObject {
+        put("accessToken", credentials.accessToken)
+        put("refreshToken", credentials.refreshToken)
+        put("accessExpiresAt", credentials.accessExpiresAt.toString())
+        put("refreshExpiresAt", credentials.refreshExpiresAt.toString())
+    }.toString()
+
+    private fun decodeCredentials(source: String): RenewableCredentials {
+        val value = Json.parseToJsonElement(source).jsonObject
+        check(value.keys == CredentialResultFields) { "Invalid stored refresh idempotency result" }
+        return RenewableCredentials(
+            accessToken = value.getValue("accessToken").jsonPrimitive.content,
+            refreshToken = value.getValue("refreshToken").jsonPrimitive.content,
+            accessExpiresAt = Instant.parse(value.getValue("accessExpiresAt").jsonPrimitive.content),
+            refreshExpiresAt = Instant.parse(value.getValue("refreshExpiresAt").jsonPrimitive.content),
+        )
+    }
+
     private fun validateBootstrap(command: GuestBootstrapCommand) {
         require(command.installationId.length in 1..128)
         validateOptional(command.appVersion, 64)
@@ -322,6 +361,13 @@ class GuestIdentityService(
         val GoogleChallengeTtl: Duration = Duration.ofMinutes(5)
         const val MaximumGoogleIdTokenCharacters = 8_192
         val GoogleNoncePattern = Regex("[A-Za-z0-9_-]{32,128}")
+        val IdempotencyKeyPattern = Regex("[A-Za-z0-9._~-]{1,128}")
+        val CredentialResultFields = setOf(
+            "accessToken",
+            "refreshToken",
+            "accessExpiresAt",
+            "refreshExpiresAt",
+        )
     }
 }
 
@@ -393,12 +439,31 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             }
         }
 
-    fun rotateRefreshToken(
+    fun <T> rotateRefreshTokenIdempotent(
         presentedTokenHash: String,
         replacementTokenHash: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
         now: Instant,
-    ): RefreshRotation? = dataSource.transaction { connection ->
-        val token = tokenRecord(connection, presentedTokenHash) ?: return@transaction null
+        createResult: (RefreshRotation) -> SerializedIdentityResult<T>,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T>? = dataSource.transaction { connection ->
+        val token = tokenRecord(connection, presentedTokenHash, lock = true) ?: return@transaction null
+        existingAuthResult(
+            connection = connection,
+            operation = RefreshOperation,
+            actorKey = token.playerId,
+            idempotencyKey = idempotencyKey,
+            now = now,
+        )?.let { existing ->
+            if (existing.requestFingerprint != requestFingerprint) {
+                throw IdempotencyKeyReusedException()
+            }
+            return@transaction IdempotentIdentityResult(
+                value = restoreResult(existing.responseJson),
+                replayed = true,
+            )
+        }
         if (token.revokedAt != null || token.familyExpiresAt <= now || token.tokenExpiresAt <= now) {
             revokeFamily(connection, token.familyId, now)
             return@transaction null
@@ -422,7 +487,24 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
             statement.setInstant(3, token.familyExpiresAt)
             statement.executeUpdate()
         }
-        RefreshRotation(token.playerId, token.familyExpiresAt)
+        val created = createResult(RefreshRotation(token.playerId, token.familyExpiresAt))
+        connection.prepareStatement(
+            """
+            INSERT INTO auth_idempotency_results(
+                operation, actor_key, idempotency_key, request_fingerprint,
+                state, response_json, expires_at
+            ) VALUES (?, ?, ?, ?, 'completed', ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, RefreshOperation)
+            statement.setString(2, token.playerId)
+            statement.setString(3, idempotencyKey)
+            statement.setString(4, requestFingerprint)
+            statement.setString(5, created.responseJson)
+            statement.setInstant(6, token.familyExpiresAt)
+            statement.executeUpdate()
+        }
+        IdempotentIdentityResult(created.value, replayed = false)
     }
 
     fun createGoogleChallenge(
@@ -600,24 +682,59 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         }
     }
 
-    private fun tokenRecord(connection: Connection, tokenHash: String): RefreshTokenRecord? = connection.prepareStatement(
-        """
+    private fun tokenRecord(
+        connection: Connection,
+        tokenHash: String,
+        lock: Boolean = false,
+    ): RefreshTokenRecord? {
+        val lockClause = if (lock) " FOR UPDATE" else ""
+        return connection.prepareStatement(
+            """
         SELECT families.id, families.player_id, families.expires_at AS family_expires_at, families.revoked_at,
                tokens.expires_at AS token_expires_at
         FROM refresh_tokens tokens
         JOIN refresh_token_families families ON families.id = tokens.family_id
         WHERE tokens.token_hash = ?
+        $lockClause
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, tokenHash)
+            statement.executeQuery().use { resultSet ->
+                if (!resultSet.next()) return@use null
+                RefreshTokenRecord(
+                    familyId = resultSet.getString("id"),
+                    playerId = resultSet.getString("player_id"),
+                    familyExpiresAt = resultSet.instant("family_expires_at"),
+                    tokenExpiresAt = resultSet.instant("token_expires_at"),
+                    revokedAt = resultSet.getObject("revoked_at", java.time.OffsetDateTime::class.java)?.toInstant(),
+                )
+            }
+        }
+    }
+
+    private fun existingAuthResult(
+        connection: Connection,
+        operation: String,
+        actorKey: String,
+        idempotencyKey: String,
+        now: Instant,
+    ): StoredAuthIdempotencyResult? = connection.prepareStatement(
+        """
+        SELECT request_fingerprint, response_json
+        FROM auth_idempotency_results
+        WHERE operation = ? AND actor_key = ? AND idempotency_key = ?
+          AND state = 'completed' AND expires_at > ?
         """.trimIndent(),
     ).use { statement ->
-        statement.setString(1, tokenHash)
+        statement.setString(1, operation)
+        statement.setString(2, actorKey)
+        statement.setString(3, idempotencyKey)
+        statement.setInstant(4, now)
         statement.executeQuery().use { resultSet ->
             if (!resultSet.next()) return@use null
-            RefreshTokenRecord(
-                familyId = resultSet.getString("id"),
-                playerId = resultSet.getString("player_id"),
-                familyExpiresAt = resultSet.instant("family_expires_at"),
-                tokenExpiresAt = resultSet.instant("token_expires_at"),
-                revokedAt = resultSet.getObject("revoked_at", java.time.OffsetDateTime::class.java)?.toInstant(),
+            StoredAuthIdempotencyResult(
+                requestFingerprint = resultSet.getString("request_fingerprint"),
+                responseJson = resultSet.getString("response_json"),
             )
         }
     }
@@ -665,11 +782,30 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         val tokenExpiresAt: Instant,
         val revokedAt: Instant?,
     )
+
+    private data class StoredAuthIdempotencyResult(
+        val requestFingerprint: String,
+        val responseJson: String,
+    )
+
+    private companion object {
+        const val RefreshOperation = "refresh"
+    }
 }
 
 data class StoredGuestIdentity(val playerId: String)
 data class StoredGoogleIdentity(val playerId: String, val restoredExistingPlayer: Boolean)
 data class RefreshRotation(val playerId: String, val refreshExpiresAt: Instant)
+
+data class SerializedIdentityResult<T>(
+    val value: T,
+    val responseJson: String,
+)
+
+data class IdempotentIdentityResult<T>(
+    val value: T,
+    val replayed: Boolean,
+)
 
 private fun StoredSaveSnapshot.toCloudSaveSnapshot() = CloudSaveSnapshot(
     saveSchemaVersion = schemaVersion,
