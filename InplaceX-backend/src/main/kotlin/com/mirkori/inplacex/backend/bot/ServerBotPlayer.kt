@@ -6,21 +6,21 @@ import com.mirkori.inplacex.core.bot.BotProfiles
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.engine.ScoreCalculator
-import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.model.GameConfig
+import java.security.SecureRandom
 
-class ServerBotPlayer private constructor(
+class ServerBotPlayer internal constructor(
     val profile: ServerBotProfile,
     val config: GameConfig,
     private val hiddenSecret: String,
-    brainSeed: Long,
+    private val solver: BotSolver,
 ) {
-    private val solver = BotSolver(
-        config = config,
-        difficulty = profile.difficulty,
-        behavior = profile.behavior,
-        seed = brainSeed,
-    )
+    init {
+        require(GuessValidator.validate(hiddenSecret, config)) {
+            "Server bot secret does not match active rules"
+        }
+    }
+
     private val defenseHistory = mutableListOf<ServerBotDefenseResult>()
     private var pendingTurn: ServerBotTurn? = null
     private var solvedOpponentSecret = false
@@ -104,15 +104,7 @@ class ServerBotPlayer private constructor(
             behavior: BotBehaviorModel = BotBehaviorModel.BALANCED,
             botId: String = defaultBotId(difficulty),
             displayName: String = defaultDisplayName(difficulty),
-            secret: String? = null,
-            secretSeed: Long = 0L,
-            brainSeed: Long = 0L,
         ): ServerBotPlayer {
-            val resolvedSecret = secret ?: SecretGenerator.generate(config.copy(seed = secretSeed))
-            require(GuessValidator.validate(resolvedSecret, config)) {
-                "Server bot secret does not match active rules: $resolvedSecret"
-            }
-
             return ServerBotPlayer(
                 profile = ServerBotProfile(
                     botId = botId,
@@ -121,8 +113,13 @@ class ServerBotPlayer private constructor(
                     behavior = behavior,
                 ),
                 config = config,
-                hiddenSecret = resolvedSecret,
-                brainSeed = brainSeed,
+                hiddenSecret = ProductionServerBotEntropy.generateSecret(config),
+                solver = BotSolver(
+                    config = config,
+                    difficulty = difficulty,
+                    behavior = behavior,
+                    seed = ProductionServerBotEntropy.nextBrainSeed(),
+                ),
             )
         }
 
@@ -135,3 +132,39 @@ class ServerBotPlayer private constructor(
         }
     }
 }
+
+internal object ProductionServerBotEntropy {
+    private val secureRandom = SecureRandom()
+
+    fun generateSecret(config: GameConfig): String {
+        repeat(MAX_SECRET_GENERATION_ATTEMPTS) {
+            val candidate = if (config.allowDuplicates) {
+                buildString(config.codeLength) {
+                    repeat(config.codeLength) {
+                        append(secureRandom.nextInt(DIGIT_ALPHABET_SIZE))
+                    }
+                }
+            } else {
+                ('0'..'9').toMutableList().also { digits ->
+                    for (index in digits.lastIndex downTo 1) {
+                        val replacement = secureRandom.nextInt(index + 1)
+                        val current = digits[index]
+                        digits[index] = digits[replacement]
+                        digits[replacement] = current
+                    }
+                }.take(config.codeLength).joinToString("")
+            }
+
+            if (GuessValidator.validate(candidate, config)) {
+                return candidate
+            }
+        }
+
+        error("Unable to generate a secure server bot secret that matches the active rules")
+    }
+
+    fun nextBrainSeed(): Long = secureRandom.nextLong()
+}
+
+private const val DIGIT_ALPHABET_SIZE = 10
+private const val MAX_SECRET_GENERATION_ATTEMPTS = 20_000
