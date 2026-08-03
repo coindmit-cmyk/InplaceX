@@ -139,9 +139,13 @@ class AuthoritativeOnlineDuelServiceTest {
             "0123",
         )
         val secondView = service.readSession(secondPlayer, sessionId)
+        val reconnectedFirstView = service.readSession(playerId, sessionId)
         assertEquals("opponent", firstTurn.currentTurn)
         assertEquals("player", secondView.currentTurn)
+        assertEquals("0123", firstTurn.attempts.single().ownGuess)
+        assertEquals("0123", reconnectedFirstView.attempts.single().ownGuess)
         assertEquals("opponent", secondView.attempts.single().actor)
+        assertNull(secondView.attempts.single().ownGuess)
     }
 
     @Test
@@ -438,6 +442,8 @@ class AuthoritativeOnlineDuelServiceTest {
         assertTrue(turn.revision >= 2)
         assertFalse(turn.attempts.isEmpty())
         assertEquals("player", turn.attempts.first().actor)
+        assertEquals("0123", turn.attempts.first().ownGuess)
+        assertTrue(turn.attempts.filter { it.actor == "opponent" }.all { it.ownGuess == null })
         assertTrue(turn.attempts.none { it.exactMatches !in 0..turn.codeLength })
     }
 

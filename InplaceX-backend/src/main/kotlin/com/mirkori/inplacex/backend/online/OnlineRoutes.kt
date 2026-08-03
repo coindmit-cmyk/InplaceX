@@ -415,6 +415,11 @@ private class OnlineJsonCodec {
                     put("actor", attempt.actor)
                     put("exactMatches", attempt.exactMatches)
                     put("number", attempt.number)
+                    if (attempt.ownGuess == null) {
+                        put("ownGuess", JsonNull)
+                    } else {
+                        put("ownGuess", attempt.ownGuess)
+                    }
                 })
             }
         })

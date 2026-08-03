@@ -37,14 +37,14 @@ class OnlineDuelGameFieldTest {
             attemptLimit = 9,
             allowDuplicates = false,
             attempts = listOf(
-                OnlineDuelAttemptState("player", exactMatches = 2, number = 1),
+                OnlineDuelAttemptState("player", exactMatches = 2, number = 1, ownGuess = "4060"),
                 OnlineDuelAttemptState("opponent", exactMatches = 1, number = 2),
             ),
         )
 
         val uiState = buildOnlineDuelGameFieldState(
             snapshot = snapshot,
-            knownPlayerGuesses = mapOf(1 to "4060"),
+            knownPlayerGuesses = snapshot.knownPlayerGuesses(),
             editor = OnlineDuelEditorState.empty(4),
             inputEnabled = true,
             modeLabel = "Online duel",
@@ -56,6 +56,26 @@ class OnlineDuelGameFieldTest {
         assertEquals(2, uiState.match.attempts.single().score)
         assertEquals(8, uiState.match.attemptsLeft)
         assertEquals(2, uiState.evidence.acceptedAttempts.single().score)
+    }
+
+    @Test
+    fun reconnectSnapshotRestoresOnlyViewerOwnedGuesses() {
+        val snapshot = OnlineDuelSnapshotState(
+            sessionId = "00000000-0000-0000-0000-000000000001",
+            revision = 4,
+            phase = "active",
+            currentTurn = "player",
+            winner = null,
+            codeLength = 4,
+            attemptLimit = 9,
+            allowDuplicates = false,
+            attempts = listOf(
+                OnlineDuelAttemptState("player", exactMatches = 2, number = 1, ownGuess = "4060"),
+                OnlineDuelAttemptState("opponent", exactMatches = 1, number = 2),
+            ),
+        )
+
+        assertEquals(mapOf(1 to "4060"), snapshot.knownPlayerGuesses())
     }
 
     @Test

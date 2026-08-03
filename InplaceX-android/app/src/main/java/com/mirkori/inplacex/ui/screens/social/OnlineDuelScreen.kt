@@ -60,8 +60,6 @@ internal fun OnlineDuelScreen(
     var state by remember { mutableStateOf<OnlineDuelUiState>(OnlineDuelUiState.Ready) }
     var digits by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
-    var guessHistorySessionId by rememberSaveable { mutableStateOf<String?>(null) }
-    var guessHistoryEntries by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val guessSubmission = remember { TransientOperationGate() }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPlayStyleName by rememberSaveable {
@@ -172,11 +170,7 @@ internal fun OnlineDuelScreen(
     val playing = state as? OnlineDuelUiState.Playing
     if (playing?.snapshot?.phase == "active") {
         val snapshot = playing.snapshot
-        val knownPlayerGuesses = if (guessHistorySessionId == snapshot.sessionId) {
-            guessHistoryEntries.toKnownGuessMap()
-        } else {
-            emptyMap()
-        }
+        val knownPlayerGuesses = snapshot.knownPlayerGuesses()
         OnlineDuelGameField(
             snapshot = snapshot,
             knownPlayerGuesses = knownPlayerGuesses,
@@ -191,27 +185,6 @@ internal fun OnlineDuelScreen(
                                 submitted,
                             )
                             if (!guessSubmission.isCurrent(operationId)) return@launch
-                            if (result is OnlineClientResult.Success) {
-                                val previousNumbers = snapshot.attempts
-                                    .asSequence()
-                                    .filter { it.actor == "player" }
-                                    .mapTo(mutableSetOf()) { it.number }
-                                result.value.attempts
-                                    .firstOrNull {
-                                        it.actor == "player" && it.number !in previousNumbers
-                                    }
-                                    ?.let { accepted ->
-                                        if (guessHistorySessionId != snapshot.sessionId) {
-                                            guessHistoryEntries = emptyList()
-                                        }
-                                        guessHistorySessionId = snapshot.sessionId
-                                        guessHistoryEntries = (
-                                            guessHistoryEntries.filterNot {
-                                                it.substringBefore('=') == accepted.number.toString()
-                                            } + "${accepted.number}=$submitted"
-                                        )
-                                    }
-                            }
                             state = if (result == OnlineClientResult.RevisionConflict) {
                                 snapshotState(runtime.readSession(snapshot.sessionId))
                             } else {
@@ -663,6 +636,11 @@ private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val MinimumOnlineCodeLength = 4
 private const val MaximumOnlineCodeLength = 10
 
+internal fun OnlineDuelSnapshotState.knownPlayerGuesses(): Map<Int, String> =
+    attempts.mapNotNull { attempt ->
+        attempt.ownGuess?.let { attempt.number to it }
+    }.toMap()
+
 internal fun normalizeFriendInviteCode(value: String): String =
     value
         .uppercase()
@@ -671,11 +649,3 @@ internal fun normalizeFriendInviteCode(value: String): String =
 
 internal fun formatFriendInviteShareText(template: String, code: String): String =
     template.replace("{code}", code)
-
-private fun List<String>.toKnownGuessMap(): Map<Int, String> =
-    mapNotNull { entry ->
-        val number = entry.substringBefore('=').toIntOrNull() ?: return@mapNotNull null
-        val guess = entry.substringAfter('=', missingDelimiterValue = "")
-        if (guess.isEmpty() || !guess.all(Char::isDigit)) return@mapNotNull null
-        number to guess
-    }.toMap()

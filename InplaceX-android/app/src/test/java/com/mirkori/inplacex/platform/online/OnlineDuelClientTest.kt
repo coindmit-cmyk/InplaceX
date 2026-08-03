@@ -196,6 +196,8 @@ class OnlineDuelClientTest {
         assertEquals(2, snapshot.revision)
         assertEquals("player", snapshot.currentTurn)
         assertEquals(2, snapshot.attempts.size)
+        assertEquals("0123", snapshot.attempts.first().ownGuess)
+        assertEquals(null, snapshot.attempts.last().ownGuess)
         assertTrue(boundary.requests.single().bodyJson == null)
     }
 
@@ -223,6 +225,22 @@ class OnlineDuelClientTest {
         val malformed = snapshot(sessionId).replace(
             "\"participants\":[",
             "\"secret\":\"1234\",\"participants\":[",
+        )
+
+        assertEquals(
+            OnlineClientResult.InvalidResponse,
+            OnlineDuelClient(
+                QueueBoundary(RemoteCallResult.Success(RemoteResponse(200, emptyMap(), malformed))),
+            ).readSession(sessionId),
+        )
+    }
+
+    @Test
+    fun `snapshot parser rejects an opponent raw guess`() = runBlocking {
+        val sessionId = UUID.randomUUID().toString()
+        val malformed = snapshot(sessionId).replace(
+            "\"actor\":\"opponent\",\"exactMatches\":0,\"number\":2,\"ownGuess\":null",
+            "\"actor\":\"opponent\",\"exactMatches\":0,\"number\":2,\"ownGuess\":\"5678\"",
         )
 
         assertEquals(
@@ -268,8 +286,8 @@ class OnlineDuelClientTest {
           "deadlineAtEpochMs":601000,
           "serverTimeEpochMs":2000,
           "attempts":[
-            {"actor":"player","exactMatches":1,"number":1},
-            {"actor":"opponent","exactMatches":0,"number":2}
+            {"actor":"player","exactMatches":1,"number":1,"ownGuess":"0123"},
+            {"actor":"opponent","exactMatches":0,"number":2,"ownGuess":null}
           ],
           "participants":[
             {"actor":"player","secretConfigured":true,"attemptsUsed":1,"attemptsLeft":8},

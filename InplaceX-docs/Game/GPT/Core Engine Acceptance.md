@@ -59,7 +59,9 @@ publishing, or production infrastructure activation.
   the second participant may solve on the matching final turn, otherwise the
   exhausted match ends in an explicit draw. A race still ends as soon as one
   participant exhausts their own attempt budget.
-- Secrets and raw guesses never appear in public snapshots.
+- Secrets and an opponent's raw guesses never appear in a viewer snapshot.
+  An authenticated viewer receives `ownGuess` only for attempts they submitted,
+  so reconnect can rebuild their deduction history without trusting transient UI state.
 - Human matchmaking prefers a waiting player and falls back to a server bot
   only after the configured delay.
 - Private rooms bind exactly two server-owned memberships, creator-selected

@@ -26,6 +26,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -95,7 +96,16 @@ class OnlineRoutesTest {
         }
         assertEquals(HttpStatusCode.OK, turn.status)
         val turnBody = turn.bodyAsText()
-        assertTrue(json(turnBody).getValue("revision").jsonPrimitive.content.toLong() > activeRevision)
+        val turnJson = json(turnBody)
+        assertTrue(turnJson.getValue("revision").jsonPrimitive.content.toLong() > activeRevision)
+        val attempts = turnJson.getValue("attempts").jsonArray
+        assertEquals("001001", attempts.first().jsonObject.getValue("ownGuess").jsonPrimitive.content)
+        assertTrue(
+            attempts
+                .map { it.jsonObject }
+                .filter { it.getValue("actor").jsonPrimitive.content == "opponent" }
+                .all { it.getValue("ownGuess").toString() == "null" },
+        )
         assertFalse(turnBody.contains("111234"))
     }
 
