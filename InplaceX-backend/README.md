@@ -32,6 +32,11 @@ Current state:
   versions in `inplacex_schema_history`
 - JDBC repositories use database constraints, transactional writes, and optimistic
   revisions for cloud saves; session commands are idempotent per client command id
+- when PostgreSQL and the online API are enabled together,
+  `INPLACEX_ONLINE_STATE_KEY_BASE64` is required and must decode to 32 random
+  bytes. The runtime encrypts each recoverable duel aggregate with AES-256-GCM,
+  restores active/recently-finished matches during startup, and preserves exact
+  command replays across a backend restart. Never commit or log this key.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.

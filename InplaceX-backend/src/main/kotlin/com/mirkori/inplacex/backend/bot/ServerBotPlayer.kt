@@ -13,6 +13,7 @@ class ServerBotPlayer internal constructor(
     val profile: ServerBotProfile,
     val config: GameConfig,
     private val hiddenSecret: String,
+    internal val brainSeed: Long,
     private val solver: BotSolver,
 ) {
     init {
@@ -105,6 +106,7 @@ class ServerBotPlayer internal constructor(
             botId: String = defaultBotId(difficulty),
             displayName: String = defaultDisplayName(difficulty),
         ): ServerBotPlayer {
+            val brainSeed = ProductionServerBotEntropy.nextBrainSeed()
             return ServerBotPlayer(
                 profile = ServerBotProfile(
                     botId = botId,
@@ -114,14 +116,33 @@ class ServerBotPlayer internal constructor(
                 ),
                 config = config,
                 hiddenSecret = ProductionServerBotEntropy.generateSecret(config),
+                brainSeed = brainSeed,
                 solver = BotSolver(
                     config = config,
                     difficulty = difficulty,
                     behavior = behavior,
-                    seed = ProductionServerBotEntropy.nextBrainSeed(),
+                    seed = brainSeed,
                 ),
             )
         }
+
+        internal fun restore(
+            profile: ServerBotProfile,
+            config: GameConfig,
+            hiddenSecret: String,
+            brainSeed: Long,
+        ): ServerBotPlayer = ServerBotPlayer(
+            profile = profile,
+            config = config,
+            hiddenSecret = hiddenSecret,
+            brainSeed = brainSeed,
+            solver = BotSolver(
+                config = config,
+                difficulty = profile.difficulty,
+                behavior = profile.behavior,
+                seed = brainSeed,
+            ),
+        )
 
         private fun defaultBotId(difficulty: BotDifficulty): String {
             return "server-bot-${difficulty.name.lowercase()}"

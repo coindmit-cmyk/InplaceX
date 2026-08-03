@@ -227,6 +227,9 @@ Recommended session rules:
   - `state_iv`
   - `state_ciphertext`
   - `expires_at`
+  - runtime writes `state_iv` + `state_ciphertext` atomically with the optimistic
+    `version`; the ciphertext is the recoverable aggregate memento and uses the
+    session id as AES-GCM authenticated data
 - `duel_participants`
   - `id`
   - `session_id`
@@ -372,6 +375,9 @@ This keeps the server simpler:
 - REST remains easy to debug
 - live match updates are still low-latency
 - reconnect can always fall back to `GET /sessions/{id}`
+- PostgreSQL-backed startup restores every non-expired encrypted duel before
+  online routes begin serving requests; decryption or replay inconsistency is a
+  startup error rather than a silent downgrade to empty in-memory state
 
 ## Bot Integration
 

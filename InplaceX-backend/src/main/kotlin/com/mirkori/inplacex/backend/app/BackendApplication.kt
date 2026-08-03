@@ -8,6 +8,7 @@ import com.mirkori.inplacex.backend.health.ReadinessProbe
 import com.mirkori.inplacex.backend.health.configureHealthRoutes
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
+import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionRepository
 import com.mirkori.inplacex.logging.InplaceXLogger
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
@@ -40,10 +41,17 @@ fun Application.backendModule(
         }
     }
     val onlineService = config.online?.let { onlineConfig ->
+        val sessionRepository = database?.let { databaseHandle ->
+            JdbcOnlineSessionRepository(
+                dataSource = databaseHandle.dataSource,
+                cipher = requireNotNull(onlineConfig.stateEncryptionKey).createCipher(),
+            )
+        }
         AuthoritativeOnlineDuelService(
             botFallbackDelay = onlineConfig.botFallbackDelay,
             sweepInterval = Duration.ofSeconds(30),
             logger = logger,
+            sessionRepository = sessionRepository,
         ).also { service ->
             environment.monitor.subscribe(ApplicationStopped) {
                 service.close()
@@ -69,6 +77,7 @@ fun Application.backendModule(
             "port" to config.port.toString(),
             "databaseConfigured" to (database != null).toString(),
             "onlineConfigured" to (onlineService != null).toString(),
+            "onlinePersistenceConfigured" to (database != null && onlineService != null).toString(),
         ),
     )
     configureHealthRoutes(readinessProbe)

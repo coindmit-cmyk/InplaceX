@@ -282,17 +282,23 @@ The invite response repeats `playStyle`, `codeLength`, `allowDuplicates`,
 `maxConsecutiveDuplicateDigits`, and `matchDurationSeconds`, so the guest can
 show the exact owner-selected rules before entering setup.
 
-The initial staging implementation keeps active invite/session state in the
-game runtime process. A process restart invalidates unfinished invitations and
-active staging matches; durable reconnect across server restarts requires the
-separate persistence milestone.
+The online duel aggregate is durable when PostgreSQL is configured. Accepted
+secrets, turns, timers, viewer-specific command replays, and server-bot seed are
+stored in an encrypted aggregate memento. On process startup the runtime loads
+non-expired mementos, reconstructs the domain match by replaying accepted
+commands, and serves the ordinary `GET /api/v1/sessions/{sessionId}` reconnect
+path before accepting the next revision. Waiting matchmaking tickets and
+unaccepted private invitations remain process-local in this package.
 
 Migration v5 reserves the normalized PostgreSQL boundary for participants,
 encrypted secrets, turns, private invites, command results, and encrypted
 aggregate state. Recoverable state uses AES-256-GCM with a unique 96-bit IV and
 session-bound authenticated data; tampering or loading ciphertext under a
-different session fails closed. Runtime recovery is enabled only after the
-repository integration supplies its key through managed production secrets.
+different session fails closed. PostgreSQL online startup therefore requires
+`INPLACEX_ONLINE_STATE_KEY_BASE64`, containing exactly 32 Base64-encoded random
+bytes supplied through managed production secrets. Losing or rotating this key
+without a data migration makes existing recoverable sessions unreadable and
+startup fails closed.
 
 The process-local state is nevertheless bounded: production runs a sweeper
 every 30 seconds, completed sessions remain readable for 15 minutes, tickets

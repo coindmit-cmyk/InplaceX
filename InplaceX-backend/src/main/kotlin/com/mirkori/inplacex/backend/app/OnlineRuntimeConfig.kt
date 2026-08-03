@@ -5,12 +5,14 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.util.Base64
+import com.mirkori.inplacex.backend.online.persistence.OnlineStateCipher
 
 data class OnlineRuntimeConfig(
     val issuer: String,
     val audience: String,
     val verificationKey: PublicKey,
     val botFallbackDelay: Duration,
+    val stateEncryptionKey: OnlineStateEncryptionKey?,
 ) {
     override fun toString(): String =
         "OnlineRuntimeConfig(issuer=$issuer, audience=$audience, verificationKey=[public], " +
@@ -50,11 +52,26 @@ data class OnlineRuntimeConfig(
                 } else {
                     DefaultBotFallbackSeconds
                 }
+            val stateEncryptionKey = environment[StateEncryptionKey]
+                ?.takeIf(String::isNotBlank)
+                ?.let { encodedKey ->
+                    val keyBytes = runCatching { Base64.getDecoder().decode(encodedKey) }
+                        .getOrElse { throw IllegalArgumentException("$StateEncryptionKey is not valid Base64") }
+                    try {
+                        require(keyBytes.size == OnlineStateEncryptionKey.KeyBytes) {
+                            "$StateEncryptionKey must decode to exactly 32 bytes"
+                        }
+                        OnlineStateEncryptionKey(keyBytes)
+                    } finally {
+                        keyBytes.fill(0)
+                    }
+                }
             return OnlineRuntimeConfig(
                 issuer = issuer,
                 audience = audience,
                 verificationKey = key,
                 botFallbackDelay = Duration.ofSeconds(fallbackSeconds),
+                stateEncryptionKey = stateEncryptionKey,
             )
         }
 
@@ -62,9 +79,26 @@ data class OnlineRuntimeConfig(
         const val AudienceKey = "INPLACEX_ONLINE_TOKEN_AUDIENCE"
         const val PublicKeyKey = "INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64"
         const val BotFallbackSecondsKey = "INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS"
+        const val StateEncryptionKey = "INPLACEX_ONLINE_STATE_KEY_BASE64"
         const val DefaultBotFallbackSeconds = 5L
         const val MinimumBotFallbackSeconds = 1L
         const val MaximumBotFallbackSeconds = 60L
+    }
+}
+
+class OnlineStateEncryptionKey(keyMaterial: ByteArray) {
+    private val keyBytes = keyMaterial.copyOf()
+
+    init {
+        require(keyBytes.size == KeyBytes)
+    }
+
+    fun createCipher(): OnlineStateCipher = OnlineStateCipher(keyBytes)
+
+    override fun toString(): String = "OnlineStateEncryptionKey([redacted])"
+
+    companion object {
+        const val KeyBytes = 32
     }
 }
 
