@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 
 from codex_host_readiness import codex_host_readiness
+import authorize_model_limit_retries
+import promote_worker_ready_tasks
 from project_paths import task_file
 
 
@@ -1041,6 +1043,11 @@ PARALLEL_WORK_PARENT_CANCEL_STATUSES = {
     "cancellation_requested",
     "cancelled",
 }
+MODEL_LIMIT_RETRY_AUTO_BATCH_SIZE = 1
+MODEL_LIMIT_RETRY_AUTO_MAX_ATTEMPTS = 3
+MODEL_LIMIT_RETRY_AUTO_COOLDOWN_SECONDS = 1800
+MODEL_LIMIT_RETRY_AUTO_MIN_REMAINING_PERCENT = 10
+MODEL_LIMIT_RETRY_AUTO_MAX_EVIDENCE_AGE_MINUTES = 60
 
 
 def utc_now() -> str:
@@ -1698,6 +1705,77 @@ def unconsumed(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [event for event in events if not event.get("consumed_by")]
 
 
+def apply_model_limit_recovery(
+    queue: dict[str, Any],
+    locks: dict[str, Any] | None,
+    runtime_root: Path,
+    *,
+    batch_size: int = MODEL_LIMIT_RETRY_AUTO_BATCH_SIZE,
+    max_attempts: int = MODEL_LIMIT_RETRY_AUTO_MAX_ATTEMPTS,
+    cooldown_seconds: int = MODEL_LIMIT_RETRY_AUTO_COOLDOWN_SECONDS,
+    min_remaining_percent: int = MODEL_LIMIT_RETRY_AUTO_MIN_REMAINING_PERCENT,
+    max_age_minutes: int = MODEL_LIMIT_RETRY_AUTO_MAX_EVIDENCE_AGE_MINUTES,
+) -> tuple[dict[str, Any], dict[str, Any], bool]:
+    active_locks = authorize_model_limit_retries.active_lock_task_ids(locks)
+    authorized_queue, approved, skipped, counters = authorize_model_limit_retries.process_automatic_queue(
+        queue,
+        active_locks,
+        evidence_root=runtime_root,
+        batch_size=max(0, batch_size),
+        max_attempts=max(1, max_attempts),
+        cooldown_seconds=max(0, cooldown_seconds),
+        min_remaining_percent=max(0, min_remaining_percent),
+        max_age_minutes=max(0, max_age_minutes),
+    )
+    auto_authorized_ids = {str(item.get("task_id") or "").strip() for item in approved}
+    promoted_queue, promoted, promotion_skipped = promote_worker_ready_tasks.process_queue(
+        authorized_queue,
+        active_locks,
+    )
+    promoted_at = authorize_model_limit_retries.utc_now()
+    auto_promotion_summary: list[str] = []
+    for index, task in enumerate(tasks(promoted_queue)):
+        if not isinstance(task, dict):
+            continue
+        tid = task_id(task) or f"index-{index}"
+        if tid not in auto_authorized_ids:
+            continue
+        if task.get("model_limit_retry_source") != "automatic_capacity_recovery":
+            continue
+        if task.get("status") == "planned" and task.get("worker_ready") is True and task.get("dispatcher_decision") == "worker_ready":
+            if tid not in {entry["task_id"] for entry in promoted}:
+                auto_promotion_summary.append(tid)
+            continue
+        task["status"] = "planned"
+        task["worker_ready"] = True
+        task["dispatcher_decision"] = "worker_ready"
+        task["integration_status"] = "worker_ready"
+        task["packet_status"] = "worker_ready"
+        task["normalization_status"] = "worker_ready"
+        task["worker_ready_promoted_at"] = promoted_at
+        task["worker_ready_promoted_by"] = "scripts/agent_control/event_driven_scheduler.py"
+        task["model_limit_retry_recovered"] = True
+        promoted.append({"task_id": tid, "status": "planned", "worker_ready": True})
+        auto_promotion_summary.append(tid)
+        if task.get("not_worker_ready_reason"):
+            task["not_worker_ready_reason"] = None
+
+    changed = promoted_queue != queue
+    if auto_promotion_summary:
+        changed = True
+    summary: dict[str, Any] = {
+        "enabled": True,
+        "approved": approved,
+        "skipped": skipped,
+        "promoted": promoted,
+        "promotion_skipped": promotion_skipped,
+        "counters": counters,
+        "runtime_root": str(runtime_root),
+        "changed": changed,
+    }
+    return promoted_queue, summary, changed
+
+
 def event_id(event: dict[str, Any]) -> str:
     explicit = str(event.get("event_id") or "").strip()
     if explicit:
@@ -1800,6 +1878,8 @@ def is_worker_ready(task: dict[str, Any], completed_ids: set[str] | None = None)
         return False
     if task.get("requires_current_context_review") is True and not has_current_context_verification(task):
         return False
+    if task.get("model_limit_retry_source") == "automatic_capacity_recovery" and task.get("model_limit_retry_allowed") is True:
+        return True
     return (
         has_value(task, "complexity")
         and has_list(task, "allowed_paths")
@@ -2257,6 +2337,7 @@ def decide(project_root: Path, args: argparse.Namespace) -> dict[str, Any]:
     events_path = Path(args.events).resolve() if args.events else task_file(project_root, "agent_events.jsonl")
 
     queue = load_json(queue_path)
+    queue_snapshot = copy.deepcopy(queue)
     history = load_json(history_path)
     locks = load_json(locks_path)
     activity = load_json(activity_path)
@@ -2265,6 +2346,40 @@ def decide(project_root: Path, args: argparse.Namespace) -> dict[str, Any]:
     names = event_names(pending)
     open_pr_stack = args.open_pr_stack
     done_ids = completed_task_ids(queue) | completed_task_ids(history)
+    model_limit_recovery_runtime_root = Path(getattr(args, "runtime_root", Path.home() / "agent-runtime")).expanduser()
+    model_limit_recovery_enabled = bool(getattr(args, "auto_model_limit_retries", False))
+    if model_limit_recovery_enabled:
+        queue, recovery, _ = apply_model_limit_recovery(
+            queue,
+            locks,
+            model_limit_recovery_runtime_root,
+            batch_size=getattr(args, "model_limit_retry_batch_size", MODEL_LIMIT_RETRY_AUTO_BATCH_SIZE),
+            max_attempts=getattr(args, "model_limit_retry_max_attempts", MODEL_LIMIT_RETRY_AUTO_MAX_ATTEMPTS),
+            cooldown_seconds=getattr(args, "model_limit_retry_cooldown_seconds", MODEL_LIMIT_RETRY_AUTO_COOLDOWN_SECONDS),
+            min_remaining_percent=getattr(args, "model_limit_retry_min_remaining_percent", MODEL_LIMIT_RETRY_AUTO_MIN_REMAINING_PERCENT),
+            max_age_minutes=getattr(args, "model_limit_retry_max_age_minutes", MODEL_LIMIT_RETRY_AUTO_MAX_EVIDENCE_AGE_MINUTES),
+        )
+    else:
+        recovery = {
+            "enabled": False,
+            "approved": [],
+            "skipped": [],
+            "promoted": [],
+            "promotion_skipped": [],
+            "counters": {
+                "waiting": 0,
+                "eligible": 0,
+                "authorized": 0,
+                "cooldown": 0,
+                "exhausted": 0,
+                "batch_limited": 0,
+            },
+            "runtime_root": str(model_limit_recovery_runtime_root),
+        }
+
+    if getattr(args, "apply", False) and queue != queue_snapshot:
+        write_json(queue_path, queue)
+
     worker_ready_count = sum(1 for task in tasks(queue) if is_worker_ready(task, done_ids))
     clean_rebuild_worker_ready_count = count_clean_rebuild_worker_ready(queue, done_ids)
     integration_ready_count = count_integration_ready(queue)
@@ -2310,6 +2425,12 @@ def decide(project_root: Path, args: argparse.Namespace) -> dict[str, Any]:
             "active_locks": lock_count,
             "worker_blocking_locks": worker_lock_count,
             "open_pr_stack": open_pr_stack,
+            "model_limit_retry_eligible": recovery.get("counters", {}).get("eligible", 0),
+            "model_limit_retry_authorized": recovery.get("counters", {}).get("authorized", 0),
+            "model_limit_retry_waiting": recovery.get("counters", {}).get("waiting", 0),
+            "model_limit_retry_exhausted": recovery.get("counters", {}).get("exhausted", 0),
+            "model_limit_retry_batch_limited": recovery.get("counters", {}).get("batch_limited", 0),
+            "model_limit_retry_cooldown": recovery.get("counters", {}).get("cooldown", 0),
         },
         "throttle": {
             "worker_creation": open_pr_stack > SOFT_OPEN_PR_LIMIT,
@@ -2324,6 +2445,7 @@ def decide(project_root: Path, args: argparse.Namespace) -> dict[str, Any]:
             "worker_host_reason": worker_host.get("reason"),
             "worker_host_readiness": worker_host,
         },
+        "model_limit_recovery": recovery,
         "event_file": str(events_path),
         "activity_file": str(activity_path),
     }
@@ -2599,6 +2721,14 @@ def main() -> int:
     parser.add_argument("--locks")
     parser.add_argument("--activity")
     parser.add_argument("--open-pr-stack", type=int, default=0)
+    parser.add_argument("--runtime-root", default=str(Path.home() / "agent-runtime"), help="Root containing codex-limits snapshots for model-limit auto recovery.")
+    parser.add_argument("--auto-model-limit-retries", action="store_true", help="Enable automatic model-limit retry recovery in scheduler decision path.")
+    parser.add_argument("--model-limit-retry-batch-size", type=int, default=MODEL_LIMIT_RETRY_AUTO_BATCH_SIZE)
+    parser.add_argument("--model-limit-retry-max-attempts", type=int, default=MODEL_LIMIT_RETRY_AUTO_MAX_ATTEMPTS)
+    parser.add_argument("--model-limit-retry-cooldown-seconds", type=int, default=MODEL_LIMIT_RETRY_AUTO_COOLDOWN_SECONDS)
+    parser.add_argument("--model-limit-retry-min-remaining-percent", type=int, default=MODEL_LIMIT_RETRY_AUTO_MIN_REMAINING_PERCENT)
+    parser.add_argument("--model-limit-retry-max-age-minutes", type=int, default=MODEL_LIMIT_RETRY_AUTO_MAX_EVIDENCE_AGE_MINUTES)
+    parser.add_argument("--apply", action="store_true", help="Persist scheduler-authored model-limit retry updates to task queue.")
     parser.add_argument("--codex-bin", default=os.environ.get("CODEX_BIN", "codex"), help="Codex executable required for worker_run decisions.")
     parser.add_argument("--consume", action="store_true", help="Mark trigger events as consumed by the chosen role.")
     parser.add_argument("--consume-ignored", action="store_true", help="Mark stale ignored unconsumed events as consumed by scheduler_ignored.")

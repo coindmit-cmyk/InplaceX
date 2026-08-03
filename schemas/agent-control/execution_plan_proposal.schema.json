@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aistudio.local/agent-control/execution_plan_proposal.schema.json",
+  "title": "AIStudio Execution Plan Proposal",
+  "description": "Untrusted role-authored analytical DAG input. This contract conveys no model, permission, scheduling, launch, merge, or release authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 127
+    },
+    "canonical_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "stage", "project_id"],
+      "properties": {
+        "role": {"$ref": "#/$defs/id"},
+        "stage": {"$ref": "#/$defs/id"},
+        "project_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "authority_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_granted",
+        "role_permissions_changed",
+        "approval_gates_bypassed",
+        "worker_ready_changed",
+        "merge_authority_granted",
+        "release_authority_granted",
+        "recurring_automation_changed"
+      ],
+      "properties": {
+        "authority_granted": {"const": false},
+        "role_permissions_changed": {"const": false},
+        "approval_gates_bypassed": {"const": false},
+        "worker_ready_changed": {"const": false},
+        "merge_authority_granted": {"const": false},
+        "release_authority_granted": {"const": false},
+        "recurring_automation_changed": {"const": false}
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_refs", "exclusive_keys"],
+      "properties": {
+        "read_refs": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "exclusive_keys": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^*?\\[\\]]+$"
+          }
+        }
+      }
+    },
+    "work_unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "acceptance_criteria",
+        "target_role",
+        "target_stage",
+        "capability_profile",
+        "resources"
+      ],
+      "oneOf": [
+        {"required": ["work_unit_id"], "not": {"required": ["id"]}},
+        {"required": ["id"], "not": {"required": ["work_unit_id"]}}
+      ],
+      "properties": {
+        "work_unit_id": {"$ref": "#/$defs/id"},
+        "id": {
+          "$ref": "#/$defs/id",
+          "description": "Legacy id alias normalized to work_unit_id by the compiler."
+        },
+        "order": {"type": "integer", "minimum": 0},
+        "criticality": {"enum": ["required", "optional"]},
+        "objective": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "target_role": {"$ref": "#/$defs/id"},
+        "target_stage": {"$ref": "#/$defs/id"},
+        "capability_profile": {
+          "description": "Advisory capability need only; the central Router remains authoritative and may override it.",
+          "enum": [
+            "efficient",
+            "balanced",
+            "deep",
+            "maximum_coherent",
+            "delegated_deep"
+          ]
+        },
+        "access_mode": {"const": "read_only"},
+        "mutation_allowed": {"const": false},
+        "external_mutation": {"const": false},
+        "spawn_children": {"const": false},
+        "inherit_parent_authority": {"const": false},
+        "write_paths": {"type": "array", "maxItems": 0},
+        "resources": {"$ref": "#/$defs/resources"},
+        "expected_result_schema": {
+          "const": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json"
+        },
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+        "depends_on": {
+          "type": "array",
+          "maxItems": 512,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"},
+          "description": "Legacy untyped dependencies; the compiler normalizes each to success."
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "type"],
+      "properties": {
+        "from": {"$ref": "#/$defs/id"},
+        "to": {"$ref": "#/$defs/id"},
+        "type": {
+          "enum": [
+            "success",
+            "completion",
+            "artifact_ready",
+            "approval",
+            "integration_accepted"
+          ]
+        }
+      }
+    },
+    "barrier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["members"],
+      "oneOf": [
+        {"required": ["barrier_id"], "not": {"required": ["id"]}},
+        {"required": ["id"], "not": {"required": ["barrier_id"]}}
+      ],
+      "properties": {
+        "barrier_id": {"$ref": "#/$defs/id"},
+        "id": {"$ref": "#/$defs/id"},
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "required_members": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "release_condition": {
+          "enum": [
+            "all_required_success",
+            "all_completion",
+            "approval",
+            "integration_accepted"
+          ]
+        },
+        "bypass_allowed": {"const": false}
+      }
+    },
+    "revision_change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "progress_denominator_changed",
+        "reason",
+        "approved_before_execution"
+      ],
+      "properties": {
+        "progress_denominator_changed": {"type": "boolean"},
+        "reason": {"type": "string", "minLength": 1},
+        "approved_before_execution": {
+          "description": "Role proposals cannot attest approval. A denominator-changing revision must leave this path for Dispatcher review.",
+          "const": false
+        }
+      }
+    }
+  },
+  "required": [
+    "contract_version",
+    "contract_kind",
+    "proposal_id",
+    "correlation_id",
+    "producer",
+    "created_at",
+    "revision",
+    "supersedes",
+    "digest_profile",
+    "authority_guard",
+    "plan_id",
+    "risk",
+    "requested_lanes",
+    "max_attempts_per_unit",
+    "child_depth",
+    "work_units",
+    "dependencies",
+    "barriers"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "contract_kind": {"const": "execution_plan_proposal"},
+    "proposal_id": {"$ref": "#/$defs/id"},
+    "correlation_id": {"$ref": "#/$defs/id"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "revision": {"type": "integer", "minimum": 1},
+    "supersedes": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/id"}
+      ]
+    },
+    "digest_profile": {"const": "jcs-sha256-v1"},
+    "authority_guard": {"$ref": "#/$defs/authority_guard"},
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journal_ref"],
+      "properties": {
+        "journal_ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "plan_id": {"$ref": "#/$defs/id"},
+    "risk": {"enum": ["low", "medium", "high", "critical"]},
+    "requested_lanes": {"type": "integer", "minimum": 2, "maximum": 64},
+    "max_attempts_per_unit": {"type": "integer", "minimum": 1, "maximum": 2},
+    "child_depth": {"const": 1},
+    "work_units": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/work_unit"}
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {"$ref": "#/$defs/dependency"}
+    },
+    "barriers": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/barrier"}
+    },
+    "cancellation_grace_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300
+    },
+    "revision_change": {"$ref": "#/$defs/revision_change"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"revision": {"const": 1}}, "required": ["revision"]},
+      "then": {
+        "properties": {"supersedes": {"type": "null"}},
+        "not": {"required": ["revision_change"]}
+      }
+    },
+    {
+      "if": {"properties": {"revision": {"minimum": 2}}, "required": ["revision"]},
+      "then": {
+        "required": ["revision_change"],
+        "properties": {"supersedes": {"$ref": "#/$defs/id"}}
+      }
+    }
+  ]
+}

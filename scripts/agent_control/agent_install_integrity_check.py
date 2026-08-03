@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_OPTIONAL_IMPORTS = {"pexpect", "psutil"}
+DEFAULT_OPTIONAL_IMPORTS = {"fcntl", "msvcrt", "pexpect", "psutil", "resource", "scripts"}
 IGNORED_DIRS = {"__pycache__"}
 REQUIRED_LOCAL_IMPORTS = {"validators"}
 

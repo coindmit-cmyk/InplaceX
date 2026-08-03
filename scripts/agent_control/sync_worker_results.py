@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from process_log import append_log
-from project_paths import task_file
+from project_paths import task_file, task_relpath
 
 
 DEFAULT_PREFIXES = (
@@ -2209,13 +2209,20 @@ def repair_existing_review_locks(
     return lock_changed, queue_changed
 
 
+def queue_git_relpath(project_root: Path, queue_path: Path) -> str:
+    try:
+        return queue_path.relative_to(project_root).as_posix()
+    except ValueError:
+        return task_relpath(project_root, "task_queue.json")
+
+
 def sync(project_root: Path, args: argparse.Namespace) -> dict[str, Any]:
     if args.fetch:
         run_git(project_root, ["fetch", "--prune", "origin"])
 
     queue_path = Path(args.queue).resolve() if args.queue else task_file(project_root, "task_queue.json")
     locks_path = Path(args.locks).resolve() if args.locks else task_file(project_root, "agent_locks.json")
-    queue_relpath = queue_path.relative_to(project_root).as_posix()
+    queue_relpath = queue_git_relpath(project_root, queue_path)
     queue = load_json(queue_path)
     locks = load_json(locks_path)
     misclassified_report_cleanup = cleanup_misclassified_imported_reports(

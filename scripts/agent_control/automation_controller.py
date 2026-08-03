@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import uuid
@@ -19,6 +20,7 @@ import claim_next_task
 import fast_track_gate
 import model_resource_router
 import runner_readiness_report
+from task_control_cutover import TaskControlConfigurationError, database_for, load_runtime_config
 from action_report import build_report as build_action_report
 from action_report import validate_report as validate_action_report
 
@@ -389,6 +391,46 @@ def load_projects(registry_path: Path, project_id: str | None = None) -> list[di
     return projects
 
 
+def effective_task_control_config(explicit: str = "") -> str:
+    value = str(explicit or os.environ.get("AISTUDIO_TASK_CONTROL_CONFIG") or "").strip()
+    if value:
+        return str(Path(value).expanduser())
+    default = Path("~/.config/aistudio/task-control.json").expanduser()
+    return str(default) if default.is_file() else ""
+
+
+def task_control_cutover_active(
+    config_path: str,
+    *,
+    verify_database: bool = False,
+) -> bool:
+    if not config_path:
+        if verify_database:
+            raise TaskControlConfigurationError(
+                "apply-capable automation requires an explicit Task Control authority config"
+            )
+        return False
+    config = load_runtime_config(Path(config_path))
+    configured_authority = (config.mode, config.source_of_truth, config.cutover_enabled)
+    if verify_database:
+        health = database_for(config).health()
+        database_authority = (
+            health.get("mode"),
+            health.get("source_of_truth"),
+            health.get("cutover_enabled"),
+        )
+        if database_authority != configured_authority:
+            raise TaskControlConfigurationError(
+                "task control config authority does not match database authority: "
+                f"config={configured_authority!r}, database={database_authority!r}"
+            )
+    return configured_authority == (
+        "cutover",
+        "postgres",
+        True,
+    )
+
+
 def manual_command(
     project: dict[str, Any],
     runtime_root: Path,
@@ -397,6 +439,7 @@ def manual_command(
     max_total_workers: int = 1,
     max_tasks_per_lane: int = 1,
     model_limit_retry_limit: int = 5,
+    task_control_config: str = "",
 ) -> list[str]:
     refs = project_ref_model(project)
     command = [sys.executable, str(script_path("run_manual_automation.py")), "--runtime-root", str(runtime_root), "--project-id", str(project["project_id"]), "--project-root", str(project_command_root(project)), "--base-ref", refs["code_base_ref"], "--base-branch", refs["push_ref"], "--mode", mode, "--json"]
@@ -406,14 +449,34 @@ def manual_command(
         command.extend(["--max-tasks-per-lane", str(max(0, int(max_tasks_per_lane)))])
     if mode == "model_limit_retries":
         command.extend(["--model-limit-retry-limit", str(max(0, int(model_limit_retry_limit)))])
+    if task_control_config:
+        command.extend(["--task-control-config", task_control_config])
     if apply:
         command.append("--apply")
     return command
 
 
-def one_task_command(project: dict[str, Any], runtime_root: Path, task_id: str, worker_id: str, apply: bool) -> list[str]:
+def one_task_command(
+    project: dict[str, Any],
+    runtime_root: Path,
+    task_id: str,
+    worker_id: str,
+    apply: bool,
+    task_control_config: str = "",
+) -> list[str]:
     refs = project_ref_model(project)
     project_root = project_command_root(project)
+    task_control_config = effective_task_control_config(task_control_config)
+    if task_control_cutover_active(task_control_config, verify_database=apply):
+        command = manual_command(
+            project,
+            runtime_root,
+            "one_task",
+            apply,
+            task_control_config=task_control_config,
+        )
+        command.extend(["--task-id", task_id, "--worker-id", worker_id])
+        return command
     command = [sys.executable, str(script_path("run_worker_cycle.py")), "--project-root", str(project_root), "--base-ref", refs["code_base_ref"], "--push-ref", refs["push_ref"], "--worker-base-ref", refs["code_base_ref"], "--worker-context-ref", refs["state_ref"], "--worker-id", worker_id, "--task-id", task_id, "--machine-id", "aistudio-controller", "--runtime-root", str(runtime_root), "--json"]
     queue_path = project_root / str(project.get("task_queue_path") or "AiStudio/Task_manager/task_queue.json")
     if queue_path.is_file():
@@ -673,9 +736,25 @@ def build_plan(args: argparse.Namespace, projects: list[dict[str, Any]]) -> list
             raise ValueError(f"{args.mode} mode requires exactly one --project-id")
         if not args.task_id:
             raise ValueError(f"{args.mode} mode requires --task-id")
-        decision = fast_track_decision(projects[0], args.task_id, args.worker_id) if args.mode == "fast-track" else None
+        task_control_config = effective_task_control_config(args.task_control_config)
+        cutover_active = task_control_cutover_active(
+            task_control_config,
+            verify_database=args.apply,
+        )
+        decision = (
+            fast_track_decision(projects[0], args.task_id, args.worker_id)
+            if args.mode == "fast-track" and not cutover_active
+            else None
+        )
         command = (
-            one_task_command(projects[0], Path(args.runtime_root).expanduser(), args.task_id, args.worker_id, args.apply)
+            one_task_command(
+                projects[0],
+                Path(args.runtime_root).expanduser(),
+                args.task_id,
+                args.worker_id,
+                args.apply,
+                task_control_config,
+            )
             if decision is None or decision["eligible"]
             else None
         )
@@ -700,6 +779,7 @@ def build_plan(args: argparse.Namespace, projects: list[dict[str, Any]]) -> list
                 args.max_total_workers,
                 args.max_tasks_per_lane,
                 args.model_limit_retry_limit,
+                args.task_control_config,
             ),
         }
         for project in projects
@@ -807,6 +887,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--registry", required=True, help="Project registry JSON path.")
     parser.add_argument("--host-id", help="Registered host id required for apply-capable automation.")
     parser.add_argument("--runtime-root", default="~/agent-runtime")
+    parser.add_argument("--task-control-config", default="")
     parser.add_argument("--mode", default="plan", choices=sorted(MODES))
     parser.add_argument("--project-id")
     parser.add_argument("--role", default="all", choices=sorted(ROLE_MODES))
@@ -838,6 +919,11 @@ def main() -> int:
         projects = load_projects(Path(args.registry).expanduser(), args.project_id)
         plan = build_plan(args, projects)
         root_diagnostics = command_root_diagnostics(projects)
+        task_control_config = effective_task_control_config(args.task_control_config)
+        cutover_active = task_control_cutover_active(
+            task_control_config,
+            verify_database=args.apply and args.mode != "worktrees",
+        )
     except Exception as exc:
         payload = {"schema_version": "1.0", "run_id": run_id, "state": "rejected", "mode": args.mode, "apply": bool(args.apply), "started_at": started_at, "finished_at": now_utc(), "error": str(exc)}
         write_controller_outputs(args, report_path, payload)
@@ -904,8 +990,14 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else payload["error"])
         return 2
     recovery_authority = fleet_authority_preflight(args)
-    preflight_recoveries = recover_lifecycle_state_commits(args, projects, recovery_authority)
-    worker_readiness_blockers = worker_readiness_preflight_blockers(args, projects)
+    preflight_recoveries = (
+        []
+        if cutover_active
+        else recover_lifecycle_state_commits(args, projects, recovery_authority)
+    )
+    worker_readiness_blockers = (
+        [] if cutover_active else worker_readiness_preflight_blockers(args, projects)
+    )
     if worker_readiness_blockers and not isolate_preflight_failures:
         finished_at = now_utc()
         payload = {
@@ -933,7 +1025,7 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else payload["error"])
         return 2
     preflight = None
-    if args.apply and args.mode in {"one-task", "fast-track"}:
+    if args.apply and args.mode in {"one-task", "fast-track"} and not cutover_active:
         preflight = worker_lock_preflight(projects[0])
         if not preflight.get("ok"):
             finished_at = now_utc()
@@ -1027,7 +1119,7 @@ def main() -> int:
         if isolate_preflight_failures
         else (plan, [])
     )
-    payload = {"schema_version": "1.0", "run_id": run_id, "state": "planned" if not args.apply else "running", "mode": args.mode, "role": args.role, "project_id": args.project_id, "task_id": args.task_id, "worker_id": args.worker_id, "host_id": args.host_id, "apply": bool(args.apply), "model_limit_retry_limit": max(0, int(args.model_limit_retry_limit)), "started_at": started_at, "updated_at": started_at, "project_count": len(projects), "runnable_project_count": len(runnable_plan), "planned_commands": plan, "results": [], "isolated_projects": isolated_projects, "preflight": preflight, "fleet_authority": authority, "preflight_recoveries": preflight_recoveries, "command_root_diagnostics": root_diagnostics, "command_root_blockers": root_blockers, "runner_readiness_blockers": worker_readiness_blockers, "entry_preflight_blockers": entry_blockers}
+    payload = {"schema_version": "1.0", "run_id": run_id, "state": "planned" if not args.apply else "running", "mode": args.mode, "role": args.role, "project_id": args.project_id, "task_id": args.task_id, "worker_id": args.worker_id, "host_id": args.host_id, "apply": bool(args.apply), "model_limit_retry_limit": max(0, int(args.model_limit_retry_limit)), "started_at": started_at, "updated_at": started_at, "project_count": len(projects), "runnable_project_count": len(runnable_plan), "planned_commands": plan, "results": [], "isolated_projects": isolated_projects, "preflight": preflight, "task_control_cutover_active": cutover_active, "fleet_authority": authority, "preflight_recoveries": preflight_recoveries, "command_root_diagnostics": root_diagnostics, "command_root_blockers": root_blockers, "runner_readiness_blockers": worker_readiness_blockers, "entry_preflight_blockers": entry_blockers}
     write_controller_outputs(args, report_path, payload)
     if not args.apply and args.mode != "worktrees":
         finished_at = now_utc()

@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.1.0",
+  "correlation_id": "corr:nrr:terminal:0001",
+  "producer": {
+    "project_id": "ai-project-agent",
+    "role": "finalizer",
+    "stage": "complete",
+    "contract_mode": "strict",
+    "output_class": "owner_visible_response"
+  },
+  "next_run": "none",
+  "router_decision": {
+    "status": "terminal_none",
+    "policy_version": "1.1",
+    "decided_at": "2026-07-15T10:32:00Z",
+    "decision_id": "router:decision:0003",
+    "router_decision_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "execution_evidence": {
+    "status": "not_applicable",
+    "reconciliation_status": "not_applicable"
+  },
+  "authority_guard": {
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed_by_recommendation": false,
+    "delegation_authority_ref": null
+  },
+  "presentation": {
+    "footer_required": true,
+    "variant": "terminal",
+    "debug_details_available": false,
+    "locale": "ru"
+  },
+  "audit": {
+    "journal_ref": "runtime/agent-control/routing-journal.jsonl",
+    "warnings": []
+  }
+}

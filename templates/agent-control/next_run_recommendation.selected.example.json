@@ -1,0 +1,77 @@
+{
+  "contract_version": "1.1.0",
+  "correlation_id": "corr:nrr:selected:0001",
+  "producer": {
+    "project_id": "ai-project-agent",
+    "role": "director",
+    "stage": "project-reality",
+    "contract_mode": "strict",
+    "output_class": "owner_visible_response"
+  },
+  "next_run": "recommended",
+  "next_run_recommendation": {
+    "next_role": "worker",
+    "next_stage": "contract-schema",
+    "capability_profile": "deep",
+    "reasoning_effort": "extra_high",
+    "delegation": "forbidden",
+    "complexity": "L",
+    "risk": "high",
+    "context_coherence": "high",
+    "confidence": 0.94,
+    "rationale": [
+      "repository schema and semantic validator must remain consistent",
+      "legacy compatibility is safety-critical"
+    ],
+    "independent_work_units": 1,
+    "synthesis_required": false,
+    "hop_count": 0,
+    "escalation_budget": 2,
+    "fallback": {
+      "capability_profile": "balanced",
+      "reasoning_effort": "high"
+    }
+  },
+  "router_decision": {
+    "status": "selected",
+    "policy_version": "1.1",
+    "decided_at": "2026-07-15T10:30:00Z",
+    "decision_id": "router:decision:0001",
+    "router_decision_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "selected": {
+      "capability_profile": "deep",
+      "model_id": "gpt-5.6-terra",
+      "reasoning_effort": "extra_high",
+      "delegation": "forbidden",
+      "parallel_lanes": 1,
+      "cost_class": "premium",
+      "selected_route_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "override": {
+      "applied": false,
+      "direction": "none"
+    },
+    "limits_snapshot_ref": "runtime/codex-limits/latest.json",
+    "delegation_authorized": false
+  },
+  "execution_evidence": {
+    "status": "not_started",
+    "reconciliation_status": "pending"
+  },
+  "authority_guard": {
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed_by_recommendation": false,
+    "delegation_authority_ref": null
+  },
+  "presentation": {
+    "footer_required": true,
+    "variant": "normal",
+    "debug_details_available": true,
+    "locale": "ru"
+  },
+  "audit": {
+    "journal_ref": "runtime/agent-control/routing-journal.jsonl",
+    "warnings": []
+  }
+}

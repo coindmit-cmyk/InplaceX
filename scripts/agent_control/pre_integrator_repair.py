@@ -174,10 +174,17 @@ def manual_review_task_ids(project_root: Path, *, reprocess_integrator_review: b
         integration_status = str(task.get("integration_status") or "").strip()
         decision = str(task.get("dispatcher_decision") or "").strip()
         owner = str(task.get("next_owner") or "").strip().lower()
+        ownership_disposition = task.get("ownership_disposition")
+        ownership_action = (
+            str(ownership_disposition.get("action") or "").strip().lower()
+            if isinstance(ownership_disposition, dict)
+            else ""
+        )
         hard_manual_route = (
             status == "needs_human"
             or integration_status == "needs_human"
             or owner in {"human", "owner", "manual"}
+            or ownership_action == "semantic_review"
         )
         integrator_review_route = (
             integration_status == "needs_integrator_review"

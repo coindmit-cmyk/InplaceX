@@ -28,6 +28,10 @@ from codex_model_capability import default_catalog_path
 import execution_lease_manager
 from process_log import append_log
 from project_paths import task_manager_dir
+from task_control_postgres import (
+    TaskControlConfigurationError,
+    TaskControlPostgres,
+)
 from uuid import uuid4
 
 
@@ -183,8 +187,8 @@ def codex_executable_available(codex_bin: str) -> bool:
     return codex_host_readiness(codex_bin, require_auth=False).ok
 
 
-def codex_worker_host_readiness(codex_bin: str) -> dict[str, Any]:
-    return codex_host_readiness(codex_bin).to_dict()
+def codex_worker_host_readiness(codex_bin: str, model: str | None = None) -> dict[str, Any]:
+    return codex_host_readiness(codex_bin, model=model).to_dict()
 
 
 def run_command(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
@@ -425,6 +429,16 @@ def reset_launch_failed_claim(state_root: Path, claim: dict[str, Any], reason: s
 
 
 def commit_and_push_state(state_root: Path, push_ref: str, message: str) -> dict[str, Any]:
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") == "postgres":
+        return {
+            "state_root": str(state_root),
+            "push_ref": push_ref,
+            "committed": False,
+            "pushed": False,
+            "persisted_in_runtime_mirror": True,
+            "session_id": os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID"),
+            "commands": [],
+        }
     rel_paths = [
         str(task_manager_dir(state_root).relative_to(state_root) / "task_queue.json"),
         str(task_manager_dir(state_root).relative_to(state_root) / "agent_locks.json"),
@@ -846,6 +860,103 @@ def update_worker_task_result(
     return changed
 
 
+def record_worker_integration_candidate(
+    state_root: Path,
+    task_id: str,
+    launch: dict[str, Any],
+    finalize_result: dict[str, Any],
+) -> bool:
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") != "postgres":
+        return False
+    queue_path = task_manager_dir(state_root) / "task_queue.json"
+    queue = load_json(queue_path) if queue_path.exists() else None
+    if not isinstance(queue, dict):
+        return False
+    head_sha = str(finalize_result.get("head_sha") or "").strip().lower()
+    base_sha = str(launch.get("base_ref_sha") or "").strip().lower()
+    branch = str(finalize_result.get("branch") or launch.get("branch") or "").strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", head_sha) or not re.fullmatch(r"[0-9a-f]{40}", base_sha) or not branch:
+        return False
+    for task in queue.get("tasks") or []:
+        if not isinstance(task, dict) or str(task.get("id") or task.get("task_id") or "") != task_id:
+            continue
+        project_id = os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip()
+        task["integration_candidate"] = {
+            "candidate_id": worker_integration_candidate_id(
+                project_id or state_root.name,
+                task_id,
+                branch,
+            ),
+            "state": "ready",
+            "base_branch": str(launch.get("base_ref") or "develop").removeprefix("origin/"),
+            "base_sha": base_sha,
+            "work_branch": branch,
+            "head_sha": head_sha,
+            "changed_paths": [str(path) for path in finalize_result.get("changed_paths") or []],
+            "evidence": {
+                "source": "run_worker_cycle",
+                "worker_report": finalize_result.get("worker_report"),
+                "pushed": finalize_result.get("pushed") is True,
+            },
+        }
+        queue["updated_at"] = utc_now()
+        write_json(queue_path, queue)
+        return True
+    return False
+
+
+def worker_integration_candidate_id(
+    project_id: str,
+    task_id: str,
+    work_branch: str,
+) -> str:
+    identity = f"{project_id}\n{work_branch}\n{task_id}".encode("utf-8")
+    return f"worker-{hashlib.sha256(identity).hexdigest()[:24]}"
+
+
+def record_sql_worker_integration_candidate(
+    task_id: str,
+    launch: dict[str, Any],
+    finalize_result: dict[str, Any],
+    *,
+    state: str,
+) -> dict[str, Any] | None:
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() != "postgres":
+        return None
+    project_id = os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip()
+    session_id = os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID", "").strip()
+    dsn_env = os.environ.get("AISTUDIO_TASK_DB_DSN_ENV", "").strip()
+    dsn = os.environ.get(dsn_env, "") if dsn_env else ""
+    if not project_id or not session_id or not dsn:
+        raise TaskControlConfigurationError(
+            "SQL worker candidate requires project, session, and configured DSN"
+        )
+    head_sha = require_commit_sha(finalize_result.get("head_sha"), "worker head_sha")
+    base_sha = require_commit_sha(launch.get("base_ref_sha"), "worker base_ref_sha")
+    branch = str(finalize_result.get("branch") or launch.get("branch") or "").strip()
+    if not branch:
+        raise TaskControlConfigurationError("SQL worker candidate requires work branch")
+    worker_report = str(finalize_result.get("worker_report") or "").strip()
+    return TaskControlPostgres(dsn).upsert_integration_candidate(
+        project_id,
+        task_id,
+        candidate_id=worker_integration_candidate_id(project_id, task_id, branch),
+        state=state,
+        base_branch=str(launch.get("base_ref") or "develop").removeprefix("origin/"),
+        base_sha=base_sha,
+        work_branch=branch,
+        head_sha=head_sha,
+        session_id=session_id,
+        changed_paths=[str(path) for path in finalize_result.get("changed_paths") or []],
+        evidence={
+            "source": "run_worker_cycle",
+            "session_id": session_id,
+            "worker_report": worker_report or None,
+            "pushed": state == "ready",
+        },
+    )
+
+
 def write_worker_report(worktree: Path, launch: dict[str, Any], task_id: str) -> Path:
     report_dir = worktree / "docs" / "reports" / "workers"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -925,7 +1036,7 @@ def changed_paths_from_porcelain(status_out: str) -> list[str]:
 
 
 def task_allowed_paths(worktree: Path, task_id: str) -> list[str]:
-    queue_path = worktree / WORKER_QUEUE_REL
+    queue_path = task_manager_dir(worktree) / "task_queue.json"
     try:
         queue = json.loads(queue_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1373,6 +1484,27 @@ def finalize_worker_branch(
     worktree = Path(str(launch.get("worktree") or "")).resolve()
     branch = str(launch.get("branch") or "").strip()
     result: dict[str, Any] = {"worktree": str(worktree), "branch": branch, "committed": False, "pushed": False, "commands": []}
+
+    def persist_sql_candidate(state: str) -> bool:
+        try:
+            candidate = record_sql_worker_integration_candidate(
+                task_id,
+                launch,
+                result,
+                state=state,
+            )
+        except Exception as exc:
+            result["error"] = f"SQL worker integration candidate {state} record failed: {exc}"
+            result["sql_integration_candidate_error"] = {
+                "state": state,
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+            }
+            result["recovery_required"] = state == "ready"
+            return False
+        if candidate is not None:
+            result["sql_integration_candidate"] = candidate
+        return True
     if not worktree.exists() or not branch:
         result["error"] = "missing worker worktree or branch"
         return result
@@ -1396,7 +1528,7 @@ def finalize_worker_branch(
                     return result
             else:
                 allowed_paths = task_allowed_paths(worktree, task_id)
-                queue_path = worktree / WORKER_QUEUE_REL
+                queue_path = task_manager_dir(worktree) / "task_queue.json"
                 try:
                     queue_data = json.loads(queue_path.read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
@@ -1559,6 +1691,27 @@ def finalize_worker_branch(
         result["committed"] = commit_code == 0
     if not run_finalize_consistency_guard(consistency_guard, result, "before_push"):
         return result
+    cutover_authority = (
+        os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() == "postgres"
+    )
+    if cutover_authority:
+        head_code, head_out, head_err = git_output(["git", "rev-parse", "HEAD"], worktree)
+        result["commands"].append(
+            {
+                "command": "git rev-parse HEAD before worker push",
+                "exit_code": head_code,
+                "stdout": head_out,
+                "stderr": head_err,
+            }
+        )
+        if head_code != 0:
+            result["error"] = "worker HEAD is unreadable before push"
+            return result
+        result["head_sha"] = head_out.strip().lower()
+        result["changed_paths"] = changed_paths
+        result["worker_report"] = str(report_path.relative_to(worktree)).replace("\\", "/")
+        if not persist_sql_candidate("integrating"):
+            return result
     push_code, push_out, push_err = git_output(git_longpaths_command("push", "-u", "origin", branch), worktree)
     result["commands"].append({"command": f"git push -u origin {branch}", "exit_code": push_code, "stdout": push_out, "stderr": push_err})
     result["pushed"] = push_code == 0
@@ -1573,14 +1726,36 @@ def finalize_worker_branch(
                 merge_code, merge_out, merge_err = git_output(git_longpaths_command("merge", "-s", "ours", "--no-edit", merge_ref), worktree)
                 result["commands"].append({"command": f"git merge -s ours --no-edit {merge_ref}", "exit_code": merge_code, "stdout": merge_out, "stderr": merge_err})
                 if merge_code == 0:
+                    if cutover_authority:
+                        head_code, head_out, head_err = git_output(
+                            ["git", "rev-parse", "HEAD"], worktree
+                        )
+                        result["commands"].append(
+                            {
+                                "command": "git rev-parse HEAD before recovered worker push",
+                                "exit_code": head_code,
+                                "stdout": head_out,
+                                "stderr": head_err,
+                            }
+                        )
+                        if head_code != 0:
+                            result["error"] = "worker HEAD is unreadable before recovered push"
+                            return result
+                        result["head_sha"] = head_out.strip().lower()
+                        if not persist_sql_candidate("integrating"):
+                            return result
                     retry_code, retry_out, retry_err = git_output(git_longpaths_command("push", "-u", "origin", branch), worktree)
                     result["commands"].append({"command": f"git push -u origin {branch} retry", "exit_code": retry_code, "stdout": retry_out, "stderr": retry_err})
                     result["pushed"] = retry_code == 0
                     if retry_code == 0:
                         result["push_recovered"] = "ours_merge_remote_branch"
+                        if cutover_authority and not persist_sql_candidate("ready"):
+                            return result
                         result["worker_report"] = str(report_path.relative_to(worktree)).replace("\\", "/")
                         return result
         result["error"] = "git push failed"
+        return result
+    if cutover_authority and not persist_sql_candidate("ready"):
         return result
     result["worker_report"] = str(report_path.relative_to(worktree)).replace("\\", "/")
     return result
@@ -2085,6 +2260,20 @@ def main() -> int:
     completed = 0
 
     if args.resume_finalize_run_dir:
+        if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") == "postgres":
+            print(
+                json.dumps(
+                    {
+                        "status": "resume_finalize_blocked",
+                        "task_id": args.task_id,
+                        "worker_id": args.worker_id,
+                        "error": "SQL cutover requires a fresh managed project session; Git queue resume authority is disabled",
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 2
         missing_resume_args = [
             flag
             for flag, value in (
@@ -2161,7 +2350,11 @@ def main() -> int:
         )
         return 0
 
-    host_readiness = codex_worker_host_readiness(args.codex_bin) if not args.dry_run and not args.queue_recovery_only else {"ok": True}
+    host_readiness = (
+        codex_worker_host_readiness(args.codex_bin, model=requested_model)
+        if not args.dry_run and not args.queue_recovery_only
+        else {"ok": True}
+    )
     if not args.dry_run and not args.queue_recovery_only and not host_readiness.get("ok"):
         event = {
             "event_id": f"evt-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid4().hex[:8]}",
@@ -2412,6 +2605,13 @@ def main() -> int:
             )
             return 2
 
+        record_worker_integration_candidate(
+            project_root,
+            str(claim["task_id"]),
+            launch,
+            finalize_result,
+        )
+
         if args.task_id:
             print(
                 json.dumps(
@@ -2421,6 +2621,7 @@ def main() -> int:
                         "task_id": claim["task_id"],
                         "completed_count": completed,
                         "next_role": "auto_integrator",
+                        "finalize_result": finalize_result,
                     },
                     ensure_ascii=False,
                     indent=2,
