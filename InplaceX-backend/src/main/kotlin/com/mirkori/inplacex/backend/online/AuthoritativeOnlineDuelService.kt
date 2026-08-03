@@ -79,6 +79,7 @@ data class OnlineDuelAttempt(
     val actor: String,
     val exactMatches: Int,
     val number: Int,
+    val ownGuess: String?,
 )
 
 data class OnlineDuelParticipant(
@@ -515,6 +516,7 @@ class AuthoritativeOnlineDuelService(
         private var revision: Long = 0
         private val commandReplays = mutableMapOf<String, CommandReplay>()
         private val pendingSecrets = mutableMapOf<DuelParticipant, CharArray>()
+        private val acceptedGuesses = mutableMapOf<Int, AcceptedGuess>()
         private var startedAt: Instant? = null
         private var deadlineAt: Instant? = null
 
@@ -576,6 +578,10 @@ class AuthoritativeOnlineDuelService(
                 participant,
                 MutableDuelCommand.guess(guess.toCharArray()),
             )
+            val acceptedAttempt = afterPlayer.attempts.last()
+            check(acceptedAttempt.attacker == participant)
+            check(acceptedAttempt.number !in acceptedGuesses)
+            acceptedGuesses[acceptedAttempt.number] = AcceptedGuess(participant, guess.toCharArray())
             revision += 1
             if (bot != null && afterPlayer.phase == DuelPhase.ACTIVE) {
                 bot.scoreIncomingGuess(guess)
@@ -599,6 +605,7 @@ class AuthoritativeOnlineDuelService(
                 revision = revision,
                 viewer = viewer,
                 pendingSecrets = pendingSecrets.keys,
+                acceptedGuesses = acceptedGuesses,
                 startedAt = startedAt,
                 deadlineAt = deadlineAt,
                 serverTime = clock.instant(),
@@ -662,6 +669,9 @@ class AuthoritativeOnlineDuelService(
         override fun close() {
             pendingSecrets.values.forEach { it.fill(CLEARED_DIGIT) }
             pendingSecrets.clear()
+            acceptedGuesses.values.forEach { it.guess.fill(CLEARED_DIGIT) }
+            acceptedGuesses.clear()
+            commandReplays.clear()
             match.close()
         }
     }
@@ -671,6 +681,11 @@ class AuthoritativeOnlineDuelService(
         val snapshot: OnlineDuelSnapshot,
     )
 }
+
+private class AcceptedGuess(
+    val participant: DuelParticipant,
+    val guess: CharArray,
+)
 
 private fun MatchmakingTicket.matched(sessionId: String, withBot: Boolean): MatchmakingTicket =
     copy(
@@ -684,6 +699,7 @@ private fun DuelSnapshot.toOnlineSnapshot(
     revision: Long,
     viewer: DuelParticipant,
     pendingSecrets: Set<DuelParticipant>,
+    acceptedGuesses: Map<Int, AcceptedGuess>,
     startedAt: Instant?,
     deadlineAt: Instant?,
     serverTime: Instant,
@@ -708,6 +724,10 @@ private fun DuelSnapshot.toOnlineSnapshot(
                 actor = attempt.attacker.publicActorFor(viewer),
                 exactMatches = attempt.exactMatches,
                 number = attempt.number,
+                ownGuess = acceptedGuesses[attempt.number]
+                    ?.takeIf { it.participant == viewer && attempt.attacker == viewer }
+                    ?.guess
+                    ?.concatToString(),
             )
         },
         participants = participants.map { participant ->

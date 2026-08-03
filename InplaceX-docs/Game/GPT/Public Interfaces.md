@@ -39,8 +39,9 @@ Online interfaces bind to the versioned transport-neutral contracts in
   and backpressure handling, not game rules.
 
 Secrets, access tokens, refresh tokens, provider payloads, and server-only
-scoring data are outside these public interfaces. A client receives only
-submission status and redacted snapshots.
+scoring data are outside these public interfaces. A client receives a
+viewer-redacted snapshot: an attempt may contain `ownGuess` only when its actor
+is the authenticated viewer; opponent guesses remain absent.
 
 ## Stability Rule
 

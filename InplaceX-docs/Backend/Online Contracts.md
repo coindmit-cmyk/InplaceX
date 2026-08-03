@@ -270,6 +270,11 @@ It contains the session revision, event cursor, public game configuration,
 participant views, submitted-secret booleans, public turn history, current
 actor, winner, phase, and server time.
 
+Turn history is viewer-specific. `ownGuess` is populated only for a turn whose
+actor is the authenticated viewer, allowing deterministic reconstruction after
+reconnect. It is `null` for every opponent turn; secrets remain absent for both
+participants.
+
 The following values are never present in a snapshot, event, REST response,
 client error, analytics payload, or ordinary application log:
 

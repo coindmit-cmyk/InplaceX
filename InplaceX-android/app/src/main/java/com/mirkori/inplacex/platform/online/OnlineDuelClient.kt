@@ -45,6 +45,7 @@ data class OnlineDuelAttemptState(
     val actor: String,
     val exactMatches: Int,
     val number: Int,
+    val ownGuess: String? = null,
 )
 
 data class OnlineDuelSnapshotState(
@@ -236,6 +237,10 @@ private class OnlineDuelResponseCodec {
                     actor = attempt.string("actor", 16).also { require(it in AllowedActors) },
                     exactMatches = attempt.nonNegativeInt("exactMatches").also { require(it <= codeLength) },
                     number = attempt.positiveInt("number"),
+                    ownGuess = attempt.nullableString("ownGuess", codeLength)?.also { guess ->
+                        require(guess.length == codeLength && guess.all(Char::isDigit))
+                        require(attempt.string("actor", 16) == "player")
+                    },
                 )
             },
             playerSecretConfigured = value.array("participants")
@@ -401,7 +406,7 @@ private class OnlineDuelResponseCodec {
             "attempts",
             "participants",
         )
-        val AttemptFields = setOf("actor", "exactMatches", "number")
+        val AttemptFields = setOf("actor", "exactMatches", "number", "ownGuess")
         val ParticipantFields = setOf(
             "actor",
             "secretConfigured",
