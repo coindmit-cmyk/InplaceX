@@ -174,6 +174,13 @@ Path identifiers and body identifiers must match. A route must not use a body
 reconnect operation may return a replay cursor, but a client can safely discard
 local transient state and use the returned snapshot as the authority.
 
+The Android client persists only the canonical UUID of an unfinished active
+session. On process restart it opens the social match route and fetches this
+recovery snapshot before rendering game state. The pointer is cleared on an
+authoritative terminal snapshot, explicit match exit, invalid membership, or
+sign-out; guesses, secrets, scores, and revisions are not duplicated in this
+route marker.
+
 ### Cloud save
 
 The save body is an opaque, versioned game state owned by the player. The

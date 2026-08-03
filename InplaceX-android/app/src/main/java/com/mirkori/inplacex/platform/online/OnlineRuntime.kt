@@ -82,8 +82,10 @@ class OnlineRuntime private constructor(
         auth.clear()
     }
 
-    suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
-        duel.readSession(sessionId)
+    suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> {
+        ensureAuthenticatedSession().onlineFailureOrNull()?.let { return it }
+        return duel.readSession(sessionId)
+    }
 
     suspend fun submitSecret(
         sessionId: String,

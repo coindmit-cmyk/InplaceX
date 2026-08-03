@@ -35,6 +35,7 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.GuestAuthResult
 import com.mirkori.inplacex.platform.online.GoogleChallengeResult
@@ -96,7 +97,19 @@ class MainActivity : ComponentActivity() {
                 }
                 val coroutineScope = rememberCoroutineScope()
 
-                var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
+                val activeOnlineSessionStore = remember {
+                    ActiveOnlineSessionStore(applicationContext)
+                }
+                val restoredActiveOnlineSessionId = remember(activeOnlineSessionStore) {
+                    activeOnlineSessionStore.read()
+                }
+
+                var currentSection by rememberSaveable {
+                    mutableStateOf(initialSectionForActiveOnlineSession(restoredActiveOnlineSessionId))
+                }
+                var activeOnlineSessionId by remember {
+                    mutableStateOf(restoredActiveOnlineSessionId)
+                }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
@@ -304,6 +317,17 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                initialActiveSessionId = activeOnlineSessionId,
+                                onActiveSessionChange = { sessionId ->
+                                    if (activeOnlineSessionId != sessionId) {
+                                        if (sessionId == null) {
+                                            activeOnlineSessionStore.clear()
+                                        } else {
+                                            activeOnlineSessionStore.write(sessionId)
+                                        }
+                                        activeOnlineSessionId = sessionId
+                                    }
+                                },
                                 friends = savedFriends,
                                 showTestFriendBot = testFriendBotEnabled(),
                                 requestExitGame = requestExitGame,
@@ -582,6 +606,8 @@ class MainActivity : ComponentActivity() {
                                             try {
                                                 googleCredentialSignIn.signOut()
                                                 onlineRuntime?.signOut()
+                                                activeOnlineSessionStore.clear()
+                                                activeOnlineSessionId = null
                                                 progressState = progressRepository.signOutFromGooglePlay()
                                                 profileAuthResultKey = "profile.auth.signed_out"
                                             } catch (error: Exception) {
@@ -651,3 +677,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSection =
+    if (sessionId == null) AppSection.HOME else AppSection.SOCIAL
