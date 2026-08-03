@@ -2,6 +2,7 @@ package com.mirkori.inplacex.backend.identity
 
 import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
+import com.mirkori.inplacex.backend.persistence.IdempotencyKeyReusedException
 import com.mirkori.inplacex.logging.InplaceXLogger
 import com.mirkori.inplacex.logging.LogLevel
 import com.mirkori.inplacex.testsupport.RecordingLogSink
@@ -15,6 +16,9 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 
 class GuestIdentityServiceTest {
@@ -36,19 +40,80 @@ class GuestIdentityServiceTest {
     }
 
     @Test
-    fun `refresh rotates once and replay revokes the entire token family`() {
+    fun `refresh replay returns the exact committed credentials after response loss`() {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
-        val service = service(clock)
+        val dataSource = testDataSource("refresh-replay")
+        val service = service(clock, dataSource = dataSource)
         val bootstrap = service.bootstrap(bootstrap("installation-b"))
+        val idempotencyKey = "00000000-0000-4000-8000-000000000010"
 
-        val rotated = service.refresh(bootstrap.credentials.refreshToken)
+        val rotated = service.refresh(bootstrap.credentials.refreshToken, idempotencyKey)
+        val restartedService = service(clock, dataSource = dataSource)
+        val replayed = restartedService.refresh(bootstrap.credentials.refreshToken, idempotencyKey)
 
         assertNotEquals(bootstrap.credentials.refreshToken, rotated.refreshToken)
-        assertThrows(RefreshTokenRejectedException::class.java) {
-            service.refresh(bootstrap.credentials.refreshToken)
+        assertEquals(rotated.accessToken, replayed.accessToken)
+        assertEquals(rotated.refreshToken, replayed.refreshToken)
+        assertEquals(rotated.accessExpiresAt, replayed.accessExpiresAt)
+        assertEquals(rotated.refreshExpiresAt, replayed.refreshExpiresAt)
+
+        assertThrows(IdempotencyKeyReusedException::class.java) {
+            service.refresh(rotated.refreshToken, idempotencyKey)
         }
+
+        val next = service.refresh(
+            rotated.refreshToken,
+            "00000000-0000-4000-8000-000000000011",
+        )
+        assertNotEquals(rotated.refreshToken, next.refreshToken)
+
         assertThrows(RefreshTokenRejectedException::class.java) {
-            service.refresh(rotated.refreshToken)
+            service.refresh(
+                bootstrap.credentials.refreshToken,
+                "00000000-0000-4000-8000-000000000012",
+            )
+        }
+    }
+
+    @Test
+    fun `concurrent duplicate refresh rotates and persists exactly once`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = testDataSource("refresh-concurrent")
+        val service = service(clock, dataSource = dataSource)
+        val bootstrap = service.bootstrap(bootstrap("installation-concurrent"))
+        val idempotencyKey = "00000000-0000-4000-8000-000000000015"
+        val ready = CountDownLatch(2)
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val futures = List(2) {
+                executor.submit<RenewableCredentials> {
+                    ready.countDown()
+                    start.await(5, TimeUnit.SECONDS)
+                    service.refresh(bootstrap.credentials.refreshToken, idempotencyKey)
+                }
+            }
+            assertTrue(ready.await(5, TimeUnit.SECONDS))
+            start.countDown()
+            val results = futures.map { it.get(10, TimeUnit.SECONDS) }
+
+            assertEquals(results[0].accessToken, results[1].accessToken)
+            assertEquals(results[0].refreshToken, results[1].refreshToken)
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { statement ->
+                    statement.executeQuery("SELECT COUNT(*) FROM auth_idempotency_results").use { result ->
+                        result.next()
+                        assertEquals(1, result.getInt(1))
+                    }
+                    statement.executeQuery("SELECT COUNT(*) FROM refresh_tokens").use { result ->
+                        result.next()
+                        assertEquals(2, result.getInt(1))
+                    }
+                }
+            }
+        } finally {
+            executor.shutdownNow()
         }
     }
 
@@ -60,7 +125,10 @@ class GuestIdentityServiceTest {
         clock.advanceSeconds(31L * 24 * 60 * 60)
 
         assertThrows(RefreshTokenRejectedException::class.java) {
-            service.refresh(bootstrap.credentials.refreshToken)
+            service.refresh(
+                bootstrap.credentials.refreshToken,
+                "00000000-0000-4000-8000-000000000013",
+            )
         }
     }
 
@@ -111,7 +179,10 @@ class GuestIdentityServiceTest {
         val service = service(clock, sink)
         val installation = "installation-private-marker"
         val bootstrap = service.bootstrap(bootstrap(installation))
-        service.refresh(bootstrap.credentials.refreshToken)
+        service.refresh(
+            bootstrap.credentials.refreshToken,
+            "00000000-0000-4000-8000-000000000014",
+        )
         service.putCloudSave(
             bootstrap.playerId,
             CloudSavePutCommand(
@@ -221,6 +292,12 @@ class GuestIdentityServiceTest {
             clock = clock,
             logger = InplaceXLogger(sink, LogLevel.DEBUG),
         )
+    }
+
+    private fun testDataSource(name: String): JdbcDataSource = JdbcDataSource().apply {
+        setURL("jdbc:h2:mem:$name-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+        user = "sa"
+        password = ""
     }
 }
 

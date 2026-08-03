@@ -3,6 +3,7 @@ package com.mirkori.inplacex.backend.identity
 import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
 import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
+import com.mirkori.inplacex.backend.persistence.IdempotencyKeyReusedException
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -48,7 +49,8 @@ fun Application.configureIdentityRoutes(
         }
 
         post("/api/v1/auth/refresh") {
-            if (!call.hasValidIdempotencyKey()) {
+            val idempotencyKey = call.validIdempotencyKeyOrNull()
+            if (idempotencyKey == null) {
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
                 return@post
             }
@@ -57,7 +59,10 @@ fun Application.configureIdentityRoutes(
                 return@post
             }
             val credentials = try {
-                service.refresh(refreshToken)
+                service.refresh(refreshToken, idempotencyKey)
+            } catch (_: IdempotencyKeyReusedException) {
+                call.respondIdentityError(HttpStatusCode.Conflict, "idempotency_key_reused")
+                return@post
             } catch (_: RefreshTokenRejectedException) {
                 call.respondIdentityError(HttpStatusCode.Unauthorized, "refresh_rejected")
                 return@post
@@ -261,9 +266,11 @@ private fun io.ktor.server.application.ApplicationCall.authenticatedPrincipalOrN
 }
 
 private fun io.ktor.server.application.ApplicationCall.hasValidIdempotencyKey(): Boolean {
-    val value = request.headers[IdempotencyHeader] ?: return false
-    return value.matches(Regex("[A-Za-z0-9._~-]{1,128}"))
+    return validIdempotencyKeyOrNull() != null
 }
+
+private fun io.ktor.server.application.ApplicationCall.validIdempotencyKeyOrNull(): String? =
+    request.headers[IdempotencyHeader]?.takeIf { it.matches(IdempotencyKeyPattern) }
 
 private suspend fun io.ktor.server.application.ApplicationCall.respondIdentityError(
     status: HttpStatusCode,
@@ -277,3 +284,4 @@ private suspend fun io.ktor.server.application.ApplicationCall.respondIdentityEr
 }
 
 private const val IdempotencyHeader = "Idempotency-Key"
+private val IdempotencyKeyPattern = Regex("[A-Za-z0-9._~-]{1,128}")

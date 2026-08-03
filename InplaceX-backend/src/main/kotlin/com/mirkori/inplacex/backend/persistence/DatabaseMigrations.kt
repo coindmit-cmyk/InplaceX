@@ -27,6 +27,11 @@ object DatabaseMigrations {
             description = "add Google player identities and auth challenges",
             sql = readResource("db/migration/V3__add_google_player_identities.sql"),
         ),
+        SqlMigration(
+            version = "4",
+            description = "add persistent auth idempotency results",
+            sql = readResource("db/migration/V4__add_auth_idempotency_results.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(
