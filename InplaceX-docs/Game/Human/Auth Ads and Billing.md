@@ -6,6 +6,11 @@
 - Google Play is the first auth and cloud-save provider
 - sign-in is optional for offline play
 - sign-in unlocks future cloud sync and multi-device restore
+
+Until cloud save has an authoritative merge/reconciliation flow, Android platform backup is
+disabled. Restoring the SQLite profile without the device-bound Keystore session could otherwise
+show a linked account or local premium flags without valid backend credentials. Progress restore
+must go through the future authenticated cloud-save contract, not an implicit device backup.
 - the Profile button opens the system Google account chooser
 - successful sign-in is confirmed by the InplaceX server, not by a local flag
 - an existing guest profile is linked in place, so current progress is kept

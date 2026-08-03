@@ -39,6 +39,7 @@ import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
+import com.mirkori.inplacex.ui.state.TransientOperationGate
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -61,7 +62,7 @@ internal fun OnlineDuelScreen(
     var inviteCode by remember { mutableStateOf("") }
     var guessHistorySessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var guessHistoryEntries by rememberSaveable { mutableStateOf(emptyList<String>()) }
-    var guessSubmitting by rememberSaveable { mutableStateOf(false) }
+    val guessSubmission = remember { TransientOperationGate() }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPlayStyleName by rememberSaveable {
         mutableStateOf(RemoteFriendPlayStyle.RACE.name)
@@ -179,48 +180,51 @@ internal fun OnlineDuelScreen(
         OnlineDuelGameField(
             snapshot = snapshot,
             knownPlayerGuesses = knownPlayerGuesses,
-            submitting = guessSubmitting,
+            submitting = guessSubmission.inProgress,
             onSubmitGuess = { submitted ->
-                if (!guessSubmitting) {
-                    guessSubmitting = true
+                guessSubmission.start()?.let { operationId ->
                     scope.launch {
-                        val result = runtime.submitGuess(
-                            snapshot.sessionId,
-                            snapshot.revision,
-                            submitted,
-                        )
-                        if (result is OnlineClientResult.Success) {
-                            val previousNumbers = snapshot.attempts
-                                .asSequence()
-                                .filter { it.actor == "player" }
-                                .mapTo(mutableSetOf()) { it.number }
-                            result.value.attempts
-                                .firstOrNull {
-                                    it.actor == "player" && it.number !in previousNumbers
-                                }
-                                ?.let { accepted ->
-                                    if (guessHistorySessionId != snapshot.sessionId) {
-                                        guessHistoryEntries = emptyList()
+                        try {
+                            val result = runtime.submitGuess(
+                                snapshot.sessionId,
+                                snapshot.revision,
+                                submitted,
+                            )
+                            if (!guessSubmission.isCurrent(operationId)) return@launch
+                            if (result is OnlineClientResult.Success) {
+                                val previousNumbers = snapshot.attempts
+                                    .asSequence()
+                                    .filter { it.actor == "player" }
+                                    .mapTo(mutableSetOf()) { it.number }
+                                result.value.attempts
+                                    .firstOrNull {
+                                        it.actor == "player" && it.number !in previousNumbers
                                     }
-                                    guessHistorySessionId = snapshot.sessionId
-                                    guessHistoryEntries = (
-                                        guessHistoryEntries.filterNot {
-                                            it.substringBefore('=') == accepted.number.toString()
-                                        } + "${accepted.number}=$submitted"
-                                    )
-                                }
+                                    ?.let { accepted ->
+                                        if (guessHistorySessionId != snapshot.sessionId) {
+                                            guessHistoryEntries = emptyList()
+                                        }
+                                        guessHistorySessionId = snapshot.sessionId
+                                        guessHistoryEntries = (
+                                            guessHistoryEntries.filterNot {
+                                                it.substringBefore('=') == accepted.number.toString()
+                                            } + "${accepted.number}=$submitted"
+                                        )
+                                    }
+                            }
+                            state = if (result == OnlineClientResult.RevisionConflict) {
+                                snapshotState(runtime.readSession(snapshot.sessionId))
+                            } else {
+                                snapshotState(result)
+                            }
+                        } finally {
+                            guessSubmission.finish(operationId)
                         }
-                        state = if (result == OnlineClientResult.RevisionConflict) {
-                            snapshotState(runtime.readSession(snapshot.sessionId))
-                        } else {
-                            snapshotState(result)
-                        }
-                        guessSubmitting = false
                     }
                 }
             },
             onBack = {
-                guessSubmitting = false
+                guessSubmission.cancel()
                 state = OnlineDuelUiState.Ready
             },
         )

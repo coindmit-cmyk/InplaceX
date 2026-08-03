@@ -61,8 +61,10 @@ import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
+import com.mirkori.inplacex.ui.state.TransientOperationGate
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -117,7 +119,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(progressRepository.loadClaimedCampaignChapters())
                 }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
-                var profileAuthInProgress by rememberSaveable { mutableStateOf(false) }
+                val profileAuthOperation = remember { TransientOperationGate() }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
                 val savedFriends = remember(platformLocalRepository) {
                     platformLocalRepository
@@ -506,72 +508,93 @@ class MainActivity : ComponentActivity() {
                                 progressState = progressState,
                                 nowMs = currentTimeMs,
                                 authResultKey = profileAuthResultKey,
-                                authInProgress = profileAuthInProgress,
+                                authInProgress = profileAuthOperation.inProgress,
                                 onGooglePlaySignIn = {
-                                    if (!profileAuthInProgress) {
-                                        profileAuthInProgress = true
+                                    profileAuthOperation.start()?.let { operationId ->
                                         profileAuthResultKey = null
                                         coroutineScope.launch {
-                                            val challenge = onlineRuntime?.createGoogleChallenge()
-                                            profileAuthResultKey = when (challenge) {
-                                                is GoogleChallengeResult.Ready -> {
-                                                    when (
-                                                        val providerResult = googleCredentialSignIn.signIn(
-                                                            activity = this@MainActivity,
-                                                            nonce = challenge.challenge.nonce,
-                                                        )
-                                                    ) {
-                                                        is GoogleCredentialResult.Success -> {
-                                                            when (
-                                                                val serverResult = onlineRuntime.authenticateWithGoogle(
-                                                                    idToken = providerResult.credential.idToken,
-                                                                    nonce = challenge.challenge.nonce,
-                                                                )
-                                                            ) {
-                                                                is GuestAuthResult.Authenticated -> {
-                                                                    progressState = progressRepository.signInWithGooglePlay(
-                                                                        providerResult.credential.playerName
-                                                                            ?: progressState.playerDisplayName,
+                                            try {
+                                                val challenge = onlineRuntime?.createGoogleChallenge()
+                                                profileAuthResultKey = when (challenge) {
+                                                    is GoogleChallengeResult.Ready -> {
+                                                        when (
+                                                            val providerResult = googleCredentialSignIn.signIn(
+                                                                activity = this@MainActivity,
+                                                                nonce = challenge.challenge.nonce,
+                                                            )
+                                                        ) {
+                                                            is GoogleCredentialResult.Success -> {
+                                                                when (
+                                                                    val serverResult = onlineRuntime.authenticateWithGoogle(
+                                                                        idToken = providerResult.credential.idToken,
+                                                                        nonce = challenge.challenge.nonce,
                                                                     )
-                                                                    "profile.auth.signed_in"
+                                                                ) {
+                                                                    is GuestAuthResult.Authenticated -> {
+                                                                        progressState =
+                                                                            progressRepository.signInWithGooglePlay(
+                                                                                providerResult.credential.playerName
+                                                                                    ?: progressState.playerDisplayName,
+                                                                            )
+                                                                        "profile.auth.signed_in"
+                                                                    }
+                                                                    GuestAuthResult.Rejected ->
+                                                                        "profile.auth.rejected"
+                                                                    GuestAuthResult.Offline,
+                                                                    GuestAuthResult.TemporarilyUnavailable ->
+                                                                        "profile.auth.unavailable"
                                                                 }
-                                                                GuestAuthResult.Rejected ->
-                                                                    "profile.auth.rejected"
-                                                                GuestAuthResult.Offline,
-                                                                GuestAuthResult.TemporarilyUnavailable ->
-                                                                    "profile.auth.unavailable"
                                                             }
+                                                            GoogleCredentialResult.Cancelled ->
+                                                                "profile.auth.cancelled"
+                                                            GoogleCredentialResult.Unavailable ->
+                                                                "profile.auth.not_configured"
+                                                            GoogleCredentialResult.Failed ->
+                                                                "profile.auth.rejected"
                                                         }
-                                                        GoogleCredentialResult.Cancelled ->
-                                                            "profile.auth.cancelled"
-                                                        GoogleCredentialResult.Unavailable ->
-                                                            "profile.auth.not_configured"
-                                                        GoogleCredentialResult.Failed ->
-                                                            "profile.auth.rejected"
                                                     }
+                                                    GoogleChallengeResult.AuthenticationRequired,
+                                                    GoogleChallengeResult.Rejected,
+                                                    -> "profile.auth.rejected"
+                                                    GoogleChallengeResult.ProviderUnavailable ->
+                                                        "profile.auth.not_configured"
+                                                    GoogleChallengeResult.TemporarilyUnavailable,
+                                                    null,
+                                                    -> "profile.auth.unavailable"
                                                 }
-                                                GoogleChallengeResult.AuthenticationRequired,
-                                                GoogleChallengeResult.Rejected,
-                                                -> "profile.auth.rejected"
-                                                GoogleChallengeResult.ProviderUnavailable ->
-                                                    "profile.auth.not_configured"
-                                                GoogleChallengeResult.TemporarilyUnavailable,
-                                                null,
-                                                -> "profile.auth.unavailable"
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Google sign-in operation failed",
+                                                    throwable = error,
+                                                )
+                                                profileAuthResultKey = "profile.auth.unavailable"
+                                            } finally {
+                                                profileAuthOperation.finish(operationId)
                                             }
-                                            profileAuthInProgress = false
                                         }
                                     }
                                 },
                                 onGooglePlaySignOut = {
-                                    if (!profileAuthInProgress) {
-                                        profileAuthInProgress = true
+                                    profileAuthOperation.start()?.let { operationId ->
                                         coroutineScope.launch {
-                                            googleCredentialSignIn.signOut()
-                                            onlineRuntime?.signOut()
-                                            progressState = progressRepository.signOutFromGooglePlay()
-                                            profileAuthResultKey = "profile.auth.signed_out"
-                                            profileAuthInProgress = false
+                                            try {
+                                                googleCredentialSignIn.signOut()
+                                                onlineRuntime?.signOut()
+                                                progressState = progressRepository.signOutFromGooglePlay()
+                                                profileAuthResultKey = "profile.auth.signed_out"
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Google sign-out operation failed",
+                                                    throwable = error,
+                                                )
+                                                profileAuthResultKey = "profile.auth.unavailable"
+                                            } finally {
+                                                profileAuthOperation.finish(operationId)
+                                            }
                                         }
                                     }
                                 },
