@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Campaign completion now persists progress and economy atomically, rewards only personal-best rating improvements, and keeps chapter rewards accessible in landscape.
+
 - Разделены сценарии `Друзья`, `Приглашения` и `Онлайн-матчи`; добавлен явный
   возврат из истории кампании и исправлено размещение настроек и переносы
   заголовков на компактных экранах.

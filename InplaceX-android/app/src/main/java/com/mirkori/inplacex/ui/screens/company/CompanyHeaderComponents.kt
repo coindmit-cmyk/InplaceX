@@ -48,6 +48,8 @@ internal fun CompanyScreenHeader(
     energy: Int,
     energyMax: Int,
     compact: Boolean,
+    chapterRewardLabel: String? = null,
+    onChapterReward: (() -> Unit)? = null,
     onHistory: () -> Unit,
     onBuyEnergy: () -> Unit,
 ) {
@@ -89,6 +91,20 @@ internal fun CompanyScreenHeader(
                 onClick = onHistory,
                 testTag = "company-history",
             )
+            if (chapterRewardLabel != null && onChapterReward != null) {
+                HeaderIconButton(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.CardGiftcard,
+                            contentDescription = chapterRewardLabel,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    },
+                    onClick = onChapterReward,
+                    testTag = "company-chapter-reward",
+                )
+            }
         }
         return
     }

@@ -1,6 +1,9 @@
 package com.mirkori.inplacex.ui.screens.shell
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -20,6 +23,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
@@ -424,6 +429,31 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithTag("company-chapter-reward").performClick()
+        composeRule.onNodeWithText(
+            "Пройдите все 10 уровней этой главы, чтобы получить награду.",
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun landscapeCompanyKeepsChapterRewardAccessible() {
+        setContent {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+            ) {
+                CompanyRootScreen(
+                    progressState = progress(),
+                    campaignProgress = emptyList(),
+                    activeLevelNumber = null,
+                    onActiveLevelNumberChange = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("company-chapter-reward")
+            .assertIsDisplayed()
+            .performClick()
         composeRule.onNodeWithText(
             "Пройдите все 10 уровней этой главы, чтобы получить награду.",
         ).assertIsDisplayed()
