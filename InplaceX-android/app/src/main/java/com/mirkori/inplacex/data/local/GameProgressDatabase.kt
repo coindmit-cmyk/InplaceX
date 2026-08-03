@@ -56,6 +56,8 @@ internal open class GameProgressDatabase(
             """.trimIndent()
         )
 
+        createCampaignChapterRewardsTable(db)
+
         createPlatformTables(db)
     }
 
@@ -115,6 +117,21 @@ internal open class GameProgressDatabase(
                 "ALTER TABLE $TABLE_PROGRESS ADD COLUMN $COL_TEMPORARY_PRO_EXPIRES_AT_MS INTEGER NOT NULL DEFAULT 0"
             )
         }
+
+        if (oldVersion < 8) {
+            createPlatformTables(db)
+            createCampaignChapterRewardsTable(db)
+        }
+    }
+
+    private fun createCampaignChapterRewardsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_CAMPAIGN_CHAPTER_REWARDS (
+                $COL_CAMPAIGN_CHAPTER_NUMBER INTEGER PRIMARY KEY
+            )
+            """.trimIndent()
+        )
     }
 
     private fun createPlatformTables(db: SQLiteDatabase) {
@@ -301,10 +318,11 @@ internal open class GameProgressDatabase(
     }
 
     companion object {
-        private const val DB_VERSION = 7
+        private const val DB_VERSION = 8
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
+        const val TABLE_CAMPAIGN_CHAPTER_REWARDS = "campaign_chapter_rewards"
         const val TABLE_PLAYER_PROFILE = "player_profile"
         const val TABLE_IDENTITY_LINKS = "identity_links"
         const val TABLE_SOCIAL_RELATIONSHIPS = "social_relationships"
@@ -341,6 +359,7 @@ internal open class GameProgressDatabase(
         const val COL_TEMPORARY_PRO_EXPIRES_AT_MS = "temporary_pro_expires_at_ms"
         const val COL_CAMPAIGN_LEVEL_NUMBER = "level_number"
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = "best_backend_rating"
+        const val COL_CAMPAIGN_CHAPTER_NUMBER = "chapter_number"
         const val PROFILE_ID = 1
     }
 }

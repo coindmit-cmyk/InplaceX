@@ -2,7 +2,6 @@ package com.mirkori.inplacex.ui.screens.social
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +37,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
@@ -48,24 +48,21 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
+    friends: List<LocalSocialRelationship> = emptyList(),
     showTestFriendBot: Boolean = false,
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var onlineDuelOpen by remember { mutableStateOf(false) }
+    var activeDestination by remember { mutableStateOf<SocialDestination?>(null) }
 
-    fun openOnline() {
-        onlineDuelOpen = true
-    }
-
-    LaunchedEffect(onlineDuelOpen) {
-        onInGameChange(onlineDuelOpen)
+    LaunchedEffect(activeDestination) {
+        onInGameChange(activeDestination != null)
     }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
-            onlineDuelOpen = false
+            activeDestination = null
             onExitGameConsumed()
         }
     }
@@ -73,11 +70,26 @@ fun SocialRootScreen(
         onDispose { onInGameChange(false) }
     }
 
-    if (onlineDuelOpen && onlineRuntime != null) {
+    if (activeDestination == SocialDestination.FRIENDS) {
+        SocialFriendsScreen(
+            friends = friends,
+            showTestFriendBot = showTestFriendBot,
+            onlineConfigured = onlineRuntime != null,
+            onPlayTestFriend = { activeDestination = SocialDestination.ONLINE_MATCH },
+        )
+        return
+    }
+
+    if (
+        activeDestination in setOf(SocialDestination.INVITES, SocialDestination.ONLINE_MATCH) &&
+        onlineRuntime != null
+    ) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
-            onBack = {
-                onlineDuelOpen = false
+            entryPoint = if (activeDestination == SocialDestination.INVITES) {
+                OnlineDuelEntryPoint.INVITES
+            } else {
+                OnlineDuelEntryPoint.QUICK_MATCH
             },
         )
         return
@@ -106,154 +118,155 @@ fun SocialRootScreen(
             SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
         }
 
-        if (showTestFriendBot) {
-            SceneCard(
-                accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = InplaceXColors.ToyPurple.copy(alpha = 0.16f),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.SmartToy,
-                            contentDescription = null,
-                            modifier = Modifier.padding(12.dp),
-                            tint = InplaceXColors.ToyPurple,
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Text(
-                            text = strings.text("social.test_friend.title"),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = strings.text(
-                                if (onlineRuntime != null) {
-                                    "social.test_friend.subtitle"
-                                } else {
-                                    "social.test_friend.offline"
-                                },
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Button(
-                        onClick = { openOnline() },
-                        enabled = onlineRuntime != null,
-                    ) {
-                        Text(strings.text("social.test_friend.play"))
-                    }
-                }
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SceneActionTile(
+                title = strings.text("social.friends"),
+                subtitle = strings.text("social.friends.subtitle"),
+                leadingIcon = Icons.Outlined.Group,
+                trailingIcon = Icons.Outlined.ChevronRight,
+                accentBrush = Brush.verticalGradient(
+                    listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
+                ),
+                onClick = { activeDestination = SocialDestination.FRIENDS },
+            )
+            SceneActionTile(
+                title = strings.text("social.invites"),
+                subtitle = strings.text("social.invites.guide"),
+                leadingIcon = Icons.Outlined.MailOutline,
+                trailingIcon = Icons.Outlined.ChevronRight,
+                accentBrush = Brush.verticalGradient(
+                    listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
+                ),
+                enabled = onlineRuntime != null,
+                onClick = { activeDestination = SocialDestination.INVITES },
+            )
+            SceneActionTile(
+                title = strings.text("social.online.title"),
+                subtitle = strings.text("social.online.description"),
+                leadingIcon = Icons.Outlined.EmojiEvents,
+                trailingIcon = Icons.Outlined.ChevronRight,
+                enabled = onlineRuntime != null,
+                accentBrush = Brush.verticalGradient(
+                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
+                ),
+                onClick = { activeDestination = SocialDestination.ONLINE_MATCH },
+            )
         }
+    }
+}
 
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val compact = maxWidth < 560.dp
-            if (compact) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SceneActionTile(
-                        title = strings.text("social.friends"),
-                        subtitle = strings.text("social.friends.empty"),
-                        leadingIcon = Icons.Outlined.Group,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
-                        ),
-                        enabled = onlineRuntime != null,
-                        onClick = { openOnline() },
-                    )
-                    SceneActionTile(
-                        title = strings.text("social.invites"),
-                        subtitle = strings.text("social.invites.guide"),
-                        leadingIcon = Icons.Outlined.MailOutline,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-                        ),
-                        enabled = onlineRuntime != null,
-                        onClick = { openOnline() },
-                    )
-                    SceneActionTile(
-                        title = strings.text("social.online.title"),
-                        subtitle = strings.text("social.online.description"),
-                        leadingIcon = Icons.Outlined.EmojiEvents,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        enabled = onlineRuntime != null,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                        ),
-                        onClick = { openOnline() },
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    SceneActionTile(
-                        title = strings.text("social.friends"),
-                        subtitle = strings.text("social.friends.empty"),
-                        leadingIcon = Icons.Outlined.Group,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
-                        ),
-                        modifier = Modifier.weight(1f),
-                        enabled = onlineRuntime != null,
-                        onClick = { openOnline() },
-                    )
-                    SceneActionTile(
-                        title = strings.text("social.invites"),
-                        subtitle = strings.text("social.invites.guide"),
-                        leadingIcon = Icons.Outlined.MailOutline,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-                        ),
-                        modifier = Modifier.weight(1f),
-                        enabled = onlineRuntime != null,
-                        onClick = { openOnline() },
-                    )
-                    SceneActionTile(
-                        title = strings.text("social.online.title"),
-                        subtitle = strings.text("social.online.description"),
-                        leadingIcon = Icons.Outlined.EmojiEvents,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        enabled = onlineRuntime != null,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                        ),
-                        modifier = Modifier.weight(1f),
-                        onClick = { openOnline() },
-                    )
-                }
-            }
-        }
+private enum class SocialDestination {
+    FRIENDS,
+    INVITES,
+    ONLINE_MATCH,
+}
 
+@Composable
+private fun SocialFriendsScreen(
+    friends: List<LocalSocialRelationship>,
+    showTestFriendBot: Boolean,
+    onlineConfigured: Boolean,
+    onPlayTestFriend: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    ScenePageColumn(
+        modifier = Modifier.fillMaxSize(),
+        scrollable = true,
+    ) {
         SceneCard(
-            accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f),
+            accentColor = InplaceXColors.ToyPurple,
+            contentColor = Color.White,
         ) {
             Text(
-                text = strings.text("social.invites.how_to"),
+                text = strings.text("social.friends"),
                 modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
-            Text(strings.text("social.invites.step_1"))
-            Text(strings.text("social.invites.step_2"))
-            Text(strings.text("social.invites.step_3"))
+            Text(strings.text("social.friends.subtitle"))
         }
 
+        if (showTestFriendBot) {
+            FriendCard(
+                title = strings.text("social.test_friend.title"),
+                subtitle = strings.text(
+                    if (onlineConfigured) {
+                        "social.test_friend.subtitle"
+                    } else {
+                        "social.test_friend.offline"
+                    },
+                ),
+                showPlay = true,
+                playEnabled = onlineConfigured,
+                onPlay = onPlayTestFriend,
+            )
+        }
+
+        friends.forEach { friend ->
+            FriendCard(
+                title = friend.targetDisplayName,
+                subtitle = strings.text("social.friend.saved"),
+            )
+        }
+
+        if (friends.isEmpty() && !showTestFriendBot) {
+            SocialEmptyCard(
+                title = strings.text("social.friends"),
+                message = strings.text("social.friends.empty"),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Group,
+                        contentDescription = null,
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FriendCard(
+    title: String,
+    subtitle: String,
+    showPlay: Boolean = false,
+    playEnabled: Boolean = false,
+    onPlay: () -> Unit = {},
+) {
+    val strings = LocalAppStrings.current
+    SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = InplaceXColors.ToyPurple.copy(alpha = 0.16f),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.SmartToy,
+                    contentDescription = null,
+                    modifier = Modifier.padding(12.dp),
+                    tint = InplaceXColors.ToyPurple,
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (showPlay) {
+                Button(onClick = onPlay, enabled = playEnabled) {
+                    Text(strings.text("social.test_friend.play"))
+                }
+            }
+        }
     }
 }
 

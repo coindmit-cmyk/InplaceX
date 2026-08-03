@@ -208,6 +208,9 @@ internal fun CompanyChapterHero(
     totalStars: Int,
     requiredStars: Int,
     nextBlockLocked: Boolean,
+    rewardAvailable: Boolean,
+    rewardClaimed: Boolean,
+    onRewardClick: () -> Unit,
     compact: Boolean,
 ) {
     val target = requiredStars.coerceAtLeast(1)
@@ -310,7 +313,15 @@ internal fun CompanyChapterHero(
                     modifier = Modifier.size(24.dp),
                 )
             },
-            label = strings.text("company.chapter.reward"),
+            label = strings.text(
+                when {
+                    rewardClaimed -> "company.chapter.reward.claimed"
+                    rewardAvailable -> "company.chapter.reward.available"
+                    else -> "company.chapter.reward"
+                },
+            ),
+            onClick = onRewardClick,
+            testTag = "company-chapter-reward",
         )
     }
 }
@@ -321,11 +332,23 @@ private fun CampaignSideBadge(
     background: Brush,
     icon: @Composable () -> Unit,
     label: String,
+    onClick: (() -> Unit)? = null,
+    testTag: String? = null,
 ) {
     Surface(
         modifier = modifier
             .fillMaxHeight()
-            .shadow(6.dp, RoundedCornerShape(18.dp)),
+            .shadow(6.dp, RoundedCornerShape(18.dp))
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .semantics { role = Role.Button }
+                        .clickable(onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
         shape = RoundedCornerShape(18.dp),
         color = Color.Transparent,
         border = BorderStroke(2.dp, Color.White.copy(alpha = 0.45f)),
