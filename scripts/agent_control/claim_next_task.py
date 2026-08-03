@@ -268,6 +268,7 @@ def needs_fresh_retry_branch(task: dict[str, Any]) -> bool:
             "worker_finalize_failed_requeued",
             "worker_launch_failed_requeued",
             "worker_fix_requeued",
+            "design_handoff_integration_retry",
         }
         return any(
             isinstance(item, dict)

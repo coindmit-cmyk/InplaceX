@@ -277,7 +277,7 @@ def main() -> int:
         print(report["status"])
         for item in report["removed_capabilities"]:
             print(f"removed: {item}")
-    return 0 if report["status"] != STATUS_RISK else 2
+    return 0 if report["status"] == STATUS_OK else 2
 
 
 if __name__ == "__main__":

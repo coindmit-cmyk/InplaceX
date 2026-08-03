@@ -1021,7 +1021,18 @@ LINE_PRESERVATION_PATHS = {
 UNION_CONFLICT_PATHS = {"CHANGELOG.md"}
 
 GENERIC_METHOD_BEHAVIOR_PATTERN = re.compile(
-    r"^\s*(?:public|private|protected)?\s*(?:static\s+)?[A-Za-z0-9_<>,.?\[\]\s]+\s+([A-Za-z_]\w*)\s*\("
+    r"^\s*(?!(?:return|new|throw|yield|await)\b)(?:(?:public|private|protected|internal)\s+)?"
+    r"(?:static\s+)?(?:<[^()]+>\s+)?[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*(?:\s+[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*)*"
+    r"(?:\s*\[\s*\])*"
+    r"\s+([A-Za-z_]\w*)\s*\("
+)
+KOTLIN_METHOD_BEHAVIOR_PATTERN = re.compile(
+    r"^\s*(?:(?:public|private|protected|internal|open|abstract|final|override|actual|expect|suspend|inline|operator|infix|tailrec|external)\s+)*"
+    r"fun\s+(?:<[^>]+>\s*)?(?:[A-Za-z_][\w.<>?]*\.)?([A-Za-z_]\w*)\s*\("
+)
+KOTLIN_TYPE_BEHAVIOR_PATTERN = re.compile(
+    r"^\s*(?:(?:public|private|protected|internal|open|abstract|final|actual|expect|data|sealed|enum|annotation|value|inner)\s+)*"
+    r"(?:class|interface|object)\s+([A-Za-z_]\w*)\b"
 )
 
 BEHAVIOR_PATTERNS = (
@@ -1042,6 +1053,44 @@ def is_code_behavior_path(path: str) -> bool:
     if not normalized:
         return False
     return Path(normalized).suffix.lower() in CODE_BEHAVIOR_EXTENSIONS
+
+
+def is_test_path(path: str) -> bool:
+    normalized = Path(normalize_path(path))
+    parts = {part.lower() for part in normalized.parts}
+    stem = normalized.stem
+    stem_lower = stem.lower()
+    conventional_suffix = stem_lower.endswith((".test", ".spec", "_test", "_spec", "-test", "-spec"))
+    camel_case_prefix = any(
+        stem.startswith(prefix)
+        and (
+            len(stem) == len(prefix)
+            or stem[len(prefix)].isupper()
+            or stem[len(prefix)].isdigit()
+            or not stem[len(prefix)].isalnum()
+        )
+        for prefix in ("Test",)
+    )
+    camel_case_suffix = stem.endswith(("Test", "Tests", "TestCase", "TestCases"))
+    return (
+        bool(parts & {"test", "tests", "__tests__"})
+        or stem_lower.startswith("test_")
+        or conventional_suffix
+        or camel_case_prefix
+        or camel_case_suffix
+    )
+
+
+def compatible_behavior_move(source: str, destination: str) -> bool:
+    source_path = Path(normalize_path(source))
+    destination_path = Path(normalize_path(destination))
+    if is_line_preservation_path(source) or is_line_preservation_path(destination):
+        return source_path == destination_path
+    return (
+        destination_path.suffix.lower() == source_path.suffix.lower()
+        and destination_path.parent == source_path.parent
+        and is_test_path(destination) == is_test_path(source)
+    )
 
 
 def is_line_preservation_path(path: str) -> bool:
@@ -1071,20 +1120,283 @@ def read_text_file(path: Path) -> str:
         return ""
 
 
+def is_java_annotation_fragment(fragment: str) -> bool:
+    match = re.match(r"@[A-Za-z_][\w$.]*", fragment)
+    if not match:
+        return False
+    index = match.end()
+    while index < len(fragment) and fragment[index].isspace():
+        index += 1
+    if index == len(fragment):
+        return True
+    if fragment[index] != "(":
+        return False
+    depth = 0
+    quote = ""
+    escaped = False
+    while index < len(fragment):
+        char = fragment[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return not fragment[index + 1 :].strip()
+        index += 1
+    return False
+
+
+def strip_trailing_java_annotations(prefix: str) -> str:
+    result = prefix.rstrip()
+    while True:
+        annotation_starts = [match.start() for match in re.finditer(r"@[A-Za-z_]", result)]
+        removed = False
+        for start in reversed(annotation_starts):
+            if is_java_annotation_fragment(result[start:]):
+                result = result[:start].rstrip()
+                removed = True
+                break
+        if not removed:
+            return result
+
+
+def java_wildcard_method_token(line: str) -> str | None:
+    candidates = list(re.finditer(r"\b([A-Za-z_]\w*)\s*\(", line))
+    for candidate in reversed(candidates):
+        prefix = line[: candidate.start()].rstrip()
+        while prefix.endswith("]"):
+            bracket = prefix.rfind("[")
+            if bracket < 0 or prefix[bracket + 1 : -1].strip():
+                break
+            prefix = prefix[:bracket].rstrip()
+            prefix = strip_trailing_java_annotations(prefix)
+        if not prefix.endswith(">"):
+            continue
+
+        angle_depth = 0
+        paren_depth = 0
+        brace_depth = 0
+        quote = ""
+        escaped = False
+        wildcard = False
+        outer_start = -1
+        balanced = True
+        rejected = False
+        for index, char in enumerate(prefix):
+            if quote:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == quote:
+                    quote = ""
+                continue
+            if char in {'"', "'"}:
+                quote = char
+            elif char == "(" :
+                paren_depth += 1
+            elif char == ")":
+                paren_depth -= 1
+            elif char == "{":
+                if angle_depth == 0 and paren_depth == 0:
+                    rejected = True
+                    break
+                brace_depth += 1
+            elif char == "}":
+                brace_depth -= 1
+            elif char == "<" and paren_depth == 0:
+                if angle_depth == 0:
+                    outer_start = index
+                angle_depth += 1
+            elif char == ">" and paren_depth == 0:
+                angle_depth -= 1
+                if angle_depth < 0:
+                    balanced = False
+                    break
+            elif char == "?" and angle_depth > 0:
+                wildcard = True
+            elif char in "=;" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+                rejected = True
+                break
+            if paren_depth < 0 or brace_depth < 0:
+                balanced = False
+                break
+
+        if rejected or not balanced or quote or angle_depth or paren_depth or brace_depth or not wildcard:
+            continue
+        before_generic = prefix[:outer_start].rstrip() if outer_start >= 0 else ""
+        if not before_generic or before_generic.endswith("."):
+            continue
+        return str(candidate.group(1))
+    return None
+
+
+def strip_java_comments_line(
+    line: str,
+    block_comment: bool,
+    text_block: bool,
+) -> tuple[str, bool, bool]:
+    output: list[str] = []
+    index = 0
+    quote = ""
+    escaped = False
+    while index < len(line):
+        if block_comment:
+            end = line.find("*/", index)
+            if end < 0:
+                return "".join(output), True, text_block
+            block_comment = False
+            index = end + 2
+            continue
+        if text_block:
+            end = line.find('"""', index)
+            while end >= 0:
+                backslashes = 0
+                cursor = end - 1
+                while cursor >= 0 and line[cursor] == "\\":
+                    backslashes += 1
+                    cursor -= 1
+                if backslashes % 2 == 0:
+                    break
+                end = line.find('"""', end + 3)
+            if end < 0:
+                return "".join(output), block_comment, True
+            text_block = False
+            index = end + 3
+            continue
+        if quote:
+            char = line[index]
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            index += 1
+            continue
+        if line.startswith('"""', index):
+            text_block = True
+            index += 3
+            continue
+        if line.startswith("//", index):
+            break
+        if line.startswith("/*", index):
+            block_comment = True
+            index += 2
+            continue
+        char = line[index]
+        output.append(char)
+        if char in {'"', "'"}:
+            quote = char
+        index += 1
+    return "".join(output), block_comment, text_block
+
+
+def java_fragment_has_declaration_boundary(fragment: str) -> bool:
+    angle_depth = 0
+    paren_depth = 0
+    brace_depth = 0
+    quote = ""
+    escaped = False
+    for char in fragment:
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "<" and paren_depth == 0:
+            angle_depth += 1
+        elif char == ">" and paren_depth == 0 and angle_depth > 0:
+            angle_depth -= 1
+        elif char == "(":
+            paren_depth += 1
+        elif char == ")" and paren_depth > 0:
+            paren_depth -= 1
+        elif char == "{" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+            return True
+        elif char == "{":
+            brace_depth += 1
+        elif char == "}" and brace_depth > 0:
+            brace_depth -= 1
+        elif char == "}" and angle_depth == 0 and paren_depth == 0:
+            return True
+        elif char == ";" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+            return True
+    return False
+
+
 def behavior_patterns_for_path(rel_path: str | None) -> tuple[re.Pattern[str], ...]:
-    if Path(str(rel_path or "")).suffix.lower() == ".py":
+    suffix = Path(str(rel_path or "")).suffix.lower()
+    if suffix == ".py":
         return tuple(pattern for pattern in BEHAVIOR_PATTERNS if pattern is not GENERIC_METHOD_BEHAVIOR_PATTERN)
+    if suffix == ".kt":
+        return (
+            KOTLIN_METHOD_BEHAVIOR_PATTERN,
+            KOTLIN_TYPE_BEHAVIOR_PATTERN,
+            *(
+                pattern
+                for pattern in BEHAVIOR_PATTERNS
+                if pattern not in {GENERIC_METHOD_BEHAVIOR_PATTERN, BEHAVIOR_PATTERNS[1]}
+            ),
+        )
     return BEHAVIOR_PATTERNS
 
 
 def behavior_tokens(text: str, rel_path: str | None = None) -> set[str]:
     tokens: set[str] = set()
+    suffix = Path(str(rel_path or "")).suffix.lower()
+    java_block_comment = False
+    java_text_block = False
+    java_declaration_lines: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("//"):
+        if not stripped or (suffix != ".java" and stripped.startswith("#")):
             continue
-        for pattern in behavior_patterns_for_path(rel_path):
-            match = pattern.search(line)
+        behavior_line = line
+        line_in_java_text_block = False
+        if suffix == ".java":
+            line_in_java_text_block = java_text_block
+            scanner_line, java_block_comment, java_text_block = strip_java_comments_line(
+                line,
+                java_block_comment,
+                java_text_block,
+            )
+            line_in_java_text_block = line_in_java_text_block or java_text_block
+            scanner_fragment = scanner_line.strip()
+            if scanner_fragment:
+                java_declaration_lines.append(scanner_fragment)
+                declaration_text = " ".join(java_declaration_lines)
+                for start in range(len(java_declaration_lines)):
+                    java_token = java_wildcard_method_token(" ".join(java_declaration_lines[start:]))
+                    if java_token:
+                        tokens.add(java_token)
+                        break
+                if java_fragment_has_declaration_boundary(declaration_text):
+                    java_declaration_lines.clear()
+        elif stripped.startswith("//"):
+            continue
+        if not behavior_line.strip():
+            continue
+        patterns = behavior_patterns_for_path(rel_path)
+        if line_in_java_text_block:
+            patterns = tuple(pattern for pattern in patterns if pattern is not GENERIC_METHOD_BEHAVIOR_PATTERN)
+        for pattern in patterns:
+            match = pattern.search(behavior_line)
             if not match:
                 continue
             token = str(match.group(1)).strip().strip("\"'")
@@ -1335,12 +1647,54 @@ def replaced_test_behaviors(
     return replaced
 
 
+def matched_behavior_relocation_sources(
+    before: dict[str, list[str]],
+    after: dict[str, list[str]],
+) -> set[str]:
+    candidates: dict[str, list[str]] = {}
+    for source, tokens in before.items():
+        source_tokens = set(tokens)
+        if not source_tokens or set(after.get(source, [])):
+            continue
+        candidates[source] = sorted(
+            destination
+            for destination, destination_tokens in after.items()
+            if destination != source
+            and not set(before.get(destination, []))
+            and source_tokens <= set(destination_tokens)
+            and compatible_behavior_move(source, destination)
+        )
+
+    destination_owner: dict[str, str] = {}
+
+    def assign(source: str, seen_destinations: set[str]) -> bool:
+        for destination in candidates.get(source, []):
+            if destination in seen_destinations:
+                continue
+            seen_destinations.add(destination)
+            current_owner = destination_owner.get(destination)
+            if current_owner is None or assign(current_owner, seen_destinations):
+                destination_owner[destination] = source
+                return True
+        return False
+
+    for source in sorted(
+        candidates,
+        key=lambda item: (len(candidates[item]), -len(set(before[item])), item),
+    ):
+        assign(source, set())
+    return set(destination_owner.values())
+
+
 def detect_behavior_regression(before: dict[str, list[str]], after: dict[str, list[str]]) -> dict[str, Any]:
     lost: dict[str, list[str]] = {}
+    relocated_sources = matched_behavior_relocation_sources(before, after)
     for rel_path, tokens in before.items():
         before_tokens = set(tokens)
         after_tokens = set(after.get(rel_path, []))
         missing_tokens = before_tokens - after_tokens
+        if rel_path in relocated_sources:
+            missing_tokens.clear()
         missing_tokens -= replaced_test_behaviors(
             rel_path,
             missing_tokens,
