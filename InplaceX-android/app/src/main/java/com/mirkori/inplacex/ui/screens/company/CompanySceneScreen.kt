@@ -67,6 +67,21 @@ internal fun CompanySceneScreen(
             ?.let { it > 0 } == true
     }
     val selectedChapterRewardClaimed = selectedChapter in claimedChapterNumbers
+    val chapterRewardLabel = strings.text(
+        when {
+            selectedChapterRewardClaimed -> "company.chapter.reward.claimed"
+            selectedChapterCompleted -> "company.chapter.reward.available"
+            else -> "company.chapter.reward"
+        },
+    )
+    val openChapterReward = {
+        rewardDialogState = when {
+            selectedChapterRewardClaimed -> ChapterRewardDialogState.CLAIMED
+            !selectedChapterCompleted -> ChapterRewardDialogState.LOCKED
+            onClaimChapterReward(selectedChapter) -> ChapterRewardDialogState.COLLECTED
+            else -> ChapterRewardDialogState.CLAIMED
+        }
+    }
     val selectedPlayable =
         selectedCompleted ||
             (
@@ -109,6 +124,8 @@ internal fun CompanySceneScreen(
                     energy = progressState.campaignEnergy,
                     energyMax = progressState.campaignEnergyMax,
                     compact = compact,
+                    chapterRewardLabel = chapterRewardLabel.takeIf { landscape },
+                    onChapterReward = openChapterReward.takeIf { landscape },
                     onHistory = onHistory,
                     onBuyEnergy = onBuyEnergy,
                 )
@@ -123,14 +140,7 @@ internal fun CompanySceneScreen(
                         nextBlockLocked = nextBlockLocked,
                         rewardAvailable = selectedChapterCompleted,
                         rewardClaimed = selectedChapterRewardClaimed,
-                        onRewardClick = {
-                            rewardDialogState = when {
-                                selectedChapterRewardClaimed -> ChapterRewardDialogState.CLAIMED
-                                !selectedChapterCompleted -> ChapterRewardDialogState.LOCKED
-                                onClaimChapterReward(selectedChapter) -> ChapterRewardDialogState.COLLECTED
-                                else -> ChapterRewardDialogState.CLAIMED
-                            }
-                        },
+                        onRewardClick = openChapterReward,
                         compact = compact,
                     )
                     Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))

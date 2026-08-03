@@ -1,14 +1,60 @@
 package com.mirkori.inplacex.data.local
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.database.sqlite.SQLiteException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LocalRepositoriesInstrumentedTest {
+    @Test
+    fun campaignCompletionIsAtomicAndOnlyRatingImprovementsGrantCoins() {
+        withIsolatedDatabase("campaign_completion_atomic", { FIXED_NOW_MS }) { context, config ->
+            val repository = GameProgressRepository(context, config)
+
+            val first = repository.recordCampaignCompletion(levelNumber = 1, backendRating = 8)
+            assertEquals(128, first.coins)
+            assertEquals(8, first.totalCampaignRating)
+            assertEquals(1, first.companyStats.wins)
+
+            val replay = repository.recordCampaignCompletion(levelNumber = 1, backendRating = 6)
+            assertEquals(128, replay.coins)
+            assertEquals(8, replay.totalCampaignRating)
+            assertEquals(2, replay.companyStats.wins)
+
+            val improved = repository.recordCampaignCompletion(levelNumber = 1, backendRating = 10)
+            assertEquals(130, improved.coins)
+            assertEquals(10, improved.totalCampaignRating)
+            assertEquals(3, improved.companyStats.wins)
+
+            val beforeFailure = repository.loadState()
+            val db = GameProgressDbHelper(context, config).writableDatabase
+            db.execSQL(
+                """
+                CREATE TRIGGER fail_campaign_profile_update
+                BEFORE INSERT ON ${GameProgressDatabase.TABLE_PROGRESS}
+                WHEN NEW.${GameProgressDatabase.COL_COMPANY_WINS} = 4
+                BEGIN
+                    SELECT RAISE(ABORT, 'forced campaign rollback');
+                END
+                """.trimIndent(),
+            )
+            try {
+                repository.recordCampaignCompletion(levelNumber = 2, backendRating = 7)
+                fail("Expected the forced profile update failure")
+            } catch (_: SQLiteException) {
+                // The profile write fails after the level progress write; the transaction must roll both back.
+            }
+
+            assertEquals(beforeFailure, repository.loadState())
+            assertEquals(CampaignLevelProgress(2, 0), repository.loadCampaignProgress(2))
+        }
+    }
+
     @Test
     fun campaignChapterRewardRequiresCompletionAndCanOnlyBeClaimedOnce() {
         withIsolatedDatabase("campaign_chapter_reward", { FIXED_NOW_MS }) { context, config ->

@@ -36,6 +36,7 @@ shipped direction. Mission controls remain semantic, adaptive Compose components
 - Compact phones use reduced spacing and labels while preserving the same information hierarchy.
 - Russian and English copy comes only from the localization catalog.
 - Stable test tags: `company-mission-list`, `company-level-{n}`, `company-history`, `company-energy`, and `company-play`.
+- Chapter rewards remain reachable in both portrait and compact landscape; landscape exposes the reward action in the screen header.
 
 ## Architecture
 

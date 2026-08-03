@@ -119,7 +119,13 @@ class GameProgressRepository(
     }
 
     fun loadCampaignProgress(levelNumber: Int): CampaignLevelProgress {
-        val db = helper.readableDatabase
+        return loadCampaignProgress(helper.readableDatabase, levelNumber)
+    }
+
+    private fun loadCampaignProgress(
+        db: SQLiteDatabase,
+        levelNumber: Int,
+    ): CampaignLevelProgress {
         val cursor = db.query(
             GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS,
             arrayOf(
@@ -373,29 +379,36 @@ class GameProgressRepository(
 
         val db = helper.writableDatabase
         ensureDefaultRow(db)
-        val previousProgress = loadCampaignProgress(levelNumber)
-        val newBest = maxOf(previousProgress.bestBackendRating, backendRating)
-        val ratingDelta = newBest - previousProgress.bestBackendRating
+        db.beginTransaction()
+        return try {
+            val previousProgress = loadCampaignProgress(db, levelNumber)
+            val newBest = maxOf(previousProgress.bestBackendRating, backendRating)
+            val ratingDelta = newBest - previousProgress.bestBackendRating
 
-        val progressValues = ContentValues().apply {
-            put(GameProgressDbHelper.COL_CAMPAIGN_LEVEL_NUMBER, levelNumber)
-            put(GameProgressDbHelper.COL_CAMPAIGN_BEST_BACKEND_RATING, newBest)
-        }
-        db.insertWithOnConflict(
-            GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS,
-            null,
-            progressValues,
-            SQLiteDatabase.CONFLICT_REPLACE,
-        )
-
-        return mutate(db = db) { row ->
-            row.copy(
-                highestUnlockedCampaignLevel = maxOf(row.highestUnlockedCampaignLevel, levelNumber + 1),
-                totalCampaignRating = row.totalCampaignRating + ratingDelta,
-                coins = row.coins + backendRating,
-                companyWins = row.companyWins + 1,
-                matchesWon = row.matchesWon + 1,
+            val progressValues = ContentValues().apply {
+                put(GameProgressDbHelper.COL_CAMPAIGN_LEVEL_NUMBER, levelNumber)
+                put(GameProgressDbHelper.COL_CAMPAIGN_BEST_BACKEND_RATING, newBest)
+            }
+            db.insertWithOnConflict(
+                GameProgressDbHelper.TABLE_CAMPAIGN_PROGRESS,
+                null,
+                progressValues,
+                SQLiteDatabase.CONFLICT_REPLACE,
             )
+
+            val updated = mutate(db = db) { row ->
+                row.copy(
+                    highestUnlockedCampaignLevel = maxOf(row.highestUnlockedCampaignLevel, levelNumber + 1),
+                    totalCampaignRating = row.totalCampaignRating + ratingDelta,
+                    coins = row.coins + ratingDelta,
+                    companyWins = row.companyWins + 1,
+                    matchesWon = row.matchesWon + 1,
+                )
+            }
+            db.setTransactionSuccessful()
+            updated
+        } finally {
+            db.endTransaction()
         }
     }
 
