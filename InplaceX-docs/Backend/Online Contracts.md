@@ -270,6 +270,9 @@ Private room rules are server-owned:
   participant to solve the opponent's secret wins;
 - a turn-based duel accepts exactly one participant at a time and alternates
   the current actor after each accepted miss;
+- setup has a five-minute authoritative deadline. If both secrets are not
+  accepted before it, the server finishes the session with
+  `finishReason=time_expired` and zeroizes every pending secret;
 - the active match has a ten-minute authoritative deadline. Snapshots expose
   `startedAtEpochMs`, `deadlineAtEpochMs`, and `serverTimeEpochMs`; after the
   deadline the server finishes the match with `finishReason=time_expired` and
@@ -283,6 +286,12 @@ The initial staging implementation keeps active invite/session state in the
 game runtime process. A process restart invalidates unfinished invitations and
 active staging matches; durable reconnect across server restarts requires the
 separate persistence milestone.
+
+The process-local state is nevertheless bounded: production runs a sweeper
+every 30 seconds, completed sessions remain readable for 15 minutes, tickets
+for 30 minutes, and expired invites for 15 minutes after their expiry. Removal
+also deletes the corresponding command replay records. Session removal always
+closes the aggregate and zeroizes pending secrets and retained own-guess data.
 
 ### Duel commands
 

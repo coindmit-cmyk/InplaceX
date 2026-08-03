@@ -193,7 +193,7 @@ class DuelMatch private constructor(
     @Synchronized
     fun finishDueToTimeout(): DuelSnapshot {
         ensureOpen()
-        if (phase == DuelPhase.ACTIVE) {
+        if (phase != DuelPhase.FINISHED) {
             phase = DuelPhase.FINISHED
             currentTurn = null
             winner = null
