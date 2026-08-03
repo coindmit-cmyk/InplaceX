@@ -33,6 +33,11 @@ class JdbcPersistenceTest {
                     "PLAYER_IDENTITIES",
                     "GOOGLE_AUTH_CHALLENGES",
                     "AUTH_IDEMPOTENCY_RESULTS",
+                    "DUEL_PARTICIPANTS",
+                    "DUEL_SECRETS",
+                    "DUEL_TURNS",
+                    "PRIVATE_DUEL_INVITES",
+                    "ONLINE_COMMAND_RESULTS",
                 ),
                 connection.metaData.getTables(null, null, "%", arrayOf("TABLE")).use { resultSet ->
                     buildSet {
@@ -43,11 +48,13 @@ class JdbcPersistenceTest {
                             "DUEL_SESSIONS", "DUEL_COMMANDS", "DUEL_EVENTS",
                             "PLAYER_IDENTITIES", "GOOGLE_AUTH_CHALLENGES",
                             "AUTH_IDEMPOTENCY_RESULTS",
+                            "DUEL_PARTICIPANTS", "DUEL_SECRETS", "DUEL_TURNS",
+                            "PRIVATE_DUEL_INVITES", "ONLINE_COMMAND_RESULTS",
                         ),
                     )
                 },
             )
-            assertEquals(4, connection.createStatement().use { statement ->
+            assertEquals(5, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
