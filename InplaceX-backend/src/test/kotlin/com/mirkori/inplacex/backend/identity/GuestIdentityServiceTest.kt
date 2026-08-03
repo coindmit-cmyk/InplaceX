@@ -16,6 +16,7 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -277,6 +278,80 @@ class GuestIdentityServiceTest {
     }
 
     @Test
+    fun `Google challenge replay survives restart with the exact nonce`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = testDataSource("google-challenge-replay")
+        val verifier = GoogleIdentityVerifier { _, _ -> null }
+        val player = service(clock, dataSource = dataSource).bootstrapForTest(bootstrap("challenge-replay-install"))
+        val idempotencyKey = "00000000-0000-4000-8000-000000000030"
+
+        val first = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
+            .createGoogleChallenge(player.playerId, idempotencyKey)
+        val replayed = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
+            .createGoogleChallenge(player.playerId, idempotencyKey)
+
+        assertEquals(first.nonce, replayed.nonce)
+        assertEquals(first.expiresAt, replayed.expiresAt)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT COUNT(*) FROM google_auth_challenges").use { result ->
+                    result.next()
+                    assertEquals(1, result.getInt(1))
+                }
+                statement.executeQuery(
+                    "SELECT COUNT(*) FROM auth_idempotency_results WHERE operation = 'google_challenge'",
+                ).use { result ->
+                    result.next()
+                    assertEquals(1, result.getInt(1))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `concurrent duplicate Google challenge creates one durable result`() {
+        val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
+        val dataSource = testDataSource("google-challenge-concurrent")
+        val verifier = GoogleIdentityVerifier { _, _ -> null }
+        val bootstrapService = service(clock, dataSource = dataSource)
+        val player = bootstrapService.bootstrapForTest(bootstrap("challenge-concurrent-install"))
+        val firstService = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
+        val secondService = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
+        val idempotencyKey = "00000000-0000-4000-8000-000000000031"
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val futures = listOf(firstService, secondService).map { candidate ->
+                executor.submit<GoogleAuthChallenge> {
+                    start.await(5, TimeUnit.SECONDS)
+                    candidate.createGoogleChallenge(player.playerId, idempotencyKey)
+                }
+            }
+            start.countDown()
+            val challenges = futures.map { it.get(10, TimeUnit.SECONDS) }
+
+            assertEquals(challenges[0].nonce, challenges[1].nonce)
+            assertEquals(challenges[0].expiresAt, challenges[1].expiresAt)
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { statement ->
+                    statement.executeQuery("SELECT COUNT(*) FROM google_auth_challenges").use { result ->
+                        result.next()
+                        assertEquals(1, result.getInt(1))
+                    }
+                    statement.executeQuery(
+                        "SELECT COUNT(*) FROM auth_idempotency_results WHERE operation = 'google_challenge'",
+                    ).use { result ->
+                        result.next()
+                        assertEquals(1, result.getInt(1))
+                    }
+                }
+            }
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `Google identity links a guest once and restores the same player`() {
         val clock = MutableClock(Instant.parse("2026-07-25T12:00:00Z"))
         val dataSource = JdbcDataSource().apply {
@@ -294,7 +369,7 @@ class GuestIdentityServiceTest {
         }
         val service = service(clock, dataSource = dataSource, googleIdentityVerifier = verifier)
         val firstGuest = service.bootstrapForTest(bootstrap("google-installation-a"))
-        val firstChallenge = service.createGoogleChallenge(firstGuest.playerId)
+        val firstChallenge = service.createGoogleChallenge(firstGuest.playerId, UUID.randomUUID().toString())
 
         val linked = service.authenticateWithGoogle(
             currentPlayerId = firstGuest.playerId,
@@ -313,7 +388,7 @@ class GuestIdentityServiceTest {
         }
 
         val secondGuest = service.bootstrapForTest(bootstrap("google-installation-b"))
-        val secondChallenge = service.createGoogleChallenge(secondGuest.playerId)
+        val secondChallenge = service.createGoogleChallenge(secondGuest.playerId, UUID.randomUUID().toString())
         val restored = service.authenticateWithGoogle(
             currentPlayerId = secondGuest.playerId,
             idToken = "valid-google-token",

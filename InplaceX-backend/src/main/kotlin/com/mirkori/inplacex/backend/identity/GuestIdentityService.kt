@@ -203,22 +203,32 @@ class GuestIdentityService(
         return result.value
     }
 
-    fun createGoogleChallenge(playerId: String): GoogleAuthChallenge {
+    fun createGoogleChallenge(playerId: String, idempotencyKey: String): GoogleAuthChallenge {
         requireCanonicalPlayerId(playerId)
+        require(idempotencyKey.matches(IdempotencyKeyPattern))
         if (googleIdentityVerifier == null) throw GoogleIdentityUnavailableException()
+        val now = clock.instant()
         val nonce = newNonce()
-        val expiresAt = clock.instant().plus(GoogleChallengeTtl)
-        identities.createGoogleChallenge(
+        val expiresAt = now.plus(GoogleChallengeTtl)
+        val result = identities.createGoogleChallengeIdempotent(
             playerId = playerId,
+            idempotencyKey = idempotencyKey,
+            requestFingerprint = GoogleChallengeFingerprint,
             nonceHash = sha256(nonce),
             expiresAt = expiresAt,
+            now = now,
+            createResult = {
+                val challenge = GoogleAuthChallenge(nonce = nonce, expiresAt = expiresAt)
+                SerializedIdentityResult(challenge, encodeGoogleChallenge(challenge))
+            },
+            restoreResult = ::decodeGoogleChallenge,
         )
         logger.info(
             "GuestIdentity",
             "Google auth challenge created",
-            mapOf("playerId" to playerId),
+            mapOf("playerId" to playerId, "replayed" to result.replayed.toString()),
         )
-        return GoogleAuthChallenge(nonce = nonce, expiresAt = expiresAt)
+        return result.value
     }
 
     fun authenticateWithGoogle(
@@ -364,6 +374,20 @@ class GuestIdentityService(
         )
     }
 
+    private fun encodeGoogleChallenge(challenge: GoogleAuthChallenge): String = buildJsonObject {
+        put("nonce", challenge.nonce)
+        put("expiresAt", challenge.expiresAt.toString())
+    }.toString()
+
+    private fun decodeGoogleChallenge(source: String): GoogleAuthChallenge {
+        val value = Json.parseToJsonElement(source).jsonObject
+        check(value.keys == GoogleChallengeResultFields) { "Invalid stored Google challenge idempotency result" }
+        return GoogleAuthChallenge(
+            nonce = value.getValue("nonce").jsonPrimitive.content,
+            expiresAt = Instant.parse(value.getValue("expiresAt").jsonPrimitive.content),
+        )
+    }
+
     private fun validateBootstrap(command: GuestBootstrapCommand) {
         require(command.installationId.length in 1..128)
         validateOptional(command.appVersion, 64)
@@ -418,6 +442,8 @@ class GuestIdentityService(
             "refreshExpiresAt",
         )
         val BootstrapResultFields = setOf("playerId", "accountKind", "credentials")
+        val GoogleChallengeResultFields = setOf("nonce", "expiresAt")
+        val GoogleChallengeFingerprint = sha256("google_challenge:v1")
     }
 }
 
@@ -647,22 +673,64 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         IdempotentIdentityResult(created.value, replayed = false)
     }
 
-    fun createGoogleChallenge(
+    fun <T> createGoogleChallengeIdempotent(
         playerId: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
         nonceHash: String,
         expiresAt: Instant,
-    ) = dataSource.transaction { connection ->
-        connection.prepareStatement(
-            """
-            INSERT INTO google_auth_challenges(nonce_hash, player_id, expires_at)
-            VALUES (?, ?, ?)
-            """.trimIndent(),
-        ).use { statement ->
-            statement.setString(1, nonceHash)
-            statement.setString(2, playerId)
-            statement.setInstant(3, expiresAt)
-            statement.executeUpdate()
+        now: Instant,
+        createResult: () -> SerializedIdentityResult<T>,
+        restoreResult: (String) -> T,
+    ): IdempotentIdentityResult<T> {
+        repeat(MaxGoogleChallengeAttempts) {
+            try {
+                return dataSource.transaction { connection ->
+                    existingAuthResult(
+                        connection,
+                        GoogleChallengeOperation,
+                        playerId,
+                        idempotencyKey,
+                        now,
+                    )?.let { existing ->
+                        return@transaction restoreIdentityResult(existing, requestFingerprint, restoreResult)
+                    }
+                    connection.prepareStatement(
+                        """
+                        INSERT INTO google_auth_challenges(nonce_hash, player_id, expires_at)
+                        VALUES (?, ?, ?)
+                        """.trimIndent(),
+                    ).use { statement ->
+                        statement.setString(1, nonceHash)
+                        statement.setString(2, playerId)
+                        statement.setInstant(3, expiresAt)
+                        statement.executeUpdate()
+                    }
+                    val created = createResult()
+                    insertCompletedAuthResult(
+                        connection = connection,
+                        operation = GoogleChallengeOperation,
+                        actorKey = playerId,
+                        idempotencyKey = idempotencyKey,
+                        requestFingerprint = requestFingerprint,
+                        responseJson = created.responseJson,
+                        expiresAt = expiresAt,
+                    )
+                    IdempotentIdentityResult(created.value, replayed = false)
+                }
+            } catch (error: SQLException) {
+                if (!error.isConstraintViolation()) throw error
+                replayAuthResult(
+                    operation = GoogleChallengeOperation,
+                    actorKey = playerId,
+                    idempotencyKey = idempotencyKey,
+                    requestFingerprint = requestFingerprint,
+                    now = now,
+                    restoreResult = restoreResult,
+                )?.let { return it }
+            }
         }
+        error("Unable to serialize Google auth challenge")
     }
 
     fun consumeGoogleChallenge(
@@ -903,6 +971,33 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
         }
     }
 
+    private fun insertCompletedAuthResult(
+        connection: Connection,
+        operation: String,
+        actorKey: String,
+        idempotencyKey: String,
+        requestFingerprint: String,
+        responseJson: String,
+        expiresAt: Instant,
+    ) {
+        connection.prepareStatement(
+            """
+            INSERT INTO auth_idempotency_results(
+                operation, actor_key, idempotency_key, request_fingerprint,
+                state, response_json, expires_at
+            ) VALUES (?, ?, ?, ?, 'completed', ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, operation)
+            statement.setString(2, actorKey)
+            statement.setString(3, idempotencyKey)
+            statement.setString(4, requestFingerprint)
+            statement.setString(5, responseJson)
+            statement.setInstant(6, expiresAt)
+            statement.executeUpdate()
+        }
+    }
+
     private fun completeBootstrapReservation(
         connection: Connection,
         installationHash: String,
@@ -1001,7 +1096,9 @@ class JdbcGuestIdentityRepository(private val dataSource: DataSource) {
     private companion object {
         const val BootstrapOperation = "bootstrap"
         const val RefreshOperation = "refresh"
+        const val GoogleChallengeOperation = "google_challenge"
         const val MaxBootstrapAttempts = 3
+        const val MaxGoogleChallengeAttempts = 3
     }
 }
 
