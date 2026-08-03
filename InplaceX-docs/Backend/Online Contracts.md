@@ -93,6 +93,14 @@ Google linking uses the authenticated guest player context:
    expiry, subject, and nonce, consumes the challenge, and links the opaque
    Google subject to the player.
 
+The Google exchange is durable under the authenticated player and
+`Idempotency-Key`. Challenge consumption, identity linking or restoration, the
+new refresh-token family, and the exact authentication response commit in one
+database transaction. A same-key retry returns the committed credentials even
+after restart and does not call the identity provider again; a changed token or
+nonce under that key returns `409 idempotency_key_reused`. Concurrent duplicate
+requests can consume the challenge and create credentials only once.
+
 The database stores the provider name and opaque subject, never the raw Google
 ID token or email address. A provider subject already linked to a player
 restores that player after explicit Google sign-in; a new subject promotes the

@@ -114,7 +114,8 @@ fun Application.configureIdentityRoutes(
         }
 
         post("/api/v1/auth/google") {
-            if (!call.hasValidIdempotencyKey()) {
+            val idempotencyKey = call.validIdempotencyKeyOrNull()
+            if (idempotencyKey == null) {
                 call.respondIdentityError(HttpStatusCode.BadRequest, "invalid_idempotency_key")
                 return@post
             }
@@ -132,7 +133,11 @@ fun Application.configureIdentityRoutes(
                     currentPlayerId = principal.playerId,
                     idToken = request.idToken,
                     nonce = request.nonce,
+                    idempotencyKey = idempotencyKey,
                 )
+            } catch (_: IdempotencyKeyReusedException) {
+                call.respondIdentityError(HttpStatusCode.Conflict, "idempotency_key_reused")
+                return@post
             } catch (_: GoogleIdentityUnavailableException) {
                 call.respondIdentityError(HttpStatusCode.ServiceUnavailable, "provider_unavailable")
                 return@post
@@ -273,10 +278,6 @@ private fun io.ktor.server.application.ApplicationCall.authenticatedPrincipalOrN
         is AccessTokenAuthentication.Accepted -> result.principal
         is AccessTokenAuthentication.Rejected -> null
     }
-}
-
-private fun io.ktor.server.application.ApplicationCall.hasValidIdempotencyKey(): Boolean {
-    return validIdempotencyKeyOrNull() != null
 }
 
 private fun io.ktor.server.application.ApplicationCall.validIdempotencyKeyOrNull(): String? =

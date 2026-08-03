@@ -187,19 +187,38 @@ class IdentityRoutesTest {
             .jsonPrimitive
             .content
 
+        val exchangeKey = UUID.randomUUID().toString()
         val exchange = client.post("/api/v1/auth/google") {
-            header("Idempotency-Key", UUID.randomUUID().toString())
+            header("Idempotency-Key", exchangeKey)
             header("Authorization", "Bearer $accessToken")
             contentType(ContentType.Application.Json)
             setBody("""{"idToken":"verified-google-token","nonce":"$nonce"}""")
         }
         assertEquals(HttpStatusCode.OK, exchange.status)
-        val exchangeJson = Json.parseToJsonElement(exchange.bodyAsText()).jsonObject
+        val exchangeBody = exchange.bodyAsText()
+        val exchangeJson = Json.parseToJsonElement(exchangeBody).jsonObject
         assertEquals("google", exchangeJson.getValue("accountKind").jsonPrimitive.content)
         assertEquals(
             bootstrapJson.getValue("playerId").jsonPrimitive.content,
             exchangeJson.getValue("playerId").jsonPrimitive.content,
         )
+
+        val exactReplay = client.post("/api/v1/auth/google") {
+            header("Idempotency-Key", exchangeKey)
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody("""{"idToken":"verified-google-token","nonce":"$nonce"}""")
+        }
+        assertEquals(HttpStatusCode.OK, exactReplay.status)
+        assertEquals(exchangeBody, exactReplay.bodyAsText())
+
+        val changedPayload = client.post("/api/v1/auth/google") {
+            header("Idempotency-Key", exchangeKey)
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody("""{"idToken":"changed-google-token","nonce":"$nonce"}""")
+        }
+        assertEquals(HttpStatusCode.Conflict, changedPayload.status)
 
         val replay = client.post("/api/v1/auth/google") {
             header("Idempotency-Key", UUID.randomUUID().toString())
