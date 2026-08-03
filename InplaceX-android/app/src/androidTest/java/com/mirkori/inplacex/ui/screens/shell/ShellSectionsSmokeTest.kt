@@ -140,7 +140,7 @@ class ShellSectionsSmokeTest {
             composeRule.onNodeWithText("Играть").performClick()
             composeRule.onNodeWithText("Онлайн-матч").assertIsDisplayed()
             composeRule.onNodeWithText("Настройки онлайн-матча").assertIsDisplayed()
-            composeRule.onNodeWithText("4 цифр").assertIsDisplayed()
+            composeRule.onNodeWithText("4 цифры").assertIsDisplayed()
             composeRule.onNodeWithText("На время").assertIsDisplayed()
             composeRule.onNodeWithText(
                 "Оба игрока разгадывают одновременно. Побеждает тот, кто первым найдёт код.",

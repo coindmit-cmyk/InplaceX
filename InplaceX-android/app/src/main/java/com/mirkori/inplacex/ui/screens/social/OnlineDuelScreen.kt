@@ -64,7 +64,7 @@ internal fun OnlineDuelScreen(
             if (initialSessionId == null) {
                 OnlineDuelUiState.Ready
             } else {
-                OnlineDuelUiState.Loading("Восстанавливаем матч…")
+                OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
             },
         )
     }
@@ -82,16 +82,17 @@ internal fun OnlineDuelScreen(
         when (result) {
             is OnlineClientResult.Success -> OnlineDuelUiState.Playing(result.value)
             OnlineClientResult.AuthenticationRequired ->
-                OnlineDuelUiState.Error("Не удалось восстановить гостевую сессию")
+                OnlineDuelUiState.Error(strings.text("social.online.error.restore_auth"))
             OnlineClientResult.MembershipRejected ->
-                OnlineDuelUiState.Error("Сервер отклонил участие в этом матче")
+                OnlineDuelUiState.Error(strings.text("social.online.error.membership"))
             OnlineClientResult.RevisionConflict ->
-                OnlineDuelUiState.Error("Матч изменился. Состояние будет загружено заново")
-            OnlineClientResult.Offline -> OnlineDuelUiState.Error("Нет подключения к сети")
+                OnlineDuelUiState.Error(strings.text("social.online.error.revision"))
+            OnlineClientResult.Offline ->
+                OnlineDuelUiState.Error(strings.text("social.online.error.offline"))
             OnlineClientResult.TemporarilyUnavailable ->
-                OnlineDuelUiState.Error("Сервер временно недоступен")
+                OnlineDuelUiState.Error(strings.text("social.online.error.unavailable"))
             OnlineClientResult.InvalidResponse ->
-                OnlineDuelUiState.Error("Сервер вернул некорректный ответ")
+                OnlineDuelUiState.Error(strings.text("social.online.error.invalid_response"))
         }
 
     fun applySnapshotResult(
@@ -116,20 +117,20 @@ internal fun OnlineDuelScreen(
     fun inviteError(result: OnlineClientResult<*>): OnlineDuelUiState.Error =
         OnlineDuelUiState.Error(
             when (result) {
-                OnlineClientResult.AuthenticationRequired -> "Не удалось войти как гость"
-                OnlineClientResult.MembershipRejected -> "Это приглашение принадлежит другому игроку"
-                OnlineClientResult.RevisionConflict -> "Приглашение уже использовано"
-                OnlineClientResult.Offline -> "Нет подключения к сети"
-                OnlineClientResult.TemporarilyUnavailable -> "Сервер временно недоступен"
-                OnlineClientResult.InvalidResponse -> "Код не найден или приглашение уже истекло"
-                is OnlineClientResult.Success<*> -> "Не удалось открыть приглашение"
+                OnlineClientResult.AuthenticationRequired -> strings.text("social.online.error.guest_auth")
+                OnlineClientResult.MembershipRejected -> strings.text("social.online.error.invite_owner")
+                OnlineClientResult.RevisionConflict -> strings.text("social.online.error.invite_used")
+                OnlineClientResult.Offline -> strings.text("social.online.error.offline")
+                OnlineClientResult.TemporarilyUnavailable -> strings.text("social.online.error.unavailable")
+                OnlineClientResult.InvalidResponse -> strings.text("social.online.error.invite_invalid")
+                is OnlineClientResult.Success<*> -> strings.text("social.online.error.invite_open")
             },
         )
 
     suspend fun openInviteSession(invite: OnlineFriendInvite) {
         val sessionId = invite.sessionId
         state = if (sessionId == null) {
-            OnlineDuelUiState.Error("Сервер не создал комнату")
+            OnlineDuelUiState.Error(strings.text("social.online.error.room_missing"))
         } else {
             onActiveSessionChange(sessionId)
             applySnapshotResult(runtime.readSession(sessionId))
@@ -147,7 +148,7 @@ internal fun OnlineDuelScreen(
             is OnlineClientResult.Success -> {
                 val sessionId = ticket.value.sessionId
                 if (sessionId == null) {
-                    OnlineDuelUiState.Error("Сервер не создал матч")
+                    OnlineDuelUiState.Error(strings.text("social.online.error.match_missing"))
                 } else {
                     onActiveSessionChange(sessionId)
                     applySnapshotResult(runtime.readSession(sessionId))
@@ -173,7 +174,9 @@ internal fun OnlineDuelScreen(
                             OnlineFriendInviteStatus.WAITING -> Unit
                             OnlineFriendInviteStatus.MATCHED -> openInviteSession(result.value)
                             OnlineFriendInviteStatus.EXPIRED ->
-                                state = OnlineDuelUiState.Error("Время приглашения истекло")
+                                state = OnlineDuelUiState.Error(
+                                    strings.text("social.online.error.invite_expired"),
+                                )
                         }
                         OnlineClientResult.Offline,
                         OnlineClientResult.TemporarilyUnavailable,
@@ -278,7 +281,7 @@ internal fun OnlineDuelScreen(
 
         when (val current = state) {
             OnlineDuelUiState.Ready -> SceneCard {
-                Text("Настройки онлайн-матча", fontWeight = FontWeight.SemiBold)
+                Text(strings.text("social.online.settings"), fontWeight = FontWeight.SemiBold)
                 Text(
                     strings.text("social.match.format"),
                     style = MaterialTheme.typography.labelLarge,
@@ -310,7 +313,7 @@ internal fun OnlineDuelScreen(
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
-                Text("Длина секрета", style = MaterialTheme.typography.labelLarge)
+                Text(strings.text("social.online.secret_length"), style = MaterialTheme.typography.labelLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -323,7 +326,7 @@ internal fun OnlineDuelScreen(
                         Text("−")
                     }
                     Text(
-                        text = "$selectedCodeLength цифр",
+                        text = formatOnlineCodeLength(strings, selectedCodeLength),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -336,14 +339,13 @@ internal fun OnlineDuelScreen(
                     }
                 }
                 Text(
-                    "Цифры могут повторяться, но не больше трёх одинаковых подряд. " +
-                        "Лимита ходов нет, время матча — 10 минут.",
+                    strings.text("social.online.rules"),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (entryPoint == OnlineDuelEntryPoint.QUICK_MATCH) {
-                    Text("Найти соперника", fontWeight = FontWeight.SemiBold)
+                    Text(strings.text("social.online.find_opponent"), fontWeight = FontWeight.SemiBold)
                     Text(
-                        "Если другого игрока с такими же настройками нет, сервер подключит бота.",
+                        strings.text("social.online.bot_fallback"),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Button(
@@ -354,16 +356,16 @@ internal fun OnlineDuelScreen(
                             }
                         },
                     ) {
-                        Text("Найти матч")
+                        Text(strings.text("social.online.find_match"))
                     }
                 }
 
                 if (entryPoint == OnlineDuelEntryPoint.INVITES) {
-                    Text("Играть с другом", fontWeight = FontWeight.SemiBold)
+                    Text(strings.text("social.online.play_friend"), fontWeight = FontWeight.SemiBold)
                     Button(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
-                            state = OnlineDuelUiState.Loading("Создаём приглашение…")
+                            state = OnlineDuelUiState.Loading(strings.text("social.online.creating_invite"))
                             scope.launch {
                                 state = when (
                                     val result = runtime.createFriendInvite(
@@ -378,7 +380,7 @@ internal fun OnlineDuelScreen(
                             }
                         },
                     ) {
-                        Text("Создать код")
+                        Text(strings.text("social.online.create_code"))
                     }
                     OutlinedTextField(
                         value = inviteCode,
@@ -386,7 +388,7 @@ internal fun OnlineDuelScreen(
                             inviteCode = normalizeFriendInviteCode(value)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Код друга") },
+                        label = { Text(strings.text("social.online.friend_code")) },
                         singleLine = true,
                     )
                     OutlinedButton(
@@ -394,7 +396,7 @@ internal fun OnlineDuelScreen(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             val submittedCode = inviteCode
-                            state = OnlineDuelUiState.Loading("Подключаемся к другу…")
+                            state = OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
                             scope.launch {
                                 when (val result = runtime.acceptFriendInvite(submittedCode)) {
                                     is OnlineClientResult.Success -> openInviteSession(result.value)
@@ -403,7 +405,7 @@ internal fun OnlineDuelScreen(
                             }
                         },
                     ) {
-                        Text("Войти по коду")
+                        Text(strings.text("social.online.join_code"))
                     }
                 }
             }
@@ -420,17 +422,21 @@ internal fun OnlineDuelScreen(
             }
 
             is OnlineDuelUiState.WaitingForFriend -> SceneCard {
-                Text("Передайте код другу", fontWeight = FontWeight.SemiBold)
+                Text(strings.text("social.online.share_code"), fontWeight = FontWeight.SemiBold)
                 Text(
                     text = current.invite.inviteCode,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
                     color = InplaceXColors.Cobalt,
                 )
-                Text("Ожидаем второй телефон. Комната действует 10 минут.")
+                Text(strings.text("social.online.waiting_phone"))
                 Text(
-                    "${current.invite.playStyle.displayName(strings)} · " +
-                        "${current.invite.codeLength} цифр · без лимита ходов",
+                    formatOnlineText(
+                        strings,
+                        "social.online.invite_summary",
+                        "style" to current.invite.playStyle.displayName(strings),
+                        "length" to formatOnlineCodeLength(strings, current.invite.codeLength),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -487,7 +493,7 @@ internal fun OnlineDuelScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = { state = OnlineDuelUiState.Ready },
                 ) {
-                    Text("Отмена")
+                    Text(strings.text("social.online.cancel"))
                 }
             }
 
@@ -500,14 +506,14 @@ internal fun OnlineDuelScreen(
                         if (sessionId == null) {
                             state = OnlineDuelUiState.Ready
                         } else {
-                            state = OnlineDuelUiState.Loading("Восстанавливаем матч…")
+                            state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
                             scope.launch {
                                 state = applySnapshotResult(runtime.readSession(sessionId))
                             }
                         }
                     },
                 ) {
-                    Text("Попробовать снова")
+                    Text(strings.text("social.online.retry"))
                 }
             }
 
@@ -517,38 +523,54 @@ internal fun OnlineDuelScreen(
                     Text(
                         text = when (snapshot.phase) {
                             "setup" -> if (snapshot.playerSecretConfigured) {
-                                "Ждём секрет друга"
+                                strings.text("social.online.setup.wait_opponent")
                             } else {
-                                "Задайте свой секретный код"
+                                strings.text("social.online.setup.enter_secret")
                             }
                             "active" -> if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
                                 strings.text("social.match.timed.started")
                             } else if (snapshot.currentTurn == "player") {
-                                "Ваш ход"
+                                strings.text("social.duel.your_turn")
                             } else {
-                                "Ход друга"
+                                strings.text("social.online.opponent_turn")
                             }
                             "finished" -> when {
-                                snapshot.finishReason == "time_expired" -> "Время вышло"
-                                snapshot.winner == "player" -> "Вы победили!"
-                                snapshot.winner == "opponent" -> "Друг победил"
-                                else -> "Матч завершён"
+                                snapshot.finishReason == "time_expired" ->
+                                    strings.text("social.online.result.time_expired")
+                                snapshot.winner == "player" -> strings.text("social.online.result.player_won")
+                                snapshot.winner == "opponent" -> strings.text("social.online.result.opponent_won")
+                                else -> strings.text("social.online.result.finished")
                             }
-                            else -> "Матч"
+                            else -> strings.text("social.online.match")
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        "${snapshot.playStyle.displayName(strings)} · ${snapshot.codeLength} цифр · " +
-                            "ходов: ${snapshot.attempts.count { it.actor == "player" }}",
+                        formatOnlineText(
+                            strings,
+                            "social.online.match_summary",
+                            "style" to snapshot.playStyle.displayName(strings),
+                            "length" to formatOnlineCodeLength(strings, snapshot.codeLength),
+                            "attempts" to snapshot.attempts.count { it.actor == "player" }.toString(),
+                        ),
                     )
                     snapshot.attempts.takeLast(8).forEach { attempt ->
                         Text(
                             if (attempt.actor == "player") {
-                                "Ваш ход #${attempt.number}: точно ${attempt.exactMatches}"
+                                formatOnlineText(
+                                    strings,
+                                    "social.online.attempt.player",
+                                    "number" to attempt.number.toString(),
+                                    "exact" to attempt.exactMatches.toString(),
+                                )
                             } else {
-                                "Друг #${attempt.number}: точно ${attempt.exactMatches}"
+                                formatOnlineText(
+                                    strings,
+                                    "social.online.attempt.opponent",
+                                    "number" to attempt.number.toString(),
+                                    "exact" to attempt.exactMatches.toString(),
+                                )
                             },
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -572,11 +594,19 @@ internal fun OnlineDuelScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             label = {
-                                Text(if (snapshot.phase == "setup") "Ваш секрет" else "Ваша комбинация")
+                                Text(
+                                    strings.text(
+                                        if (snapshot.phase == "setup") {
+                                            "social.online.secret"
+                                        } else {
+                                            "social.online.combination"
+                                        },
+                                    ),
+                                )
                             },
                             supportingText = {
                                 if (digits.maximumConsecutiveRun() > 3) {
-                                    Text("Нельзя вводить больше трёх одинаковых цифр подряд")
+                                    Text(strings.text("social.online.duplicate_error"))
                                 }
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -588,7 +618,7 @@ internal fun OnlineDuelScreen(
                             onClick = {
                                 val submitted = digits
                                 digits = ""
-                                state = OnlineDuelUiState.Loading("Синхронизируем ход…")
+                                state = OnlineDuelUiState.Loading(strings.text("social.online.syncing"))
                                 scope.launch {
                                     val result = if (snapshot.phase == "setup") {
                                         runtime.submitSecret(snapshot.sessionId, snapshot.revision, submitted)
@@ -603,7 +633,15 @@ internal fun OnlineDuelScreen(
                                 }
                             },
                         ) {
-                            Text(if (snapshot.phase == "setup") "Сохранить секрет" else "Подтвердить ход")
+                            Text(
+                                strings.text(
+                                    if (snapshot.phase == "setup") {
+                                        "social.online.save_secret"
+                                    } else {
+                                        "social.online.confirm_move"
+                                    },
+                                ),
+                            )
                         }
                     }
                 } else if (snapshot.phase != "finished") {
@@ -615,9 +653,9 @@ internal fun OnlineDuelScreen(
                             CircularProgressIndicator()
                             Text(
                                 if (snapshot.phase == "setup") {
-                                    "Друг задаёт свой секрет…"
+                                    strings.text("social.online.opponent_setting_secret")
                                 } else {
-                                    "Ожидаем ход друга…"
+                                    strings.text("social.online.waiting_opponent_move")
                                 },
                             )
                         }
@@ -632,7 +670,7 @@ internal fun OnlineDuelScreen(
                             state = OnlineDuelUiState.Ready
                         },
                     ) {
-                        Text("Новый матч")
+                        Text(strings.text("social.online.new_match"))
                     }
                 }
             }
@@ -703,3 +741,18 @@ internal fun normalizeFriendInviteCode(value: String): String =
 
 internal fun formatFriendInviteShareText(template: String, code: String): String =
     template.replace("{code}", code)
+
+internal fun formatOnlineCodeLength(strings: LocalizationProvider, count: Int): String =
+    formatOnlineText(
+        strings,
+        if (count == 4) "social.online.code_length.four" else "social.online.code_length.other",
+        "count" to count.toString(),
+    )
+
+private fun formatOnlineText(
+    strings: LocalizationProvider,
+    key: String,
+    vararg replacements: Pair<String, String>,
+): String = replacements.fold(strings.text(key)) { text, (placeholder, value) ->
+    text.replace("{$placeholder}", value)
+}
