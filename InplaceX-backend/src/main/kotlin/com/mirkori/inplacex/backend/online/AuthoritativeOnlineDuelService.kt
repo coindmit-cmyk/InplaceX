@@ -177,34 +177,7 @@ class AuthoritativeOnlineDuelService(
         sessionRepository?.deleteExpired(recoveredAt)
         sessionRepository?.loadRecoverable(recoveredAt)?.forEach(::restoreSession)
         lobbyRepository?.loadTickets(recoveredAt)?.forEach(::cacheTicket)
-        lobbyRepository?.loadInvites(recoveredAt.minus(inviteRetention))?.forEach { stored ->
-            val rules = OnlineLobbyRulesCodec.decodeInvite(stored.rulesJson)
-            val record = PrivateInviteRecord(
-                ownerPlayerId = stored.ownerPlayerId,
-                guestPlayerId = stored.guestPlayerId,
-                createCommandId = stored.createCommandId,
-                acceptCommandId = stored.acceptCommandId,
-                invite = PrivateDuelInvite(
-                    inviteCode = stored.inviteCode,
-                    status = enumValueOf(stored.status),
-                    sessionId = stored.sessionId,
-                    createdAt = stored.createdAt,
-                    expiresAt = stored.expiresAt,
-                    playStyle = rules.playStyle,
-                    codeLength = rules.codeLength,
-                    allowDuplicates = rules.allowDuplicates,
-                    maxConsecutiveDuplicateDigits = rules.maxConsecutiveDuplicateDigits,
-                    matchDurationSeconds = rules.matchDurationSeconds,
-                ),
-            )
-            privateInvites[stored.inviteCode] = record
-            privateInviteCreateReplays["${stored.ownerPlayerId}:${stored.createCommandId}"] =
-                PrivateInviteCreateReplay(rules.playStyle, rules.codeLength, stored.inviteCode)
-            if (stored.guestPlayerId != null && stored.acceptCommandId != null) {
-                privateInviteAcceptReplays["${stored.guestPlayerId}:${stored.acceptCommandId}"] =
-                    PrivateInviteAcceptReplay(stored.inviteCode)
-            }
-        }
+        lobbyRepository?.loadInvites(recoveredAt.minus(inviteRetention))?.forEach(::cacheInvite)
         expirePrivateInvites(recoveredAt)
         if (lobbyRepository != null) {
             logger.info(
@@ -393,39 +366,55 @@ class AuthoritativeOnlineDuelService(
         synchronized(lock) {
             val replayKey = "$playerId:$commandId"
             privateInviteCreateReplays[replayKey]?.let { replay ->
-                if (replay.playStyle != playStyle || replay.codeLength != codeLength) {
+                val replayed = lobbyRepository?.loadInvite(replay.inviteCode)?.let(::cacheInvite)
+                    ?: privateInvites.getValue(replay.inviteCode)
+                if (
+                    replayed.invite.playStyle != playStyle ||
+                    replayed.invite.codeLength != codeLength
+                ) {
                     throw OnlineCommandIdReusedException()
                 }
-                return privateInvites.getValue(replay.inviteCode).invite
+                return replayed.invite
             }
-            expirePrivateInvites(clock.instant())
             val createdAt = clock.instant()
-            val inviteCode = nextInviteCode()
-            val invite = PrivateDuelInvite(
-                inviteCode = inviteCode,
-                status = PrivateInviteStatus.WAITING,
-                sessionId = null,
-                createdAt = createdAt,
-                expiresAt = createdAt.plus(privateInviteLifetime),
-                playStyle = playStyle,
-                codeLength = codeLength,
-                allowDuplicates = true,
-                maxConsecutiveDuplicateDigits = OnlineMaximumConsecutiveDuplicateDigits,
-                matchDurationSeconds = privateMatchDuration.seconds,
-            )
-            val record = PrivateInviteRecord(
-                ownerPlayerId = playerId,
-                createCommandId = commandId,
-                invite = invite,
-            )
-            lobbyRepository?.saveInvite(record.toDurable())
-            privateInvites[inviteCode] = record
-            privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(
-                playStyle,
-                codeLength,
-                inviteCode,
-            )
-            return invite
+            repeat(MaximumInviteCodeAttempts) {
+                val inviteCode = nextInviteCode()
+                val invite = PrivateDuelInvite(
+                    inviteCode = inviteCode,
+                    status = PrivateInviteStatus.WAITING,
+                    sessionId = null,
+                    createdAt = createdAt,
+                    expiresAt = createdAt.plus(privateInviteLifetime),
+                    playStyle = playStyle,
+                    codeLength = codeLength,
+                    allowDuplicates = true,
+                    maxConsecutiveDuplicateDigits = OnlineMaximumConsecutiveDuplicateDigits,
+                    matchDurationSeconds = privateMatchDuration.seconds,
+                )
+                val candidate = PrivateInviteRecord(
+                    ownerPlayerId = playerId,
+                    createCommandId = commandId,
+                    invite = invite,
+                )
+                val stored = lobbyRepository?.coordinateInvite(candidate.toDurable())
+                if (lobbyRepository != null && stored == null) return@repeat
+                val coordinated = stored?.let(::cacheInvite) ?: candidate.also {
+                    privateInvites[inviteCode] = it
+                    privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(
+                        playStyle,
+                        codeLength,
+                        inviteCode,
+                    )
+                }
+                if (
+                    coordinated.invite.playStyle != playStyle ||
+                    coordinated.invite.codeLength != codeLength
+                ) {
+                    throw OnlineCommandIdReusedException()
+                }
+                return coordinated.invite
+            }
+            throw IllegalStateException("could not allocate private duel invite code")
         }
     }
 
@@ -433,12 +422,15 @@ class AuthoritativeOnlineDuelService(
         requireCanonicalUuid(playerId, "playerId")
         requireInviteCode(inviteCode)
         synchronized(lock) {
-            val record = privateInvites[inviteCode] ?: throw NoSuchElementException("private duel invite not found")
+            val record = lobbyRepository?.loadInvite(inviteCode)?.let(::cacheInvite)
+                ?: privateInvites[inviteCode]
+                ?: throw NoSuchElementException("private duel invite not found")
             expirePrivateInvite(record, clock.instant())
-            if (playerId != record.ownerPlayerId && playerId != record.guestPlayerId) {
+            val current = privateInvites.getValue(inviteCode)
+            if (playerId != current.ownerPlayerId && playerId != current.guestPlayerId) {
                 throw OnlineMembershipRejectedException()
             }
-            return record.invite
+            return current.invite
         }
     }
 
@@ -451,6 +443,49 @@ class AuthoritativeOnlineDuelService(
         requireCanonicalUuid(commandId, "commandId")
         requireInviteCode(inviteCode)
         synchronized(lock) {
+            if (lobbyRepository != null) {
+                var createdSession: SessionRecord? = null
+                val result = try {
+                    lobbyRepository.coordinateInviteAcceptance(
+                        inviteCode = inviteCode,
+                        guestPlayerId = playerId,
+                        commandId = commandId,
+                        now = clock.instant(),
+                    ) { stored ->
+                        val record = inviteRecord(stored)
+                        createHumanSession(
+                            rules = record.invite.onlineRules(),
+                            attemptLimit = null,
+                            matchDuration = Duration.ofSeconds(record.invite.matchDurationSeconds),
+                            firstPlayerId = record.ownerPlayerId,
+                            secondPlayerId = playerId,
+                        ).also { createdSession = it }.persistenceState()
+                    }
+                } catch (failure: Throwable) {
+                    createdSession?.close()
+                    throw failure
+                } ?: throw NoSuchElementException("private duel invite not found")
+                if (!result.createdSession) createdSession?.close()
+                if (result.invite.inviteCode != inviteCode) throw OnlineCommandIdReusedException()
+                val record = cacheInvite(result.invite)
+                if (
+                    record.ownerPlayerId == playerId ||
+                    record.guestPlayerId != playerId ||
+                    record.invite.status != PrivateInviteStatus.MATCHED
+                ) {
+                    throw OnlineInviteUnavailableException()
+                }
+                if (result.createdSession) {
+                    val session = requireNotNull(createdSession)
+                    sessions[session.sessionId] = session
+                    logger.info(
+                        tag = "OnlineInvite",
+                        message = "private invite matched",
+                        attributes = mapOf("sessionId" to session.sessionId),
+                    )
+                }
+                return record.invite
+            }
             val replayKey = "$playerId:$commandId"
             privateInviteAcceptReplays[replayKey]?.let { replay ->
                 if (replay.inviteCode != inviteCode) throw OnlineCommandIdReusedException()
@@ -482,11 +517,7 @@ class AuthoritativeOnlineDuelService(
                 sessionId = session.sessionId,
             )
             try {
-                if (lobbyRepository != null) {
-                    lobbyRepository.createSessionAndSaveInvite(session.persistenceState(), record.toDurable())
-                } else {
-                    session.persistNew()
-                }
+                session.persistNew()
             } catch (failure: Throwable) {
                 record.guestPlayerId = previousGuestPlayerId
                 record.acceptCommandId = previousAcceptCommandId
@@ -571,6 +602,43 @@ class AuthoritativeOnlineDuelService(
         return record
     }
 
+    private fun inviteRecord(stored: DurablePrivateInvite): PrivateInviteRecord {
+        val rules = OnlineLobbyRulesCodec.decodeInvite(stored.rulesJson)
+        return PrivateInviteRecord(
+            ownerPlayerId = stored.ownerPlayerId,
+            guestPlayerId = stored.guestPlayerId,
+            createCommandId = stored.createCommandId,
+            acceptCommandId = stored.acceptCommandId,
+            invite = PrivateDuelInvite(
+                inviteCode = stored.inviteCode,
+                status = enumValueOf(stored.status),
+                sessionId = stored.sessionId,
+                createdAt = stored.createdAt,
+                expiresAt = stored.expiresAt,
+                playStyle = rules.playStyle,
+                codeLength = rules.codeLength,
+                allowDuplicates = rules.allowDuplicates,
+                maxConsecutiveDuplicateDigits = rules.maxConsecutiveDuplicateDigits,
+                matchDurationSeconds = rules.matchDurationSeconds,
+            ),
+        )
+    }
+
+    private fun cacheInvite(stored: DurablePrivateInvite): PrivateInviteRecord =
+        inviteRecord(stored).also { record ->
+            privateInvites[stored.inviteCode] = record
+            privateInviteCreateReplays["${stored.ownerPlayerId}:${stored.createCommandId}"] =
+                PrivateInviteCreateReplay(
+                    record.invite.playStyle,
+                    record.invite.codeLength,
+                    stored.inviteCode,
+                )
+            if (stored.guestPlayerId != null && stored.acceptCommandId != null) {
+                privateInviteAcceptReplays["${stored.guestPlayerId}:${stored.acceptCommandId}"] =
+                    PrivateInviteAcceptReplay(stored.inviteCode)
+            }
+        }
+
     private fun expirePrivateInvites(now: Instant) {
         privateInvites.values.forEach { expirePrivateInvite(it, now) }
     }
@@ -580,8 +648,11 @@ class AuthoritativeOnlineDuelService(
             record.invite.status == PrivateInviteStatus.WAITING &&
             !now.isBefore(record.invite.expiresAt)
         ) {
-            record.invite = record.invite.copy(status = PrivateInviteStatus.EXPIRED)
-            lobbyRepository?.saveInvite(record.toDurable())
+            if (lobbyRepository != null) {
+                lobbyRepository.expireInvite(record.invite.inviteCode, now)?.let(::cacheInvite)
+            } else {
+                record.invite = record.invite.copy(status = PrivateInviteStatus.EXPIRED)
+            }
         }
     }
 

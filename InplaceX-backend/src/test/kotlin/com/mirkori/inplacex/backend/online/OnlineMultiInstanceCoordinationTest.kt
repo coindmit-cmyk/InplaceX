@@ -166,6 +166,155 @@ class OnlineMultiInstanceCoordinationTest {
         }
     }
 
+    @Test
+    fun `concurrent duplicate invite create command returns one durable invite`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val commandId = UUID.randomUUID().toString()
+        val runtimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val start = CountDownLatch(1)
+            val futures = runtimes.map { runtime ->
+                executor.submit(Callable {
+                    start.await()
+                    runtime.createPrivateInvite(
+                        owner,
+                        commandId,
+                        OnlineFriendPlayStyle.TURN_BASED,
+                        4,
+                    )
+                })
+            }
+            start.countDown()
+            val invites = futures.map { it.get() }
+
+            assertEquals(1, fixture.count("private_duel_invites"))
+            assertEquals(invites.first().inviteCode, invites.last().inviteCode)
+            assertEquals(PrivateInviteStatus.WAITING, invites.first().status)
+            assertEquals(0, fixture.count("duel_sessions"))
+        } finally {
+            executor.shutdownNow()
+            runtimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
+    @Test
+    fun `concurrent guests can accept one invite only once`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guests = listOf(fixture.player(), fixture.player())
+        val ownerRuntime = fixture.service()
+        val guestRuntimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val invite = ownerRuntime.createPrivateInvite(
+                owner,
+                UUID.randomUUID().toString(),
+                OnlineFriendPlayStyle.RACE,
+                6,
+            )
+            val start = CountDownLatch(1)
+            val futures = guestRuntimes.zip(guests).map { (runtime, guest) ->
+                executor.submit(Callable {
+                    start.await()
+                    runCatching {
+                        runtime.acceptPrivateInvite(guest, UUID.randomUUID().toString(), invite.inviteCode)
+                    }
+                })
+            }
+            start.countDown()
+            val results = futures.map { it.get() }
+
+            assertEquals(1, results.count { it.isSuccess })
+            assertEquals(1, results.count { it.exceptionOrNull() is OnlineInviteUnavailableException })
+            assertEquals(1, fixture.count("duel_sessions"))
+            val matched = ownerRuntime.readPrivateInvite(owner, invite.inviteCode)
+            assertEquals(PrivateInviteStatus.MATCHED, matched.status)
+            assertEquals(results.single { it.isSuccess }.getOrThrow().sessionId, matched.sessionId)
+        } finally {
+            executor.shutdownNow()
+            ownerRuntime.close()
+            guestRuntimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
+    @Test
+    fun `duplicate accept command across instances returns one session`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guest = fixture.player()
+        val ownerRuntime = fixture.service()
+        val guestRuntimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val invite = ownerRuntime.createPrivateInvite(
+                owner,
+                UUID.randomUUID().toString(),
+                OnlineFriendPlayStyle.TURN_BASED,
+                4,
+            )
+            val commandId = UUID.randomUUID().toString()
+            val start = CountDownLatch(1)
+            val futures = guestRuntimes.map { runtime ->
+                executor.submit(Callable {
+                    start.await()
+                    runtime.acceptPrivateInvite(guest, commandId, invite.inviteCode)
+                })
+            }
+            start.countDown()
+            val accepted = futures.map { it.get() }
+
+            assertEquals(1, fixture.count("duel_sessions"))
+            assertEquals(accepted.first().sessionId, accepted.last().sessionId)
+            assertNotNull(guestRuntimes.last().readSession(guest, requireNotNull(accepted.last().sessionId)))
+        } finally {
+            executor.shutdownNow()
+            ownerRuntime.close()
+            guestRuntimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
+    @Test
+    fun `stale instance cannot expire an invite matched elsewhere`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guest = fixture.player()
+        val staleRuntime = fixture.service()
+        val acceptingRuntime = fixture.service()
+        try {
+            val createCommandId = UUID.randomUUID().toString()
+            val invite = staleRuntime.createPrivateInvite(
+                owner,
+                createCommandId,
+                OnlineFriendPlayStyle.TURN_BASED,
+                4,
+            )
+            val accepted = acceptingRuntime.acceptPrivateInvite(
+                guest,
+                UUID.randomUUID().toString(),
+                invite.inviteCode,
+            )
+            fixture.clock.advance(Duration.ofMinutes(10))
+
+            val replayedCreate = staleRuntime.createPrivateInvite(
+                owner,
+                createCommandId,
+                OnlineFriendPlayStyle.TURN_BASED,
+                4,
+            )
+            val refreshed = staleRuntime.readPrivateInvite(owner, invite.inviteCode)
+
+            assertEquals(PrivateInviteStatus.MATCHED, replayedCreate.status)
+            assertEquals(PrivateInviteStatus.MATCHED, refreshed.status)
+            assertEquals(accepted.sessionId, refreshed.sessionId)
+            assertEquals(1, fixture.count("duel_sessions"))
+        } finally {
+            staleRuntime.close()
+            acceptingRuntime.close()
+        }
+    }
+
     private class Fixture {
         val dataSource: DataSource = JdbcDataSource().apply {
             setURL("jdbc:h2:mem:online-multi-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
@@ -199,7 +348,7 @@ class OnlineMultiInstanceCoordinationTest {
             }
 
         fun count(table: String): Int {
-            require(table in setOf("matchmaking_tickets", "duel_sessions"))
+            require(table in setOf("matchmaking_tickets", "private_duel_invites", "duel_sessions"))
             return dataSource.connection.use { connection ->
                 connection.createStatement().use { statement ->
                     statement.executeQuery("SELECT COUNT(*) FROM $table").use { results ->

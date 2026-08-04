@@ -269,6 +269,12 @@ another session. Before matching, only the owner can read the invite; after
 matching, only its two participants can read it. The code is a discovery
 capability, not an authentication credential: every route still requires a
 valid access token and all session routes enforce server-owned membership.
+With PostgreSQL enabled, owner/create-command and guest/accept-command pairs
+are unique. Acceptance locks the invite row and creates the duel session plus
+the matched invite link in one transaction, so concurrent backend instances
+cannot assign two guests or create two sessions. Reads and expiry decisions
+refresh the durable row before acting, preventing a stale process from
+overwriting an invite that another process already matched.
 
 Private room rules are server-owned:
 
@@ -300,7 +306,9 @@ path before accepting the next revision. The runtime also reloads every
 non-expired matchmaking ticket and every private invite still inside its
 retention window. Ticket creation, human pairing, bot fallback, invite creation
 and invite acceptance retain their command replay identity across restart, so
-the same command cannot mint a second lobby resource or session.
+the same command cannot mint a second lobby resource or session. The same
+identities and invite row locks coordinate active backend instances as well as
+process restarts.
 
 Migration v5 reserves the normalized PostgreSQL boundary for participants,
 encrypted secrets, turns, private invites, command results, and encrypted
