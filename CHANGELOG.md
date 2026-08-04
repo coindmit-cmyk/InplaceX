@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- PostgreSQL-backed online runtime now restores waiting matchmaking tickets,
+  bot-fallback decisions, private invite codes and lobby command replays after
+  backend restarts; accepted matches continue through the existing encrypted
+  duel recovery path.
+
 - Transient sign-in and online-submit operations now reset safely across recreation/cancellation, and Android backup is disabled until authenticated cloud reconciliation is available.
 
 - Campaign completion now persists progress and economy atomically, rewards only personal-best rating improvements, and keeps chapter rewards accessible in landscape.

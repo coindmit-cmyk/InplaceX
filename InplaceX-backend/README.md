@@ -37,6 +37,10 @@ Current state:
   bytes. The runtime encrypts each recoverable duel aggregate with AES-256-GCM,
   restores active/recently-finished matches during startup, and preserves exact
   command replays across a backend restart. Never commit or log this key.
+- the same PostgreSQL runtime restores non-expired matchmaking tickets and
+  retained private invites before online routes start. Create/accept command
+  ids are reconstructed from their rows, so retries after restart return the
+  existing ticket, invite, or shared session instead of minting duplicates.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.

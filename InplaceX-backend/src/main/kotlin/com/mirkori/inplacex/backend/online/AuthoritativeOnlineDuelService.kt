@@ -8,7 +8,10 @@ import com.mirkori.inplacex.backend.domain.duel.DuelParticipant
 import com.mirkori.inplacex.backend.domain.duel.DuelPhase
 import com.mirkori.inplacex.backend.domain.duel.DuelPlayStyle
 import com.mirkori.inplacex.backend.domain.duel.DuelSnapshot
+import com.mirkori.inplacex.backend.online.persistence.DurableMatchmakingTicket
 import com.mirkori.inplacex.backend.online.persistence.DurableOnlineSession
+import com.mirkori.inplacex.backend.online.persistence.DurablePrivateInvite
+import com.mirkori.inplacex.backend.online.persistence.OnlineLobbyRepository
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionRepository
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
@@ -141,6 +144,7 @@ class AuthoritativeOnlineDuelService(
     private val secureRandom: SecureRandom = SecureRandom(),
     private val logger: InplaceXLogger = InplaceXLogger(),
     private val sessionRepository: OnlineSessionRepository? = null,
+    private val lobbyRepository: OnlineLobbyRepository? = null,
 ) : AutoCloseable {
     private val lock = Any()
     private val tickets = mutableMapOf<String, TicketRecord>()
@@ -165,7 +169,13 @@ class AuthoritativeOnlineDuelService(
         require(!finishedSessionRetention.isNegative) { "finishedSessionRetention must not be negative" }
         require(!ticketRetention.isNegative && !ticketRetention.isZero) { "ticketRetention must be positive" }
         require(!inviteRetention.isNegative && !inviteRetention.isZero) { "inviteRetention must be positive" }
-        sessionRepository?.loadRecoverable(clock.instant())?.forEach { stored ->
+        require(lobbyRepository == null || sessionRepository != null) {
+            "Durable online lobby requires durable session persistence"
+        }
+        val recoveredAt = clock.instant()
+        lobbyRepository?.deleteLinksToExpiredSessions(recoveredAt)
+        sessionRepository?.deleteExpired(recoveredAt)
+        sessionRepository?.loadRecoverable(recoveredAt)?.forEach { stored ->
             val memento = OnlineSessionMementoCodec.decode(stored.stateJson)
             check(memento.sessionId == stored.sessionId && memento.revision == stored.revision) {
                 "Durable online session metadata does not match encrypted state"
@@ -175,6 +185,64 @@ class AuthoritativeOnlineDuelService(
                 clock = clock,
                 finishedSessionRetention = finishedSessionRetention,
                 repository = sessionRepository,
+            )
+        }
+        lobbyRepository?.loadTickets(recoveredAt)?.forEach { stored ->
+            val rules = OnlineLobbyRulesCodec.decode(stored.rulesJson)
+            val record = TicketRecord(
+                mode = enumValueOf(stored.mode),
+                rules = rules,
+                commandId = stored.commandId,
+                ticket = MatchmakingTicket(
+                    ticketId = stored.ticketId,
+                    ownerPlayerId = stored.ownerPlayerId,
+                    status = enumValueOf(stored.status),
+                    sessionId = stored.sessionId,
+                    matchedWithBot = stored.matchedWithBot,
+                    createdAt = stored.createdAt,
+                ),
+            )
+            tickets[stored.ticketId] = record
+            ticketReplays["${stored.ownerPlayerId}:${stored.commandId}"] =
+                TicketReplay(record.mode, rules, stored.ticketId)
+        }
+        lobbyRepository?.loadInvites(recoveredAt.minus(inviteRetention))?.forEach { stored ->
+            val rules = OnlineLobbyRulesCodec.decodeInvite(stored.rulesJson)
+            val record = PrivateInviteRecord(
+                ownerPlayerId = stored.ownerPlayerId,
+                guestPlayerId = stored.guestPlayerId,
+                createCommandId = stored.createCommandId,
+                acceptCommandId = stored.acceptCommandId,
+                invite = PrivateDuelInvite(
+                    inviteCode = stored.inviteCode,
+                    status = enumValueOf(stored.status),
+                    sessionId = stored.sessionId,
+                    createdAt = stored.createdAt,
+                    expiresAt = stored.expiresAt,
+                    playStyle = rules.playStyle,
+                    codeLength = rules.codeLength,
+                    allowDuplicates = rules.allowDuplicates,
+                    maxConsecutiveDuplicateDigits = rules.maxConsecutiveDuplicateDigits,
+                    matchDurationSeconds = rules.matchDurationSeconds,
+                ),
+            )
+            privateInvites[stored.inviteCode] = record
+            privateInviteCreateReplays["${stored.ownerPlayerId}:${stored.createCommandId}"] =
+                PrivateInviteCreateReplay(rules.playStyle, rules.codeLength, stored.inviteCode)
+            if (stored.guestPlayerId != null && stored.acceptCommandId != null) {
+                privateInviteAcceptReplays["${stored.guestPlayerId}:${stored.acceptCommandId}"] =
+                    PrivateInviteAcceptReplay(stored.inviteCode)
+            }
+        }
+        expirePrivateInvites(recoveredAt)
+        if (lobbyRepository != null) {
+            logger.info(
+                tag = "OnlineRecovery",
+                message = "online lobby state restored",
+                attributes = mapOf(
+                    "tickets" to tickets.size.toString(),
+                    "invites" to privateInvites.size.toString(),
+                ),
             )
         }
         sweeper = sweepInterval?.let { interval ->
@@ -227,6 +295,8 @@ class AuthoritativeOnlineDuelService(
 
             val ticketId = UUID.randomUUID().toString()
             val createdAt = clock.instant()
+            var createdSession: SessionRecord? = null
+            val previousWaitingTicket = waitingPeer?.ticket
             val ticket = if (waitingPeer == null) {
                 MatchmakingTicket(
                     ticketId = ticketId,
@@ -242,6 +312,7 @@ class AuthoritativeOnlineDuelService(
                     firstPlayerId = waitingPeer.ticket.ownerPlayerId,
                     secondPlayerId = playerId,
                 )
+                createdSession = session
                 waitingPeer.ticket = waitingPeer.ticket.matched(session.sessionId, withBot = false)
                 MatchmakingTicket(
                     ticketId = ticketId,
@@ -252,7 +323,25 @@ class AuthoritativeOnlineDuelService(
                     createdAt = createdAt,
                 )
             }
-            tickets[ticketId] = TicketRecord(mode, rules, ticket)
+            val record = TicketRecord(mode, rules, commandId, ticket)
+            val durableTickets = listOfNotNull(waitingPeer, record).map { it.toDurable(ticketRetention) }
+            try {
+                createdSession?.let { session ->
+                    if (lobbyRepository != null) {
+                        lobbyRepository.createSessionAndSaveTickets(session.persistenceState(), durableTickets)
+                    } else {
+                        session.persistNew()
+                    }
+                    sessions[session.sessionId] = session
+                } ?: lobbyRepository?.saveTickets(durableTickets)
+            } catch (failure: Throwable) {
+                if (waitingPeer != null && previousWaitingTicket != null) {
+                    waitingPeer.ticket = previousWaitingTicket
+                }
+                createdSession?.close()
+                throw failure
+            }
+            tickets[ticketId] = record
             ticketReplays[replayKey] = TicketReplay(mode, rules, ticketId)
             return ticket
         }
@@ -302,10 +391,13 @@ class AuthoritativeOnlineDuelService(
                 maxConsecutiveDuplicateDigits = OnlineMaximumConsecutiveDuplicateDigits,
                 matchDurationSeconds = privateMatchDuration.seconds,
             )
-            privateInvites[inviteCode] = PrivateInviteRecord(
+            val record = PrivateInviteRecord(
                 ownerPlayerId = playerId,
+                createCommandId = commandId,
                 invite = invite,
             )
+            lobbyRepository?.saveInvite(record.toDurable())
+            privateInvites[inviteCode] = record
             privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(
                 playStyle,
                 codeLength,
@@ -354,15 +446,33 @@ class AuthoritativeOnlineDuelService(
             val session = createHumanSession(
                 rules = record.invite.onlineRules(),
                 attemptLimit = null,
-                matchDuration = privateMatchDuration,
+                matchDuration = Duration.ofSeconds(record.invite.matchDurationSeconds),
                 firstPlayerId = record.ownerPlayerId,
                 secondPlayerId = playerId,
             )
+            val previousGuestPlayerId = record.guestPlayerId
+            val previousAcceptCommandId = record.acceptCommandId
+            val previousInvite = record.invite
             record.guestPlayerId = playerId
+            record.acceptCommandId = commandId
             record.invite = record.invite.copy(
                 status = PrivateInviteStatus.MATCHED,
                 sessionId = session.sessionId,
             )
+            try {
+                if (lobbyRepository != null) {
+                    lobbyRepository.createSessionAndSaveInvite(session.persistenceState(), record.toDurable())
+                } else {
+                    session.persistNew()
+                }
+            } catch (failure: Throwable) {
+                record.guestPlayerId = previousGuestPlayerId
+                record.acceptCommandId = previousAcceptCommandId
+                record.invite = previousInvite
+                session.close()
+                throw failure
+            }
+            sessions[session.sessionId] = session
             privateInviteAcceptReplays[replayKey] = PrivateInviteAcceptReplay(inviteCode)
             return record.invite
         }
@@ -415,6 +525,7 @@ class AuthoritativeOnlineDuelService(
             !now.isBefore(record.invite.expiresAt)
         ) {
             record.invite = record.invite.copy(status = PrivateInviteStatus.EXPIRED)
+            lobbyRepository?.saveInvite(record.toDurable())
         }
     }
 
@@ -435,7 +546,21 @@ class AuthoritativeOnlineDuelService(
         val deadline = record.ticket.createdAt.plus(botFallbackDelay)
         if (now.isBefore(deadline)) return
         val session = createBotSession(record.mode, record.rules, record.ticket.ownerPlayerId)
+        val previousTicket = record.ticket
         record.ticket = record.ticket.matched(session.sessionId, withBot = true)
+        val durableTicket = record.toDurable(ticketRetention)
+        try {
+            if (lobbyRepository != null) {
+                lobbyRepository.createSessionAndSaveTickets(session.persistenceState(), listOf(durableTicket))
+            } else {
+                session.persistNew()
+            }
+        } catch (failure: Throwable) {
+            record.ticket = previousTicket
+            session.close()
+            throw failure
+        }
+        sessions[session.sessionId] = session
     }
 
     private fun createBotSession(
@@ -464,10 +589,7 @@ class AuthoritativeOnlineDuelService(
             createdAt = clock.instant(),
             finishedSessionRetention = finishedSessionRetention,
             repository = sessionRepository,
-        ).also { record ->
-            record.persistNew()
-            sessions[sessionId] = record
-        }
+        )
     }
 
     private fun createHumanSession(
@@ -508,10 +630,7 @@ class AuthoritativeOnlineDuelService(
             createdAt = clock.instant(),
             finishedSessionRetention = finishedSessionRetention,
             repository = sessionRepository,
-        ).also { record ->
-            record.persistNew()
-            sessions[sessionId] = record
-        }
+        )
     }
 
     private fun sessionFor(playerId: String, sessionId: String): SessionRecord {
@@ -533,26 +652,35 @@ class AuthoritativeOnlineDuelService(
             val expiredSessionIds = sessions.entries.mapNotNull { (sessionId, record) ->
                 val finishedAt = record.expireAndFinishedAt(now) ?: return@mapNotNull null
                 sessionId.takeIf { !now.isBefore(finishedAt.plus(finishedSessionRetention)) }
-            }
-            expiredSessionIds.forEach { sessionId ->
-                sessions.remove(sessionId)?.close()
-                sessionRepository?.delete(sessionId)
-            }
+            }.toSet()
 
             val expiredTicketIds = tickets.values
-                .filter { !now.isBefore(it.ticket.createdAt.plus(ticketRetention)) }
+                .filter {
+                    !now.isBefore(it.ticket.createdAt.plus(ticketRetention)) ||
+                        it.ticket.sessionId in expiredSessionIds
+                }
                 .map { it.ticket.ticketId }
                 .toSet()
+            lobbyRepository?.deleteTickets(expiredTicketIds)
             expiredTicketIds.forEach(tickets::remove)
             ticketReplays.entries.removeIf { it.value.ticketId in expiredTicketIds }
 
             val expiredInviteCodes = privateInvites.values
-                .filter { !now.isBefore(it.invite.expiresAt.plus(inviteRetention)) }
+                .filter {
+                    !now.isBefore(it.invite.expiresAt.plus(inviteRetention)) ||
+                        it.invite.sessionId in expiredSessionIds
+                }
                 .map { it.invite.inviteCode }
                 .toSet()
+            lobbyRepository?.deleteInvites(expiredInviteCodes)
             expiredInviteCodes.forEach(privateInvites::remove)
             privateInviteCreateReplays.entries.removeIf { it.value.inviteCode in expiredInviteCodes }
             privateInviteAcceptReplays.entries.removeIf { it.value.inviteCode in expiredInviteCodes }
+
+            expiredSessionIds.forEach { sessionId ->
+                sessions.remove(sessionId)?.close()
+                sessionRepository?.delete(sessionId)
+            }
         }
     }
 
@@ -566,6 +694,7 @@ class AuthoritativeOnlineDuelService(
             privateInvites.clear()
             privateInviteCreateReplays.clear()
             privateInviteAcceptReplays.clear()
+            lobbyRepository?.close()
             sessionRepository?.close()
         }
     }
@@ -579,8 +708,22 @@ class AuthoritativeOnlineDuelService(
     private data class TicketRecord(
         val mode: OnlineMatchMode,
         val rules: OnlineMatchRules,
+        val commandId: String,
         var ticket: MatchmakingTicket,
-    )
+    ) {
+        fun toDurable(retention: Duration): DurableMatchmakingTicket = DurableMatchmakingTicket(
+            ticketId = ticket.ticketId,
+            ownerPlayerId = ticket.ownerPlayerId,
+            commandId = commandId,
+            mode = mode.name,
+            rulesJson = OnlineLobbyRulesCodec.encode(rules),
+            status = ticket.status.name,
+            sessionId = ticket.sessionId,
+            matchedWithBot = ticket.matchedWithBot,
+            createdAt = ticket.createdAt,
+            expiresAt = ticket.createdAt.plus(retention),
+        )
+    }
 
     private data class PrivateInviteCreateReplay(
         val playStyle: OnlineFriendPlayStyle,
@@ -595,8 +738,23 @@ class AuthoritativeOnlineDuelService(
     private data class PrivateInviteRecord(
         val ownerPlayerId: String,
         var guestPlayerId: String? = null,
+        val createCommandId: String,
+        var acceptCommandId: String? = null,
         var invite: PrivateDuelInvite,
-    )
+    ) {
+        fun toDurable(): DurablePrivateInvite = DurablePrivateInvite(
+            inviteCode = invite.inviteCode,
+            ownerPlayerId = ownerPlayerId,
+            guestPlayerId = guestPlayerId,
+            createCommandId = createCommandId,
+            acceptCommandId = acceptCommandId,
+            status = invite.status.name,
+            rulesJson = OnlineLobbyRulesCodec.encodeInvite(invite),
+            sessionId = invite.sessionId,
+            createdAt = invite.createdAt,
+            expiresAt = invite.expiresAt,
+        )
+    }
 
     private class SessionRecord(
         val sessionId: String,
@@ -621,6 +779,12 @@ class AuthoritativeOnlineDuelService(
         private val setupDeadlineAt: Instant = restoredSetupDeadlineAt ?: createdAt.plus(setupTimeout)
         private var finishedAt: Instant? = null
         private var finishedByTimeout: Boolean = false
+
+        init {
+            if (bot != null) {
+                durableSecrets[DuelParticipant.SECOND] = bot.revealSecret().toCharArray()
+            }
+        }
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
 
@@ -813,14 +977,14 @@ class AuthoritativeOnlineDuelService(
         }
 
         fun persistNew() {
-            repository?.create(durableState())
+            repository?.create(persistenceState())
         }
 
         private fun persistUpdate(expectedRevision: Long) {
-            repository?.update(durableState(), expectedRevision)
+            repository?.update(persistenceState(), expectedRevision)
         }
 
-        private fun durableState(): DurableOnlineSession {
+        fun persistenceState(): DurableOnlineSession {
             val snapshot = match.snapshot()
             val memento = OnlineSessionMemento(
                 sessionId = sessionId,
@@ -911,6 +1075,7 @@ class AuthoritativeOnlineDuelService(
                     restoredSetupDeadlineAt = memento.setupDeadlineAt,
                 )
                 memento.secrets.forEach { (participant, secret) ->
+                    record.durableSecrets[participant]?.fill(CLEARED_DIGIT)
                     record.durableSecrets[participant] = secret.toCharArray()
                 }
                 if (memento.secrets.keys.containsAll(DuelParticipant.entries)) {
@@ -918,7 +1083,9 @@ class AuthoritativeOnlineDuelService(
                         record.configureSecret(participant, memento.secrets.getValue(participant).toCharArray())
                     }
                 } else {
-                    memento.secrets.forEach { (participant, secret) ->
+                    memento.secrets
+                        .filterKeys { participant -> bot == null || participant == DuelParticipant.FIRST }
+                        .forEach { (participant, secret) ->
                         record.pendingSecrets[participant] = secret.toCharArray()
                     }
                 }
