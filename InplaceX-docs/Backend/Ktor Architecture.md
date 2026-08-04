@@ -216,6 +216,10 @@ Recommended session rules:
   - `expires_at`
   - runtime startup restores non-expired rows and reconstructs the create
     command replay from `player_id + command_id`
+  - `player_id + command_id` is unique; active instances claim the oldest
+    compatible waiting row with `FOR UPDATE SKIP LOCKED`
+  - session creation and both matched ticket updates share one transaction;
+    bot fallback locks the same waiting row
 - `duel_sessions`
   - `id`
   - `mode`

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- PostgreSQL-backed public matchmaking now coordinates concurrent backend
+  instances with row-level ticket claims, one durable command identity, and an
+  atomic session-plus-ticket transaction; human pairing and bot fallback can no
+  longer create two sessions for the same waiting ticket.
+
 - PostgreSQL-backed online runtime now restores waiting matchmaking tickets,
   bot-fallback decisions, private invite codes and lobby command replays after
   backend restarts; accepted matches continue through the existing encrypted

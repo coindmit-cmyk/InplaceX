@@ -2,6 +2,8 @@ package com.mirkori.inplacex.backend.online.persistence
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
+import java.sql.SQLException
 import java.time.Instant
 import java.time.ZoneOffset
 import javax.sql.DataSource
@@ -32,15 +34,27 @@ data class DurablePrivateInvite(
     val expiresAt: Instant,
 )
 
+data class DurableTicketCoordination(
+    val ticket: DurableMatchmakingTicket,
+    val matchedPeer: DurableMatchmakingTicket? = null,
+    val createdSession: Boolean = false,
+)
+
 interface OnlineLobbyRepository : AutoCloseable {
     fun deleteLinksToExpiredSessions(now: Instant)
     fun loadTickets(now: Instant): List<DurableMatchmakingTicket>
-    fun saveTickets(tickets: Collection<DurableMatchmakingTicket>)
+    fun loadTicket(ticketId: String): DurableMatchmakingTicket?
+    fun loadSearchingTickets(eligibleBefore: Instant, now: Instant): List<DurableMatchmakingTicket>
+    fun coordinateTicket(
+        candidate: DurableMatchmakingTicket,
+        createSession: (DurableMatchmakingTicket) -> DurableOnlineSession,
+    ): DurableTicketCoordination
+    fun coordinateBotFallback(
+        ticketId: String,
+        eligibleBefore: Instant,
+        createSession: (DurableMatchmakingTicket) -> DurableOnlineSession,
+    ): DurableTicketCoordination?
     fun deleteTickets(ticketIds: Collection<String>)
-    fun createSessionAndSaveTickets(
-        session: DurableOnlineSession,
-        tickets: Collection<DurableMatchmakingTicket>,
-    )
     fun loadInvites(retainedAfter: Instant): List<DurablePrivateInvite>
     fun saveInvite(invite: DurablePrivateInvite)
     fun createSessionAndSaveInvite(session: DurableOnlineSession, invite: DurablePrivateInvite)
@@ -88,50 +102,127 @@ class JdbcOnlineLobbyRepository(
                 statement.executeQuery().use { results ->
                     buildList {
                         while (results.next()) {
-                            add(
-                                DurableMatchmakingTicket(
-                                    ticketId = results.getString("id"),
-                                    ownerPlayerId = results.getString("player_id"),
-                                    commandId = requireNotNull(results.getString("command_id")) {
-                                        "Durable matchmaking ticket is missing command id"
-                                    },
-                                    mode = results.getString("mode"),
-                                    rulesJson = requireNotNull(results.getString("rules_json")) {
-                                        "Durable matchmaking ticket is missing rules"
-                                    },
-                                    status = results.getString("status"),
-                                    sessionId = results.getString("session_id"),
-                                    matchedWithBot = results.getBoolean("matched_with_bot"),
-                                    createdAt = results.instant("created_at"),
-                                    expiresAt = results.instant("expires_at"),
-                                ),
-                            )
+                            add(results.ticket())
                         }
                     }
                 }
             }
         }
 
-    override fun saveTickets(tickets: Collection<DurableMatchmakingTicket>) {
-        if (tickets.isEmpty()) return
-        dataSource.transaction { connection ->
-            tickets.forEach { ticket -> saveTicket(connection, ticket) }
+    override fun loadTicket(ticketId: String): DurableMatchmakingTicket? =
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(
+                """
+                SELECT id, player_id, command_id, mode, rules_json, status, session_id,
+                       matched_with_bot, created_at, expires_at
+                FROM matchmaking_tickets
+                WHERE id = ?
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setString(1, ticketId)
+                statement.executeQuery().use { results ->
+                    if (results.next()) results.ticket() else null
+                }
+            }
+        }
+
+    override fun loadSearchingTickets(
+        eligibleBefore: Instant,
+        now: Instant,
+    ): List<DurableMatchmakingTicket> = dataSource.connection.use { connection ->
+        connection.prepareStatement(
+            """
+            SELECT id, player_id, command_id, mode, rules_json, status, session_id,
+                   matched_with_bot, created_at, expires_at
+            FROM matchmaking_tickets
+            WHERE status = 'SEARCHING' AND created_at <= ? AND expires_at > ?
+            ORDER BY created_at, id
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setInstant(1, eligibleBefore)
+            statement.setInstant(2, now)
+            statement.executeQuery().use { results ->
+                buildList {
+                    while (results.next()) add(results.ticket())
+                }
+            }
         }
     }
 
-    override fun createSessionAndSaveTickets(
-        session: DurableOnlineSession,
-        tickets: Collection<DurableMatchmakingTicket>,
-    ) {
-        require(tickets.isNotEmpty())
-        dataSource.transaction { connection ->
-            sessionRepository.create(connection, session)
-            tickets.forEach { ticket -> saveTicket(connection, ticket) }
+    override fun coordinateTicket(
+        candidate: DurableMatchmakingTicket,
+        createSession: (DurableMatchmakingTicket) -> DurableOnlineSession,
+    ): DurableTicketCoordination {
+        require(candidate.status == "SEARCHING" && candidate.sessionId == null)
+        return try {
+            dataSource.transaction { connection ->
+                connection.ticketByCommand(candidate.ownerPlayerId, candidate.commandId, lock = true)?.let {
+                    return@transaction DurableTicketCoordination(it)
+                }
+                val peer = connection.prepareStatement(
+                    """
+                    SELECT id, player_id, command_id, mode, rules_json, status, session_id,
+                           matched_with_bot, created_at, expires_at
+                    FROM matchmaking_tickets
+                    WHERE status = 'SEARCHING' AND mode = ? AND rules_json = ?
+                      AND player_id <> ? AND expires_at > ?
+                    ORDER BY created_at, id
+                    LIMIT 1 FOR UPDATE SKIP LOCKED
+                    """.trimIndent(),
+                ).use { statement ->
+                    statement.setString(1, candidate.mode)
+                    statement.setString(2, candidate.rulesJson)
+                    statement.setString(3, candidate.ownerPlayerId)
+                    statement.setInstant(4, candidate.createdAt)
+                    statement.executeQuery().use { results ->
+                        if (results.next()) results.ticket() else null
+                    }
+                }
+                if (peer == null) {
+                    insertTicket(connection, candidate)
+                    DurableTicketCoordination(candidate)
+                } else {
+                    val session = createSession(peer)
+                    sessionRepository.create(connection, session)
+                    val matchedPeer = peer.matched(session.sessionId, withBot = false)
+                    val matchedCandidate = candidate.matched(session.sessionId, withBot = false)
+                    updateTicket(connection, matchedPeer)
+                    insertTicket(connection, matchedCandidate)
+                    DurableTicketCoordination(
+                        ticket = matchedCandidate,
+                        matchedPeer = matchedPeer,
+                        createdSession = true,
+                    )
+                }
+            }
+        } catch (error: SQLException) {
+            if (error.sqlState == UniqueViolationSqlState) {
+                dataSource.connection.use { connection ->
+                    connection.ticketByCommand(candidate.ownerPlayerId, candidate.commandId, lock = false)
+                }?.let { return DurableTicketCoordination(it) }
+            }
+            throw error
         }
     }
 
-    private fun saveTicket(connection: Connection, ticket: DurableMatchmakingTicket) {
-        val changed = connection.prepareStatement(
+    override fun coordinateBotFallback(
+        ticketId: String,
+        eligibleBefore: Instant,
+        createSession: (DurableMatchmakingTicket) -> DurableOnlineSession,
+    ): DurableTicketCoordination? = dataSource.transaction { connection ->
+        val ticket = connection.ticketById(ticketId, lock = true) ?: return@transaction null
+        if (ticket.status != "SEARCHING" || ticket.createdAt > eligibleBefore) {
+            return@transaction DurableTicketCoordination(ticket)
+        }
+        val session = createSession(ticket)
+        sessionRepository.create(connection, session)
+        val matched = ticket.matched(session.sessionId, withBot = true)
+        updateTicket(connection, matched)
+        DurableTicketCoordination(ticket = matched, createdSession = true)
+    }
+
+    private fun updateTicket(connection: Connection, ticket: DurableMatchmakingTicket): Int =
+        connection.prepareStatement(
             """
             UPDATE matchmaking_tickets
             SET player_id = ?, command_id = ?, mode = ?, rules_json = ?, status = ?,
@@ -142,18 +233,18 @@ class JdbcOnlineLobbyRepository(
             statement.bindTicket(ticket, includeIdentity = false)
             statement.executeUpdate()
         }
-        if (changed == 0) {
-            connection.prepareStatement(
-                """
-                INSERT INTO matchmaking_tickets(
-                    player_id, command_id, mode, rules_json, status, session_id,
-                    matched_with_bot, expires_at, id, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """.trimIndent(),
-            ).use { statement ->
-                statement.bindTicket(ticket, includeIdentity = true)
-                statement.executeUpdate()
-            }
+
+    private fun insertTicket(connection: Connection, ticket: DurableMatchmakingTicket) {
+        connection.prepareStatement(
+            """
+            INSERT INTO matchmaking_tickets(
+                player_id, command_id, mode, rules_json, status, session_id,
+                matched_with_bot, expires_at, id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.bindTicket(ticket, includeIdentity = true)
+            statement.executeUpdate()
         }
     }
 
@@ -255,6 +346,64 @@ class JdbcOnlineLobbyRepository(
     }
 }
 
+private fun Connection.ticketByCommand(
+    playerId: String,
+    commandId: String,
+    lock: Boolean,
+): DurableMatchmakingTicket? = prepareStatement(
+    """
+    SELECT id, player_id, command_id, mode, rules_json, status, session_id,
+           matched_with_bot, created_at, expires_at
+    FROM matchmaking_tickets
+    WHERE player_id = ? AND command_id = ?
+    ${if (lock) "FOR UPDATE" else ""}
+    """.trimIndent(),
+).use { statement ->
+    statement.setString(1, playerId)
+    statement.setString(2, commandId)
+    statement.executeQuery().use { results -> if (results.next()) results.ticket() else null }
+}
+
+private fun Connection.ticketById(ticketId: String, lock: Boolean): DurableMatchmakingTicket? =
+    prepareStatement(
+        """
+        SELECT id, player_id, command_id, mode, rules_json, status, session_id,
+               matched_with_bot, created_at, expires_at
+        FROM matchmaking_tickets
+        WHERE id = ?
+        ${if (lock) "FOR UPDATE" else ""}
+        """.trimIndent(),
+    ).use { statement ->
+        statement.setString(1, ticketId)
+        statement.executeQuery().use { results -> if (results.next()) results.ticket() else null }
+    }
+
+private fun ResultSet.ticket(): DurableMatchmakingTicket = DurableMatchmakingTicket(
+    ticketId = getString("id"),
+    ownerPlayerId = getString("player_id"),
+    commandId = requireNotNull(getString("command_id")) {
+        "Durable matchmaking ticket is missing command id"
+    },
+    mode = getString("mode"),
+    rulesJson = requireNotNull(getString("rules_json")) {
+        "Durable matchmaking ticket is missing rules"
+    },
+    status = getString("status"),
+    sessionId = getString("session_id"),
+    matchedWithBot = getBoolean("matched_with_bot"),
+    createdAt = instant("created_at"),
+    expiresAt = instant("expires_at"),
+)
+
+private fun DurableMatchmakingTicket.matched(
+    sessionId: String,
+    withBot: Boolean,
+): DurableMatchmakingTicket = copy(
+    status = "MATCHED",
+    sessionId = sessionId,
+    matchedWithBot = withBot,
+)
+
 private fun PreparedStatement.bindTicket(ticket: DurableMatchmakingTicket, includeIdentity: Boolean) {
     setString(1, ticket.ownerPlayerId)
     setString(2, ticket.commandId)
@@ -303,3 +452,5 @@ private inline fun <T> DataSource.transaction(block: (Connection) -> T): T = con
         connection.autoCommit = previousAutoCommit
     }
 }
+
+private const val UniqueViolationSqlState = "23505"

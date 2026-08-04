@@ -41,6 +41,11 @@ Current state:
   retained private invites before online routes start. Create/accept command
   ids are reconstructed from their rows, so retries after restart return the
   existing ticket, invite, or shared session instead of minting duplicates.
+- public matchmaking coordinates active backend instances through PostgreSQL:
+  the oldest compatible waiting row is claimed with `FOR UPDATE SKIP LOCKED`,
+  the duel and both matched tickets commit together, and bot fallback locks the
+  same row. Ticket polling reloads database truth and sessions created by a
+  peer instance are restored lazily for reconnect reads.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.

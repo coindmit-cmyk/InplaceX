@@ -54,7 +54,7 @@ class JdbcPersistenceTest {
                     )
                 },
             )
-            assertEquals(5, connection.createStatement().use { statement ->
+            assertEquals(6, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)

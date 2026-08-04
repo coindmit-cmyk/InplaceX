@@ -240,6 +240,15 @@ null `sessionId`; a matched ticket always has a server-generated non-null
 `sessionId`. Replaying the create command returns the ticket's current state,
 including a later human or bot match, rather than creating another ticket.
 
+When PostgreSQL is enabled, every active backend instance uses the database as
+the matchmaking authority. The oldest compatible row is claimed with
+`FOR UPDATE SKIP LOCKED`; the duel session and both matched ticket rows commit
+in one transaction. Bot fallback locks that same ticket row, so a human claim
+and a fallback claim cannot both create a session. `player_id + command_id` is
+unique, and a losing concurrent retry reloads the committed ticket. Polling on
+another instance refreshes the row and lazily restores the encrypted session
+for the ordinary reconnect snapshot.
+
 ### Private friend invites
 
 A private friend invite is an authenticated, human-only alternative to public
@@ -302,6 +311,9 @@ different session fails closed. PostgreSQL online startup therefore requires
 bytes supplied through managed production secrets. Losing or rotating this key
 without a data migration makes existing recoverable sessions unreadable and
 startup fails closed.
+
+Migration v6 adds the unique public-matchmaking command identity used by the
+multi-instance claim transaction.
 
 The durable state is bounded: production runs a sweeper
 every 30 seconds, completed sessions remain readable for 15 minutes, tickets

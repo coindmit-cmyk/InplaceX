@@ -22,6 +22,7 @@ class OnlineSessionRevisionConflictException(sessionId: String, expectedRevision
 interface OnlineSessionRepository : AutoCloseable {
     fun deleteExpired(now: Instant)
     fun loadRecoverable(now: Instant): List<DurableOnlineSession>
+    fun loadRecoverable(sessionId: String, now: Instant): DurableOnlineSession?
     fun create(session: DurableOnlineSession)
     fun update(session: DurableOnlineSession, expectedRevision: Long)
     fun delete(sessionId: String)
@@ -86,6 +87,51 @@ class JdbcOnlineSessionRepository(
                                 plaintext.fill(0)
                             }
                         }
+                    }
+                }
+            }
+        }
+
+    override fun loadRecoverable(sessionId: String, now: Instant): DurableOnlineSession? =
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(
+                """
+                SELECT id, version, status, state_iv, state_ciphertext, created_at,
+                       started_at, finished_at, expires_at
+                FROM duel_sessions
+                WHERE id = ?
+                  AND state_iv IS NOT NULL
+                  AND state_ciphertext IS NOT NULL
+                  AND (expires_at IS NULL OR expires_at > ?)
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setString(1, sessionId)
+                statement.setInstant(2, now)
+                statement.executeQuery().use { results ->
+                    if (results.next()) {
+                        val plaintext = cipher.decrypt(
+                            sessionId,
+                            EncryptedOnlineState(
+                                iv = results.getBytes("state_iv"),
+                                ciphertext = results.getBytes("state_ciphertext"),
+                            ),
+                        )
+                        try {
+                            DurableOnlineSession(
+                                sessionId = sessionId,
+                                revision = results.getLong("version"),
+                                status = results.getString("status"),
+                                stateJson = plaintext.toString(Charsets.UTF_8),
+                                createdAt = results.instant("created_at")!!,
+                                startedAt = results.instant("started_at"),
+                                finishedAt = results.instant("finished_at"),
+                                expiresAt = results.instant("expires_at"),
+                            )
+                        } finally {
+                            plaintext.fill(0)
+                        }
+                    } else {
+                        null
                     }
                 }
             }
