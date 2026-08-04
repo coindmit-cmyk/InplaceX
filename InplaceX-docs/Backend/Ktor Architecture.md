@@ -239,6 +239,10 @@ Recommended session rules:
 - `private_duel_invites`
   - owner/guest, create/accept command ids, immutable rules and session link are
     restored through the invite retention window
+  - `owner_player_id + create_command_id` and non-null
+    `guest_player_id + accept_command_id` are unique
+  - acceptance locks the invite row and writes the session plus matched invite
+    in one transaction across active instances
 - `duel_participants`
   - `id`
   - `session_id`

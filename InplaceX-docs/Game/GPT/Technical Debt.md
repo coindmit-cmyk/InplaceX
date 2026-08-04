@@ -9,9 +9,9 @@
 - active online duel sessions, waiting matchmaking tickets and retained private
   invitations are PostgreSQL-recoverable when the database and managed AES
   state key are configured; public matchmaking and bot fallback now use
-  database row claims across active instances, while cross-instance private
-  invite acceptance and long-lived duel-session ownership remain later scaling
-  boundaries
+  database row claims across active instances, and private invite creation,
+  acceptance and expiry use durable command uniqueness plus row locking;
+  long-lived duel-session ownership remains the next scaling boundary
 - strings are only partially centralized
 - platform config is still static code, not external assets/resources
 

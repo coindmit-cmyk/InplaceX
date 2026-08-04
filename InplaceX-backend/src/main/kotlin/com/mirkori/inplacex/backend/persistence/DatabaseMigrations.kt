@@ -42,6 +42,11 @@ object DatabaseMigrations {
             description = "coordinate online matchmaking commands",
             sql = readResource("db/migration/V6__coordinate_online_matchmaking.sql"),
         ),
+        SqlMigration(
+            version = "7",
+            description = "coordinate private invite commands",
+            sql = readResource("db/migration/V7__coordinate_private_invites.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(

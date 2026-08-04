@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- PostgreSQL private friend invites now coordinate creation, acceptance and
+  expiry across backend instances. Duplicate commands return the committed
+  invite, concurrent guests can create only one duel session, and stale
+  runtimes refresh the durable invite before reporting or expiring it.
+
 - PostgreSQL-backed public matchmaking now coordinates concurrent backend
   instances with row-level ticket claims, one durable command identity, and an
   atomic session-plus-ticket transaction; human pairing and bot fallback can no

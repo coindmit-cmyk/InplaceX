@@ -40,6 +40,11 @@ data class DurableTicketCoordination(
     val createdSession: Boolean = false,
 )
 
+data class DurableInviteCoordination(
+    val invite: DurablePrivateInvite,
+    val createdSession: Boolean = false,
+)
+
 interface OnlineLobbyRepository : AutoCloseable {
     fun deleteLinksToExpiredSessions(now: Instant)
     fun loadTickets(now: Instant): List<DurableMatchmakingTicket>
@@ -56,8 +61,16 @@ interface OnlineLobbyRepository : AutoCloseable {
     ): DurableTicketCoordination?
     fun deleteTickets(ticketIds: Collection<String>)
     fun loadInvites(retainedAfter: Instant): List<DurablePrivateInvite>
-    fun saveInvite(invite: DurablePrivateInvite)
-    fun createSessionAndSaveInvite(session: DurableOnlineSession, invite: DurablePrivateInvite)
+    fun loadInvite(inviteCode: String): DurablePrivateInvite?
+    fun coordinateInvite(candidate: DurablePrivateInvite): DurablePrivateInvite?
+    fun coordinateInviteAcceptance(
+        inviteCode: String,
+        guestPlayerId: String,
+        commandId: String,
+        now: Instant,
+        createSession: (DurablePrivateInvite) -> DurableOnlineSession,
+    ): DurableInviteCoordination?
+    fun expireInvite(inviteCode: String, now: Instant): DurablePrivateInvite?
     fun deleteInvites(inviteCodes: Collection<String>)
     override fun close() = Unit
 }
@@ -287,21 +300,102 @@ class JdbcOnlineLobbyRepository(
             }
         }
 
-    override fun saveInvite(invite: DurablePrivateInvite) {
-        dataSource.transaction { connection ->
-            saveInvite(connection, invite)
+    override fun loadInvite(inviteCode: String): DurablePrivateInvite? =
+        dataSource.connection.use { connection -> connection.inviteByCode(inviteCode, lock = false) }
+
+    override fun coordinateInvite(candidate: DurablePrivateInvite): DurablePrivateInvite? {
+        return try {
+            dataSource.transaction { connection ->
+                connection.inviteByCreateCommand(
+                    candidate.ownerPlayerId,
+                    candidate.createCommandId,
+                    lock = true,
+                ) ?: insertInvite(connection, candidate).let { candidate }
+            }
+        } catch (error: SQLException) {
+            if (error.sqlState == UniqueViolationSqlState) {
+                return dataSource.connection.use { connection ->
+                    connection.inviteByCreateCommand(
+                        candidate.ownerPlayerId,
+                        candidate.createCommandId,
+                        lock = false,
+                    )
+                }
+            }
+            throw error
         }
     }
 
-    override fun createSessionAndSaveInvite(session: DurableOnlineSession, invite: DurablePrivateInvite) {
-        dataSource.transaction { connection ->
-            sessionRepository.create(connection, session)
-            saveInvite(connection, invite)
+    override fun coordinateInviteAcceptance(
+        inviteCode: String,
+        guestPlayerId: String,
+        commandId: String,
+        now: Instant,
+        createSession: (DurablePrivateInvite) -> DurableOnlineSession,
+    ): DurableInviteCoordination? {
+        return try {
+            dataSource.transaction { connection ->
+                connection.inviteByAcceptCommand(guestPlayerId, commandId, lock = true)?.let {
+                    return@transaction DurableInviteCoordination(it)
+                }
+                val current = connection.inviteByCode(inviteCode, lock = true)
+                    ?: return@transaction null
+                if (current.status != "WAITING" || current.ownerPlayerId == guestPlayerId) {
+                    return@transaction DurableInviteCoordination(current)
+                }
+                if (!now.isBefore(current.expiresAt)) {
+                    val expired = current.copy(status = "EXPIRED")
+                    updateInvite(connection, expired)
+                    return@transaction DurableInviteCoordination(expired)
+                }
+                val session = createSession(current)
+                sessionRepository.create(connection, session)
+                val matched = current.copy(
+                    guestPlayerId = guestPlayerId,
+                    acceptCommandId = commandId,
+                    status = "MATCHED",
+                    sessionId = session.sessionId,
+                )
+                updateInvite(connection, matched)
+                DurableInviteCoordination(matched, createdSession = true)
+            }
+        } catch (error: SQLException) {
+            if (error.sqlState == UniqueViolationSqlState) {
+                dataSource.connection.use { connection ->
+                    connection.inviteByAcceptCommand(guestPlayerId, commandId, lock = false)
+                }?.let { return DurableInviteCoordination(it) }
+            }
+            throw error
         }
     }
 
-    private fun saveInvite(connection: Connection, invite: DurablePrivateInvite) {
-        val changed = connection.prepareStatement(
+    override fun expireInvite(inviteCode: String, now: Instant): DurablePrivateInvite? =
+        dataSource.transaction { connection ->
+            val current = connection.inviteByCode(inviteCode, lock = true)
+                ?: return@transaction null
+            if (current.status == "WAITING" && !now.isBefore(current.expiresAt)) {
+                current.copy(status = "EXPIRED").also { updateInvite(connection, it) }
+            } else {
+                current
+            }
+        }
+
+    private fun insertInvite(connection: Connection, invite: DurablePrivateInvite) {
+        connection.prepareStatement(
+            """
+            INSERT INTO private_duel_invites(
+                owner_player_id, guest_player_id, create_command_id, accept_command_id,
+                status, rules_json, session_id, expires_at, invite_code, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.bindInvite(invite, includeCreatedAt = true)
+            statement.executeUpdate()
+        }
+    }
+
+    private fun updateInvite(connection: Connection, invite: DurablePrivateInvite): Int =
+        connection.prepareStatement(
             """
             UPDATE private_duel_invites
             SET owner_player_id = ?, guest_player_id = ?, create_command_id = ?,
@@ -313,20 +407,6 @@ class JdbcOnlineLobbyRepository(
             statement.bindInvite(invite, includeCreatedAt = false)
             statement.executeUpdate()
         }
-        if (changed == 0) {
-            connection.prepareStatement(
-                """
-                INSERT INTO private_duel_invites(
-                    owner_player_id, guest_player_id, create_command_id, accept_command_id,
-                    status, rules_json, session_id, expires_at, invite_code, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """.trimIndent(),
-            ).use { statement ->
-                statement.bindInvite(invite, includeCreatedAt = true)
-                statement.executeUpdate()
-            }
-        }
-    }
 
     override fun deleteInvites(inviteCodes: Collection<String>) {
         deleteEach("DELETE FROM private_duel_invites WHERE invite_code = ?", inviteCodes)
@@ -378,6 +458,53 @@ private fun Connection.ticketById(ticketId: String, lock: Boolean): DurableMatch
         statement.executeQuery().use { results -> if (results.next()) results.ticket() else null }
     }
 
+private fun Connection.inviteByCode(inviteCode: String, lock: Boolean): DurablePrivateInvite? =
+    invite(
+        where = "invite_code = ?",
+        lock = lock,
+    ) { statement -> statement.setString(1, inviteCode) }
+
+private fun Connection.inviteByCreateCommand(
+    ownerPlayerId: String,
+    commandId: String,
+    lock: Boolean,
+): DurablePrivateInvite? = invite(
+    where = "owner_player_id = ? AND create_command_id = ?",
+    lock = lock,
+) { statement ->
+    statement.setString(1, ownerPlayerId)
+    statement.setString(2, commandId)
+}
+
+private fun Connection.inviteByAcceptCommand(
+    guestPlayerId: String,
+    commandId: String,
+    lock: Boolean,
+): DurablePrivateInvite? = invite(
+    where = "guest_player_id = ? AND accept_command_id = ?",
+    lock = lock,
+) { statement ->
+    statement.setString(1, guestPlayerId)
+    statement.setString(2, commandId)
+}
+
+private fun Connection.invite(
+    where: String,
+    lock: Boolean,
+    bind: (PreparedStatement) -> Unit,
+): DurablePrivateInvite? = prepareStatement(
+    """
+    SELECT invite_code, owner_player_id, guest_player_id, create_command_id,
+           accept_command_id, status, rules_json, session_id, created_at, expires_at
+    FROM private_duel_invites
+    WHERE $where
+    ${if (lock) "FOR UPDATE" else ""}
+    """.trimIndent(),
+).use { statement ->
+    bind(statement)
+    statement.executeQuery().use { results -> if (results.next()) results.invite() else null }
+}
+
 private fun ResultSet.ticket(): DurableMatchmakingTicket = DurableMatchmakingTicket(
     ticketId = getString("id"),
     ownerPlayerId = getString("player_id"),
@@ -391,6 +518,19 @@ private fun ResultSet.ticket(): DurableMatchmakingTicket = DurableMatchmakingTic
     status = getString("status"),
     sessionId = getString("session_id"),
     matchedWithBot = getBoolean("matched_with_bot"),
+    createdAt = instant("created_at"),
+    expiresAt = instant("expires_at"),
+)
+
+private fun ResultSet.invite(): DurablePrivateInvite = DurablePrivateInvite(
+    inviteCode = getString("invite_code"),
+    ownerPlayerId = getString("owner_player_id"),
+    guestPlayerId = getString("guest_player_id"),
+    createCommandId = getString("create_command_id"),
+    acceptCommandId = getString("accept_command_id"),
+    status = getString("status"),
+    rulesJson = getString("rules_json"),
+    sessionId = getString("session_id"),
     createdAt = instant("created_at"),
     expiresAt = instant("expires_at"),
 )
