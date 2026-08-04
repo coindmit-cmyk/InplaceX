@@ -4,6 +4,9 @@ import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,6 +14,31 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnlineSessionEventSequenceTest {
+    @Test
+    fun `in-memory allocation and publication stay ordered under concurrency`() {
+        val events = InMemoryOnlineSessionEventSequence()
+        val sessionId = UUID.randomUUID().toString()
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(8)
+        try {
+            val writes = (1..100).map { revision ->
+                executor.submit<Long> {
+                    start.await(5, TimeUnit.SECONDS)
+                    events.sessionChanged(sessionId, revision.toLong(), Instant.EPOCH)
+                }
+            }
+            start.countDown()
+            writes.forEach { it.get(5, TimeUnit.SECONDS) }
+
+            assertEquals(
+                (1L..100L).toList(),
+                events.readAfter(sessionId, 0, 100).map(OnlineSessionEvent::eventSequence),
+            )
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
     @Test
     fun `jdbc allocator stays increasing across backend instances`() {
         val dataSource = JdbcDataSource().apply {

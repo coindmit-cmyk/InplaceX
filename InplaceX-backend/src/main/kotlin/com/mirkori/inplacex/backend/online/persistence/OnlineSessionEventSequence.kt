@@ -48,12 +48,12 @@ class InMemoryOnlineSessionEventSequence : OnlineSessionEventSequence {
     }
 
     private fun append(sessionId: String, revision: Long?): Long {
-        val sequence = sequences.computeIfAbsent(sessionId) { AtomicLong() }.incrementAndGet()
-        synchronized(events) {
+        return synchronized(events) {
+            val sequence = sequences.computeIfAbsent(sessionId) { AtomicLong() }.incrementAndGet()
             events.computeIfAbsent(sessionId) { mutableListOf() }
                 .add(OnlineSessionEvent(sequence, revision))
+            sequence
         }
-        return sequence
     }
 }
 
@@ -62,12 +62,12 @@ class JdbcOnlineSessionEventSequence(
     private val dataSource: DataSource,
 ) : OnlineSessionEventSequence {
     override fun next(sessionId: String, eventType: String, createdAt: Instant): Long =
-        dataSource.connection.use { connection ->
+        dataSource.withSessionEventLock(sessionId) { connection ->
             insertOnlineSessionEvent(connection, sessionId, eventType, null, createdAt)
         }
 
     override fun sessionChanged(sessionId: String, revision: Long, createdAt: Instant): Long =
-        dataSource.connection.use { connection ->
+        dataSource.withSessionEventLock(sessionId) { connection ->
             insertOnlineSessionEvent(connection, sessionId, SessionChangedEventType, revision, createdAt)
         }
 
@@ -140,5 +140,29 @@ internal fun insertOnlineSessionEvent(
     statement.generatedKeys.use { keys ->
         check(keys.next()) { "WebSocket event cursor was not returned" }
         keys.getLong(1)
+    }
+}
+
+private inline fun <T> DataSource.withSessionEventLock(
+    sessionId: String,
+    block: (Connection) -> T,
+): T = connection.use { connection ->
+    val previousAutoCommit = connection.autoCommit
+    connection.autoCommit = false
+    try {
+        connection.prepareStatement(
+            "SELECT id FROM duel_sessions WHERE id = ? FOR UPDATE",
+        ).use { statement ->
+            statement.setString(1, sessionId)
+            statement.executeQuery().use { results ->
+                check(results.next()) { "Online session does not exist" }
+            }
+        }
+        block(connection).also { connection.commit() }
+    } catch (failure: Exception) {
+        connection.rollback()
+        throw failure
+    } finally {
+        connection.autoCommit = previousAutoCommit
     }
 }

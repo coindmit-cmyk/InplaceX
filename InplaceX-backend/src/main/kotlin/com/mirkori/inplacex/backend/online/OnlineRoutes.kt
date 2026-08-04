@@ -6,6 +6,7 @@ import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
 import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEvent
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEventSequence
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
 import io.ktor.http.ContentType
@@ -222,9 +223,45 @@ fun Application.configureOnlineRoutes(
             val writer = launch {
                 for (message in outbound) send(Frame.Text(message))
             }
+            fun queueObservedEvent(event: OnlineSessionEvent): Boolean {
+                val response = event.sessionRevision?.let {
+                    val snapshot = service.readSession(principal.playerId, sessionId)
+                    check(snapshot.revision >= it) {
+                        "Durable session event is ahead of the authoritative snapshot"
+                    }
+                    codec.encodeSnapshotFrame(
+                        snapshot = snapshot,
+                        eventSequence = event.eventSequence,
+                        sentAt = clock.instant(),
+                        requestId = null,
+                    )
+                }
+                val accepted = response == null || outbound.trySend(response).isSuccess
+                if (accepted) observedEventSequence.set(event.eventSequence)
+                return accepted
+            }
+            fun queueEventsBefore(targetEventSequence: Long): Boolean {
+                if (observedEventSequence.get() == UnsubscribedEventSequence) return true
+                while (true) {
+                    val events = eventSequences.readAfter(
+                        sessionId,
+                        observedEventSequence.get(),
+                        MaximumEventPollBatch,
+                    )
+                    check(events.isNotEmpty()) { "Allocated WebSocket cursor is not readable" }
+                    for (event in events) {
+                        if (event.eventSequence == targetEventSequence) return true
+                        check(event.eventSequence < targetEventSequence) {
+                            "WebSocket event cursor ordering is inconsistent"
+                        }
+                        if (!queueObservedEvent(event)) return false
+                    }
+                }
+            }
             val heartbeat = launch {
                 while (true) {
                     delay(WebSocketHeartbeatIntervalMillis)
+                    if (observedEventSequence.get() == UnsubscribedEventSequence) continue
                     if (heartbeatDeadline.hasExpired()) {
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "heartbeat_timeout"))
                         return@launch
@@ -237,7 +274,8 @@ fun Application.configureOnlineRoutes(
                                 eventType = "connection.heartbeat",
                                 createdAt = sentAt,
                             )
-                            outbound.trySend(
+                            val caughtUp = queueEventsBefore(eventSequence)
+                            val queued = caughtUp && outbound.trySend(
                                 codec.encodeHeartbeatFrame(
                                     sessionId,
                                     eventSequence,
@@ -245,6 +283,8 @@ fun Application.configureOnlineRoutes(
                                     requestId = null,
                                 ),
                             ).isSuccess
+                            if (queued) observedEventSequence.set(eventSequence)
+                            queued
                         }
                     }.getOrElse {
                         close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
@@ -259,42 +299,20 @@ fun Application.configureOnlineRoutes(
             val sessionChanges = launch {
                 while (true) {
                     delay(WebSocketEventPollIntervalMillis)
-                    val after = observedEventSequence.get()
-                    if (after == UnsubscribedEventSequence) continue
-                    val events = runCatching {
-                        eventSequences.readAfter(sessionId, after, MaximumEventPollBatch)
+                    val queued = runCatching {
+                        outboundMutex.withLock {
+                            val after = observedEventSequence.get()
+                            if (after == UnsubscribedEventSequence) return@withLock true
+                            eventSequences.readAfter(sessionId, after, MaximumEventPollBatch)
+                                .all(::queueObservedEvent)
+                        }
                     }.getOrElse {
                         close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
                         return@launch
                     }
-                    for (event in events) {
-                        val queued = runCatching {
-                            outboundMutex.withLock {
-                                if (event.eventSequence <= observedEventSequence.get()) return@withLock true
-                                val response = event.sessionRevision?.let {
-                                    val snapshot = service.readSession(principal.playerId, sessionId)
-                                    check(snapshot.revision >= it) {
-                                        "Durable session event is ahead of the authoritative snapshot"
-                                    }
-                                    codec.encodeSnapshotFrame(
-                                        snapshot = snapshot,
-                                        eventSequence = event.eventSequence,
-                                        sentAt = clock.instant(),
-                                        requestId = null,
-                                    )
-                                }
-                                val accepted = response == null || outbound.trySend(response).isSuccess
-                                if (accepted) observedEventSequence.set(event.eventSequence)
-                                accepted
-                            }
-                        }.getOrElse {
-                            close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
-                            return@launch
-                        }
-                        if (!queued) {
-                            close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "slow_consumer"))
-                            return@launch
-                        }
+                    if (!queued) {
+                        close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "slow_consumer"))
+                        return@launch
                     }
                 }
             }
@@ -358,18 +376,22 @@ fun Application.configureOnlineRoutes(
                                         "connection.heartbeat",
                                         sentAt,
                                     )
-                                    codec.encodeHeartbeatFrame(
+                                    if (!queueEventsBefore(eventSequence)) throw SlowWebSocketConsumerException()
+                                    val response = codec.encodeHeartbeatFrame(
                                         sessionId,
                                         eventSequence,
                                         sentAt,
                                         command.requestId,
                                     )
+                                    observedEventSequence.set(eventSequence)
+                                    response
                                 }
                                 else -> error("unsupported control command")
                             }
                             outbound.trySend(response).isSuccess
                         }
-                    }.getOrElse {
+                    }.getOrElse { failure ->
+                        if (failure is SlowWebSocketConsumerException) return@getOrElse false
                         close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
                         return@webSocket
                     }
@@ -863,6 +885,7 @@ private const val WebSocketPingTimeoutNanos = 45_000_000_000L
 private const val MaximumEventPollBatch = 32
 private const val UnsubscribedEventSequence = -1L
 private val WebSocketControlTypes = setOf("session.subscribe", "session.resync", "session.ping")
+private class SlowWebSocketConsumerException : IllegalStateException()
 
 internal class WebSocketHeartbeatDeadline(
     private val nanoTime: () -> Long,

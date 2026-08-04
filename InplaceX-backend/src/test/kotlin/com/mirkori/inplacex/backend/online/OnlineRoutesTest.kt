@@ -279,6 +279,8 @@ class OnlineRoutesTest {
                     expectedRevision = 0,
                     secret = "111234",
                 )
+                val pingRequestId = UUID.randomUUID().toString()
+                send(Frame.Text(webSocketControl(sessionId, pingRequestId, "session.ping", "{}")))
 
                 val liveFrameText = withTimeout(3_000) { (incoming.receive() as Frame.Text).readText() }
                 val liveFrame = json(liveFrameText)
@@ -287,6 +289,14 @@ class OnlineRoutesTest {
                 assertEquals(1L, liveFrame.getValue("payload").jsonObject
                     .getValue("snapshot").jsonObject.getValue("revision").jsonPrimitive.content.toLong())
                 assertFalse(liveFrameText.contains("111234"))
+
+                val heartbeat = json(withTimeout(3_000) { (incoming.receive() as Frame.Text).readText() })
+                assertEquals("connection.heartbeat", heartbeat.getValue("type").jsonPrimitive.content)
+                assertEquals(pingRequestId, heartbeat.getValue("requestId").jsonPrimitive.content)
+                assertTrue(
+                    heartbeat.getValue("eventSeq").jsonPrimitive.content.toLong() >
+                        liveFrame.getValue("eventSeq").jsonPrimitive.content.toLong(),
+                )
             }
         }
 
