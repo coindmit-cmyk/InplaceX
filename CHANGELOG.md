@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Every committed online duel revision now writes a secret-free durable event
+  marker in the same PostgreSQL transaction. WebSocket connections consume the
+  journal across backend instances, push viewer-specific live snapshots, resume
+  retained cursors without a false replay gap, and reserve `session.replayGap`
+  for missing cursors.
+
 - The online WebSocket endpoint now enforces the published v1 bearer/subprotocol
   contract and supports `session.subscribe`, `session.resync`, and
   `session.ping` envelopes. Snapshot recovery stays PostgreSQL-authoritative,

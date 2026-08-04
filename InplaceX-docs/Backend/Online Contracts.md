@@ -442,12 +442,19 @@ command as success.
 
 The current backend implements the control subset of this protocol:
 `session.subscribe`, `session.resync`, and `session.ping`. A subscribe or resync
-without a cursor returns `session.snapshot`; a request with a cursor returns
-`session.replayGap` with a fresh PostgreSQL-authoritative snapshot. Server event
-cursors are allocated durably through `duel_events`, so frames emitted by
-different backend instances remain strictly ordered. Durable replay and
-cross-instance push fan-out are separate later capabilities; duel mutations
-continue to use the REST fallback until that fan-out exists.
+without a cursor returns `session.snapshot`. A retained cursor returns a fresh
+PostgreSQL-authoritative snapshot and continues from its new durable cursor; a
+cursor that is not retained returns `session.replayGap` with the same recovery
+snapshot.
+
+Every committed duel revision appends a secret-free `session.changed` marker to
+`duel_events` in the same database transaction. Connected backend instances
+poll that durable journal and emit a newly authorized, viewer-specific
+`session.snapshot` for every observed marker. This provides restart-safe
+snapshot replay and cross-instance live fan-out while keeping guesses and
+secrets out of the event journal. Server event cursors remain strictly ordered
+across instances. Duel mutations continue to use the REST fallback; the socket
+is the live state and recovery transport in this protocol slice.
 
 ### Heartbeat and backpressure
 

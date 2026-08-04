@@ -4,6 +4,8 @@ import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.identity.CredentialPolicy
 import com.mirkori.inplacex.backend.identity.Rs256AccessTokenIssuer
+import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
@@ -32,6 +34,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.withTimeout
+import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -181,17 +185,17 @@ class OnlineRoutesTest {
                     ),
                 ),
             )
-            val replayGap = json((incoming.receive() as Frame.Text).readText())
-            assertEquals("session.replayGap", replayGap.getValue("type").jsonPrimitive.content)
-            assertEquals(resyncRequestId, replayGap.getValue("requestId").jsonPrimitive.content)
+            val replay = json((incoming.receive() as Frame.Text).readText())
+            assertEquals("session.snapshot", replay.getValue("type").jsonPrimitive.content)
+            assertEquals(resyncRequestId, replay.getValue("requestId").jsonPrimitive.content)
             assertTrue(
-                replayGap.getValue("eventSeq").jsonPrimitive.content.toLong() > snapshotEventSequence,
+                replay.getValue("eventSeq").jsonPrimitive.content.toLong() > snapshotEventSequence,
             )
-            val recoveredSnapshot = replayGap.getValue("payload").jsonObject
+            val recoveredSnapshot = replay.getValue("payload").jsonObject
                 .getValue("snapshot").jsonObject
             assertEquals("ACTIVE_RACE", recoveredSnapshot.getValue("phase").jsonPrimitive.content)
             assertEquals(
-                replayGap.getValue("eventSeq").jsonPrimitive.content.toLong(),
+                replay.getValue("eventSeq").jsonPrimitive.content.toLong(),
                 recoveredSnapshot.getValue("eventSeq").jsonPrimitive.content.toLong(),
             )
             val turns = recoveredSnapshot.getValue("turns").jsonArray.map { it.jsonObject }
@@ -205,10 +209,86 @@ class OnlineRoutesTest {
             assertEquals(pingRequestId, heartbeat.getValue("requestId").jsonPrimitive.content)
             assertTrue(
                 heartbeat.getValue("eventSeq").jsonPrimitive.content.toLong() >
-                    replayGap.getValue("eventSeq").jsonPrimitive.content.toLong(),
+                    replay.getValue("eventSeq").jsonPrimitive.content.toLong(),
             )
+
+            val missingCursorRequestId = UUID.randomUUID().toString()
+            send(
+                Frame.Text(
+                    webSocketControl(
+                        sessionId,
+                        missingCursorRequestId,
+                        "session.resync",
+                        """{"lastSeenEventSeq":999999}""",
+                    ),
+                ),
+            )
+            val replayGap = json((incoming.receive() as Frame.Text).readText())
+            assertEquals("session.replayGap", replayGap.getValue("type").jsonPrimitive.content)
+            assertEquals(missingCursorRequestId, replayGap.getValue("requestId").jsonPrimitive.content)
         }
     }
+
+    @Test
+    fun `WebSocket receives a session change written through another database event store instance`() =
+        testApplication {
+            val dataSource = JdbcDataSource().apply {
+                setURL("jdbc:h2:mem:ws-fanout-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+            }
+            JdbcMigrationRunner().migrate(dataSource)
+            val writerEvents = JdbcOnlineSessionEventSequence(dataSource)
+            val readerEvents = JdbcOnlineSessionEventSequence(dataSource)
+            val serviceClock = RouteMutableClock(now)
+            val service = AuthoritativeOnlineDuelService(
+                clock = serviceClock,
+                botFallbackDelay = Duration.ofSeconds(5),
+                sessionEvents = writerEvents,
+            )
+            application { configureOnlineRoutes(verifier, service, readerEvents) }
+            val sessionId = createMatchedTicket(playerToken, serviceClock)
+                .getValue("sessionId").jsonPrimitive.content
+            dataSource.connection.use { connection ->
+                connection.prepareStatement(
+                    """
+                    INSERT INTO duel_sessions(id, mode, status, config_json, version, created_at)
+                    VALUES (?, 'ONLINE_DUEL', 'SETUP', '{}', 0, ?)
+                    """.trimIndent(),
+                ).use { statement ->
+                    statement.setString(1, sessionId)
+                    statement.setObject(2, now.atOffset(ZoneOffset.UTC))
+                    statement.executeUpdate()
+                }
+            }
+
+            val wsClient = createClient { install(WebSockets) }
+            wsClient.webSocket(
+                urlString = "/api/v1/ws/sessions/$sessionId",
+                request = {
+                    bearer(playerToken)
+                    header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+                },
+            ) {
+                send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.subscribe", "{}")))
+                assertEquals("session.snapshot", json((incoming.receive() as Frame.Text).readText())
+                    .getValue("type").jsonPrimitive.content)
+
+                service.submitSecret(
+                    playerId = playerId,
+                    sessionId = sessionId,
+                    commandId = UUID.randomUUID().toString(),
+                    expectedRevision = 0,
+                    secret = "111234",
+                )
+
+                val liveFrameText = withTimeout(3_000) { (incoming.receive() as Frame.Text).readText() }
+                val liveFrame = json(liveFrameText)
+                assertEquals("session.snapshot", liveFrame.getValue("type").jsonPrimitive.content)
+                assertEquals("null", liveFrame.getValue("requestId").toString())
+                assertEquals(1L, liveFrame.getValue("payload").jsonObject
+                    .getValue("snapshot").jsonObject.getValue("revision").jsonPrimitive.content.toLong())
+                assertFalse(liveFrameText.contains("111234"))
+            }
+        }
 
     @Test
     fun `WebSocket rejects query credentials foreign members and legacy frames`() = testApplication {

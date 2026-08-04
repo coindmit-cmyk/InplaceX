@@ -217,6 +217,7 @@ fun Application.configureOnlineRoutes(
 
             val outbound = Channel<String>(capacity = MaximumPendingWebSocketFrames)
             val outboundMutex = Mutex()
+            val observedEventSequence = AtomicLong(UnsubscribedEventSequence)
             val heartbeatDeadline = WebSocketHeartbeatDeadline(nanoTime, WebSocketPingTimeoutNanos)
             val writer = launch {
                 for (message in outbound) send(Frame.Text(message))
@@ -255,6 +256,48 @@ fun Application.configureOnlineRoutes(
                     }
                 }
             }
+            val sessionChanges = launch {
+                while (true) {
+                    delay(WebSocketEventPollIntervalMillis)
+                    val after = observedEventSequence.get()
+                    if (after == UnsubscribedEventSequence) continue
+                    val events = runCatching {
+                        eventSequences.readAfter(sessionId, after, MaximumEventPollBatch)
+                    }.getOrElse {
+                        close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                        return@launch
+                    }
+                    for (event in events) {
+                        val queued = runCatching {
+                            outboundMutex.withLock {
+                                if (event.eventSequence <= observedEventSequence.get()) return@withLock true
+                                val response = event.sessionRevision?.let {
+                                    val snapshot = service.readSession(principal.playerId, sessionId)
+                                    check(snapshot.revision >= it) {
+                                        "Durable session event is ahead of the authoritative snapshot"
+                                    }
+                                    codec.encodeSnapshotFrame(
+                                        snapshot = snapshot,
+                                        eventSequence = event.eventSequence,
+                                        sentAt = clock.instant(),
+                                        requestId = null,
+                                    )
+                                }
+                                val accepted = response == null || outbound.trySend(response).isSuccess
+                                if (accepted) observedEventSequence.set(event.eventSequence)
+                                accepted
+                            }
+                        }.getOrElse {
+                            close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                            return@launch
+                        }
+                        if (!queued) {
+                            close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "slow_consumer"))
+                            return@launch
+                        }
+                    }
+                }
+            }
             try {
                 for (frame in incoming) {
                     if (frame !is Frame.Text) {
@@ -280,14 +323,17 @@ fun Application.configureOnlineRoutes(
                             val sentAt = clock.instant()
                             val response = when (command.type) {
                                 "session.subscribe", "session.resync" -> {
-                                    val snapshot = service.readSession(principal.playerId, sessionId)
-                                    val eventType = if (command.lastSeenEventSequence == null) {
+                                    val replayable = command.lastSeenEventSequence?.let {
+                                        eventSequences.isReplayable(sessionId, it)
+                                    } ?: true
+                                    val eventType = if (replayable) {
                                         "session.snapshot"
                                     } else {
                                         "session.replayGap"
                                     }
                                     val eventSequence = eventSequences.next(sessionId, eventType, sentAt)
-                                    if (command.lastSeenEventSequence == null) {
+                                    val snapshot = service.readSession(principal.playerId, sessionId)
+                                    val response = if (replayable) {
                                         codec.encodeSnapshotFrame(
                                             snapshot,
                                             eventSequence,
@@ -297,12 +343,14 @@ fun Application.configureOnlineRoutes(
                                     } else {
                                         codec.encodeReplayGapFrame(
                                             snapshot,
-                                            command.lastSeenEventSequence,
+                                            requireNotNull(command.lastSeenEventSequence),
                                             eventSequence,
                                             sentAt,
                                             command.requestId,
                                         )
                                     }
+                                    observedEventSequence.set(eventSequence)
+                                    response
                                 }
                                 "session.ping" -> {
                                     val eventSequence = eventSequences.next(
@@ -332,6 +380,7 @@ fun Application.configureOnlineRoutes(
                 }
             } finally {
                 heartbeat.cancel()
+                sessionChanges.cancel()
                 outbound.close()
                 writer.cancel()
             }
@@ -809,7 +858,10 @@ private class OnlineJsonCodec {
 private const val MaximumOnlineWebSocketFrameBytes = 64 * 1024
 private const val MaximumPendingWebSocketFrames = 16
 private const val WebSocketHeartbeatIntervalMillis = 20_000L
+private const val WebSocketEventPollIntervalMillis = 250L
 private const val WebSocketPingTimeoutNanos = 45_000_000_000L
+private const val MaximumEventPollBatch = 32
+private const val UnsubscribedEventSequence = -1L
 private val WebSocketControlTypes = setOf("session.subscribe", "session.resync", "session.ping")
 
 internal class WebSocketHeartbeatDeadline(

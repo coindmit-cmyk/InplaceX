@@ -44,6 +44,8 @@ fun Application.backendModule(
         }
     }
     val onlineService = config.online?.let { onlineConfig ->
+        val sessionEvents = database?.let { JdbcOnlineSessionEventSequence(it.dataSource) }
+            ?: InMemoryOnlineSessionEventSequence()
         val sessionRepository = database?.let { databaseHandle ->
             JdbcOnlineSessionRepository(
                 dataSource = databaseHandle.dataSource,
@@ -59,6 +61,7 @@ fun Application.backendModule(
             logger = logger,
             sessionRepository = sessionRepository,
             lobbyRepository = lobbyRepository,
+            sessionEvents = sessionEvents,
         ).also { service ->
             environment.monitor.subscribe(ApplicationStopped) {
                 service.close()
@@ -72,8 +75,7 @@ fun Application.backendModule(
                     ),
                 ),
                 service = service,
-                eventSequences = database?.let { JdbcOnlineSessionEventSequence(it.dataSource) }
-                    ?: InMemoryOnlineSessionEventSequence(),
+                eventSequences = sessionEvents,
             )
         }
     }
