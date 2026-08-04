@@ -9,6 +9,8 @@ import com.mirkori.inplacex.backend.health.configureHealthRoutes
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineLobbyRepository
+import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionRepository
 import com.mirkori.inplacex.logging.InplaceXLogger
 import io.ktor.server.application.Application
@@ -70,6 +72,8 @@ fun Application.backendModule(
                     ),
                 ),
                 service = service,
+                eventSequences = database?.let { JdbcOnlineSessionEventSequence(it.dataSource) }
+                    ?: InMemoryOnlineSessionEventSequence(),
             )
         }
     }

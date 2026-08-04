@@ -17,7 +17,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
 import io.ktor.websocket.Frame
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.readText
+import io.ktor.websocket.send
 import java.security.KeyPairGenerator
 import java.time.Clock
 import java.time.Duration
@@ -25,6 +27,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -52,6 +55,19 @@ class OnlineRoutesTest {
     )
     private val playerToken = issuer.issue(playerId, now, now.plus(tokenPolicy.accessTtl))
     private val attackerToken = issuer.issue(attackerId, now, now.plus(tokenPolicy.accessTtl))
+
+    @Test
+    fun `WebSocket heartbeat deadline advances only after a valid ping`() {
+        val ticker = AtomicLong(100)
+        val deadline = WebSocketHeartbeatDeadline(ticker::get, timeoutNanos = 10)
+
+        ticker.set(111)
+        assertTrue(deadline.hasExpired())
+        deadline.recordPing()
+        assertFalse(deadline.hasExpired())
+        ticker.set(122)
+        assertTrue(deadline.hasExpired())
+    }
 
     @Test
     fun `authenticated REST flow creates and plays an authoritative online duel`() = testApplication {
@@ -110,15 +126,13 @@ class OnlineRoutesTest {
     }
 
     @Test
-    fun `authenticated WebSocket returns authoritative snapshot and rejects foreign membership`() = testApplication {
+    fun `authenticated WebSocket subscribe resync and ping use the v1 envelope`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
         application { configureOnlineRoutes(verifier, service) }
         val sessionId = createMatchedTicket(playerToken, serviceClock)
             .getValue("sessionId").jsonPrimitive.content
         val wsClient = createClient { install(WebSockets) }
-        var snapshotFrame = ""
-
         wsClient.webSocket(
             urlString = "/api/v1/ws/sessions/$sessionId",
             request = {
@@ -126,16 +140,110 @@ class OnlineRoutesTest {
                 header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
             },
         ) {
-            snapshotFrame = (incoming.receive() as Frame.Text).readText()
-        }
+            val subscribeRequestId = UUID.randomUUID().toString()
+            send(Frame.Text(webSocketControl(sessionId, subscribeRequestId, "session.subscribe", "{}")))
+            val snapshot = json((incoming.receive() as Frame.Text).readText())
+            assertEquals("1.0", snapshot.getValue("schemaVersion").jsonPrimitive.content)
+            assertEquals(subscribeRequestId, snapshot.getValue("requestId").jsonPrimitive.content)
+            assertEquals(sessionId, snapshot.getValue("sessionId").jsonPrimitive.content)
+            assertEquals("session.snapshot", snapshot.getValue("type").jsonPrimitive.content)
+            val snapshotEventSequence = snapshot.getValue("eventSeq").jsonPrimitive.content.toLong()
+            val initialSnapshot = snapshot.getValue("payload").jsonObject
+                .getValue("snapshot").jsonObject
+            assertEquals(
+                snapshotEventSequence,
+                initialSnapshot.getValue("eventSeq").jsonPrimitive.content.toLong(),
+            )
+            assertEquals("SETUP_SECRET_A", initialSnapshot.getValue("phase").jsonPrimitive.content)
 
-        assertEquals("session.snapshot", json(snapshotFrame).getValue("type").jsonPrimitive.content)
+            val active = service.submitSecret(
+                playerId = playerId,
+                sessionId = sessionId,
+                commandId = UUID.randomUUID().toString(),
+                expectedRevision = 0,
+                secret = "111234",
+            )
+            service.submitGuess(
+                playerId = playerId,
+                sessionId = sessionId,
+                commandId = UUID.randomUUID().toString(),
+                expectedRevision = active.revision,
+                guess = "001001",
+            )
+            val resyncRequestId = UUID.randomUUID().toString()
+            send(
+                Frame.Text(
+                    webSocketControl(
+                        sessionId,
+                        resyncRequestId,
+                        "session.resync",
+                        """{"lastSeenEventSeq":$snapshotEventSequence}""",
+                    ),
+                ),
+            )
+            val replayGap = json((incoming.receive() as Frame.Text).readText())
+            assertEquals("session.replayGap", replayGap.getValue("type").jsonPrimitive.content)
+            assertEquals(resyncRequestId, replayGap.getValue("requestId").jsonPrimitive.content)
+            assertTrue(
+                replayGap.getValue("eventSeq").jsonPrimitive.content.toLong() > snapshotEventSequence,
+            )
+            val recoveredSnapshot = replayGap.getValue("payload").jsonObject
+                .getValue("snapshot").jsonObject
+            assertEquals("ACTIVE_RACE", recoveredSnapshot.getValue("phase").jsonPrimitive.content)
+            assertEquals(
+                replayGap.getValue("eventSeq").jsonPrimitive.content.toLong(),
+                recoveredSnapshot.getValue("eventSeq").jsonPrimitive.content.toLong(),
+            )
+            val turns = recoveredSnapshot.getValue("turns").jsonArray.map { it.jsonObject }
+            assertEquals("001001", turns.first().getValue("ownGuess").jsonPrimitive.content)
+            assertEquals("null", turns.last().getValue("ownGuess").toString())
 
-        val foreign = client.get("/api/v1/sessions/$sessionId") {
-            bearer(attackerToken)
+            val pingRequestId = UUID.randomUUID().toString()
+            send(Frame.Text(webSocketControl(sessionId, pingRequestId, "session.ping", "{}")))
+            val heartbeat = json((incoming.receive() as Frame.Text).readText())
+            assertEquals("connection.heartbeat", heartbeat.getValue("type").jsonPrimitive.content)
+            assertEquals(pingRequestId, heartbeat.getValue("requestId").jsonPrimitive.content)
+            assertTrue(
+                heartbeat.getValue("eventSeq").jsonPrimitive.content.toLong() >
+                    replayGap.getValue("eventSeq").jsonPrimitive.content.toLong(),
+            )
         }
-        assertEquals(HttpStatusCode.Forbidden, foreign.status)
-        assertFalse(foreign.bodyAsText().contains(playerId))
+    }
+
+    @Test
+    fun `WebSocket rejects query credentials foreign members and legacy frames`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        application { configureOnlineRoutes(verifier, service) }
+        val sessionId = createMatchedTicket(playerToken, serviceClock)
+            .getValue("sessionId").jsonPrimitive.content
+        val wsClient = createClient { install(WebSockets) }
+
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId?access_token=$playerToken",
+            request = { header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1") },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(attackerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            send(Frame.Text("""{"type":"snapshot.request"}"""))
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
     }
 
     @Test
@@ -257,6 +365,14 @@ class OnlineRoutesTest {
     private fun io.ktor.client.request.HttpRequestBuilder.bearer(token: String) {
         header(HttpHeaders.Authorization, "Bearer $token")
     }
+
+    private fun webSocketControl(
+        sessionId: String,
+        requestId: String,
+        type: String,
+        payload: String,
+    ): String =
+        """{"schemaVersion":"1.0","messageId":"${UUID.randomUUID()}","requestId":"$requestId","sessionId":"$sessionId","type":"$type","payload":$payload}"""
 
     private fun json(source: String) = Json.parseToJsonElement(source).jsonObject
 }

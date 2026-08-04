@@ -48,6 +48,18 @@ class JdbcOnlineSessionRepository(
     override fun deleteExpired(now: Instant) {
         dataSource.transaction { connection ->
             connection.prepareStatement(
+                """
+                DELETE FROM duel_events
+                WHERE session_id IN (
+                    SELECT id FROM duel_sessions
+                    WHERE expires_at IS NOT NULL AND expires_at <= ?
+                )
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setInstant(1, now)
+                statement.executeUpdate()
+            }
+            connection.prepareStatement(
                 "DELETE FROM duel_sessions WHERE expires_at IS NOT NULL AND expires_at <= ?",
             ).use { statement ->
                 statement.setInstant(1, now)
@@ -254,6 +266,10 @@ class JdbcOnlineSessionRepository(
 
     override fun delete(sessionId: String) {
         dataSource.transaction { connection ->
+            connection.prepareStatement("DELETE FROM duel_events WHERE session_id = ?").use { statement ->
+                statement.setString(1, sessionId)
+                statement.executeUpdate()
+            }
             connection.prepareStatement("DELETE FROM duel_sessions WHERE id = ?").use { statement ->
                 statement.setString(1, sessionId)
                 statement.executeUpdate()

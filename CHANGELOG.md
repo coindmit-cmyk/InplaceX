@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The online WebSocket endpoint now enforces the published v1 bearer/subprotocol
+  contract and supports `session.subscribe`, `session.resync`, and
+  `session.ping` envelopes. Snapshot recovery stays PostgreSQL-authoritative,
+  reconnect cursors are durable across backend instances, outbound frames are
+  bounded, and unavailable replay is reported explicitly as `session.replayGap`.
+
 - PostgreSQL-backed duel reads and commands now take command-scoped ownership
   of the durable session row. Each backend instance restores the latest
   encrypted aggregate under `FOR UPDATE`, so concurrent commands preserve

@@ -440,11 +440,24 @@ then a suffix, or emits `session.replayGap` with a snapshot. The client applies
 the snapshot before later events and never treats an unacknowledged local
 command as success.
 
+The current backend implements the control subset of this protocol:
+`session.subscribe`, `session.resync`, and `session.ping`. A subscribe or resync
+without a cursor returns `session.snapshot`; a request with a cursor returns
+`session.replayGap` with a fresh PostgreSQL-authoritative snapshot. Server event
+cursors are allocated durably through `duel_events`, so frames emitted by
+different backend instances remain strictly ordered. Durable replay and
+cross-instance push fan-out are separate later capabilities; duel mutations
+continue to use the REST fallback until that fan-out exists.
+
 ### Heartbeat and backpressure
 
 The server sends `connection.heartbeat`; the client answers with
 `session.ping` within the advertised connection timeout. Heartbeat frames do
 not advance the domain revision.
+
+The current transport emits a JSON heartbeat every 20 seconds and closes a
+connection with `1008 heartbeat_timeout` when no valid `session.ping` has been
+received for 45 seconds.
 
 Each connection has a bounded outbound queue and a maximum JSON frame size of
 64 KiB. The server may coalesce presence/heartbeat information, but must not

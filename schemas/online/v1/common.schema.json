@@ -41,6 +41,7 @@
         "SETUP_WAITING_FOR_PLAYERS",
         "SETUP_SECRET_A",
         "SETUP_SECRET_B",
+        "ACTIVE_RACE",
         "ACTIVE_TURN_A",
         "ACTIVE_TURN_B",
         "FINISHED",
@@ -145,10 +146,9 @@
       "required": [
         "turnNumber",
         "actorParticipantId",
-        "guess",
+        "ownGuess",
         "exactMatches",
-        "solved",
-        "createdAt"
+        "solved"
       ],
       "properties": {
         "turnNumber": {
@@ -158,9 +158,16 @@
         "actorParticipantId": {
           "$ref": "#/$defs/Uuid"
         },
-        "guess": {
-          "type": "string",
-          "pattern": "^[0-9]{4,20}$"
+        "ownGuess": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{4,20}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "exactMatches": {
           "type": "integer",
@@ -169,9 +176,6 @@
         },
         "solved": {
           "type": "boolean"
-        },
-        "createdAt": {
-          "$ref": "#/$defs/Instant"
         }
       }
     },
