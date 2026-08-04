@@ -5,9 +5,12 @@ WORKDIR /workspace
 COPY gradle gradle
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY InplaceX-bot-core InplaceX-bot-core
+COPY InplaceX-auth-core InplaceX-auth-core
+COPY InplaceX-ads-core InplaceX-ads-core
 COPY InplaceX-logging InplaceX-logging
 COPY InplaceX-test-support InplaceX-test-support
 COPY InplaceX-backend InplaceX-backend
+COPY InplaceX-identity InplaceX-identity
 COPY InplaceX-android/app InplaceX-android/app
 
 RUN ./gradlew --no-daemon :InplaceX-backend:installDist

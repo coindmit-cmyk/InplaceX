@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Shell entrypoints, Gradle wrapper and Dockerfiles now keep LF endings on
+  Windows checkouts. The backend Docker build also includes every Gradle module
+  declared by the root project, so the stock local-stack verification runs
+  without a normalized export or a patched Dockerfile.
+
 - Every committed online duel revision now writes a secret-free durable event
   marker in the same PostgreSQL transaction. WebSocket connections consume the
   journal across backend instances, push viewer-specific live snapshots, resume
