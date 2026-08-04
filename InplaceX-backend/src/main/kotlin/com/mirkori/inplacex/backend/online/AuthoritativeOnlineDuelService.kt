@@ -175,37 +175,8 @@ class AuthoritativeOnlineDuelService(
         val recoveredAt = clock.instant()
         lobbyRepository?.deleteLinksToExpiredSessions(recoveredAt)
         sessionRepository?.deleteExpired(recoveredAt)
-        sessionRepository?.loadRecoverable(recoveredAt)?.forEach { stored ->
-            val memento = OnlineSessionMementoCodec.decode(stored.stateJson)
-            check(memento.sessionId == stored.sessionId && memento.revision == stored.revision) {
-                "Durable online session metadata does not match encrypted state"
-            }
-            sessions[stored.sessionId] = SessionRecord.restore(
-                memento = memento,
-                clock = clock,
-                finishedSessionRetention = finishedSessionRetention,
-                repository = sessionRepository,
-            )
-        }
-        lobbyRepository?.loadTickets(recoveredAt)?.forEach { stored ->
-            val rules = OnlineLobbyRulesCodec.decode(stored.rulesJson)
-            val record = TicketRecord(
-                mode = enumValueOf(stored.mode),
-                rules = rules,
-                commandId = stored.commandId,
-                ticket = MatchmakingTicket(
-                    ticketId = stored.ticketId,
-                    ownerPlayerId = stored.ownerPlayerId,
-                    status = enumValueOf(stored.status),
-                    sessionId = stored.sessionId,
-                    matchedWithBot = stored.matchedWithBot,
-                    createdAt = stored.createdAt,
-                ),
-            )
-            tickets[stored.ticketId] = record
-            ticketReplays["${stored.ownerPlayerId}:${stored.commandId}"] =
-                TicketReplay(record.mode, rules, stored.ticketId)
-        }
+        sessionRepository?.loadRecoverable(recoveredAt)?.forEach(::restoreSession)
+        lobbyRepository?.loadTickets(recoveredAt)?.forEach(::cacheTicket)
         lobbyRepository?.loadInvites(recoveredAt.minus(inviteRetention))?.forEach { stored ->
             val rules = OnlineLobbyRulesCodec.decodeInvite(stored.rulesJson)
             val record = PrivateInviteRecord(
@@ -279,10 +250,14 @@ class AuthoritativeOnlineDuelService(
             val replayKey = "$playerId:$commandId"
             ticketReplays[replayKey]?.let { replay ->
                 if (replay.mode != mode || replay.rules != rules) throw OnlineCommandIdReusedException()
-                return tickets.getValue(replay.ticketId).ticket
+                return refreshTicket(replay.ticketId)?.ticket
+                    ?: throw NoSuchElementException("matchmaking ticket not found")
             }
 
             promoteExpiredTickets(clock.instant())
+            if (lobbyRepository != null) {
+                return createCoordinatedTicket(playerId, commandId, mode, rules)
+            }
             val waitingPeer = tickets.values
                 .asSequence()
                 .filter { record ->
@@ -324,16 +299,11 @@ class AuthoritativeOnlineDuelService(
                 )
             }
             val record = TicketRecord(mode, rules, commandId, ticket)
-            val durableTickets = listOfNotNull(waitingPeer, record).map { it.toDurable(ticketRetention) }
             try {
                 createdSession?.let { session ->
-                    if (lobbyRepository != null) {
-                        lobbyRepository.createSessionAndSaveTickets(session.persistenceState(), durableTickets)
-                    } else {
-                        session.persistNew()
-                    }
+                    session.persistNew()
                     sessions[session.sessionId] = session
-                } ?: lobbyRepository?.saveTickets(durableTickets)
+                }
             } catch (failure: Throwable) {
                 if (waitingPeer != null && previousWaitingTicket != null) {
                     waitingPeer.ticket = previousWaitingTicket
@@ -350,13 +320,65 @@ class AuthoritativeOnlineDuelService(
     fun readTicket(playerId: String, ticketId: String): MatchmakingTicket {
         requireCanonicalUuid(playerId, "playerId")
         synchronized(lock) {
-            val record = tickets[ticketId] ?: throw NoSuchElementException("matchmaking ticket not found")
+            val record = refreshTicket(ticketId)
+                ?: throw NoSuchElementException("matchmaking ticket not found")
             if (record.ticket.ownerPlayerId != playerId) throw OnlineMembershipRejectedException()
             if (record.ticket.status == MatchmakingStatus.SEARCHING) {
                 promoteTicketToBotIfExpired(record, clock.instant())
             }
-            return record.ticket
+            return refreshTicket(ticketId)?.ticket
+                ?: throw NoSuchElementException("matchmaking ticket not found")
         }
+    }
+
+    private fun createCoordinatedTicket(
+        playerId: String,
+        commandId: String,
+        mode: OnlineMatchMode,
+        rules: OnlineMatchRules,
+    ): MatchmakingTicket {
+        val createdAt = clock.instant()
+        val candidate = TicketRecord(
+            mode = mode,
+            rules = rules,
+            commandId = commandId,
+            ticket = MatchmakingTicket(
+                ticketId = UUID.randomUUID().toString(),
+                ownerPlayerId = playerId,
+                status = MatchmakingStatus.SEARCHING,
+                sessionId = null,
+                matchedWithBot = false,
+                createdAt = createdAt,
+            ),
+        )
+        var createdSession: SessionRecord? = null
+        val result = try {
+            requireNotNull(lobbyRepository).coordinateTicket(candidate.toDurable(ticketRetention)) { peer ->
+                createHumanSession(
+                    rules = rules,
+                    firstPlayerId = peer.ownerPlayerId,
+                    secondPlayerId = playerId,
+                ).also { createdSession = it }.persistenceState()
+            }
+        } catch (failure: Throwable) {
+            createdSession?.close()
+            throw failure
+        }
+        val storedRules = OnlineLobbyRulesCodec.decode(result.ticket.rulesJson)
+        if (result.ticket.mode != mode.name || storedRules != rules) {
+            createdSession?.close()
+            throw OnlineCommandIdReusedException()
+        }
+        result.matchedPeer?.let(::cacheTicket)
+        val record = cacheTicket(result.ticket)
+        createdSession?.let { session ->
+            if (result.createdSession && result.ticket.sessionId == session.sessionId) {
+                sessions[session.sessionId] = session
+            } else {
+                session.close()
+            }
+        }
+        return record.ticket
     }
 
     fun createPrivateInvite(
@@ -510,9 +532,43 @@ class AuthoritativeOnlineDuelService(
         )
 
     private fun promoteExpiredTickets(now: Instant) {
+        lobbyRepository
+            ?.loadSearchingTickets(now.minus(botFallbackDelay), now)
+            ?.forEach(::cacheTicket)
         tickets.values
             .filter { it.ticket.status == MatchmakingStatus.SEARCHING }
             .forEach { promoteTicketToBotIfExpired(it, now) }
+    }
+
+    private fun refreshTicket(ticketId: String): TicketRecord? =
+        if (lobbyRepository == null) {
+            tickets[ticketId]
+        } else {
+            lobbyRepository.loadTicket(ticketId)?.let(::cacheTicket)
+        }
+
+    private fun cacheTicket(stored: DurableMatchmakingTicket): TicketRecord {
+        val rules = OnlineLobbyRulesCodec.decode(stored.rulesJson)
+        val mode = enumValueOf<OnlineMatchMode>(stored.mode)
+        val ticket = MatchmakingTicket(
+            ticketId = stored.ticketId,
+            ownerPlayerId = stored.ownerPlayerId,
+            status = enumValueOf(stored.status),
+            sessionId = stored.sessionId,
+            matchedWithBot = stored.matchedWithBot,
+            createdAt = stored.createdAt,
+        )
+        val record = tickets[stored.ticketId]?.also { existing ->
+            check(existing.mode == mode && existing.rules == rules && existing.commandId == stored.commandId) {
+                "Durable matchmaking ticket identity changed"
+            }
+            existing.ticket = ticket
+        } ?: TicketRecord(mode, rules, stored.commandId, ticket).also { created ->
+            tickets[stored.ticketId] = created
+        }
+        ticketReplays["${stored.ownerPlayerId}:${stored.commandId}"] =
+            TicketReplay(mode, rules, stored.ticketId)
+        return record
     }
 
     private fun expirePrivateInvites(now: Instant) {
@@ -545,16 +601,38 @@ class AuthoritativeOnlineDuelService(
         if (record.ticket.status != MatchmakingStatus.SEARCHING) return
         val deadline = record.ticket.createdAt.plus(botFallbackDelay)
         if (now.isBefore(deadline)) return
+        if (lobbyRepository != null) {
+            var createdSession: SessionRecord? = null
+            val result = try {
+                lobbyRepository.coordinateBotFallback(
+                    ticketId = record.ticket.ticketId,
+                    eligibleBefore = now.minus(botFallbackDelay),
+                ) { stored ->
+                    createBotSession(
+                        mode = enumValueOf(stored.mode),
+                        rules = OnlineLobbyRulesCodec.decode(stored.rulesJson),
+                        playerId = stored.ownerPlayerId,
+                    ).also { createdSession = it }.persistenceState()
+                }
+            } catch (failure: Throwable) {
+                createdSession?.close()
+                throw failure
+            } ?: return
+            cacheTicket(result.ticket)
+            createdSession?.let { session ->
+                if (result.createdSession && result.ticket.sessionId == session.sessionId) {
+                    sessions[session.sessionId] = session
+                } else {
+                    session.close()
+                }
+            }
+            return
+        }
         val session = createBotSession(record.mode, record.rules, record.ticket.ownerPlayerId)
         val previousTicket = record.ticket
         record.ticket = record.ticket.matched(session.sessionId, withBot = true)
-        val durableTicket = record.toDurable(ticketRetention)
         try {
-            if (lobbyRepository != null) {
-                lobbyRepository.createSessionAndSaveTickets(session.persistenceState(), listOf(durableTicket))
-            } else {
-                session.persistNew()
-            }
+            session.persistNew()
         } catch (failure: Throwable) {
             record.ticket = previousTicket
             session.close()
@@ -637,10 +715,26 @@ class AuthoritativeOnlineDuelService(
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(sessionId, "sessionId")
         synchronized(lock) {
-            val record = sessions[sessionId] ?: throw NoSuchElementException("online session not found")
+            val record = sessions[sessionId]
+                ?: sessionRepository?.loadRecoverable(sessionId, clock.instant())?.let(::restoreSession)
+                ?: throw NoSuchElementException("online session not found")
             if (!record.isMember(playerId)) throw OnlineMembershipRejectedException()
             return record
         }
+    }
+
+    private fun restoreSession(stored: DurableOnlineSession): SessionRecord {
+        sessions[stored.sessionId]?.let { return it }
+        val memento = OnlineSessionMementoCodec.decode(stored.stateJson)
+        check(memento.sessionId == stored.sessionId && memento.revision == stored.revision) {
+            "Durable online session metadata does not match encrypted state"
+        }
+        return SessionRecord.restore(
+            memento = memento,
+            clock = clock,
+            finishedSessionRetention = finishedSessionRetention,
+            repository = requireNotNull(sessionRepository),
+        ).also { sessions[stored.sessionId] = it }
     }
 
     internal fun sweepExpiredState() {

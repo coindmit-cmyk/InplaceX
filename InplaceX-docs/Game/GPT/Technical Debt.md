@@ -8,8 +8,10 @@
   its search budget and then exposes only sound local deductions
 - active online duel sessions, waiting matchmaking tickets and retained private
   invitations are PostgreSQL-recoverable when the database and managed AES
-  state key are configured; multi-instance matchmaking coordination remains a
-  later scaling boundary
+  state key are configured; public matchmaking and bot fallback now use
+  database row claims across active instances, while cross-instance private
+  invite acceptance and long-lived duel-session ownership remain later scaling
+  boundaries
 - strings are only partially centralized
 - platform config is still static code, not external assets/resources
 

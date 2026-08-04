@@ -37,6 +37,11 @@ object DatabaseMigrations {
             description = "add durable online state storage",
             sql = readResource("db/migration/V5__add_durable_online_state.sql"),
         ),
+        SqlMigration(
+            version = "6",
+            description = "coordinate online matchmaking commands",
+            sql = readResource("db/migration/V6__coordinate_online_matchmaking.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(
