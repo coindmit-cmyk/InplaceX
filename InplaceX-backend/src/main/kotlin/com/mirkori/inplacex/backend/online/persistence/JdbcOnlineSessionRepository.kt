@@ -259,6 +259,13 @@ class JdbcOnlineSessionRepository(
                 statement.executeUpdate()
             }
             if (changed != 1) throw OnlineSessionRevisionConflictException(session.sessionId, expectedRevision)
+            insertOnlineSessionEvent(
+                connection = connection,
+                sessionId = session.sessionId,
+                eventType = SessionChangedEventType,
+                sessionRevision = session.revision,
+                createdAt = Instant.now(),
+            )
         } finally {
             encrypted.wipe()
         }

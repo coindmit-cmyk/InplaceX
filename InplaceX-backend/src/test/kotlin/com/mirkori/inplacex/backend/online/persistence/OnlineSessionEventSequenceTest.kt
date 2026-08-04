@@ -4,12 +4,41 @@ import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnlineSessionEventSequenceTest {
+    @Test
+    fun `in-memory allocation and publication stay ordered under concurrency`() {
+        val events = InMemoryOnlineSessionEventSequence()
+        val sessionId = UUID.randomUUID().toString()
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(8)
+        try {
+            val writes = (1..100).map { revision ->
+                executor.submit<Long> {
+                    start.await(5, TimeUnit.SECONDS)
+                    events.sessionChanged(sessionId, revision.toLong(), Instant.EPOCH)
+                }
+            }
+            start.countDown()
+            writes.forEach { it.get(5, TimeUnit.SECONDS) }
+
+            assertEquals(
+                (1L..100L).toList(),
+                events.readAfter(sessionId, 0, 100).map(OnlineSessionEvent::eventSequence),
+            )
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
     @Test
     fun `jdbc allocator stays increasing across backend instances`() {
         val dataSource = JdbcDataSource().apply {
@@ -44,6 +73,21 @@ class OnlineSessionEventSequenceTest {
         )
 
         assertTrue(second > first)
+        assertTrue(firstInstance.isReplayable(sessionId, first))
+        assertFalse(firstInstance.isReplayable(sessionId, second + 100))
+
+        val change = secondInstance.sessionChanged(
+            sessionId,
+            revision = 3,
+            Instant.parse("2026-08-04T12:00:03Z"),
+        )
+        assertEquals(
+            listOf(
+                OnlineSessionEvent(second, null),
+                OnlineSessionEvent(change, 3),
+            ),
+            firstInstance.readAfter(sessionId, first, 10),
+        )
 
         JdbcOnlineSessionRepository(
             dataSource,
@@ -54,6 +98,51 @@ class OnlineSessionEventSequenceTest {
                 statement.executeQuery("SELECT COUNT(*) FROM duel_events").use { results ->
                     assertTrue(results.next())
                     assertEquals(0, results.getInt(1))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `session revision update atomically appends only a safe change marker`() {
+        val dataSource = JdbcDataSource().apply {
+            setURL("jdbc:h2:mem:ws-revision-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+        }
+        JdbcMigrationRunner().migrate(dataSource)
+        val sessionId = UUID.randomUUID().toString()
+        val createdAt = Instant.parse("2026-08-04T13:00:00Z")
+        JdbcOnlineSessionRepository(
+            dataSource,
+            OnlineStateCipher(ByteArray(32) { index -> (index + 11).toByte() }),
+        ).use { repository ->
+            val initial = DurableOnlineSession(
+                sessionId = sessionId,
+                revision = 0,
+                status = "SETUP",
+                stateJson = "{\"privateSecret\":\"987654\"}",
+                createdAt = createdAt,
+                startedAt = null,
+                finishedAt = null,
+                expiresAt = createdAt.plusSeconds(300),
+            )
+            repository.create(initial)
+            repository.update(initial.copy(revision = 1, status = "ACTIVE"), expectedRevision = 0)
+
+            assertEquals(
+                listOf(OnlineSessionEvent(eventSequence = 1, sessionRevision = 1)),
+                JdbcOnlineSessionEventSequence(dataSource).readAfter(sessionId, 0, 10),
+            )
+            dataSource.connection.use { connection ->
+                connection.prepareStatement(
+                    "SELECT event_type, payload_json FROM duel_events WHERE session_id = ?",
+                ).use { statement ->
+                    statement.setString(1, sessionId)
+                    statement.executeQuery().use { results ->
+                        assertTrue(results.next())
+                        assertEquals("session.changed", results.getString("event_type"))
+                        assertEquals("{}", results.getString("payload_json"))
+                        assertFalse(results.next())
+                    }
                 }
             }
         }

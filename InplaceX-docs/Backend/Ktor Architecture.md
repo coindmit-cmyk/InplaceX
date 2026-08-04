@@ -481,7 +481,8 @@ com.mirkori.inplacex.backend
 
 - WebSocket v1 control transport (`subscribe`, `resync`, `ping`) with durable
   cross-instance cursors and authoritative snapshot recovery (implemented)
-- durable WebSocket replay and cross-instance live event fan-out
+- durable revision-marker replay and cross-instance live snapshot fan-out
+  through `duel_events` (implemented)
 - observability
 - anti-abuse limits
 - admin tooling

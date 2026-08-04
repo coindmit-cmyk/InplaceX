@@ -47,6 +47,11 @@ object DatabaseMigrations {
             description = "coordinate private invite commands",
             sql = readResource("db/migration/V7__coordinate_private_invites.sql"),
         ),
+        SqlMigration(
+            version = "8",
+            description = "add online session event replay",
+            sql = readResource("db/migration/V8__add_online_session_event_replay.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(

@@ -14,6 +14,7 @@ import com.mirkori.inplacex.backend.online.persistence.DurablePrivateInvite
 import com.mirkori.inplacex.backend.online.persistence.DurableSessionCoordination
 import com.mirkori.inplacex.backend.online.persistence.OnlineLobbyRepository
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionRepository
+import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEventSequence
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
 import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.core.engine.GuessValidator
@@ -146,6 +147,7 @@ class AuthoritativeOnlineDuelService(
     private val logger: InplaceXLogger = InplaceXLogger(),
     private val sessionRepository: OnlineSessionRepository? = null,
     private val lobbyRepository: OnlineLobbyRepository? = null,
+    private val sessionEvents: OnlineSessionEventSequence? = null,
 ) : AutoCloseable {
     private val lock = Any()
     private val tickets = mutableMapOf<String, TicketRecord>()
@@ -808,7 +810,13 @@ class AuthoritativeOnlineDuelService(
         val repository = sessionRepository
         if (repository == null) {
             val record = synchronized(lock) { sessions[sessionId] } ?: return null
-            return SessionOperationResult(operation(record))
+            val previousRevision = record.currentRevision()
+            val result = operation(record)
+            val currentRevision = record.currentRevision()
+            if (currentRevision > previousRevision) {
+                sessionEvents?.sessionChanged(sessionId, currentRevision, clock.instant())
+            }
+            return SessionOperationResult(result)
         }
         var coordinatedRecord: SessionRecord? = null
         val result = try {
