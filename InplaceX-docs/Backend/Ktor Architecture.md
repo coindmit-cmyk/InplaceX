@@ -479,7 +479,9 @@ com.mirkori.inplacex.backend
 
 ### Phase 4
 
-- WebSocket live session transport
+- WebSocket v1 control transport (`subscribe`, `resync`, `ping`) with durable
+  cross-instance cursors and authoritative snapshot recovery (implemented)
+- durable WebSocket replay and cross-instance live event fan-out
 - observability
 - anti-abuse limits
 - admin tooling

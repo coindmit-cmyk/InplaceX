@@ -5,6 +5,8 @@ import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
+import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEventSequence
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -26,7 +28,15 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import java.nio.charset.StandardCharsets
+import java.time.Clock
+import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -40,9 +50,14 @@ import kotlinx.serialization.json.put
 fun Application.configureOnlineRoutes(
     verifier: JwtAccessTokenVerifier,
     service: AuthoritativeOnlineDuelService,
+    eventSequences: OnlineSessionEventSequence = InMemoryOnlineSessionEventSequence(),
+    clock: Clock = Clock.systemUTC(),
+    nanoTime: () -> Long = System::nanoTime,
 ) {
     val codec = OnlineJsonCodec()
-    install(WebSockets)
+    install(WebSockets) {
+        maxFrameSize = MaximumOnlineWebSocketFrameBytes.toLong()
+    }
     routing {
         post("/api/v1/matchmaking/tickets") {
             val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
@@ -186,21 +201,139 @@ fun Application.configureOnlineRoutes(
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "unauthorized"))
                 return@webSocket
             }
-            val initial = runCatching { service.readSession(principal.playerId, sessionId) }.getOrElse {
+            val initial = try {
+                service.readSession(principal.playerId, sessionId)
+            } catch (_: OnlineMembershipRejectedException) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "membership_rejected"))
                 return@webSocket
+            } catch (_: NoSuchElementException) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "membership_rejected"))
+                return@webSocket
+            } catch (_: Throwable) {
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                return@webSocket
             }
-            send(Frame.Text(codec.encodeSnapshotFrame(initial)))
-            for (frame in incoming) {
-                if (frame !is Frame.Text || frame.readText() != """{"type":"snapshot.request"}""") {
-                    close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "unsupported_frame"))
-                    return@webSocket
+            check(initial.sessionId == sessionId)
+
+            val outbound = Channel<String>(capacity = MaximumPendingWebSocketFrames)
+            val outboundMutex = Mutex()
+            val heartbeatDeadline = WebSocketHeartbeatDeadline(nanoTime, WebSocketPingTimeoutNanos)
+            val writer = launch {
+                for (message in outbound) send(Frame.Text(message))
+            }
+            val heartbeat = launch {
+                while (true) {
+                    delay(WebSocketHeartbeatIntervalMillis)
+                    if (heartbeatDeadline.hasExpired()) {
+                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "heartbeat_timeout"))
+                        return@launch
+                    }
+                    val queued = runCatching {
+                        outboundMutex.withLock {
+                            val sentAt = clock.instant()
+                            val eventSequence = eventSequences.next(
+                                sessionId = sessionId,
+                                eventType = "connection.heartbeat",
+                                createdAt = sentAt,
+                            )
+                            outbound.trySend(
+                                codec.encodeHeartbeatFrame(
+                                    sessionId,
+                                    eventSequence,
+                                    sentAt,
+                                    requestId = null,
+                                ),
+                            ).isSuccess
+                        }
+                    }.getOrElse {
+                        close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                        return@launch
+                    }
+                    if (!queued) {
+                        close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "slow_consumer"))
+                        return@launch
+                    }
                 }
-                val snapshot = runCatching { service.readSession(principal.playerId, sessionId) }.getOrElse {
-                    close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "membership_rejected"))
-                    return@webSocket
+            }
+            try {
+                for (frame in incoming) {
+                    if (frame !is Frame.Text) {
+                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "unsupported_frame"))
+                        return@webSocket
+                    }
+                    val source = frame.readText()
+                    if (source.toByteArray(StandardCharsets.UTF_8).size > MaximumOnlineWebSocketFrameBytes) {
+                        close(CloseReason(CloseReason.Codes.TOO_BIG, "frame_too_large"))
+                        return@webSocket
+                    }
+                    val command = runCatching { codec.decodeWebSocketControl(source) }.getOrElse {
+                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "invalid_frame"))
+                        return@webSocket
+                    }
+                    if (command.sessionId != sessionId) {
+                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "session_mismatch"))
+                        return@webSocket
+                    }
+                    if (command.type == "session.ping") heartbeatDeadline.recordPing()
+                    val queued = runCatching {
+                        outboundMutex.withLock {
+                            val sentAt = clock.instant()
+                            val response = when (command.type) {
+                                "session.subscribe", "session.resync" -> {
+                                    val snapshot = service.readSession(principal.playerId, sessionId)
+                                    val eventType = if (command.lastSeenEventSequence == null) {
+                                        "session.snapshot"
+                                    } else {
+                                        "session.replayGap"
+                                    }
+                                    val eventSequence = eventSequences.next(sessionId, eventType, sentAt)
+                                    if (command.lastSeenEventSequence == null) {
+                                        codec.encodeSnapshotFrame(
+                                            snapshot,
+                                            eventSequence,
+                                            sentAt,
+                                            command.requestId,
+                                        )
+                                    } else {
+                                        codec.encodeReplayGapFrame(
+                                            snapshot,
+                                            command.lastSeenEventSequence,
+                                            eventSequence,
+                                            sentAt,
+                                            command.requestId,
+                                        )
+                                    }
+                                }
+                                "session.ping" -> {
+                                    val eventSequence = eventSequences.next(
+                                        sessionId,
+                                        "connection.heartbeat",
+                                        sentAt,
+                                    )
+                                    codec.encodeHeartbeatFrame(
+                                        sessionId,
+                                        eventSequence,
+                                        sentAt,
+                                        command.requestId,
+                                    )
+                                }
+                                else -> error("unsupported control command")
+                            }
+                            outbound.trySend(response).isSuccess
+                        }
+                    }.getOrElse {
+                        close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                        return@webSocket
+                    }
+                    if (!queued) {
+                        close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "slow_consumer"))
+                        return@webSocket
+                    }
                 }
-                send(Frame.Text(codec.encodeSnapshotFrame(snapshot)))
+            } finally {
+                heartbeat.cancel()
+                outbound.close()
+                writer.cancel()
             }
         }
     }
@@ -230,6 +363,20 @@ private data class ReconnectCommand(
 
 private data class InviteAcceptCommand(
     val commandId: String,
+)
+
+private data class WebSocketControlCommand(
+    val requestId: String,
+    val sessionId: String,
+    val type: String,
+    val lastSeenEventSequence: Long?,
+)
+
+private data class WebSocketParticipant(
+    val actor: String,
+    val participantId: String,
+    val slot: String,
+    val secretSubmitted: Boolean,
 )
 
 private class OnlineJsonCodec {
@@ -347,10 +494,185 @@ private class OnlineJsonCodec {
         put("matchDurationSeconds", invite.matchDurationSeconds)
     }.toString()
 
-    fun encodeSnapshotFrame(snapshot: OnlineDuelSnapshot): String = buildJsonObject {
-        put("type", "session.snapshot")
-        put("payload", snapshotJson(snapshot))
+    fun decodeWebSocketControl(source: String): WebSocketControlCommand {
+        val value = decodeObject(
+            source,
+            setOf("schemaVersion", "messageId", "requestId", "sessionId", "type", "payload"),
+            maximumBytes = MaximumOnlineWebSocketFrameBytes,
+        )
+        require(value.string("schemaVersion", 8) == "1.0")
+        value.uuid("messageId")
+        val requestId = value.uuid("requestId")
+        val sessionId = value.uuid("sessionId")
+        val type = value.string("type", 32)
+        require(type in WebSocketControlTypes)
+        val payload = value["payload"] as? JsonObject
+            ?: throw IllegalArgumentException("payload must be an object")
+        val lastSeenEventSequence = when (type) {
+            "session.ping" -> {
+                require(payload.isEmpty())
+                null
+            }
+            else -> {
+                require(payload.keys.all { it == "lastSeenEventSeq" })
+                payload["lastSeenEventSeq"]?.let { element ->
+                    require(element !is JsonNull)
+                    (element as? JsonPrimitive)?.longOrNull?.takeIf { it >= 0 }
+                        ?: throw IllegalArgumentException("lastSeenEventSeq must not be negative")
+                }
+            }
+        }
+        return WebSocketControlCommand(requestId, sessionId, type, lastSeenEventSequence)
+    }
+
+    fun encodeSnapshotFrame(
+        snapshot: OnlineDuelSnapshot,
+        eventSequence: Long,
+        sentAt: Instant,
+        requestId: String?,
+    ): String = serverEnvelope(
+        sessionId = snapshot.sessionId,
+        eventSequence = eventSequence,
+        sentAt = sentAt,
+        requestId = requestId,
+        type = "session.snapshot",
+        payload = buildJsonObject {
+            put("snapshot", webSocketSnapshotJson(snapshot, eventSequence))
+        },
+    )
+
+    fun encodeReplayGapFrame(
+        snapshot: OnlineDuelSnapshot,
+        requestedAfterEventSequence: Long,
+        eventSequence: Long,
+        sentAt: Instant,
+        requestId: String,
+    ): String = serverEnvelope(
+        sessionId = snapshot.sessionId,
+        eventSequence = eventSequence,
+        sentAt = sentAt,
+        requestId = requestId,
+        type = "session.replayGap",
+        payload = buildJsonObject {
+            put("snapshot", webSocketSnapshotJson(snapshot, eventSequence))
+            put("requestedAfterEventSeq", requestedAfterEventSequence)
+        },
+    )
+
+    fun encodeHeartbeatFrame(
+        sessionId: String,
+        eventSequence: Long,
+        sentAt: Instant,
+        requestId: String?,
+    ): String = serverEnvelope(
+        sessionId = sessionId,
+        eventSequence = eventSequence,
+        sentAt = sentAt,
+        requestId = requestId,
+        type = "connection.heartbeat",
+        payload = buildJsonObject { put("serverTime", sentAt.toString()) },
+    )
+
+    private fun serverEnvelope(
+        sessionId: String,
+        eventSequence: Long,
+        sentAt: Instant,
+        requestId: String?,
+        type: String,
+        payload: JsonObject,
+    ): String = buildJsonObject {
+        put("schemaVersion", "1.0")
+        put("messageId", UUID.randomUUID().toString())
+        if (requestId == null) put("requestId", JsonNull) else put("requestId", requestId)
+        put("sessionId", sessionId)
+        put("eventSeq", eventSequence)
+        put("sentAt", sentAt.toString())
+        put("type", type)
+        put("payload", payload)
     }.toString()
+
+    private fun webSocketSnapshotJson(
+        snapshot: OnlineDuelSnapshot,
+        eventSequence: Long,
+    ): JsonObject {
+        val participants = snapshot.participants.mapIndexed { index, participant ->
+            WebSocketParticipant(
+                actor = participant.actor,
+                participantId = UUID.nameUUIDFromBytes(
+                    "${snapshot.sessionId}:${if (index == 0) "A" else "B"}"
+                        .toByteArray(StandardCharsets.UTF_8),
+                ).toString(),
+                slot = if (index == 0) "A" else "B",
+                secretSubmitted = participant.secretConfigured,
+            )
+        }
+        fun participantId(actor: String?): String? =
+            actor?.let { expected -> participants.firstOrNull { it.actor == expected }?.participantId }
+
+        val phase = when (snapshot.phase) {
+            "setup" -> when (participants.indexOfFirst { !it.secretSubmitted }) {
+                0 -> "SETUP_SECRET_A"
+                1 -> "SETUP_SECRET_B"
+                else -> "SETUP_WAITING_FOR_PLAYERS"
+            }
+            "active" -> if (snapshot.playStyle == "race") {
+                "ACTIVE_RACE"
+            } else if (participants.indexOfFirst { it.actor == snapshot.currentTurn } == 0) {
+                "ACTIVE_TURN_A"
+            } else {
+                "ACTIVE_TURN_B"
+            }
+            "finished" -> "FINISHED"
+            else -> "ABANDONED"
+        }
+        return buildJsonObject {
+            put("sessionId", snapshot.sessionId)
+            put("revision", snapshot.revision)
+            put("eventSeq", eventSequence)
+            put("phase", phase)
+            put("config", buildJsonObject {
+                put("mode", "online_duel")
+                put("playStyle", snapshot.playStyle)
+                put("codeLength", snapshot.codeLength)
+                if (snapshot.attemptLimit == null) put("attemptLimit", JsonNull)
+                else put("attemptLimit", snapshot.attemptLimit)
+                put("allowDuplicates", snapshot.allowDuplicates)
+                if (snapshot.maxConsecutiveDuplicateDigits == null) {
+                    put("maxConsecutiveDuplicateDigits", JsonNull)
+                } else {
+                    put("maxConsecutiveDuplicateDigits", snapshot.maxConsecutiveDuplicateDigits)
+                }
+            })
+            put("selfParticipantId", requireNotNull(participantId("player")))
+            participantId(snapshot.currentTurn)?.let { put("currentTurnParticipantId", it) }
+                ?: put("currentTurnParticipantId", JsonNull)
+            put("participants", buildJsonArray {
+                participants.forEach { participant ->
+                    add(buildJsonObject {
+                        put("participantId", participant.participantId)
+                        put("slot", participant.slot)
+                        put("secretSubmitted", participant.secretSubmitted)
+                        put("connected", participant.actor == "player")
+                    })
+                }
+            })
+            put("turns", buildJsonArray {
+                snapshot.attempts.forEach { attempt ->
+                    add(buildJsonObject {
+                        put("turnNumber", attempt.number)
+                        put("actorParticipantId", requireNotNull(participantId(attempt.actor)))
+                        if (attempt.ownGuess == null) put("ownGuess", JsonNull)
+                        else put("ownGuess", attempt.ownGuess)
+                        put("exactMatches", attempt.exactMatches)
+                        put("solved", attempt.exactMatches == snapshot.codeLength)
+                    })
+                }
+            })
+            participantId(snapshot.winner)?.let { put("winnerParticipantId", it) }
+                ?: put("winnerParticipantId", JsonNull)
+            put("serverTime", Instant.ofEpochMilli(snapshot.serverTimeEpochMs).toString())
+        }
+    }
 
     private fun decodeSessionCommand(source: String, digitField: String): SessionCommand {
         val value = decodeObject(
@@ -443,8 +765,9 @@ private class OnlineJsonCodec {
         source: String,
         requiredFields: Set<String>,
         allowedFields: Set<String> = requiredFields,
+        maximumBytes: Int = MaximumOnlineBodyBytes,
     ): JsonObject {
-        require(source.toByteArray(StandardCharsets.UTF_8).size <= MaximumOnlineBodyBytes)
+        require(source.toByteArray(StandardCharsets.UTF_8).size <= maximumBytes)
         BoundedJsonScanner(json).requireSafeStructure(source)
         val value = json.parseToJsonElement(source) as? JsonObject
             ?: throw IllegalArgumentException("request must be an object")
@@ -481,6 +804,29 @@ private class OnlineJsonCodec {
     private companion object {
         const val MaximumOnlineBodyBytes = 16 * 1024
     }
+}
+
+private const val MaximumOnlineWebSocketFrameBytes = 64 * 1024
+private const val MaximumPendingWebSocketFrames = 16
+private const val WebSocketHeartbeatIntervalMillis = 20_000L
+private const val WebSocketPingTimeoutNanos = 45_000_000_000L
+private val WebSocketControlTypes = setOf("session.subscribe", "session.resync", "session.ping")
+
+internal class WebSocketHeartbeatDeadline(
+    private val nanoTime: () -> Long,
+    private val timeoutNanos: Long,
+) {
+    private val lastPingAt = AtomicLong(nanoTime())
+
+    init {
+        require(timeoutNanos > 0) { "WebSocket ping timeout must be positive" }
+    }
+
+    fun recordPing() {
+        lastPingAt.set(nanoTime())
+    }
+
+    fun hasExpired(): Boolean = nanoTime() - lastPingAt.get() > timeoutNanos
 }
 
 private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
