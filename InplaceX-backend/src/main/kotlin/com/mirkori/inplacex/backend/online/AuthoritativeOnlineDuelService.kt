@@ -11,6 +11,7 @@ import com.mirkori.inplacex.backend.domain.duel.DuelSnapshot
 import com.mirkori.inplacex.backend.online.persistence.DurableMatchmakingTicket
 import com.mirkori.inplacex.backend.online.persistence.DurableOnlineSession
 import com.mirkori.inplacex.backend.online.persistence.DurablePrivateInvite
+import com.mirkori.inplacex.backend.online.persistence.DurableSessionCoordination
 import com.mirkori.inplacex.backend.online.persistence.OnlineLobbyRepository
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionRepository
 import com.mirkori.inplacex.backend.session.domain.MutableDuelCommand
@@ -532,7 +533,7 @@ class AuthoritativeOnlineDuelService(
     }
 
     fun readSession(playerId: String, sessionId: String): OnlineDuelSnapshot =
-        sessionFor(playerId, sessionId).snapshotFor(playerId)
+        withSession(playerId, sessionId) { record -> record.snapshotFor(playerId) }
 
     fun submitSecret(
         playerId: String,
@@ -541,12 +542,14 @@ class AuthoritativeOnlineDuelService(
         expectedRevision: Long,
         secret: String,
     ): OnlineDuelSnapshot =
-        sessionFor(playerId, sessionId).submitSecret(
-            playerId = playerId,
-            commandId = commandId,
-            expectedRevision = expectedRevision,
-            secret = secret,
-        )
+        withSession(playerId, sessionId) { record ->
+            record.submitSecret(
+                playerId = playerId,
+                commandId = commandId,
+                expectedRevision = expectedRevision,
+                secret = secret,
+            )
+        }
 
     fun submitGuess(
         playerId: String,
@@ -555,12 +558,14 @@ class AuthoritativeOnlineDuelService(
         expectedRevision: Long,
         guess: String,
     ): OnlineDuelSnapshot =
-        sessionFor(playerId, sessionId).submitGuess(
-            playerId = playerId,
-            commandId = commandId,
-            expectedRevision = expectedRevision,
-            guess = guess,
-        )
+        withSession(playerId, sessionId) { record ->
+            record.submitGuess(
+                playerId = playerId,
+                commandId = commandId,
+                expectedRevision = expectedRevision,
+                guess = guess,
+            )
+        }
 
     private fun promoteExpiredTickets(now: Instant) {
         lobbyRepository
@@ -782,20 +787,67 @@ class AuthoritativeOnlineDuelService(
         )
     }
 
-    private fun sessionFor(playerId: String, sessionId: String): SessionRecord {
+    private fun <T> withSession(
+        playerId: String,
+        sessionId: String,
+        operation: (SessionRecord) -> T,
+    ): T {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(sessionId, "sessionId")
-        synchronized(lock) {
-            val record = sessions[sessionId]
-                ?: sessionRepository?.loadRecoverable(sessionId, clock.instant())?.let(::restoreSession)
-                ?: throw NoSuchElementException("online session not found")
+        return coordinateSessionRecord(sessionId) { record ->
             if (!record.isMember(playerId)) throw OnlineMembershipRejectedException()
-            return record
+            operation(record)
+        }?.value ?: throw NoSuchElementException("online session not found")
+    }
+
+    private fun <T> coordinateSessionRecord(
+        sessionId: String,
+        includeExpired: Boolean = false,
+        operation: (SessionRecord) -> T,
+    ): SessionOperationResult<T>? {
+        val repository = sessionRepository
+        if (repository == null) {
+            val record = synchronized(lock) { sessions[sessionId] } ?: return null
+            return SessionOperationResult(operation(record))
         }
+        var coordinatedRecord: SessionRecord? = null
+        val result = try {
+            repository.coordinate(sessionId, clock.instant(), includeExpired) { stored ->
+                val record = sessionRecord(stored, repository = null)
+                coordinatedRecord = record
+                val operationResult = operation(record)
+                DurableSessionCoordination(
+                    session = record.persistenceState(),
+                    result = SessionOperationResult(operationResult),
+                )
+            }
+        } catch (failure: Throwable) {
+            coordinatedRecord?.close()
+            throw failure
+        } ?: return null
+        val record = requireNotNull(coordinatedRecord)
+        synchronized(lock) {
+            val cached = sessions[sessionId]
+            if (cached == null || cached.currentRevision() <= record.currentRevision()) {
+                sessions.put(sessionId, record)?.takeIf { it !== record }?.close()
+            } else {
+                record.close()
+            }
+        }
+        return result
     }
 
     private fun restoreSession(stored: DurableOnlineSession): SessionRecord {
         sessions[stored.sessionId]?.let { return it }
+        return sessionRecord(stored, requireNotNull(sessionRepository)).also {
+            sessions[stored.sessionId] = it
+        }
+    }
+
+    private fun sessionRecord(
+        stored: DurableOnlineSession,
+        repository: OnlineSessionRepository?,
+    ): SessionRecord {
         val memento = OnlineSessionMementoCodec.decode(stored.stateJson)
         check(memento.sessionId == stored.sessionId && memento.revision == stored.revision) {
             "Durable online session metadata does not match encrypted state"
@@ -804,8 +856,8 @@ class AuthoritativeOnlineDuelService(
             memento = memento,
             clock = clock,
             finishedSessionRetention = finishedSessionRetention,
-            repository = requireNotNull(sessionRepository),
-        ).also { sessions[stored.sessionId] = it }
+            repository = repository,
+        )
     }
 
     internal fun sweepExpiredState() {
@@ -814,8 +866,15 @@ class AuthoritativeOnlineDuelService(
             promoteExpiredTickets(now)
             expirePrivateInvites(now)
 
-            val expiredSessionIds = sessions.entries.mapNotNull { (sessionId, record) ->
-                val finishedAt = record.expireAndFinishedAt(now) ?: return@mapNotNull null
+            val expiredSessionIds = sessions.keys.toList().mapNotNull { sessionId ->
+                val coordinated = coordinateSessionRecord(sessionId, includeExpired = true) { record ->
+                    record.expireAndFinishedAt(now)
+                }
+                if (coordinated == null) {
+                    sessions.remove(sessionId)?.close()
+                    return@mapNotNull null
+                }
+                val finishedAt = coordinated.value ?: return@mapNotNull null
                 sessionId.takeIf { !now.isBefore(finishedAt.plus(finishedSessionRetention)) }
             }.toSet()
 
@@ -869,6 +928,8 @@ class AuthoritativeOnlineDuelService(
         val rules: OnlineMatchRules,
         val ticketId: String,
     )
+
+    private data class SessionOperationResult<T>(val value: T)
 
     private data class TicketRecord(
         val mode: OnlineMatchMode,
@@ -952,6 +1013,9 @@ class AuthoritativeOnlineDuelService(
         }
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
+
+        @Synchronized
+        fun currentRevision(): Long = revision
 
         @Synchronized
         fun submitSecret(
@@ -1208,7 +1272,7 @@ class AuthoritativeOnlineDuelService(
                 memento: OnlineSessionMemento,
                 clock: Clock,
                 finishedSessionRetention: Duration,
-                repository: OnlineSessionRepository,
+                repository: OnlineSessionRepository?,
             ): SessionRecord {
                 val match = DuelMatch.create(
                     config = memento.config,
