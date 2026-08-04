@@ -6,9 +6,10 @@
   lifecycle around the shared pure engine
 - the bounded evidence solver intentionally stops exhaustive enumeration above
   its search budget and then exposes only sound local deductions
-- active online duel sessions are PostgreSQL-recoverable when the database and
-  managed AES state key are configured; waiting matchmaking tickets and
-  unaccepted private invitations remain process-local
+- active online duel sessions, waiting matchmaking tickets and retained private
+  invitations are PostgreSQL-recoverable when the database and managed AES
+  state key are configured; multi-instance matchmaking coordination remains a
+  later scaling boundary
 - strings are only partially centralized
 - platform config is still static code, not external assets/resources
 

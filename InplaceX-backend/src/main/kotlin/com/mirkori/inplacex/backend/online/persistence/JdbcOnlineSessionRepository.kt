@@ -20,6 +20,7 @@ class OnlineSessionRevisionConflictException(sessionId: String, expectedRevision
     IllegalStateException("Online session $sessionId changed from revision $expectedRevision")
 
 interface OnlineSessionRepository : AutoCloseable {
+    fun deleteExpired(now: Instant)
     fun loadRecoverable(now: Instant): List<DurableOnlineSession>
     fun create(session: DurableOnlineSession)
     fun update(session: DurableOnlineSession, expectedRevision: Long)
@@ -32,6 +33,17 @@ class JdbcOnlineSessionRepository(
     private val dataSource: DataSource,
     private val cipher: OnlineStateCipher,
 ) : OnlineSessionRepository {
+    override fun deleteExpired(now: Instant) {
+        dataSource.transaction { connection ->
+            connection.prepareStatement(
+                "DELETE FROM duel_sessions WHERE expires_at IS NOT NULL AND expires_at <= ?",
+            ).use { statement ->
+                statement.setInstant(1, now)
+                statement.executeUpdate()
+            }
+        }
+    }
+
     override fun loadRecoverable(now: Instant): List<DurableOnlineSession> =
         dataSource.connection.use { connection ->
             connection.prepareStatement(
@@ -81,28 +93,31 @@ class JdbcOnlineSessionRepository(
 
     override fun create(session: DurableOnlineSession) {
         require(session.revision >= 0) { "Initial online session revision must not be negative" }
+        dataSource.transaction { connection -> create(connection, session) }
+    }
+
+    internal fun create(connection: Connection, session: DurableOnlineSession) {
+        require(session.revision >= 0) { "Initial online session revision must not be negative" }
         val encrypted = encrypt(session)
         try {
-            dataSource.transaction { connection ->
-                connection.prepareStatement(
-                    """
-                    INSERT INTO duel_sessions(
-                        id, mode, status, config_json, version, created_at, started_at,
-                        finished_at, state_iv, state_ciphertext, expires_at
-                    ) VALUES (?, 'ONLINE_DUEL', ?, '{}', ?, ?, ?, ?, ?, ?, ?)
-                    """.trimIndent(),
-                ).use { statement ->
-                    statement.setString(1, session.sessionId)
-                    statement.setString(2, session.status)
-                    statement.setLong(3, session.revision)
-                    statement.setInstant(4, session.createdAt)
-                    statement.setInstantOrNull(5, session.startedAt)
-                    statement.setInstantOrNull(6, session.finishedAt)
-                    statement.setBytes(7, encrypted.iv)
-                    statement.setBytes(8, encrypted.ciphertext)
-                    statement.setInstantOrNull(9, session.expiresAt)
-                    statement.executeUpdate()
-                }
+            connection.prepareStatement(
+                """
+                INSERT INTO duel_sessions(
+                    id, mode, status, config_json, version, created_at, started_at,
+                    finished_at, state_iv, state_ciphertext, expires_at
+                ) VALUES (?, 'ONLINE_DUEL', ?, '{}', ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setString(1, session.sessionId)
+                statement.setString(2, session.status)
+                statement.setLong(3, session.revision)
+                statement.setInstant(4, session.createdAt)
+                statement.setInstantOrNull(5, session.startedAt)
+                statement.setInstantOrNull(6, session.finishedAt)
+                statement.setBytes(7, encrypted.iv)
+                statement.setBytes(8, encrypted.ciphertext)
+                statement.setInstantOrNull(9, session.expiresAt)
+                statement.executeUpdate()
             }
         } finally {
             encrypted.wipe()

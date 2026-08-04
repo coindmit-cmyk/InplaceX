@@ -214,6 +214,8 @@ Recommended session rules:
   - `status`
   - `created_at`
   - `expires_at`
+  - runtime startup restores non-expired rows and reconstructs the create
+    command replay from `player_id + command_id`
 - `duel_sessions`
   - `id`
   - `mode`
@@ -230,6 +232,9 @@ Recommended session rules:
   - runtime writes `state_iv` + `state_ciphertext` atomically with the optimistic
     `version`; the ciphertext is the recoverable aggregate memento and uses the
     session id as AES-GCM authenticated data
+- `private_duel_invites`
+  - owner/guest, create/accept command ids, immutable rules and session link are
+    restored through the invite retention window
 - `duel_participants`
   - `id`
   - `session_id`

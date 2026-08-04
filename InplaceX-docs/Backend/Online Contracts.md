@@ -287,8 +287,11 @@ secrets, turns, timers, viewer-specific command replays, and server-bot seed are
 stored in an encrypted aggregate memento. On process startup the runtime loads
 non-expired mementos, reconstructs the domain match by replaying accepted
 commands, and serves the ordinary `GET /api/v1/sessions/{sessionId}` reconnect
-path before accepting the next revision. Waiting matchmaking tickets and
-unaccepted private invitations remain process-local in this package.
+path before accepting the next revision. The runtime also reloads every
+non-expired matchmaking ticket and every private invite still inside its
+retention window. Ticket creation, human pairing, bot fallback, invite creation
+and invite acceptance retain their command replay identity across restart, so
+the same command cannot mint a second lobby resource or session.
 
 Migration v5 reserves the normalized PostgreSQL boundary for participants,
 encrypted secrets, turns, private invites, command results, and encrypted
@@ -300,11 +303,12 @@ bytes supplied through managed production secrets. Losing or rotating this key
 without a data migration makes existing recoverable sessions unreadable and
 startup fails closed.
 
-The process-local state is nevertheless bounded: production runs a sweeper
+The durable state is bounded: production runs a sweeper
 every 30 seconds, completed sessions remain readable for 15 minutes, tickets
 for 30 minutes, and expired invites for 15 minutes after their expiry. Removal
-also deletes the corresponding command replay records. Session removal always
-closes the aggregate and zeroizes pending secrets and retained own-guess data.
+also deletes the corresponding durable rows and command replay identity.
+Session removal first removes retained lobby rows that reference it, then closes
+the aggregate and zeroizes pending secrets and retained own-guess data.
 
 ### Duel commands
 
