@@ -310,6 +310,16 @@ the same command cannot mint a second lobby resource or session. The same
 identities and invite row locks coordinate active backend instances as well as
 process restarts.
 
+PostgreSQL is also the active duel command authority. A session read or command
+that can advance state locks its `duel_sessions` row, decrypts and reconstructs
+the latest committed aggregate, applies membership, command replay and revision
+validation, and writes the next encrypted memento before releasing the same
+transaction. An instance-local aggregate is only a cache. Concurrent strict
+revision commands therefore produce one committed mutation and one ordinary
+`revision_conflict`; duplicate commands replay once, while race commands that
+permit an older expected revision serialize without losing either accepted
+turn.
+
 Migration v5 reserves the normalized PostgreSQL boundary for participants,
 encrypted secrets, turns, private invites, command results, and encrypted
 aggregate state. Recoverable state uses AES-256-GCM with a unique 96-bit IV and

@@ -11,7 +11,9 @@
   state key are configured; public matchmaking and bot fallback now use
   database row claims across active instances, and private invite creation,
   acceptance and expiry use durable command uniqueness plus row locking;
-  long-lived duel-session ownership remains the next scaling boundary
+  active duel reads, commands and timeout transitions restore and mutate the
+  latest encrypted aggregate under command-scoped PostgreSQL row ownership;
+  live WebSocket transport and connection affinity remain later boundaries
 - strings are only partially centralized
 - platform config is still static code, not external assets/resources
 

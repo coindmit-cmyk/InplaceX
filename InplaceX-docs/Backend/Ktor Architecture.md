@@ -236,6 +236,9 @@ Recommended session rules:
   - runtime writes `state_iv` + `state_ciphertext` atomically with the optimistic
     `version`; the ciphertext is the recoverable aggregate memento and uses the
     session id as AES-GCM authenticated data
+  - active reads, commands and timeout transitions take command-scoped row
+    ownership with `FOR UPDATE`, restore the latest memento, and commit any next
+    version before releasing the transaction; process memory is not authority
 - `private_duel_invites`
   - owner/guest, create/accept command ids, immutable rules and session link are
     restored through the invite retention window

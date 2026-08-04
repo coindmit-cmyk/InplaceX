@@ -315,6 +315,167 @@ class OnlineMultiInstanceCoordinationTest {
         }
     }
 
+    @Test
+    fun `concurrent strict revision commands have one durable winner`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guest = fixture.player()
+        val runtimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val invite = runtimes.first().createPrivateInvite(
+                owner,
+                UUID.randomUUID().toString(),
+                OnlineFriendPlayStyle.TURN_BASED,
+                4,
+            )
+            val sessionId = requireNotNull(
+                runtimes.last().acceptPrivateInvite(
+                    guest,
+                    UUID.randomUUID().toString(),
+                    invite.inviteCode,
+                ).sessionId,
+            )
+            val start = CountDownLatch(1)
+            val commands = listOf(
+                Triple(runtimes.first(), owner, "1234"),
+                Triple(runtimes.last(), guest, "5678"),
+            )
+            val futures = commands.map { (runtime, player, secret) ->
+                executor.submit(Callable {
+                    start.await()
+                    runCatching {
+                        runtime.submitSecret(
+                            player,
+                            sessionId,
+                            UUID.randomUUID().toString(),
+                            0,
+                            secret,
+                        )
+                    }
+                })
+            }
+            start.countDown()
+            val results = futures.map { it.get() }
+
+            assertEquals(1, results.count { it.isSuccess })
+            assertEquals(1, results.count { it.exceptionOrNull() is OnlineRevisionConflictException })
+            val snapshot = runtimes.first().readSession(owner, sessionId)
+            assertEquals(1, snapshot.revision)
+            assertEquals(1, snapshot.participants.count { it.secretConfigured })
+            assertEquals(1, fixture.sessionVersion(sessionId))
+        } finally {
+            executor.shutdownNow()
+            runtimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
+    @Test
+    fun `duplicate duel command across instances advances once`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guest = fixture.player()
+        val runtimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val invite = runtimes.first().createPrivateInvite(
+                owner,
+                UUID.randomUUID().toString(),
+                OnlineFriendPlayStyle.TURN_BASED,
+                4,
+            )
+            val sessionId = requireNotNull(
+                runtimes.last().acceptPrivateInvite(
+                    guest,
+                    UUID.randomUUID().toString(),
+                    invite.inviteCode,
+                ).sessionId,
+            )
+            val commandId = UUID.randomUUID().toString()
+            val start = CountDownLatch(1)
+            val futures = runtimes.map { runtime ->
+                executor.submit(Callable {
+                    start.await()
+                    runtime.submitSecret(owner, sessionId, commandId, 0, "1234")
+                })
+            }
+            start.countDown()
+            val results = futures.map { it.get() }
+
+            assertEquals(results.first(), results.last())
+            assertEquals(1, results.first().revision)
+            assertEquals(1, fixture.sessionVersion(sessionId))
+        } finally {
+            executor.shutdownNow()
+            runtimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
+    @Test
+    fun `concurrent race guesses are serialized without losing either command`() {
+        val fixture = Fixture()
+        val owner = fixture.player()
+        val guest = fixture.player()
+        val runtimes = listOf(fixture.service(), fixture.service())
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val invite = runtimes.first().createPrivateInvite(
+                owner,
+                UUID.randomUUID().toString(),
+                OnlineFriendPlayStyle.RACE,
+                4,
+            )
+            val sessionId = requireNotNull(
+                runtimes.last().acceptPrivateInvite(
+                    guest,
+                    UUID.randomUUID().toString(),
+                    invite.inviteCode,
+                ).sessionId,
+            )
+            val ownerReady = runtimes.first().submitSecret(
+                owner,
+                sessionId,
+                UUID.randomUUID().toString(),
+                0,
+                "1234",
+            )
+            val active = runtimes.last().submitSecret(
+                guest,
+                sessionId,
+                UUID.randomUUID().toString(),
+                ownerReady.revision,
+                "5678",
+            )
+            val start = CountDownLatch(1)
+            val guesses = listOf(
+                Triple(runtimes.first(), owner, "0011"),
+                Triple(runtimes.last(), guest, "9900"),
+            )
+            val futures = guesses.map { (runtime, player, guess) ->
+                executor.submit(Callable {
+                    start.await()
+                    runtime.submitGuess(
+                        player,
+                        sessionId,
+                        UUID.randomUUID().toString(),
+                        active.revision,
+                        guess,
+                    )
+                })
+            }
+            start.countDown()
+            futures.forEach { it.get() }
+
+            val snapshot = runtimes.first().readSession(owner, sessionId)
+            assertEquals(4, snapshot.revision)
+            assertEquals(2, snapshot.attempts.size)
+            assertEquals(4, fixture.sessionVersion(sessionId))
+        } finally {
+            executor.shutdownNow()
+            runtimes.forEach(AuthoritativeOnlineDuelService::close)
+        }
+    }
+
     private class Fixture {
         val dataSource: DataSource = JdbcDataSource().apply {
             setURL("jdbc:h2:mem:online-multi-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
@@ -364,6 +525,16 @@ class OnlineMultiInstanceCoordinationTest {
                 statement.executeQuery("SELECT id FROM matchmaking_tickets").use { results ->
                     assertTrue(results.next())
                     results.getString(1)
+                }
+            }
+        }
+
+        fun sessionVersion(sessionId: String): Long = dataSource.connection.use { connection ->
+            connection.prepareStatement("SELECT version FROM duel_sessions WHERE id = ?").use { statement ->
+                statement.setString(1, sessionId)
+                statement.executeQuery().use { results ->
+                    assertTrue(results.next())
+                    results.getLong(1)
                 }
             }
         }

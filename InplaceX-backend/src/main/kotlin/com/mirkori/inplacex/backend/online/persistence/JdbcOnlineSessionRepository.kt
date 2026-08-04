@@ -16,6 +16,11 @@ data class DurableOnlineSession(
     val expiresAt: Instant?,
 )
 
+data class DurableSessionCoordination<T>(
+    val session: DurableOnlineSession,
+    val result: T,
+)
+
 class OnlineSessionRevisionConflictException(sessionId: String, expectedRevision: Long) :
     IllegalStateException("Online session $sessionId changed from revision $expectedRevision")
 
@@ -23,6 +28,12 @@ interface OnlineSessionRepository : AutoCloseable {
     fun deleteExpired(now: Instant)
     fun loadRecoverable(now: Instant): List<DurableOnlineSession>
     fun loadRecoverable(sessionId: String, now: Instant): DurableOnlineSession?
+    fun <T> coordinate(
+        sessionId: String,
+        now: Instant,
+        includeExpired: Boolean = false,
+        operation: (DurableOnlineSession) -> DurableSessionCoordination<T>,
+    ): T?
     fun create(session: DurableOnlineSession)
     fun update(session: DurableOnlineSession, expectedRevision: Long)
     fun delete(sessionId: String)
@@ -137,6 +148,44 @@ class JdbcOnlineSessionRepository(
             }
         }
 
+    override fun <T> coordinate(
+        sessionId: String,
+        now: Instant,
+        includeExpired: Boolean,
+        operation: (DurableOnlineSession) -> DurableSessionCoordination<T>,
+    ): T? = dataSource.transaction { connection ->
+        val current = connection.prepareStatement(
+            """
+            SELECT id, version, status, state_iv, state_ciphertext, created_at,
+                   started_at, finished_at, expires_at
+            FROM duel_sessions
+            WHERE id = ?
+              AND state_iv IS NOT NULL
+              AND state_ciphertext IS NOT NULL
+              AND (? OR expires_at IS NULL OR expires_at > ?)
+            FOR UPDATE
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, sessionId)
+            statement.setBoolean(2, includeExpired)
+            statement.setInstant(3, now)
+            statement.executeQuery().use { results ->
+                if (results.next()) decrypt(results) else null
+            }
+        } ?: return@transaction null
+        val coordinated = operation(current)
+        require(coordinated.session.sessionId == current.sessionId) {
+            "Coordinated online session identity must not change"
+        }
+        require(coordinated.session.revision >= current.revision) {
+            "Coordinated online session revision must not move backwards"
+        }
+        if (coordinated.session.revision > current.revision) {
+            update(connection, coordinated.session, current.revision)
+        }
+        coordinated.result
+    }
+
     override fun create(session: DurableOnlineSession) {
         require(session.revision >= 0) { "Initial online session revision must not be negative" }
         dataSource.transaction { connection -> create(connection, session) }
@@ -172,28 +221,30 @@ class JdbcOnlineSessionRepository(
 
     override fun update(session: DurableOnlineSession, expectedRevision: Long) {
         require(session.revision > expectedRevision) { "Online session revision must advance" }
+        dataSource.transaction { connection -> update(connection, session, expectedRevision) }
+    }
+
+    private fun update(connection: Connection, session: DurableOnlineSession, expectedRevision: Long) {
         val encrypted = encrypt(session)
         try {
-            val changed = dataSource.transaction { connection ->
-                connection.prepareStatement(
-                    """
-                    UPDATE duel_sessions
-                    SET status = ?, version = ?, started_at = ?, finished_at = ?,
-                        state_iv = ?, state_ciphertext = ?, expires_at = ?
-                    WHERE id = ? AND version = ?
-                    """.trimIndent(),
-                ).use { statement ->
-                    statement.setString(1, session.status)
-                    statement.setLong(2, session.revision)
-                    statement.setInstantOrNull(3, session.startedAt)
-                    statement.setInstantOrNull(4, session.finishedAt)
-                    statement.setBytes(5, encrypted.iv)
-                    statement.setBytes(6, encrypted.ciphertext)
-                    statement.setInstantOrNull(7, session.expiresAt)
-                    statement.setString(8, session.sessionId)
-                    statement.setLong(9, expectedRevision)
-                    statement.executeUpdate()
-                }
+            val changed = connection.prepareStatement(
+                """
+                UPDATE duel_sessions
+                SET status = ?, version = ?, started_at = ?, finished_at = ?,
+                    state_iv = ?, state_ciphertext = ?, expires_at = ?
+                WHERE id = ? AND version = ?
+                """.trimIndent(),
+            ).use { statement ->
+                statement.setString(1, session.status)
+                statement.setLong(2, session.revision)
+                statement.setInstantOrNull(3, session.startedAt)
+                statement.setInstantOrNull(4, session.finishedAt)
+                statement.setBytes(5, encrypted.iv)
+                statement.setBytes(6, encrypted.ciphertext)
+                statement.setInstantOrNull(7, session.expiresAt)
+                statement.setString(8, session.sessionId)
+                statement.setLong(9, expectedRevision)
+                statement.executeUpdate()
             }
             if (changed != 1) throw OnlineSessionRevisionConflictException(session.sessionId, expectedRevision)
         } finally {
@@ -218,6 +269,31 @@ class JdbcOnlineSessionRepository(
         val plaintext = session.stateJson.toByteArray(Charsets.UTF_8)
         return try {
             cipher.encrypt(session.sessionId, plaintext)
+        } finally {
+            plaintext.fill(0)
+        }
+    }
+
+    private fun decrypt(results: java.sql.ResultSet): DurableOnlineSession {
+        val sessionId = results.getString("id")
+        val plaintext = cipher.decrypt(
+            sessionId,
+            EncryptedOnlineState(
+                iv = results.getBytes("state_iv"),
+                ciphertext = results.getBytes("state_ciphertext"),
+            ),
+        )
+        return try {
+            DurableOnlineSession(
+                sessionId = sessionId,
+                revision = results.getLong("version"),
+                status = results.getString("status"),
+                stateJson = plaintext.toString(Charsets.UTF_8),
+                createdAt = results.instant("created_at")!!,
+                startedAt = results.instant("started_at"),
+                finishedAt = results.instant("finished_at"),
+                expiresAt = results.instant("expires_at"),
+            )
         } finally {
             plaintext.fill(0)
         }

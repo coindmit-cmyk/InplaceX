@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- PostgreSQL-backed duel reads and commands now take command-scoped ownership
+  of the durable session row. Each backend instance restores the latest
+  encrypted aggregate under `FOR UPDATE`, so concurrent commands preserve
+  revision conflicts, cross-instance idempotency and race-mode updates without
+  treating a stale in-memory copy as authority.
+
 - PostgreSQL private friend invites now coordinate creation, acceptance and
   expiry across backend instances. Duplicate commands return the committed
   invite, concurrent guests can create only one duel session, and stale
