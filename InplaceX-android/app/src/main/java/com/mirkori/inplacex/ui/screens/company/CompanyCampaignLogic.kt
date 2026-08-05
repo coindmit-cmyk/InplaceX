@@ -44,8 +44,8 @@ internal fun campaignLevelItemsForChapter(
     return levelItems.filter { it.definition.levelNumber in levelRange }
 }
 
-internal fun computeUnlockedBlock(completedLevelsCount: Int, totalStars: Int): Int {
-    return CampaignProgressionRules.computeUnlockedBlock(completedLevelsCount, totalStars)
+internal fun computeUnlockedBlock(starsByLevel: Map<Int, Int>): Int {
+    return CampaignProgressionRules.computeUnlockedBlock(starsByLevel)
 }
 
 internal fun CampaignLevelDefinition.toFieldParams(): GameFieldParams {

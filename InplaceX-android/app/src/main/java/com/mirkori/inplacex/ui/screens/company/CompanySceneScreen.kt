@@ -40,8 +40,7 @@ internal fun CompanySceneScreen(
     claimedChapterNumbers: Set<Int>,
     focusLevel: Int,
     accessibleMaxLevel: Int,
-    totalStars: Int,
-    completedLevelsCount: Int,
+    starsByLevel: Map<Int, Int>,
     unlockedBlock: Int,
     onHistory: () -> Unit,
     onClaimChapterReward: (Int) -> Boolean,
@@ -76,11 +75,15 @@ internal fun CompanySceneScreen(
     } else {
         selectedChapter
     }
-    val requiredCompletedLevels =
-        CampaignProgressionRules.requiredCompletedLevelsForNextBlock(progressTargetBlock)
     val requiredStars = CampaignProgressionRules.requiredStarsForNextBlock(progressTargetBlock)
-    val nextBlockLocked =
-        completedLevelsCount < requiredCompletedLevels || totalStars < requiredStars
+    val totalStars = CampaignProgressionRules.earnedStarsForNextBlock(
+        progressTargetBlock,
+        starsByLevel,
+    )
+    val nextBlockLocked = !CampaignProgressionRules.isBlockUnlocked(
+        progressTargetBlock,
+        starsByLevel,
+    )
     val chapterRewardLabel = strings.text(
         when {
             selectedChapterRewardClaimed -> "company.chapter.reward.claimed"

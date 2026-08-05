@@ -161,25 +161,29 @@ fun CompanyRootScreen(
         )
 
         else -> {
-            val completedProgress = remember(campaignProgress) {
-                campaignProgress.filter { it.bestBackendRating > 0 }.sortedBy { it.levelNumber }
+            val starsByLevel = remember(campaignProgress) {
+                campaignProgress.associate { progress ->
+                    progress.levelNumber to starsForRating(progress.bestBackendRating)
+                }
             }
-            val completedLevelsCount = completedProgress.size
-            val totalStars = completedProgress.sumOf { starsForRating(it.bestBackendRating) }
-            val unlockedBlock = remember(completedLevelsCount, totalStars) {
-                computeUnlockedBlock(completedLevelsCount, totalStars)
+            val unlockedBlock = remember(starsByLevel) {
+                computeUnlockedBlock(starsByLevel)
             }
             val levelsPerChapter = CampaignProgressionRules.unlockConfig.levelsPerChapter
             val accessibleMaxLevel = unlockedBlock * levelsPerChapter
             val nextBlockNumber = unlockedBlock + 1
-            val requiredStarsForNextBlock = CampaignProgressionRules.requiredStarsForNextBlock(
-                nextBlockNumber,
-            )
             val requiredCompletedLevelsForNextBlock =
                 CampaignProgressionRules.requiredCompletedLevelsForNextBlock(nextBlockNumber)
-            val currentChapterCompleted = completedLevelsCount >= requiredCompletedLevelsForNextBlock
-            val nextBlockLocked =
-                !currentChapterCompleted || totalStars < requiredStarsForNextBlock
+            val completedPrerequisiteLevels = CampaignProgressionRules.completedLevelsForNextBlock(
+                nextBlockNumber,
+                starsByLevel,
+            )
+            val currentChapterCompleted =
+                completedPrerequisiteLevels == requiredCompletedLevelsForNextBlock
+            val nextBlockLocked = !CampaignProgressionRules.isBlockUnlocked(
+                nextBlockNumber,
+                starsByLevel,
+            )
             val focusLevel = if (currentChapterCompleted && nextBlockLocked) {
                 accessibleMaxLevel + 1
             } else {
@@ -197,8 +201,7 @@ fun CompanyRootScreen(
                 claimedChapterNumbers = claimedChapterNumbers,
                 focusLevel = focusLevel,
                 accessibleMaxLevel = accessibleMaxLevel,
-                totalStars = totalStars,
-                completedLevelsCount = completedLevelsCount,
+                starsByLevel = starsByLevel,
                 unlockedBlock = unlockedBlock,
                 onHistory = { showHistory = true },
                 onClaimChapterReward = onClaimChapterReward,

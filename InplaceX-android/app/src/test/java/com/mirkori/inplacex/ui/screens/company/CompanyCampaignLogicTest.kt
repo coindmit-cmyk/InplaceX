@@ -98,9 +98,9 @@ class CompanyCampaignLogicTest {
 
     @Test
     fun `next chapter stays locked until completion and star thresholds pass`() {
-        assertEquals(1, computeUnlockedBlock(completedLevelsCount = 9, totalStars = 30))
-        assertEquals(1, computeUnlockedBlock(completedLevelsCount = 10, totalStars = 19))
-        assertEquals(2, computeUnlockedBlock(completedLevelsCount = 10, totalStars = 20))
+        assertEquals(1, computeUnlockedBlock((1..9).associateWith { 3 }))
+        assertEquals(1, computeUnlockedBlock((1..9).associateWith { 2 } + (10 to 1)))
+        assertEquals(2, computeUnlockedBlock((1..10).associateWith { 2 }))
         assertEquals(20, CampaignProgressionRules.requiredStarsForNextBlock(2))
     }
 

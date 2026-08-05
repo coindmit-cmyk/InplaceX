@@ -10,11 +10,11 @@ class CampaignProgressionRulesTest {
         assertEquals(20, CampaignProgressionRules.requiredStarsForNextBlock(2))
         assertEquals(40, CampaignProgressionRules.requiredStarsForNextBlock(3))
 
-        assertEquals(1, CampaignProgressionRules.computeUnlockedBlock(9, 30))
-        assertEquals(1, CampaignProgressionRules.computeUnlockedBlock(10, 19))
-        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(10, 20))
-        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(20, 39))
-        assertEquals(3, CampaignProgressionRules.computeUnlockedBlock(20, 40))
+        assertEquals(1, CampaignProgressionRules.computeUnlockedBlock(stars(9, 3)))
+        assertEquals(1, CampaignProgressionRules.computeUnlockedBlock(stars(9, 2) + (10 to 1)))
+        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(stars(10, 2)))
+        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(stars(19, 2) + (20 to 1)))
+        assertEquals(3, CampaignProgressionRules.computeUnlockedBlock(stars(20, 2)))
     }
 
     @Test
@@ -26,7 +26,18 @@ class CampaignProgressionRulesTest {
 
         assertEquals(15, CampaignProgressionRules.requiredStarsForNextBlock(2, config))
         assertEquals(30, CampaignProgressionRules.requiredStarsForNextBlock(3, config))
-        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(10, 15, config))
+        val chapterStars = stars(5, 2) + (6..10).associateWith { 1 }
+        assertEquals(2, CampaignProgressionRules.computeUnlockedBlock(chapterStars, config))
+    }
+
+    @Test
+    fun `stars from later chapters cannot repair an earlier chapter gate`() {
+        val legacyProgress = stars(5, 2) +
+            (6..10).associateWith { 1 } +
+            (11..15).associateWith { 1 }
+
+        assertEquals(15, CampaignProgressionRules.earnedStarsForNextBlock(2, legacyProgress))
+        assertEquals(1, CampaignProgressionRules.computeUnlockedBlock(legacyProgress))
     }
 
     @Test
@@ -36,4 +47,7 @@ class CampaignProgressionRulesTest {
         assertEquals(1, CampaignProgressionRules.chapterForLevel(10))
         assertEquals(2, CampaignProgressionRules.chapterForLevel(11))
     }
+
+    private fun stars(levels: Int, stars: Int): Map<Int, Int> =
+        (1..levels).associateWith { stars }
 }

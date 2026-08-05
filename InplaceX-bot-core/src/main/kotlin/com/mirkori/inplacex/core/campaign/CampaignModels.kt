@@ -160,20 +160,51 @@ object CampaignProgressionRules {
         return kotlin.math.ceil(requiredCompleted * config.requiredStarsPerLevel).toInt()
     }
 
-    fun computeUnlockedBlock(
-        completedLevelsCount: Int,
-        totalStars: Int,
+    fun completedLevelsForNextBlock(
+        nextBlockNumber: Int,
+        starsByLevel: Map<Int, Int>,
         config: CampaignUnlockConfig = unlockConfig,
     ): Int {
-        require(completedLevelsCount >= 0)
-        require(totalStars >= 0)
+        val requiredCompleted = requiredCompletedLevelsForNextBlock(nextBlockNumber, config)
+        return (1..requiredCompleted).count { levelNumber ->
+            starsByLevel.getOrDefault(levelNumber, 0) > 0
+        }
+    }
+
+    fun earnedStarsForNextBlock(
+        nextBlockNumber: Int,
+        starsByLevel: Map<Int, Int>,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
+        val requiredCompleted = requiredCompletedLevelsForNextBlock(nextBlockNumber, config)
+        return (1..requiredCompleted).sumOf { levelNumber ->
+            starsByLevel.getOrDefault(levelNumber, 0).coerceAtLeast(0)
+        }
+    }
+
+    fun isBlockUnlocked(
+        blockNumber: Int,
+        starsByLevel: Map<Int, Int>,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Boolean {
+        if (blockNumber <= 1) return true
+        val requiredCompleted = requiredCompletedLevelsForNextBlock(blockNumber, config)
+        val requiredStars = requiredStarsForNextBlock(blockNumber, config)
+        return completedLevelsForNextBlock(blockNumber, starsByLevel, config) == requiredCompleted &&
+            earnedStarsForNextBlock(blockNumber, starsByLevel, config) >= requiredStars
+    }
+
+    fun computeUnlockedBlock(
+        starsByLevel: Map<Int, Int>,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
+        require(starsByLevel.keys.all { it > 0 }) { "level numbers must be > 0" }
+        require(starsByLevel.values.all { it >= 0 }) { "stars must be >= 0" }
 
         var unlockedBlock = 1
         while (true) {
             val nextBlock = unlockedBlock + 1
-            val requiredCompleted = requiredCompletedLevelsForNextBlock(nextBlock, config)
-            val requiredStars = requiredStarsForNextBlock(nextBlock, config)
-            if (completedLevelsCount < requiredCompleted || totalStars < requiredStars) break
+            if (!isBlockUnlocked(nextBlock, starsByLevel, config)) break
             unlockedBlock = nextBlock
         }
         return unlockedBlock
