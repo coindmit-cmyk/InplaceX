@@ -12,7 +12,7 @@ internal inline fun <T> withIsolatedDatabase(
     block: (Context, LocalDatabaseConfig) -> T,
 ): T {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
-    val config = LocalDatabaseConfig.uniqueTest(prefix, nowMs)
+    val config = LocalDatabaseConfig.uniqueTest(prefix, nowMs = nowMs)
     val databaseFile = context.getDatabasePath(config.databaseName)
 
     assertNotEquals(LocalDatabaseConfig.DEFAULT_DATABASE_NAME, config.databaseName)

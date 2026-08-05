@@ -29,6 +29,8 @@ import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
+import com.mirkori.inplacex.data.local.RetentionRewardStatus
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
@@ -436,6 +438,48 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText("История").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.onNodeWithText("Компания").assertIsDisplayed()
+    }
+
+    @Test
+    fun campaignBonusDialogClaimsDailyAndWeeklyRewardsIndependently() {
+        var dailyClaims = 0
+        var weeklyClaims = 0
+        setContent {
+            var status by remember {
+                mutableStateOf(RetentionRewardStatus(dailyAvailable = true, weeklyAvailable = true))
+            }
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = emptyList(),
+                activeLevelNumber = null,
+                onActiveLevelNumberChange = {},
+                retentionRewardStatus = status,
+                onClaimRetentionReward = { type ->
+                    when (type) {
+                        RetentionRewardType.DAILY -> {
+                            dailyClaims += 1
+                            status = status.copy(dailyAvailable = false)
+                        }
+                        RetentionRewardType.WEEKLY -> {
+                            weeklyClaims += 1
+                            status = status.copy(weeklyAvailable = false)
+                        }
+                    }
+                    true
+                },
+            )
+        }
+
+        composeRule.onNodeWithTag("company-retention-rewards").performClick()
+        composeRule.onNodeWithText("Ежедневные бонусы").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-retention-daily-claim").performClick()
+        composeRule.onNodeWithTag("company-retention-daily-claim").assertIsNotEnabled()
+        composeRule.onNodeWithTag("company-retention-weekly-claim").performClick()
+        composeRule.onNodeWithTag("company-retention-weekly-claim").assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertTrue(dailyClaims == 1)
+            assertTrue(weeklyClaims == 1)
+        }
     }
 
     @Test

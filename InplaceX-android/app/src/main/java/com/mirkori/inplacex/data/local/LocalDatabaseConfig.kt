@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.data.local
 
+import java.time.ZoneId
 import java.util.UUID
 
 /**
@@ -11,6 +12,7 @@ import java.util.UUID
  */
 data class LocalDatabaseConfig(
     val databaseName: String = DEFAULT_DATABASE_NAME,
+    val zoneId: ZoneId = ZoneId.systemDefault(),
     val nowMs: () -> Long = ::systemNowMs,
 ) {
     init {
@@ -27,12 +29,14 @@ data class LocalDatabaseConfig(
          */
         fun uniqueTest(
             prefix: String = "inplacex_test",
+            zoneId: ZoneId = ZoneId.systemDefault(),
             nowMs: () -> Long,
         ): LocalDatabaseConfig {
             require(prefix.isNotBlank()) { "prefix must not be blank" }
             return LocalDatabaseConfig(
                 databaseName = "${prefix}_${UUID.randomUUID()}.db",
                 nowMs = nowMs,
+                zoneId = zoneId,
             )
         }
     }

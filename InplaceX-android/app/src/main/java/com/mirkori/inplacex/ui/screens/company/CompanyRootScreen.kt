@@ -18,6 +18,8 @@ import com.mirkori.inplacex.core.campaign.CampaignLevelGenerator
 import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.GameProgressState
+import com.mirkori.inplacex.data.local.RetentionRewardStatus
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
@@ -49,6 +51,8 @@ fun CompanyRootScreen(
     onBuyEnergy: () -> Unit = {},
     onRecordCampaignCompletion: (Int, Int) -> Unit = { _, _ -> },
     onClaimChapterReward: (Int) -> Boolean = { false },
+    retentionRewardStatus: RetentionRewardStatus = RetentionRewardStatus(false, false),
+    onClaimRetentionReward: (RetentionRewardType) -> Boolean = { false },
     onCampaignTutorialCompleted: () -> Unit = {},
     onRecordCompanyLoss: () -> Unit = {},
     onMatchStarted: () -> Unit = {},
@@ -219,6 +223,8 @@ fun CompanyRootScreen(
                 unlockedBlock = unlockedBlock,
                 onHistory = { showHistory = true },
                 onClaimChapterReward = onClaimChapterReward,
+                retentionRewardStatus = retentionRewardStatus,
+                onClaimRetentionReward = onClaimRetentionReward,
                 onBuyEnergy = onBuyEnergy,
                 onPlay = { levelNumber ->
                     AppLog.info(

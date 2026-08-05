@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.data.local
 
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.database.sqlite.SQLiteException
 import org.junit.Assert.assertEquals
@@ -190,6 +191,43 @@ class LocalRepositoriesInstrumentedTest {
             val regenerated = GameProgressRepository(context, config).loadState()
 
             assertEquals(MAX_CAMPAIGN_ENERGY, regenerated.campaignEnergy)
+        }
+    }
+
+    @Test
+    fun retentionRewardsAreAtomicPersistentAndLimitedToTheirCalendarPeriod() {
+        var nowMs = 1_754_395_200_000L // 2025-08-05T12:00:00Z
+        withIsolatedDatabase("retention_rewards", { nowMs }) { context, config ->
+            val repository = GameProgressRepository(context, config)
+
+            assertTrue(repository.loadRetentionRewardStatus().dailyAvailable)
+            assertTrue(repository.loadRetentionRewardStatus().weeklyAvailable)
+
+            val daily = repository.claimRetentionReward(RetentionRewardType.DAILY)
+            assertEquals(140, daily?.coins)
+            assertEquals(1, daily?.checkDigitHints)
+            assertEquals(null, repository.claimRetentionReward(RetentionRewardType.DAILY))
+
+            val weekly = repository.claimRetentionReward(RetentionRewardType.WEEKLY)
+            assertEquals(240, weekly?.coins)
+            assertEquals(1, weekly?.openPositionHints)
+            assertEquals(2, weekly?.checkDigitHints)
+            assertEquals(1, weekly?.checkPositionHints)
+            assertEquals(1, weekly?.extraMovesBoosts)
+            assertEquals(1, weekly?.extraTimeBoosts)
+            assertEquals(null, repository.claimRetentionReward(RetentionRewardType.WEEKLY))
+
+            val reloaded = GameProgressRepository(context, config)
+            assertFalse(reloaded.loadRetentionRewardStatus().dailyAvailable)
+            assertFalse(reloaded.loadRetentionRewardStatus().weeklyAvailable)
+            assertEquals(240, reloaded.loadState().coins)
+
+            nowMs += 24 * 60 * 60_000L
+            assertTrue(reloaded.loadRetentionRewardStatus().dailyAvailable)
+            assertFalse(reloaded.loadRetentionRewardStatus().weeklyAvailable)
+
+            nowMs += 6 * 24 * 60 * 60_000L
+            assertTrue(reloaded.loadRetentionRewardStatus().weeklyAvailable)
         }
     }
 

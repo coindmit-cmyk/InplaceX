@@ -212,3 +212,16 @@ Match boosts:
 - `EXTRA_TIME`
 
 This separation is required for balancing, monetization, and campaign progression.
+
+## Retention Rewards
+
+`RetentionRewardPolicy` is the single source for daily and weekly reward
+payloads and calendar period keys. Daily keys use the player's local date;
+weekly keys use the ISO week-based year and week number.
+
+Claims are stored in `retention_reward_claims` with a composite primary key of
+reward type and period key. Claim insertion and inventory mutation must share
+one SQLite transaction. A conflict means the period was already claimed and
+must not mutate inventory. The MVP is local-first and therefore trusts the
+device clock; a server-authoritative clock and claim ledger are required before
+these rewards participate in competitive or paid economies.

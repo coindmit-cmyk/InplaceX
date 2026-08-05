@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase
 import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
 import com.mirkori.inplacex.core.match.RaceRewardPolicy
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
+import com.mirkori.inplacex.core.retention.RetentionRewardPolicy
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.logging.AppLog
 
 enum class HintStockType {
@@ -47,6 +49,14 @@ data class ModeStats(
     val wins: Int,
     val losses: Int,
 )
+
+data class RetentionRewardStatus(
+    val dailyAvailable: Boolean,
+    val weeklyAvailable: Boolean,
+) {
+    val anyAvailable: Boolean
+        get() = dailyAvailable || weeklyAvailable
+}
 
 data class GameProgressState(
     val playerDisplayName: String,
@@ -501,6 +511,94 @@ class GameProgressRepository(
         }
     }
 
+    fun loadRetentionRewardStatus(
+        nowMs: Long = databaseConfig.nowMs(),
+    ): RetentionRewardStatus {
+        val db = helper.readableDatabase
+        return RetentionRewardStatus(
+            dailyAvailable = !hasRetentionRewardClaim(
+                db = db,
+                type = RetentionRewardType.DAILY,
+                periodKey = RetentionRewardPolicy.periodKey(
+                    RetentionRewardType.DAILY,
+                    nowMs,
+                    databaseConfig.zoneId,
+                ),
+            ),
+            weeklyAvailable = !hasRetentionRewardClaim(
+                db = db,
+                type = RetentionRewardType.WEEKLY,
+                periodKey = RetentionRewardPolicy.periodKey(
+                    RetentionRewardType.WEEKLY,
+                    nowMs,
+                    databaseConfig.zoneId,
+                ),
+            ),
+        )
+    }
+
+    fun claimRetentionReward(
+        type: RetentionRewardType,
+        nowMs: Long = databaseConfig.nowMs(),
+    ): GameProgressState? {
+        val db = helper.writableDatabase
+        ensureDefaultRow(db)
+        val periodKey = RetentionRewardPolicy.periodKey(type, nowMs, databaseConfig.zoneId)
+        val grant = RetentionRewardPolicy.grantFor(type)
+
+        db.beginTransaction()
+        return try {
+            val inserted = db.insertWithOnConflict(
+                GameProgressDbHelper.TABLE_RETENTION_REWARD_CLAIMS,
+                null,
+                ContentValues().apply {
+                    put(GameProgressDbHelper.COL_RETENTION_REWARD_TYPE, type.storageKey)
+                    put(GameProgressDbHelper.COL_RETENTION_PERIOD_KEY, periodKey)
+                    put(GameProgressDbHelper.COL_RETENTION_CLAIMED_AT_MS, nowMs)
+                },
+                SQLiteDatabase.CONFLICT_IGNORE,
+            )
+            if (inserted == -1L) {
+                null
+            } else {
+                val row = applyEnergyRegen(loadRow(db), nowMs)
+                val updated = row.copy(
+                    coins = row.coins + grant.coins,
+                    hintOpenPosition = row.hintOpenPosition + grant.openPositionHints,
+                    hintCheckDigit = row.hintCheckDigit + grant.checkDigitHints,
+                    hintCheckPosition = row.hintCheckPosition + grant.checkPositionHints,
+                    boostExtraMoves = row.boostExtraMoves + grant.extraMovesBoosts,
+                    boostExtraTime = row.boostExtraTime + grant.extraTimeBoosts,
+                )
+                writeRow(db, updated)
+                db.setTransactionSuccessful()
+                AppLog.info(
+                    tag = "RetentionReward",
+                    message = "Retention reward claimed",
+                    attributes = mapOf("type" to type.storageKey, "period" to periodKey),
+                )
+                updated.toState()
+            }
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    private fun hasRetentionRewardClaim(
+        db: SQLiteDatabase,
+        type: RetentionRewardType,
+        periodKey: String,
+    ): Boolean = db.rawQuery(
+        """
+        SELECT 1
+        FROM ${GameProgressDbHelper.TABLE_RETENTION_REWARD_CLAIMS}
+        WHERE ${GameProgressDbHelper.COL_RETENTION_REWARD_TYPE} = ?
+          AND ${GameProgressDbHelper.COL_RETENTION_PERIOD_KEY} = ?
+        LIMIT 1
+        """.trimIndent(),
+        arrayOf(type.storageKey, periodKey),
+    ).use { cursor -> cursor.moveToFirst() }
+
     private fun consumeResource(
         currentValue: (ProgressRow) -> Int,
         updater: (ProgressRow) -> ProgressRow,
@@ -810,6 +908,7 @@ internal class GameProgressDbHelper(
         const val TABLE_PROGRESS = GameProgressDatabase.TABLE_PROGRESS
         const val TABLE_CAMPAIGN_PROGRESS = GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS
         const val TABLE_CAMPAIGN_CHAPTER_REWARDS = GameProgressDatabase.TABLE_CAMPAIGN_CHAPTER_REWARDS
+        const val TABLE_RETENTION_REWARD_CLAIMS = GameProgressDatabase.TABLE_RETENTION_REWARD_CLAIMS
         const val TABLE_PLAYER_PROFILE = GameProgressDatabase.TABLE_PLAYER_PROFILE
         const val TABLE_IDENTITY_LINKS = GameProgressDatabase.TABLE_IDENTITY_LINKS
         const val TABLE_SOCIAL_RELATIONSHIPS = GameProgressDatabase.TABLE_SOCIAL_RELATIONSHIPS
@@ -848,6 +947,9 @@ internal class GameProgressDbHelper(
         const val COL_CAMPAIGN_LEVEL_NUMBER = GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING
         const val COL_CAMPAIGN_CHAPTER_NUMBER = GameProgressDatabase.COL_CAMPAIGN_CHAPTER_NUMBER
+        const val COL_RETENTION_REWARD_TYPE = GameProgressDatabase.COL_RETENTION_REWARD_TYPE
+        const val COL_RETENTION_PERIOD_KEY = GameProgressDatabase.COL_RETENTION_PERIOD_KEY
+        const val COL_RETENTION_CLAIMED_AT_MS = GameProgressDatabase.COL_RETENTION_CLAIMED_AT_MS
         const val PROFILE_ID = GameProgressDatabase.PROFILE_ID
     }
 }
