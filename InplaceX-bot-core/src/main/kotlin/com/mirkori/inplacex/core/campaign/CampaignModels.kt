@@ -26,10 +26,14 @@ data class CampaignBoostPack(
 )
 
 data class CampaignUnlockConfig(
-    val earlyBlockRequiredAverageStars: Double = 1.5,
-    val lateBlockRequiredAverageStars: Double = 1.75,
-    val lateBlockStartsFrom: Int = 6,
-)
+    val levelsPerChapter: Int = 10,
+    val requiredStarsPerLevel: Double = 2.0,
+) {
+    init {
+        require(levelsPerChapter > 0) { "levelsPerChapter must be > 0" }
+        require(requiredStarsPerLevel > 0.0) { "requiredStarsPerLevel must be > 0" }
+    }
+}
 
 data class CampaignRatingPolicy(
     val maxBackendPoints: Int = 10,
@@ -123,28 +127,52 @@ object CampaignRatingCalculator {
 object CampaignProgressionRules {
     val unlockConfig = CampaignUnlockConfig()
 
-    fun requiredAverageStarsForBlock(blockNumber: Int): Double {
-        return when {
-            blockNumber <= 1 -> 0.0
-            blockNumber < unlockConfig.lateBlockStartsFrom -> unlockConfig.earlyBlockRequiredAverageStars
-            else -> unlockConfig.lateBlockRequiredAverageStars
-        }
+    fun chapterForLevel(
+        levelNumber: Int,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
+        require(levelNumber > 0) { "levelNumber must be > 0" }
+        return ((levelNumber - 1) / config.levelsPerChapter) + 1
     }
 
-    fun requiredStarsForNextBlock(nextBlockNumber: Int, completedLevelsCount: Int): Int {
+    fun levelRange(
+        chapterNumber: Int,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): IntRange {
+        require(chapterNumber > 0) { "chapterNumber must be > 0" }
+        val firstLevel = (chapterNumber - 1) * config.levelsPerChapter + 1
+        return firstLevel..(firstLevel + config.levelsPerChapter - 1)
+    }
+
+    fun requiredCompletedLevelsForNextBlock(
+        nextBlockNumber: Int,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
         if (nextBlockNumber <= 1) return 0
-        return kotlin.math.ceil(completedLevelsCount * requiredAverageStarsForBlock(nextBlockNumber)).toInt()
+        return (nextBlockNumber - 1) * config.levelsPerChapter
     }
 
-    fun computeUnlockedBlock(completedLevelsCount: Int, totalStars: Int): Int {
+    fun requiredStarsForNextBlock(
+        nextBlockNumber: Int,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
+        val requiredCompleted = requiredCompletedLevelsForNextBlock(nextBlockNumber, config)
+        return kotlin.math.ceil(requiredCompleted * config.requiredStarsPerLevel).toInt()
+    }
+
+    fun computeUnlockedBlock(
+        completedLevelsCount: Int,
+        totalStars: Int,
+        config: CampaignUnlockConfig = unlockConfig,
+    ): Int {
         require(completedLevelsCount >= 0)
         require(totalStars >= 0)
 
         var unlockedBlock = 1
         while (true) {
             val nextBlock = unlockedBlock + 1
-            val requiredCompleted = unlockedBlock * 10
-            val requiredStars = requiredStarsForNextBlock(nextBlock, requiredCompleted)
+            val requiredCompleted = requiredCompletedLevelsForNextBlock(nextBlock, config)
+            val requiredStars = requiredStarsForNextBlock(nextBlock, config)
             if (completedLevelsCount < requiredCompleted || totalStars < requiredStars) break
             unlockedBlock = nextBlock
         }

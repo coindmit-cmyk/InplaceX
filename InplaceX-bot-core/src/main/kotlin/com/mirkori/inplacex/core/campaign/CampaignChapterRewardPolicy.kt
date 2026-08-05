@@ -8,12 +8,11 @@ data class CampaignChapterReward(
 )
 
 object CampaignChapterRewardPolicy {
-    const val LEVELS_PER_CHAPTER = 10
+    val LEVELS_PER_CHAPTER: Int
+        get() = CampaignProgressionRules.unlockConfig.levelsPerChapter
 
     fun levelRange(chapterNumber: Int): IntRange {
-        require(chapterNumber > 0) { "chapterNumber must be > 0" }
-        val firstLevel = (chapterNumber - 1) * LEVELS_PER_CHAPTER + 1
-        return firstLevel..(firstLevel + LEVELS_PER_CHAPTER - 1)
+        return CampaignProgressionRules.levelRange(chapterNumber)
     }
 
     fun rewardFor(chapterNumber: Int): CampaignChapterReward {

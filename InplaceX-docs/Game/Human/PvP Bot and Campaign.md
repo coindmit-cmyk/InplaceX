@@ -76,6 +76,10 @@ Campaign levels are grouped by 10:
 - `6, 7, 8, 9`: standard
 - `10`: hardcore
 
+Экран показывает только десять уровней выбранной главы. Между уже доступными
+главами и ближайшей закрытой главой игрок переключается отдельными кнопками,
+поэтому уровни соседней главы не выглядят частью текущей.
+
 Difficulty keeps rising until about levels `300-500`, then reaches a plateau of maximum difficulty.
 
 The first 10 levels are the onboarding block with 4-digit codes. Starting at
@@ -128,6 +132,15 @@ Campaign stores two progress values:
 Backend rating uses a `1..10` score.
 
 Player-facing UI shows up to `3` stars.
+
+Следующая глава открывается только после прохождения всех уровней перед ней и
+набора в среднем не менее двух звёзд за уровень:
+
+`requiredStars = completedChapterLevels × requiredStarsPerLevel`
+
+Текущее значение `requiredStarsPerLevel = 2.0` хранится в конфигурации правил
+прогрессии. Для второй главы это означает все `10` уровней первой главы и
+минимум `20` звёзд; для третьей — `20` завершённых уровней и `40` звёзд.
 
 The rating depends on:
 

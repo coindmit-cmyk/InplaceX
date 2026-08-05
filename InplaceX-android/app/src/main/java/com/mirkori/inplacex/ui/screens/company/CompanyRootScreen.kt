@@ -169,21 +169,23 @@ fun CompanyRootScreen(
             val unlockedBlock = remember(completedLevelsCount, totalStars) {
                 computeUnlockedBlock(completedLevelsCount, totalStars)
             }
-            val accessibleMaxLevel = unlockedBlock * 10
+            val levelsPerChapter = CampaignProgressionRules.unlockConfig.levelsPerChapter
+            val accessibleMaxLevel = unlockedBlock * levelsPerChapter
             val nextBlockNumber = unlockedBlock + 1
             val requiredStarsForNextBlock = CampaignProgressionRules.requiredStarsForNextBlock(
                 nextBlockNumber,
-                completedLevelsCount,
             )
+            val requiredCompletedLevelsForNextBlock =
+                CampaignProgressionRules.requiredCompletedLevelsForNextBlock(nextBlockNumber)
+            val currentChapterCompleted = completedLevelsCount >= requiredCompletedLevelsForNextBlock
             val nextBlockLocked =
-                completedLevelsCount >= unlockedBlock * 10 &&
-                    totalStars < requiredStarsForNextBlock
-            val focusLevel = if (nextBlockLocked) {
+                !currentChapterCompleted || totalStars < requiredStarsForNextBlock
+            val focusLevel = if (currentChapterCompleted && nextBlockLocked) {
                 accessibleMaxLevel + 1
             } else {
                 progressState.highestUnlockedCampaignLevel.coerceAtLeast(1)
             }
-            val visibleTopLevel = maxOf(focusLevel + 9, accessibleMaxLevel + 10, 20)
+            val visibleTopLevel = (unlockedBlock + 1) * levelsPerChapter
             val levelItems = remember(campaignProgress, visibleTopLevel) {
                 buildCampaignLevelItems(campaignProgress, visibleTopLevel)
             }
@@ -196,8 +198,8 @@ fun CompanyRootScreen(
                 focusLevel = focusLevel,
                 accessibleMaxLevel = accessibleMaxLevel,
                 totalStars = totalStars,
-                requiredStarsForNextBlock = requiredStarsForNextBlock,
-                nextBlockLocked = nextBlockLocked,
+                completedLevelsCount = completedLevelsCount,
+                unlockedBlock = unlockedBlock,
                 onHistory = { showHistory = true },
                 onClaimChapterReward = onClaimChapterReward,
                 onBuyEnergy = onBuyEnergy,

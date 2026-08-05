@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
+import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 
@@ -40,25 +41,28 @@ internal fun CompanySceneScreen(
     focusLevel: Int,
     accessibleMaxLevel: Int,
     totalStars: Int,
-    requiredStarsForNextBlock: Int,
-    nextBlockLocked: Boolean,
+    completedLevelsCount: Int,
+    unlockedBlock: Int,
     onHistory: () -> Unit,
     onClaimChapterReward: (Int) -> Boolean,
     onBuyEnergy: () -> Unit,
     onPlay: (Int) -> Unit,
 ) {
     val listState = rememberLazyListState()
-    val displayItems = levelItems.asReversed()
+    val focusChapter = CampaignProgressionRules.chapterForLevel(focusLevel)
+    var selectedChapterState by rememberSaveable { mutableIntStateOf(focusChapter) }
     var selectedLevel by rememberSaveable { mutableIntStateOf(focusLevel) }
     var showRules by rememberSaveable { mutableStateOf(false) }
     var rewardDialogState by rememberSaveable {
         mutableStateOf<ChapterRewardDialogState?>(null)
     }
-    val selectedItem =
-        levelItems.firstOrNull { it.definition.levelNumber == selectedLevel }
-            ?: levelItems.first { it.definition.levelNumber == focusLevel }
+    val maxVisibleChapter = unlockedBlock + 1
+    val selectedChapter = selectedChapterState.coerceIn(1, maxVisibleChapter)
+    val chapterItems = campaignLevelItemsForChapter(levelItems, selectedChapter)
+    val displayItems = chapterItems.asReversed()
+    val selectedItem = chapterItems.firstOrNull { it.definition.levelNumber == selectedLevel }
+        ?: chapterItems.first()
     val selectedCompleted = selectedItem.progress.bestBackendRating > 0
-    val selectedChapter = selectedItem.definition.blockNumber
     val selectedChapterLevels = CampaignChapterRewardPolicy.levelRange(selectedChapter)
     val selectedChapterCompleted = selectedChapterLevels.all { levelNumber ->
         levelItems.firstOrNull { it.definition.levelNumber == levelNumber }
@@ -67,6 +71,16 @@ internal fun CompanySceneScreen(
             ?.let { it > 0 } == true
     }
     val selectedChapterRewardClaimed = selectedChapter in claimedChapterNumbers
+    val progressTargetBlock = if (selectedChapter <= unlockedBlock) {
+        selectedChapter + 1
+    } else {
+        selectedChapter
+    }
+    val requiredCompletedLevels =
+        CampaignProgressionRules.requiredCompletedLevelsForNextBlock(progressTargetBlock)
+    val requiredStars = CampaignProgressionRules.requiredStarsForNextBlock(progressTargetBlock)
+    val nextBlockLocked =
+        completedLevelsCount < requiredCompletedLevels || totalStars < requiredStars
     val chapterRewardLabel = strings.text(
         when {
             selectedChapterRewardClaimed -> "company.chapter.reward.claimed"
@@ -91,8 +105,18 @@ internal fun CompanySceneScreen(
     val hasEnergy = progressState.campaignEnergy > 0
     val focusIndex = displayItems.indexOfFirst { it.definition.levelNumber == focusLevel }
         .coerceAtLeast(0)
+    val selectChapter: (Int) -> Unit = { chapterNumber ->
+        val items = campaignLevelItemsForChapter(levelItems, chapterNumber)
+        val preferredItem = items.lastOrNull { item ->
+            item.progress.bestBackendRating > 0 ||
+                item.definition.levelNumber <= progressState.highestUnlockedCampaignLevel
+        } ?: items.first()
+        selectedChapterState = chapterNumber
+        selectedLevel = preferredItem.definition.levelNumber
+    }
 
     LaunchedEffect(focusLevel, levelItems.size) {
+        selectedChapterState = focusChapter
         selectedLevel = focusLevel
     }
 
@@ -131,12 +155,22 @@ internal fun CompanySceneScreen(
                 )
                 Spacer(modifier = Modifier.height(if (compact) 4.dp else 7.dp))
 
+                CompanyChapterNavigator(
+                    strings = strings,
+                    chapter = selectedChapter,
+                    canGoPrevious = selectedChapter > 1,
+                    canGoNext = selectedChapter < maxVisibleChapter,
+                    onPrevious = { selectChapter(selectedChapter - 1) },
+                    onNext = { selectChapter(selectedChapter + 1) },
+                )
+                Spacer(modifier = Modifier.height(if (compact) 4.dp else 6.dp))
+
                 if (!landscape) {
                     CompanyChapterHero(
                         strings = strings,
                         chapter = selectedItem.definition.blockNumber,
                         totalStars = totalStars,
-                        requiredStars = requiredStarsForNextBlock,
+                        requiredStars = requiredStars,
                         nextBlockLocked = nextBlockLocked,
                         rewardAvailable = selectedChapterCompleted,
                         rewardClaimed = selectedChapterRewardClaimed,
@@ -170,7 +204,7 @@ internal fun CompanySceneScreen(
                                     selectedLevel = selectedLevel,
                                     accessibleMaxLevel = accessibleMaxLevel,
                                     highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                                    requiredStars = requiredStarsForNextBlock,
+                                    requiredStars = requiredStars,
                                     first = index == 0,
                                     last = index == displayItems.lastIndex,
                                     compact = true,
@@ -201,7 +235,7 @@ internal fun CompanySceneScreen(
                                 selectedLevel = selectedLevel,
                                 accessibleMaxLevel = accessibleMaxLevel,
                                 highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                                requiredStars = requiredStarsForNextBlock,
+                                requiredStars = requiredStars,
                                 first = index == 0,
                                 last = index == displayItems.lastIndex,
                                 compact = compact,
@@ -216,7 +250,7 @@ internal fun CompanySceneScreen(
                     levelNumber = selectedLevel,
                     playable = selectedPlayable,
                     hasEnergy = hasEnergy,
-                    requiredStars = requiredStarsForNextBlock,
+                    requiredStars = requiredStars,
                     lockRequiresStars = selectedLevel > accessibleMaxLevel,
                     onBuyEnergy = onBuyEnergy,
                     onPlay = { onPlay(selectedLevel) },

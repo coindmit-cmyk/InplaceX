@@ -36,6 +36,14 @@ internal fun buildCampaignLevelItems(
     }
 }
 
+internal fun campaignLevelItemsForChapter(
+    levelItems: List<CampaignLevelListItem>,
+    chapterNumber: Int,
+): List<CampaignLevelListItem> {
+    val levelRange = CampaignProgressionRules.levelRange(chapterNumber)
+    return levelItems.filter { it.definition.levelNumber in levelRange }
+}
+
 internal fun computeUnlockedBlock(completedLevelsCount: Int, totalStars: Int): Int {
     return CampaignProgressionRules.computeUnlockedBlock(completedLevelsCount, totalStars)
 }
