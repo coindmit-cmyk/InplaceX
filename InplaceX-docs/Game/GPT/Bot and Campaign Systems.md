@@ -49,6 +49,16 @@ The player secret is mandatory. The bot secret can be generated after a configur
 
 Campaign is race-only and does not use duel logic.
 
+### First-Match Tutorial
+
+Level `1` is gated by a three-step tutorial until the local progress flag
+`campaignTutorialCompleted` is set. The steps explain the goal and input,
+turn feedback, and inventory-backed hints and boosts. `GameFieldScreen` must
+not be composed before completion, so its timer and match-start callback cannot
+run behind the tutorial. Completing the final step persists the flag before
+the level is shown. Exiting the dialog returns to the campaign map without
+marking the tutorial complete.
+
 `CampaignLevelGenerator.generate(levelNumber)` must output a `CampaignLevelDefinition` that includes:
 
 - level number

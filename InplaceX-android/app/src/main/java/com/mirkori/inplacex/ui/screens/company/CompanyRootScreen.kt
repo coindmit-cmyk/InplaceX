@@ -49,6 +49,7 @@ fun CompanyRootScreen(
     onBuyEnergy: () -> Unit = {},
     onRecordCampaignCompletion: (Int, Int) -> Unit = { _, _ -> },
     onClaimChapterReward: (Int) -> Boolean = { false },
+    onCampaignTutorialCompleted: () -> Unit = {},
     onRecordCompanyLoss: () -> Unit = {},
     onMatchStarted: () -> Unit = {},
 ) {
@@ -96,6 +97,19 @@ fun CompanyRootScreen(
     }
 
     when {
+        activeLevel != null &&
+            activeLevel.levelNumber == 1 &&
+            !progressState.campaignTutorialCompleted -> {
+            CampaignTutorialDialog(
+                strings = strings,
+                onExit = {
+                    onActiveLevelNumberChange(null)
+                    onDebugSecretChange(null)
+                },
+                onComplete = onCampaignTutorialCompleted,
+            )
+        }
+
         activeLevel != null -> {
             GameFieldScreen(
                 title = "",

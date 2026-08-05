@@ -149,6 +149,7 @@ class LocalRepositoriesInstrumentedTest {
             repository.recordModeResult(GameModeStatType.PVE_RACE, won = true)
             repository.recordCompanyLoss()
             repository.recordCampaignCompletion(levelNumber = 3, backendRating = 8)
+            repository.completeCampaignTutorial()
 
             val reloadedRepository = GameProgressRepository(context, config)
             val state = reloadedRepository.loadState()
@@ -175,6 +176,7 @@ class LocalRepositoriesInstrumentedTest {
             assertTrue(state.adsDisabled)
             assertTrue(state.autoTableAssistEnabled)
             assertTrue(state.infiniteHintsEnabled)
+            assertTrue(state.campaignTutorialCompleted)
             assertEquals(
                 CampaignLevelProgress(levelNumber = 3, bestBackendRating = 8),
                 reloadedRepository.loadCampaignProgress(3),

@@ -429,6 +429,9 @@ class MainActivity : ComponentActivity() {
                                         false
                                     }
                                 },
+                                onCampaignTutorialCompleted = {
+                                    progressState = progressRepository.completeCampaignTutorial()
+                                },
                                 onRecordCompanyLoss = {
                                     progressState = progressRepository.recordCompanyLoss()
                                 },

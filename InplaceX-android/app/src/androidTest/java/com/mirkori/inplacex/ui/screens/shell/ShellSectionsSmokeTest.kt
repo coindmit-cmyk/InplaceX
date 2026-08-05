@@ -481,6 +481,41 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun firstCampaignLevelExplainsTheGameBeforeStartingTheMatch() {
+        var tutorialCompleted = false
+        var matchStarted = false
+
+        setContent {
+            var currentProgress by remember { mutableStateOf(progress()) }
+            CompanyRootScreen(
+                progressState = currentProgress,
+                campaignProgress = emptyList(),
+                activeLevelNumber = 1,
+                onActiveLevelNumberChange = {},
+                onCampaignTutorialCompleted = {
+                    tutorialCompleted = true
+                    currentProgress = currentProgress.copy(campaignTutorialCompleted = true)
+                },
+                onMatchStarted = { matchStarted = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Как играть").assertIsDisplayed()
+        composeRule.runOnIdle { assertTrue(!matchStarted) }
+
+        composeRule.onNodeWithTag("company-tutorial-next").performClick()
+        composeRule.onNodeWithText("Читайте результат хода").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-tutorial-next").performClick()
+        composeRule.onNodeWithText("Подсказки и усилители").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-tutorial-start").performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(tutorialCompleted)
+            assertTrue(matchStarted)
+        }
+    }
+
+    @Test
     fun companyGameDoesNotDrawASecondRoomBackgroundInsideTheShell() {
         setContent {
             CompanyRootScreen(

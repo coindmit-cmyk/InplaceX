@@ -12,8 +12,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GameProgressDatabaseMigrationTest {
     @Test
-    fun freshDatabaseCreatesCompleteV8Schema() {
-        withIsolatedDatabase("fresh_v8", ::fixedNowMs) { context, config ->
+    fun freshDatabaseCreatesCompleteV9Schema() {
+        withIsolatedDatabase("fresh_v9", ::fixedNowMs) { context, config ->
             GameProgressDatabase(context, config).use { helper ->
                 val db = helper.writableDatabase
 
@@ -56,6 +56,11 @@ class GameProgressDatabaseMigrationTest {
     @Test
     fun migrationFromV7ToV8PreservesSentinelData() {
         assertMigrationFrom(7)
+    }
+
+    @Test
+    fun migrationFromV8ToV9PreservesSentinelData() {
+        assertMigrationFrom(8)
     }
 
     private fun assertMigrationFrom(oldVersion: Int) {
@@ -102,6 +107,22 @@ class GameProgressDatabaseMigrationTest {
                     ) VALUES ($SENTINEL_LEVEL, $SENTINEL_RATING)
                     """.trimIndent(),
                 )
+            }
+
+            if (version >= 8) {
+                listOf(
+                    GameProgressDatabase.TABLE_CAMPAIGN_CHAPTER_REWARDS,
+                    GameProgressDatabase.TABLE_PLAYER_PROFILE,
+                    GameProgressDatabase.TABLE_IDENTITY_LINKS,
+                    GameProgressDatabase.TABLE_SOCIAL_RELATIONSHIPS,
+                    GameProgressDatabase.TABLE_ONLINE_ROOMS,
+                    GameProgressDatabase.TABLE_ONLINE_ROOM_MEMBERS,
+                    GameProgressDatabase.TABLE_ONLINE_MATCHES,
+                    GameProgressDatabase.TABLE_ONLINE_MATCH_TURNS,
+                    GameProgressDatabase.TABLE_SYNC_QUEUE,
+                ).forEach { tableName ->
+                    db.execSQL("CREATE TABLE $tableName (id INTEGER PRIMARY KEY)")
+                }
             }
 
             db.version = version
@@ -258,6 +279,7 @@ class GameProgressDatabaseMigrationTest {
             assertEquals(if (oldVersion >= 5) 1 else 0, it.int(GameProgressDatabase.COL_PRO_SUBSCRIPTION_ACTIVE))
             assertEquals(if (oldVersion >= 5) 1 else 0, it.int(GameProgressDatabase.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE))
             assertEquals(0L, it.long(GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS))
+            assertEquals(0, it.int(GameProgressDatabase.COL_CAMPAIGN_TUTORIAL_COMPLETED))
         }
     }
 
@@ -330,7 +352,7 @@ class GameProgressDatabaseMigrationTest {
     private fun fixedNowMs(): Long = FIXED_NOW_MS
 
     companion object {
-        private const val CURRENT_DATABASE_VERSION = 8
+        private const val CURRENT_DATABASE_VERSION = 9
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val SENTINEL_ENERGY_UPDATED_AT = FIXED_NOW_MS - 60_000L
 
