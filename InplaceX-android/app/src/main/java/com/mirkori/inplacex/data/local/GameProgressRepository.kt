@@ -71,6 +71,7 @@ data class GameProgressState(
     val proSubscriptionActive: Boolean,
     val proPlusSubscriptionActive: Boolean,
     val temporaryProExpiresAtMs: Long,
+    val campaignTutorialCompleted: Boolean = false,
 ) {
     fun temporaryProActiveAt(nowMs: Long): Boolean =
         TemporaryProPolicy.isActive(temporaryProExpiresAtMs, nowMs)
@@ -286,6 +287,15 @@ class GameProgressRepository(
     fun grantRewardedCoins(amount: Int): GameProgressState {
         require(amount > 0) { "amount must be > 0" }
         return mutate { row -> row.copy(coins = row.coins + amount) }
+    }
+
+    fun completeCampaignTutorial(): GameProgressState {
+        val updated = mutate { row -> row.copy(campaignTutorialCompleted = true) }
+        AppLog.info(
+            tag = "CampaignTutorial",
+            message = "Campaign tutorial completed",
+        )
+        return updated
     }
 
     fun signInWithGooglePlay(playerName: String): GameProgressState {
@@ -571,6 +581,7 @@ class GameProgressRepository(
             put(GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE, if (state.proSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE, if (state.proPlusSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS, state.temporaryProExpiresAtMs)
+            put(GameProgressDbHelper.COL_CAMPAIGN_TUTORIAL_COMPLETED, if (state.campaignTutorialCompleted) 1 else 0)
         }
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PROGRESS,
@@ -608,6 +619,7 @@ class GameProgressRepository(
                 GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE,
                 GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE,
                 GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS,
+                GameProgressDbHelper.COL_CAMPAIGN_TUTORIAL_COMPLETED,
             ),
             "${GameProgressDbHelper.COL_ID} = ?",
             arrayOf(GameProgressDbHelper.PROFILE_ID.toString()),
@@ -645,6 +657,7 @@ class GameProgressRepository(
                 proSubscriptionActive = it.getInt(21) != 0,
                 proPlusSubscriptionActive = it.getInt(22) != 0,
                 temporaryProExpiresAtMs = it.getLong(23),
+                campaignTutorialCompleted = it.getInt(24) != 0,
             )
         }
     }
@@ -676,6 +689,7 @@ class GameProgressRepository(
             put(GameProgressDbHelper.COL_PRO_SUBSCRIPTION_ACTIVE, if (row.proSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE, if (row.proPlusSubscriptionActive) 1 else 0)
             put(GameProgressDbHelper.COL_TEMPORARY_PRO_EXPIRES_AT_MS, row.temporaryProExpiresAtMs)
+            put(GameProgressDbHelper.COL_CAMPAIGN_TUTORIAL_COMPLETED, if (row.campaignTutorialCompleted) 1 else 0)
         }
         db.insertWithOnConflict(
             GameProgressDbHelper.TABLE_PROGRESS,
@@ -710,6 +724,7 @@ class GameProgressRepository(
         val proSubscriptionActive: Boolean,
         val proPlusSubscriptionActive: Boolean,
         val temporaryProExpiresAtMs: Long,
+        val campaignTutorialCompleted: Boolean,
     ) {
         fun toState(): GameProgressState {
             return GameProgressState(
@@ -735,6 +750,7 @@ class GameProgressRepository(
                 proSubscriptionActive = proSubscriptionActive,
                 proPlusSubscriptionActive = proPlusSubscriptionActive,
                 temporaryProExpiresAtMs = temporaryProExpiresAtMs,
+                campaignTutorialCompleted = campaignTutorialCompleted,
             )
         }
 
@@ -765,6 +781,7 @@ class GameProgressRepository(
                     proSubscriptionActive = false,
                     proPlusSubscriptionActive = false,
                     temporaryProExpiresAtMs = 0L,
+                    campaignTutorialCompleted = false,
                 )
             }
         }
@@ -827,6 +844,7 @@ internal class GameProgressDbHelper(
         const val COL_PRO_SUBSCRIPTION_ACTIVE = GameProgressDatabase.COL_PRO_SUBSCRIPTION_ACTIVE
         const val COL_PRO_PLUS_SUBSCRIPTION_ACTIVE = GameProgressDatabase.COL_PRO_PLUS_SUBSCRIPTION_ACTIVE
         const val COL_TEMPORARY_PRO_EXPIRES_AT_MS = GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS
+        const val COL_CAMPAIGN_TUTORIAL_COMPLETED = GameProgressDatabase.COL_CAMPAIGN_TUTORIAL_COMPLETED
         const val COL_CAMPAIGN_LEVEL_NUMBER = GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING
         const val COL_CAMPAIGN_CHAPTER_NUMBER = GameProgressDatabase.COL_CAMPAIGN_CHAPTER_NUMBER

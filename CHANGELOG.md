@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The first campaign match now starts with a persisted three-step tutorial for
+  the game goal, turn feedback, hints and boosts. The match timer does not start
+  until the player explicitly finishes the tutorial.
+
 - Campaign chapters now show exactly their configured ten levels and use one
   shared progression rule for generation, rewards and UI grouping. Unlocking
   the next chapter requires every preceding level plus two stars per level
