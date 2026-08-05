@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.company
 
 import com.mirkori.inplacex.core.campaign.CampaignLevelGenerator
+import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import org.junit.Assert.assertEquals
@@ -22,6 +23,21 @@ class CompanyCampaignLogicTest {
         assertEquals(4, items[0].progress.bestBackendRating)
         assertEquals(0, items[1].progress.bestBackendRating)
         assertEquals(8, items[2].progress.bestBackendRating)
+    }
+
+    @Test
+    fun `chapter screen contains exactly its ten levels`() {
+        val items = buildCampaignLevelItems(
+            campaignProgress = emptyList(),
+            visibleTopLevel = 20,
+        )
+
+        assertEquals((1..10).toList(), campaignLevelItemsForChapter(items, 1).map {
+            it.definition.levelNumber
+        })
+        assertEquals((11..20).toList(), campaignLevelItemsForChapter(items, 2).map {
+            it.definition.levelNumber
+        })
     }
 
     @Test
@@ -82,9 +98,10 @@ class CompanyCampaignLogicTest {
 
     @Test
     fun `next chapter stays locked until completion and star thresholds pass`() {
-        assertEquals(1, computeUnlockedBlock(completedLevelsCount = 9, totalStars = 30))
-        assertEquals(1, computeUnlockedBlock(completedLevelsCount = 10, totalStars = 14))
-        assertEquals(2, computeUnlockedBlock(completedLevelsCount = 10, totalStars = 15))
+        assertEquals(1, computeUnlockedBlock((1..9).associateWith { 3 }))
+        assertEquals(1, computeUnlockedBlock((1..9).associateWith { 2 } + (10 to 1)))
+        assertEquals(2, computeUnlockedBlock((1..10).associateWith { 2 }))
+        assertEquals(20, CampaignProgressionRules.requiredStarsForNextBlock(2))
     }
 
     private fun summary(

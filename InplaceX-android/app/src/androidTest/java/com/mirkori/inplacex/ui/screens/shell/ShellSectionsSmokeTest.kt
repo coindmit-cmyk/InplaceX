@@ -398,6 +398,27 @@ class ShellSectionsSmokeTest {
             .assertIsDisplayed()
             .assertIsSelected()
         composeRule.onNodeWithTag("company-play").assertIsDisplayed()
+        composeRule.onNodeWithText("0 из 20 звёзд").assertIsDisplayed()
+        composeRule.onNodeWithText("Следующая глава уже открыта.").assertDoesNotExist()
+    }
+
+    @Test
+    fun companySeparatesTenLevelChapters() {
+        setContent {
+            CompanyRootScreen(
+                progressState = progress(),
+                campaignProgress = emptyList(),
+                activeLevelNumber = null,
+                onActiveLevelNumberChange = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("company-level-3").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-next-chapter").performClick()
+        composeRule.onNodeWithTag("company-level-11")
+            .assertIsDisplayed()
+            .assertIsSelected()
+        composeRule.onNodeWithTag("company-level-10").assertDoesNotExist()
     }
 
     @Test

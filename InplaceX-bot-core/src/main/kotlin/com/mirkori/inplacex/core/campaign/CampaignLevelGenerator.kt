@@ -8,8 +8,9 @@ object CampaignLevelGenerator {
     fun generate(levelNumber: Int): CampaignLevelDefinition {
         require(levelNumber > 0) { "levelNumber must be > 0" }
 
-        val blockNumber = ((levelNumber - 1) / 10) + 1
-        val positionInBlock = ((levelNumber - 1) % 10) + 1
+        val blockSize = CampaignProgressionRules.unlockConfig.levelsPerChapter
+        val blockNumber = CampaignProgressionRules.chapterForLevel(levelNumber)
+        val positionInBlock = ((levelNumber - 1) % blockSize) + 1
         val difficultyTier = tierForLevel(levelNumber)
         val blockRole = roleForPosition(positionInBlock)
         val codeLength = codeLengthForLevel(levelNumber)
@@ -54,9 +55,10 @@ object CampaignLevelGenerator {
     }
 
     private fun roleForPosition(positionInBlock: Int): CampaignBlockRole {
+        val blockSize = CampaignProgressionRules.unlockConfig.levelsPerChapter
         return when (positionInBlock) {
-            5 -> CampaignBlockRole.SPIKE
-            10 -> CampaignBlockRole.HARDCORE
+            (blockSize + 1) / 2 -> CampaignBlockRole.SPIKE
+            blockSize -> CampaignBlockRole.HARDCORE
             else -> CampaignBlockRole.STANDARD
         }
     }

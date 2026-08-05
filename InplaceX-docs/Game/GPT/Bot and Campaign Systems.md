@@ -74,6 +74,23 @@ The generator uses:
 - `SPIKE`
 - `HARDCORE`
 
+### Chapter Progression
+
+`CampaignProgressionRules` is the single source for chapter size and unlock
+thresholds. The default configuration is:
+
+- `levelsPerChapter = 10`
+- `requiredStarsPerLevel = 2.0`
+
+Chapter `n` becomes available only when every level in chapters `1..n-1` is
+complete and the cumulative star count reaches:
+
+`ceil((n - 1) * levelsPerChapter * requiredStarsPerLevel)`
+
+The campaign UI renders exactly one chapter range at a time and may expose the
+nearest locked chapter for progress preview. Chapter rewards, level generation,
+unlock calculations and UI grouping must use the same configured chapter size.
+
 ### Difficulty Plateau
 
 Difficulty should keep growing until about `300-500`, then flatten into a stable maximum band.

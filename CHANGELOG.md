@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Campaign chapters now show exactly their configured ten levels and use one
+  shared progression rule for generation, rewards and UI grouping. Unlocking
+  the next chapter requires every preceding level plus two stars per level
+  (`20` stars for chapter 2), with the coefficient kept configurable.
+
 - Shell entrypoints, Gradle wrapper and Dockerfiles now keep LF endings on
   Windows checkouts. The backend Docker build also includes every Gradle module
   declared by the root project, so the stock local-stack verification runs

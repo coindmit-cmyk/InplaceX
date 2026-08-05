@@ -19,10 +19,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -213,6 +216,55 @@ private fun HeaderIconButton(
     ) {
         Box(contentAlignment = Alignment.Center) {
             icon()
+        }
+    }
+}
+
+@Composable
+internal fun CompanyChapterNavigator(
+    strings: LocalizationProvider,
+    chapter: Int,
+    canGoPrevious: Boolean,
+    canGoNext: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(38.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        IconButton(
+            onClick = onPrevious,
+            enabled = canGoPrevious,
+            modifier = Modifier.testTag("company-previous-chapter"),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.ChevronLeft,
+                contentDescription = strings.text("company.chapter.previous"),
+                tint = InplaceXColors.ToyBrown,
+            )
+        }
+        Text(
+            text = strings.text("company.chapter.number").replace("{value}", chapter.toString()),
+            color = InplaceXColors.ToyBrown,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(132.dp),
+        )
+        IconButton(
+            onClick = onNext,
+            enabled = canGoNext,
+            modifier = Modifier.testTag("company-next-chapter"),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = strings.text("company.chapter.next"),
+                tint = InplaceXColors.ToyBrown,
+            )
         }
     }
 }
