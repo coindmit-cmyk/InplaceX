@@ -439,6 +439,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 retentionRewardStatus = retentionRewardStatus,
+                                onRefreshRetentionRewards = {
+                                    retentionRewardStatus = progressRepository.loadRetentionRewardStatus()
+                                },
                                 onClaimRetentionReward = { type: RetentionRewardType ->
                                     val claimedState = progressRepository.claimRetentionReward(type)
                                     if (claimedState != null) {

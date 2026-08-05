@@ -444,6 +444,7 @@ class ShellSectionsSmokeTest {
     fun campaignBonusDialogClaimsDailyAndWeeklyRewardsIndependently() {
         var dailyClaims = 0
         var weeklyClaims = 0
+        var refreshes = 0
         setContent {
             var status by remember {
                 mutableStateOf(RetentionRewardStatus(dailyAvailable = true, weeklyAvailable = true))
@@ -454,6 +455,7 @@ class ShellSectionsSmokeTest {
                 activeLevelNumber = null,
                 onActiveLevelNumberChange = {},
                 retentionRewardStatus = status,
+                onRefreshRetentionRewards = { refreshes += 1 },
                 onClaimRetentionReward = { type ->
                     when (type) {
                         RetentionRewardType.DAILY -> {
@@ -479,6 +481,7 @@ class ShellSectionsSmokeTest {
         composeRule.runOnIdle {
             assertTrue(dailyClaims == 1)
             assertTrue(weeklyClaims == 1)
+            assertTrue(refreshes == 1)
         }
     }
 

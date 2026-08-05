@@ -47,6 +47,7 @@ internal fun CompanySceneScreen(
     onHistory: () -> Unit,
     onClaimChapterReward: (Int) -> Boolean,
     retentionRewardStatus: RetentionRewardStatus,
+    onRefreshRetentionRewards: () -> Unit,
     onClaimRetentionReward: (RetentionRewardType) -> Boolean,
     onBuyEnergy: () -> Unit,
     onPlay: (Int) -> Unit,
@@ -159,7 +160,10 @@ internal fun CompanySceneScreen(
                     chapterRewardLabel = chapterRewardLabel.takeIf { landscape },
                     onChapterReward = openChapterReward.takeIf { landscape },
                     retentionRewardAvailable = retentionRewardStatus.anyAvailable,
-                    onRetentionRewards = { showRetentionRewards = true },
+                    onRetentionRewards = {
+                        onRefreshRetentionRewards()
+                        showRetentionRewards = true
+                    },
                     onHistory = onHistory,
                     onBuyEnergy = onBuyEnergy,
                 )

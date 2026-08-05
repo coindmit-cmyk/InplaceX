@@ -52,6 +52,7 @@ fun CompanyRootScreen(
     onRecordCampaignCompletion: (Int, Int) -> Unit = { _, _ -> },
     onClaimChapterReward: (Int) -> Boolean = { false },
     retentionRewardStatus: RetentionRewardStatus = RetentionRewardStatus(false, false),
+    onRefreshRetentionRewards: () -> Unit = {},
     onClaimRetentionReward: (RetentionRewardType) -> Boolean = { false },
     onCampaignTutorialCompleted: () -> Unit = {},
     onRecordCompanyLoss: () -> Unit = {},
@@ -224,6 +225,7 @@ fun CompanyRootScreen(
                 onHistory = { showHistory = true },
                 onClaimChapterReward = onClaimChapterReward,
                 retentionRewardStatus = retentionRewardStatus,
+                onRefreshRetentionRewards = onRefreshRetentionRewards,
                 onClaimRetentionReward = onClaimRetentionReward,
                 onBuyEnergy = onBuyEnergy,
                 onPlay = { levelNumber ->
