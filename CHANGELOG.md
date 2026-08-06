@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Campaign now offers atomic, persisted daily and weekly bonus claims. Reward
+  payloads and local calendar periods are centralized in a configurable policy,
+  and duplicate claims cannot mutate inventory.
+
 - The first campaign match now starts with a persisted three-step tutorial for
   the game goal, turn feedback, hints and boosts. The match timer does not start
   until the player explicitly finishes the tutorial.

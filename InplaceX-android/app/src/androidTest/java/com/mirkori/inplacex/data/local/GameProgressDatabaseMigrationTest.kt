@@ -12,8 +12,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GameProgressDatabaseMigrationTest {
     @Test
-    fun freshDatabaseCreatesCompleteV9Schema() {
-        withIsolatedDatabase("fresh_v9", ::fixedNowMs) { context, config ->
+    fun freshDatabaseCreatesCompleteV10Schema() {
+        withIsolatedDatabase("fresh_v10", ::fixedNowMs) { context, config ->
             GameProgressDatabase(context, config).use { helper ->
                 val db = helper.writableDatabase
 
@@ -61,6 +61,11 @@ class GameProgressDatabaseMigrationTest {
     @Test
     fun migrationFromV8ToV9PreservesSentinelData() {
         assertMigrationFrom(8)
+    }
+
+    @Test
+    fun migrationFromV9ToV10PreservesSentinelData() {
+        assertMigrationFrom(9)
     }
 
     private fun assertMigrationFrom(oldVersion: Int) {
@@ -170,6 +175,9 @@ class GameProgressDatabaseMigrationTest {
         }
         if (version >= 7) {
             columns += "${GameProgressDatabase.COL_TEMPORARY_PRO_EXPIRES_AT_MS} INTEGER NOT NULL DEFAULT 0"
+        }
+        if (version >= 9) {
+            columns += "${GameProgressDatabase.COL_CAMPAIGN_TUTORIAL_COMPLETED} INTEGER NOT NULL DEFAULT 0"
         }
 
         return """
@@ -328,6 +336,7 @@ class GameProgressDatabaseMigrationTest {
                     GameProgressDatabase.TABLE_PROGRESS,
                     GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS,
                     GameProgressDatabase.TABLE_CAMPAIGN_CHAPTER_REWARDS,
+                    GameProgressDatabase.TABLE_RETENTION_REWARD_CLAIMS,
                     GameProgressDatabase.TABLE_PLAYER_PROFILE,
                     GameProgressDatabase.TABLE_IDENTITY_LINKS,
                     GameProgressDatabase.TABLE_SOCIAL_RELATIONSHIPS,
@@ -352,7 +361,7 @@ class GameProgressDatabaseMigrationTest {
     private fun fixedNowMs(): Long = FIXED_NOW_MS
 
     companion object {
-        private const val CURRENT_DATABASE_VERSION = 9
+        private const val CURRENT_DATABASE_VERSION = 10
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val SENTINEL_ENERGY_UPDATED_AT = FIXED_NOW_MS - 60_000L
 

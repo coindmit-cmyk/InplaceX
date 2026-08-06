@@ -58,6 +58,7 @@ internal open class GameProgressDatabase(
         )
 
         createCampaignChapterRewardsTable(db)
+        createRetentionRewardClaimsTable(db)
 
         createPlatformTables(db)
     }
@@ -129,6 +130,10 @@ internal open class GameProgressDatabase(
                 "ALTER TABLE $TABLE_PROGRESS ADD COLUMN $COL_CAMPAIGN_TUTORIAL_COMPLETED INTEGER NOT NULL DEFAULT 0"
             )
         }
+
+        if (oldVersion < 10) {
+            createRetentionRewardClaimsTable(db)
+        }
     }
 
     private fun createCampaignChapterRewardsTable(db: SQLiteDatabase) {
@@ -136,6 +141,19 @@ internal open class GameProgressDatabase(
             """
             CREATE TABLE IF NOT EXISTS $TABLE_CAMPAIGN_CHAPTER_REWARDS (
                 $COL_CAMPAIGN_CHAPTER_NUMBER INTEGER PRIMARY KEY
+            )
+            """.trimIndent()
+        )
+    }
+
+    private fun createRetentionRewardClaimsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_RETENTION_REWARD_CLAIMS (
+                $COL_RETENTION_REWARD_TYPE TEXT NOT NULL,
+                $COL_RETENTION_PERIOD_KEY TEXT NOT NULL,
+                $COL_RETENTION_CLAIMED_AT_MS INTEGER NOT NULL,
+                PRIMARY KEY ($COL_RETENTION_REWARD_TYPE, $COL_RETENTION_PERIOD_KEY)
             )
             """.trimIndent()
         )
@@ -325,11 +343,12 @@ internal open class GameProgressDatabase(
     }
 
     companion object {
-        private const val DB_VERSION = 9
+        private const val DB_VERSION = 10
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
         const val TABLE_CAMPAIGN_CHAPTER_REWARDS = "campaign_chapter_rewards"
+        const val TABLE_RETENTION_REWARD_CLAIMS = "retention_reward_claims"
         const val TABLE_PLAYER_PROFILE = "player_profile"
         const val TABLE_IDENTITY_LINKS = "identity_links"
         const val TABLE_SOCIAL_RELATIONSHIPS = "social_relationships"
@@ -368,6 +387,9 @@ internal open class GameProgressDatabase(
         const val COL_CAMPAIGN_LEVEL_NUMBER = "level_number"
         const val COL_CAMPAIGN_BEST_BACKEND_RATING = "best_backend_rating"
         const val COL_CAMPAIGN_CHAPTER_NUMBER = "chapter_number"
+        const val COL_RETENTION_REWARD_TYPE = "reward_type"
+        const val COL_RETENTION_PERIOD_KEY = "period_key"
+        const val COL_RETENTION_CLAIMED_AT_MS = "claimed_at_ms"
         const val PROFILE_ID = 1
     }
 }

@@ -30,6 +30,7 @@ import com.mirkori.inplacex.data.local.PlatformLocalRepository
 import com.mirkori.inplacex.data.local.LocalRelationshipStatus
 import com.mirkori.inplacex.data.local.LocalRelationshipType
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -131,6 +132,9 @@ class MainActivity : ComponentActivity() {
                 var claimedCampaignChapters by remember {
                     mutableStateOf(progressRepository.loadClaimedCampaignChapters())
                 }
+                var retentionRewardStatus by remember {
+                    mutableStateOf(progressRepository.loadRetentionRewardStatus())
+                }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val profileAuthOperation = remember { TransientOperationGate() }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
@@ -156,6 +160,11 @@ class MainActivity : ComponentActivity() {
                     val campaignUpperBound = maxOf(40, progressState.highestUnlockedCampaignLevel + 20)
                     campaignProgress = withContext(Dispatchers.IO) {
                         progressRepository.loadCampaignProgressRange(1, campaignUpperBound)
+                    }
+                }
+                LaunchedEffect(currentSection) {
+                    if (currentSection == AppSection.COMPANY) {
+                        retentionRewardStatus = progressRepository.loadRetentionRewardStatus()
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
@@ -426,6 +435,21 @@ class MainActivity : ComponentActivity() {
                                         claimedCampaignChapters = claimedCampaignChapters + chapterNumber
                                         true
                                     } else {
+                                        false
+                                    }
+                                },
+                                retentionRewardStatus = retentionRewardStatus,
+                                onRefreshRetentionRewards = {
+                                    retentionRewardStatus = progressRepository.loadRetentionRewardStatus()
+                                },
+                                onClaimRetentionReward = { type: RetentionRewardType ->
+                                    val claimedState = progressRepository.claimRetentionReward(type)
+                                    if (claimedState != null) {
+                                        progressState = claimedState
+                                        retentionRewardStatus = progressRepository.loadRetentionRewardStatus()
+                                        true
+                                    } else {
+                                        retentionRewardStatus = progressRepository.loadRetentionRewardStatus()
                                         false
                                     }
                                 },

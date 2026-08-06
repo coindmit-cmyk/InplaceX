@@ -29,7 +29,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.campaign.CampaignChapterRewardPolicy
 import com.mirkori.inplacex.core.campaign.CampaignProgressionRules
+import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.data.local.GameProgressState
+import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 
 @Composable
@@ -44,6 +46,9 @@ internal fun CompanySceneScreen(
     unlockedBlock: Int,
     onHistory: () -> Unit,
     onClaimChapterReward: (Int) -> Boolean,
+    retentionRewardStatus: RetentionRewardStatus,
+    onRefreshRetentionRewards: () -> Unit,
+    onClaimRetentionReward: (RetentionRewardType) -> Boolean,
     onBuyEnergy: () -> Unit,
     onPlay: (Int) -> Unit,
 ) {
@@ -52,6 +57,7 @@ internal fun CompanySceneScreen(
     var selectedChapterState by rememberSaveable { mutableIntStateOf(focusChapter) }
     var selectedLevel by rememberSaveable { mutableIntStateOf(focusLevel) }
     var showRules by rememberSaveable { mutableStateOf(false) }
+    var showRetentionRewards by rememberSaveable { mutableStateOf(false) }
     var rewardDialogState by rememberSaveable {
         mutableStateOf<ChapterRewardDialogState?>(null)
     }
@@ -153,6 +159,11 @@ internal fun CompanySceneScreen(
                     compact = compact,
                     chapterRewardLabel = chapterRewardLabel.takeIf { landscape },
                     onChapterReward = openChapterReward.takeIf { landscape },
+                    retentionRewardAvailable = retentionRewardStatus.anyAvailable,
+                    onRetentionRewards = {
+                        onRefreshRetentionRewards()
+                        showRetentionRewards = true
+                    },
                     onHistory = onHistory,
                     onBuyEnergy = onBuyEnergy,
                 )
@@ -268,6 +279,57 @@ internal fun CompanySceneScreen(
             strings = strings,
             level = selectedItem.definition,
             onDismiss = { showRules = false },
+        )
+    }
+
+    if (showRetentionRewards) {
+        AlertDialog(
+            onDismissRequest = { showRetentionRewards = false },
+            modifier = Modifier.testTag("company-retention-rewards-dialog"),
+            title = { Text(strings.text("company.retention.title")) },
+            text = {
+                Column {
+                    Text(strings.text("company.retention.daily.reward"))
+                    TextButton(
+                        modifier = Modifier.testTag("company-retention-daily-claim"),
+                        enabled = retentionRewardStatus.dailyAvailable,
+                        onClick = { onClaimRetentionReward(RetentionRewardType.DAILY) },
+                    ) {
+                        Text(
+                            strings.text(
+                                if (retentionRewardStatus.dailyAvailable) {
+                                    "company.retention.claim"
+                                } else {
+                                    "company.retention.claimed"
+                                },
+                            ),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(strings.text("company.retention.weekly.reward"))
+                    TextButton(
+                        modifier = Modifier.testTag("company-retention-weekly-claim"),
+                        enabled = retentionRewardStatus.weeklyAvailable,
+                        onClick = { onClaimRetentionReward(RetentionRewardType.WEEKLY) },
+                    ) {
+                        Text(
+                            strings.text(
+                                if (retentionRewardStatus.weeklyAvailable) {
+                                    "company.retention.claim"
+                                } else {
+                                    "company.retention.claimed"
+                                },
+                            ),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showRetentionRewards = false }) {
+                    Text(strings.text("company.action.close"))
+                }
+            },
         )
     }
 

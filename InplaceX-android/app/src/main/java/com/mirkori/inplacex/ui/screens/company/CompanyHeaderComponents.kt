@@ -53,6 +53,8 @@ internal fun CompanyScreenHeader(
     compact: Boolean,
     chapterRewardLabel: String? = null,
     onChapterReward: (() -> Unit)? = null,
+    retentionRewardAvailable: Boolean,
+    onRetentionRewards: () -> Unit,
     onHistory: () -> Unit,
     onBuyEnergy: () -> Unit,
 ) {
@@ -82,6 +84,22 @@ internal fun CompanyScreenHeader(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
                 )
             }
+            HeaderIconButton(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.CardGiftcard,
+                        contentDescription = strings.text("company.retention.title"),
+                        tint = if (retentionRewardAvailable) {
+                            InplaceXColors.ToyOrangeTop
+                        } else {
+                            Color.White
+                        },
+                        modifier = Modifier.size(22.dp),
+                    )
+                },
+                onClick = onRetentionRewards,
+                testTag = "company-retention-rewards",
+            )
             HeaderIconButton(
                 icon = {
                     Icon(
@@ -148,6 +166,24 @@ internal fun CompanyScreenHeader(
                         fontWeight = FontWeight.Black,
                     )
                 }
+            }
+            Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                HeaderIconButton(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.CardGiftcard,
+                            contentDescription = strings.text("company.retention.title"),
+                            tint = if (retentionRewardAvailable) {
+                                InplaceXColors.ToyOrangeTop
+                            } else {
+                                Color.White
+                            },
+                            modifier = Modifier.size(22.dp),
+                        )
+                    },
+                    onClick = onRetentionRewards,
+                    testTag = "company-retention-rewards",
+                )
             }
             Box(modifier = Modifier.align(Alignment.CenterEnd)) {
                 HeaderIconButton(
