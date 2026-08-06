@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- InplaceX now bootstraps a global Mirkori Games guest profile, stores its
+  installation/session and pending PKCE state under Android Keystore-backed
+  encryption, opens account login in the system browser, validates the exact
+  HTTPS App Link callback, and shows linked/conflict/offline status in Profile.
+  The existing Google Play online identity remains a separate compatibility
+  path.
+
 - Campaign now offers atomic, persisted daily and weekly bonus claims. Reward
   payloads and local calendar periods are centralized in a configurable policy,
   and duplicate claims cannot mutate inventory.

@@ -19,6 +19,7 @@ val verificationTasks = listOf(
     ":InplaceX-bot-core:test",
     ":InplaceX-identity:test",
     ":InplaceX-logging:test",
+    ":Mirkori-platform-game-sdk:test",
     ":InplaceX-test-support:test",
     ":app:testDebugUnitTest",
 )
@@ -50,6 +51,7 @@ tasks.register<Delete>("clean") {
     dependsOn(":InplaceX-auth-core:clean")
     dependsOn(":InplaceX-bot-core:clean")
     dependsOn(":InplaceX-logging:clean")
+    dependsOn(":Mirkori-platform-game-sdk:clean")
     dependsOn(":InplaceX-test-support:clean")
     dependsOn(":app:clean")
 }

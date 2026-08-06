@@ -1,5 +1,7 @@
 package com.mirkori.inplacex
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -36,6 +38,10 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.GuestAuthResult
@@ -73,9 +79,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        captureMirkoriCallback(intent)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         applyImmersiveMode()
 
@@ -137,6 +145,11 @@ class MainActivity : ComponentActivity() {
                 }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val profileAuthOperation = remember { TransientOperationGate() }
+                var mirkoriAccountState by remember {
+                    mutableStateOf(MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING))
+                }
+                var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
+                val mirkoriAuthOperation = remember { TransientOperationGate() }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
                 val savedFriends = remember(platformLocalRepository) {
                     platformLocalRepository
@@ -181,6 +194,71 @@ class MainActivity : ComponentActivity() {
                 }
                 DisposableEffect(onlineRuntime) {
                     onDispose { onlineRuntime?.close() }
+                }
+                val mirkoriPlatformRuntime = remember {
+                    runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
+                        .onFailure { error ->
+                            AppLog.warn(
+                                tag = "MainActivity",
+                                message = "Mirkori Games runtime is unavailable",
+                                attributes = mapOf("errorClass" to error.javaClass.name),
+                            )
+                        }
+                        .getOrNull()
+                }
+                DisposableEffect(mirkoriPlatformRuntime) {
+                    onDispose { mirkoriPlatformRuntime?.close() }
+                }
+                LaunchedEffect(mirkoriPlatformRuntime, mirkoriCallbackUrl) {
+                    if (mirkoriCallbackUrl == null) {
+                        mirkoriAccountState = if (mirkoriPlatformRuntime == null) {
+                            MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
+                        } else {
+                            withContext(Dispatchers.IO) { mirkoriPlatformRuntime.restoreOrBootstrap() }
+                        }
+                    }
+                }
+                LaunchedEffect(mirkoriCallbackUrl, mirkoriPlatformRuntime) {
+                    val callback = mirkoriCallbackUrl ?: return@LaunchedEffect
+                    currentSection = AppSection.PROFILE
+                    val operationId = mirkoriAuthOperation.start()
+                    if (operationId == null || mirkoriPlatformRuntime == null) {
+                        mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                        operationId?.let(mirkoriAuthOperation::finish)
+                        consumeMirkoriCallback()
+                        return@LaunchedEffect
+                    }
+                    try {
+                        when (val result = withContext(Dispatchers.IO) {
+                            mirkoriPlatformRuntime.completeLogin(callback)
+                        }) {
+                            is MirkoriLoginResult.Connected -> {
+                                mirkoriAccountState = result.accountState
+                                mirkoriAuthResultKey = "profile.mirkori.connected.success"
+                            }
+                            MirkoriLoginResult.ProfileConflict ->
+                                mirkoriAuthResultKey = "profile.mirkori.conflict"
+                            MirkoriLoginResult.Rejected ->
+                                mirkoriAuthResultKey = "profile.mirkori.rejected"
+                            MirkoriLoginResult.Unavailable ->
+                                mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                            MirkoriLoginResult.AlreadyConnected ->
+                                mirkoriAuthResultKey = "profile.mirkori.connected.success"
+                            is MirkoriLoginResult.BrowserReady ->
+                                mirkoriAuthResultKey = "profile.mirkori.rejected"
+                        }
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        AppLog.warn(
+                            tag = "MainActivity",
+                            message = "Mirkori Games callback operation failed",
+                            attributes = mapOf("errorClass" to error.javaClass.name),
+                        )
+                        mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                    } finally {
+                        mirkoriAuthOperation.finish(operationId)
+                        consumeMirkoriCallback()
+                    }
                 }
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
@@ -558,8 +636,59 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
                                 progressState = progressState,
                                 nowMs = currentTimeMs,
+                                mirkoriAccountState = mirkoriAccountState,
+                                mirkoriAuthResultKey = mirkoriAuthResultKey,
+                                mirkoriAuthInProgress = mirkoriAuthOperation.inProgress,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
+                                onMirkoriSignIn = {
+                                    mirkoriAuthOperation.start()?.let { operationId ->
+                                        mirkoriAuthResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val result = if (mirkoriPlatformRuntime == null) {
+                                                    MirkoriLoginResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        mirkoriPlatformRuntime.beginLogin()
+                                                    }
+                                                }
+                                                when (result) {
+                                                    is MirkoriLoginResult.BrowserReady -> {
+                                                        startActivity(
+                                                            Intent(Intent.ACTION_VIEW, Uri.parse(result.connectUrl)),
+                                                        )
+                                                        mirkoriAuthResultKey = "profile.mirkori.browser_opened"
+                                                    }
+                                                    is MirkoriLoginResult.Connected -> {
+                                                        mirkoriAccountState = result.accountState
+                                                        mirkoriAuthResultKey = "profile.mirkori.connected.success"
+                                                    }
+                                                    MirkoriLoginResult.AlreadyConnected ->
+                                                        mirkoriAuthResultKey = "profile.mirkori.connected.success"
+                                                    MirkoriLoginResult.ProfileConflict ->
+                                                        mirkoriAuthResultKey = "profile.mirkori.conflict"
+                                                    MirkoriLoginResult.Rejected ->
+                                                        mirkoriAuthResultKey = "profile.mirkori.rejected"
+                                                    MirkoriLoginResult.Unavailable ->
+                                                        mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Mirkori Games sign-in operation failed",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                                mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                            } finally {
+                                                mirkoriAccountState = mirkoriPlatformRuntime?.currentAccountState()
+                                                    ?: MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
+                                                mirkoriAuthOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
                                 onGooglePlaySignIn = {
                                     profileAuthOperation.start()?.let { operationId ->
                                         profileAuthResultKey = null
@@ -687,6 +816,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        captureMirkoriCallback(intent)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -702,6 +838,22 @@ class MainActivity : ComponentActivity() {
             systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+    }
+
+    private fun captureMirkoriCallback(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (
+            data.scheme.equals("https", ignoreCase = true) &&
+            data.host.equals("games.dmit.life", ignoreCase = true) &&
+            data.path == "/connect/inplacex/callback"
+        ) {
+            mirkoriCallbackUrl = data.toString()
+        }
+    }
+
+    private fun consumeMirkoriCallback() {
+        mirkoriCallbackUrl = null
+        setIntent(Intent(intent).setData(null))
     }
 }
 

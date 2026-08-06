@@ -6,6 +6,8 @@
 - debug reads `provider.debug.*` keys and supplies Google test ad ids plus sandbox product defaults when those keys are absent
 - release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
 - `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields
+- the Mirkori Games platform origin uses `platform.debug.baseUrl` or
+  `platform.release.baseUrl`; both default to `https://games.dmit.life`
 - the ads app id also flows into `AndroidManifest.xml` via variant-specific `manifestPlaceholders`
 - shared `defaultConfig` contains no sandbox provider mode, test ad id, or mock billing product default
 
@@ -22,6 +24,8 @@
 - `BILLING_REMOVE_ADS_PRODUCT_ID`
 - `BILLING_PRO_SUBSCRIPTION_ID`
 - `BILLING_PRO_PLUS_SUBSCRIPTION_ID`
+- `MIRKORI_PLATFORM_BASE_URL`
+- `MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK`
 
 ## Canonical Runtime Model
 
@@ -55,3 +59,8 @@
 Absent provider configuration, Credential Manager cancellation, server
 rejection, or network failure leaves the player in guest mode. Debug provider
 stubs remain isolated tooling and are not used by the real Profile sign-in flow.
+
+Mirkori Games login is independent from the legacy Google Play/online identity
+adapter. Release requires an HTTPS platform origin. Debug may explicitly use
+cleartext only for a loopback host and still uses the registered HTTPS App Link
+callback.

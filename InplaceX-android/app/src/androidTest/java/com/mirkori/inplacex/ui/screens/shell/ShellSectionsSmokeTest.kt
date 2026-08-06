@@ -34,6 +34,8 @@ import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
@@ -251,6 +253,25 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText(
             "Вход сейчас недоступен. Вы остаётесь в гостевом режиме, прогресс не потерян.",
         ).assertIsDisplayed()
+    }
+
+    @Test
+    fun profileMakesMirkoriGamesThePrimaryAccountEntry() {
+        var signInRequested = false
+        setContent {
+            ProfileRootScreen(
+                progressState = progress(),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.GUEST,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000802",
+                ),
+                onMirkoriSignIn = { signInRequested = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Гостевой профиль Mirkori Games").assertIsDisplayed()
+        composeRule.onNodeWithText("Войти в Mirkori Games").performScrollTo().performClick()
+        composeRule.runOnIdle { assertTrue(signInRequested) }
     }
 
     @Test

@@ -50,6 +50,8 @@ android {
         getByName("debug") {
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
+            buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")
+            buildConfigField("boolean", "MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
@@ -70,6 +72,8 @@ android {
             isMinifyEnabled = false
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.release.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "false")
+            buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.release.baseUrl", "https://games.dmit.life")}\"")
+            buildConfigField("boolean", "MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK", "false")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"live\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
@@ -112,6 +116,7 @@ androidComponents {
 }
 
 dependencies {
+    implementation(project(":Mirkori-platform-game-sdk"))
     implementation(project(":InplaceX-ads-core"))
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))
