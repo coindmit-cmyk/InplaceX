@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The home duel card now opens an explicit bot/real-player choice: bot play
+  starts the local secret setup, while real-player play opens online quick
+  match. The default PvE race is speed-based with unlimited moves, and local
+  bot duels no longer apply a turn timer.
+
 - Campaign now offers atomic, persisted daily and weekly bonus claims. Reward
   payloads and local calendar periods are centralized in a configurable policy,
   and duplicate claims cannot mutate inventory.

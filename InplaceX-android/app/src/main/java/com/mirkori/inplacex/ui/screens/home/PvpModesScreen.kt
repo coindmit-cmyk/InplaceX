@@ -16,7 +16,9 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 @Composable
 fun PvpModesScreen(
-    onBack: () -> Unit
+    onPlayWithBot: () -> Unit,
+    onPlayOnline: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
     BoxWithConstraints(
@@ -41,17 +43,17 @@ fun PvpModesScreen(
             )
 
             FilledTonalButton(
-                onClick = { },
+                onClick = onPlayWithBot,
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text(strings.text("home.pvp.friend"))
+                Text(strings.text("home.pvp.bot"))
             }
 
             FilledTonalButton(
-                onClick = { },
+                onClick = onPlayOnline,
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text(strings.text("home.pvp.online"))
+                Text(strings.text("home.pvp.player"))
             }
 
             OutlinedButton(

@@ -16,7 +16,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 internal fun RaceResultDialog(
     won: Boolean,
     attemptsUsed: Int,
-    attemptLimit: Int,
+    attemptLimit: Int?,
     elapsedSeconds: Int,
     onRetry: () -> Unit,
     onHome: () -> Unit,
@@ -48,10 +48,7 @@ internal fun RaceResultDialog(
                     },
                 )
                 Text(
-                    text = strings.homeRaceAttempts(
-                        used = attemptsUsed,
-                        limit = attemptLimit,
-                    ),
+                    text = strings.homeRaceAttempts(attemptsUsed, attemptLimit),
                     fontWeight = FontWeight.Bold,
                 )
                 Text(

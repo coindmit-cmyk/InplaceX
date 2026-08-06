@@ -27,8 +27,12 @@ internal fun LocalizationProvider.homeBotReady(seconds: Int): String =
 internal fun LocalizationProvider.homeEnterDigits(codeLength: Int): String =
     formatHomeText("home.dialog.setup.enter_digits", codeLength)
 
-internal fun LocalizationProvider.homeRaceAttempts(used: Int, limit: Int): String =
-    formatHomeText("home.race.result.attempts", used, limit)
+internal fun LocalizationProvider.homeRaceAttempts(used: Int, limit: Int?): String =
+    if (limit == null) {
+        formatHomeText("home.race.result.attempts_unlimited", used)
+    } else {
+        formatHomeText("home.race.result.attempts", used, limit)
+    }
 
 internal fun LocalizationProvider.homeRaceTime(elapsedSeconds: Int): String =
     formatHomeText("home.race.result.time", formatRaceElapsed(elapsedSeconds))
