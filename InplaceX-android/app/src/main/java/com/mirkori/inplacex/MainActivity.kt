@@ -327,6 +327,7 @@ class MainActivity : ComponentActivity() {
                                         requestOnlineDuel = true
                                         currentSection = AppSection.SOCIAL
                                     },
+                                    onlineAvailable = onlineRuntime != null,
                                 )
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(

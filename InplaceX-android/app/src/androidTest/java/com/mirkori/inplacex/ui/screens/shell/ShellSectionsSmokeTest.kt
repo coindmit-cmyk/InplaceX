@@ -386,7 +386,7 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun duelModeChoiceRoutesARealPlayerToOnline() {
+    fun duelModeChoiceRoutesOnlineMatchToSocialRuntime() {
         var openedOnline = false
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
@@ -394,13 +394,29 @@ class ShellSectionsSmokeTest {
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
                 onOpenOnlineDuel = { openedOnline = true },
+                onlineAvailable = true,
             )
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("С реальным игроком").performClick()
+        composeRule.onNodeWithText("Онлайн-матч").performClick()
 
         composeRule.runOnIdle { assertTrue(openedOnline) }
+    }
+
+    @Test
+    fun duelModeChoiceDisablesOnlineWithoutConfiguredRuntime() {
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+                onlineAvailable = false,
+            )
+        }
+
+        composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("Онлайн-матч").assertIsNotEnabled()
     }
 
     @Test

@@ -18,6 +18,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 fun PvpModesScreen(
     onPlayWithBot: () -> Unit,
     onPlayOnline: () -> Unit,
+    onlineAvailable: Boolean,
     onBack: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
@@ -51,9 +52,10 @@ fun PvpModesScreen(
 
             FilledTonalButton(
                 onClick = onPlayOnline,
+                enabled = onlineAvailable,
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text(strings.text("home.pvp.player"))
+                Text(strings.text("home.pvp.online"))
             }
 
             OutlinedButton(

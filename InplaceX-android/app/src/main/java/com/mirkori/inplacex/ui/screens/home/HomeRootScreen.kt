@@ -89,6 +89,7 @@ fun HomeRootScreen(
     onRecordPvpResult: (Boolean) -> Unit = {},
     onOpenCompany: () -> Unit = {},
     onOpenOnlineDuel: () -> Unit = {},
+    onlineAvailable: Boolean = false,
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
@@ -244,6 +245,7 @@ fun HomeRootScreen(
                     showPreMatchDialog = true
                 },
                 onPlayOnline = onOpenOnlineDuel,
+                onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
             )
         }
