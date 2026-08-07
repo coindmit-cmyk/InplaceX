@@ -70,6 +70,20 @@
     "expected": "step.release.assemble.exact-run"
   },
   {
+    "name": "backend_production_non_blocking",
+    "target": "workflow",
+    "anchor": "  backend-production-runtime:\n    name: Production backend deploy and rollback",
+    "replacement": "  backend-production-runtime:\n    continue-on-error: true\n    name: Production backend deploy and rollback",
+    "expected": "job.backend-production-runtime.continue-on-error"
+  },
+  {
+    "name": "backend_production_runtime_echo",
+    "target": "workflow",
+    "anchor": "            bash scripts/ci/test_backend_production_runtime.sh",
+    "replacement": "            echo bash scripts/ci/test_backend_production_runtime.sh",
+    "expected": "step.backend-production.runtime.exact-block"
+  },
+  {
     "name": "artifact_script_noop",
     "target": "artifact_script",
     "anchor": "set -euo pipefail",

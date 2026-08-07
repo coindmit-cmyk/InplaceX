@@ -1,6 +1,24 @@
 # InplaceX Online Contracts v1
 
-Status: normative design contract for the first online implementation.
+Status: normative design contract with an explicitly identified release subset.
+
+## Current release subset
+
+The production Ktor composition currently routes only:
+
+- matchmaking ticket create/read;
+- friend invite create/read/accept;
+- session read/reconnect/secret/turn commands and the one-time authenticated
+  legacy-membership transfer to the stable Platform `pid`;
+- `/api/v1/ws/sessions/{sessionId}` with `inplacex.online.v1`;
+- ad-market, health, readiness and release metadata.
+
+Cloud-save HTTP routes, matchmaking cancellation, profile, rankings, seasons,
+entitlements, purchase validation and rewarded-grant mutation are future
+contracts. Existing schemas, migrations, repositories or compatibility source
+for those areas are not evidence that a public route is deployed. The retired
+standalone identity routes are likewise not composed in production; identity
+belongs to Mirkori Games Platform.
 
 This document defines the transport-neutral boundary shared by REST commands,
 WebSocket commands/events, and future client adapters. The JSON Schema catalog
@@ -247,21 +265,21 @@ or internal stack traces.
 The following routes are the v1 binding of the transport-neutral operations.
 Every authenticated route checks that the player owns the referenced resource.
 
-| Operation | Route | Contract |
-| --- | --- | --- |
-| Read cloud save | `GET /api/v1/me/save` | `CloudSaveSnapshot` |
-| Write cloud save | `PUT /api/v1/me/save` | `CloudSavePutCommand` → `CloudSaveSnapshot` |
-| Create matchmaking ticket | `POST /api/v1/matchmaking/tickets` | `MatchmakingCreateCommand` → `MatchmakingTicket` |
-| Read ticket | `GET /api/v1/matchmaking/tickets/{ticketId}` | `MatchmakingTicket` |
-| Cancel ticket | `DELETE /api/v1/matchmaking/tickets/{ticketId}` | idempotent empty response or `MatchmakingTicket` |
-| Create friend invite | `POST /api/v1/friends/invites` | `FriendInviteCreateCommand` → `FriendInvite` |
-| Read owned friend invite | `GET /api/v1/friends/invites/{inviteCode}` | `FriendInvite` |
-| Accept friend invite | `POST /api/v1/friends/invites/{inviteCode}/accept` | `FriendInviteAcceptCommand` → `FriendInvite` |
-| Read duel snapshot | `GET /api/v1/sessions/{sessionId}` | `SessionSnapshotResponse` |
-| Migrate legacy active-session membership | `POST /api/v1/sessions/{sessionId}/legacy-membership` | `{commandId, legacyRefreshToken}` → `{sessionId, status: "migrated"}` |
-| Reconnect snapshot | `POST /api/v1/sessions/{sessionId}/reconnect` | `ReconnectRequest` → `ReconnectResponse` |
-| Submit secret | `POST /api/v1/sessions/{sessionId}/setup/secret` | `DuelSubmitSecretCommand` → `DuelSecretReceipt` |
-| Submit guess | `POST /api/v1/sessions/{sessionId}/turns` | `DuelSubmitGuessCommand` → `DuelTurnResult` |
+| Operation | Route | Contract | Release status |
+| --- | --- | --- | --- |
+| Read cloud save | `GET /api/v1/me/save` | `CloudSaveSnapshot` | Future; not routed |
+| Write cloud save | `PUT /api/v1/me/save` | `CloudSavePutCommand` → `CloudSaveSnapshot` | Future; not routed |
+| Create matchmaking ticket | `POST /api/v1/matchmaking/tickets` | `MatchmakingCreateCommand` → `MatchmakingTicket` | Implemented |
+| Read ticket | `GET /api/v1/matchmaking/tickets/{ticketId}` | `MatchmakingTicket` | Implemented |
+| Cancel ticket | `DELETE /api/v1/matchmaking/tickets/{ticketId}` | idempotent empty response or `MatchmakingTicket` | Future; not routed |
+| Create friend invite | `POST /api/v1/friends/invites` | `FriendInviteCreateCommand` → `FriendInvite` | Implemented |
+| Read owned friend invite | `GET /api/v1/friends/invites/{inviteCode}` | `FriendInvite` | Implemented |
+| Accept friend invite | `POST /api/v1/friends/invites/{inviteCode}/accept` | `FriendInviteAcceptCommand` → `FriendInvite` | Implemented |
+| Read duel snapshot | `GET /api/v1/sessions/{sessionId}` | `SessionSnapshotResponse` | Implemented |
+| Migrate legacy active-session membership | `POST /api/v1/sessions/{sessionId}/legacy-membership` | `{commandId, legacyRefreshToken}` → `{sessionId, status: "migrated"}` | Implemented compatibility bridge |
+| Reconnect snapshot | `POST /api/v1/sessions/{sessionId}/reconnect` | `ReconnectRequest` → `ReconnectResponse` | Implemented |
+| Submit secret | `POST /api/v1/sessions/{sessionId}/setup/secret` | `DuelSubmitSecretCommand` → `DuelSecretReceipt` | Implemented |
+| Submit guess | `POST /api/v1/sessions/{sessionId}/turns` | `DuelSubmitGuessCommand` → `DuelTurnResult` | Implemented |
 
 Path identifiers and body identifiers must match. A route must not use a body
 `sessionId` to bypass authorization for a different path resource.
@@ -554,9 +572,13 @@ Application close reasons are stable codes, not user-visible prose:
   origin and must not downgrade a WebSocket connection.
 - JWT verification checks signature, issuer, audience, expiry, token id, and
   player status on every authenticated boundary.
-- Refresh, bootstrap, matchmaking, save writes, secret submission, and turns
-  have server-side rate limits. A `429` response includes a bounded retry hint;
-  clients must not spin on it.
+- The current online release applies process-local limits by verified principal
+  and operation to every routed online REST operation, a separate invalid-auth
+  budget by nginx-overwritten client identity, and per-principal/global
+  WebSocket caps. A rejected REST request returns `429` with `Retry-After`;
+  rejected sockets close with `1013`. Nginx adds a coarse IP limiter. Future
+  refresh, bootstrap, cloud-save and billing routes must add their own limits
+  when they become part of the production composition.
 - Client scoring, winner, timers, entitlement flags, ad completion, and
   integrity claims are never trusted without server verification.
 - Secrets use a cryptographic hash for comparison and authenticated encryption

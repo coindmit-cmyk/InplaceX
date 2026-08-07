@@ -4,8 +4,10 @@ import com.mirkori.inplacex.backend.ads.AdMarketSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.security.KeyPairGenerator
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.util.Base64
@@ -53,6 +55,75 @@ class BackendRuntimeConfigTest {
         assertEquals("jdbc:postgresql://db/inplacex", database.jdbcUrl)
         assertEquals("inplacex", database.username)
         assertFalse(database.toString().contains("test-password"))
+    }
+
+    @Test
+    fun `database password can be loaded only from a regular external file`() {
+        val passwordFile = Files.createTempFile("inplacex-db-password-", ".txt")
+        Files.writeString(passwordFile, "external-database-password\n")
+
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordPathEnvironmentKey to passwordFile.toString(),
+            ),
+        )
+
+        assertFalse(requireNotNull(config.database).toString().contains("external-database-password"))
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                mapOf(
+                    DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                    DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                    DatabaseRuntimeConfig.PasswordEnvironmentKey to "inline-password",
+                    DatabaseRuntimeConfig.PasswordPathEnvironmentKey to passwordFile.toString(),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `database URL rejects embedded credentials query and userinfo`() {
+        listOf(
+            "jdbc:postgresql://db/inplacex?password=leaked",
+            "jdbc:postgresql://user@db/inplacex",
+            "jdbc:postgresql://db/inplacex#fragment",
+        ).forEach { jdbcUrl ->
+            assertThrows(IllegalArgumentException::class.java) {
+                BackendRuntimeConfig.fromEnvironment(
+                    mapOf(
+                        DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to jdbcUrl,
+                        DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                        DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+                    ),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `legacy checksum baseline requires exact acknowledgement`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                mapOf(
+                    DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                    DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                    DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+                    DatabaseRuntimeConfig.LegacyChecksumBaselineAcknowledgementEnvironmentKey to "yes",
+                ),
+            )
+        }
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
+                DatabaseRuntimeConfig.LegacyChecksumBaselineAcknowledgementEnvironmentKey to
+                    DatabaseRuntimeConfig.LegacyChecksumBaselineAcknowledgement,
+            ),
+        )
+        assertEquals(true, requireNotNull(config.database).acknowledgeLegacyChecksumBaseline)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -218,5 +289,116 @@ class BackendRuntimeConfigTest {
                 "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1",
             ),
         )
+    }
+
+    @Test
+    fun `production fails closed until every runtime capability is configured`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                mapOf("INPLACEX_BACKEND_ENVIRONMENT" to BackendRuntimeConfig.ProductionEnvironment),
+            )
+        }
+    }
+
+    @Test
+    fun `production rejects inline database and online state secrets`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val passwordFile = Files.createTempFile("inplacex-prod-inline-check-", ".txt")
+        Files.writeString(passwordFile, "production-database-password\n")
+        val inlineStateKey = Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() })
+        val common = mapOf(
+            "INPLACEX_BACKEND_ENVIRONMENT" to BackendRuntimeConfig.ProductionEnvironment,
+            DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://postgres/inplacex",
+            DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+            OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+            OnlineRuntimeConfig.AudienceKey to "mirkori-games",
+            OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+            BackendReleaseIdentity.ReleaseIdEnvironmentKey to "inplacex-backend-20260807-1",
+            BackendReleaseIdentity.GitShaEnvironmentKey to "a".repeat(40),
+            BackendReleaseIdentity.ImageDigestEnvironmentKey to "sha256:${"b".repeat(64)}",
+            "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+            "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1",
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                common + mapOf(
+                    DatabaseRuntimeConfig.PasswordEnvironmentKey to "inline-database-password",
+                    OnlineRuntimeConfig.StateEncryptionKey to inlineStateKey,
+                ),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                common + mapOf(
+                    DatabaseRuntimeConfig.PasswordPathEnvironmentKey to passwordFile.toString(),
+                    OnlineRuntimeConfig.StateEncryptionKey to inlineStateKey,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `production rejects an inline platform verification key`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val passwordFile = Files.createTempFile("inplacex-prod-db-", ".txt")
+        val stateKeyFile = Files.createTempFile("inplacex-prod-state-", ".txt")
+        Files.writeString(passwordFile, "production-database-password\n")
+        Files.writeString(stateKeyFile, Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() }) + "\n")
+
+        assertThrows(IllegalArgumentException::class.java) {
+            BackendRuntimeConfig.fromEnvironment(
+                mapOf(
+                    "INPLACEX_BACKEND_ENVIRONMENT" to BackendRuntimeConfig.ProductionEnvironment,
+                    DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://postgres/inplacex",
+                    DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                    DatabaseRuntimeConfig.PasswordPathEnvironmentKey to passwordFile.toString(),
+                    OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                    OnlineRuntimeConfig.AudienceKey to "mirkori-games",
+                    OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
+                    OnlineRuntimeConfig.StateEncryptionKeyPath to stateKeyFile.toString(),
+                    BackendReleaseIdentity.ReleaseIdEnvironmentKey to "inplacex-backend-20260807-1",
+                    BackendReleaseIdentity.GitShaEnvironmentKey to "a".repeat(40),
+                    BackendReleaseIdentity.ImageDigestEnvironmentKey to "sha256:${"b".repeat(64)}",
+                    "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+                    "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1",
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `production accepts external database online keys and explicit ad market`() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val passwordFile = Files.createTempFile("inplacex-prod-db-", ".txt")
+        val publicKeyFile = Files.createTempFile("inplacex-prod-public-", ".txt")
+        val stateKeyFile = Files.createTempFile("inplacex-prod-state-", ".txt")
+        Files.writeString(passwordFile, "production-database-password\n")
+        Files.writeString(publicKeyFile, Base64.getEncoder().encodeToString(keys.public.encoded) + "\n")
+        Files.writeString(stateKeyFile, Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() }) + "\n")
+
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                "INPLACEX_BACKEND_ENVIRONMENT" to BackendRuntimeConfig.ProductionEnvironment,
+                DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://postgres/inplacex",
+                DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
+                DatabaseRuntimeConfig.PasswordPathEnvironmentKey to passwordFile.toString(),
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
+                OnlineRuntimeConfig.PublicKeyPathKey to publicKeyFile.toString(),
+                OnlineRuntimeConfig.StateEncryptionKeyPath to stateKeyFile.toString(),
+                BackendReleaseIdentity.ReleaseIdEnvironmentKey to "inplacex-backend-20260807-1",
+                BackendReleaseIdentity.GitShaEnvironmentKey to "a".repeat(40),
+                BackendReleaseIdentity.ImageDigestEnvironmentKey to "sha256:${"b".repeat(64)}",
+                "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+                "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1",
+            ),
+        )
+
+        assertEquals(true, config.isProduction)
+        assertNotNull(config.database)
+        assertNotNull(config.online)
+        assertNotNull(config.adMarket)
+        assertNotNull(config.releaseIdentity)
     }
 }

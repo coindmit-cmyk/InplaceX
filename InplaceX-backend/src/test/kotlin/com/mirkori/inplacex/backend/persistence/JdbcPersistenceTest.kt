@@ -4,6 +4,7 @@ import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.util.concurrent.Callable
@@ -62,7 +63,85 @@ class JdbcPersistenceTest {
                     resultSet.getInt(1)
                 }
             })
+            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
         }
+    }
+
+    @Test
+    fun migrationChecksumsAreBackfilledForACompatibleLegacyHistoryTable() {
+        val dataSource = newDataSource()
+        val runner = JdbcMigrationRunner()
+        runner.migrate(dataSource)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum") }
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            runner.migrate(dataSource)
+        }
+        val acknowledgedRunner = JdbcMigrationRunner(allowLegacyChecksumBackfill = true)
+        acknowledgedRunner.migrate(dataSource)
+        acknowledgedRunner.verify(dataSource)
+
+        dataSource.connection.use { connection ->
+            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+        }
+    }
+
+    @Test
+    fun migrationChecksumIsCanonicalAcrossLfAndCrLfCheckouts() {
+        val lf = SqlMigration("1", "canonical", "CREATE TABLE sample (id INT);\n")
+        val crlf = lf.copy(sql = lf.sql.replace("\n", "\r\n"))
+
+        assertEquals(lf.checksum, crlf.checksum)
+    }
+
+    @Test
+    fun legacyChecksumBackfillDoesNotPartiallyWriteBeforeHistoryValidationCompletes() {
+        val dataSource = newDataSource()
+        JdbcMigrationRunner().migrate(dataSource)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                statement.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")
+                statement.execute(
+                    "UPDATE inplacex_schema_history SET description = 'tampered' WHERE version = '9'",
+                )
+            }
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(dataSource)
+        }
+
+        dataSource.connection.use { connection ->
+            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE checksum IS NULL"))
+        }
+    }
+
+    @Test
+    fun changedOrUnknownAppliedMigrationFailsClosed() {
+        val dataSource = newDataSource()
+        JdbcMigrationRunner().migrate(dataSource)
+        val changed = DatabaseMigrations.all.toMutableList().also { migrations ->
+            migrations[0] = migrations[0].copy(sql = migrations[0].sql + "\nSELECT 1;")
+        }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            JdbcMigrationRunner(changed).migrate(dataSource)
+        }
+
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(
+                "INSERT INTO inplacex_schema_history(version, description, checksum) VALUES ('999', 'foreign', ?)",
+            ).use { statement ->
+                statement.setString(1, "f".repeat(64))
+                statement.executeUpdate()
+            }
+        }
+        val unknown = assertThrows(IllegalArgumentException::class.java) {
+            JdbcMigrationRunner().verify(dataSource)
+        }
+        assertTrue(unknown.message.orEmpty().contains("unknown"))
     }
 
     @Test

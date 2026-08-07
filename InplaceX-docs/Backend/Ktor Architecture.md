@@ -13,25 +13,44 @@ Build the server as an authoritative backend for:
 
 The current game docs already define the core product behavior. Backend should preserve those contracts and move authority for online state, purchases, and cross-device sync to the server.
 
-The normative v1 boundary for Platform-token authentication, cloud save,
-matchmaking, duel
+## Implemented production composition
+
+The release application currently composes Platform game-token verification,
+PostgreSQL player projection, matchmaking, private invites, authoritative duel
+sessions, encrypted restart recovery, the v1 session WebSocket, ad-market
+routing and health/release endpoints. It uses direct JDBC migrations and
+repositories with HikariCP.
+
+Profile APIs, cloud-save HTTP APIs, ticket cancellation, rankings/seasons and
+entitlement/billing/reward mutation are roadmap modules and are not routed.
+Some migrations, repositories, schemas and retired identity compatibility code
+exist for them, but those artifacts must not be described as shipped endpoints.
+The one-time legacy membership bridge is routed only to transfer an active
+legacy session to the stable Platform `pid`; it does not restore the retired
+standalone identity runtime.
+
+The normative v1 boundary for Platform-token authentication, legacy membership
+migration, cloud save, matchmaking, duel
 commands, snapshots, WebSocket events, concurrency, redaction, and security is
 [`Online Contracts v1`](Online%20Contracts.md). This architecture document
 defines module ownership and rollout; it must not introduce a second wire
 contract.
 
-## Recommended Stack
+## Original stack direction
 
 - `Kotlin`
 - `Ktor`
 - `PostgreSQL`
-- `Exposed` for the first stage
 - `kotlinx.serialization`
 - Mirkori game-scoped `RS256` access-token verification
-- `Flyway` for migrations
+- project JDBC migration runner
 - `HikariCP`
 - `Testcontainers`
 - `Docker`
+
+The implemented persistence slice uses explicit JDBC and the project migration
+runner rather than Exposed/Flyway. Future modules should extend the existing
+transaction boundary unless an approved migration changes that decision.
 
 ## Why Exposed First
 
@@ -326,11 +345,15 @@ module-level route inventory.
 
 ### Profile
 
+Future; not routed in the production composition.
+
 - `GET /api/v1/me`
 - `PATCH /api/v1/me`
 - `GET /api/v1/me/progression`
 
 ### Cloud save
+
+Future; repositories/schema do not currently imply public routes.
 
 - `GET /api/v1/me/save`
 - `PUT /api/v1/me/save`
@@ -340,7 +363,7 @@ module-level route inventory.
 
 - `POST /api/v1/matchmaking/tickets`
 - `GET /api/v1/matchmaking/tickets/{ticketId}`
-- `DELETE /api/v1/matchmaking/tickets/{ticketId}`
+- `DELETE /api/v1/matchmaking/tickets/{ticketId}` — future, not routed
 
 ### Duel sessions
 
@@ -351,11 +374,17 @@ module-level route inventory.
 
 ### Ranking
 
+Future; not routed in the production composition.
+
 - `GET /api/v1/seasons/current`
 - `GET /api/v1/leaderboard`
 - `GET /api/v1/me/rank`
 
 ### Billing and ads
+
+Entitlement, purchase-validation and reward-mutation routes are future. The
+read-only ad-market resolver is implemented separately at
+`GET /api/v1/runtime/ad-market`.
 
 - `GET /api/v1/me/entitlements`
 - `POST /api/v1/billing/google/validate`
@@ -450,47 +479,18 @@ com.mirkori.inplacex.backend
   shared/
 ```
 
-## Delivery Order
+## Remaining delivery order
 
-### Phase 1
+1. Operate and observe the implemented online slice in a bounded rollout.
+2. Define and route cloud-save plus profile APIs against Mirkori Platform
+   identity; add conflict/restart E2E before claiming them shipped.
+3. Implement matchmaking cancellation with the same PostgreSQL coordination
+   and idempotency guarantees as create/read.
+4. Add server-authoritative entitlements and the Mirkori payment adapter for
+   the selected markets; client flags remain non-authoritative.
+5. Add ranking/seasons only after match-result authority and abuse monitoring
+   are stable.
 
-- Ktor app skeleton
-- config + health endpoints
-- PostgreSQL + Flyway + Exposed
-- Platform token verifier + idempotent local `pid` projection
-- profile read/write
-- cloud save basic sync
-
-### Phase 2
-
-- entitlement validation
-- ad reward grants
-- season stats + leaderboard
-
-### Phase 3
-
-- matchmaking queue
-- duel session aggregate
-- reconnect snapshots
-- bot fallback through `ServerBotPlayer`
-
-### Phase 4
-
-- WebSocket v1 control transport (`subscribe`, `resync`, `ping`) with durable
-  cross-instance cursors and authoritative snapshot recovery (implemented)
-- durable revision-marker replay and cross-instance live snapshot fan-out
-  through `duel_events` (implemented)
-- observability
-- anti-abuse limits
-- admin tooling
-
-## Recommended First Implementation Slice
-
-If we want the highest value with the least risk, start with:
-
-1. Mirkori Platform token verification and local `pid` projection
-2. `GET/PUT me/save`
-3. `GET me/entitlements`
-4. session aggregate contracts without full live transport
-
-That gives us a real backend foundation without blocking on the hardest online-room logic immediately.
+Each new route requires production composition, authorization, principal plus
+operation rate limits, migration/restart proof, nginx routing and canonical
+documentation in the same package.

@@ -135,7 +135,13 @@ def validate(
     instrumentation_script: bytes,
 ) -> None:
     workflow = Workflow(workflow_source)
-    expected_jobs = {"verify", "instrumentation", "release", "ci-contract"}
+    expected_jobs = {
+        "verify",
+        "instrumentation",
+        "release",
+        "ci-contract",
+        "backend-production-runtime",
+    }
     if not expected_jobs.issubset(workflow.jobs):
         raise ContractError("workflow.required-jobs")
 
@@ -143,10 +149,18 @@ def validate(
     instrumentation = workflow.job("instrumentation")
     release = workflow.job("release")
     guard = workflow.job("ci-contract")
+    backend_production = workflow.job("backend-production-runtime")
     verify.require_blocking(needs_verify=False)
     instrumentation.require_blocking(needs_verify=True)
     release.require_blocking(needs_verify=True)
     guard.require_blocking(needs_verify=False)
+    backend_production.require_blocking(needs_verify=False)
+    if (
+        "    needs:" not in backend_production.lines
+        or "      - verify" not in backend_production.lines
+        or "      - ci-contract" not in backend_production.lines
+    ):
+        raise ContractError("job.backend-production.needs")
 
     require_exact_run(verify, "Run unit verification", "./gradlew verifyProject", "step.verify.unit.exact-run")
     require_exact_run(verify, "Run Android lint", "./gradlew lint", "step.verify.lint.exact-run")
@@ -217,10 +231,31 @@ def validate(
     require_exact_action(guard, "Run actionlint", ACTIONLINT_ACTION, "step.guard.actionlint.pinned-action")
     require_exact_run(
         guard,
+        "Validate backend production contract",
+        "bash scripts/ci/validate_backend_production_contract.sh",
+        "step.guard.backend-production.exact-run",
+    )
+    require_exact_run(
+        guard,
         "Validate CI contract and hostile fixtures",
         "python3 scripts/ci/validate_ci_contract.py --self-test",
         "step.guard.contract.exact-run",
     )
+
+    production_step = backend_production.step("Run pinned production runtime integration")
+    expected_production_step = (
+        "      - name: Run pinned production runtime integration",
+        "        env:",
+        "          INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK: isolated-ci-host",
+        "        run: |",
+        "          sudo env \\",
+        '            "PATH=$PATH" \\',
+        '            "GITHUB_RUN_ID=$GITHUB_RUN_ID" \\',
+        '            "INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK=$INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK" \\',
+        "            bash scripts/ci/test_backend_production_runtime.sh",
+    )
+    if production_step.lines != expected_production_step:
+        raise ContractError("step.backend-production.runtime.exact-block")
 
     require_script_hash(artifact_script, ARTIFACT_SCRIPT_SHA256, "script.artifact.sha256")
     require_script_hash(instrumentation_script, INSTRUMENTATION_SCRIPT_SHA256, "script.instrumentation.sha256")
