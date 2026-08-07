@@ -18,6 +18,9 @@ import com.mirkori.platform.sdk.PlatformProfileConflictException
 import io.ktor.client.HttpClient
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -29,6 +32,9 @@ class MirkoriPlatformRuntime internal constructor(
 ) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
     private var persistedState: MirkoriPersistedState? = store.read()
+    private val mutableAccountState = MutableStateFlow(persistedState.toAccountState())
+
+    val accountState: StateFlow<MirkoriAccountState> = mutableAccountState.asStateFlow()
 
     fun currentAccountState(): MirkoriAccountState = persistedState.toAccountState()
 
@@ -187,6 +193,7 @@ class MirkoriPlatformRuntime internal constructor(
     private fun persist(state: MirkoriPersistedState) {
         store.write(state)
         persistedState = state
+        mutableAccountState.value = state.toAccountState()
     }
 
     private fun logFailure(error: Throwable) {

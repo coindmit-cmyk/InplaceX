@@ -84,6 +84,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import com.mirkori.platform.sdk.PlatformAuthMode
@@ -271,6 +272,15 @@ class MainActivity : ComponentActivity() {
                 }
                 DisposableEffect(mirkoriPlatformRuntime) {
                     onDispose { mirkoriPlatformRuntime?.close() }
+                }
+                LaunchedEffect(mirkoriPlatformRuntime) {
+                    if (mirkoriPlatformRuntime == null) {
+                        mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
+                    } else {
+                        mirkoriPlatformRuntime.accountState.collect { state ->
+                            mirkoriAccountState = state
+                        }
+                    }
                 }
                 val onlineRuntime = remember(mirkoriPlatformRuntime) {
                     mirkoriPlatformRuntime?.let { platformRuntime ->
