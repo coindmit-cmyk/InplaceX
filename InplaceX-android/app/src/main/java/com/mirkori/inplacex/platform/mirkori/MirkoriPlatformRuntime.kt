@@ -108,17 +108,36 @@ class MirkoriPlatformRuntime internal constructor(
             persist(state)
         }
         val current = state.session
-        if (current != null && current.credentials.accessExpiresAt.toEpochMilli() > clockMs() + RefreshSkewMs) {
+        if (
+            current != null &&
+            state.pendingRefresh == null &&
+            current.credentials.accessExpiresAt.toEpochMilli() > clockMs() + RefreshSkewMs
+        ) {
             return current
         }
-        if (current != null && current.credentials.refreshExpiresAt.toEpochMilli() > clockMs()) {
+        if (
+            current != null &&
+            (state.pendingRefresh != null || current.credentials.refreshExpiresAt.toEpochMilli() > clockMs())
+        ) {
+            val pendingRefresh = state.pendingRefresh ?: PendingMirkoriRefresh(
+                refreshToken = current.credentials.refreshToken,
+                idempotencyKey = sdk.newIdempotencyKey(),
+            ).also { pending ->
+                state = state.copy(pendingRefresh = pending)
+                persist(state)
+            }
             try {
-                val credentials = sdk.refresh(current.credentials.refreshToken)
+                val credentials = sdk.refresh(
+                    refreshToken = pendingRefresh.refreshToken,
+                    idempotencyKey = pendingRefresh.idempotencyKey,
+                )
                 return current.withCredentials(credentials).also { refreshed ->
-                    persist(state.copy(session = refreshed))
+                    persist(state.copy(session = refreshed, pendingRefresh = null))
                 }
             } catch (error: PlatformApiException) {
                 if (error.status != 401) throw error
+                state = state.copy(pendingRefresh = null)
+                persist(state)
             }
         }
         val guest = sdk.bootstrapGuest(
@@ -126,7 +145,7 @@ class MirkoriPlatformRuntime internal constructor(
             platform = GameClientPlatform.ANDROID,
             appVersion = BuildConfig.VERSION_NAME,
         )
-        persist(state.copy(session = guest))
+        persist(state.copy(session = guest, pendingRefresh = null))
         return guest
     }
 

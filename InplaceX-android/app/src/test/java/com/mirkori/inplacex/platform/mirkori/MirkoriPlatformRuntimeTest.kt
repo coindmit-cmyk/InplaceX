@@ -9,8 +9,11 @@ import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCredentials
 import com.mirkori.platform.sdk.PlatformHttpRequest
 import com.mirkori.platform.sdk.PlatformHttpResponse
+import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.SecureEntropy
+import java.io.IOException
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -44,6 +47,10 @@ class MirkoriPlatformRuntimeTest {
                 connectUrl = "https://games.dmit.life/connect?session=${"S".repeat(64)}",
                 expiresAt = Instant.ofEpochMilli(ExpiresAtMs),
             ),
+            pendingRefresh = PendingMirkoriRefresh(
+                refreshToken = credentials("stored").refreshToken,
+                idempotencyKey = PlatformIdempotencyKey("refresh-attempt-1"),
+            ),
         )
 
         val encoded = MirkoriStateCodec.encode(state)
@@ -53,9 +60,25 @@ class MirkoriPlatformRuntimeTest {
         assertEquals(PlatformAuthMode.LOCAL, decoded.session?.authMode)
         assertEquals(state.session?.credentials?.refreshToken, decoded.session?.credentials?.refreshToken)
         assertEquals(state.pendingLogin?.codeVerifier, decoded.pendingLogin?.codeVerifier)
+        assertEquals(state.pendingRefresh?.refreshToken, decoded.pendingRefresh?.refreshToken)
+        assertEquals(state.pendingRefresh?.idempotencyKey?.value, decoded.pendingRefresh?.idempotencyKey?.value)
+        assertFalse(decoded.pendingRefresh.toString().contains(state.session?.credentials?.refreshToken.orEmpty()))
         assertThrows(IllegalArgumentException::class.java) {
             MirkoriStateCodec.decode(encoded + 1)
         }
+    }
+
+    @Test
+    fun protectedStateCodecReadsLegacyVersionWithoutPendingRefresh() {
+        val encoded = MirkoriStateCodec.encode(
+            MirkoriPersistedState(InstallationIdentity(InstallationId, "I".repeat(43))),
+        )
+        val legacy = encoded.copyOf(encoded.size - 1).also { ByteBuffer.wrap(it).putInt(1) }
+
+        val decoded = MirkoriStateCodec.decode(legacy)
+
+        assertEquals(InstallationId, decoded.installation.installationId)
+        assertNull(decoded.pendingRefresh)
     }
 
     @Test
@@ -159,7 +182,39 @@ class MirkoriPlatformRuntimeTest {
         assertTrue(transport.requests.isEmpty())
     }
 
-    private fun runtime(transport: QueueTransport, store: MemoryStore): MirkoriPlatformRuntime {
+    @Test
+    fun refreshReusesPersistedIdempotencyKeyAfterAmbiguousRestart() {
+        val store = MemoryStore(
+            MirkoriPersistedState(
+                installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+                session = GameIdentitySession(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    gameId = "inplacex",
+                    installationId = InstallationId,
+                    authMode = PlatformAuthMode.LOCAL,
+                    credentials = expiredCredentials("linked"),
+                ),
+            ),
+        )
+        val firstTransport = ThrowingTransport(IOException("response was not received"))
+
+        val unavailable = runSuspend { runtime(firstTransport, store).restoreOrBootstrap() }
+        val firstKey = requireNotNull(store.value?.pendingRefresh).idempotencyKey.value
+
+        assertEquals(MirkoriAccountStateKind.LINKED, unavailable.kind)
+        assertEquals(firstKey, firstTransport.requests.single().headers["Idempotency-Key"])
+
+        val retryTransport = QueueTransport(ok(credentialsJson("refreshed")))
+        val restored = runSuspend { runtime(retryTransport, store).restoreOrBootstrap() }
+
+        assertEquals(MirkoriAccountStateKind.LINKED, restored.kind)
+        assertEquals(firstKey, retryTransport.requests.single().headers["Idempotency-Key"])
+        assertTrue(store.value?.session?.credentials?.accessToken.orEmpty().startsWith("refreshed."))
+        assertNull(store.value?.pendingRefresh)
+    }
+
+    private fun runtime(transport: PlatformTransport, store: MemoryStore): MirkoriPlatformRuntime {
         val sdk = MirkoriGameSdk(
             config = MirkoriGameSdkConfig(
                 platformBaseUrl = "https://games.dmit.life",
@@ -211,6 +266,14 @@ private class QueueTransport(vararg responses: PlatformHttpResponse) : PlatformT
     }
 }
 
+private class ThrowingTransport(private val error: IOException) : PlatformTransport {
+    val requests = mutableListOf<PlatformHttpRequest>()
+    override suspend fun execute(request: PlatformHttpRequest): PlatformHttpResponse {
+        requests += request
+        throw error
+    }
+}
+
 private object FixedEntropy : SecureEntropy {
     override fun bytes(count: Int): ByteArray = ByteArray(count) { 7 }
 }
@@ -219,6 +282,13 @@ private fun credentials(prefix: String) = PlatformCredentials(
     accessToken = "$prefix.${"a".repeat(43)}",
     refreshToken = "$prefix-${"r".repeat(43)}",
     accessExpiresAt = Instant.ofEpochMilli(1_786_032_600_000L),
+    refreshExpiresAt = Instant.ofEpochMilli(1_788_624_600_000L),
+)
+
+private fun expiredCredentials(prefix: String) = PlatformCredentials(
+    accessToken = "$prefix.${"a".repeat(43)}",
+    refreshToken = "$prefix-${"r".repeat(43)}",
+    accessExpiresAt = Instant.ofEpochMilli(1_785_999_999_999L),
     refreshExpiresAt = Instant.ofEpochMilli(1_788_624_600_000L),
 )
 

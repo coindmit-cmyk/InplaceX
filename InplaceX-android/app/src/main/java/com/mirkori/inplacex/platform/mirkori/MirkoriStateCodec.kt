@@ -5,6 +5,7 @@ import com.mirkori.platform.sdk.InstallationIdentity
 import com.mirkori.platform.sdk.PendingGameLogin
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCredentials
+import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -35,6 +36,11 @@ internal object MirkoriStateCodec {
                 output.writeUTF(pending.connectUrl)
                 output.writeLong(pending.expiresAt.toEpochMilli())
             }
+            output.writeBoolean(state.pendingRefresh != null)
+            state.pendingRefresh?.let { pending ->
+                output.writeUTF(pending.refreshToken)
+                output.writeUTF(pending.idempotencyKey.value)
+            }
         }
         bytes.toByteArray().also { require(it.size <= MaximumStateBytes) }
     }
@@ -42,7 +48,8 @@ internal object MirkoriStateCodec {
     fun decode(bytes: ByteArray): MirkoriPersistedState {
         require(bytes.size in 1..MaximumStateBytes)
         return DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-            require(input.readInt() == FormatVersion)
+            val formatVersion = input.readInt()
+            require(formatVersion in MinimumSupportedFormatVersion..FormatVersion)
             val installation = InstallationIdentity(input.readUTF(), input.readUTF())
             val session = if (input.readBoolean()) {
                 val accountId = input.readUTF()
@@ -71,8 +78,16 @@ internal object MirkoriStateCodec {
             } else {
                 null
             }
+            val pendingRefresh = if (formatVersion >= PendingRefreshFormatVersion && input.readBoolean()) {
+                PendingMirkoriRefresh(
+                    refreshToken = input.readUTF(),
+                    idempotencyKey = PlatformIdempotencyKey(input.readUTF()),
+                )
+            } else {
+                null
+            }
             require(input.available() == 0)
-            MirkoriPersistedState(installation, session, pending).also(::validate)
+            MirkoriPersistedState(installation, session, pending, pendingRefresh).also(::validate)
         }
     }
 
@@ -122,9 +137,16 @@ internal object MirkoriStateCodec {
             require(connectUri.userInfo == null && connectUri.fragment == null)
             require(pending.expiresAt.toEpochMilli() > 0)
         }
+        state.pendingRefresh?.let { pending ->
+            val session = requireNotNull(state.session)
+            require(pending.refreshToken == session.credentials.refreshToken)
+            require(pending.refreshToken.matches(CredentialPattern))
+        }
     }
 
-    private const val FormatVersion = 1
+    private const val MinimumSupportedFormatVersion = 1
+    private const val PendingRefreshFormatVersion = 2
+    private const val FormatVersion = PendingRefreshFormatVersion
     private const val MaximumStateBytes = 32 * 1024
     private val HighEntropyTokenPattern = Regex("[A-Za-z0-9_-]{43,128}")
     private val CredentialPattern = Regex("\\S{32,8192}")

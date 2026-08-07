@@ -3,9 +3,10 @@
 ## Unreleased
 
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
-  installation/session and pending PKCE state under Android Keystore-backed
-  encryption, opens account login in the system browser, validates the exact
-  HTTPS App Link callback, and shows linked/conflict/offline status in Profile.
+  installation/session, pending PKCE state and in-flight refresh identity under
+  Android Keystore-backed encryption, opens account login in the system browser,
+  validates the exact HTTPS App Link callback, and shows linked/conflict/offline
+  status in Profile.
   The existing Google Play online identity remains a separate compatibility
   path.
 

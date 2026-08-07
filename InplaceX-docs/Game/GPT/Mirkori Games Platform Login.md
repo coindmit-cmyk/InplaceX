@@ -25,10 +25,16 @@ read or written by the Android client.
 
 `AndroidKeystoreMirkoriStateStore` encrypts one atomic record with AES-256-GCM.
 It contains the installation ID/secret, current account/profile credentials,
-and an optional pending browser session/state/verifier. Corrupt ciphertext is
-discarded fail-closed. Secret values and HTTP bodies are never logged.
+an optional pending browser session/state/verifier, and the exact refresh-token
+plus idempotency-key pair for an in-flight refresh. Corrupt ciphertext is
+discarded fail-closed. Secret values and HTTP bodies are never logged. The state
+codec writes format v2 and continues to read format v1 records.
 
 The access token may be refreshed through the stored rotating refresh token.
+The client persists the refresh pair before network I/O, reuses it after an
+ambiguous failure or process restart, and clears it only after a committed
+response or an unambiguous rejection. This preserves the server's durable
+refresh idempotency contract when the response is lost after token rotation.
 If refresh is rejected or expired, the same installation is bootstrapped back
 to a guest credential before a new browser login.
 
