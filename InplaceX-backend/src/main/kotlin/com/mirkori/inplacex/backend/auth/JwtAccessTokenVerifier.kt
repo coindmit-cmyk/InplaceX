@@ -6,6 +6,7 @@ import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.security.PublicKey
 import java.security.Signature
+import java.security.interfaces.RSAKey
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -17,7 +18,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
 sealed interface AuthenticatedPrincipal {
+    val accountId: String
     val playerId: String
+    val gameId: String?
     val tokenId: String
 }
 
@@ -36,18 +39,50 @@ enum class AccessTokenRejection {
     EXPIRED,
 }
 
-data class JwtVerificationPolicy(
+class JwtVerificationPolicy private constructor(
     val issuer: String,
     val audience: String,
+    val requiredGameId: String?,
     val maximumTokenLifetime: Duration = Duration.ofMinutes(15),
     val allowedClockSkew: Duration = Duration.ofSeconds(30),
 ) {
     init {
         require(issuer.isSafePolicyValue())
         require(audience.isSafePolicyValue())
+        requiredGameId?.let { require(it.matches(GameIdPattern)) }
         require(!maximumTokenLifetime.isNegative && !maximumTokenLifetime.isZero)
         require(maximumTokenLifetime <= Duration.ofHours(1))
         require(!allowedClockSkew.isNegative && allowedClockSkew <= Duration.ofMinutes(2))
+    }
+
+    companion object {
+        fun platformGame(
+            issuer: String,
+            audience: String,
+            gameId: String,
+            maximumTokenLifetime: Duration = Duration.ofMinutes(15),
+            allowedClockSkew: Duration = Duration.ofSeconds(30),
+        ): JwtVerificationPolicy = JwtVerificationPolicy(
+            issuer = issuer,
+            audience = audience,
+            requiredGameId = gameId,
+            maximumTokenLifetime = maximumTokenLifetime,
+            allowedClockSkew = allowedClockSkew,
+        )
+
+        /** Explicit compatibility path for the retired standalone InplaceX identity module and its tests. */
+        fun legacyInplaceXCompatibility(
+            issuer: String,
+            audience: String,
+            maximumTokenLifetime: Duration = Duration.ofMinutes(15),
+            allowedClockSkew: Duration = Duration.ofSeconds(30),
+        ): JwtVerificationPolicy = JwtVerificationPolicy(
+            issuer = issuer,
+            audience = audience,
+            requiredGameId = null,
+            maximumTokenLifetime = maximumTokenLifetime,
+            allowedClockSkew = allowedClockSkew,
+        )
     }
 }
 
@@ -68,8 +103,12 @@ class JwtAccessTokenVerifier(
     }
 
     init {
-        require(verificationKey.algorithm.equals("RSA", ignoreCase = true)) {
+        val rsaKey = verificationKey as? RSAKey
+        require(verificationKey.algorithm.equals("RSA", ignoreCase = true) && rsaKey != null) {
             "RS256 verifier requires an RSA public key"
+        }
+        require(rsaKey.modulus.bitLength() >= MinimumRsaModulusBits) {
+            "RS256 verifier requires an RSA public key of at least $MinimumRsaModulusBits bits"
         }
     }
 
@@ -109,9 +148,14 @@ class JwtAccessTokenVerifier(
             return AccessTokenAuthentication.Rejected(AccessTokenRejection.INVALID_SIGNATURE)
         }
 
-        val claims = decodeJsonObject(payloadBytes)?.toVerifiedClaims()
+        val claims = decodeJsonObject(payloadBytes)?.toVerifiedClaims(
+            requireGameScope = policy.requiredGameId != null,
+        )
             ?: return AccessTokenAuthentication.Rejected(AccessTokenRejection.INVALID_CLAIMS)
         if (claims.issuer != policy.issuer || claims.audience != policy.audience) {
+            return AccessTokenAuthentication.Rejected(AccessTokenRejection.INVALID_CLAIMS)
+        }
+        if (policy.requiredGameId != null && claims.gameId != policy.requiredGameId) {
             return AccessTokenAuthentication.Rejected(AccessTokenRejection.INVALID_CLAIMS)
         }
 
@@ -132,7 +176,12 @@ class JwtAccessTokenVerifier(
         }
 
         return AccessTokenAuthentication.Accepted(
-            VerifiedJwtPrincipal(claims.subject, claims.tokenId),
+            VerifiedJwtPrincipal(
+                accountId = claims.subject,
+                playerId = claims.playerId,
+                gameId = claims.gameId,
+                tokenId = claims.tokenId,
+            ),
         )
     }
 
@@ -172,13 +221,17 @@ private data class VerifiedJwtClaims(
     val issuer: String,
     val audience: String,
     val subject: String,
+    val playerId: String,
+    val gameId: String?,
     val issuedAt: Long,
     val expiresAt: Long,
     val tokenId: String,
 )
 
 private class VerifiedJwtPrincipal(
+    override val accountId: String,
     override val playerId: String,
+    override val gameId: String?,
     override val tokenId: String,
 ) : AuthenticatedPrincipal {
     override fun toString(): String = "AuthenticatedPrincipal([redacted])"
@@ -190,15 +243,29 @@ private fun JsonObject.hasExactStringClaims(expected: Map<String, String>): Bool
         claim?.isString == true && claim.content == value
     }
 
-private fun JsonObject.toVerifiedClaims(): VerifiedJwtClaims? {
-    if (keys != ExpectedClaimNames) return null
+private fun JsonObject.toVerifiedClaims(requireGameScope: Boolean): VerifiedJwtClaims? {
+    if (requireGameScope) {
+        if (!keys.containsAll(RequiredGameClaimNames)) return null
+    } else if (keys != LegacyClaimNames) {
+        return null
+    }
     val issuer = stringClaim("iss") ?: return null
     val audience = stringClaim("aud") ?: return null
     val subject = stringClaim("sub")?.takeIf(String::isCanonicalUuid) ?: return null
+    val playerId = if (requireGameScope) {
+        stringClaim("pid")?.takeIf(String::isCanonicalUuid) ?: return null
+    } else {
+        subject
+    }
+    val gameId = if (requireGameScope) {
+        stringClaim("gid")?.takeIf { it.matches(GameIdPattern) } ?: return null
+    } else {
+        null
+    }
     val tokenId = stringClaim("jti")?.takeIf(String::isCanonicalUuid) ?: return null
     val issuedAt = integerClaim("iat") ?: return null
     val expiresAt = integerClaim("exp") ?: return null
-    return VerifiedJwtClaims(issuer, audience, subject, issuedAt, expiresAt, tokenId)
+    return VerifiedJwtClaims(issuer, audience, subject, playerId, gameId, issuedAt, expiresAt, tokenId)
 }
 
 private fun JsonObject.stringClaim(name: String): String? =
@@ -226,10 +293,13 @@ private const val MaximumTokenCharacters = 4_096
 private const val MaximumAuthorizationCharacters = MaximumTokenCharacters + 16
 private const val Base64ExpansionFactor = 2
 private const val SignatureAlgorithm = "SHA256withRSA"
+private const val MinimumRsaModulusBits = 2_048
 private val Base64UrlSegment = Regex("[A-Za-z0-9_-]+")
 private val BearerHeader = Regex(
     pattern = "Bearer ([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)",
     option = RegexOption.IGNORE_CASE,
 )
 private val ExpectedHeader = mapOf("alg" to "RS256", "typ" to "JWT")
-private val ExpectedClaimNames = setOf("iss", "aud", "sub", "iat", "exp", "jti")
+private val LegacyClaimNames = setOf("iss", "aud", "sub", "iat", "exp", "jti")
+private val RequiredGameClaimNames = LegacyClaimNames + setOf("pid", "gid")
+private val GameIdPattern = Regex("[a-z0-9][a-z0-9-]{0,63}")

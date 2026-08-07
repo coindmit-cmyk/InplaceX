@@ -22,7 +22,7 @@ class Rs256AccessTokenBoundaryTest {
         issuer = "inplacex-identity",
         audience = "inplacex-game-api",
     )
-    private val verificationPolicy = JwtVerificationPolicy(
+    private val verificationPolicy = JwtVerificationPolicy.legacyInplaceXCompatibility(
         issuer = policy.issuer,
         audience = policy.audience,
         maximumTokenLifetime = policy.accessTtl,

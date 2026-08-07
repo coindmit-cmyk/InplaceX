@@ -322,11 +322,12 @@ module-level route inventory.
 
 ### Auth
 
-- `POST /api/v1/auth/bootstrap`
-  - create or resume anonymous backend identity for the installation
-- `POST /api/v1/auth/google/link`
-  - verify Google Play identity and link account
-- `POST /api/v1/auth/refresh`
+- production identity and credential refresh are owned by Mirkori Games
+  Platform and consumed through the Platform Game SDK
+- the InplaceX online backend verifies the Platform public key plus exact
+  issuer, audience and `gid=inplacex`, and maps `pid` to the online player
+- legacy `/api/v1/auth/*` sources are debug/test compatibility only and are not
+  part of the production application composition
 
 ### Profile
 
@@ -379,7 +380,8 @@ Do not leak Exposed table rows directly into routes.
 
 For the first stage:
 
-- use REST for bootstrap, profile, save, billing, matchmaking, and the reliable
+- use the external Platform API for identity bootstrap/refresh, and InplaceX
+  REST for profile, save, billing, matchmaking, and the reliable
   duel command/recovery path;
 - use the authenticated WebSocket for live duel session updates and the
   versioned subscribe/resync protocol;
@@ -412,9 +414,11 @@ Responsibilities:
 
 ## Security Rules
 
-- JWT for API auth
-- `RS256` access tokens with the private key isolated in the identity process;
-  the game API verifies with the public key only. See `Auth Process Boundary.md`.
+- Mirkori game-scoped JWT for API auth
+- `RS256` access tokens with the private key isolated in Mirkori Games Platform;
+  the game API verifies with the public key only, requires the configured
+  issuer/audience and exact `gid=inplacex`, and authorizes by `pid` rather than
+  the account `sub`. See `Auth Process Boundary.md`.
 - refresh token rotation
 - persistent refresh idempotency in the same transaction as token rotation;
   response payloads are retained only until the refresh family expires and
@@ -491,7 +495,7 @@ com.mirkori.inplacex.backend
 
 If we want the highest value with the least risk, start with:
 
-1. `auth/bootstrap`
+1. Mirkori Platform token verification and local `pid` projection
 2. `GET/PUT me/save`
 3. `GET me/entitlements`
 4. session aggregate contracts without full live transport

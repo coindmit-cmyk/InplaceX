@@ -54,6 +54,7 @@ fun Application.configureOnlineRoutes(
     eventSequences: OnlineSessionEventSequence = InMemoryOnlineSessionEventSequence(),
     clock: Clock = Clock.systemUTC(),
     nanoTime: () -> Long = System::nanoTime,
+    playerProvisioner: OnlinePlayerProvisioner = NoOpOnlinePlayerProvisioner,
 ) {
     val codec = OnlineJsonCodec()
     install(WebSockets) {
@@ -61,7 +62,7 @@ fun Application.configureOnlineRoutes(
     }
     routing {
         post("/api/v1/matchmaking/tickets") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val command = runCatching { codec.decodeTicket(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
@@ -79,7 +80,7 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/matchmaking/tickets/{ticketId}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
             val ticketId = call.safeUuidParameter("ticketId") ?: return@get
             val result = runOnlineCommand(call) {
                 service.readTicket(principal.playerId, ticketId)
@@ -88,7 +89,7 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/friends/invites") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val command = runCatching { codec.decodeFriendInvite(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
@@ -106,7 +107,7 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/friends/invites/{inviteCode}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
             val inviteCode = call.safeInviteCodeParameter() ?: return@get
             val result = runOnlineCommand(call) {
                 service.readPrivateInvite(principal.playerId, inviteCode)
@@ -115,7 +116,7 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/friends/invites/{inviteCode}/accept") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val inviteCode = call.safeInviteCodeParameter() ?: return@post
             val command = runCatching { codec.decodeInviteAccept(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -129,7 +130,7 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/sessions/{sessionId}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
             val sessionId = call.safeUuidParameter("sessionId") ?: return@get
             val result = runOnlineCommand(call) {
                 service.readSession(principal.playerId, sessionId)
@@ -138,7 +139,7 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/reconnect") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeReconnect(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -152,7 +153,7 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/setup/secret") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeSecret(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -172,7 +173,7 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/turns") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeGuess(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -906,14 +907,25 @@ internal class WebSocketHeartbeatDeadline(
 
 private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
     verifier: JwtAccessTokenVerifier,
+    playerProvisioner: OnlinePlayerProvisioner,
 ): AuthenticatedPrincipal? {
     return when (val result = verifier.authenticate(request.headers[HttpHeaders.Authorization])) {
-        is AccessTokenAuthentication.Accepted -> result.principal
+        is AccessTokenAuthentication.Accepted -> result.principal.also {
+            playerProvisioner.ensurePlayer(it.playerId)
+        }
         is AccessTokenAuthentication.Rejected -> {
             respondOnlineError(HttpStatusCode.Unauthorized, "unauthorized")
             null
         }
     }
+}
+
+fun interface OnlinePlayerProvisioner {
+    fun ensurePlayer(playerId: String)
+}
+
+private object NoOpOnlinePlayerProvisioner : OnlinePlayerProvisioner {
+    override fun ensurePlayer(playerId: String) = Unit
 }
 
 private suspend fun ApplicationCall.safeUuidParameter(name: String): String? {

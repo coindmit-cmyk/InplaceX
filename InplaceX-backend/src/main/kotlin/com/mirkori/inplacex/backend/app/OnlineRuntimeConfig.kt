@@ -2,6 +2,7 @@ package com.mirkori.inplacex.backend.app
 
 import java.security.KeyFactory
 import java.security.PublicKey
+import java.security.interfaces.RSAKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.util.Base64
@@ -14,8 +15,10 @@ data class OnlineRuntimeConfig(
     val botFallbackDelay: Duration,
     val stateEncryptionKey: OnlineStateEncryptionKey?,
 ) {
+    val gameId: String = GameId
+
     override fun toString(): String =
-        "OnlineRuntimeConfig(issuer=$issuer, audience=$audience, verificationKey=[public], " +
+        "OnlineRuntimeConfig(issuer=$issuer, audience=$audience, gameId=$gameId, verificationKey=[public], " +
             "botFallbackDelaySeconds=${botFallbackDelay.seconds})"
 
     companion object {
@@ -40,6 +43,9 @@ data class OnlineRuntimeConfig(
                 }
             }.getOrElse {
                 throw IllegalArgumentException("$PublicKeyKey is not a valid RSA X509 public key")
+            }
+            require((key as? RSAKey)?.modulus?.bitLength()?.let { it >= MinimumRsaModulusBits } == true) {
+                "$PublicKeyKey must use an RSA key of at least $MinimumRsaModulusBits bits"
             }
             val fallbackSeconds = environment[BotFallbackSecondsKey]
                 ?.toLongOrNull()
@@ -83,6 +89,8 @@ data class OnlineRuntimeConfig(
         const val DefaultBotFallbackSeconds = 5L
         const val MinimumBotFallbackSeconds = 1L
         const val MaximumBotFallbackSeconds = 60L
+        const val MinimumRsaModulusBits = 2_048
+        const val GameId = "inplacex"
     }
 }
 

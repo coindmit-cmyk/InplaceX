@@ -2,8 +2,10 @@ package com.mirkori.inplacex.backend.persistence
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.SQLException
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 import javax.sql.DataSource
 
 class RevisionConflictException(playerId: String, expectedRevision: Long) : IllegalStateException(
@@ -61,6 +63,32 @@ class JdbcPlayerRepository(private val dataSource: DataSource) {
             statement.setString(1, id)
             statement.executeUpdate()
         }
+    }
+
+    /**
+     * Creates only the game-local projection required by online persistence.
+     * Mirkori Platform remains the identity authority for the supplied player id.
+     */
+    fun ensurePlatformPlayer(id: String) {
+        require(id.isCanonicalUuid()) { "platform player id must be a canonical UUID" }
+        try {
+            dataSource.connection.use { connection ->
+                connection.prepareStatement(
+                    "INSERT INTO players(id, display_name) VALUES (?, ?)",
+                ).use { statement ->
+                    statement.setString(1, id)
+                    statement.setString(2, PlatformPlayerDisplayName)
+                    statement.executeUpdate()
+                }
+            }
+        } catch (error: SQLException) {
+            if (error.sqlState != UniqueViolationSqlState) throw error
+        }
+    }
+
+    private companion object {
+        const val PlatformPlayerDisplayName = "Mirkori player"
+        const val UniqueViolationSqlState = "23505"
     }
 }
 
@@ -319,3 +347,6 @@ internal inline fun <T> DataSource.transaction(block: (Connection) -> T): T = co
 private fun PreparedStatement.setInstant(index: Int, value: Instant) {
     setObject(index, value.atOffset(ZoneOffset.UTC))
 }
+
+private fun String.isCanonicalUuid(): Boolean =
+    runCatching { UUID.fromString(this).toString() == this }.getOrDefault(false)

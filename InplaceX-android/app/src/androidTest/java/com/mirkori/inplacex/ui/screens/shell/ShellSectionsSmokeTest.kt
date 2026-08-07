@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
-import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.core.retention.RetentionRewardType
@@ -38,6 +37,8 @@ import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.AccessToken
+import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
@@ -121,13 +122,7 @@ class ShellSectionsSmokeTest {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
                 context = composeRule.activity,
-                profile = LocalPlayerProfile(
-                    playerId = "instrumented-player",
-                    installationId = "instrumented-installation",
-                    displayName = "Instrumented",
-                ),
-                locale = "ru-RU",
-                regionCode = "RU",
+                accessTokenProvider = InstrumentedAccessTokenProvider,
                 baseUrl = "http://127.0.0.1:65535",
                 allowCleartextLoopback = true,
             ),
@@ -169,13 +164,7 @@ class ShellSectionsSmokeTest {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
                 context = composeRule.activity,
-                profile = LocalPlayerProfile(
-                    playerId = "instrumented-player",
-                    installationId = "instrumented-installation-invites",
-                    displayName = "Instrumented",
-                ),
-                locale = "ru-RU",
-                regionCode = "RU",
+                accessTokenProvider = InstrumentedAccessTokenProvider,
                 baseUrl = "http://127.0.0.1:65535",
                 allowCleartextLoopback = true,
             ),
@@ -689,4 +678,10 @@ class ShellSectionsSmokeTest {
         proPlusSubscriptionActive = false,
         temporaryProExpiresAtMs = temporaryProExpiresAtMs,
     )
+}
+
+private object InstrumentedAccessTokenProvider : AccessTokenProvider {
+    override suspend fun currentAccessToken(): AccessToken = AccessToken.from("instrumented-token")
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? = null
 }

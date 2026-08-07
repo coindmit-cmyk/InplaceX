@@ -103,6 +103,21 @@ class JdbcPersistenceTest {
     }
 
     @Test
+    fun platformPlayerProjectionIsIdempotentAndDoesNotCreateASecondIdentity() {
+        val dataSource = migratedDataSource()
+        val players = JdbcPlayerRepository(dataSource)
+        val playerId = "00000000-0000-4000-8000-000000000701"
+
+        players.ensurePlatformPlayer(playerId)
+        players.ensurePlatformPlayer(playerId)
+
+        dataSource.connection.use { connection ->
+            assertEquals(1, count(connection, "SELECT COUNT(*) FROM players WHERE id = '$playerId'"))
+            assertEquals(0, count(connection, "SELECT COUNT(*) FROM player_identities WHERE player_id = '$playerId'"))
+        }
+    }
+
+    @Test
     fun concurrentSaveAtSameRevisionAllowsOnlyOneWriter() {
         val dataSource = migratedDataSource()
         JdbcPlayerRepository(dataSource).create("player-1", "One")

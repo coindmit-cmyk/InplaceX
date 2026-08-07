@@ -2,6 +2,7 @@ package com.mirkori.inplacex.backend.app
 
 import com.mirkori.inplacex.backend.ads.configureAdMarketRoutes
 import com.mirkori.inplacex.backend.persistence.PostgresDatabase
+import com.mirkori.inplacex.backend.persistence.JdbcPlayerRepository
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.health.AlwaysReadyProbe
@@ -9,6 +10,7 @@ import com.mirkori.inplacex.backend.health.ReadinessProbe
 import com.mirkori.inplacex.backend.health.configureHealthRoutes
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
+import com.mirkori.inplacex.backend.online.OnlinePlayerProvisioner
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineLobbyRepository
 import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEventSequence
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
@@ -70,13 +72,18 @@ fun Application.backendModule(
             configureOnlineRoutes(
                 verifier = JwtAccessTokenVerifier(
                     verificationKey = onlineConfig.verificationKey,
-                    policy = JwtVerificationPolicy(
+                    policy = JwtVerificationPolicy.platformGame(
                         issuer = onlineConfig.issuer,
                         audience = onlineConfig.audience,
+                        gameId = onlineConfig.gameId,
                     ),
                 ),
                 service = service,
                 eventSequences = sessionEvents,
+                playerProvisioner = database?.let { databaseHandle ->
+                    val players = JdbcPlayerRepository(databaseHandle.dataSource)
+                    OnlinePlayerProvisioner(players::ensurePlatformPlayer)
+                } ?: OnlinePlayerProvisioner { },
             )
         }
     }
