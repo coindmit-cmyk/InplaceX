@@ -147,6 +147,21 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
 
             self.assertEqual("{}\n", (output / "catalog.json").read_text(encoding="utf-8"))
 
+    def test_incompatible_existing_provenance_cannot_publish_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = self.create_candidate(root)
+            output = root / "catalog-release"
+            provenance = root / "catalog-release.provenance"
+            provenance.mkdir()
+            (provenance / "release-provenance.json").write_text("{}\n", encoding="utf-8")
+
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                self.run_builder(candidate, output, "--allow-empty-base")
+
+            self.assertFalse(output.exists())
+            self.assertEqual("{}\n", (provenance / "release-provenance.json").read_text(encoding="utf-8"))
+
     def test_rejects_same_version_code_with_different_release_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

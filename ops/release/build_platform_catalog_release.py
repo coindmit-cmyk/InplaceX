@@ -852,14 +852,23 @@ def build_catalog(
     return {"schemaVersion": CATALOG_SCHEMA_VERSION, "games": games}
 
 
+def verify_publish_destination(staging: Path, output: Path) -> None:
+    try:
+        output.lstat()
+    except FileNotFoundError:
+        return
+    else:
+        real_directory(output, "existing output directory")
+        require(tree_identity(output) == tree_identity(staging), "output path already contains a different release")
+
+
 def publish_directory(staging: Path, output: Path) -> None:
     try:
         output.lstat()
     except FileNotFoundError:
         pass
     else:
-        real_directory(output, "existing output directory")
-        require(tree_identity(output) == tree_identity(staging), "output path already contains a different release")
+        verify_publish_destination(staging, output)
         shutil.rmtree(staging)
         return
     staging.replace(output)
@@ -1008,13 +1017,6 @@ def main(arguments: Iterable[str] | None = None) -> int:
             run_platform_validator(validator, staging, base_directory, output_parent, boundary_guard)
             catalog_manifest_sha256 = sha256_file(manifest_path)
             fsync_tree(staging)
-            boundary_guard.verify()
-            publish_directory(staging, output)
-            staging = None
-            require(
-                sha256_file(output / "catalog.json") == catalog_manifest_sha256,
-                "published catalog manifest differs from its validated staging manifest",
-            )
             provenance = release_provenance(
                 identity,
                 output.name,
@@ -1025,8 +1027,21 @@ def main(arguments: Iterable[str] | None = None) -> int:
             boundary_guard.verify()
             provenance_staging = stage_provenance(output_parent, output.name, provenance)
             boundary_guard.verify()
+            verify_publish_destination(staging, output)
+            verify_publish_destination(provenance_staging, provenance_output)
+            # Publish the non-activating attestation first. If the process dies
+            # before the catalog rename, the byte-identical provenance can be
+            # reused on retry; the inverse ordering could expose an
+            # unattested catalog and permanently block recovery.
             publish_directory(provenance_staging, provenance_output)
             provenance_staging = None
+            boundary_guard.verify()
+            publish_directory(staging, output)
+            staging = None
+            require(
+                sha256_file(output / "catalog.json") == catalog_manifest_sha256,
+                "published catalog manifest differs from its validated staging manifest",
+            )
         except BaseException:
             boundary_guard.verify()
             for temporary in (provenance_staging, staging):
