@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Platform token lookup, refresh, and bootstrap outages now remain typed as
+  temporary unavailability instead of forcing false reauthentication. A
+  one-time, authenticated compatibility bridge atomically transfers an active
+  legacy online-session membership to the stable Platform `pid`, consumes and
+  revokes the legacy proof, survives response loss and backend restart, and
+  clears Android legacy state only after a confirmed Platform-authorized read
+  of the exact durably marked session (or a final proof rejection).
+
 - Android release identity now comes from one version properties file. PR CI
   runs release unit tests and lint, builds an unsigned release APK, and derives
   package/version/minSdk/size/debuggable/signing evidence from the APK itself.
@@ -16,8 +24,10 @@
   Android Keystore-backed encryption, opens account login in the system browser,
   validates the exact HTTPS App Link callback, and shows linked/conflict/offline
   status in Profile.
-  The existing Google Play online identity remains a separate compatibility
-  path.
+  Android online requests now reuse a fresh game-scoped Platform token, while
+  the backend authorizes the stable `pid` only after verifying the Platform
+  issuer, audience and `gid=inplacex`. The former InplaceX guest/Google identity
+  code remains debug/test compatibility and is no longer release authority.
 
 - The home duel card now opens an explicit bot/online choice: bot play starts
   the local secret setup, while online play opens quick match and discloses its

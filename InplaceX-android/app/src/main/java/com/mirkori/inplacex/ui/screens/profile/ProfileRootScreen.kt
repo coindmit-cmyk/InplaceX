@@ -45,6 +45,7 @@ fun ProfileRootScreen(
     mirkoriAuthInProgress: Boolean = false,
     authResultKey: String? = null,
     authInProgress: Boolean = false,
+    showLegacyGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
@@ -154,7 +155,8 @@ fun ProfileRootScreen(
             }
         }
 
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+        if (showLegacyGooglePlayCard) {
+            SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.google_play.title"),
                 modifier = Modifier.semantics { heading() },
@@ -170,15 +172,18 @@ fun ProfileRootScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val legacyGoogleActionsAllowed = mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
             if (progressState.googlePlaySignedIn) {
-                OutlinedButton(
-                    onClick = onGooglePlaySignOut,
-                    enabled = !authInProgress,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.google_play.sign_out"))
+                if (legacyGoogleActionsAllowed) {
+                    OutlinedButton(
+                        onClick = onGooglePlaySignOut,
+                        enabled = !authInProgress,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) {
+                        Text(strings.text("profile.google_play.sign_out"))
+                    }
                 }
-            } else {
+            } else if (legacyGoogleActionsAllowed) {
                 Button(
                     onClick = onGooglePlaySignIn,
                     enabled = !authInProgress,
@@ -208,6 +213,7 @@ fun ProfileRootScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+            }
             }
         }
 

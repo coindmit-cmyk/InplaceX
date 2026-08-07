@@ -67,15 +67,28 @@ class BackendRuntimeConfigTest {
 
         val config = BackendRuntimeConfig.fromEnvironment(
             mapOf(
-                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
-                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
                 OnlineRuntimeConfig.PublicKeyKey to encodedPublicKey,
             ),
         )
 
         assertEquals("RSA", requireNotNull(config.online).verificationKey.algorithm)
+        assertEquals("inplacex", config.online?.gameId)
         assertEquals(Duration.ofSeconds(5), config.online?.botFallbackDelay)
         assertFalse(config.online.toString().contains(encodedPublicKey))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `online game API rejects RSA verification keys below 2048 bits`() {
+        val weakKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair()
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
+                OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(weakKeys.public.encoded),
+            ),
+        )
     }
 
     @Test
@@ -83,8 +96,8 @@ class BackendRuntimeConfigTest {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val config = BackendRuntimeConfig.fromEnvironment(
             mapOf(
-                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
-                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
                 OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
                 OnlineRuntimeConfig.BotFallbackSecondsKey to "8",
             ),
@@ -98,8 +111,8 @@ class BackendRuntimeConfigTest {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         BackendRuntimeConfig.fromEnvironment(
             mapOf(
-                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
-                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
                 OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
                 OnlineRuntimeConfig.BotFallbackSecondsKey to "600",
             ),
@@ -121,8 +134,8 @@ class BackendRuntimeConfigTest {
                 DatabaseRuntimeConfig.JdbcUrlEnvironmentKey to "jdbc:postgresql://db/inplacex",
                 DatabaseRuntimeConfig.UsernameEnvironmentKey to "inplacex",
                 DatabaseRuntimeConfig.PasswordEnvironmentKey to "test-password",
-                OnlineRuntimeConfig.IssuerKey to "inplacex-identity",
-                OnlineRuntimeConfig.AudienceKey to "inplacex-game-api",
+                OnlineRuntimeConfig.IssuerKey to "mirkori-platform",
+                OnlineRuntimeConfig.AudienceKey to "mirkori-games",
                 OnlineRuntimeConfig.PublicKeyKey to Base64.getEncoder().encodeToString(keys.public.encoded),
             ),
         )

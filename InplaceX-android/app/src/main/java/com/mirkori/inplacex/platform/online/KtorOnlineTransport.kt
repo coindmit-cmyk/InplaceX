@@ -58,6 +58,9 @@ interface AccessTokenProvider {
     suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken?
 }
 
+class AccessTokenTemporarilyUnavailableException(cause: Throwable? = null) :
+    IllegalStateException("access token authority is temporarily unavailable", cause)
+
 class SingleFlightAccessTokenProvider(
     private val delegate: AccessTokenProvider,
 ) : AccessTokenProvider {
@@ -154,6 +157,8 @@ sealed interface RemoteCallResult {
 
     data object MissingAccessToken : RemoteCallResult
 
+    data object AccessTokenTemporarilyUnavailable : RemoteCallResult
+
     data object TimedOut : RemoteCallResult
 
     data class NetworkFailure(val errorClass: String) : RemoteCallResult
@@ -165,6 +170,8 @@ sealed interface OnlineSessionOpenResult {
     data object Offline : OnlineSessionOpenResult
 
     data object MissingAccessToken : OnlineSessionOpenResult
+
+    data object AccessTokenTemporarilyUnavailable : OnlineSessionOpenResult
 
     data object Unauthorized : OnlineSessionOpenResult
 
@@ -205,7 +212,11 @@ class KtorOnlineTransport(
         if (!connectivity.isOnline()) return RemoteCallResult.Offline
 
         var token = if (request.requiresAuthentication) {
-            tokens.currentAccessToken() ?: return RemoteCallResult.MissingAccessToken
+            try {
+                tokens.currentAccessToken() ?: return RemoteCallResult.MissingAccessToken
+            } catch (_: AccessTokenTemporarilyUnavailableException) {
+                return RemoteCallResult.AccessTokenTemporarilyUnavailable
+            }
         } else {
             null
         }
@@ -233,8 +244,12 @@ class KtorOnlineTransport(
                     !refreshAttempted
                 ) {
                     refreshAttempted = true
-                    token = tokens.refreshAccessToken(requireNotNull(token))
-                        ?: return RemoteCallResult.MissingAccessToken
+                    token = try {
+                        tokens.refreshAccessToken(requireNotNull(token))
+                            ?: return RemoteCallResult.MissingAccessToken
+                    } catch (_: AccessTokenTemporarilyUnavailableException) {
+                        return RemoteCallResult.AccessTokenTemporarilyUnavailable
+                    }
                     continue
                 }
 
@@ -281,8 +296,12 @@ class KtorOnlineTransport(
     override suspend fun openSession(request: RemoteWebSocketSpec): OnlineSessionOpenResult {
         if (!connectivity.isOnline()) return OnlineSessionOpenResult.Offline
 
-        var token = tokens.currentAccessToken()
-            ?: return OnlineSessionOpenResult.MissingAccessToken
+        var token = try {
+            tokens.currentAccessToken()
+                ?: return OnlineSessionOpenResult.MissingAccessToken
+        } catch (_: AccessTokenTemporarilyUnavailableException) {
+            return OnlineSessionOpenResult.AccessTokenTemporarilyUnavailable
+        }
         var refreshAttempted = false
         var attempt = 1
 
@@ -307,8 +326,12 @@ class KtorOnlineTransport(
             } catch (response: ResponseException) {
                 if (response.response.status == HttpStatusCode.Unauthorized && !refreshAttempted) {
                     refreshAttempted = true
-                    token = tokens.refreshAccessToken(token)
-                        ?: return OnlineSessionOpenResult.MissingAccessToken
+                    token = try {
+                        tokens.refreshAccessToken(token)
+                            ?: return OnlineSessionOpenResult.MissingAccessToken
+                    } catch (_: AccessTokenTemporarilyUnavailableException) {
+                        return OnlineSessionOpenResult.AccessTokenTemporarilyUnavailable
+                    }
                     continue
                 }
                 if (response.response.status == HttpStatusCode.Unauthorized) {

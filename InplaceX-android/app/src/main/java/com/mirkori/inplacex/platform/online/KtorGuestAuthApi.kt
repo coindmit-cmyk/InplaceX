@@ -51,6 +51,7 @@ class KtorGuestAuthApi(
             else GuestAuthResult.TemporarilyUnavailable
         }
         RemoteCallResult.Offline -> GuestAuthResult.Offline
+        RemoteCallResult.AccessTokenTemporarilyUnavailable,
         RemoteCallResult.TimedOut,
         is RemoteCallResult.NetworkFailure,
         -> GuestAuthResult.TemporarilyUnavailable

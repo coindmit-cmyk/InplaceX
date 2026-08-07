@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.platform.mirkori
 
+import com.mirkori.inplacex.platform.online.AccessToken
+import com.mirkori.inplacex.platform.online.AccessTokenTemporarilyUnavailableException
 import com.mirkori.platform.sdk.GameIdentitySession
 import com.mirkori.platform.sdk.InstallationIdentity
 import com.mirkori.platform.sdk.MirkoriGameSdk
@@ -212,6 +214,78 @@ class MirkoriPlatformRuntimeTest {
         assertEquals(firstKey, retryTransport.requests.single().headers["Idempotency-Key"])
         assertTrue(store.value?.session?.credentials?.accessToken.orEmpty().startsWith("refreshed."))
         assertNull(store.value?.pendingRefresh)
+    }
+
+    @Test
+    fun rejectedLinkedRefreshPublishesGuestAccountState() {
+        val store = MemoryStore(
+            MirkoriPersistedState(
+                installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+                session = GameIdentitySession(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    gameId = "inplacex",
+                    installationId = InstallationId,
+                    authMode = PlatformAuthMode.LOCAL,
+                    credentials = expiredCredentials("linked"),
+                ),
+            ),
+        )
+        val runtime = runtime(
+            QueueTransport(
+                PlatformHttpResponse(401, "{}"),
+                ok(bootstrapJson()),
+            ),
+            store,
+        )
+
+        val token = runSuspend {
+            runtime.refreshAccessToken(AccessToken.from("rejected.token"))
+        }
+
+        assertTrue(
+            requireNotNull(token).sameValueAs(AccessToken.from(credentials("guest").accessToken)),
+        )
+        assertEquals(MirkoriAccountStateKind.GUEST, runtime.accountState.value.kind)
+        assertEquals(PlatformAuthMode.GUEST, runtime.accountState.value.authMode)
+    }
+
+    @Test
+    fun temporaryRefreshFailureIsTypedAndPreservesPersistedCredentials() {
+        val initial = MirkoriPersistedState(
+            installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+            session = GameIdentitySession(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                gameId = "inplacex",
+                installationId = InstallationId,
+                authMode = PlatformAuthMode.LOCAL,
+                credentials = expiredCredentials("linked"),
+            ),
+        )
+        val store = MemoryStore(initial)
+        val runtime = runtime(ThrowingTransport(IOException("platform unavailable")), store)
+
+        assertThrows(AccessTokenTemporarilyUnavailableException::class.java) {
+            runSuspend { runtime.currentAccessToken() }
+        }
+
+        assertEquals(PlayerId, store.value?.session?.gamePlayerId)
+        assertEquals(expiredCredentials("linked").refreshToken, store.value?.session?.credentials?.refreshToken)
+        assertTrue(store.value?.pendingRefresh != null)
+    }
+
+    @Test
+    fun temporaryBootstrapFailureIsTypedAndPreservesInstallation() {
+        val store = installationStore()
+        val runtime = runtime(ThrowingTransport(IOException("platform unavailable")), store)
+
+        assertThrows(AccessTokenTemporarilyUnavailableException::class.java) {
+            runSuspend { runtime.currentAccessToken() }
+        }
+
+        assertEquals(InstallationId, store.value?.installation?.installationId)
+        assertNull(store.value?.session)
     }
 
     private fun runtime(transport: PlatformTransport, store: MemoryStore): MirkoriPlatformRuntime {

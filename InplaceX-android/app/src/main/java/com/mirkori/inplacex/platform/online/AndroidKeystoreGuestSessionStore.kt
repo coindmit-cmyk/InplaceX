@@ -36,7 +36,9 @@ class AndroidKeystoreGuestSessionStore(
     }
 
     override fun clear() {
-        preferences.edit().remove(SessionKey).commit()
+        check(preferences.edit().remove(SessionKey).commit()) {
+            "Unable to clear guest session"
+        }
     }
 
     private fun encrypt(session: GuestSession): String {

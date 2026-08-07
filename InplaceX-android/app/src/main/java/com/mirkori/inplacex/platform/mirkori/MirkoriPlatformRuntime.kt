@@ -4,6 +4,9 @@ import android.content.Context
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.AndroidConnectivityGate
+import com.mirkori.inplacex.platform.online.AccessToken
+import com.mirkori.inplacex.platform.online.AccessTokenProvider
+import com.mirkori.inplacex.platform.online.AccessTokenTemporarilyUnavailableException
 import com.mirkori.platform.sdk.GameClientPlatform
 import com.mirkori.platform.sdk.GameIdentitySession
 import com.mirkori.platform.sdk.MirkoriGameSdk
@@ -16,6 +19,9 @@ import com.mirkori.platform.sdk.PlatformProfileConflictException
 import io.ktor.client.HttpClient
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -24,9 +30,12 @@ class MirkoriPlatformRuntime internal constructor(
     private val store: SecureMirkoriStateStore,
     private val client: HttpClient? = null,
     private val clockMs: () -> Long = System::currentTimeMillis,
-) : AutoCloseable {
+) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
     private var persistedState: MirkoriPersistedState? = store.read()
+    private val mutableAccountState = MutableStateFlow(persistedState.toAccountState())
+
+    val accountState: StateFlow<MirkoriAccountState> = mutableAccountState.asStateFlow()
 
     fun currentAccountState(): MirkoriAccountState = persistedState.toAccountState()
 
@@ -97,11 +106,44 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
+    override suspend fun currentAccessToken(): AccessToken? = accessTokenOrNull(forceRefresh = false)
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? =
+        operationMutex.withLock {
+            try {
+                val current = persistedState?.session
+                    ?.takeIf { it.credentials.accessExpiresAt.toEpochMilli() > clockMs() }
+                    ?.credentials
+                    ?.accessToken
+                    ?.let(AccessToken::from)
+                if (current != null && !current.sameValueAs(rejectedToken)) {
+                    return@withLock current
+                }
+                AccessToken.from(ensureFreshSession(forceRefresh = true).credentials.accessToken)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                logFailure(error)
+                throw AccessTokenTemporarilyUnavailableException(error)
+            }
+        }
+
     override fun close() {
         client?.close()
     }
 
-    private suspend fun ensureFreshSession(): GameIdentitySession {
+    private suspend fun accessTokenOrNull(forceRefresh: Boolean): AccessToken? = operationMutex.withLock {
+        try {
+            AccessToken.from(ensureFreshSession(forceRefresh).credentials.accessToken)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            throw AccessTokenTemporarilyUnavailableException(error)
+        }
+    }
+
+    private suspend fun ensureFreshSession(forceRefresh: Boolean = false): GameIdentitySession {
         var state = persistedState
         if (state == null) {
             state = MirkoriPersistedState(sdk.newInstallation())
@@ -109,7 +151,7 @@ class MirkoriPlatformRuntime internal constructor(
         }
         val current = state.session
         if (
-            current != null &&
+            !forceRefresh && current != null &&
             state.pendingRefresh == null &&
             current.credentials.accessExpiresAt.toEpochMilli() > clockMs() + RefreshSkewMs
         ) {
@@ -152,6 +194,7 @@ class MirkoriPlatformRuntime internal constructor(
     private fun persist(state: MirkoriPersistedState) {
         store.write(state)
         persistedState = state
+        mutableAccountState.value = state.toAccountState()
     }
 
     private fun logFailure(error: Throwable) {

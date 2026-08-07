@@ -6,9 +6,15 @@ import com.mirkori.inplacex.platform.services.StubAdService
 import com.mirkori.inplacex.platform.services.StubBillingService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DebugBuildVariantToolsTest {
+    @Test
+    fun `legacy Google profile actions remain debug only`() {
+        assertTrue(legacyGoogleProfileActionsEnabled())
+    }
+
     @Test
     fun `initial test coins are granted once instead of restored after spending`() {
         assertEquals(

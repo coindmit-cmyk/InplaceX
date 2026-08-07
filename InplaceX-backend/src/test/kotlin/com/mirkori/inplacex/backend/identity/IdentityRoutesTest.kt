@@ -145,7 +145,7 @@ class IdentityRoutesTest {
         )
         val accessVerifier = JwtAccessTokenVerifier(
             keyPair.public,
-            JwtVerificationPolicy(policy.issuer, policy.audience),
+            JwtVerificationPolicy.legacyInplaceXCompatibility(policy.issuer, policy.audience),
             Clock.fixed(now, ZoneOffset.UTC),
         )
         application { configureIdentityRoutes(service, accessVerifier) }

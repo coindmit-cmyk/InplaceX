@@ -2,6 +2,9 @@ package com.mirkori.inplacex
 
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
+import com.mirkori.inplacex.platform.online.AccessTokenProvider
+import com.mirkori.inplacex.platform.online.OnlineRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -15,6 +18,17 @@ class ReleaseVariantIsolationTest {
         assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
         assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
         assertFalse(testFriendBotEnabled())
+        assertFalse(legacyGoogleProfileActionsEnabled())
+    }
+
+    @Test
+    fun `release online runtime accepts tokens only through the Mirkori provider boundary`() {
+        assertTrue(AccessTokenProvider::class.java.isAssignableFrom(MirkoriPlatformRuntime::class.java))
+        val forbiddenLegacyMethods = setOf("createGoogleChallenge", "authenticateWithGoogle", "signOut")
+
+        assertTrue(
+            OnlineRuntime::class.java.declaredMethods.none { it.name in forbiddenLegacyMethods },
+        )
     }
 
     @Test

@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
-import com.mirkori.inplacex.data.local.LocalPlayerProfile
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.core.retention.RetentionRewardType
@@ -38,6 +37,8 @@ import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.AccessToken
+import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
@@ -53,6 +54,7 @@ import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
+import com.mirkori.platform.sdk.PlatformAuthMode
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -121,13 +123,7 @@ class ShellSectionsSmokeTest {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
                 context = composeRule.activity,
-                profile = LocalPlayerProfile(
-                    playerId = "instrumented-player",
-                    installationId = "instrumented-installation",
-                    displayName = "Instrumented",
-                ),
-                locale = "ru-RU",
-                regionCode = "RU",
+                accessTokenProvider = InstrumentedAccessTokenProvider,
                 baseUrl = "http://127.0.0.1:65535",
                 allowCleartextLoopback = true,
             ),
@@ -169,13 +165,7 @@ class ShellSectionsSmokeTest {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
                 context = composeRule.activity,
-                profile = LocalPlayerProfile(
-                    playerId = "instrumented-player",
-                    installationId = "instrumented-installation-invites",
-                    displayName = "Instrumented",
-                ),
-                locale = "ru-RU",
-                regionCode = "RU",
+                accessTokenProvider = InstrumentedAccessTokenProvider,
                 baseUrl = "http://127.0.0.1:65535",
                 allowCleartextLoopback = true,
             ),
@@ -250,6 +240,7 @@ class ShellSectionsSmokeTest {
             ProfileRootScreen(
                 progressState = progress(),
                 authResultKey = "profile.auth.unavailable",
+                showLegacyGooglePlayCard = true,
             )
         }
 
@@ -275,6 +266,65 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText("Гостевой профиль Mirkori Games").assertIsDisplayed()
         composeRule.onNodeWithText("Войти в Mirkori Games").performScrollTo().performClick()
         composeRule.runOnIdle { assertTrue(signInRequested) }
+    }
+
+    @Test
+    fun linkedMirkoriAccountDoesNotExposeFalseGoogleSignOut() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = true),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000803",
+                ),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun initializingMirkoriAccountDoesNotExposeLegacyGoogleSignOut() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = true),
+                mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun linkedTelegramAccountDoesNotOfferUnsupportedGoogleLinking() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = false),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000804",
+                    authMode = PlatformAuthMode.TELEGRAM,
+                ),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun releaseLikeGuestProfileDoesNotOfferLegacyGoogleLogin() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = false),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.GUEST,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000805",
+                ),
+                showLegacyGooglePlayCard = false,
+            )
+        }
+
+        composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
     }
 
     @Test
@@ -689,4 +739,10 @@ class ShellSectionsSmokeTest {
         proPlusSubscriptionActive = false,
         temporaryProExpiresAtMs = temporaryProExpiresAtMs,
     )
+}
+
+private object InstrumentedAccessTokenProvider : AccessTokenProvider {
+    override suspend fun currentAccessToken(): AccessToken = AccessToken.from("instrumented-token")
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? = null
 }

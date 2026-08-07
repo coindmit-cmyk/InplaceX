@@ -24,9 +24,10 @@ class JwtAccessTokenVerifierTest {
     private val trustedKeys = rsaKeys()
     private val verifier = JwtAccessTokenVerifier(
         verificationKey = trustedKeys.public,
-        policy = JwtVerificationPolicy(
+        policy = JwtVerificationPolicy.platformGame(
             issuer = Issuer,
             audience = Audience,
+            gameId = GameId,
             maximumTokenLifetime = Duration.ofMinutes(15),
             allowedClockSkew = Duration.ZERO,
         ),
@@ -40,6 +41,8 @@ class JwtAccessTokenVerifierTest {
         val result = verifier.authenticate("Bearer $token") as AccessTokenAuthentication.Accepted
 
         assertEquals(PlayerId, result.principal.playerId)
+        assertEquals(AccountId, result.principal.accountId)
+        assertEquals(GameId, result.principal.gameId)
         assertEquals(TokenId, result.principal.tokenId)
         assertEquals("AuthenticatedPrincipal([redacted])", result.principal.toString())
         assertFalse(Modifier.isPublic(result.principal.javaClass.modifiers))
@@ -94,7 +97,7 @@ class JwtAccessTokenVerifierTest {
     }
 
     @Test
-    fun `algorithm confusion unknown claims and non canonical ids are rejected`() {
+    fun `algorithm confusion wrong game and non canonical ids are rejected`() {
         assertRejected(
             token(
                 header = """{"alg":"none","typ":"JWT"}""",
@@ -103,15 +106,38 @@ class JwtAccessTokenVerifierTest {
             AccessTokenRejection.INVALID_CLAIMS,
         )
         assertRejected(
-            token(payload = validPayload().replace("}", """, "role":"admin"}""")),
+            token(payload = validPayload(subject = AccountId.uppercase())),
             AccessTokenRejection.INVALID_CLAIMS,
         )
         assertRejected(
-            token(payload = validPayload(subject = PlayerId.uppercase())),
+            token(payload = validPayload(playerId = PlayerId.uppercase())),
+            AccessTokenRejection.INVALID_CLAIMS,
+        )
+        assertRejected(
+            token(payload = validPayload(gameId = "another-game")),
             AccessTokenRejection.INVALID_CLAIMS,
         )
         assertRejected(
             token(payload = validPayload(tokenId = "not-a-token-id")),
+            AccessTokenRejection.INVALID_CLAIMS,
+        )
+    }
+
+    @Test
+    fun `signed additive platform claims are accepted but required pid remains mandatory`() {
+        val extended = token(
+            payload = validPayload().replace(
+                "}",
+                """, "sid":"00000000-0000-4000-8000-000000000099","amr":"google","roles":["player"]}""",
+            ),
+        )
+
+        val accepted = verifier.authenticate("Bearer $extended") as AccessTokenAuthentication.Accepted
+
+        assertEquals(AccountId, accepted.principal.accountId)
+        assertEquals(PlayerId, accepted.principal.playerId)
+        assertRejected(
+            token(payload = validPayload().replace("\"pid\":\"$PlayerId\",", "")),
             AccessTokenRejection.INVALID_CLAIMS,
         )
     }
@@ -143,7 +169,11 @@ class JwtAccessTokenVerifierTest {
     @Test
     fun `policy key type and public verifier surface are bounded`() {
         assertThrows(IllegalArgumentException::class.java) {
-            JwtVerificationPolicy(issuer = "issuer with spaces", audience = Audience)
+            JwtVerificationPolicy.platformGame(
+                issuer = "issuer with spaces",
+                audience = Audience,
+                gameId = GameId,
+            )
         }
         assertThrows(IllegalArgumentException::class.java) {
             JwtAccessTokenVerifier(
@@ -151,14 +181,25 @@ class JwtAccessTokenVerifierTest {
                     .apply { initialize(256) }
                     .generateKeyPair()
                     .public,
-                policy = JwtVerificationPolicy(Issuer, Audience),
+                policy = JwtVerificationPolicy.platformGame(Issuer, Audience, GameId),
                 clock = Clock.fixed(now, ZoneOffset.UTC),
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            JwtVerificationPolicy(
+            JwtAccessTokenVerifier(
+                verificationKey = KeyPairGenerator.getInstance("RSA")
+                    .apply { initialize(1024) }
+                    .generateKeyPair()
+                    .public,
+                policy = JwtVerificationPolicy.platformGame(Issuer, Audience, GameId),
+                clock = Clock.fixed(now, ZoneOffset.UTC),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            JwtVerificationPolicy.platformGame(
                 issuer = Issuer,
                 audience = Audience,
+                gameId = GameId,
                 maximumTokenLifetime = Duration.ofHours(2),
             )
         }
@@ -214,19 +255,23 @@ class JwtAccessTokenVerifierTest {
     private fun validPayload(
         issuer: String = Issuer,
         audience: String = Audience,
-        subject: String = PlayerId,
+        subject: String = AccountId,
+        playerId: String = PlayerId,
+        gameId: String = GameId,
         issuedAt: Instant = now,
         expiresAt: Instant = now.plusSeconds(900),
         tokenId: String = TokenId,
     ): String =
-        """{"iss":"$issuer","aud":"$audience","sub":"$subject","iat":${issuedAt.epochSecond},"exp":${expiresAt.epochSecond},"jti":"$tokenId"}"""
+        """{"iss":"$issuer","aud":"$audience","sub":"$subject","pid":"$playerId","gid":"$gameId","iat":${issuedAt.epochSecond},"exp":${expiresAt.epochSecond},"jti":"$tokenId"}"""
 
     private fun rsaKeys(): KeyPair =
         KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
 
     private companion object {
-        const val Issuer = "inplacex-test"
-        const val Audience = "inplacex-client"
+        const val Issuer = "mirkori-platform"
+        const val Audience = "mirkori-games"
+        const val GameId = "inplacex"
+        const val AccountId = "00000000-0000-4000-8000-abcdefabc001"
         const val PlayerId = "00000000-0000-4000-8000-abcdefabcdef"
         const val OtherPlayerId = "00000000-0000-4000-8000-000000000002"
         const val TokenId = "00000000-0000-4000-8000-000000000003"

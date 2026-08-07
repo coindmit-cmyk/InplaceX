@@ -4,6 +4,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 import javax.sql.DataSource
 
 class RevisionConflictException(playerId: String, expectedRevision: Long) : IllegalStateException(
@@ -47,6 +48,16 @@ data class StoredSessionCommand(
 )
 
 class JdbcPlayerRepository(private val dataSource: DataSource) {
+    private val platformPlayerUpsertSql: String by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        dataSource.connection.use { connection ->
+            when (connection.metaData.databaseProductName) {
+                "PostgreSQL" -> PostgreSqlPlatformPlayerUpsert
+                "H2" -> H2PlatformPlayerUpsert
+                else -> throw IllegalStateException("Unsupported player repository database")
+            }
+        }
+    }
+
     fun create(id: String, displayName: String) = dataSource.transaction { connection ->
         connection.prepareStatement(
             "INSERT INTO players(id, display_name) VALUES (?, ?)",
@@ -61,6 +72,35 @@ class JdbcPlayerRepository(private val dataSource: DataSource) {
             statement.setString(1, id)
             statement.executeUpdate()
         }
+    }
+
+    /**
+     * Creates only the game-local projection required by online persistence.
+     * Mirkori Platform remains the identity authority for the supplied player id.
+     */
+    fun ensurePlatformPlayer(id: String) {
+        require(id.isCanonicalUuid()) { "platform player id must be a canonical UUID" }
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(platformPlayerUpsertSql).use { statement ->
+                statement.setString(1, id)
+                statement.setString(2, PlatformPlayerDisplayName)
+                statement.executeUpdate()
+            }
+        }
+    }
+
+    private companion object {
+        const val PlatformPlayerDisplayName = "Mirkori player"
+        const val PostgreSqlPlatformPlayerUpsert =
+            "INSERT INTO players(id, display_name) VALUES (?, ?) ON CONFLICT (id) DO NOTHING"
+        const val H2PlatformPlayerUpsert =
+            """
+            MERGE INTO players AS target
+            USING (VALUES (?, ?)) AS source(id, display_name)
+            ON target.id = source.id
+            WHEN NOT MATCHED THEN
+                INSERT (id, display_name) VALUES (source.id, source.display_name)
+            """
     }
 }
 
@@ -319,3 +359,6 @@ internal inline fun <T> DataSource.transaction(block: (Connection) -> T): T = co
 private fun PreparedStatement.setInstant(index: Int, value: Instant) {
     setObject(index, value.atOffset(ZoneOffset.UTC))
 }
+
+private fun String.isCanonicalUuid(): Boolean =
+    runCatching { UUID.fromString(this).toString() == this }.getOrDefault(false)

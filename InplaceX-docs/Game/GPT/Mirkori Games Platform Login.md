@@ -36,17 +36,41 @@ ambiguous failure or process restart, and clears it only after a committed
 response or an unambiguous rejection. This preserves the server's durable
 refresh idempotency contract when the response is lost after token rotation.
 If refresh is rejected or expired, the same installation is bootstrapped back
-to a guest credential before a new browser login.
+to a guest credential before a new browser login. Network or Platform failures
+during current-token lookup, refresh, or bootstrap are reported to online
+features as temporary unavailability, not as missing authentication, and do not
+erase the persisted Platform session.
 
-## Compatibility boundary
+## Online identity boundary
 
-The existing Google Play sign-in and InplaceX online backend credentials remain
-separate during this slice. Connecting Mirkori Games does not rewrite local
-progress and does not silently switch online-match identity.
+Mirkori Games is the only release identity authority for InplaceX online play.
+Every online request uses a fresh Platform game token scoped to `gid=inplacex`;
+the backend maps membership and persistence to its `pid` (`game_player_id`),
+never to the global account `sub`. Connecting a linked account therefore keeps
+the same Platform game profile across Google, Telegram, the website, and online
+matches. It does not rewrite local campaign progress. The retired standalone
+guest/Google credential path remains source-level debug/test compatibility and
+is not composed into the release runtime as an identity authority.
+
+For a bounded upgrade window, an unfinished match created before the Platform
+cutover may use its encrypted legacy refresh token once as ownership proof. The
+client attempts this only after a Platform-authorized session read returns a
+membership rejection. The backend atomically replaces the legacy participant
+with the current Platform `pid`, consumes and revokes the legacy credential,
+and durably records the idempotent result. Android clears the legacy store only
+after a follow-up Platform-authorized read confirms the transfer for the exact
+session recorded in a non-secret durable attempt marker. Reading another
+Platform-owned session cannot clear the proof. Offline, temporary Platform
+failure, and ambiguous response loss preserve the proof and the same command
+identifier for safe retry; an authoritative rejection of the proof clears both
+stores. The raw proof is never logged.
 
 No Mirkori Games sign-out button is exposed in v1 because the platform does not
-yet have a provider-session revocation endpoint. Discarding a local refresh
-token while leaving its server family active would present a false logout.
+yet have a provider-session revocation endpoint. When the Platform profile is
+linked, the legacy Google Play sign-out action is hidden as well: discarding
+only local credentials while leaving the server refresh family active would
+present a false logout. A future logout flow must revoke the Platform session
+server-side before clearing the encrypted local state.
 
 ## Build and App Link
 

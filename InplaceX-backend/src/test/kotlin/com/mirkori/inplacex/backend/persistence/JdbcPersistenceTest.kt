@@ -38,6 +38,7 @@ class JdbcPersistenceTest {
                     "DUEL_TURNS",
                     "PRIVATE_DUEL_INVITES",
                     "ONLINE_COMMAND_RESULTS",
+                    "LEGACY_ONLINE_SESSION_MIGRATIONS",
                 ),
                 connection.metaData.getTables(null, null, "%", arrayOf("TABLE")).use { resultSet ->
                     buildSet {
@@ -50,11 +51,12 @@ class JdbcPersistenceTest {
                             "AUTH_IDEMPOTENCY_RESULTS",
                             "DUEL_PARTICIPANTS", "DUEL_SECRETS", "DUEL_TURNS",
                             "PRIVATE_DUEL_INVITES", "ONLINE_COMMAND_RESULTS",
+                            "LEGACY_ONLINE_SESSION_MIGRATIONS",
                         ),
                     )
                 },
             )
-            assertEquals(8, connection.createStatement().use { statement ->
+            assertEquals(9, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
@@ -99,6 +101,32 @@ class JdbcPersistenceTest {
 
         assertThrows(Exception::class.java) {
             tickets.create(MatchmakingTicket("ticket-2", "missing", "ranked", Instant.parse("2026-07-26T00:00:00Z")))
+        }
+    }
+
+    @Test
+    fun platformPlayerProjectionIsIdempotentAndDoesNotCreateASecondIdentity() {
+        val dataSource = migratedDataSource()
+        val players = JdbcPlayerRepository(dataSource)
+        val playerId = "00000000-0000-4000-8000-000000000701"
+
+        players.create(playerId, "Existing player")
+        players.ensurePlatformPlayer(playerId)
+        players.ensurePlatformPlayer(playerId)
+
+        dataSource.connection.use { connection ->
+            assertEquals(1, count(connection, "SELECT COUNT(*) FROM players WHERE id = '$playerId'"))
+            assertEquals(0, count(connection, "SELECT COUNT(*) FROM player_identities WHERE player_id = '$playerId'"))
+            val displayName = connection.prepareStatement(
+                "SELECT display_name FROM players WHERE id = ?",
+            ).use { statement ->
+                statement.setString(1, playerId)
+                statement.executeQuery().use { result ->
+                    require(result.next())
+                    result.getString(1)
+                }
+            }
+            assertEquals("Existing player", displayName)
         }
     }
 

@@ -58,11 +58,8 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
-import com.mirkori.inplacex.platform.online.GuestAuthResult
-import com.mirkori.inplacex.platform.online.GoogleChallengeResult
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.AdPlacementPolicy
-import com.mirkori.inplacex.platform.services.GoogleCredentialResult
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
@@ -87,8 +84,10 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import com.mirkori.platform.sdk.PlatformAuthMode
 
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
@@ -260,20 +259,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
-                val localPlayerProfile = remember(platformLocalRepository) {
-                    platformLocalRepository.loadPlayerProfile()
-                }
-                val onlineRuntime = remember(currentLanguage, localPlayerProfile.installationId) {
-                    OnlineRuntime.createOrNull(
-                        context = applicationContext,
-                        profile = localPlayerProfile,
-                        locale = if (currentLanguage == AppLanguage.RU) "ru-RU" else "en-US",
-                        regionCode = if (currentLanguage == AppLanguage.RU) "RU" else "US",
-                    )
-                }
-                DisposableEffect(onlineRuntime) {
-                    onDispose { onlineRuntime?.close() }
-                }
                 val mirkoriPlatformRuntime = remember {
                     runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
                         .onFailure { error ->
@@ -287,6 +272,26 @@ class MainActivity : ComponentActivity() {
                 }
                 DisposableEffect(mirkoriPlatformRuntime) {
                     onDispose { mirkoriPlatformRuntime?.close() }
+                }
+                LaunchedEffect(mirkoriPlatformRuntime) {
+                    if (mirkoriPlatformRuntime == null) {
+                        mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
+                    } else {
+                        mirkoriPlatformRuntime.accountState.collect { state ->
+                            mirkoriAccountState = state
+                        }
+                    }
+                }
+                val onlineRuntime = remember(mirkoriPlatformRuntime) {
+                    mirkoriPlatformRuntime?.let { platformRuntime ->
+                        OnlineRuntime.createOrNull(
+                            context = applicationContext,
+                            accessTokenProvider = platformRuntime,
+                        )
+                    }
+                }
+                DisposableEffect(onlineRuntime) {
+                    onDispose { onlineRuntime?.close() }
                 }
                 LaunchedEffect(mirkoriPlatformRuntime, mirkoriCallbackUrl) {
                     if (mirkoriCallbackUrl == null) {
@@ -313,6 +318,12 @@ class MainActivity : ComponentActivity() {
                         }) {
                             is MirkoriLoginResult.Connected -> {
                                 mirkoriAccountState = result.accountState
+                                if (result.accountState.authMode == PlatformAuthMode.GOOGLE) {
+                                    progressState = progressRepository.signInWithGooglePlay(
+                                        progressState.playerDisplayName,
+                                    )
+                                    profileAuthResultKey = "profile.auth.signed_in"
+                                }
                                 mirkoriAuthResultKey = "profile.mirkori.connected.success"
                             }
                             MirkoriLoginResult.ProfileConflict ->
@@ -833,6 +844,7 @@ class MainActivity : ComponentActivity() {
                                 mirkoriAuthInProgress = mirkoriAuthOperation.inProgress,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
+                                showLegacyGooglePlayCard = legacyGoogleProfileActionsEnabled(),
                                 onMirkoriSignIn = {
                                     mirkoriAuthOperation.start()?.let { operationId ->
                                         mirkoriAuthResultKey = null
@@ -886,53 +898,45 @@ class MainActivity : ComponentActivity() {
                                         profileAuthResultKey = null
                                         coroutineScope.launch {
                                             try {
-                                                val challenge = onlineRuntime?.createGoogleChallenge()
-                                                profileAuthResultKey = when (challenge) {
-                                                    is GoogleChallengeResult.Ready -> {
-                                                        when (
-                                                            val providerResult = googleCredentialSignIn.signIn(
-                                                                activity = this@MainActivity,
-                                                                nonce = challenge.challenge.nonce,
+                                                val result = if (mirkoriPlatformRuntime == null) {
+                                                    MirkoriLoginResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        mirkoriPlatformRuntime.beginLogin()
+                                                    }
+                                                }
+                                                profileAuthResultKey = when (result) {
+                                                    is MirkoriLoginResult.BrowserReady -> {
+                                                        startActivity(
+                                                            Intent(Intent.ACTION_VIEW, Uri.parse(result.connectUrl)),
+                                                        )
+                                                        null
+                                                    }
+                                                    is MirkoriLoginResult.Connected -> {
+                                                        mirkoriAccountState = result.accountState
+                                                        if (result.accountState.authMode == PlatformAuthMode.GOOGLE) {
+                                                            progressState = progressRepository.signInWithGooglePlay(
+                                                                progressState.playerDisplayName,
                                                             )
-                                                        ) {
-                                                            is GoogleCredentialResult.Success -> {
-                                                                when (
-                                                                    val serverResult = onlineRuntime.authenticateWithGoogle(
-                                                                        idToken = providerResult.credential.idToken,
-                                                                        nonce = challenge.challenge.nonce,
-                                                                    )
-                                                                ) {
-                                                                    is GuestAuthResult.Authenticated -> {
-                                                                        progressState =
-                                                                            progressRepository.signInWithGooglePlay(
-                                                                                providerResult.credential.playerName
-                                                                                    ?: progressState.playerDisplayName,
-                                                                            )
-                                                                        "profile.auth.signed_in"
-                                                                    }
-                                                                    GuestAuthResult.Rejected ->
-                                                                        "profile.auth.rejected"
-                                                                    GuestAuthResult.Offline,
-                                                                    GuestAuthResult.TemporarilyUnavailable ->
-                                                                        "profile.auth.unavailable"
-                                                                }
-                                                            }
-                                                            GoogleCredentialResult.Cancelled ->
-                                                                "profile.auth.cancelled"
-                                                            GoogleCredentialResult.Unavailable ->
-                                                                "profile.auth.not_configured"
-                                                            GoogleCredentialResult.Failed ->
-                                                                "profile.auth.rejected"
+                                                            "profile.auth.signed_in"
+                                                        } else {
+                                                            "profile.auth.rejected"
                                                         }
                                                     }
-                                                    GoogleChallengeResult.AuthenticationRequired,
-                                                    GoogleChallengeResult.Rejected,
+                                                    MirkoriLoginResult.AlreadyConnected -> {
+                                                        if (mirkoriAccountState.authMode == PlatformAuthMode.GOOGLE) {
+                                                            progressState = progressRepository.signInWithGooglePlay(
+                                                                progressState.playerDisplayName,
+                                                            )
+                                                            "profile.auth.signed_in"
+                                                        } else {
+                                                            "profile.auth.rejected"
+                                                        }
+                                                    }
+                                                    MirkoriLoginResult.ProfileConflict,
+                                                    MirkoriLoginResult.Rejected,
                                                     -> "profile.auth.rejected"
-                                                    GoogleChallengeResult.ProviderUnavailable ->
-                                                        "profile.auth.not_configured"
-                                                    GoogleChallengeResult.TemporarilyUnavailable,
-                                                    null,
-                                                    -> "profile.auth.unavailable"
+                                                    MirkoriLoginResult.Unavailable -> "profile.auth.unavailable"
                                                 }
                                             } catch (error: Exception) {
                                                 if (error is CancellationException) throw error
@@ -953,7 +957,6 @@ class MainActivity : ComponentActivity() {
                                         coroutineScope.launch {
                                             try {
                                                 googleCredentialSignIn.signOut()
-                                                onlineRuntime?.signOut()
                                                 activeOnlineSessionStore.clear()
                                                 activeOnlineSessionId = null
                                                 progressState = progressRepository.signOutFromGooglePlay()

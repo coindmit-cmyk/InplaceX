@@ -43,6 +43,15 @@ Current state:
   retained private invites before online routes start. Create/accept command
   ids are reconstructed from their rows, so retries after restart return the
   existing ticket, invite, or shared session instead of minting duplicates.
+- production online authentication accepts only Mirkori Games Platform RS256
+  game tokens. Configure `INPLACEX_ONLINE_TOKEN_ISSUER` and
+  `INPLACEX_ONLINE_TOKEN_AUDIENCE` to the Platform values (normally
+  `mirkori-platform` and `mirkori-games`) and provide only the Platform X509
+  RSA public key through `INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64`. Keys below
+  2048 bits are rejected during configuration and verifier construction. The
+  verifier requires `pid` plus exact `gid=inplacex`; it never treats account
+  `sub` as the player. PostgreSQL creates only an idempotent local player
+  projection for the verified `pid`, not a second identity account.
 - public matchmaking coordinates active backend instances through PostgreSQL:
   the oldest compatible waiting row is claimed with `FOR UPDATE SKIP LOCKED`,
   the duel and both matched tickets commit together, and bot fallback locks the

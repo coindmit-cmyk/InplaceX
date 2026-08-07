@@ -37,7 +37,7 @@ fun Application.identityModule(
     val policy = CredentialPolicy(config.issuer, config.audience)
     val accessTokenVerifier = JwtAccessTokenVerifier(
         verificationKey = derivePublicKey(config.privateKey),
-        policy = JwtVerificationPolicy(
+        policy = JwtVerificationPolicy.legacyInplaceXCompatibility(
             issuer = config.issuer,
             audience = config.audience,
         ),

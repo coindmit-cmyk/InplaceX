@@ -13,7 +13,8 @@ Build the server as an authoritative backend for:
 
 The current game docs already define the core product behavior. Backend should preserve those contracts and move authority for online state, purchases, and cross-device sync to the server.
 
-The normative v1 boundary for guest auth, cloud save, matchmaking, duel
+The normative v1 boundary for Platform-token authentication, cloud save,
+matchmaking, duel
 commands, snapshots, WebSocket events, concurrency, redaction, and security is
 [`Online Contracts v1`](Online%20Contracts.md). This architecture document
 defines module ownership and rollout; it must not introduce a second wire
@@ -26,7 +27,7 @@ contract.
 - `PostgreSQL`
 - `Exposed` for the first stage
 - `kotlinx.serialization`
-- `JWT` access tokens
+- Mirkori game-scoped `RS256` access-token verification
 - `Flyway` for migrations
 - `HikariCP`
 - `Testcontainers`
@@ -52,7 +53,8 @@ Suggested bounded modules inside one Ktor app:
 1. `app`
    boot, config, routing, DI, security, observability
 2. `auth`
-   Google sign-in verification, device identity bootstrap, JWT issuing
+   Mirkori game-token verification, exact claim validation, and idempotent
+   projection of the Platform `pid` into the game-local player row
 3. `profile`
    player profile, settings, currencies, progression snapshot
 4. `cloudsave`
@@ -74,28 +76,29 @@ Suggested bounded modules inside one Ktor app:
 
 ## High-Level Runtime Flow
 
-### 1. Anonymous bootstrap
+### 1. Platform guest identity
 
-Client starts offline-first, but may request backend bootstrap:
+The client remains offline-first. When online identity is needed, Android uses
+the Mirkori Platform Game SDK to restore or bootstrap its installation and
+InplaceX game profile. The Platform owns the installation secret, account,
+refresh family, and game-scoped credential pair.
 
-- create or attach a `device_installation`
-- create a lightweight player identity if none exists
-- receive JWT pair for backend calls
+The InplaceX backend does not bootstrap a second device identity and does not
+issue another JWT. It verifies the Platform `RS256` token, requires the
+configured issuer/audience and exact `gid=inplacex`, then idempotently projects
+the stable `pid` into the game-local `players` row.
 
-### 2. Optional Google Play sign-in
+### 2. Optional Platform account linking
 
-This follows the current product rule from docs:
+Offline play remains available without linking an account. Profile linking is
+performed through the Mirkori browser/PKCE flow; Google, Telegram, local/email,
+and future provider credentials remain inside the Platform. Linking preserves
+the same InplaceX `gamePlayerId` and does not replace local campaign progress.
 
-- local save remains primary for offline play
-- sign-in is optional
-- sign-in enables cloud sync and multi-device restore
-
-Backend responsibility:
-
-- verify Google token
-- link provider identity to player
-- merge or preserve cloud-save ownership rules
-- reissue JWT with stable player id
+The InplaceX backend never verifies a Google or Telegram provider token, never
+links provider subjects, and never reissues a backend JWT after linking. The
+former direct Google challenge/bootstrap flow is retained only as historical
+debug/test compatibility and is not part of the release composition.
 
 ### 3. Cloud save sync
 
@@ -151,26 +154,18 @@ Recommended session rules:
 ### Core identity
 
 - `players`
-  - `id`
+  - `id` (the verified Platform `pid` / `game_player_id`)
   - `created_at`
   - `display_name`
   - `country_code`
   - `last_seen_at`
   - `status`
-- `player_identities`
-  - `id`
-  - `player_id`
-  - `provider`
-  - `provider_user_id`
-  - `created_at`
-  - unique on `provider + provider_user_id`
-- `device_installations`
-  - `id`
-  - `player_id`
-  - `platform`
-  - `app_version`
-  - `device_label`
-  - `last_seen_at`
+
+Production provider identities, device installations, refresh families, and
+provider subjects belong to Mirkori Games Platform and are not copied into the
+InplaceX database. Any older `player_identities` or `device_installations`
+schema is migration/historical evidence for the retired debug/test identity
+adapter, not the current release model.
 
 ### Profile and progression
 
@@ -322,11 +317,12 @@ module-level route inventory.
 
 ### Auth
 
-- `POST /api/v1/auth/bootstrap`
-  - create or resume anonymous backend identity for the installation
-- `POST /api/v1/auth/google/link`
-  - verify Google Play identity and link account
-- `POST /api/v1/auth/refresh`
+- production identity and credential refresh are owned by Mirkori Games
+  Platform and consumed through the Platform Game SDK
+- the InplaceX online backend verifies the Platform public key plus exact
+  issuer, audience and `gid=inplacex`, and maps `pid` to the online player
+- legacy `/api/v1/auth/*` sources are debug/test compatibility only and are not
+  part of the production application composition
 
 ### Profile
 
@@ -379,7 +375,8 @@ Do not leak Exposed table rows directly into routes.
 
 For the first stage:
 
-- use REST for bootstrap, profile, save, billing, matchmaking, and the reliable
+- use the external Platform API for identity bootstrap/refresh, and InplaceX
+  REST for profile, save, billing, matchmaking, and the reliable
   duel command/recovery path;
 - use the authenticated WebSocket for live duel session updates and the
   versioned subscribe/resync protocol;
@@ -412,13 +409,13 @@ Responsibilities:
 
 ## Security Rules
 
-- JWT for API auth
-- `RS256` access tokens with the private key isolated in the identity process;
-  the game API verifies with the public key only. See `Auth Process Boundary.md`.
-- refresh token rotation
-- persistent refresh idempotency in the same transaction as token rotation;
-  response payloads are retained only until the refresh family expires and
-  must be protected as credentials at the database boundary
+- Mirkori game-scoped JWT for API auth
+- `RS256` access tokens with the private key isolated in Mirkori Games Platform;
+  the game API verifies with the public key only, requires the configured
+  issuer/audience and exact `gid=inplacex`, and authorizes by `pid` rather than
+  the account `sub`. See `Auth Process Boundary.md`.
+- Mirkori Games Platform owns refresh-token rotation and persistent refresh
+  idempotency; the InplaceX backend never accepts or stores refresh tokens
 - never trust client-side scoring
 - never trust client-side entitlement flags
 - never expose opponent secret in setup or active snapshots
@@ -460,7 +457,7 @@ com.mirkori.inplacex.backend
 - Ktor app skeleton
 - config + health endpoints
 - PostgreSQL + Flyway + Exposed
-- auth bootstrap
+- Platform token verifier + idempotent local `pid` projection
 - profile read/write
 - cloud save basic sync
 
@@ -491,7 +488,7 @@ com.mirkori.inplacex.backend
 
 If we want the highest value with the least risk, start with:
 
-1. `auth/bootstrap`
+1. Mirkori Platform token verification and local `pid` projection
 2. `GET/PUT me/save`
 3. `GET me/entitlements`
 4. session aggregate contracts without full live transport

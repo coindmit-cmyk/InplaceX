@@ -60,6 +60,7 @@ class BackendAdMarketResolver(
             is RemoteCallResult.HttpFailure,
             RemoteCallResult.Offline,
             RemoteCallResult.MissingAccessToken,
+            RemoteCallResult.AccessTokenTemporarilyUnavailable,
             RemoteCallResult.TimedOut,
             is RemoteCallResult.NetworkFailure,
             -> AdMarket.UNKNOWN
