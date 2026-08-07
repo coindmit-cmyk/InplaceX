@@ -2,6 +2,7 @@ package com.mirkori.inplacex
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -289,6 +290,7 @@ class MainActivity : ComponentActivity() {
                             store = AndroidAppUpdatePolicyStore(applicationContext),
                             platformBaseUrl = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
                             allowCleartextLoopback = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
+                            installedAndroidSdk = Build.VERSION.SDK_INT,
                         )
                     }
                 }

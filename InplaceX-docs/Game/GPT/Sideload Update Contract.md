@@ -15,6 +15,8 @@ version `1` only and verifies the Platform policy locally:
 - `updateAvailable=false` requires `required=false` and no release object;
 - an available release must have a greater numeric `versionCode`;
 - `required` must equal `installedVersionCode < minimumSupportedVersionCode`;
+- `minimumAndroidSdk` must not exceed the device SDK; an incompatible APK is
+  rejected before a prompt can block the player;
 - the release must belong to `inplacex`, `android`, and `stable`.
 
 The public catalog request is independent of the current guest or linked
