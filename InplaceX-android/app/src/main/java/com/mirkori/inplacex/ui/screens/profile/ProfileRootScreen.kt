@@ -170,8 +170,9 @@ fun ProfileRootScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val legacyGoogleActionsAllowed = mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
             if (progressState.googlePlaySignedIn) {
-                if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
+                if (legacyGoogleActionsAllowed) {
                     OutlinedButton(
                         onClick = onGooglePlaySignOut,
                         enabled = !authInProgress,
@@ -180,7 +181,7 @@ fun ProfileRootScreen(
                         Text(strings.text("profile.google_play.sign_out"))
                     }
                 }
-            } else {
+            } else if (legacyGoogleActionsAllowed) {
                 Button(
                     onClick = onGooglePlaySignIn,
                     enabled = !authInProgress,

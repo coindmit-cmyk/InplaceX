@@ -11,7 +11,7 @@ read or written by the Android client.
 
 1. `MirkoriPlatformRuntime` restores one encrypted installation identity or
    creates it once.
-2. The vendored `platform-game-sdk:0.2.0` bootstraps a global guest profile at
+2. The vendored `platform-game-sdk:0.1.0` bootstraps a global guest profile at
    the configured platform origin.
 3. Profile starts a PKCE S256 session and opens its `/connect` URL with the
    system browser. WebView is not used.

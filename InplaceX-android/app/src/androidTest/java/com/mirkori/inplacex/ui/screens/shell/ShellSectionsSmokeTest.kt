@@ -54,6 +54,7 @@ import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
+import com.mirkori.platform.sdk.PlatformAuthMode
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -279,6 +280,34 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun initializingMirkoriAccountDoesNotExposeLegacyGoogleSignOut() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = true),
+                mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun linkedTelegramAccountDoesNotOfferUnsupportedGoogleLinking() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = false),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000804",
+                    authMode = PlatformAuthMode.TELEGRAM,
+                ),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
     }
 
     @Test
