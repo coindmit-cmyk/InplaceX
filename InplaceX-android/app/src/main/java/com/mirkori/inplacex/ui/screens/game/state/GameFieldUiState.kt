@@ -138,6 +138,7 @@ data class GameFieldRouteUiState(
     val extraMovesPerBoost: Int = 0,
     val extraTimeSecondsPerBoost: Int = 0,
     val pendingRewardedHint: GameFieldHintMode? = null,
+    val rewardedHintInFlight: Boolean = false,
 )
 
 data class GameFieldMatchState(

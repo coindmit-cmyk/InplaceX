@@ -47,6 +47,7 @@ import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.ads.YandexGameBanner
 import com.mirkori.inplacex.platform.ads.AdUsageTracker
+import com.mirkori.inplacex.platform.ads.completedMatchCountForAds
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
@@ -147,10 +148,10 @@ class MainActivity : ComponentActivity() {
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
-                var selectedBannerProviderName by rememberSaveable {
+                var selectedBannerProviderName by remember {
                     mutableStateOf<String?>(null)
                 }
-                var bannerLoaded by rememberSaveable { mutableStateOf(false) }
+                var bannerLoaded by remember { mutableStateOf(false) }
                 var failedBannerProviderNames by remember {
                     mutableStateOf(emptySet<String>())
                 }
@@ -202,7 +203,11 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     adUsageTracker.ensureCompletedMatchBaseline(
-                        initialProgressState.matchesPlayed,
+                        completedMatchCountForAds(
+                            pve = initialProgressState.pveStats,
+                            pvp = initialProgressState.pvpStats,
+                            company = initialProgressState.companyStats,
+                        ),
                     )
                 }
 

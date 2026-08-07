@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.game
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import com.mirkori.inplacex.ui.viewmodel.GameFieldHintInventory
 import com.mirkori.inplacex.ui.viewmodel.GameFieldLifecycleCallbacks
 import com.mirkori.inplacex.ui.viewmodel.GameFieldRouteController
 import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
+import com.mirkori.inplacex.ui.state.TransientOperationGate
 import kotlinx.coroutines.delay
 
 /**
@@ -79,8 +81,10 @@ fun GameFieldScreen(
         GameFieldViewModel(SavedStateHandle(), matchParameters, acceptedFixedSecret)
     }
     val routeController = remember(viewModel) { GameFieldRouteController(viewModel) }
+    val rewardedHintOperation = remember(routeController) { TransientOperationGate() }
     val holderState by viewModel.uiState.collectAsState()
     val overlay by routeController.overlay.collectAsState()
+    val currentPendingRewardedHint by rememberUpdatedState(overlay.pendingRewardedHint)
     val hintInventory = GameFieldHintInventory(
         openPositionHints = openPositionHints,
         checkDigitHints = checkDigitHints,
@@ -98,6 +102,10 @@ fun GameFieldScreen(
         autoRestartOnWin = autoRestartOnWin,
     )
     val currentLifecycleCallbacks by rememberUpdatedState(lifecycleCallbacks)
+
+    DisposableEffect(routeController, rewardedHintOperation) {
+        onDispose(rewardedHintOperation::cancel)
+    }
 
     LaunchedEffect(viewModel) {
         if (fixedSecret != null && acceptedFixedSecret == null) {
@@ -159,6 +167,7 @@ fun GameFieldScreen(
             extraMovesPerBoost = extraMovesPerBoost,
             extraTimeSecondsPerBoost = extraTimeSecondsPerBoost,
             pendingRewardedHint = overlay.pendingRewardedHint,
+            rewardedHintInFlight = rewardedHintOperation.inProgress,
         ),
     )
 
@@ -209,15 +218,41 @@ fun GameFieldScreen(
                     callbacks = lifecycleCallbacks,
                 )
             },
-            onRewardedHintConfirmed = { mode ->
-                onWatchRewardedHintAd(mode.toStockType()) { granted ->
-                    routeController.confirmRewardedHint(
-                        mode = mode,
-                        granted = granted,
+            onRewardedHintConfirmed = rewardedHintConfirmed@{ mode ->
+                val operationId = rewardedHintOperation.start()
+                    ?: return@rewardedHintConfirmed
+                try {
+                    onWatchRewardedHintAd(mode.toStockType()) rewardedHintCompleted@{ granted ->
+                        if (!rewardedHintOperation.finish(operationId)) {
+                            return@rewardedHintCompleted
+                        }
+                        if (currentPendingRewardedHint != mode) {
+                            return@rewardedHintCompleted
+                        }
+                        routeController.confirmRewardedHint(
+                            mode = mode,
+                            granted = granted,
+                        )
+                    }
+                } catch (error: Exception) {
+                    AppLog.warn(
+                        tag = "GameFieldScreen",
+                        message = "rewarded hint operation could not start",
+                        attributes = mapOf("errorClass" to error.javaClass.name),
                     )
+                    if (
+                        rewardedHintOperation.finish(operationId) &&
+                        currentPendingRewardedHint == mode
+                    ) {
+                        routeController.confirmRewardedHint(mode = mode, granted = false)
+                    }
                 }
             },
-            onRewardedHintDismissed = routeController::dismissRewardedHint,
+            onRewardedHintDismissed = {
+                if (!rewardedHintOperation.inProgress) {
+                    routeController.dismissRewardedHint()
+                }
+            },
         ),
     )
 }
