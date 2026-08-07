@@ -60,6 +60,7 @@ tasks.register<Exec>("testReleaseDistribution") {
     environment("PYTHONDONTWRITEBYTECODE", "1")
     commandLine(
         releaseDistributionPython,
+        "-I",
         "-m",
         "unittest",
         "discover",
@@ -94,6 +95,7 @@ val testPlatformReleaseContract = tasks.register<Exec>("testPlatformReleaseContr
         }
         commandLine(
             releaseDistributionPython,
+            "-I",
             "ops/release/verify_platform_release_contract.py",
             "--platform-repo-dir",
             platformRepositoryDirectory,
@@ -154,6 +156,7 @@ tasks.register<Exec>("buildPlatformCatalogRelease") {
         }
         commandLine(
             releaseDistributionPython,
+            "-I",
             "ops/release/build_platform_catalog_release.py",
             "--candidate-dir",
             releaseDistributionCandidateDirectory.get().asFile.absolutePath,

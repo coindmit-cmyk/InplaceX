@@ -53,6 +53,8 @@ hermetic `testReleaseDistribution` task does not depend on another repository.
 The production `buildPlatformCatalogRelease` task always depends on both the
 opt-in contract check and `:app:releaseCandidate`, so production cannot bypass
 either signing or the exact cross-repository contract.
+All release Python entry points and the copied Platform validator run in
+isolated mode without inherited `PYTHON*` injection variables.
 
 ## Routine build
 

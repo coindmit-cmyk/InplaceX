@@ -110,6 +110,37 @@ def is_windows_reparse_point(metadata: os.stat_result) -> bool:
     return os.name == "nt" and bool(getattr(metadata, "st_file_attributes", 0) & reparse_attribute)
 
 
+def decode_linux_mount_path(value: str) -> str:
+    replacements = {"040": " ", "011": "\t", "012": "\n", "134": "\\"}
+    return re.sub(r"\\(040|011|012|134)", lambda match: replacements[match.group(1)], value)
+
+
+def linux_mount_points() -> set[str]:
+    mountinfo = Path("/proc/self/mountinfo")
+    try:
+        content = mountinfo.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise ReleaseBuildError("Linux mount table is unavailable") from error
+    require(len(content.encode("utf-8")) <= MAX_JSON_BYTES * 8, "Linux mount table is unexpectedly large")
+    points: set[str] = set()
+    for line in content.splitlines():
+        fields = line.split(" - ", 1)[0].split()
+        require(len(fields) >= 6, "Linux mount table contains a malformed record")
+        points.add(os.path.normpath(decode_linux_mount_path(fields[4])))
+    return points
+
+
+def path_is_mount_boundary(path: Path) -> bool:
+    absolute = path.absolute()
+    if absolute == absolute.parent:
+        return False
+    if os.path.ismount(absolute):
+        return True
+    if sys.platform.startswith("linux"):
+        return os.path.normpath(str(absolute)) in linux_mount_points()
+    return False
+
+
 def resolved_without_links(path: Path, label: str) -> Path:
     absolute = path.absolute()
     resolved = path.resolve(strict=True)
@@ -142,6 +173,7 @@ def real_directory(path: Path, label: str) -> Path:
     require(stat.S_ISDIR(metadata.st_mode), f"{label} must be a directory")
     require(not stat.S_ISLNK(metadata.st_mode), f"{label} must not be a symlink")
     require(not is_windows_reparse_point(metadata), f"{label} must not be a Windows reparse point")
+    require(not path_is_mount_boundary(path), f"{label} must not be a mount boundary")
     return resolved_without_links(path, label)
 
 
@@ -263,6 +295,10 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def isolated_python_environment() -> dict[str, str]:
+    return {key: value for key, value in os.environ.items() if not key.upper().startswith("PYTHON")}
+
+
 def git_command(repository: Path, arguments: list[str], *, binary: bool = False) -> bytes | str:
     result = subprocess.run(
         ["git", "-C", str(repository), *arguments],
@@ -353,13 +389,14 @@ def run_platform_validator(
         tool_copy.write_bytes(validator.tool_bytes)
         require(sha256_file(tool_copy) == validator.tool_sha256, "private Platform validator copy differs")
         boundary_guard.verify()
-        command = [sys.executable, str(tool_copy), "validate", str(catalog_directory), "--quiet"]
+        command = [sys.executable, "-I", str(tool_copy), "validate", str(catalog_directory), "--quiet"]
         if previous_release_directory is not None:
             command.extend(["--previous-release-directory", str(previous_release_directory)])
         result = subprocess.run(
             command,
             capture_output=True,
             check=False,
+            env=isolated_python_environment(),
         )
         require(
             len(result.stdout) <= MAX_JSON_BYTES and len(result.stderr) <= MAX_JSON_BYTES,

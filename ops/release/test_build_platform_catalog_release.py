@@ -74,6 +74,24 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
 
             self.assertFalse(missing_parent.exists())
 
+    def test_rejects_output_mount_boundary_without_side_effects(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = self.create_candidate(root)
+            output_parent = root / "mounted-output"
+            output_parent.mkdir()
+            with (
+                mock.patch.object(
+                    release_builder,
+                    "path_is_mount_boundary",
+                    side_effect=lambda path: path == output_parent,
+                ),
+                self.assertRaises(release_builder.ReleaseBuildError),
+            ):
+                self.run_builder(candidate, output_parent / "catalog-release", "--allow-empty-base")
+
+            self.assertEqual([], list(output_parent.iterdir()))
+
     def test_merges_with_existing_catalog_without_losing_other_games(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -348,8 +366,20 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             'inplacexPlatformExpectedCommit',
             'inplacexPlatformValidatorSha256',
             'verify_platform_release_contract.py',
+            '"-I"',
         ):
             self.assertIn(required_fragment, gradle_script)
+
+    def test_isolated_python_environment_removes_python_injection(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"PYTHONPATH": "hostile", "PythonHome": "hostile", "ANDROID_HOME": "trusted-sdk"},
+            clear=True,
+        ):
+            environment = release_builder.isolated_python_environment()
+        self.assertNotIn("PYTHONPATH", environment)
+        self.assertNotIn("PythonHome", environment)
+        self.assertEqual("trusted-sdk", environment["ANDROID_HOME"])
 
     def test_validates_exact_clean_platform_checkout_and_schema(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
