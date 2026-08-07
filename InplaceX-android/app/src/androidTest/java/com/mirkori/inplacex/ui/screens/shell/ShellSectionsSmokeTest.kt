@@ -279,6 +279,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("С ботом").performClick()
         composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
         composeRule.onNodeWithText("Подтвердить").performClick()
         composeRule.waitForIdle()
@@ -318,6 +319,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("С ботом").performClick()
         composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
         composeRule.onNodeWithText("Подтвердить").performClick()
         composeRule.waitForIdle()
@@ -381,6 +383,56 @@ class ShellSectionsSmokeTest {
         composeRule.runOnIdle { assertTrue(!retried) }
         composeRule.onNodeWithText("Ещё раз").performClick()
         composeRule.runOnIdle { assertTrue(retried) }
+    }
+
+    @Test
+    fun duelModeChoiceRoutesOnlineMatchToSocialRuntime() {
+        var openedOnline = false
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+                onOpenOnlineDuel = { openedOnline = true },
+                onlineAvailable = true,
+            )
+        }
+
+        composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("Онлайн-матч").performClick()
+
+        composeRule.runOnIdle { assertTrue(openedOnline) }
+    }
+
+    @Test
+    fun duelModeChoiceDisablesOnlineWithoutConfiguredRuntime() {
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+                onlineAvailable = false,
+            )
+        }
+
+        composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("Онлайн-матч").assertIsNotEnabled()
+    }
+
+    @Test
+    fun unlimitedRaceResultDoesNotShowAFakeMoveCap() {
+        setContent {
+            RaceResultDialog(
+                won = true,
+                attemptsUsed = 18,
+                attemptLimit = null,
+                elapsedSeconds = 70,
+                onRetry = {},
+                onHome = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Попытки: 18 • без лимита").assertIsDisplayed()
     }
 
     @Test

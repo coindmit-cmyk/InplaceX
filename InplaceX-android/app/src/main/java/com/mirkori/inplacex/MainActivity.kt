@@ -119,6 +119,7 @@ class MainActivity : ComponentActivity() {
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
+                var requestOnlineDuel by rememberSaveable { mutableStateOf(false) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 val initialProgressState = remember {
                     initialProgressState(
@@ -322,6 +323,11 @@ class MainActivity : ComponentActivity() {
                                     onOpenCompany = {
                                         currentSection = AppSection.COMPANY
                                     },
+                                    onOpenOnlineDuel = {
+                                        requestOnlineDuel = true
+                                        currentSection = AppSection.SOCIAL
+                                    },
+                                    onlineAvailable = onlineRuntime != null,
                                 )
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
@@ -339,6 +345,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 friends = savedFriends,
                                 showTestFriendBot = testFriendBotEnabled(),
+                                requestQuickMatch = requestOnlineDuel,
+                                onQuickMatchRequestConsumed = { requestOnlineDuel = false },
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },

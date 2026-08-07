@@ -21,6 +21,11 @@ Initial centralization lives in:
 - `ui.navigation.AppSectionIconCatalog`
 - `image/icon`
 
+`GameModeDefinition.moveLimit` is the user-visible move cap. `null` means that
+the mode is unlimited; it must not be represented by an invalid zero
+`GameConfig.attemptLimit`. Likewise, a missing turn timer is represented by
+`turnTimeLimitSeconds = null`.
+
 ## Non-Goal
 
 Do not move match rules into arbitrary config blobs. Logic stays in code.
