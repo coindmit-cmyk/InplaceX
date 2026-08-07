@@ -426,6 +426,7 @@ val releaseCandidateBash = if (System.getProperty("os.name").startsWith("Windows
 val releaseCandidateProcessEnvironment = System.getenv()
     .filterKeys {
         !it.startsWith("GIT_", ignoreCase = true) &&
+            !it.startsWith("BASH_FUNC_", ignoreCase = true) &&
             !it.equals("BASH_ENV", ignoreCase = true) &&
             !it.equals("ENV", ignoreCase = true)
     }
@@ -443,6 +444,7 @@ tasks.register<Exec>("releaseCandidate") {
     setEnvironment(releaseCandidateProcessEnvironment)
     commandLine(
         releaseCandidateBash,
+        "-p",
         "scripts/ci/artifact_identity.sh",
         "--apk",
         "InplaceX-android/app/build/outputs/apk/signedReleaseCandidate/app-signedReleaseCandidate.apk",

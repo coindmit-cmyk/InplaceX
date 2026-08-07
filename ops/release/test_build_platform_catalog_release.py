@@ -374,9 +374,64 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             'setEnvironment(releaseDistributionProcessEnvironment)',
         ):
             self.assertIn(required_fragment, gradle_script)
-        for forbidden_startup_environment in ('"BASH_ENV"', '"ENV"'):
+        for forbidden_startup_environment in ('"BASH_FUNC_"', '"BASH_ENV"', '"ENV"'):
             self.assertIn(forbidden_startup_environment, app_gradle_script)
         self.assertIn("setEnvironment(releaseCandidateProcessEnvironment)", app_gradle_script)
+        self.assertIn('releaseCandidateBash,\n        "-p",', app_gradle_script)
+
+    def test_release_candidate_bash_rejects_imported_functions(self) -> None:
+        if os.name == "nt":
+            bash = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe"
+            if not bash.is_file():
+                self.skipTest("Git Bash is unavailable")
+        else:
+            bash_path = shutil.which("bash")
+            if bash_path is None:
+                self.skipTest("Bash is unavailable")
+            bash = Path(bash_path)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            imported_probe = root / "imported"
+            privileged_probe = root / "privileged"
+            filtered_probe = root / "filtered"
+            injected_environment = os.environ.copy()
+            injected_environment["BASH_FUNC_mkdir%%"] = "() { return 73; }"
+
+            imported = subprocess.run(
+                [str(bash), "-c", 'mkdir -p "$1"', "bash", str(imported_probe)],
+                check=False,
+                env=injected_environment,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(73, imported.returncode)
+            self.assertFalse(imported_probe.exists())
+
+            privileged = subprocess.run(
+                [str(bash), "-p", "-c", 'mkdir -p "$1"', "bash", str(privileged_probe)],
+                check=False,
+                env=injected_environment,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, privileged.returncode, privileged.stderr)
+            self.assertTrue(privileged_probe.is_dir())
+
+            filtered_environment = {
+                key: value
+                for key, value in injected_environment.items()
+                if not key.upper().startswith("BASH_FUNC_")
+            }
+            filtered = subprocess.run(
+                [str(bash), "-c", 'mkdir -p "$1"', "bash", str(filtered_probe)],
+                check=False,
+                env=filtered_environment,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, filtered.returncode, filtered.stderr)
+            self.assertTrue(filtered_probe.is_dir())
 
     def test_isolated_python_environment_removes_python_injection(self) -> None:
         with mock.patch.dict(
