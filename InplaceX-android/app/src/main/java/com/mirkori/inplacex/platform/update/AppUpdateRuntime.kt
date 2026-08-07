@@ -96,10 +96,15 @@ internal class AppUpdateRuntime(
     private val catalog: StableAndroidUpdateCatalog,
     private val store: AppUpdatePolicyStore,
     private val originPolicy: AppUpdateOriginPolicy,
+    private val installedAndroidSdk: Int,
     private val clockMs: () -> Long = System::currentTimeMillis,
 ) {
     private val checkMutex = Mutex()
     private val stateLock = Any()
+
+    init {
+        require(installedAndroidSdk in 21..100)
+    }
 
     suspend fun check(installedVersionCode: Long): AppUpdateCheckResult = checkMutex.withLock {
         require(installedVersionCode > 0)
@@ -182,6 +187,7 @@ internal class AppUpdateRuntime(
         require(release.versionCode > installedVersionCode)
         require(release.minimumSupportedVersionCode in 1..release.versionCode)
         require(release.minimumAndroidSdk in 21..100)
+        require(release.minimumAndroidSdk <= installedAndroidSdk)
         require(release.sizeBytes in 1..MaximumArtifactBytes)
         require(release.sha256.matches(Sha256Pattern))
         require(decision.required == (installedVersionCode < release.minimumSupportedVersionCode))
@@ -217,6 +223,7 @@ internal class AppUpdateRuntime(
             store: AppUpdatePolicyStore,
             platformBaseUrl: String,
             allowCleartextLoopback: Boolean,
+            installedAndroidSdk: Int,
             clockMs: () -> Long = System::currentTimeMillis,
         ): AppUpdateRuntime = AppUpdateRuntime(
             catalog = StableAndroidUpdateCatalog { installedVersionCode ->
@@ -224,6 +231,7 @@ internal class AppUpdateRuntime(
             },
             store = store,
             originPolicy = AppUpdateOriginPolicy(platformBaseUrl, allowCleartextLoopback),
+            installedAndroidSdk = installedAndroidSdk,
             clockMs = clockMs,
         )
 

@@ -76,14 +76,29 @@ class AppUpdateRuntimeTest {
         assertEquals(NowMs + 15L * 60L * 1_000L, store.state.nextCheckAfterMs)
     }
 
+    @Test
+    fun `release requiring a newer Android SDK is never presented`() = runBlocking {
+        val store = MemoryUpdateStore()
+        val catalog = RecordingCatalog(
+            optionalDecision(release = release(minimumAndroidSdk = 36)),
+        )
+
+        val result = runtime(catalog, store, installedAndroidSdk = 35).check(42)
+
+        assertEquals(AppUpdateCheckResult.Unavailable, result)
+        assertEquals(NowMs + 15L * 60L * 1_000L, store.state.nextCheckAfterMs)
+    }
+
     private fun runtime(
         catalog: StableAndroidUpdateCatalog,
         store: AppUpdatePolicyStore,
+        installedAndroidSdk: Int = 35,
         clockMs: () -> Long = { NowMs },
     ) = AppUpdateRuntime(
         catalog = catalog,
         store = store,
         originPolicy = AppUpdateOriginPolicy("https://games.dmit.life", false),
+        installedAndroidSdk = installedAndroidSdk,
         clockMs = clockMs,
     )
 
@@ -107,13 +122,14 @@ class AppUpdateRuntimeTest {
             releaseId: String = ReleaseId,
             versionCode: Long = 100,
             minimumSupportedVersionCode: Long = 1,
+            minimumAndroidSdk: Int = 29,
             downloadUrl: String = "https://games.dmit.life/downloads/$releaseId/InplaceX-1.0.0.apk",
         ) = AppUpdateRelease(
             id = releaseId,
             versionName = "1.0.0",
             versionCode = versionCode,
             minimumSupportedVersionCode = minimumSupportedVersionCode,
-            minimumAndroidSdk = 29,
+            minimumAndroidSdk = minimumAndroidSdk,
             publishedAt = Instant.parse("2026-08-07T12:00:00Z"),
             changelog = "Release notes",
             fileName = "InplaceX-1.0.0.apk",
