@@ -265,7 +265,14 @@ class LegacyOnlineMembershipPostgresIntegrationTest {
             val dockerAvailable = runCatching {
                 DockerClientFactory.instance().isDockerAvailable
             }.getOrDefault(false)
-            Assume.assumeTrue("Docker is required for PostgreSQL integration tests", dockerAvailable)
+            if (System.getenv("CI").equals("true", ignoreCase = true)) {
+                assertTrue(
+                    "CI must provide Docker for mandatory PostgreSQL concurrency tests",
+                    dockerAvailable,
+                )
+            } else {
+                Assume.assumeTrue("Docker is required for PostgreSQL integration tests", dockerAvailable)
+            }
             postgresContainer = PostgreSQLContainer<Nothing>(
                 DockerImageName.parse("postgres:16.10-alpine"),
             ).apply {
