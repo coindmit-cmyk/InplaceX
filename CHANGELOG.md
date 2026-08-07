@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- InplaceX now bootstraps a global Mirkori Games guest profile, stores its
+  installation/session, pending PKCE state and in-flight refresh identity under
+  Android Keystore-backed encryption, opens account login in the system browser,
+  validates the exact HTTPS App Link callback, and shows linked/conflict/offline
+  status in Profile.
+  The existing Google Play online identity remains a separate compatibility
+  path.
+
 - The home duel card now opens an explicit bot/online choice: bot play starts
   the local secret setup, while online play opens quick match and discloses its
   server bot fallback. Online play is disabled when no runtime is configured.

@@ -29,6 +29,8 @@ import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
+import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
@@ -38,8 +40,12 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun ProfileRootScreen(
     progressState: GameProgressState,
     nowMs: Long = System.currentTimeMillis(),
+    mirkoriAccountState: MirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING),
+    mirkoriAuthResultKey: String? = null,
+    mirkoriAuthInProgress: Boolean = false,
     authResultKey: String? = null,
     authInProgress: Boolean = false,
+    onMirkoriSignIn: () -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
 ) {
@@ -80,10 +86,11 @@ fun ProfileRootScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = if (progressState.googlePlaySignedIn) {
-                            strings.text("profile.google_play.connected.short")
-                        } else {
-                            strings.text("profile.google_play.guest")
+                        text = when (mirkoriAccountState.kind) {
+                            MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected.short")
+                            MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest.short")
+                            MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
+                            MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable.short")
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -91,6 +98,69 @@ fun ProfileRootScreen(
                 }
             }
 
+            Text(
+                text = when (mirkoriAccountState.kind) {
+                    MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected")
+                    MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest")
+                    MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
+                    MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            mirkoriAccountState.gamePlayerId?.let { playerId ->
+                Text(
+                    text = strings.text("profile.mirkori.player_id").replace("{id}", playerId.takeLast(8)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
+                Button(
+                    onClick = onMirkoriSignIn,
+                    enabled = !mirkoriAuthInProgress &&
+                        mirkoriAccountState.kind != MirkoriAccountStateKind.INITIALIZING,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(strings.text("profile.mirkori.sign_in"))
+                }
+            }
+
+            val resultKey = if (mirkoriAuthInProgress) "profile.mirkori.in_progress" else mirkoriAuthResultKey
+            resultKey?.let { key ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (key in MirkoriAuthErrorKeys) {
+                        InplaceXColors.Coral.copy(alpha = 0.12f)
+                    } else {
+                        InplaceXColors.Mint.copy(alpha = 0.14f)
+                    },
+                    border = BorderStroke(
+                        1.dp,
+                        if (key in MirkoriAuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
+                    ),
+                ) {
+                    Text(
+                        text = strings.text(key),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+
+        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+            Text(
+                text = strings.text("profile.google_play.title"),
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
             Text(
                 text = if (progressState.googlePlaySignedIn) {
                     strings.text("profile.google_play.connected")
@@ -100,14 +170,11 @@ fun ProfileRootScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
             if (progressState.googlePlaySignedIn) {
                 OutlinedButton(
                     onClick = onGooglePlaySignOut,
                     enabled = !authInProgress,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) {
                     Text(strings.text("profile.google_play.sign_out"))
                 }
@@ -115,16 +182,13 @@ fun ProfileRootScreen(
                 Button(
                     onClick = onGooglePlaySignIn,
                     enabled = !authInProgress,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) {
                     Text(strings.text("profile.google_play.sign_in"))
                 }
             }
-
-            val resultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
-            resultKey?.let { key ->
+            val googleResultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
+            googleResultKey?.let { key ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -215,6 +279,12 @@ private val AuthErrorKeys = setOf(
     "profile.auth.unavailable",
     "profile.auth.not_configured",
     "profile.auth.rejected",
+)
+
+private val MirkoriAuthErrorKeys = setOf(
+    "profile.mirkori.unavailable",
+    "profile.mirkori.rejected",
+    "profile.mirkori.conflict",
 )
 
 @Composable

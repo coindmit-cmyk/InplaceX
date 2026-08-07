@@ -5,9 +5,17 @@ import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReleaseVariantIsolationTest {
+    @Test
+    fun `release Mirkori platform identity is HTTPS and bound to the production package`() {
+        assertEquals("com.mirkori.inplacex", BuildConfig.APPLICATION_ID)
+        assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
+        assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
+    }
+
     @Test
     fun `release variant excludes internal tool catalogs and classes`() {
         AppLanguage.values().forEach { language ->
