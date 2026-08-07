@@ -142,7 +142,9 @@ class MirkoriPlatformRuntimeTest {
             ok(
                 """{"session":"$sessionHandle","connectUrl":"https://games.dmit.life/connect?session=$sessionHandle","expiresAtEpochMs":$ExpiresAtMs}""",
             ),
-            ok(exchangeJson()),
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}""",
+            ),
         )
         val store = installationStore()
         val runtime = runtime(transport, store)
@@ -165,6 +167,10 @@ class MirkoriPlatformRuntimeTest {
 
         assertEquals(MirkoriAccountStateKind.LINKED, completed.accountState.kind)
         assertEquals(PlatformAuthMode.LOCAL, completed.accountState.authMode)
+        assertEquals(AccountId, restored.accountIdentity)
+        assertEquals(OtherAccountId, completed.accountState.accountIdentity)
+        assertFalse(restored == completed.accountState)
+        assertFalse(completed.accountState.toString().contains(OtherAccountId))
         assertEquals(PlatformAuthMode.LOCAL, store.value?.session?.authMode)
         assertNull(store.value?.pendingLogin)
         assertEquals(3, transport.requests.size)

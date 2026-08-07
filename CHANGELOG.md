@@ -44,7 +44,9 @@
   pending-order endpoint, recovers safely from `order_pending`, and no longer
   blocks after a full history page. Oversized Platform responses explicitly
   cancel their body channel. Release product IDs are immutable canonical
-  `inplacex.*` values; debug catalog IDs remain configurable.
+  `inplacex.*` values; debug catalog IDs remain configurable. Account changes
+  synchronously discard the previous identity's cached paid UI state before
+  any network refresh, including when the new account keeps the same player ID.
 
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under

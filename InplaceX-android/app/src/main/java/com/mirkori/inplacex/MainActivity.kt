@@ -373,10 +373,13 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(
                     billingService,
                     mirkoriAccountState.kind,
+                    mirkoriAccountState.accountIdentity,
                     mirkoriAccountState.gamePlayerId,
                     mirkoriAccountState.authMode,
                     resumeGeneration,
                 ) {
+                    billingOperation.cancel()
+                    billingState = billingService.cachedState()
                     if (mirkoriAccountState.kind == MirkoriAccountStateKind.INITIALIZING) {
                         return@LaunchedEffect
                     }

@@ -93,7 +93,11 @@ data class MirkoriAccountState(
     val kind: MirkoriAccountStateKind,
     val gamePlayerId: String? = null,
     val authMode: PlatformAuthMode? = null,
-)
+    internal val accountIdentity: String? = null,
+) {
+    override fun toString(): String =
+        "MirkoriAccountState(kind=$kind, authMode=$authMode, identity=[redacted])"
+}
 
 sealed interface MirkoriLoginResult {
     data class BrowserReady(val connectUrl: String) : MirkoriLoginResult

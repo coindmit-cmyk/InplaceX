@@ -315,6 +315,7 @@ private fun GameIdentitySession.toAccountState(): MirkoriAccountState = MirkoriA
     kind = if (authMode == PlatformAuthMode.GUEST) MirkoriAccountStateKind.GUEST else MirkoriAccountStateKind.LINKED,
     gamePlayerId = gamePlayerId,
     authMode = authMode,
+    accountIdentity = accountId,
 )
 
 private fun MirkoriPersistedState?.toAccountState(fallbackUnavailable: Boolean = false): MirkoriAccountState = when {
