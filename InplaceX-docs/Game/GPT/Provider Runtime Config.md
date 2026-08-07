@@ -127,3 +127,29 @@ Verified production bundles are atomically published under
 pattern `[a-z0-9][a-z0-9._-]{1,63}`. Reusing an ID with another APK SHA-256 or
 with a stale/incomplete directory is rejected without modifying the existing
 bundle.
+
+The verified candidate is converted to a complete, immutable Mirkori Platform
+catalog snapshot by `ops/release/build_platform_catalog_release.py`. Routine
+publication requires an export of Platform's exact resolved active `current`
+catalog as its base, never a remembered copy or `backup`. The builder preserves
+that supplied snapshot but cannot prove server activation state; the Platform
+publisher independently requires the candidate to retain the active games,
+releases, and artifacts. An empty base is available only through the explicit
+one-time `--allow-empty-base` bootstrap flag.
+
+The supported Gradle `buildPlatformCatalogRelease` workflow depends on
+`:app:releaseCandidate`, derives its exact versioned directory, and passes the
+current full Git commit as mandatory `--expected-commit`. The builder rechecks
+the exact identity bundle, checksum, package, version, non-debuggable status,
+signer report, and certificate fingerprint, then writes through a
+same-filesystem staging directory without overwriting a different release.
+
+The exact reviewed Mirkori Platform `catalog_release_tool.py` remains the final
+authority: it independently verifies the real APK and complete catalog before
+server publication. The public `/.well-known/assetlinks.json` response is
+derived from the activated catalog rather than maintained as a separate mutable
+file. Adding the candidate certificate to `androidAppLink` is declarative only:
+the builder never edits or overrides Platform's external root-owned catalog
+trust policy. That policy must preapprove the exact InplaceX package and every
+declared certificate; an intentional rotation requires an approved old/new
+overlap before publication.

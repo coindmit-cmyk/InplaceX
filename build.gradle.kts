@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
@@ -22,7 +24,110 @@ val verificationTasks = listOf(
     ":Mirkori-platform-game-sdk:test",
     ":InplaceX-test-support:test",
     ":app:testDebugUnitTest",
+    ":testReleaseDistribution",
 )
+
+val releaseDistributionPython = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+    "python"
+} else {
+    "python3"
+}
+
+val releaseDistributionVersionProperties = Properties().apply {
+    rootProject.file("InplaceX-android/version.properties").inputStream().use(::load)
+}
+val releaseDistributionVersionName = releaseDistributionVersionProperties.getProperty("versionName")
+    ?.takeIf { it.matches(Regex("[0-9A-Za-z][0-9A-Za-z._-]{0,63}")) }
+    ?: throw GradleException("Release distribution versionName is invalid")
+val releaseDistributionVersionCode = releaseDistributionVersionProperties.getProperty("versionCode")
+    ?.toIntOrNull()
+    ?.takeIf { it > 0 }
+    ?: throw GradleException("Release distribution versionCode is invalid")
+val releaseDistributionCandidateId =
+    "inplacex-${releaseDistributionVersionName.lowercase()}-$releaseDistributionVersionCode"
+val releaseDistributionCandidateDirectory =
+    rootProject.layout.buildDirectory.dir("release-candidates/$releaseDistributionCandidateId")
+
+tasks.register<Exec>("testReleaseDistribution") {
+    group = "verification"
+    description = "Validates immutable Mirkori Platform catalog generation from a signed APK candidate."
+    workingDir(rootDir)
+    commandLine(
+        releaseDistributionPython,
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ops/release",
+        "-p",
+        "test_*.py",
+    )
+}
+
+tasks.register<Exec>("buildPlatformCatalogRelease") {
+    group = "distribution"
+    description = "Builds the exact signed candidate for HEAD and converts it using the current Platform catalog base."
+    dependsOn(":app:releaseCandidate")
+    workingDir(rootDir)
+    inputs.file(rootProject.file("ops/release/build_platform_catalog_release.py"))
+    inputs.dir(releaseDistributionCandidateDirectory)
+    doFirst {
+        fun requiredProperty(name: String): String = providers.gradleProperty(name)
+            .orNull
+            ?.takeIf(String::isNotBlank)
+            ?: throw GradleException("Missing required Gradle property: $name")
+
+        val baseReleaseDirectory = rootProject.file(
+            requiredProperty("inplacexPlatformCatalogBaseReleaseDir"),
+        ).absolutePath
+        val outputDirectory = rootProject.file(
+            requiredProperty("inplacexPlatformCatalogOutputDir"),
+        ).absolutePath
+        val minimumSupportedVersionCode =
+            requiredProperty("inplacexPlatformCatalogMinimumSupportedVersionCode")
+                .toIntOrNull()
+                ?.takeIf { it > 0 }
+                ?: throw GradleException(
+                    "inplacexPlatformCatalogMinimumSupportedVersionCode must be a positive integer",
+                )
+        val publishedAt = requiredProperty("inplacexPlatformCatalogPublishedAt")
+        val changelog = requiredProperty("inplacexPlatformCatalogChangelog")
+        val channel = providers.gradleProperty("inplacexPlatformCatalogChannel")
+            .orNull
+            ?.takeIf(String::isNotBlank)
+            ?: "stable"
+        if (channel !in setOf("stable", "beta")) {
+            throw GradleException("inplacexPlatformCatalogChannel must be stable or beta")
+        }
+        val expectedCommit = providers.exec {
+            workingDir(rootDir)
+            commandLine("git", "rev-parse", "HEAD")
+        }.standardOutput.asText.get().trim()
+        if (!expectedCommit.matches(Regex("[0-9a-f]{40}"))) {
+            throw GradleException("Could not resolve the exact lowercase Git HEAD for release distribution")
+        }
+        commandLine(
+            releaseDistributionPython,
+            "ops/release/build_platform_catalog_release.py",
+            "--candidate-dir",
+            releaseDistributionCandidateDirectory.get().asFile.absolutePath,
+            "--expected-commit",
+            expectedCommit,
+            "--base-release-dir",
+            baseReleaseDirectory,
+            "--output-dir",
+            outputDirectory,
+            "--channel",
+            channel,
+            "--minimum-supported-version-code",
+            minimumSupportedVersionCode.toString(),
+            "--published-at",
+            publishedAt,
+            "--changelog",
+            changelog,
+        )
+    }
+}
 
 tasks.register("assembleDebug") {
     group = "build"
