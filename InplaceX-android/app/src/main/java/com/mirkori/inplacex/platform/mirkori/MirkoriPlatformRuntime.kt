@@ -4,6 +4,8 @@ import android.content.Context
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.AndroidConnectivityGate
+import com.mirkori.inplacex.platform.online.AccessToken
+import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.platform.sdk.GameClientPlatform
 import com.mirkori.platform.sdk.GameIdentitySession
 import com.mirkori.platform.sdk.MirkoriGameSdk
@@ -24,7 +26,7 @@ class MirkoriPlatformRuntime internal constructor(
     private val store: SecureMirkoriStateStore,
     private val client: HttpClient? = null,
     private val clockMs: () -> Long = System::currentTimeMillis,
-) : AutoCloseable {
+) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
     private var persistedState: MirkoriPersistedState? = store.read()
 
@@ -97,11 +99,44 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
+    override suspend fun currentAccessToken(): AccessToken? = accessTokenOrNull(forceRefresh = false)
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? =
+        operationMutex.withLock {
+            try {
+                val current = persistedState?.session
+                    ?.takeIf { it.credentials.accessExpiresAt.toEpochMilli() > clockMs() }
+                    ?.credentials
+                    ?.accessToken
+                    ?.let(AccessToken::from)
+                if (current != null && !current.sameValueAs(rejectedToken)) {
+                    return@withLock current
+                }
+                AccessToken.from(ensureFreshSession(forceRefresh = true).credentials.accessToken)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                logFailure(error)
+                null
+            }
+        }
+
     override fun close() {
         client?.close()
     }
 
-    private suspend fun ensureFreshSession(): GameIdentitySession {
+    private suspend fun accessTokenOrNull(forceRefresh: Boolean): AccessToken? = operationMutex.withLock {
+        try {
+            AccessToken.from(ensureFreshSession(forceRefresh).credentials.accessToken)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            null
+        }
+    }
+
+    private suspend fun ensureFreshSession(forceRefresh: Boolean = false): GameIdentitySession {
         var state = persistedState
         if (state == null) {
             state = MirkoriPersistedState(sdk.newInstallation())
@@ -109,7 +144,7 @@ class MirkoriPlatformRuntime internal constructor(
         }
         val current = state.session
         if (
-            current != null &&
+            !forceRefresh && current != null &&
             state.pendingRefresh == null &&
             current.credentials.accessExpiresAt.toEpochMilli() > clockMs() + RefreshSkewMs
         ) {

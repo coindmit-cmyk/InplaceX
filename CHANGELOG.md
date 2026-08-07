@@ -16,8 +16,10 @@
   Android Keystore-backed encryption, opens account login in the system browser,
   validates the exact HTTPS App Link callback, and shows linked/conflict/offline
   status in Profile.
-  The existing Google Play online identity remains a separate compatibility
-  path.
+  Android online requests now reuse a fresh game-scoped Platform token, while
+  the backend authorizes the stable `pid` only after verifying the Platform
+  issuer, audience and `gid=inplacex`. The former InplaceX guest/Google identity
+  code remains debug/test compatibility and is no longer release authority.
 
 - The home duel card now opens an explicit bot/online choice: bot play starts
   the local secret setup, while online play opens quick match and discloses its

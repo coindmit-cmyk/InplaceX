@@ -55,10 +55,10 @@
 - `ProviderServicesFactory.create(...)` is the canonical entry point
 - the factory is selected by the compile-time Android variant, not by the runtime environment string
 - debug returns stub services for local test flows
-- Google sign-in uses Android Credential Manager when a variant-specific web
-  client ID and online endpoint are configured; the returned ID token is not a
-  local success and becomes authenticated only after the identity process
-  verifies it and returns InplaceX credentials
+- production account linking, including Google and Telegram identities, uses
+  the Mirkori Games browser/PKCE flow. The Platform returns a refreshed
+  game-scoped identity with the same stable `gamePlayerId`; InplaceX never
+  exchanges a provider token for a second online identity
 - debug and release create the same real Yandex owner adapter when at least one
   variant-specific Yandex placement is present; release separately requires
   banner and rewarded ids
@@ -77,10 +77,11 @@ Absent provider configuration, Credential Manager cancellation, server
 rejection, or network failure leaves the player in guest mode. Debug provider
 stubs remain isolated tooling and are not used by the real Profile sign-in flow.
 
-Mirkori Games login is independent from the legacy Google Play/online identity
-adapter. Release requires an HTTPS platform origin. Debug may explicitly use
-cleartext only for a loopback host and still uses the registered HTTPS App Link
-callback.
+Mirkori Games login is the release identity authority for the online runtime.
+The legacy InplaceX guest/Google adapter remains source-level debug/test
+compatibility and is not instantiated by release online composition. Release
+requires an HTTPS platform origin. Debug may explicitly use cleartext only for
+a loopback host and still uses the registered HTTPS App Link callback.
 
 The preferred backend market source is a local MMDB configured through
 `INPLACEX_AD_MARKET_DB_PATH`. A reverse proxy must overwrite

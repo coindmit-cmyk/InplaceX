@@ -2,8 +2,6 @@ package com.mirkori.inplacex.backend.online
 
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
-import com.mirkori.inplacex.backend.identity.CredentialPolicy
-import com.mirkori.inplacex.backend.identity.Rs256AccessTokenIssuer
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
 import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
 import io.ktor.client.plugins.websocket.WebSockets
@@ -23,12 +21,16 @@ import io.ktor.websocket.CloseReason
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Signature
+import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.Base64
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -46,19 +48,17 @@ class OnlineRoutesTest {
     private val playerId = UUID.randomUUID().toString()
     private val attackerId = UUID.randomUUID().toString()
     private val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-    private val tokenPolicy = CredentialPolicy("inplacex-identity", "inplacex-game-api")
-    private val issuer = Rs256AccessTokenIssuer(keys.private, tokenPolicy)
     private val verifier = JwtAccessTokenVerifier(
         verificationKey = keys.public,
-        policy = JwtVerificationPolicy(
-            issuer = tokenPolicy.issuer,
-            audience = tokenPolicy.audience,
-            maximumTokenLifetime = tokenPolicy.accessTtl,
+        policy = JwtVerificationPolicy.platformGame(
+            issuer = TokenIssuer,
+            audience = TokenAudience,
+            gameId = GameId,
         ),
         clock = Clock.fixed(now, ZoneOffset.UTC),
     )
-    private val playerToken = issuer.issue(playerId, now, now.plus(tokenPolicy.accessTtl))
-    private val attackerToken = issuer.issue(attackerId, now, now.plus(tokenPolicy.accessTtl))
+    private val playerToken = platformToken(playerId)
+    private val attackerToken = platformToken(attackerId)
 
     @Test
     fun `WebSocket heartbeat deadline advances only after a valid ping`() {
@@ -393,8 +393,7 @@ class OnlineRoutesTest {
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
         application { configureOnlineRoutes(verifier, service) }
         val forgedKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-        val forgedToken = Rs256AccessTokenIssuer(forgedKeys.private, tokenPolicy)
-            .issue(playerId, now, now.plus(tokenPolicy.accessTtl))
+        val forgedToken = platformToken(playerId, forgedKeys.private)
 
         val unauthorized = client.post("/api/v1/matchmaking/tickets") {
             bearer(forgedToken)
@@ -465,6 +464,31 @@ class OnlineRoutesTest {
         """{"schemaVersion":"1.0","messageId":"${UUID.randomUUID()}","requestId":"$requestId","sessionId":"$sessionId","type":"$type","payload":$payload}"""
 
     private fun json(source: String) = Json.parseToJsonElement(source).jsonObject
+
+    private fun platformToken(
+        gamePlayerId: String,
+        signingKey: PrivateKey = keys.private,
+    ): String {
+        val encoder = Base64.getUrlEncoder().withoutPadding()
+        val header = encoder.encodeToString("""{"alg":"RS256","typ":"JWT"}""".toByteArray())
+        val payload = encoder.encodeToString(
+            """{"iss":"$TokenIssuer","aud":"$TokenAudience","sub":"${UUID.randomUUID()}","pid":"$gamePlayerId","gid":"$GameId","sid":"${UUID.randomUUID()}","amr":"guest","iat":${now.epochSecond},"exp":${now.plusSeconds(900).epochSecond},"jti":"${UUID.randomUUID()}"}"""
+                .toByteArray(StandardCharsets.UTF_8),
+        )
+        val unsigned = "$header.$payload"
+        val signature = Signature.getInstance("SHA256withRSA").run {
+            initSign(signingKey)
+            update(unsigned.toByteArray(StandardCharsets.US_ASCII))
+            sign()
+        }
+        return "$unsigned.${encoder.encodeToString(signature)}"
+    }
+
+    private companion object {
+        const val TokenIssuer = "mirkori-platform"
+        const val TokenAudience = "mirkori-games"
+        const val GameId = "inplacex"
+    }
 }
 
 private class RouteMutableClock(

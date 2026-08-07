@@ -28,11 +28,37 @@ The API and WebSocket layers are bindings of the same command and event
 concepts. A command must have the same authorization, validation, idempotency,
 revision, and result semantics regardless of its binding.
 
-## Authentication and guest identity
+## Authentication and game identity
+
+Mirkori Games Platform is the only production identity authority. Android
+creates or restores its installation and game profile through the Platform
+Game SDK, refreshes the Platform credentials there, and sends that same fresh
+game-scoped bearer token to InplaceX online routes. The InplaceX backend does
+not issue a second production player identity.
+
+The RS256 token must have the configured Mirkori issuer and audience, global
+account UUID in `sub`, stable InplaceX player UUID in required `pid`, exact
+`gid: "inplacex"`, numeric `iat` and `exp`, and canonical UUID `jti`. The online
+principal is `pid`; `sub` must never replace it. The verifier accepts bounded,
+signed additive Platform claims such as `sid` and `amr`, but they cannot alter
+the required identity. Wrong issuer, audience or game, missing/invalid `pid`,
+invalid signature, future issuance, and expiry all fail closed.
+
+On first authenticated use, PostgreSQL may create an idempotent game-local row
+for `pid` so existing online foreign keys remain valid. This row is not an
+identity account, does not copy provider credentials, and does not change or
+delete existing players, saves, tickets, or matches.
+
+### Retired InplaceX identity compatibility
+
+The source and tests for the earlier InplaceX guest/bootstrap and direct Google
+adapter remain temporarily available for debug/test compatibility. They are
+not composed by the release backend and are not used by the release Android
+online runtime.
 
 ### Bootstrap
 
-`POST /api/v1/auth/bootstrap` creates or resumes a guest identity for an
+The retired `POST /api/v1/auth/bootstrap` creates or resumes a guest identity for an
 installation. The request contains an opaque client-generated
 `installationId`, platform, and optional app metadata. `installationId` is a
 lookup hint, not a credential; possession of it alone never authorizes a
@@ -73,12 +99,13 @@ restart, and is not treated as token theft. Reusing that key with a different
 refresh token returns `409 idempotency_key_reused` without revoking the token
 family. The stored result expires with the refresh family.
 
-The access token carries an issuer, audience, subject (`playerId`), expiry and
-unique token id. The client sends it as `Authorization: Bearer <token>` for
-REST and during the WebSocket handshake. Tokens are never accepted in a query
-parameter, WebSocket payload, path, or application log.
+Production uses the Mirkori game-scoped token described above. The client sends
+it as `Authorization: Bearer <token>` for REST and during the WebSocket
+handshake. Tokens are never accepted in a query parameter, WebSocket payload,
+path, or application log.
 
-Google linking uses the authenticated guest player context:
+The retired direct Google compatibility flow used the authenticated guest
+player context:
 
 1. `POST /api/v1/auth/google/challenge` creates a short-lived, single-use
    server challenge for the authenticated player. The challenge and its exact
@@ -180,10 +207,6 @@ Every authenticated route checks that the player owns the referenced resource.
 
 | Operation | Route | Contract |
 | --- | --- | --- |
-| Guest bootstrap | `POST /api/v1/auth/bootstrap` | `AuthBootstrapRequest` → `AuthTokenResponse` |
-| Refresh | `POST /api/v1/auth/refresh` | `RefreshRequest` → `RefreshResponse` |
-| Create Google challenge | `POST /api/v1/auth/google/challenge` | authenticated empty request → nonce and expiry |
-| Authenticate with Google | `POST /api/v1/auth/google` | Google ID token + nonce → `AuthTokenResponse` |
 | Read cloud save | `GET /api/v1/me/save` | `CloudSaveSnapshot` |
 | Write cloud save | `PUT /api/v1/me/save` | `CloudSavePutCommand` → `CloudSaveSnapshot` |
 | Create matchmaking ticket | `POST /api/v1/matchmaking/tickets` | `MatchmakingCreateCommand` → `MatchmakingTicket` |

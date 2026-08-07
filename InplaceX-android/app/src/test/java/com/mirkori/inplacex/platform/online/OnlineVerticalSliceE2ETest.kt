@@ -2,47 +2,68 @@ package com.mirkori.inplacex.platform.online
 
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
-import com.mirkori.inplacex.backend.identity.CredentialPolicy
-import com.mirkori.inplacex.backend.identity.GuestIdentityService
-import com.mirkori.inplacex.backend.identity.JdbcGuestIdentityRepository
-import com.mirkori.inplacex.backend.identity.Rs256AccessTokenIssuer
-import com.mirkori.inplacex.backend.identity.configureIdentityRoutes
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
-import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
-import com.mirkori.inplacex.backend.persistence.JdbcSaveRepository
+import com.mirkori.inplacex.platform.mirkori.MirkoriPersistedState
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
+import com.mirkori.inplacex.platform.mirkori.SecureMirkoriStateStore
+import com.mirkori.platform.sdk.InstallationIdentity
+import com.mirkori.platform.sdk.MirkoriGameSdk
+import com.mirkori.platform.sdk.MirkoriGameSdkConfig
+import com.mirkori.platform.sdk.PlatformHttpRequest
+import com.mirkori.platform.sdk.PlatformHttpResponse
+import com.mirkori.platform.sdk.PlatformTransport
 import io.ktor.server.testing.testApplication
+import java.nio.charset.StandardCharsets
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Signature
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
-import kotlinx.coroutines.runBlocking
-import org.h2.jdbcx.JdbcDataSource
+import java.util.Base64
+import java.util.UUID
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnlineVerticalSliceE2ETest {
     @Test
-    fun `Android transport bootstraps identity and plays server-authoritative turn`() = testApplication {
-        val now = Instant.parse("2026-07-27T12:00:00Z")
+    fun `fresh Mirkori guest token authorizes the first online request and authoritative turn`() = testApplication {
+        val now = Instant.parse("2026-08-07T12:00:00Z")
         val clock = Clock.fixed(now, ZoneOffset.UTC)
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-        val policy = CredentialPolicy("inplacex-identity", "inplacex-game-api")
-        val dataSource = JdbcDataSource().apply {
-            setURL("jdbc:h2:mem:android-online-e2e;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
-            user = "sa"
-            password = ""
-        }
-        JdbcMigrationRunner().migrate(dataSource)
-        val identity = GuestIdentityService(
-            identities = JdbcGuestIdentityRepository(dataSource),
-            saves = JdbcSaveRepository(dataSource),
-            policy = policy,
-            accessTokenIssuer = Rs256AccessTokenIssuer(keys.private, policy),
-            clock = clock,
+        val gamePlayerId = UUID.randomUUID().toString()
+        val accountId = UUID.randomUUID().toString()
+        val accessToken = platformToken(
+            signingKey = keys.private,
+            accountId = accountId,
+            gamePlayerId = gamePlayerId,
+            now = now,
+        )
+        val platformTransport = BootstrapPlatformTransport(
+            PlatformHttpResponse(
+                200,
+                """{"accountId":"$accountId","gamePlayerId":"$gamePlayerId","gameId":"$GameId","installationId":"$InstallationId","credentials":{"accessToken":"$accessToken","refreshToken":"${"r".repeat(64)}","accessExpiresAtEpochMs":${now.plusSeconds(900).toEpochMilli()},"refreshExpiresAtEpochMs":${now.plus(Duration.ofDays(30)).toEpochMilli()}}}""",
+            ),
+        )
+        val platformRuntime = MirkoriPlatformRuntime(
+            sdk = MirkoriGameSdk(
+                config = MirkoriGameSdkConfig(
+                    platformBaseUrl = "https://games.dmit.life",
+                    gameId = GameId,
+                    redirectUri = MirkoriPlatformRuntime.RedirectUri,
+                ),
+                transport = platformTransport,
+            ),
+            store = MemoryMirkoriStore(
+                MirkoriPersistedState(
+                    InstallationIdentity(InstallationId, "i".repeat(43)),
+                ),
+            ),
+            clockMs = now::toEpochMilli,
         )
         val matchmakingClock = E2EMutableClock(now)
         val online = AuthoritativeOnlineDuelService(
@@ -50,14 +71,13 @@ class OnlineVerticalSliceE2ETest {
             botFallbackDelay = Duration.ofSeconds(5),
         )
         application {
-            configureIdentityRoutes(identity)
             configureOnlineRoutes(
                 verifier = JwtAccessTokenVerifier(
                     verificationKey = keys.public,
-                    policy = JwtVerificationPolicy(
-                        issuer = policy.issuer,
-                        audience = policy.audience,
-                        maximumTokenLifetime = policy.accessTtl,
+                    policy = JwtVerificationPolicy.platformGame(
+                        issuer = TokenIssuer,
+                        audience = TokenAudience,
+                        gameId = GameId,
                     ),
                     clock = clock,
                 ),
@@ -65,42 +85,24 @@ class OnlineVerticalSliceE2ETest {
             )
         }
 
-        val endpoint = OnlineEndpoint("http://localhost", allowCleartextLoopback = true)
-        val unauthenticatedTransport = KtorOnlineTransport(
-            client = client,
-            endpoint = endpoint,
-            tokenProvider = NoAccessTokenProvider,
-        )
-        val store = MemoryGuestSessionStore()
-        val auth = GuestAuthSessionManager(
-            api = KtorGuestAuthApi(unauthenticatedTransport),
-            store = store,
-            clockMs = { now.toEpochMilli() },
-        )
-
-        val bootstrap = auth.bootstrap(
-            GuestInstallation(
-                installationId = "integration-installation",
-                locale = "ru-RU",
-                regionCode = "RU",
-                appVersion = "1.0",
+        val duel = OnlineDuelClient(
+            KtorOnlineTransport(
+                client = client,
+                endpoint = OnlineEndpoint("http://localhost", allowCleartextLoopback = true),
+                tokenProvider = platformRuntime,
             ),
         )
-        assertTrue(bootstrap is GuestAuthResult.Authenticated)
-
-        val authenticatedTransport = KtorOnlineTransport(
-            client = client,
-            endpoint = endpoint,
-            tokenProvider = auth,
-        )
-        val duel = OnlineDuelClient(authenticatedTransport)
         val searching = duel.createMatch(
             mode = RemoteMatchmakingMode.CLASSIC,
             playStyle = RemoteFriendPlayStyle.RACE,
             codeLength = 6,
         )
         val createdTicket = (searching as OnlineClientResult.Success).value
+
         assertEquals(OnlineMatchStatus.SEARCHING, createdTicket.status)
+        assertEquals(1, platformTransport.requests.size)
+        assertTrue(platformTransport.requests.single().url.endsWith("/api/v1/auth/guest/bootstrap"))
+
         matchmakingClock.advance(Duration.ofSeconds(5))
         val ticket = duel.readTicket(createdTicket.ticketId) as OnlineClientResult.Success
         assertEquals(OnlineMatchStatus.MATCHED, ticket.value.status)
@@ -122,40 +124,74 @@ class OnlineVerticalSliceE2ETest {
         assertTrue(turn.value.revision > active.value.revision)
         assertTrue(turn.value.attempts.any { it.actor == "player" })
         assertTrue(turn.value.attempts.none { it.exactMatches !in 0..turn.value.codeLength })
+        assertEquals(1, platformTransport.requests.size)
     }
 
-    private class E2EMutableClock(
-        @Volatile private var current: Instant,
-        private val zone: ZoneId = ZoneOffset.UTC,
-    ) : Clock() {
-        override fun getZone(): ZoneId = zone
-
-        override fun withZone(zone: ZoneId): Clock = E2EMutableClock(current, zone)
-
-        override fun instant(): Instant = current
-
-        fun advance(duration: Duration) {
-            current = current.plus(duration)
+    private fun platformToken(
+        signingKey: PrivateKey,
+        accountId: String,
+        gamePlayerId: String,
+        now: Instant,
+    ): String {
+        val encoder = Base64.getUrlEncoder().withoutPadding()
+        val header = encoder.encodeToString("""{"alg":"RS256","typ":"JWT"}""".toByteArray())
+        val payload = encoder.encodeToString(
+            """{"iss":"$TokenIssuer","aud":"$TokenAudience","sub":"$accountId","pid":"$gamePlayerId","gid":"$GameId","sid":"${UUID.randomUUID()}","amr":"guest","iat":${now.epochSecond},"exp":${now.plusSeconds(900).epochSecond},"jti":"${UUID.randomUUID()}","platform_features":["online-v1"]}"""
+                .toByteArray(StandardCharsets.UTF_8),
+        )
+        val unsigned = "$header.$payload"
+        val signature = Signature.getInstance("SHA256withRSA").run {
+            initSign(signingKey)
+            update(unsigned.toByteArray(StandardCharsets.US_ASCII))
+            sign()
         }
+        return "$unsigned.${encoder.encodeToString(signature)}"
     }
 
-    private class MemoryGuestSessionStore : SecureGuestSessionStore {
-        private var session: GuestSession? = null
+    private companion object {
+        const val TokenIssuer = "mirkori-platform"
+        const val TokenAudience = "mirkori-games"
+        const val GameId = "inplacex"
+        const val InstallationId = "00000000-0000-4000-8000-000000000801"
+    }
+}
 
-        override fun read(): GuestSession? = session
+private class E2EMutableClock(
+    @Volatile private var current: Instant,
+    private val zone: ZoneId = ZoneOffset.UTC,
+) : Clock() {
+    override fun getZone(): ZoneId = zone
 
-        override fun write(session: GuestSession) {
-            this.session = session
-        }
+    override fun withZone(zone: ZoneId): Clock = E2EMutableClock(current, zone)
 
-        override fun clear() {
-            session = null
-        }
+    override fun instant(): Instant = current
+
+    fun advance(duration: Duration) {
+        current = current.plus(duration)
+    }
+}
+
+private class MemoryMirkoriStore(
+    private var state: MirkoriPersistedState?,
+) : SecureMirkoriStateStore {
+    override fun read(): MirkoriPersistedState? = state
+
+    override fun write(state: MirkoriPersistedState) {
+        this.state = state
     }
 
-    private object NoAccessTokenProvider : AccessTokenProvider {
-        override suspend fun currentAccessToken(): AccessToken? = null
+    override fun clear() {
+        state = null
+    }
+}
 
-        override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? = null
+private class BootstrapPlatformTransport(
+    private val response: PlatformHttpResponse,
+) : PlatformTransport {
+    val requests = mutableListOf<PlatformHttpRequest>()
+
+    override suspend fun execute(request: PlatformHttpRequest): PlatformHttpResponse {
+        requests += request
+        return response
     }
 }
