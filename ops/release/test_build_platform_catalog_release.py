@@ -454,7 +454,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         repository = root / "platform"
         tool = repository / "ops" / "catalog_release_tool.py"
         tool.parent.mkdir(parents=True)
-        tool.write_text(
+        tool.write_bytes((
             f"SCHEMA_VERSION = {schema_version}\n"
             "GAME_FIELDS = {'id', 'slug', 'displayName', 'description', 'releases'}\n"
             "APP_LINK_FIELDS = {'packageName', 'certificateSha256Fingerprints'}\n"
@@ -462,10 +462,8 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             "    'id', 'platform', 'channel', 'versionName', 'versionCode',\n"
             "    'minimumSupportedVersionCode', 'minimumAndroidSdk', 'publishedAt',\n"
             "    'changelog', 'fileName', 'relativePath', 'sizeBytes', 'sha256',\n"
-            "}\n",
-            encoding="utf-8",
-            newline="\n",
-        )
+            "}\n"
+        ).encode("utf-8"))
         self.git(repository, "init", "--quiet")
         self.git(repository, "config", "user.email", "release-test@example.invalid")
         self.git(repository, "config", "user.name", "Release Test")

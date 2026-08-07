@@ -780,10 +780,8 @@ def stage_provenance(
     manifest_path = staging / manifest_name
     manifest_path.write_bytes(manifest_bytes)
     digest = sha256_bytes(manifest_bytes)
-    (staging / f"{manifest_name}.sha256").write_text(
-        f"{digest}  {manifest_name}\n",
-        encoding="ascii",
-        newline="\n",
+    (staging / f"{manifest_name}.sha256").write_bytes(
+        f"{digest}  {manifest_name}\n".encode("ascii"),
     )
     fsync_tree(staging)
     return staging
@@ -1044,10 +1042,8 @@ def main(arguments: Iterable[str] | None = None) -> int:
             else:
                 shutil.copyfile(apk, artifact_target)
             manifest_path = staging / "catalog.json"
-            manifest_path.write_text(
-                json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-                newline="\n",
+            manifest_path.write_bytes(
+                (json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"),
             )
             validate_base_catalog(staging)
             boundary_guard.verify()
