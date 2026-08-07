@@ -1,28 +1,36 @@
 # Auth, Ads, and Billing
 
-## Google Play Auth
+## Mirkori Games Account And Online Identity
 
 - local save remains the primary source of truth
-- Google Play is the first auth and cloud-save provider
-- sign-in is optional for offline play
-- sign-in unlocks future cloud sync and multi-device restore
+- offline play does not require a linked account
+- when online identity is needed, the game restores or creates a Mirkori Games
+  guest profile with one stable InplaceX player ID
+- the Profile action opens the Mirkori Games connection page in the system
+  browser; WebView is not used
+- linking Google, Telegram, or a website account keeps the same InplaceX game
+  profile and does not replace local campaign progress
+- online matches use the refreshed Mirkori game token directly; the InplaceX
+  backend verifies it and does not create a second player identity
 
 Until cloud save has an authoritative merge/reconciliation flow, Android platform backup is
 disabled. Restoring the SQLite profile without the device-bound Keystore session could otherwise
 show a linked account or local premium flags without valid backend credentials. Progress restore
 must go through the future authenticated cloud-save contract, not an implicit device backup.
-- the Profile button opens the system Google account chooser
-- successful sign-in is confirmed by the InplaceX server, not by a local flag
-- an existing guest profile is linked in place, so current progress is kept
 
-## Email and Telegram Auth
+## Google, Email, And Telegram Providers
 
-- the shared security layer is ready for passwordless email and Telegram
-- email uses a short-lived six-digit code instead of a stored password
-- Telegram login is accepted only after its signature and timestamp are checked
-- both providers link to the same InplaceX player model as Google
-- sending email, exposing Telegram login in the app, and VPS routes are not live
-  until their delivery/provider configuration is installed
+- production provider login is owned by Mirkori Games Platform and happens on
+  its browser connection page
+- Android and the InplaceX online backend never receive raw Google or Telegram
+  tokens and do not verify provider credentials directly
+- provider availability depends on the Platform deployment and its own
+  provider configuration
+- the former Credential Manager plus InplaceX VPS identity-service flow and
+  the shared direct-provider verification module remain debug/test or
+  historical compatibility only; they are not the current release login path
+- no logout action is shown for a linked Platform profile until Mirkori can
+  revoke the server session before encrypted local credentials are cleared
 
 ## Rewarded Ads
 
@@ -84,11 +92,13 @@ must go through the future authenticated cloud-save contract, not an implicit de
 
 ## Current Stage
 
-- Google account authentication is connected to Android Credential Manager and
-  the VPS identity service; activation requires the matching Google OAuth web
-  client ID in the Android build and identity-service environment
-- common email and Telegram verification rules are implemented and tested, but
-  their delivery adapters and public endpoints are intentionally not active yet
+- production account linking and online identity are connected through the
+  Mirkori Games SDK, browser/PKCE flow, rotating Platform credentials, and the
+  stable game-scoped player ID
+- the InplaceX backend accepts only verified Mirkori game tokens for release
+  online routes; direct Google bootstrap, provider-token verification, and
+  backend JWT issuing remain debug/test compatibility rather than deployment
+  requirements
 - Yandex Mobile Ads SDK is connected as the owner's live adapter for banner,
   rewarded, and optional post-match formats; it becomes active only when the
   player has made a privacy choice and the backend returns `Russia`

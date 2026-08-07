@@ -2,7 +2,14 @@
 
 ## Canonical Services
 
-- `AuthService`
+- production `MirkoriPlatformRuntime`
+  - `restoreOrBootstrap()`
+  - `beginLogin()`
+  - `completeLogin(callbackUrl)`
+- production `AccessTokenProvider`
+  - `currentAccessToken()`
+  - `refreshAccessToken(rejectedToken)`
+- legacy `AuthService` is debug/test compatibility only
   - `currentSession()`
   - `signInWithGooglePlay()`
   - `signOut()`
@@ -19,26 +26,25 @@
 
 ## Auth Model
 
-- canonical providers:
-  - `GOOGLE`
-  - `EMAIL`
-  - `TELEGRAM`
-- auth is optional
-- Google keeps the existing server challenge plus verified ID-token flow
-- email is passwordless:
-  - six-digit, short-lived code
-  - verification proof is HMAC-protected
-  - raw email addresses and codes must not appear in logs or token claims
-- Telegram accepts only the documented signed login payload:
-  - HMAC signature must be valid
-  - `auth_date` must be fresh
-  - unknown fields fail closed
-  - the bot token stays in the identity-service/VPS secret store
-- new email and Telegram provider subjects are opaque and domain-separated by
-  provider; the already-shipped Google link keeps its provider-issued subject
-  until a separately versioned persistence migration is approved
-- `InplaceX-auth-core` owns these provider-neutral rules; HTTP routes, SMTP,
-  persistence, and Android provider UI remain adapter responsibilities
+- Mirkori Games Platform is the only production identity and token authority
+- offline gameplay does not require a linked account; when online identity is
+  needed, the Platform SDK restores or bootstraps a guest game profile
+- account linking uses the Platform browser/PKCE flow and preserves the same
+  stable InplaceX `gamePlayerId` across `GOOGLE`, `TELEGRAM`, `LOCAL`/email,
+  website, and future providers
+- Android and the InplaceX online backend never receive Google or Telegram
+  provider credentials; those credentials, provider subjects, and verification
+  rules remain inside Mirkori Games Platform
+- every release online request uses the same refreshed game-scoped Platform
+  bearer token; the backend verifies `RS256`, configured issuer/audience,
+  canonical `sub/pid/jti`, and exact `gid=inplacex`
+- the online principal is `pid`; the global account `sub` is audit context and
+  must never replace the game player identity
+- the former InplaceX guest bootstrap, direct Google challenge/ID-token
+  exchange, backend JWT issuing, and local logout contract are retired from
+  release composition and remain only debug/test or historical compatibility
+- `InplaceX-auth-core` retains provider-neutral legacy rules and tests, but it
+  is not a production identity authority
 
 ## Monetization Model
 
@@ -116,7 +122,12 @@ This is intentionally separate from permanent hint inventory.
 ## Integration Rule
 
 - game code uses platform contracts only
-- server auth adapters use `InplaceX-auth-core`
+- release Android identity uses `MirkoriPlatformRuntime` and the Platform Game
+  SDK; release online transport obtains tokens through `AccessTokenProvider`
+- the release backend verifies Platform game tokens and provisions only the
+  game-local `pid` projection; it does not compose an InplaceX token issuer
+- direct provider adapters and `InplaceX-auth-core` remain debug/test or
+  historical compatibility only
 - Android ad adapters use `InplaceX-ads-core`
 - debug builds use `StubGooglePlayAuthService`, `StubAdService`, and `StubBillingService`
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
