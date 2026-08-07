@@ -137,7 +137,8 @@ fun GameFieldScreen(
             turnLabel = turnLabel,
             secondaryStatusText = secondaryStatusText,
             inputEnabled = inputEnabled,
-            configuredMoveLimit = params.limitMoves,
+            configuredMoveLimit = params.limitMoves.takeIf { it > 0 },
+            movesUnlimited = params.limitMoves <= 0,
             openPositionHints = routeController.visibleHintCount(
                 GameFieldHintMode.OPEN_POSITION,
                 hintInventory,

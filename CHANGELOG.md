@@ -9,6 +9,12 @@
   The existing Google Play online identity remains a separate compatibility
   path.
 
+- The home duel card now opens an explicit bot/online choice: bot play starts
+  the local secret setup, while online play opens quick match and discloses its
+  server bot fallback. Online play is disabled when no runtime is configured.
+  The default PvE race is speed-based with unlimited moves, and local
+  bot duels no longer apply a turn timer.
+
 - Campaign now offers atomic, persisted daily and weekly bonus claims. Reward
   payloads and local calendar periods are centralized in a configurable policy,
   and duplicate claims cannot mutate inventory.

@@ -108,6 +108,7 @@ object AppConfigCatalog {
             ),
             opponentKind = OpponentKind.BOT,
             hintsEnabled = true,
+            moveLimit = null,
         ),
         GameModeDefinition(
             id = "pvp_bot_duel",
@@ -119,11 +120,10 @@ object AppConfigCatalog {
                 allowDuplicates = true,
                 attemptLimit = 12,
                 maxConsecutiveDuplicateDigits = 3,
-                turnTimeLimitSeconds = 30,
             ),
             opponentKind = OpponentKind.BOT,
             hintsEnabled = false,
-            turnTimeLimitSeconds = 30,
+            moveLimit = null,
             preMatchConfig = PreMatchConfig(
                 secretSelectionTimeoutSeconds = 60,
                 devBotSecretDelaySeconds = 5,

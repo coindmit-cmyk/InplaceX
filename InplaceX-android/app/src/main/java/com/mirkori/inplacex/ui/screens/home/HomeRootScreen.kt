@@ -88,6 +88,8 @@ fun HomeRootScreen(
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
     onOpenCompany: () -> Unit = {},
+    onOpenOnlineDuel: () -> Unit = {},
+    onlineAvailable: Boolean = false,
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
@@ -166,8 +168,12 @@ fun HomeRootScreen(
     LaunchedEffect(requestExitGame, screenState) {
         if (!requestExitGame) return@LaunchedEffect
 
-        if (screenState != HomeScreenState.ROOT) {
-            showExitDialog = true
+        when (screenState) {
+            HomeScreenState.ROOT -> Unit
+            HomeScreenState.PVP_MODES -> onScreenStateChange(HomeScreenState.ROOT)
+            HomeScreenState.PVE_GAME,
+            HomeScreenState.PVP_GAME,
+            -> showExitDialog = true
         }
         onExitGameConsumed()
     }
@@ -199,7 +205,16 @@ fun HomeRootScreen(
         }
     }
     BackHandler(
-        enabled = screenState != HomeScreenState.ROOT &&
+        enabled = screenState == HomeScreenState.PVP_MODES &&
+            !showExitDialog &&
+            !showPreMatchDialog &&
+            !showDuelResultDialog &&
+            raceResultWon == null,
+    ) {
+        onScreenStateChange(HomeScreenState.ROOT)
+    }
+    BackHandler(
+        enabled = screenState in setOf(HomeScreenState.PVE_GAME, HomeScreenState.PVP_GAME) &&
             !showExitDialog &&
             !showPreMatchDialog &&
             !showDuelResultDialog &&
@@ -214,7 +229,14 @@ fun HomeRootScreen(
                 pveMode = pveMode,
                 pvpMode = pvpMode,
                 onOpenPve = { onScreenStateChange(HomeScreenState.PVE_GAME) },
-                onOpenPvp = {
+                onOpenPvp = { onScreenStateChange(HomeScreenState.PVP_MODES) },
+                onOpenCompany = onOpenCompany,
+            )
+        }
+
+        HomeScreenState.PVP_MODES -> {
+            PvpModesScreen(
+                onPlayWithBot = {
                     preMatchPhase = PreMatchPhase.SECRET_SELECTION
                     preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
                     botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
@@ -222,7 +244,9 @@ fun HomeRootScreen(
                     preMatchError = null
                     showPreMatchDialog = true
                 },
-                onOpenCompany = onOpenCompany,
+                onPlayOnline = onOpenOnlineDuel,
+                onlineAvailable = onlineAvailable,
+                onBack = { onScreenStateChange(HomeScreenState.ROOT) },
             )
         }
 
@@ -399,7 +423,7 @@ fun HomeRootScreen(
         RaceResultDialog(
             won = won,
             attemptsUsed = raceResultAttempts,
-            attemptLimit = pveMode.config.attemptLimit,
+            attemptLimit = pveMode.moveLimit,
             elapsedSeconds = raceResultElapsedSeconds,
             onRetry = {
                 raceResultWon = null
@@ -690,14 +714,14 @@ private fun HomeSelectionScreen(
     }
 }
 
-private fun GameModeDefinition.toFieldParams(typeGame: TypeGame): GameFieldParams {
+internal fun GameModeDefinition.toFieldParams(typeGame: TypeGame): GameFieldParams {
     return GameFieldParams(
         typeGame = typeGame,
         useHints = hintsEnabled,
         useBoosts = false,
         timeAll = if (typeGame == TypeGame.DuelMatch) 0 else (totalTimeLimitSeconds ?: 0),
         timeMove = turnTimeLimitSeconds ?: 0,
-        limitMoves = if (typeGame == TypeGame.DuelMatch) 0 else config.attemptLimit,
+        limitMoves = moveLimit ?: 0,
         lenSecret = config.codeLength,
         allowDuplicates = config.allowDuplicates,
         forbidAllSameDigitsGuess = config.forbidAllSameDigitsGuess,

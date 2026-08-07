@@ -18,9 +18,16 @@ data class GameModeDefinition(
     val config: GameConfig,
     val opponentKind: OpponentKind,
     val hintsEnabled: Boolean,
+    val moveLimit: Int? = config.attemptLimit,
     val totalTimeLimitSeconds: Int? = null,
     val turnTimeLimitSeconds: Int? = null,
     val preMatchConfig: PreMatchConfig? = null,
     val botDifficulty: BotDifficulty? = null,
     val campaignLevelNumber: Int? = null,
-)
+) {
+    init {
+        require(moveLimit == null || moveLimit > 0) {
+            "moveLimit must be null or > 0"
+        }
+    }
+}

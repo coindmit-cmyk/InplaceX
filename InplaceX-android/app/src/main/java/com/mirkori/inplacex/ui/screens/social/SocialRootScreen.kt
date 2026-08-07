@@ -52,6 +52,8 @@ fun SocialRootScreen(
     onActiveSessionChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     showTestFriendBot: Boolean = false,
+    requestQuickMatch: Boolean = false,
+    onQuickMatchRequestConsumed: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
@@ -71,6 +73,14 @@ fun SocialRootScreen(
             onActiveSessionChange(null)
             activeDestination = null
         }
+    }
+    LaunchedEffect(requestQuickMatch, onlineRuntime) {
+        if (!requestQuickMatch) return@LaunchedEffect
+
+        if (onlineRuntime != null) {
+            activeDestination = SocialDestination.ONLINE_MATCH
+        }
+        onQuickMatchRequestConsumed()
     }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
