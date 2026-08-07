@@ -19,6 +19,35 @@
   atomically writes an immutable signed artifact bundle. Ordinary release and
   internal-distribution builds remain unsigned even when signing is configured.
 
+- Android commerce now uses the typed Mirkori Games Platform SDK 0.2.0 for the
+  product catalog, idempotent order/checkout creation, external HTTPS payment,
+  order polling, and server-authoritative `Remove Ads`, `Pro`, and `Pro+`
+  entitlements. Browser return and paid-order status cannot unlock products
+  without the matching Platform grant; retry state survives process restart,
+  remains scoped to the exact account/profile, and exposes explicit offline,
+  provider-unavailable, cancellation, refund, and delayed-entitlement states.
+  The local one-hour coin `Pro` remains a separate bonus, Google Play Billing
+  is not used, and release validation now requires valid distinct Platform
+  product IDs.
+  Entitlement ownership is now projected from a stable typed contract even
+  after catalog delisting. Pending state format v4 preserves an immutable
+  offer snapshot, restores exactly one server-side pending order after
+  reinstall/second-device use, and fails closed on ambiguity. Repricing cannot
+  mutate an existing attempt, while cancellation/refund remains terminal.
+  Timed Pro access uses trusted HTTPS server time advanced by the monotonic
+  clock and fails closed after rollback/reboot until resynchronization. The
+  shop describes YooKassa Pro/Pro+ as prepaid fixed-term access with no
+  auto-renewal, and release validation rejects whitespace in billing IDs.
+  Pro+ now covers Pro consistently and disables the lower-tier checkout.
+  Debug developer paid toggles are merged only by the debug source-set overlay,
+  while release ignores local premium flags. Reconciliation uses the dedicated
+  pending-order endpoint, recovers safely from `order_pending`, and no longer
+  blocks after a full history page. Oversized Platform responses explicitly
+  cancel their body channel. Release product IDs are immutable canonical
+  `inplacex.*` values; debug catalog IDs remain configurable. Account changes
+  synchronously discard the previous identity's cached paid UI state before
+  any network refresh, including when the new account keeps the same player ID.
+
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under
   Android Keystore-backed encryption, opens account login in the system browser,

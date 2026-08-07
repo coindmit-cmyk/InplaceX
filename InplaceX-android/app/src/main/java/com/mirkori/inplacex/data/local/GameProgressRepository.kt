@@ -269,11 +269,16 @@ class GameProgressRepository(
         row.copy(campaignEnergy = (row.campaignEnergy + amount).coerceAtMost(MAX_CAMPAIGN_ENERGY))
     }
 
-    fun buyTemporaryPro(nowMs: Long = databaseConfig.nowMs()): Boolean {
+    fun buyTemporaryPro(
+        nowMs: Long = databaseConfig.nowMs(),
+        permanentPremiumActive: Boolean? = null,
+    ): Boolean {
         val db = helper.writableDatabase
         ensureDefaultRow(db)
         val row = applyEnergyRegen(loadRow(db), nowMs)
-        if (row.proSubscriptionActive || row.proPlusSubscriptionActive) return false
+        val permanentActive = permanentPremiumActive
+            ?: (row.proSubscriptionActive || row.proPlusSubscriptionActive)
+        if (permanentActive) return false
         if (row.coins < TemporaryProPolicy.PRICE_COINS) return false
 
         writeRow(

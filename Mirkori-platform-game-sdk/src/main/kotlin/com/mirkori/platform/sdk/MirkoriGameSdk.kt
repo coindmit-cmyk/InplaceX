@@ -8,6 +8,7 @@ import java.security.SecureRandom
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 class MirkoriGameSdk(
     val config: MirkoriGameSdkConfig,
@@ -17,6 +18,7 @@ class MirkoriGameSdk(
     private val codec = SdkJsonCodec()
     private val baseUri = validateBaseUrl(config.platformBaseUrl, config.allowCleartextLoopback)
     private val callbackUri = validateCallbackUri(config.redirectUri)
+    private val serverTimeObservation = AtomicReference<PlatformServerTimeObservation?>()
 
     init {
         require(config.gameId.matches(GameIdPattern))
@@ -28,6 +30,8 @@ class MirkoriGameSdk(
     )
 
     fun newIdempotencyKey(): PlatformIdempotencyKey = PlatformIdempotencyKey(entropy.token(32))
+
+    fun latestServerTimeObservation(): PlatformServerTimeObservation? = serverTimeObservation.get()
 
     suspend fun bootstrapGuest(
         installation: InstallationIdentity,
@@ -141,30 +145,220 @@ class MirkoriGameSdk(
         )
     }
 
+    suspend fun products(currency: String): List<PlatformProductOffer> {
+        require(currency.matches(CurrencyPattern))
+        return codec.productsResponse(
+            get("/api/v1/commerce/games/${config.gameId}/products?currency=$currency"),
+        ).also { products ->
+            products.forEach { product ->
+                require(product.gameId == config.gameId)
+                require(product.id.matches(ResourceIdPattern))
+                require(product.slug.matches(ResourceIdPattern))
+                require(product.price.currency == currency && product.price.amountMinor > 0)
+                require(product.version > 0 && product.grants.isNotEmpty())
+                product.grants.forEach { grant ->
+                    require(grant.entitlementKey.matches(ResourceIdPattern) && grant.quantity > 0)
+                    require(
+                        if (grant.type == PlatformEntitlementType.TIMED) {
+                            grant.durationSeconds != null && grant.durationSeconds > 0
+                        } else {
+                            grant.durationSeconds == null
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun createOrder(
+        profileAccessToken: String,
+        productId: String,
+        currency: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformOrder {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(productId.matches(ResourceIdPattern))
+        require(currency.matches(CurrencyPattern))
+        return codec.orderResponse(
+            post(
+                path = "/api/v1/commerce/orders",
+                body = codec.createOrderRequest(productId, currency),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { order ->
+            validateOrder(order)
+            require(order.productId == productId && order.currency == currency)
+        }
+    }
+
+    suspend fun createCheckout(
+        profileAccessToken: String,
+        orderId: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformCheckout {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(orderId.isCanonicalUuid())
+        return codec.checkoutResponse(
+            post(
+                path = "/api/v1/commerce/orders/$orderId/checkout",
+                body = "{}",
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { checkout ->
+            require(checkout.id.isCanonicalUuid() && checkout.orderId == orderId)
+            require(checkout.provider.matches(ProviderPattern))
+            require(checkout.status == PlatformCheckoutStatus.READY)
+            require(checkout.expiresAt > checkout.createdAt && checkout.updatedAt >= checkout.createdAt)
+            validateExternalHttpsUrl(checkout.paymentUrl)
+        }
+    }
+
+    suspend fun order(profileAccessToken: String, orderId: String): PlatformOrder {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(orderId.isCanonicalUuid())
+        return codec.orderResponse(
+            get("/api/v1/commerce/orders/$orderId", profileAccessToken),
+        ).also { order ->
+            validateOrder(order)
+            require(order.id == orderId)
+        }
+    }
+
+    suspend fun orders(profileAccessToken: String): List<PlatformOrder> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.ordersResponse(
+            get("/api/v1/commerce/orders", profileAccessToken),
+        ).also { orders -> orders.forEach(::validateOrder) }
+    }
+
+    suspend fun pendingOrders(profileAccessToken: String): List<PlatformOrder> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.ordersResponse(
+            get("/api/v1/commerce/orders/pending", profileAccessToken),
+        ).also { orders ->
+            orders.forEach { order ->
+                validateOrder(order)
+                require(order.status == PlatformOrderStatus.PENDING)
+            }
+        }
+    }
+
+    suspend fun entitlements(profileAccessToken: String): List<PlatformEntitlement> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.entitlementsResponse(
+            get("/api/v1/commerce/entitlements", profileAccessToken),
+        ).also { entitlements ->
+            entitlements.forEach { entitlement ->
+                require(entitlement.key.matches(ResourceIdPattern) && entitlement.quantity > 0)
+                require(
+                    if (entitlement.type == PlatformEntitlementType.TIMED) {
+                        entitlement.validUntil != null
+                    } else {
+                        entitlement.validUntil == null
+                    },
+                )
+            }
+        }
+    }
+
+    suspend fun consumeEntitlement(
+        profileAccessToken: String,
+        entitlementKey: String,
+        quantity: Long,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformConsumptionReceipt {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(entitlementKey.matches(ResourceIdPattern))
+        require(quantity > 0)
+        return codec.consumptionResponse(
+            post(
+                path = "/api/v2/commerce/entitlements/$entitlementKey/consume",
+                body = codec.consumptionRequest(quantity),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { receipt ->
+            require(receipt.id.isCanonicalUuid())
+            require(receipt.entitlementKey == entitlementKey)
+            require(receipt.quantity == quantity && receipt.remainingQuantity >= 0)
+        }
+    }
+
     private suspend fun post(
         path: String,
         body: String,
         idempotencyKey: PlatformIdempotencyKey,
         bearerToken: String? = null,
+    ): String = request(
+        method = PlatformHttpMethod.POST,
+        path = path,
+        body = body,
+        idempotencyKey = idempotencyKey,
+        bearerToken = bearerToken,
+    )
+
+    private suspend fun get(path: String, bearerToken: String? = null): String = request(
+        method = PlatformHttpMethod.GET,
+        path = path,
+        body = "",
+        bearerToken = bearerToken,
+    )
+
+    private suspend fun request(
+        method: PlatformHttpMethod,
+        path: String,
+        body: String,
+        idempotencyKey: PlatformIdempotencyKey? = null,
+        bearerToken: String? = null,
     ): String {
         val headers = linkedMapOf(
             "Accept" to "application/json",
-            "Content-Type" to "application/json",
-            "Idempotency-Key" to idempotencyKey.value,
         )
+        if (method == PlatformHttpMethod.POST) headers["Content-Type"] = "application/json"
+        idempotencyKey?.let { headers["Idempotency-Key"] = it.value }
         bearerToken?.let { headers["Authorization"] = "Bearer $it" }
         val response = transport.execute(
             PlatformHttpRequest(
-                method = PlatformHttpMethod.POST,
+                method = method,
                 url = endpoint(path),
                 headers = headers,
                 body = body,
             ),
         )
+        response.serverTime
+            ?.takeIf { baseUri.scheme.equals("https", ignoreCase = true) }
+            ?.let { serverTime ->
+                serverTimeObservation.updateAndGet { previous ->
+                    PlatformServerTimeObservation(
+                        serverEpochMs = serverTime.toEpochMilli(),
+                        revision = (previous?.revision ?: 0L) + 1L,
+                    )
+                }
+            }
         if (response.status !in 200..299) {
             throw PlatformApiException(response.status, codec.errorCode(response.body))
         }
         return response.body
+    }
+
+    private fun validateOrder(order: PlatformOrder) {
+        require(order.id.isCanonicalUuid())
+        require(order.gameId == config.gameId)
+        require(order.gamePlayerId.isCanonicalUuid())
+        require(order.productId.matches(ResourceIdPattern))
+        require(order.currency.matches(CurrencyPattern) && order.amountMinor > 0)
+        require(order.updatedAt >= order.createdAt)
+    }
+
+    private fun validateExternalHttpsUrl(value: String) {
+        require(value.length in 1..4096 && value.none(Char::isISOControl))
+        val uri = URI(value)
+        require(
+            uri.scheme.equals("https", ignoreCase = true) && uri.host != null && uri.userInfo == null &&
+                uri.fragment == null
+        )
     }
 
     private fun endpoint(path: String): String {
@@ -202,12 +396,15 @@ class MirkoriGameSdk(
     private data class Callback(val session: String, val state: String, val error: String?)
 
     private companion object {
-        val GameIdPattern = Regex("[a-z0-9][a-z0-9_-]{1,63}")
+        val GameIdPattern = Regex("[a-z0-9][a-z0-9-]{0,63}")
         val HighEntropyTokenPattern = Regex("[A-Za-z0-9_-]{43,128}")
         val CredentialPattern = Regex("\\S{32,8192}")
         val SessionPattern = Regex("[A-Za-z0-9_-]{64}")
         val PkceValuePattern = Regex("[A-Za-z0-9._~-]{43,128}")
         val ErrorCodePattern = Regex("[a-z0-9_]{1,64}")
+        val ResourceIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
+        val CurrencyPattern = Regex("[A-Z]{3}")
+        val ProviderPattern = Regex("[a-z0-9][a-z0-9_-]{1,31}")
     }
 }
 

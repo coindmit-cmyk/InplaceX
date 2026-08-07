@@ -15,6 +15,8 @@ import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.SecureEntropy
 import java.io.IOException
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
@@ -53,6 +55,34 @@ class MirkoriPlatformRuntimeTest {
                 refreshToken = credentials("stored").refreshToken,
                 idempotencyKey = PlatformIdempotencyKey("refresh-attempt-1"),
             ),
+            pendingPurchase = PendingMirkoriPurchase(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                productId = "remove_ads",
+                currency = "RUB",
+                orderId = "00000000-0000-4000-8000-000000000804",
+                orderIdempotencyKey = PlatformIdempotencyKey("order-attempt-1"),
+                checkoutIdempotencyKey = PlatformIdempotencyKey("checkout-attempt-1"),
+                offerSnapshot = PendingMirkoriOfferSnapshot(
+                    amountMinor = 9_900,
+                    currency = "RUB",
+                    entitlementSchemaVersion = 1,
+                    productVersion = 4,
+                ),
+            ),
+            confirmedEntitlements = ConfirmedMirkoriEntitlements(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                confirmedAtEpochMs = NowMs,
+                removeAds = MirkoriFeatureGrant(active = true),
+                pro = MirkoriFeatureGrant(active = true, validUntilEpochMs = ExpiresAtMs),
+                proPlus = MirkoriFeatureGrant(active = false),
+            ),
+            trustedTimeAnchor = MirkoriTrustedTimeAnchor(
+                serverEpochMs = NowMs,
+                monotonicAtObservationMs = 10_000L,
+                bootMarker = 3L,
+            ),
         )
 
         val encoded = MirkoriStateCodec.encode(state)
@@ -64,7 +94,18 @@ class MirkoriPlatformRuntimeTest {
         assertEquals(state.pendingLogin?.codeVerifier, decoded.pendingLogin?.codeVerifier)
         assertEquals(state.pendingRefresh?.refreshToken, decoded.pendingRefresh?.refreshToken)
         assertEquals(state.pendingRefresh?.idempotencyKey?.value, decoded.pendingRefresh?.idempotencyKey?.value)
+        assertEquals(state.pendingPurchase?.orderId, decoded.pendingPurchase?.orderId)
+        assertEquals(
+            state.pendingPurchase?.checkoutIdempotencyKey?.value,
+            decoded.pendingPurchase?.checkoutIdempotencyKey?.value,
+        )
+        assertTrue(decoded.confirmedEntitlements?.removeAds?.active == true)
+        assertEquals(ExpiresAtMs, decoded.confirmedEntitlements?.pro?.validUntilEpochMs)
+        assertEquals(9_900L, decoded.pendingPurchase?.offerSnapshot?.amountMinor)
+        assertEquals(4L, decoded.pendingPurchase?.offerSnapshot?.productVersion)
+        assertEquals(3L, decoded.trustedTimeAnchor?.bootMarker)
         assertFalse(decoded.pendingRefresh.toString().contains(state.session?.credentials?.refreshToken.orEmpty()))
+        assertFalse(decoded.pendingPurchase.toString().contains(AccountId))
         assertThrows(IllegalArgumentException::class.java) {
             MirkoriStateCodec.decode(encoded + 1)
         }
@@ -75,12 +116,22 @@ class MirkoriPlatformRuntimeTest {
         val encoded = MirkoriStateCodec.encode(
             MirkoriPersistedState(InstallationIdentity(InstallationId, "I".repeat(43))),
         )
-        val legacy = encoded.copyOf(encoded.size - 1).also { ByteBuffer.wrap(it).putInt(1) }
+        val legacy = encoded.copyOf(encoded.size - 4).also { ByteBuffer.wrap(it).putInt(1) }
 
         val decoded = MirkoriStateCodec.decode(legacy)
 
         assertEquals(InstallationId, decoded.installation.installationId)
         assertNull(decoded.pendingRefresh)
+    }
+
+    @Test
+    fun protectedStateCodecMigratesVersionThreePendingPurchaseWithoutInventingOfferSnapshot() {
+        val decoded = MirkoriStateCodec.decode(legacyVersionThreeCommerceState())
+
+        assertEquals("remove_ads", decoded.pendingPurchase?.productId)
+        assertEquals("00000000-0000-4000-8000-000000000804", decoded.pendingPurchase?.orderId)
+        assertNull(decoded.pendingPurchase?.offerSnapshot)
+        assertNull(decoded.trustedTimeAnchor)
     }
 
     @Test
@@ -91,7 +142,9 @@ class MirkoriPlatformRuntimeTest {
             ok(
                 """{"session":"$sessionHandle","connectUrl":"https://games.dmit.life/connect?session=$sessionHandle","expiresAtEpochMs":$ExpiresAtMs}""",
             ),
-            ok(exchangeJson()),
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}""",
+            ),
         )
         val store = installationStore()
         val runtime = runtime(transport, store)
@@ -114,6 +167,10 @@ class MirkoriPlatformRuntimeTest {
 
         assertEquals(MirkoriAccountStateKind.LINKED, completed.accountState.kind)
         assertEquals(PlatformAuthMode.LOCAL, completed.accountState.authMode)
+        assertEquals(AccountId, restored.accountIdentity)
+        assertEquals(OtherAccountId, completed.accountState.accountIdentity)
+        assertFalse(restored == completed.accountState)
+        assertFalse(completed.accountState.toString().contains(OtherAccountId))
         assertEquals(PlatformAuthMode.LOCAL, store.value?.session?.authMode)
         assertNull(store.value?.pendingLogin)
         assertEquals(3, transport.requests.size)
@@ -288,6 +345,64 @@ class MirkoriPlatformRuntimeTest {
         assertNull(store.value?.session)
     }
 
+    @Test
+    fun accountProfileSwitchClearsCachedEntitlementsAndPendingCheckout() {
+        val sessionHandle = "W".repeat(64)
+        val pendingLogin = PendingGameLogin(
+            session = sessionHandle,
+            state = "T".repeat(43),
+            codeVerifier = "V".repeat(43),
+            connectUrl = "https://games.dmit.life/connect?session=$sessionHandle",
+            expiresAt = Instant.ofEpochMilli(ExpiresAtMs),
+        )
+        val store = MemoryStore(
+            MirkoriPersistedState(
+                installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+                session = GameIdentitySession(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    gameId = "inplacex",
+                    installationId = InstallationId,
+                    authMode = PlatformAuthMode.GUEST,
+                    credentials = credentials("guest"),
+                ),
+                pendingLogin = pendingLogin,
+                pendingPurchase = PendingMirkoriPurchase(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    productId = "remove_ads",
+                    currency = "RUB",
+                    orderIdempotencyKey = PlatformIdempotencyKey("switch-order-key"),
+                    checkoutIdempotencyKey = PlatformIdempotencyKey("switch-checkout-key"),
+                ),
+                confirmedEntitlements = ConfirmedMirkoriEntitlements(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    confirmedAtEpochMs = NowMs,
+                    removeAds = MirkoriFeatureGrant(true),
+                    pro = MirkoriFeatureGrant(false),
+                    proPlus = MirkoriFeatureGrant(false),
+                ),
+            ),
+        )
+        val transport = QueueTransport(
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$OtherPlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}""",
+            ),
+        )
+
+        val result = runSuspend {
+            runtime(transport, store).completeLogin(
+                "https://games.dmit.life/connect/inplacex/callback?session=$sessionHandle&state=${pendingLogin.state}",
+            )
+        }
+
+        assertTrue(result is MirkoriLoginResult.Connected)
+        assertEquals(OtherPlayerId, store.value?.session?.gamePlayerId)
+        assertNull(store.value?.pendingPurchase)
+        assertNull(store.value?.confirmedEntitlements)
+    }
+
     private fun runtime(transport: PlatformTransport, store: MemoryStore): MirkoriPlatformRuntime {
         val sdk = MirkoriGameSdk(
             config = MirkoriGameSdkConfig(
@@ -311,10 +426,43 @@ class MirkoriPlatformRuntimeTest {
     private fun exchangeJson(): String =
         """{"accountId":"$AccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}"""
 
+    private fun legacyVersionThreeCommerceState(): ByteArray = ByteArrayOutputStream().use { bytes ->
+        DataOutputStream(bytes).use { output ->
+            output.writeInt(3)
+            output.writeUTF(InstallationId)
+            output.writeUTF("I".repeat(43))
+            output.writeBoolean(true)
+            output.writeUTF(AccountId)
+            output.writeUTF(PlayerId)
+            output.writeUTF("inplacex")
+            output.writeUTF("local")
+            val credentials = credentials("legacy")
+            output.writeUTF(credentials.accessToken)
+            output.writeUTF(credentials.refreshToken)
+            output.writeLong(credentials.accessExpiresAt.toEpochMilli())
+            output.writeLong(credentials.refreshExpiresAt.toEpochMilli())
+            output.writeBoolean(false)
+            output.writeBoolean(false)
+            output.writeBoolean(true)
+            output.writeUTF(AccountId)
+            output.writeUTF(PlayerId)
+            output.writeUTF("remove_ads")
+            output.writeUTF("RUB")
+            output.writeBoolean(true)
+            output.writeUTF("00000000-0000-4000-8000-000000000804")
+            output.writeUTF("legacy-order-key")
+            output.writeUTF("legacy-checkout-key")
+            output.writeBoolean(false)
+        }
+        bytes.toByteArray()
+    }
+
     private companion object {
         const val AccountId = "00000000-0000-4000-8000-000000000801"
         const val PlayerId = "00000000-0000-4000-8000-000000000802"
         const val InstallationId = "00000000-0000-4000-8000-000000000803"
+        const val OtherAccountId = "00000000-0000-4000-8000-000000000811"
+        const val OtherPlayerId = "00000000-0000-4000-8000-000000000812"
         const val NowMs = 1_786_000_000_000L
         const val ExpiresAtMs = 1_786_032_600_000L
     }

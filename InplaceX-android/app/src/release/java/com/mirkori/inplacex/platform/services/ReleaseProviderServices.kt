@@ -15,6 +15,7 @@ object ProviderServicesFactory {
         context: Context,
         platformConfig: PlatformConfig,
         adConsentController: AdConsentController? = null,
+        billingService: BillingService? = null,
     ): ProviderServices {
         val providers = platformConfig.providers
         val auth = GooglePlayAuthService(context, providers.googlePlay)
@@ -42,7 +43,13 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
-            billingService = GooglePlayBillingService(context, providers.billing),
+            billingService = billingService ?: UnavailableBillingService(
+                notice = if (providers.billing.isConfigured) {
+                    BillingNotice.PROVIDER_UNAVAILABLE
+                } else {
+                    BillingNotice.CONFIGURATION_REQUIRED
+                },
+            ),
         )
     }
 }

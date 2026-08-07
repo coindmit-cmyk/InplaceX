@@ -2,9 +2,12 @@ package com.mirkori.inplacex
 
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.services.BillingService
+import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -29,6 +32,58 @@ class ReleaseVariantIsolationTest {
         assertTrue(
             OnlineRuntime::class.java.declaredMethods.none { it.name in forbiddenLegacyMethods },
         )
+    }
+
+    @Test
+    fun `release commerce uses Mirkori browser checkout and contains no Google Play billing adapter`() {
+        assertTrue(BillingService::class.java.isAssignableFrom(MirkoriBillingService::class.java))
+        assertNull(
+            javaClass.classLoader?.getResource(
+                "com/mirkori/inplacex/platform/services/GooglePlayBillingService.class",
+            ),
+        )
+    }
+
+    @Test
+    fun `release paid features ignore local debug flags and use server only`() {
+        val localDebugFlags = paidEntitlementTestProgress(adFree = true, pro = true, proPlus = true)
+
+        val effective = localDebugFlags.withServerPaidEntitlements(MonetizationEntitlements.None)
+
+        assertFalse(effective.adFreePurchased)
+        assertFalse(effective.proSubscriptionActive)
+        assertFalse(effective.proPlusSubscriptionActive)
+    }
+
+    @Test
+    fun `release local paid flags cannot suppress real ad gates`() {
+        val localDebugFlags = paidEntitlementTestProgress(adFree = true, pro = true, proPlus = true)
+
+        val entitlements = localDebugFlags.effectiveMonetizationEntitlements(
+            serverEntitlements = MonetizationEntitlements.None,
+            nowMs = 1_000L,
+        )
+
+        assertFalse(entitlements.adsDisabled)
+    }
+
+    @Test
+    fun `release ad gate keeps temporary Pro suppression`() {
+        val temporaryPro = paidEntitlementTestProgress().copy(temporaryProExpiresAtMs = 2_000L)
+
+        val entitlements = temporaryPro.effectiveMonetizationEntitlements(
+            serverEntitlements = MonetizationEntitlements.None,
+            nowMs = 1_000L,
+        )
+
+        assertTrue(entitlements.adsDisabled)
+    }
+
+    @Test
+    fun `release product ids are immutable canonical Platform ids`() {
+        assertEquals("inplacex.remove_ads", BuildConfig.BILLING_REMOVE_ADS_PRODUCT_ID)
+        assertEquals("inplacex.pro", BuildConfig.BILLING_PRO_SUBSCRIPTION_ID)
+        assertEquals("inplacex.pro_plus", BuildConfig.BILLING_PRO_PLUS_SUBSCRIPTION_ID)
     }
 
     @Test

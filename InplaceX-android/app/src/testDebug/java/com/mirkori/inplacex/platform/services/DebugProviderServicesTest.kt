@@ -25,7 +25,7 @@ class DebugProviderServicesTest {
         assertTrue(services.billingService is StubBillingService)
         assertTrue(services.authService.signInWithGooglePlay().isSignedIn)
         assertFalse(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
-        assertFalse(services.billingService.purchase(BillingProductId.REMOVE_ADS))
+        assertEquals(BillingNotice.CONFIGURATION_REQUIRED, services.billingService.cachedState().notice)
     }
 
     private object TestAdConsentController : AdConsentController {

@@ -22,7 +22,14 @@
   variant tooling and code not yet removed
 
 - `BillingService`
-  - `purchase(productId): Boolean`
+  - `cachedState()`
+  - `refresh()`
+  - `purchase(productId)`
+
+`BillingService` is asynchronous and returns typed availability, notice,
+catalog, pending-order, and server-confirmed entitlement state. A purchase may
+return only a validated external HTTPS checkout URL or an updated fail-closed
+state; opening a browser is never proof of payment.
 
 ## Auth Model
 
@@ -48,15 +55,75 @@
 
 ## Monetization Model
 
-- DB stores:
-  - `ad_free_purchased`
-  - `pro_subscription_active`
-  - `pro_plus_subscription_active`
+- Mirkori Games Platform is authoritative for permanent paid products:
+  - `REMOVE_ADS`
+  - `PRO`
+  - `PRO_PLUS`
+- legacy local premium columns are ignored when deriving permanent paid access
+- the encrypted Android cache contains only the last server-confirmed grants,
+  their validity window, a trusted server-time anchor, and a pending
+  order/checkout retry identity scoped to the exact Platform account and game
+  profile
+- entitlement projection uses the stable typed contract, independently of the
+  currently saleable catalog: `REMOVE_ADS -> ads.disabled/DURABLE/1`,
+  `PRO -> pro.active/TIMED/1`, and
+  `PRO_PLUS -> pro-plus.active/TIMED/1`. Delisting or repricing an offer cannot
+  revoke an already confirmed entitlement
+- `PRO_PLUS` includes `PRO`: effective entitlement state, gameplay, Profile,
+  Shop, and paid-order completion all treat an active Pro+ grant as active Pro,
+  and the lower Pro checkout is disabled
+- debug builds may OR explicit local developer toggles with server grants;
+  release builds ignore all local paid flags and remain server-only
+- changing account or game profile invalidates both the cached grants and the
+  pending checkout
+- temporary `Pro`, bought with local coins, remains a separate local bonus and
+  must never be presented as a provider purchase
 
 - derived entitlements:
   - `adsDisabled`
   - `autoTableAssistEnabled`
   - `infiniteHintsEnabled`
+
+## Mirkori Checkout Flow
+
+1. Android refreshes the Platform catalog and current entitlements for the
+   linked account/profile.
+2. Before creating a new order, Android calls the explicit authenticated
+   `/api/v1/commerce/orders/pending` projection, never the bounded order
+   history. Exactly one compatible `PENDING` order is restored; multiple,
+   unknown-product, or wrong-currency candidates fail closed and no
+   new order is created. This also recovers after reinstall or on a second
+   linked device.
+3. Before the first order request it durably stores one order idempotency key,
+   one checkout idempotency key, and an immutable offer snapshot containing
+   amount, currency, entitlement-schema version, and product version. Ambiguous
+   network failure, process restart, repricing, delisting, and user retry reuse
+   that exact attempt instead of comparing it with the current catalog.
+   If order creation returns `order_pending`, the losing local attempt is
+   cleared and the same pending-order reconciliation is repeated; cancellation
+   still propagates and cannot be converted into a retry state.
+4. Android accepts only an SDK-validated external HTTPS checkout URL and opens
+   it in the system browser. WebView and non-HTTPS destinations fail closed.
+5. Returning to the app triggers order polling and entitlement refresh. Browser
+   return, provider redirect, or a `PAID` order alone does not unlock anything.
+6. Permanent access changes only after the Platform returns the matching active
+   entitlement grant for the current account/profile. A paid order without the
+   grant remains explicitly `AWAITING_ENTITLEMENT`.
+7. Cancelled/refunded orders are terminal even if the product was delisted or
+   repriced. Expired or reconciliation-required checkout links, offline state,
+   Platform `503`, token refresh, and retry remain explicit UI states. A conclusively
+   expired checkout retains its key and blocks a replacement until the server
+   authoritatively confirms cancellation of the original provider payment; ambiguous
+   failures retain the original key. Last confirmed timed grants use an HTTPS
+   `Date` observation plus the device monotonic clock and persisted boot marker;
+   wall-clock changes never extend access. Clock rollback or reboot fails timed
+   access closed until a fresh trusted server observation is available.
+8. Current YooKassa checkout is prepaid, fixed-term access with no automatic
+   renewal. UI must say `Pro access`/`Pro+ access`, show the typed offer duration
+   when available, and never claim that this flow is a recurring subscription.
+9. Platform response bodies are streamed with a hard 64 KiB limit. Overflow
+   explicitly cancels the response body channel before returning a typed
+   transport failure.
 
 ## Rewarded Hint Flow
 
@@ -129,8 +196,11 @@ This is intentionally separate from permanent hint inventory.
 - direct provider adapters and `InplaceX-auth-core` remain debug/test or
   historical compatibility only
 - Android ad adapters use `InplaceX-ads-core`
-- debug builds use `StubGooglePlayAuthService`, `StubAdService`, and `StubBillingService`
+- debug builds may use `StubGooglePlayAuthService`, `StubAdService`, and
+  `StubBillingService` only when no real Mirkori billing runtime is injected
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
+- release composes `MirkoriBillingService`; absent/invalid Platform commerce
+  configuration fails closed through `UnavailableBillingService`
 - Yandex Mobile Ads SDK 8 is the active owner adapter for banner and rewarded
   placements in Russia; post-match interstitial is enabled only when its
   optional placement id is present

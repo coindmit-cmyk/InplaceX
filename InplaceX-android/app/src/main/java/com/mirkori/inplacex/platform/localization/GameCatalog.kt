@@ -39,7 +39,7 @@ internal object GameCatalog {
             localizationEntry("game.validation.only_digits", "Можно вводить только цифры"),
             localizationEntry("game.status.auto_enabled", "Авто режим включен"),
             localizationEntry("game.status.auto_disabled", "Авто режим выключен"),
-            localizationEntry("game.status.auto_requires_pro", "Авто режим входит в подписку Pro"),
+            localizationEntry("game.status.auto_requires_pro", "Авто режим входит в Pro-доступ"),
             localizationEntry("game.status.bonus_hint_ready", "Бонусная подсказка готова к использованию"),
             localizationEntry("game.status.bonus_not_granted", "Бонус не получен"),
             localizationEntry("game.dialog.bonus_hint.title", "Получить бонусную подсказку?"),

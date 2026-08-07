@@ -56,7 +56,17 @@ class StubGooglePlayAuthService(
 }
 
 class StubBillingService : BillingService {
-    override fun purchase(productId: BillingProductId): Boolean = false
+    private val unavailable = BillingState(
+        availability = BillingAvailability.UNAVAILABLE,
+        notice = BillingNotice.CONFIGURATION_REQUIRED,
+    )
+
+    override fun cachedState(): BillingState = unavailable
+
+    override suspend fun refresh(): BillingState = unavailable
+
+    override suspend fun purchase(productId: BillingProductId): BillingPurchaseResult =
+        BillingPurchaseResult.StateUpdated(unavailable)
 }
 
 object ProviderServicesFactory {
@@ -64,6 +74,7 @@ object ProviderServicesFactory {
         context: Context,
         platformConfig: PlatformConfig,
         adConsentController: AdConsentController? = null,
+        billingService: BillingService? = null,
     ): ProviderServices {
         val auth = StubGooglePlayAuthService()
         val adConsent = adConsentController ?: SharedPreferencesAdConsentController(context)
@@ -90,7 +101,7 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
-            billingService = StubBillingService(),
+            billingService = billingService ?: StubBillingService(),
         )
     }
 }

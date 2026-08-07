@@ -28,6 +28,121 @@ enum class PlatformAuthMode(val wireName: String) {
     }
 }
 
+enum class PlatformProductKind(val wireName: String) {
+    GAME("game"),
+    ADDON("addon"),
+    CURRENCY("currency");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformProductKind? = entries.firstOrNull { it.wireName == value }
+    }
+}
+
+enum class PlatformEntitlementType(val wireName: String) {
+    DURABLE("durable"),
+    CONSUMABLE("consumable"),
+    TIMED("timed");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformEntitlementType? = entries.firstOrNull {
+            it.wireName == value
+        }
+    }
+}
+
+enum class PlatformOrderStatus(val wireName: String) {
+    PENDING("pending"),
+    PAID("paid"),
+    REFUNDED("refunded"),
+    CANCELLED("cancelled");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformOrderStatus? = entries.firstOrNull { it.wireName == value }
+    }
+}
+
+enum class PlatformCheckoutStatus(val wireName: String) {
+    CREATING("creating"),
+    READY("ready"),
+    EXPIRED("expired");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformCheckoutStatus? = entries.firstOrNull {
+            it.wireName == value
+        }
+    }
+}
+
+data class PlatformProductPrice(
+    val currency: String,
+    val amountMinor: Long,
+)
+
+data class PlatformProductGrant(
+    val entitlementKey: String,
+    val type: PlatformEntitlementType,
+    val quantity: Long,
+    val durationSeconds: Long?,
+)
+
+data class PlatformProductOffer(
+    val id: String,
+    val gameId: String,
+    val slug: String,
+    val displayName: String,
+    val description: String,
+    val kind: PlatformProductKind,
+    val version: Long,
+    val price: PlatformProductPrice,
+    val grants: List<PlatformProductGrant>,
+)
+
+data class PlatformOrder(
+    val id: String,
+    val gameId: String,
+    val gamePlayerId: String,
+    val productId: String,
+    val currency: String,
+    val amountMinor: Long,
+    val status: PlatformOrderStatus,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+)
+
+data class PlatformEntitlement(
+    val key: String,
+    val type: PlatformEntitlementType,
+    val quantity: Long,
+    val validUntil: Instant?,
+)
+
+data class PlatformServerTimeObservation(
+    val serverEpochMs: Long,
+    val revision: Long,
+)
+
+class PlatformCheckout(
+    val id: String,
+    val orderId: String,
+    val provider: String,
+    val status: PlatformCheckoutStatus,
+    val paymentUrl: String,
+    val expiresAt: Instant,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+) {
+    override fun toString(): String =
+        "PlatformCheckout(id=$id, orderId=$orderId, status=${status.wireName}, expiresAt=$expiresAt, [redacted])"
+}
+
+data class PlatformConsumptionReceipt(
+    val id: String,
+    val entitlementKey: String,
+    val quantity: Long,
+    val remainingQuantity: Long,
+    val createdAt: Instant,
+)
+
 class InstallationIdentity(
     val installationId: String,
     val installationSecret: String,

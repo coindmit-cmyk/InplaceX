@@ -14,6 +14,7 @@ import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.MonetizationProductType
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.ui.screens.developer.DeveloperRootScreen
 import com.mirkori.inplacex.ui.shell.DebugSecretAdSlot
 
@@ -22,6 +23,18 @@ internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = fal
 internal fun testFriendBotEnabled(): Boolean = true
 
 internal fun legacyGoogleProfileActionsEnabled(): Boolean = true
+
+internal fun variantPaidProgressState(
+    local: GameProgressState,
+    server: MonetizationEntitlements,
+): GameProgressState {
+    val proPlusActive = local.proPlusSubscriptionActive || server.proPlusSubscriptionActive
+    return local.copy(
+        adFreePurchased = local.adFreePurchased || server.adFreePurchased,
+        proSubscriptionActive = local.proSubscriptionActive || server.effectiveProAccessActive || proPlusActive,
+        proPlusSubscriptionActive = proPlusActive,
+    )
+}
 
 internal fun initialProgressState(
     context: Context,

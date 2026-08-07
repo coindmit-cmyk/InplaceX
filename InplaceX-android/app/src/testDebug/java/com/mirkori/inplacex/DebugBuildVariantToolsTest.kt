@@ -1,6 +1,7 @@
 package com.mirkori.inplacex
 
-import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.BillingNotice
+import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.RewardedPlacement
 import com.mirkori.inplacex.platform.services.StubAdService
 import com.mirkori.inplacex.platform.services.StubBillingService
@@ -31,9 +32,7 @@ class DebugBuildVariantToolsTest {
     fun `debug billing cannot unlock premium products for free`() {
         val billing = StubBillingService()
 
-        BillingProductId.entries.forEach { productId ->
-            assertFalse(billing.purchase(productId))
-        }
+        assertEquals(BillingNotice.CONFIGURATION_REQUIRED, billing.cachedState().notice)
     }
 
     @Test
@@ -41,5 +40,44 @@ class DebugBuildVariantToolsTest {
         assertFalse(
             StubAdService().showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD),
         )
+    }
+
+    @Test
+    fun `debug paid feature toggles are combined with server entitlements`() {
+        val localProPlus = paidEntitlementTestProgress(adFree = true, proPlus = true)
+
+        val effective = localProPlus.withServerPaidEntitlements(MonetizationEntitlements.None)
+
+        assertTrue(effective.adFreePurchased)
+        assertTrue(effective.proSubscriptionActive)
+        assertTrue(effective.proPlusSubscriptionActive)
+    }
+
+    @Test
+    fun `debug local paid toggles suppress real ad gates`() {
+        listOf(
+            paidEntitlementTestProgress(adFree = true),
+            paidEntitlementTestProgress(pro = true),
+            paidEntitlementTestProgress(proPlus = true),
+        ).forEach { progress ->
+            val entitlements = progress.effectiveMonetizationEntitlements(
+                serverEntitlements = MonetizationEntitlements.None,
+                nowMs = 1_000L,
+            )
+
+            assertTrue(entitlements.adsDisabled)
+        }
+    }
+
+    @Test
+    fun `debug ad gate keeps temporary Pro suppression`() {
+        val temporaryPro = paidEntitlementTestProgress().copy(temporaryProExpiresAtMs = 2_000L)
+
+        val entitlements = temporaryPro.effectiveMonetizationEntitlements(
+            serverEntitlements = MonetizationEntitlements.None,
+            nowMs = 1_000L,
+        )
+
+        assertTrue(entitlements.adsDisabled)
     }
 }
