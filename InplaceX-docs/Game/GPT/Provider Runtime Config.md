@@ -33,6 +33,10 @@
 - `MIRKORI_PLATFORM_BASE_URL`
 - `MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK`
 
+The same Mirkori Platform origin owns the public stable release-catalog check.
+No separate update origin or bearer credential is configured. See
+`Sideload Update Contract.md`.
+
 ## Canonical Runtime Model
 
 - `PlatformConfig.providers`

@@ -17,6 +17,53 @@ enum class GameClientPlatform(val wireName: String) {
     WEB("web"),
 }
 
+enum class PlatformReleasePlatform(val wireName: String) {
+    ANDROID("android"),
+    WINDOWS("windows");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformReleasePlatform? =
+            entries.firstOrNull { it.wireName == value }
+    }
+}
+
+enum class PlatformReleaseChannel(val wireName: String) {
+    STABLE("stable"),
+    BETA("beta");
+
+    companion object {
+        internal fun fromWireName(value: String): PlatformReleaseChannel? =
+            entries.firstOrNull { it.wireName == value }
+    }
+}
+
+class PlatformGameRelease internal constructor(
+    val id: String,
+    val gameId: String,
+    val platform: PlatformReleasePlatform,
+    val channel: PlatformReleaseChannel,
+    val versionName: String,
+    val versionCode: Long,
+    val minimumSupportedVersionCode: Long,
+    val minimumAndroidSdk: Int?,
+    val publishedAt: Instant,
+    val changelog: String,
+    val fileName: String,
+    val sizeBytes: Long,
+    val sha256: String,
+    val downloadUrl: String,
+)
+
+class PlatformGameUpdateDecision internal constructor(
+    val gameId: String,
+    val platform: PlatformReleasePlatform,
+    val channel: PlatformReleaseChannel,
+    val currentVersionCode: Long,
+    val updateAvailable: Boolean,
+    val required: Boolean,
+    val release: PlatformGameRelease?,
+)
+
 enum class PlatformAuthMode(val wireName: String) {
     GUEST("guest"),
     GOOGLE("google"),

@@ -48,6 +48,16 @@
   synchronously discard the previous identity's cached paid UI state before
   any network refresh, including when the new account keeps the same player ID.
 
+- Added the first Google Play-independent Android update flow backed by the
+  public Mirkori Games stable catalog. The typed SDK verifies exact update and
+  `minimumSupportedVersionCode` semantics, accepts only immutable same-origin
+  HTTPS APK links (debug loopback remains explicitly gated), and sends no
+  account token. Android checks on startup/foreground return with bounded
+  transport retries and persisted cooldown/dismissal, presents localized
+  optional or non-dismissible required prompts, and opens the verified URL in
+  the external browser without storing APK bytes or requesting install
+  permissions.
+
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under
   Android Keystore-backed encryption, opens account login in the system browser,
