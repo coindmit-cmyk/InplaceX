@@ -14,12 +14,13 @@
 8. `Server Bot Runtime.md`
 9. `Auth Ads Billing Contracts.md`
 10. `Provider Runtime Config.md`
-11. `Data Driven Model.md`
-12. `UI Design Contracts.md`
-13. `Add New Mode.md`
-14. `Add New Game.md`
-15. `Technical Debt.md`
-16. `ADR/`
+11. `Sideload Update Contract.md`
+12. `Data Driven Model.md`
+13. `UI Design Contracts.md`
+14. `Add New Mode.md`
+15. `Add New Game.md`
+16. `Technical Debt.md`
+17. `ADR/`
 
 ## Intent
 

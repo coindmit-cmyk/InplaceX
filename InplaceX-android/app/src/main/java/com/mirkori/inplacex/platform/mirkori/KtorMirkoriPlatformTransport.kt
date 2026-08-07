@@ -62,11 +62,14 @@ class KtorMirkoriPlatformTransport(
             try {
                 val response = client.request {
                     method = when (request.method) {
+                        PlatformHttpMethod.GET -> HttpMethod.Get
                         PlatformHttpMethod.POST -> HttpMethod.Post
                     }
                     url(request.url)
                     request.headers.forEach { (name, value) -> header(name, value) }
-                    setBody(request.body)
+                    if (request.method == PlatformHttpMethod.POST) {
+                        setBody(request.body)
+                    }
                 }
                 val body = response.bodyAsText()
                 if (body.toByteArray(Charsets.UTF_8).size > MaximumResponseBytes) {

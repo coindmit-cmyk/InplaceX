@@ -2,6 +2,7 @@ package com.mirkori.platform.sdk
 
 import java.net.URI
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -141,6 +142,30 @@ class MirkoriGameSdk(
         )
     }
 
+    suspend fun stableAndroidUpdate(installedVersionCode: Long): PlatformGameUpdateDecision {
+        require(installedVersionCode > 0)
+        val decision = codec.updateDecisionResponse(
+            get(
+                "/api/v1/catalog/games/${urlEncode(config.gameId)}/updates" +
+                    "?platform=android&channel=stable&versionCode=$installedVersionCode",
+            ),
+        )
+        require(decision.gameId == config.gameId)
+        require(decision.platform == PlatformReleasePlatform.ANDROID)
+        require(decision.channel == PlatformReleaseChannel.STABLE)
+        require(decision.currentVersionCode == installedVersionCode)
+        val release = decision.release
+        if (!decision.updateAvailable) {
+            require(!decision.required && release == null)
+            return decision
+        }
+        requireNotNull(release)
+        validateStableAndroidRelease(release)
+        require(release.versionCode > installedVersionCode)
+        require(decision.required == (installedVersionCode < release.minimumSupportedVersionCode))
+        return decision
+    }
+
     private suspend fun post(
         path: String,
         body: String,
@@ -165,6 +190,50 @@ class MirkoriGameSdk(
             throw PlatformApiException(response.status, codec.errorCode(response.body))
         }
         return response.body
+    }
+
+    private suspend fun get(path: String): String {
+        val response = transport.execute(
+            PlatformHttpRequest(
+                method = PlatformHttpMethod.GET,
+                url = endpoint(path),
+                headers = mapOf("Accept" to "application/json"),
+                body = "",
+            ),
+        )
+        if (response.status !in 200..299) {
+            throw PlatformApiException(response.status, codec.errorCode(response.body))
+        }
+        return response.body
+    }
+
+    private fun validateStableAndroidRelease(release: PlatformGameRelease) {
+        require(release.id.matches(ResourceIdPattern))
+        require(release.gameId == config.gameId)
+        require(release.platform == PlatformReleasePlatform.ANDROID)
+        require(release.channel == PlatformReleaseChannel.STABLE)
+        require(release.versionName.length in 1..64 && release.versionName.trim() == release.versionName)
+        require(release.versionCode > 0)
+        require(release.minimumSupportedVersionCode in 1..release.versionCode)
+        require(release.minimumAndroidSdk != null && release.minimumAndroidSdk in 21..100)
+        require(release.changelog.length in 1..4000 && release.changelog.trim() == release.changelog)
+        require(release.fileName.matches(ArtifactFileNamePattern) && release.fileName.endsWith(".apk", true))
+        require(release.sizeBytes in 1..MaximumArtifactBytes)
+        require(release.sha256.matches(Sha256Pattern))
+        validateDownloadUrl(release)
+    }
+
+    private fun validateDownloadUrl(release: PlatformGameRelease) {
+        val uri = runCatching { URI(release.downloadUrl) }
+            .getOrElse { throw IllegalArgumentException("Invalid update download URL") }
+        val expectedPath = "/downloads/${urlEncode(release.id)}/${urlEncode(release.fileName)}"
+        require(
+            sameOrigin(uri, baseUri) &&
+                uri.rawPath == expectedPath &&
+                uri.rawQuery == null &&
+                uri.fragment == null &&
+                uri.userInfo == null
+        )
     }
 
     private fun endpoint(path: String): String {
@@ -208,6 +277,10 @@ class MirkoriGameSdk(
         val SessionPattern = Regex("[A-Za-z0-9_-]{64}")
         val PkceValuePattern = Regex("[A-Za-z0-9._~-]{43,128}")
         val ErrorCodePattern = Regex("[a-z0-9_]{1,64}")
+        val ResourceIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
+        val ArtifactFileNamePattern = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+        val Sha256Pattern = Regex("[0-9a-f]{64}")
+        const val MaximumArtifactBytes = 4L * 1024L * 1024L * 1024L
     }
 }
 
@@ -264,6 +337,11 @@ private fun sameEndpoint(first: URI, second: URI): Boolean =
         first.host.equals(second.host, ignoreCase = true) &&
         effectivePort(first) == effectivePort(second) && first.path == second.path && first.userInfo == null
 
+private fun sameOrigin(first: URI, second: URI): Boolean =
+    first.scheme.equals(second.scheme, ignoreCase = true) &&
+        first.host.equals(second.host, ignoreCase = true) &&
+        effectivePort(first) == effectivePort(second)
+
 private fun effectivePort(uri: URI): Int = when {
     uri.port >= 0 -> uri.port
     uri.scheme.equals("https", ignoreCase = true) -> 443
@@ -279,6 +357,9 @@ private fun constantTimeEqual(first: String, second: String): Boolean = MessageD
     first.toByteArray(StandardCharsets.US_ASCII),
     second.toByteArray(StandardCharsets.US_ASCII),
 )
+
+private fun urlEncode(value: String): String =
+    URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20")
 
 private fun String.isCanonicalUuid(): Boolean = runCatching { UUID.fromString(this).toString() == this }.getOrDefault(false)
 

@@ -7,6 +7,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 
@@ -88,6 +90,30 @@ internal class SdkJsonCodec {
         )
     }
 
+    fun updateDecisionResponse(body: String): PlatformGameUpdateDecision {
+        val root = objectBody(body)
+        val requiredFields = setOf(
+            "schemaVersion",
+            "gameId",
+            "platform",
+            "channel",
+            "currentVersionCode",
+            "updateAvailable",
+            "required",
+        )
+        require(root.keys == requiredFields || root.keys == requiredFields + "release")
+        require(root.long("schemaVersion") == 1L)
+        return PlatformGameUpdateDecision(
+            gameId = root.string("gameId", 64),
+            platform = PlatformReleasePlatform.fromWireName(root.string("platform", 16)) ?: reject(),
+            channel = PlatformReleaseChannel.fromWireName(root.string("channel", 16)) ?: reject(),
+            currentVersionCode = root.long("currentVersionCode"),
+            updateAvailable = root.boolean("updateAvailable"),
+            required = root.boolean("required"),
+            release = root["release"]?.let { release(it.jsonObject) },
+        )
+    }
+
     fun errorCode(body: String): String = runCatching {
         val root = objectBody(body)
         root.requireExactFields("error")
@@ -109,6 +135,41 @@ internal class SdkJsonCodec {
         )
     }
 
+    private fun release(value: JsonObject): PlatformGameRelease {
+        val requiredFields = setOf(
+            "id",
+            "gameId",
+            "platform",
+            "channel",
+            "versionName",
+            "versionCode",
+            "minimumSupportedVersionCode",
+            "publishedAt",
+            "changelog",
+            "fileName",
+            "sizeBytes",
+            "sha256",
+            "downloadUrl",
+        )
+        require(value.keys == requiredFields || value.keys == requiredFields + "minimumAndroidSdk")
+        return PlatformGameRelease(
+            id = value.string("id", 64),
+            gameId = value.string("gameId", 64),
+            platform = PlatformReleasePlatform.fromWireName(value.string("platform", 16)) ?: reject(),
+            channel = PlatformReleaseChannel.fromWireName(value.string("channel", 16)) ?: reject(),
+            versionName = value.string("versionName", 64),
+            versionCode = value.long("versionCode"),
+            minimumSupportedVersionCode = value.long("minimumSupportedVersionCode"),
+            minimumAndroidSdk = value["minimumAndroidSdk"]?.let { value.int("minimumAndroidSdk") },
+            publishedAt = runCatching { Instant.parse(value.string("publishedAt", 64)) }.getOrElse { reject() },
+            changelog = value.string("changelog", 4000),
+            fileName = value.string("fileName", 128),
+            sizeBytes = value.long("sizeBytes"),
+            sha256 = value.string("sha256", 64),
+            downloadUrl = value.string("downloadUrl", 4096),
+        )
+    }
+
     private fun objectBody(body: String): JsonObject {
         require(body.toByteArray(Charsets.UTF_8).size in 2..MaximumResponseBytes)
         return json.parseToJsonElement(body) as? JsonObject ?: reject()
@@ -127,8 +188,23 @@ internal class SdkJsonCodec {
     private fun JsonObject.credential(name: String, maximum: Int): String =
         string(name, maximum).takeIf { it.none(Char::isWhitespace) } ?: reject()
 
-    private fun JsonObject.long(name: String): Long =
-        runCatching { get(name)?.jsonPrimitive?.long }.getOrNull() ?: reject()
+    private fun JsonObject.long(name: String): Long {
+        val primitive = get(name) as? JsonPrimitive ?: reject()
+        require(!primitive.isString)
+        return runCatching { primitive.long }.getOrNull() ?: reject()
+    }
+
+    private fun JsonObject.int(name: String): Int {
+        val primitive = get(name) as? JsonPrimitive ?: reject()
+        require(!primitive.isString)
+        return runCatching { primitive.int }.getOrNull() ?: reject()
+    }
+
+    private fun JsonObject.boolean(name: String): Boolean {
+        val primitive = get(name) as? JsonPrimitive ?: reject()
+        require(!primitive.isString)
+        return runCatching { primitive.boolean }.getOrNull() ?: reject()
+    }
 
     private fun reject(): Nothing = throw IllegalArgumentException("Invalid platform response")
 

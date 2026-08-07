@@ -58,6 +58,9 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.update.AndroidAppUpdatePolicyStore
+import com.mirkori.inplacex.platform.update.AppUpdateCheckResult
+import com.mirkori.inplacex.platform.update.AppUpdateRuntime
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.AdPlacementPolicy
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
@@ -81,6 +84,7 @@ import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.state.TransientOperationGate
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.update.AppUpdateDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -90,6 +94,7 @@ import com.mirkori.platform.sdk.PlatformAuthMode
 
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
+    private var updateCheckSignal by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -192,6 +197,11 @@ class MainActivity : ComponentActivity() {
                 }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
+                var updatePrompt by remember {
+                    mutableStateOf<AppUpdateCheckResult.Prompt?>(null)
+                }
+                var updateDownloadError by rememberSaveable { mutableStateOf(false) }
+                var updateCheckGeneration by remember { mutableLongStateOf(0L) }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
                 val savedFriends = remember(platformLocalRepository) {
                     platformLocalRepository
@@ -271,6 +281,35 @@ class MainActivity : ComponentActivity() {
                 }
                 DisposableEffect(mirkoriPlatformRuntime) {
                     onDispose { mirkoriPlatformRuntime?.close() }
+                }
+                val appUpdateRuntime = remember(mirkoriPlatformRuntime) {
+                    mirkoriPlatformRuntime?.let { platformRuntime ->
+                        AppUpdateRuntime.create(
+                            platformRuntime = platformRuntime,
+                            store = AndroidAppUpdatePolicyStore(applicationContext),
+                            platformBaseUrl = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
+                            allowCleartextLoopback = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
+                        )
+                    }
+                }
+                LaunchedEffect(updateCheckSignal, appUpdateRuntime, updatePrompt?.release?.id) {
+                    val runtime = appUpdateRuntime ?: return@LaunchedEffect
+                    if (updateCheckSignal <= 0L || updatePrompt != null) return@LaunchedEffect
+                    val generation = updateCheckGeneration + 1L
+                    updateCheckGeneration = generation
+                    val result = withContext(Dispatchers.IO) {
+                        runtime.check(BuildConfig.VERSION_CODE.toLong())
+                    }
+                    if (generation != updateCheckGeneration) return@LaunchedEffect
+                    when (result) {
+                        is AppUpdateCheckResult.Prompt -> {
+                            updateDownloadError = false
+                            updatePrompt = result
+                        }
+                        AppUpdateCheckResult.NoAction,
+                        AppUpdateCheckResult.Unavailable,
+                        -> Unit
+                    }
                 }
                 val onlineRuntime = remember(mirkoriPlatformRuntime) {
                     mirkoriPlatformRuntime?.let { platformRuntime ->
@@ -1004,7 +1043,26 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (isAdPrivacyOpen) {
+                        val currentUpdatePrompt = updatePrompt
+                        if (currentUpdatePrompt != null) {
+                            AppUpdateDialog(
+                                release = currentUpdatePrompt.release,
+                                required = currentUpdatePrompt.required,
+                                downloadError = updateDownloadError,
+                                onDownload = {
+                                    updateDownloadError = !openUpdateDownload(
+                                        currentUpdatePrompt.release.downloadUrl,
+                                    )
+                                },
+                                onDismissOptional = {
+                                    if (!currentUpdatePrompt.required) {
+                                        appUpdateRuntime?.dismissOptional(currentUpdatePrompt.release.id)
+                                        updateDownloadError = false
+                                        updatePrompt = null
+                                    }
+                                },
+                            )
+                        } else if (isAdPrivacyOpen) {
                             AdPrivacyConsentDialog(
                                 onAccept = {
                                     providerServices.adConsent.updateDecision(
@@ -1053,6 +1111,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         adUsageTracker.onForeground()
+        updateCheckSignal += 1L
     }
 
     override fun onStop() {
@@ -1073,6 +1132,22 @@ class MainActivity : ComponentActivity() {
             systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+    }
+
+    private fun openUpdateDownload(downloadUrl: String): Boolean = try {
+        startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)).apply {
+                addCategory(Intent.CATEGORY_BROWSABLE)
+            },
+        )
+        true
+    } catch (error: Exception) {
+        AppLog.warn(
+            tag = "MainActivity",
+            message = "App update browser could not be opened",
+            attributes = mapOf("errorClass" to error.javaClass.name),
+        )
+        false
     }
 
     private fun captureMirkoriCallback(intent: Intent?) {
