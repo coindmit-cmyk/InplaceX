@@ -381,6 +381,17 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         self.assertNotIn("PythonHome", environment)
         self.assertEqual("trusted-sdk", environment["ANDROID_HOME"])
 
+    def test_isolated_git_environment_removes_git_injection(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"GIT_DIR": "hostile", "Git_Config_Count": "1", "ANDROID_HOME": "trusted-sdk"},
+            clear=True,
+        ):
+            environment = release_builder.isolated_git_environment()
+        self.assertNotIn("GIT_DIR", environment)
+        self.assertNotIn("Git_Config_Count", environment)
+        self.assertEqual("trusted-sdk", environment["ANDROID_HOME"])
+
     def test_validates_exact_clean_platform_checkout_and_schema(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = self.create_platform_repository(Path(directory))
@@ -407,6 +418,25 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                     commit,
                     hashlib.sha256(tool.read_bytes()).hexdigest(),
                 )
+
+    def test_rejects_platform_checkout_hidden_by_replace_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self.create_platform_repository(Path(directory))
+            trusted_commit = self.git(repository, "rev-parse", "HEAD").strip()
+            tool = repository / "ops" / "catalog_release_tool.py"
+            tool_sha256 = hashlib.sha256(tool.read_bytes()).hexdigest()
+            marker = repository / "release-marker.txt"
+            marker.write_text("replacement tree\n", encoding="utf-8")
+            self.git(repository, "add", "release-marker.txt")
+            self.git(repository, "commit", "--quiet", "-m", "replacement tree")
+            replacement_commit = self.git(repository, "rev-parse", "HEAD").strip()
+            self.git(repository, "replace", trusted_commit, replacement_commit)
+            self.git(repository, "checkout", "--quiet", "--detach", trusted_commit)
+
+            self.assertEqual(trusted_commit, self.git(repository, "rev-parse", "HEAD").strip())
+            self.assertEqual("", self.git(repository, "status", "--porcelain=v1").strip())
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                release_builder.validate_platform_checkout(repository, trusted_commit, tool_sha256)
 
     def run_builder(
         self,

@@ -299,11 +299,16 @@ def isolated_python_environment() -> dict[str, str]:
     return {key: value for key, value in os.environ.items() if not key.upper().startswith("PYTHON")}
 
 
+def isolated_git_environment() -> dict[str, str]:
+    return {key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")}
+
+
 def git_command(repository: Path, arguments: list[str], *, binary: bool = False) -> bytes | str:
     result = subprocess.run(
-        ["git", "-C", str(repository), *arguments],
+        ["git", "--no-replace-objects", "-C", str(repository), *arguments],
         capture_output=True,
         check=False,
+        env=isolated_git_environment(),
         text=not binary,
     )
     if result.returncode != 0:
