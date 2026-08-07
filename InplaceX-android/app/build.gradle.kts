@@ -424,7 +424,11 @@ val releaseCandidateBash = if (System.getProperty("os.name").startsWith("Windows
     "bash"
 }
 val releaseCandidateProcessEnvironment = System.getenv()
-    .filterKeys { !it.startsWith("GIT_", ignoreCase = true) }
+    .filterKeys {
+        !it.startsWith("GIT_", ignoreCase = true) &&
+            !it.equals("BASH_ENV", ignoreCase = true) &&
+            !it.equals("ENV", ignoreCase = true)
+    }
 
 tasks.register<Exec>("releaseCandidate") {
     group = "distribution"

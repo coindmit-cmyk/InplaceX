@@ -356,6 +356,9 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
 
     def test_gradle_workflow_consumes_exact_release_candidate_and_commit(self) -> None:
         gradle_script = (MODULE_PATH.parents[2] / "build.gradle.kts").read_text(encoding="utf-8")
+        app_gradle_script = (
+            MODULE_PATH.parents[2] / "InplaceX-android" / "app" / "build.gradle.kts"
+        ).read_text(encoding="utf-8")
         for required_fragment in (
             'tasks.register<Exec>("buildPlatformCatalogRelease")',
             'dependsOn(":app:releaseCandidate", testPlatformReleaseContract)',
@@ -371,6 +374,9 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             'setEnvironment(releaseDistributionProcessEnvironment)',
         ):
             self.assertIn(required_fragment, gradle_script)
+        for forbidden_startup_environment in ('"BASH_ENV"', '"ENV"'):
+            self.assertIn(forbidden_startup_environment, app_gradle_script)
+        self.assertIn("setEnvironment(releaseCandidateProcessEnvironment)", app_gradle_script)
 
     def test_isolated_python_environment_removes_python_injection(self) -> None:
         with mock.patch.dict(
