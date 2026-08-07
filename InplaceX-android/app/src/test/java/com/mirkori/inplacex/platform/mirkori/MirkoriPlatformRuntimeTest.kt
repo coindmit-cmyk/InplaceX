@@ -53,6 +53,23 @@ class MirkoriPlatformRuntimeTest {
                 refreshToken = credentials("stored").refreshToken,
                 idempotencyKey = PlatformIdempotencyKey("refresh-attempt-1"),
             ),
+            pendingPurchase = PendingMirkoriPurchase(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                productId = "remove_ads",
+                currency = "RUB",
+                orderId = "00000000-0000-4000-8000-000000000804",
+                orderIdempotencyKey = PlatformIdempotencyKey("order-attempt-1"),
+                checkoutIdempotencyKey = PlatformIdempotencyKey("checkout-attempt-1"),
+            ),
+            confirmedEntitlements = ConfirmedMirkoriEntitlements(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                confirmedAtEpochMs = NowMs,
+                removeAds = MirkoriFeatureGrant(active = true),
+                pro = MirkoriFeatureGrant(active = true, validUntilEpochMs = ExpiresAtMs),
+                proPlus = MirkoriFeatureGrant(active = false),
+            ),
         )
 
         val encoded = MirkoriStateCodec.encode(state)
@@ -64,7 +81,15 @@ class MirkoriPlatformRuntimeTest {
         assertEquals(state.pendingLogin?.codeVerifier, decoded.pendingLogin?.codeVerifier)
         assertEquals(state.pendingRefresh?.refreshToken, decoded.pendingRefresh?.refreshToken)
         assertEquals(state.pendingRefresh?.idempotencyKey?.value, decoded.pendingRefresh?.idempotencyKey?.value)
+        assertEquals(state.pendingPurchase?.orderId, decoded.pendingPurchase?.orderId)
+        assertEquals(
+            state.pendingPurchase?.checkoutIdempotencyKey?.value,
+            decoded.pendingPurchase?.checkoutIdempotencyKey?.value,
+        )
+        assertTrue(decoded.confirmedEntitlements?.removeAds?.active == true)
+        assertEquals(ExpiresAtMs, decoded.confirmedEntitlements?.pro?.validUntilEpochMs)
         assertFalse(decoded.pendingRefresh.toString().contains(state.session?.credentials?.refreshToken.orEmpty()))
+        assertFalse(decoded.pendingPurchase.toString().contains(AccountId))
         assertThrows(IllegalArgumentException::class.java) {
             MirkoriStateCodec.decode(encoded + 1)
         }
@@ -75,7 +100,7 @@ class MirkoriPlatformRuntimeTest {
         val encoded = MirkoriStateCodec.encode(
             MirkoriPersistedState(InstallationIdentity(InstallationId, "I".repeat(43))),
         )
-        val legacy = encoded.copyOf(encoded.size - 1).also { ByteBuffer.wrap(it).putInt(1) }
+        val legacy = encoded.copyOf(encoded.size - 3).also { ByteBuffer.wrap(it).putInt(1) }
 
         val decoded = MirkoriStateCodec.decode(legacy)
 
@@ -288,6 +313,64 @@ class MirkoriPlatformRuntimeTest {
         assertNull(store.value?.session)
     }
 
+    @Test
+    fun accountProfileSwitchClearsCachedEntitlementsAndPendingCheckout() {
+        val sessionHandle = "W".repeat(64)
+        val pendingLogin = PendingGameLogin(
+            session = sessionHandle,
+            state = "T".repeat(43),
+            codeVerifier = "V".repeat(43),
+            connectUrl = "https://games.dmit.life/connect?session=$sessionHandle",
+            expiresAt = Instant.ofEpochMilli(ExpiresAtMs),
+        )
+        val store = MemoryStore(
+            MirkoriPersistedState(
+                installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+                session = GameIdentitySession(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    gameId = "inplacex",
+                    installationId = InstallationId,
+                    authMode = PlatformAuthMode.GUEST,
+                    credentials = credentials("guest"),
+                ),
+                pendingLogin = pendingLogin,
+                pendingPurchase = PendingMirkoriPurchase(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    productId = "remove_ads",
+                    currency = "RUB",
+                    orderIdempotencyKey = PlatformIdempotencyKey("switch-order-key"),
+                    checkoutIdempotencyKey = PlatformIdempotencyKey("switch-checkout-key"),
+                ),
+                confirmedEntitlements = ConfirmedMirkoriEntitlements(
+                    accountId = AccountId,
+                    gamePlayerId = PlayerId,
+                    confirmedAtEpochMs = NowMs,
+                    removeAds = MirkoriFeatureGrant(true),
+                    pro = MirkoriFeatureGrant(false),
+                    proPlus = MirkoriFeatureGrant(false),
+                ),
+            ),
+        )
+        val transport = QueueTransport(
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$OtherPlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}""",
+            ),
+        )
+
+        val result = runSuspend {
+            runtime(transport, store).completeLogin(
+                "https://games.dmit.life/connect/inplacex/callback?session=$sessionHandle&state=${pendingLogin.state}",
+            )
+        }
+
+        assertTrue(result is MirkoriLoginResult.Connected)
+        assertEquals(OtherPlayerId, store.value?.session?.gamePlayerId)
+        assertNull(store.value?.pendingPurchase)
+        assertNull(store.value?.confirmedEntitlements)
+    }
+
     private fun runtime(transport: PlatformTransport, store: MemoryStore): MirkoriPlatformRuntime {
         val sdk = MirkoriGameSdk(
             config = MirkoriGameSdkConfig(
@@ -315,6 +398,8 @@ class MirkoriPlatformRuntimeTest {
         const val AccountId = "00000000-0000-4000-8000-000000000801"
         const val PlayerId = "00000000-0000-4000-8000-000000000802"
         const val InstallationId = "00000000-0000-4000-8000-000000000803"
+        const val OtherAccountId = "00000000-0000-4000-8000-000000000811"
+        const val OtherPlayerId = "00000000-0000-4000-8000-000000000812"
         const val NowMs = 1_786_000_000_000L
         const val ExpiresAtMs = 1_786_032_600_000L
     }

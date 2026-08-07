@@ -19,6 +19,17 @@
   atomically writes an immutable signed artifact bundle. Ordinary release and
   internal-distribution builds remain unsigned even when signing is configured.
 
+- Android commerce now uses the typed Mirkori Games Platform SDK 0.2.0 for the
+  product catalog, idempotent order/checkout creation, external HTTPS payment,
+  order polling, and server-authoritative `Remove Ads`, `Pro`, and `Pro+`
+  entitlements. Browser return and paid-order status cannot unlock products
+  without the matching Platform grant; retry state survives process restart,
+  remains scoped to the exact account/profile, and exposes explicit offline,
+  provider-unavailable, cancellation, refund, and delayed-entitlement states.
+  The local one-hour coin `Pro` remains a separate bonus, Google Play Billing
+  is not used, and release validation now requires valid distinct Platform
+  product IDs.
+
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under
   Android Keystore-backed encryption, opens account login in the system browser,

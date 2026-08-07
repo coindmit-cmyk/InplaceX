@@ -90,6 +90,21 @@ must go through the future authenticated cloud-save contract, not an implicit de
   - disables all ads
   - grants infinite hints
 
+Permanent products are sold by Mirkori Games Platform, not Google Play Billing.
+The shop requires a linked Mirkori account, shows the Platform price, and opens
+only the Platform's HTTPS payment page in the system browser. Returning from
+the browser does not grant the product: the game checks the order and then
+waits for the matching server entitlement. This prevents a redirect, local
+flag, or interrupted payment from looking like a successful purchase.
+
+If the device is offline, the payment provider is temporarily unavailable, or
+the payment was cancelled, the shop keeps a truthful retry/status action.
+Retries reuse the already created purchase attempt. A confirmed time-limited
+entitlement can remain available offline only until its confirmed expiry time.
+Switching the linked Platform account/profile clears that cached purchase
+state. The one-hour temporary `Pro` bought with coins stays completely local
+and separate from these permanent products.
+
 ## Current Stage
 
 - production account linking and online identity are connected through the
@@ -111,10 +126,13 @@ must go through the future authenticated cloud-save contract, not an implicit de
 - release and internal-distribution builds automatically validate the HTTPS
   backend origin plus required, distinct owner Yandex banner/rewarded IDs;
   post-match remains optional
-- billing remains a local/debug stub and fails closed in release
+- Mirkori Games Platform billing is connected in release for catalog, external
+  HTTPS checkout, order polling, and server-authoritative entitlements; release
+  fails closed when the Platform or product configuration is unavailable
 - UI and local persistence use asynchronous provider callbacks; dismissal
   without the Yandex reward callback never grants coins or a hint
 - temporary `Pro` is a local coin purchase rather than a billing-provider product
 - code integration is complete; activation needs production deployment of the
-  prepared backend/nginx/MMDB configuration. A separate Yandex post-match ID
-  may be added later without blocking banner and rewarded placements.
+  prepared backend/nginx/MMDB configuration and active Platform product/payment
+  configuration. A separate Yandex post-match ID may be added later without
+  blocking banner and rewarded placements.

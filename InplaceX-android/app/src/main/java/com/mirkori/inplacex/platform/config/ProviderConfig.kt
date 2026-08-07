@@ -48,10 +48,16 @@ data class BillingProviderConfig(
     val proSubscriptionId: String = "",
     val proPlusSubscriptionId: String = "",
 ) {
+    val productIds: List<String>
+        get() = listOf(removeAdsProductId, proSubscriptionId, proPlusSubscriptionId)
+
     val isConfigured: Boolean
-        get() = removeAdsProductId.isNotBlank() &&
-            proSubscriptionId.isNotBlank() &&
-            proPlusSubscriptionId.isNotBlank()
+        get() = productIds.all { it.matches(ProductIdPattern) } &&
+            productIds.distinct().size == productIds.size
+
+    private companion object {
+        val ProductIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
+    }
 }
 
 data class ProviderConfig(

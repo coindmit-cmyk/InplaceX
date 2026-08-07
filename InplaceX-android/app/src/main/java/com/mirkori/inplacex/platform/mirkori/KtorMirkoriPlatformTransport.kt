@@ -35,7 +35,17 @@ data class MirkoriTransportPolicy(
     }
 }
 
-class MirkoriTransportException(errorClass: String) : IOException("Mirkori platform transport failed: $errorClass")
+enum class MirkoriTransportFailure {
+    OFFLINE,
+    NETWORK,
+    TIMEOUT,
+    RESPONSE_TOO_LARGE,
+    RETRY_EXHAUSTED,
+}
+
+class MirkoriTransportException(
+    val failure: MirkoriTransportFailure,
+) : IOException("Mirkori platform transport failed: ${failure.name.lowercase()}")
 
 fun createMirkoriHttpClient(policy: MirkoriTransportPolicy = MirkoriTransportPolicy()): HttpClient =
     HttpClient(OkHttp) {
@@ -56,36 +66,45 @@ class KtorMirkoriPlatformTransport(
     private val policy: MirkoriTransportPolicy = MirkoriTransportPolicy(),
 ) : PlatformTransport {
     override suspend fun execute(request: PlatformHttpRequest): PlatformHttpResponse {
-        if (!connectivity.isOnline()) throw MirkoriTransportException("offline")
+        if (!connectivity.isOnline()) throw MirkoriTransportException(MirkoriTransportFailure.OFFLINE)
         var attempt = 1
         while (attempt <= policy.maxAttempts) {
             try {
                 val response = client.request {
                     method = when (request.method) {
+                        PlatformHttpMethod.GET -> HttpMethod.Get
                         PlatformHttpMethod.POST -> HttpMethod.Post
                     }
                     url(request.url)
                     request.headers.forEach { (name, value) -> header(name, value) }
-                    setBody(request.body)
+                    if (request.method == PlatformHttpMethod.POST) {
+                        setBody(request.body)
+                    }
                 }
                 val body = response.bodyAsText()
                 if (body.toByteArray(Charsets.UTF_8).size > MaximumResponseBytes) {
-                    throw MirkoriTransportException("response_too_large")
+                    throw MirkoriTransportException(MirkoriTransportFailure.RESPONSE_TOO_LARGE)
                 }
                 return PlatformHttpResponse(response.status.value, body)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (timeout: HttpRequestTimeoutException) {
-                if (attempt >= policy.maxAttempts) throw MirkoriTransportException(timeout.javaClass.name)
+                if (attempt >= policy.maxAttempts) {
+                    throw MirkoriTransportException(MirkoriTransportFailure.TIMEOUT)
+                }
             } catch (network: IOException) {
                 if (network is MirkoriTransportException || attempt >= policy.maxAttempts) {
-                    throw MirkoriTransportException(network.javaClass.name)
+                    throw if (network is MirkoriTransportException) {
+                        network
+                    } else {
+                        MirkoriTransportException(MirkoriTransportFailure.NETWORK)
+                    }
                 }
             }
             delay(policy.retryDelayMillis * attempt)
             attempt += 1
         }
-        throw MirkoriTransportException("retry_exhausted")
+        throw MirkoriTransportException(MirkoriTransportFailure.RETRY_EXHAUSTED)
     }
 
     private companion object {

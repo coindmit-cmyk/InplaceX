@@ -2,8 +2,8 @@
 
 This module is a source snapshot of
 `coindmit-cmyk/MirkoriGamesPlatform:platform-game-sdk` at merge commit
-`ea68371824d36203a54ebd40bfbfc9d04a46a56b`, coordinate
-`com.mirkori.platform:platform-game-sdk:0.1.0`.
+`be3f197a154de633e78f04cb7f8be8b3531c28a8`, coordinate
+`com.mirkori.platform:platform-game-sdk:0.2.0`.
 
 It is vendored because the platform repository is private and an InplaceX
 GitHub Actions token cannot safely resolve a cross-repository source or Maven

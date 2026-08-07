@@ -11,6 +11,8 @@ data class MirkoriPersistedState(
     val session: GameIdentitySession? = null,
     val pendingLogin: PendingGameLogin? = null,
     val pendingRefresh: PendingMirkoriRefresh? = null,
+    val pendingPurchase: PendingMirkoriPurchase? = null,
+    val confirmedEntitlements: ConfirmedMirkoriEntitlements? = null,
 )
 
 data class PendingMirkoriRefresh(
@@ -18,6 +20,47 @@ data class PendingMirkoriRefresh(
     val idempotencyKey: PlatformIdempotencyKey,
 ) {
     override fun toString(): String = "PendingMirkoriRefresh([redacted])"
+}
+
+data class PendingMirkoriPurchase(
+    val accountId: String,
+    val gamePlayerId: String,
+    val productId: String,
+    val currency: String,
+    val orderId: String? = null,
+    val orderIdempotencyKey: PlatformIdempotencyKey,
+    val checkoutIdempotencyKey: PlatformIdempotencyKey,
+) {
+    override fun toString(): String = "PendingMirkoriPurchase(productId=$productId, [redacted])"
+}
+
+data class MirkoriFeatureGrant(
+    val active: Boolean,
+    val validUntilEpochMs: Long? = null,
+) {
+    init {
+        require(active || validUntilEpochMs == null)
+    }
+
+    fun activeAt(nowMs: Long): Boolean = active && (validUntilEpochMs == null || validUntilEpochMs > nowMs)
+}
+
+data class ConfirmedMirkoriEntitlements(
+    val accountId: String,
+    val gamePlayerId: String,
+    val confirmedAtEpochMs: Long,
+    val removeAds: MirkoriFeatureGrant,
+    val pro: MirkoriFeatureGrant,
+    val proPlus: MirkoriFeatureGrant,
+) {
+    fun nextExpiryAfter(nowMs: Long): Long? =
+        listOfNotNull(
+            removeAds.validUntilEpochMs,
+            pro.validUntilEpochMs,
+            proPlus.validUntilEpochMs,
+        ).filter { it > nowMs }.minOrNull()
+
+    override fun toString(): String = "ConfirmedMirkoriEntitlements([redacted])"
 }
 
 enum class MirkoriAccountStateKind {

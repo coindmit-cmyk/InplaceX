@@ -1,6 +1,7 @@
 package com.mirkori.platform.sdk
 
 enum class PlatformHttpMethod {
+    GET,
     POST,
 }
 

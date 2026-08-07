@@ -14,6 +14,7 @@ import com.mirkori.inplacex.platform.config.ProviderEnvironment
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReleaseProviderServicesTest {
@@ -50,7 +51,8 @@ class ReleaseProviderServicesTest {
         assertFalse(services.adService.showBanner("game"))
         assertFalse(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
         assertFalse(services.adService.showInterstitial(InterstitialPlacement.POST_MATCH))
-        assertFalse(services.billingService.purchase(BillingProductId.REMOVE_ADS))
+        assertTrue(services.billingService is UnavailableBillingService)
+        assertEquals(BillingNotice.PROVIDER_UNAVAILABLE, services.billingService.cachedState().notice)
         assertNull(
             javaClass.classLoader?.getResource(
                 "com/mirkori/inplacex/platform/services/StubGooglePlayAuthService.class",

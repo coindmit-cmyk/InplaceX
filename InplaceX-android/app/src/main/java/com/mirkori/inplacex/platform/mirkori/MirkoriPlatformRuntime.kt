@@ -26,18 +26,27 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class MirkoriPlatformRuntime internal constructor(
-    private val sdk: MirkoriGameSdk,
+    internal val sdk: MirkoriGameSdk,
     private val store: SecureMirkoriStateStore,
     private val client: HttpClient? = null,
     private val clockMs: () -> Long = System::currentTimeMillis,
 ) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
+    @Volatile
     private var persistedState: MirkoriPersistedState? = store.read()
     private val mutableAccountState = MutableStateFlow(persistedState.toAccountState())
 
     val accountState: StateFlow<MirkoriAccountState> = mutableAccountState.asStateFlow()
 
     fun currentAccountState(): MirkoriAccountState = persistedState.toAccountState()
+
+    internal fun currentPersistedState(): MirkoriPersistedState? = persistedState
+
+    internal fun nowMs(): Long = clockMs()
+
+    internal suspend fun <T> withOperationLock(
+        block: suspend MirkoriPlatformRuntime.() -> T,
+    ): T = operationMutex.withLock { block() }
 
     suspend fun restoreOrBootstrap(): MirkoriAccountState = operationMutex.withLock {
         try {
@@ -83,7 +92,7 @@ class MirkoriPlatformRuntime internal constructor(
         }
         try {
             val linked = sdk.completeAccountLogin(callbackUrl, pending)
-            persist(state.copy(session = linked, pendingLogin = null))
+            persist(state.withSession(linked).copy(pendingLogin = null))
             AppLog.info(
                 tag = LogTag,
                 message = "Mirkori Games account connected",
@@ -143,7 +152,7 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
-    private suspend fun ensureFreshSession(forceRefresh: Boolean = false): GameIdentitySession {
+    internal suspend fun ensureFreshSession(forceRefresh: Boolean = false): GameIdentitySession {
         var state = persistedState
         if (state == null) {
             state = MirkoriPersistedState(sdk.newInstallation())
@@ -187,17 +196,17 @@ class MirkoriPlatformRuntime internal constructor(
             platform = GameClientPlatform.ANDROID,
             appVersion = BuildConfig.VERSION_NAME,
         )
-        persist(state.copy(session = guest, pendingRefresh = null))
+        persist(state.withSession(guest).copy(pendingRefresh = null))
         return guest
     }
 
-    private fun persist(state: MirkoriPersistedState) {
+    internal fun persist(state: MirkoriPersistedState) {
         store.write(state)
         persistedState = state
         mutableAccountState.value = state.toAccountState()
     }
 
-    private fun logFailure(error: Throwable) {
+    internal fun logFailure(error: Throwable) {
         AppLog.warn(
             tag = LogTag,
             message = "Mirkori Games operation unavailable",
@@ -242,6 +251,18 @@ class MirkoriPlatformRuntime internal constructor(
         private const val RefreshSkewMs = 30_000L
         private const val LogTag = "MirkoriPlatform"
     }
+}
+
+private fun MirkoriPersistedState.withSession(newSession: GameIdentitySession): MirkoriPersistedState {
+    val sameProfile = session?.let { current ->
+        current.accountId == newSession.accountId && current.gamePlayerId == newSession.gamePlayerId
+    } ?: false
+    return copy(
+        session = newSession,
+        pendingLogin = pendingLogin.takeIf { sameProfile },
+        pendingPurchase = pendingPurchase.takeIf { sameProfile },
+        confirmedEntitlements = confirmedEntitlements.takeIf { sameProfile },
+    )
 }
 
 private fun GameIdentitySession.withCredentials(credentials: PlatformCredentials): GameIdentitySession =

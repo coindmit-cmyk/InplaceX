@@ -1,6 +1,6 @@
 package com.mirkori.inplacex
 
-import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.BillingNotice
 import com.mirkori.inplacex.platform.services.RewardedPlacement
 import com.mirkori.inplacex.platform.services.StubAdService
 import com.mirkori.inplacex.platform.services.StubBillingService
@@ -31,9 +31,7 @@ class DebugBuildVariantToolsTest {
     fun `debug billing cannot unlock premium products for free`() {
         val billing = StubBillingService()
 
-        BillingProductId.entries.forEach { productId ->
-            assertFalse(billing.purchase(productId))
-        }
+        assertEquals(BillingNotice.CONFIGURATION_REQUIRED, billing.cachedState().notice)
     }
 
     @Test

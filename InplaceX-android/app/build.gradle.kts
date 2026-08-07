@@ -143,9 +143,12 @@ fun requiredProductionReleasePropertyKeys(): List<String> = listOf(
     "platform.release.baseUrl",
     "provider.release.ads.yandex.owner.banner.game",
     "provider.release.ads.yandex.owner.rewarded.general",
+    "provider.release.billing.removeAdsProductId",
+    "provider.release.billing.proSubscriptionId",
+    "provider.release.billing.proPlusSubscriptionId",
 )
 
-fun validateDistinctProviderPlacements(
+fun validateDistinctProviderIds(
     providerName: String,
     keys: List<String>,
 ): List<String> {
@@ -155,7 +158,7 @@ fun validateDistinctProviderPlacements(
     return if (
         configuredValues.distinct().size != configuredValues.size
     ) {
-        listOf("$providerName placement ids must be distinct: ${keys.joinToString()}")
+        listOf("$providerName configured ids must be distinct: ${keys.joinToString()}")
     } else {
         emptyList()
     }
@@ -313,7 +316,7 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
     "validateProductionReleaseConfig",
 ) {
     group = "verification"
-    description = "Validates production HTTPS origins and required Yandex placement ids without printing values."
+    description = "Validates production HTTPS origins, Yandex placements, and Mirkori product ids without printing values."
     validationErrors.set(
         buildList {
             val missing = requiredProductionReleasePropertyKeys()
@@ -332,7 +335,7 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                     }
             }
             addAll(
-                validateDistinctProviderPlacements(
+                validateDistinctProviderIds(
                     providerName = "owner Yandex",
                     keys = listOf(
                         "provider.release.ads.yandex.owner.banner.game",
@@ -342,11 +345,34 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                 ),
             )
             addAll(
+                validateDistinctProviderIds(
+                    providerName = "Mirkori commerce",
+                    keys = listOf(
+                        "provider.release.billing.removeAdsProductId",
+                        "provider.release.billing.proSubscriptionId",
+                        "provider.release.billing.proPlusSubscriptionId",
+                    ),
+                ),
+            )
+            listOf(
+                "provider.release.billing.removeAdsProductId",
+                "provider.release.billing.proSubscriptionId",
+                "provider.release.billing.proPlusSubscriptionId",
+            ).forEach { key ->
+                val value = localProps.getProperty(key).orEmpty().trim()
+                if (value.isNotEmpty() && !value.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) {
+                    add("$key must match the Mirkori Platform product id contract")
+                }
+            }
+            addAll(
                 validateProviderValueShape(
                     listOf(
                         "provider.release.ads.yandex.owner.banner.game",
                         "provider.release.ads.yandex.owner.rewarded.general",
                         "provider.release.ads.yandex.owner.interstitial.postMatch",
+                        "provider.release.billing.removeAdsProductId",
+                        "provider.release.billing.proSubscriptionId",
+                        "provider.release.billing.proPlusSubscriptionId",
                     ),
                 ),
             )

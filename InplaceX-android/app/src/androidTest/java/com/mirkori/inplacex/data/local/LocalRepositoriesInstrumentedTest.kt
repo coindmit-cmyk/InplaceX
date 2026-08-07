@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.data.local
 
+import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.core.retention.RetentionRewardType
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.database.sqlite.SQLiteException
@@ -129,6 +130,11 @@ class LocalRepositoriesInstrumentedTest {
             val after = repository.loadState()
             assertEquals(before.coins, after.coins)
             assertEquals(0L, after.temporaryProExpiresAtMs)
+
+            assertTrue(repository.buyTemporaryPro(permanentPremiumActive = false))
+            val serverAuthoritative = repository.loadState()
+            assertEquals(before.coins - TemporaryProPolicy.PRICE_COINS, serverAuthoritative.coins)
+            assertTrue(serverAuthoritative.temporaryProActiveAt(FIXED_NOW_MS))
         }
     }
 

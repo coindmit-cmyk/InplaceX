@@ -11,7 +11,7 @@ read or written by the Android client.
 
 1. `MirkoriPlatformRuntime` restores one encrypted installation identity or
    creates it once.
-2. The vendored `platform-game-sdk:0.1.0` bootstraps a global guest profile at
+2. The vendored `platform-game-sdk:0.2.0` bootstraps a global guest profile at
    the configured platform origin.
 3. Profile starts a PKCE S256 session and opens its `/connect` URL with the
    system browser. WebView is not used.
@@ -25,10 +25,14 @@ read or written by the Android client.
 
 `AndroidKeystoreMirkoriStateStore` encrypts one atomic record with AES-256-GCM.
 It contains the installation ID/secret, current account/profile credentials,
-an optional pending browser session/state/verifier, and the exact refresh-token
-plus idempotency-key pair for an in-flight refresh. Corrupt ciphertext is
-discarded fail-closed. Secret values and HTTP bodies are never logged. The state
-codec writes format v2 and continues to read format v1 records.
+an optional pending browser session/state/verifier, the exact refresh-token
+plus idempotency-key pair for an in-flight refresh, a pending commerce retry
+identity, and the last server-confirmed paid grants with their validity window.
+Commerce state is bound to the exact Platform account and `game_player_id`; an
+identity change clears it. Corrupt ciphertext is discarded fail-closed. Secret
+values, checkout URLs, account/profile IDs, idempotency keys, and HTTP bodies
+are never logged. The state codec writes format v3 and continues to read format
+v1/v2 records.
 
 The access token may be refreshed through the stored rotating refresh token.
 The client persists the refresh pair before network I/O, reuses it after an
@@ -40,6 +44,17 @@ to a guest credential before a new browser login. Network or Platform failures
 during current-token lookup, refresh, or bootstrap are reported to online
 features as temporary unavailability, not as missing authentication, and do not
 erase the persisted Platform session.
+
+## Commerce flow
+
+The same game-scoped Platform session loads products, creates an order and an
+external HTTPS checkout, polls the order after browser return/resume, and
+refreshes entitlements. Android durably saves and reuses separate order and
+checkout idempotency keys across retries and process restarts. It never treats
+the browser redirect or an order status alone as ownership: `Remove Ads`, `Pro`,
+and `Pro+` become active only from matching server entitlements. Guest profiles
+may browse local game content but cannot start a paid checkout until the
+Platform account is linked.
 
 ## Online identity boundary
 

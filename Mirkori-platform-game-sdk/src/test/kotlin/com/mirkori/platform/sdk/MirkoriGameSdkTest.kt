@@ -180,6 +180,21 @@ class MirkoriGameSdkTest {
     }
 
     @Test
+    fun gameIdValidationExactlyMatchesTheBackendContract() {
+        val transport = QueueTransport(success("""{"schemaVersion":1,"products":[]}"""))
+        val oneCharacterGame = sdk(transport, gameId = "a")
+
+        assertTrue(runSuspend { oneCharacterGame.products("RUB") }.isEmpty())
+        assertEquals(
+            "https://games.dmit.life/api/v1/commerce/games/a/products?currency=RUB",
+            transport.requests.single().url,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            sdk(QueueTransport(), gameId = "a_b")
+        }
+    }
+
+    @Test
     fun apiErrorsExposeOnlyStatusAndStableCode() {
         val transport = QueueTransport(PlatformHttpResponse(401, """{"error":"refresh_rejected"}"""))
         val sdk = sdk(transport)
@@ -196,12 +211,88 @@ class MirkoriGameSdkTest {
         assertFalse(transport.servedResponses.single().toString().contains("refresh_rejected"))
     }
 
+    @Test
+    fun commerceFlowUsesBearerTokensStableKeysAndTypedResponses() {
+        val orderId = "00000000-0000-4000-8000-000000000401"
+        val checkoutId = "00000000-0000-4000-8000-000000000402"
+        val receiptId = "00000000-0000-4000-8000-000000000403"
+        val orderJson = """
+            {"id":"$orderId","gameId":"inplacex","gamePlayerId":"00000000-0000-4000-8000-000000000404",
+             "productId":"inplacex.coins-100","currency":"RUB","amountMinor":9900,"status":"pending",
+             "createdAt":"2026-08-07T10:00:00Z","updatedAt":"2026-08-07T10:00:00Z"}
+        """.trimIndent().replace("\n", "")
+        val transport = QueueTransport(
+            success(
+                """{"schemaVersion":1,"products":[{"id":"inplacex.coins-100","gameId":"inplacex","slug":"coins-100","displayName":"100 монет","description":"Игровая валюта","productKind":"currency","version":1,"price":{"currency":"RUB","amountMinor":9900},"grants":[{"entitlementKey":"currency.coins","type":"consumable","quantity":100}]}]}""",
+            ),
+            success(orderJson),
+            success(
+                """{"schemaVersion":1,"checkout":{"id":"$checkoutId","orderId":"$orderId","provider":"fake_checkout","status":"ready","expiresAt":"2026-08-07T10:15:00Z","createdAt":"2026-08-07T10:00:00Z","updatedAt":"2026-08-07T10:00:01Z"},"paymentUrl":"https://payments.invalid/checkout/$checkoutId"}""",
+            ),
+            success(orderJson),
+            success("""{"schemaVersion":1,"orders":[$orderJson]}"""),
+            success(
+                """{"schemaVersion":1,"entitlements":[{"key":"currency.coins","type":"consumable","quantity":100}]}""",
+            ),
+            success(
+                """{"schemaVersion":2,"consumption":{"id":"$receiptId","entitlementKey":"currency.coins","quantity":20,"remainingQuantity":80,"createdAt":"2026-08-07T10:02:00Z"},"entitlements":[{"key":"currency.coins","type":"consumable","quantity":80}]}""",
+            ),
+        )
+        val sdk = sdk(transport)
+        val accessToken = "access." + "x".repeat(40)
+
+        val products = runSuspend { sdk.products("RUB") }
+        val order = runSuspend {
+            sdk.createOrder(
+                accessToken,
+                "inplacex.coins-100",
+                "RUB",
+                PlatformIdempotencyKey("create-order-key"),
+            )
+        }
+        val checkout = runSuspend {
+            sdk.createCheckout(accessToken, order.id, PlatformIdempotencyKey("create-checkout-key"))
+        }
+        val restoredOrder = runSuspend { sdk.order(accessToken, order.id) }
+        val orders = runSuspend { sdk.orders(accessToken) }
+        val entitlements = runSuspend { sdk.entitlements(accessToken) }
+        val consumption = runSuspend {
+            sdk.consumeEntitlement(
+                accessToken,
+                "currency.coins",
+                20,
+                PlatformIdempotencyKey("consume-coins-key"),
+            )
+        }
+
+        assertEquals(100L, products.single().grants.single().quantity)
+        assertEquals(order, restoredOrder)
+        assertEquals(orderId, orders.single().id)
+        assertEquals(checkoutId, checkout.id)
+        assertFalse(checkout.toString().contains(checkout.paymentUrl))
+        assertEquals(100L, entitlements.single().quantity)
+        assertEquals(receiptId, consumption.id)
+        assertEquals(80L, consumption.remainingQuantity)
+        assertEquals(PlatformHttpMethod.GET, transport.requests.first().method)
+        assertEquals(
+            "https://games.dmit.life/api/v1/commerce/games/inplacex/products?currency=RUB",
+            transport.requests.first().url,
+        )
+        assertEquals("create-order-key", transport.requests[1].headers["Idempotency-Key"])
+        assertEquals("create-checkout-key", transport.requests[2].headers["Idempotency-Key"])
+        assertEquals("Bearer $accessToken", transport.requests[2].headers["Authorization"])
+        assertEquals(PlatformHttpMethod.GET, transport.requests[3].method)
+        assertTrue(transport.requests.last().url.contains("/api/v2/commerce/entitlements/"))
+        assertEquals("consume-coins-key", transport.requests.last().headers["Idempotency-Key"])
+    }
+
     private fun sdk(
         transport: QueueTransport,
         entropy: SecureEntropy = CountingEntropy(),
         baseUrl: String = "https://games.dmit.life",
+        gameId: String = "inplacex",
     ) = MirkoriGameSdk(
-        MirkoriGameSdkConfig(baseUrl, "inplacex", RedirectUri),
+        MirkoriGameSdkConfig(baseUrl, gameId, RedirectUri),
         transport,
         entropy,
     )

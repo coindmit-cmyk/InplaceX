@@ -26,9 +26,9 @@ import androidx.compose.ui.Modifier
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.BoostStockType
 import com.mirkori.inplacex.data.local.GameModeStatType
+import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
-import com.mirkori.inplacex.data.local.MonetizationProductType
 import com.mirkori.inplacex.ads.AdFormat
 import com.mirkori.inplacex.ads.AdDecision
 import com.mirkori.inplacex.ads.AdEntitlements
@@ -55,10 +55,15 @@ import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.BillingAvailability
+import com.mirkori.inplacex.platform.services.BillingNotice
+import com.mirkori.inplacex.platform.services.BillingPurchaseResult
+import com.mirkori.inplacex.platform.services.BillingState
 import com.mirkori.inplacex.platform.services.AdPlacementPolicy
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
@@ -88,9 +93,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import com.mirkori.platform.sdk.PlatformAuthMode
+import java.net.URI
 
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
+    private var resumeGeneration by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,10 +110,33 @@ class MainActivity : ComponentActivity() {
         setContent {
             InplaceXTheme {
                 val progressRepository = remember { GameProgressRepository(applicationContext) }
-                val providerServices = remember {
+                val mirkoriPlatformRuntime = remember {
+                    runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
+                        .onFailure { error ->
+                            AppLog.warn(
+                                tag = "MainActivity",
+                                message = "Mirkori Games runtime is unavailable",
+                                attributes = mapOf("errorClass" to error.javaClass.name),
+                            )
+                        }
+                        .getOrNull()
+                }
+                DisposableEffect(mirkoriPlatformRuntime) {
+                    onDispose { mirkoriPlatformRuntime?.close() }
+                }
+                val liveBillingService = remember(mirkoriPlatformRuntime) {
+                    mirkoriPlatformRuntime?.let { runtime ->
+                        MirkoriBillingService(
+                            runtime = runtime,
+                            config = AppConfigCatalog.platformConfig.providers.billing,
+                        )
+                    }
+                }
+                val providerServices = remember(liveBillingService) {
                     ProviderServicesFactory.create(
                         context = applicationContext,
                         platformConfig = AppConfigCatalog.platformConfig,
+                        billingService = liveBillingService,
                     )
                 }
                 val billingService = providerServices.billingService
@@ -179,6 +209,10 @@ class MainActivity : ComponentActivity() {
                 }
                 var progressState by remember { mutableStateOf(initialProgressState) }
                 var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+                var billingState by remember(billingService) {
+                    mutableStateOf(billingService.cachedState())
+                }
+                val billingOperation = remember { TransientOperationGate() }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var claimedCampaignChapters by remember {
                     mutableStateOf(progressRepository.loadClaimedCampaignChapters())
@@ -259,20 +293,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
-                val mirkoriPlatformRuntime = remember {
-                    runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
-                        .onFailure { error ->
-                            AppLog.warn(
-                                tag = "MainActivity",
-                                message = "Mirkori Games runtime is unavailable",
-                                attributes = mapOf("errorClass" to error.javaClass.name),
-                            )
-                        }
-                        .getOrNull()
-                }
-                DisposableEffect(mirkoriPlatformRuntime) {
-                    onDispose { mirkoriPlatformRuntime?.close() }
-                }
                 LaunchedEffect(mirkoriPlatformRuntime) {
                     if (mirkoriPlatformRuntime == null) {
                         mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
@@ -350,16 +370,115 @@ class MainActivity : ComponentActivity() {
                         consumeMirkoriCallback()
                     }
                 }
+                LaunchedEffect(
+                    billingService,
+                    mirkoriAccountState.kind,
+                    mirkoriAccountState.gamePlayerId,
+                    mirkoriAccountState.authMode,
+                    resumeGeneration,
+                ) {
+                    if (mirkoriAccountState.kind == MirkoriAccountStateKind.INITIALIZING) {
+                        return@LaunchedEffect
+                    }
+                    val operationId = billingOperation.start() ?: return@LaunchedEffect
+                    try {
+                        val refreshed = withContext(Dispatchers.IO) { billingService.refresh() }
+                        if (billingOperation.isCurrent(operationId)) billingState = refreshed
+                    } finally {
+                        billingOperation.finish(operationId)
+                    }
+                }
+                LaunchedEffect(billingState.nextEntitlementExpiryAtMs) {
+                    val expiresAtMs = billingState.nextEntitlementExpiryAtMs ?: return@LaunchedEffect
+                    val waitMs = (expiresAtMs - System.currentTimeMillis()).coerceAtLeast(1L)
+                    delay(waitMs)
+                    currentTimeMs = System.currentTimeMillis()
+                    billingState = billingService.cachedState()
+                }
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
                 }
-                val entitlements = remember(progressState, currentTimeMs) {
+                val effectiveProgressState = remember(progressState, billingState.entitlements) {
+                    progressState.withServerPaidEntitlements(billingState.entitlements)
+                }
+                val entitlements = remember(billingState.entitlements, progressState, currentTimeMs) {
                     MonetizationEntitlements(
-                        adFreePurchased = progressState.adFreePurchased,
-                        proSubscriptionActive = progressState.proSubscriptionActive ||
+                        adFreePurchased = billingState.entitlements.adFreePurchased,
+                        proSubscriptionActive = billingState.entitlements.proSubscriptionActive ||
                             progressState.temporaryProActiveAt(currentTimeMs),
-                        proPlusSubscriptionActive = progressState.proPlusSubscriptionActive,
+                        proPlusSubscriptionActive = billingState.entitlements.proPlusSubscriptionActive,
                     )
+                }
+                val refreshBilling: () -> Unit = {
+                    billingOperation.start()?.let { operationId ->
+                        coroutineScope.launch {
+                            try {
+                                val refreshed = withContext(Dispatchers.IO) { billingService.refresh() }
+                                if (billingOperation.isCurrent(operationId)) billingState = refreshed
+                            } catch (error: Exception) {
+                                if (error is CancellationException) throw error
+                                AppLog.warn(
+                                    tag = "MainActivity",
+                                    message = "Commerce refresh failed",
+                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                )
+                            } finally {
+                                billingOperation.finish(operationId)
+                            }
+                        }
+                    }
+                }
+                val purchaseBilling: (BillingProductId) -> Unit = { productId ->
+                    billingOperation.start()?.let { operationId ->
+                        coroutineScope.launch {
+                            try {
+                                val result = withContext(Dispatchers.IO) {
+                                    billingService.purchase(productId)
+                                }
+                                if (billingOperation.isCurrent(operationId)) {
+                                    billingState = result.state
+                                    if (result is BillingPurchaseResult.OpenExternalCheckout) {
+                                        if (isExternalHttpsCheckoutUrl(result.checkoutUrl)) {
+                                            val browserOpened = runCatching {
+                                                startActivity(
+                                                    Intent(Intent.ACTION_VIEW, Uri.parse(result.checkoutUrl)),
+                                                )
+                                            }.onFailure { error ->
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Commerce browser unavailable",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                            }.isSuccess
+                                            if (!browserOpened) {
+                                                billingState = result.state.copy(
+                                                    notice = BillingNotice.RETRY_REQUIRED,
+                                                )
+                                            }
+                                        } else {
+                                            billingState = result.state.copy(
+                                                availability = BillingAvailability.UNAVAILABLE,
+                                                notice = BillingNotice.RETRY_REQUIRED,
+                                            )
+                                            AppLog.warn(
+                                                tag = "MainActivity",
+                                                message = "Commerce checkout URL rejected",
+                                            )
+                                        }
+                                    }
+                                }
+                            } catch (error: Exception) {
+                                if (error is CancellationException) throw error
+                                AppLog.warn(
+                                    tag = "MainActivity",
+                                    message = "Commerce purchase failed",
+                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                )
+                            } finally {
+                                billingOperation.finish(operationId)
+                            }
+                        }
+                    }
                 }
                 val isPremium = entitlements.adsDisabled
                 val showPostMatchInterstitial: () -> Unit = {
@@ -507,7 +626,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 else -> VariantBottomAdContent(
                                     inspectionValue = currentInspectionValue,
-                                    adsDisabled = progressState.adsDisabledAt(currentTimeMs),
+                                    adsDisabled = effectiveProgressState.adsDisabledAt(currentTimeMs),
                                     toolsEnabled = variantToolsEnabled,
                                 )
                             }
@@ -525,10 +644,10 @@ class MainActivity : ComponentActivity() {
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
                                     checkPositionHints = progressState.checkPositionHints,
-                                    autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
-                                    infiniteHintsEnabled = progressState.infiniteHintsEnabled,
+                                    autoModeAvailable = effectiveProgressState.autoTableAssistEnabledAt(currentTimeMs),
+                                    infiniteHintsEnabled = effectiveProgressState.infiniteHintsEnabled,
                                     onConsumeOpenPositionHint = {
-                                        if (progressState.infiniteHintsEnabled) {
+                                        if (effectiveProgressState.infiniteHintsEnabled) {
                                             true
                                         } else if (progressRepository.consumeHint(HintStockType.OPEN_POSITION)) {
                                             progressState = progressRepository.loadState()
@@ -538,7 +657,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onConsumeCheckDigitHint = {
-                                        if (progressState.infiniteHintsEnabled) {
+                                        if (effectiveProgressState.infiniteHintsEnabled) {
                                             true
                                         } else if (progressRepository.consumeHint(HintStockType.CHECK_DIGIT)) {
                                             progressState = progressRepository.loadState()
@@ -548,7 +667,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onConsumeCheckPositionHint = {
-                                        if (progressState.infiniteHintsEnabled) {
+                                        if (effectiveProgressState.infiniteHintsEnabled) {
                                             true
                                         } else if (progressRepository.consumeHint(HintStockType.CHECK_POSITION)) {
                                             progressState = progressRepository.loadState()
@@ -624,12 +743,12 @@ class MainActivity : ComponentActivity() {
                                 openPositionHints = progressState.openPositionHints,
                                 checkDigitHints = progressState.checkDigitHints,
                                 checkPositionHints = progressState.checkPositionHints,
-                                autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
-                                infiniteHintsEnabled = progressState.infiniteHintsEnabled,
+                                autoModeAvailable = effectiveProgressState.autoTableAssistEnabledAt(currentTimeMs),
+                                infiniteHintsEnabled = effectiveProgressState.infiniteHintsEnabled,
                                 extraMovesBoosts = progressState.extraMovesBoosts,
                                 extraTimeBoosts = progressState.extraTimeBoosts,
                                 onConsumeOpenPositionHint = {
-                                    if (progressState.infiniteHintsEnabled) {
+                                    if (effectiveProgressState.infiniteHintsEnabled) {
                                         true
                                     } else if (progressRepository.consumeHint(HintStockType.OPEN_POSITION)) {
                                         progressState = progressRepository.loadState()
@@ -639,7 +758,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onConsumeCheckDigitHint = {
-                                    if (progressState.infiniteHintsEnabled) {
+                                    if (effectiveProgressState.infiniteHintsEnabled) {
                                         true
                                     } else if (progressRepository.consumeHint(HintStockType.CHECK_DIGIT)) {
                                         progressState = progressRepository.loadState()
@@ -649,7 +768,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onConsumeCheckPositionHint = {
-                                    if (progressState.infiniteHintsEnabled) {
+                                    if (effectiveProgressState.infiniteHintsEnabled) {
                                         true
                                     } else if (progressRepository.consumeHint(HintStockType.CHECK_POSITION)) {
                                         progressState = progressRepository.loadState()
@@ -737,8 +856,12 @@ class MainActivity : ComponentActivity() {
                             )
 
                             currentSection == AppSection.SHOP -> ShopRootScreen(
-                                progressState = progressState,
+                                progressState = effectiveProgressState,
                                 nowMs = currentTimeMs,
+                                billingState = billingState,
+                                billingInProgress = billingOperation.inProgress,
+                                onRefreshBilling = refreshBilling,
+                                onOpenProfile = { currentSection = AppSection.PROFILE },
                                 onWatchRewardedCoins = { completed ->
                                     val request = AdRequest(
                                         placement = AdPlacement.SHOP_COINS_REWARD,
@@ -798,28 +921,24 @@ class MainActivity : ComponentActivity() {
                                     purchased
                                 },
                                 onBuyRemoveAds = {
-                                    val purchased = billingService.purchase(BillingProductId.REMOVE_ADS)
-                                    if (purchased) {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.REMOVE_ADS)
-                                    }
-                                    purchased
+                                    purchaseBilling(BillingProductId.REMOVE_ADS)
                                 },
                                 onBuyPro = {
-                                    val purchased = billingService.purchase(BillingProductId.PRO_SUBSCRIPTION)
-                                    if (purchased) {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_SUBSCRIPTION)
-                                    }
-                                    purchased
+                                    purchaseBilling(BillingProductId.PRO_SUBSCRIPTION)
                                 },
                                 onBuyProPlus = {
-                                    val purchased = billingService.purchase(BillingProductId.PRO_PLUS_SUBSCRIPTION)
-                                    if (purchased) {
-                                        progressState = progressRepository.activateProduct(MonetizationProductType.PRO_PLUS_SUBSCRIPTION)
-                                    }
-                                    purchased
+                                    purchaseBilling(BillingProductId.PRO_PLUS_SUBSCRIPTION)
+                                },
+                                onRetryBillingPurchase = {
+                                    billingState.pendingProduct?.let(purchaseBilling)
                                 },
                                 onBuyTemporaryPro = {
-                                    val purchased = progressRepository.buyTemporaryPro()
+                                    val permanentPremiumActive =
+                                        billingState.entitlements.proSubscriptionActive ||
+                                            billingState.entitlements.proPlusSubscriptionActive
+                                    val purchased = progressRepository.buyTemporaryPro(
+                                        permanentPremiumActive = permanentPremiumActive,
+                                    )
                                     if (purchased) {
                                         progressState = progressRepository.loadState()
                                         AppLog.info(
@@ -837,7 +956,7 @@ class MainActivity : ComponentActivity() {
                             )
 
                             currentSection == AppSection.PROFILE -> ProfileRootScreen(
-                                progressState = progressState,
+                                progressState = effectiveProgressState,
                                 nowMs = currentTimeMs,
                                 mirkoriAccountState = mirkoriAccountState,
                                 mirkoriAuthResultKey = mirkoriAuthResultKey,
@@ -1061,6 +1180,11 @@ class MainActivity : ComponentActivity() {
         captureMirkoriCallback(intent)
     }
 
+    override fun onResume() {
+        super.onResume()
+        resumeGeneration += 1L
+    }
+
     override fun onStart() {
         super.onStart()
         adUsageTracker.onForeground()
@@ -1105,6 +1229,26 @@ class MainActivity : ComponentActivity() {
 
 internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSection =
     if (sessionId == null) AppSection.HOME else AppSection.SOCIAL
+
+internal fun GameProgressState.withServerPaidEntitlements(
+    entitlements: MonetizationEntitlements,
+): GameProgressState = copy(
+    adFreePurchased = entitlements.adFreePurchased,
+    proSubscriptionActive = entitlements.proSubscriptionActive,
+    proPlusSubscriptionActive = entitlements.proPlusSubscriptionActive,
+)
+
+internal fun isExternalHttpsCheckoutUrl(value: String): Boolean = runCatching {
+    val uri = URI(value)
+    val isLoginCallback = uri.host.equals("games.dmit.life", ignoreCase = true) &&
+        uri.path == "/connect/inplacex/callback"
+    uri.scheme.equals("https", ignoreCase = true) &&
+        !uri.host.isNullOrBlank() &&
+        uri.userInfo == null &&
+        uri.fragment == null &&
+        (uri.port == -1 || uri.port in 1..65_535) &&
+        !isLoginCallback
+}.getOrDefault(false)
 
 private fun rewardedHintRequest(hintType: HintStockType): AdRequest =
     AdRequest(

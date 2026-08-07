@@ -70,7 +70,10 @@
   `UNKNOWN` fail closed until another provider is explicitly implemented
 - banner, rewarded, and post-match UI call sites use `AndroidAdRuntime`; reward
   state changes only after the provider reports completion
-- billing continues to fail closed until its SDK integration exists
+- billing uses the typed Mirkori Platform SDK/runtime for catalog, checkout,
+  order polling, and entitlements; no Google Play Billing adapter is composed
+- release product IDs are Platform product IDs, not client-side entitlement
+  switches, and the three IDs must be valid and distinct
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
 Absent provider configuration, Credential Manager cancellation, server
@@ -97,8 +100,9 @@ artifact for PR compilation and static checks. The distribution-only
 and `:app:validateReleaseSigningConfig`. It checks strict HTTPS origins for the
 online backend and Mirkori Games Platform, requires live Yandex banner and
 rewarded placement IDs, verifies that configured Yandex IDs are distinct, and
-never prints a configured value. The post-match interstitial is optional and
-fails closed when absent.
+requires three valid, distinct Mirkori Platform product IDs without printing
+configured values. The post-match interstitial is optional and fails closed
+when absent.
 
 Android version identity is centralized in
 `InplaceX-android/version.properties`. Release signing is accepted only as a

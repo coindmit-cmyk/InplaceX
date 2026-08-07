@@ -2,9 +2,11 @@ package com.mirkori.inplacex
 
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
+import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.services.BillingService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,6 +30,16 @@ class ReleaseVariantIsolationTest {
 
         assertTrue(
             OnlineRuntime::class.java.declaredMethods.none { it.name in forbiddenLegacyMethods },
+        )
+    }
+
+    @Test
+    fun `release commerce uses Mirkori browser checkout and contains no Google Play billing adapter`() {
+        assertTrue(BillingService::class.java.isAssignableFrom(MirkoriBillingService::class.java))
+        assertNull(
+            javaClass.classLoader?.getResource(
+                "com/mirkori/inplacex/platform/services/GooglePlayBillingService.class",
+            ),
         )
     }
 

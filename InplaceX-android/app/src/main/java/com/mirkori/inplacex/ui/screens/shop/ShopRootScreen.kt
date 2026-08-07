@@ -35,6 +35,10 @@ import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.services.BillingAvailability
+import com.mirkori.inplacex.platform.services.BillingNotice
+import com.mirkori.inplacex.platform.services.BillingProductId
+import com.mirkori.inplacex.platform.services.BillingState
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
@@ -49,6 +53,13 @@ private enum class ShopCategory {
 fun ShopRootScreen(
     progressState: GameProgressState,
     nowMs: Long = System.currentTimeMillis(),
+    billingState: BillingState = BillingState(
+        availability = BillingAvailability.UNAVAILABLE,
+        notice = BillingNotice.CONFIGURATION_REQUIRED,
+    ),
+    billingInProgress: Boolean = false,
+    onRefreshBilling: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
     onWatchRewardedCoins: ((Boolean) -> Unit) -> Unit,
     onBuyOpenPositionHint: () -> Boolean,
     onBuyCheckDigitHint: () -> Boolean,
@@ -56,9 +67,10 @@ fun ShopRootScreen(
     onBuyExtraMovesBoost: () -> Boolean,
     onBuyExtraTimeBoost: () -> Boolean,
     onBuyEnergy: () -> Boolean,
-    onBuyRemoveAds: () -> Boolean,
-    onBuyPro: () -> Boolean,
-    onBuyProPlus: () -> Boolean,
+    onBuyRemoveAds: () -> Unit,
+    onBuyPro: () -> Unit,
+    onBuyProPlus: () -> Unit,
+    onRetryBillingPurchase: () -> Unit = {},
     onBuyTemporaryPro: () -> Boolean = { false },
 ) {
     val strings = LocalAppStrings.current
@@ -163,10 +175,15 @@ fun ShopRootScreen(
             ShopCategory.PREMIUM -> PremiumCatalog(
                 progressState = progressState,
                 nowMs = nowMs,
+                billingState = billingState,
+                billingInProgress = billingInProgress,
                 onReport = ::report,
+                onRefreshBilling = onRefreshBilling,
+                onOpenProfile = onOpenProfile,
                 onBuyRemoveAds = onBuyRemoveAds,
                 onBuyPro = onBuyPro,
                 onBuyProPlus = onBuyProPlus,
+                onRetryBillingPurchase = onRetryBillingPurchase,
                 onBuyTemporaryPro = onBuyTemporaryPro,
             )
         }
@@ -371,10 +388,15 @@ private fun shellFilterChipColors() = FilterChipDefaults.filterChipColors(
 private fun PremiumCatalog(
     progressState: GameProgressState,
     nowMs: Long,
+    billingState: BillingState,
+    billingInProgress: Boolean,
     onReport: (Boolean) -> Unit,
-    onBuyRemoveAds: () -> Boolean,
-    onBuyPro: () -> Boolean,
-    onBuyProPlus: () -> Boolean,
+    onRefreshBilling: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onBuyRemoveAds: () -> Unit,
+    onBuyPro: () -> Unit,
+    onBuyProPlus: () -> Unit,
+    onRetryBillingPurchase: () -> Unit,
     onBuyTemporaryPro: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
@@ -384,31 +406,142 @@ private fun PremiumCatalog(
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
     )
-    PremiumCard(
+    BillingStatusCard(
+        state = billingState,
+        inProgress = billingInProgress,
+        onRefresh = onRefreshBilling,
+        onOpenProfile = onOpenProfile,
+        onRetryPurchase = onRetryBillingPurchase,
+    )
+    BillingPremiumCard(
+        productId = BillingProductId.REMOVE_ADS,
         title = strings.text("shop.product.remove_ads"),
         description = strings.text("shop.product.remove_ads.desc"),
-        active = progressState.adFreePurchased,
-        actionLabel = strings.text(if (progressState.adFreePurchased) "shop.owned" else "shop.buy"),
-        onAction = { onReport(onBuyRemoveAds()) },
+        active = billingState.entitlements.adFreePurchased,
+        billingState = billingState,
+        inProgress = billingInProgress,
+        onBuy = onBuyRemoveAds,
+        onRetry = onRetryBillingPurchase,
     )
     TemporaryProCard(
         progressState = progressState,
         nowMs = nowMs,
         onAction = { onReport(onBuyTemporaryPro()) },
     )
-    PremiumCard(
+    BillingPremiumCard(
+        productId = BillingProductId.PRO_SUBSCRIPTION,
         title = strings.text("shop.product.pro"),
         description = strings.text("shop.product.pro.desc"),
-        active = progressState.proSubscriptionActive,
-        actionLabel = strings.text(if (progressState.proSubscriptionActive) "shop.active" else "shop.subscribe"),
-        onAction = { onReport(onBuyPro()) },
+        active = billingState.entitlements.proSubscriptionActive,
+        billingState = billingState,
+        inProgress = billingInProgress,
+        onBuy = onBuyPro,
+        onRetry = onRetryBillingPurchase,
     )
-    PremiumCard(
+    BillingPremiumCard(
+        productId = BillingProductId.PRO_PLUS_SUBSCRIPTION,
         title = strings.text("shop.product.pro_plus"),
         description = strings.text("shop.product.pro_plus.desc"),
-        active = progressState.proPlusSubscriptionActive,
-        actionLabel = strings.text(if (progressState.proPlusSubscriptionActive) "shop.active" else "shop.subscribe"),
-        onAction = { onReport(onBuyProPlus()) },
+        active = billingState.entitlements.proPlusSubscriptionActive,
+        billingState = billingState,
+        inProgress = billingInProgress,
+        onBuy = onBuyProPlus,
+        onRetry = onRetryBillingPurchase,
+    )
+}
+
+@Composable
+private fun BillingStatusCard(
+    state: BillingState,
+    inProgress: Boolean,
+    onRefresh: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onRetryPurchase: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    val noticeKey = billingNoticeLocalizationKey(state.notice)
+    val positive = state.notice == BillingNotice.PAYMENT_CONFIRMED ||
+        state.notice == BillingNotice.PRODUCT_ALREADY_ACTIVE
+    SceneCard(
+        accentColor = when {
+            positive -> InplaceXColors.Mint.copy(alpha = 0.12f)
+            state.notice == BillingNotice.NONE && state.availability == BillingAvailability.READY ->
+                InplaceXColors.ToyCream.copy(alpha = 0.95f)
+            else -> InplaceXColors.Coral.copy(alpha = 0.10f)
+        },
+    ) {
+        Text(
+            text = when {
+                inProgress -> strings.text("shop.billing.checking")
+                noticeKey != null -> strings.text(noticeKey)
+                state.availability == BillingAvailability.READY -> strings.text("shop.billing.ready")
+                else -> strings.text("shop.billing.unavailable")
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        when {
+            state.notice == BillingNotice.LINKED_ACCOUNT_REQUIRED -> Button(
+                onClick = onOpenProfile,
+                enabled = !inProgress,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) {
+                Text(strings.text("shop.billing.open_profile"))
+            }
+
+            shouldRetryPendingPurchase(state) -> Button(
+                onClick = onRetryPurchase,
+                enabled = !inProgress,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) {
+                Text(strings.text("shop.billing.retry_payment"))
+            }
+
+            else -> OutlinedButton(
+                onClick = onRefresh,
+                enabled = !inProgress,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) {
+                Text(strings.text("shop.billing.refresh"))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BillingPremiumCard(
+    productId: BillingProductId,
+    title: String,
+    description: String,
+    active: Boolean,
+    billingState: BillingState,
+    inProgress: Boolean,
+    onBuy: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    val product = billingState.products[productId]
+    val isPending = billingState.pendingProduct == productId
+    val actionLabel = when {
+        active -> strings.text(if (productId == BillingProductId.REMOVE_ADS) "shop.owned" else "shop.active")
+        inProgress -> strings.text("shop.billing.checking")
+        isPending && billingState.notice == BillingNotice.AWAITING_ENTITLEMENT ->
+            strings.text("shop.billing.refresh")
+        isPending -> strings.text("shop.billing.retry_payment")
+        product == null -> strings.text("shop.billing.unavailable_short")
+        else -> strings.text("shop.billing.buy_for").replace(
+            "{price}",
+            formatBillingPrice(product.amountMinor, product.currency),
+        )
+    }
+    PremiumCard(
+        title = title,
+        description = description,
+        active = active,
+        priceLabel = product?.let { formatBillingPrice(it.amountMinor, it.currency) },
+        actionLabel = actionLabel,
+        actionEnabled = canStartBillingAction(billingState, productId, inProgress),
+        onAction = if (isPending) onRetry else onBuy,
     )
 }
 
@@ -497,7 +630,9 @@ private fun PremiumCard(
     title: String,
     description: String,
     active: Boolean,
+    priceLabel: String?,
     actionLabel: String,
+    actionEnabled: Boolean,
     onAction: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
@@ -519,7 +654,11 @@ private fun PremiumCard(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = strings.text(if (active) "shop.premium.unlocked" else "shop.premium.access"),
+                text = if (active) {
+                    strings.text("shop.premium.unlocked")
+                } else {
+                    priceLabel ?: strings.text("shop.premium.access")
+                },
                 style = MaterialTheme.typography.labelMedium,
                 color = if (active) InplaceXColors.Mint else InplaceXColors.InkMuted,
                 fontWeight = FontWeight.SemiBold,
@@ -532,7 +671,7 @@ private fun PremiumCard(
         )
         Button(
             onClick = onAction,
-            enabled = !active,
+            enabled = actionEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp),
@@ -540,4 +679,55 @@ private fun PremiumCard(
             Text(actionLabel)
         }
     }
+}
+
+internal fun billingNoticeLocalizationKey(notice: BillingNotice): String? = when (notice) {
+    BillingNotice.NONE -> null
+    BillingNotice.CHECKOUT_OPENED -> "shop.billing.checkout_opened"
+    BillingNotice.AWAITING_PAYMENT -> "shop.billing.awaiting_payment"
+    BillingNotice.AWAITING_ENTITLEMENT -> "shop.billing.awaiting_entitlement"
+    BillingNotice.PAYMENT_CONFIRMED -> "shop.billing.confirmed"
+    BillingNotice.PAYMENT_CANCELLED -> "shop.billing.cancelled"
+    BillingNotice.PAYMENT_REFUNDED -> "shop.billing.refunded"
+    BillingNotice.CHECKOUT_EXPIRED -> "shop.billing.checkout_expired"
+    BillingNotice.LINKED_ACCOUNT_REQUIRED -> "shop.billing.link_required"
+    BillingNotice.PROVIDER_UNAVAILABLE -> "shop.billing.provider_unavailable"
+    BillingNotice.OFFLINE -> "shop.billing.offline"
+    BillingNotice.RETRY_REQUIRED -> "shop.billing.retry_required"
+    BillingNotice.PRODUCT_ALREADY_ACTIVE -> "shop.billing.already_active"
+    BillingNotice.BUSY -> "shop.billing.busy"
+    BillingNotice.CONFIGURATION_REQUIRED -> "shop.billing.configuration_required"
+}
+
+internal fun shouldRetryPendingPurchase(state: BillingState): Boolean =
+    state.pendingProduct != null && state.notice in setOf(
+        BillingNotice.CHECKOUT_OPENED,
+        BillingNotice.AWAITING_PAYMENT,
+        BillingNotice.CHECKOUT_EXPIRED,
+        BillingNotice.PROVIDER_UNAVAILABLE,
+        BillingNotice.RETRY_REQUIRED,
+    )
+
+internal fun canStartBillingAction(
+    state: BillingState,
+    productId: BillingProductId,
+    inProgress: Boolean,
+): Boolean {
+    if (inProgress || state.availability != BillingAvailability.READY) return false
+    if (state.products[productId] == null) return false
+    val alreadyActive = when (productId) {
+        BillingProductId.REMOVE_ADS -> state.entitlements.adFreePurchased
+        BillingProductId.PRO_SUBSCRIPTION -> state.entitlements.proSubscriptionActive
+        BillingProductId.PRO_PLUS_SUBSCRIPTION -> state.entitlements.proPlusSubscriptionActive
+    }
+    if (alreadyActive) return false
+    return state.pendingProduct == null || state.pendingProduct == productId
+}
+
+internal fun formatBillingPrice(amountMinor: Long, currency: String): String {
+    require(amountMinor >= 0)
+    require(currency.matches(Regex("[A-Z]{3}")))
+    val whole = amountMinor / 100
+    val fraction = (amountMinor % 100).toString().padStart(2, '0')
+    return if (currency == "RUB") "$whole,$fraction ₽" else "$whole.$fraction $currency"
 }

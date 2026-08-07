@@ -4,7 +4,6 @@ import android.content.Context
 import com.mirkori.inplacex.platform.ads.AndroidAdRuntime
 import com.mirkori.inplacex.platform.ads.AdConsentController
 import com.mirkori.inplacex.platform.ads.AdActivityHost
-import com.mirkori.inplacex.platform.config.BillingProviderConfig
 import com.mirkori.inplacex.platform.config.GooglePlayProviderConfig
 
 data class ProviderServices(
@@ -60,11 +59,18 @@ class UnavailableAdService : AdService {
     }
 }
 
-class GooglePlayBillingService(
-    private val appContext: Context,
-    private val config: BillingProviderConfig,
+class UnavailableBillingService(
+    notice: BillingNotice,
 ) : BillingService {
-    override fun purchase(productId: BillingProductId): Boolean {
-        return false
-    }
+    private val unavailable = BillingState(
+        availability = BillingAvailability.UNAVAILABLE,
+        notice = notice,
+    )
+
+    override fun cachedState(): BillingState = unavailable
+
+    override suspend fun refresh(): BillingState = unavailable
+
+    override suspend fun purchase(productId: BillingProductId): BillingPurchaseResult =
+        BillingPurchaseResult.StateUpdated(unavailable)
 }
