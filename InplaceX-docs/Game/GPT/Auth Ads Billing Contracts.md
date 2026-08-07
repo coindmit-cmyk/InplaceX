@@ -90,7 +90,8 @@ state; opening a browser is never proof of payment.
    grant remains explicitly `AWAITING_ENTITLEMENT`.
 7. Cancelled/refunded orders, expired checkout links, offline state, Platform
    `503`, token refresh, and retry remain explicit UI states. A conclusively
-   expired checkout rotates its key for the next logical user retry; ambiguous
+   expired checkout retains its key and blocks a replacement until the server
+   authoritatively confirms cancellation of the original provider payment; ambiguous
    failures retain the original key. Last confirmed timed grants may be used
    offline only until their server validity timestamp.
 

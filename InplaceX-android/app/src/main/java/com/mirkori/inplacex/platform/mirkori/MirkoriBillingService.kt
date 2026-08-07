@@ -262,7 +262,6 @@ private suspend fun MirkoriPlatformRuntime.purchase(
             }
 
             "checkout_expired" -> {
-                rotateCheckoutAttempt()
                 cachedCommerceState(
                     config = config,
                     previousProducts = previousProducts,
@@ -450,18 +449,6 @@ private fun MirkoriPlatformRuntime.commerceFailureState(
 private fun MirkoriPlatformRuntime.clearPendingPurchase() {
     currentPersistedState()?.let { state ->
         if (state.pendingPurchase != null) persist(state.copy(pendingPurchase = null))
-    }
-}
-
-private fun MirkoriPlatformRuntime.rotateCheckoutAttempt() {
-    currentPersistedState()?.let { state ->
-        state.pendingPurchase?.let { pending ->
-            persist(
-                state.copy(
-                    pendingPurchase = pending.copy(checkoutIdempotencyKey = sdk.newIdempotencyKey()),
-                ),
-            )
-        }
     }
 }
 

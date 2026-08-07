@@ -167,7 +167,7 @@ class MirkoriBillingServiceTest {
     }
 
     @Test
-    fun confirmedCheckoutExpiryRotatesKeyOnlyForNextUserRetry() {
+    fun checkoutExpiryKeepsOriginalAttemptUntilServerConfirmsCancellation() {
         val orderId = "00000000-0000-4000-8000-000000000934"
         val store = linkedStore(pending = pendingPurchase(orderId = orderId))
         val originalKey = requireNotNull(store.value?.pendingPurchase).checkoutIdempotencyKey.value
@@ -178,11 +178,11 @@ class MirkoriBillingServiceTest {
         )
 
         val result = runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
-        val rotatedKey = requireNotNull(store.value?.pendingPurchase).checkoutIdempotencyKey.value
+        val retainedKey = requireNotNull(store.value?.pendingPurchase).checkoutIdempotencyKey.value
 
         assertEquals(BillingNotice.CHECKOUT_EXPIRED, result.state.notice)
         assertEquals(originalKey, transport.requests[2].headers["Idempotency-Key"])
-        assertTrue(rotatedKey != originalKey)
+        assertEquals(originalKey, retainedKey)
         assertNotNull(store.value?.pendingPurchase)
     }
 
