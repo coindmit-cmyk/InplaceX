@@ -188,6 +188,16 @@ data class RemoteSubmitGuessPayload(
             "expectedRevision=$expectedRevision, guess=[redacted])"
 }
 
+data class RemoteLegacyMembershipMigrationPayload(
+    val sessionId: String,
+    val commandId: String,
+    val legacyRefreshToken: String,
+) {
+    override fun toString(): String =
+        "RemoteLegacyMembershipMigrationPayload(sessionId=$sessionId, commandId=$commandId, " +
+            "legacyRefreshToken=[redacted])"
+}
+
 interface RemotePlatformGateway : MatchmakingStub {
     fun prepareGuestBootstrap(
         payload: RemoteAuthBootstrapPayload,
@@ -241,6 +251,11 @@ interface RemotePlatformGateway : MatchmakingStub {
     ): RemoteRequestSpec
 
     fun prepareReadSession(sessionId: String): RemoteRequestSpec
+
+    fun prepareLegacyMembershipMigration(
+        payload: RemoteLegacyMembershipMigrationPayload,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): RemoteRequestSpec
 
     fun prepareReconnect(
         sessionId: String,
@@ -468,6 +483,28 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
             operation = "session.read",
             method = RemoteHttpMethod.GET,
             path = "/api/v1/sessions/$sessionId",
+        )
+    }
+
+    override fun prepareLegacyMembershipMigration(
+        payload: RemoteLegacyMembershipMigrationPayload,
+        idempotencyKey: String,
+    ): RemoteRequestSpec {
+        requireSafeUuid(payload.sessionId, "sessionId")
+        requireSafeUuid(payload.commandId, "commandId")
+        require(
+            payload.legacyRefreshToken.length in 1..512 &&
+                payload.legacyRefreshToken.none(Char::isWhitespace),
+        ) { "legacyRefreshToken has an invalid format" }
+        return RemoteRequestSpec(
+            operation = "session.legacy.migrate",
+            method = RemoteHttpMethod.POST,
+            path = "/api/v1/sessions/${payload.sessionId}/legacy-membership",
+            bodyJson = jsonObject(
+                "commandId" to JsonPrimitive(payload.commandId),
+                "legacyRefreshToken" to JsonPrimitive(payload.legacyRefreshToken),
+            ),
+            idempotencyKey = idempotencyKey,
         )
     }
 

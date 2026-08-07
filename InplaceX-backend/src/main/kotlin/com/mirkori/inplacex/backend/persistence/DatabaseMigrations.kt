@@ -52,6 +52,11 @@ object DatabaseMigrations {
             description = "add online session event replay",
             sql = readResource("db/migration/V8__add_online_session_event_replay.sql"),
         ),
+        SqlMigration(
+            version = "9",
+            description = "add one-time legacy online membership migration",
+            sql = readResource("db/migration/V9__add_legacy_online_membership_migration.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(

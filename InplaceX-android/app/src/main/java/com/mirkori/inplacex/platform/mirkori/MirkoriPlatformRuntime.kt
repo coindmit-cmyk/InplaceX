@@ -6,6 +6,7 @@ import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.AndroidConnectivityGate
 import com.mirkori.inplacex.platform.online.AccessToken
 import com.mirkori.inplacex.platform.online.AccessTokenProvider
+import com.mirkori.inplacex.platform.online.AccessTokenTemporarilyUnavailableException
 import com.mirkori.platform.sdk.GameClientPlatform
 import com.mirkori.platform.sdk.GameIdentitySession
 import com.mirkori.platform.sdk.MirkoriGameSdk
@@ -123,7 +124,7 @@ class MirkoriPlatformRuntime internal constructor(
                 throw cancelled
             } catch (error: Exception) {
                 logFailure(error)
-                null
+                throw AccessTokenTemporarilyUnavailableException(error)
             }
         }
 
@@ -138,7 +139,7 @@ class MirkoriPlatformRuntime internal constructor(
             throw cancelled
         } catch (error: Exception) {
             logFailure(error)
-            null
+            throw AccessTokenTemporarilyUnavailableException(error)
         }
     }
 

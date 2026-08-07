@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 class OnlineRuntime private constructor(
     private val client: HttpClient,
     private val duel: OnlineDuelClient,
+    private val legacySessionRecovery: LegacyOnlineSessionRecovery,
 ) : AutoCloseable {
     suspend fun createMatch(
         mode: RemoteMatchmakingMode = RemoteMatchmakingMode.CLASSIC,
@@ -51,7 +52,7 @@ class OnlineRuntime private constructor(
     }
 
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> {
-        return duel.readSession(sessionId)
+        return legacySessionRecovery.readSession(sessionId)
     }
 
     suspend fun submitSecret(
@@ -92,9 +93,15 @@ class OnlineRuntime private constructor(
                 tokenProvider = accessTokenProvider,
                 connectivity = connectivity,
             )
+            val duel = OnlineDuelClient(authenticatedTransport)
             return OnlineRuntime(
                 client = client,
-                duel = OnlineDuelClient(authenticatedTransport),
+                duel = duel,
+                legacySessionRecovery = LegacyOnlineSessionRecovery(
+                    duel = duel,
+                    legacyStore = AndroidKeystoreGuestSessionStore(context),
+                    attemptStore = SharedPreferencesLegacyMembershipMigrationAttemptStore(context),
+                ),
             )
         }
     }

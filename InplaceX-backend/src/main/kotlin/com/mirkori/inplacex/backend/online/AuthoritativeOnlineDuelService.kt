@@ -12,6 +12,7 @@ import com.mirkori.inplacex.backend.online.persistence.DurableMatchmakingTicket
 import com.mirkori.inplacex.backend.online.persistence.DurableOnlineSession
 import com.mirkori.inplacex.backend.online.persistence.DurablePrivateInvite
 import com.mirkori.inplacex.backend.online.persistence.DurableSessionCoordination
+import com.mirkori.inplacex.backend.online.persistence.LegacyMembershipTransferPersistenceResult
 import com.mirkori.inplacex.backend.online.persistence.OnlineLobbyRepository
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionRepository
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEventSequence
@@ -124,6 +125,14 @@ class OnlineRevisionConflictException(val current: OnlineDuelSnapshot) :
     IllegalStateException("online session revision conflict")
 class OnlineCommandIdReusedException : IllegalStateException("online command id reused with a different payload")
 class OnlineInviteUnavailableException : IllegalStateException("private duel invite is unavailable")
+class LegacyOnlineCredentialRejectedException :
+    IllegalStateException("legacy online credential is not accepted")
+class LegacyOnlineMigrationUnavailableException :
+    IllegalStateException("legacy online membership migration is unavailable")
+
+data class LegacyOnlineMembershipMigrationReceipt(
+    val sessionId: String,
+)
 
 /**
  * Server-authoritative matchmaking and duel runtime.
@@ -536,6 +545,68 @@ class AuthoritativeOnlineDuelService(
 
     fun readSession(playerId: String, sessionId: String): OnlineDuelSnapshot =
         withSession(playerId, sessionId) { record -> record.snapshotFor(playerId) }
+
+    fun migrateLegacyMembership(
+        platformPlayerId: String,
+        sessionId: String,
+        commandId: String,
+        legacyRefreshToken: String,
+    ): LegacyOnlineMembershipMigrationReceipt {
+        requireCanonicalUuid(platformPlayerId, "platformPlayerId")
+        requireCanonicalUuid(sessionId, "sessionId")
+        requireCanonicalUuid(commandId, "commandId")
+        require(
+            legacyRefreshToken.length in 1..MaximumLegacyRefreshTokenCharacters &&
+                legacyRefreshToken.none(Char::isWhitespace),
+        ) { "legacyRefreshToken has an invalid format" }
+        val repository = sessionRepository ?: throw LegacyOnlineMigrationUnavailableException()
+        val presentedTokenHash = sha256(legacyRefreshToken)
+        val requestFingerprint = fingerprint(
+            "legacy_membership",
+            "$sessionId:$platformPlayerId:$presentedTokenHash",
+        )
+        val result = try {
+            repository.transferLegacyMembership(
+                sessionId = sessionId,
+                platformPlayerId = platformPlayerId,
+                presentedTokenHash = presentedTokenHash,
+                commandId = commandId,
+                requestFingerprint = requestFingerprint,
+                now = clock.instant(),
+            ) { stored, legacyPlayerId ->
+                val record = sessionRecord(stored, repository = null)
+                try {
+                    record.transferMembership(legacyPlayerId, platformPlayerId)
+                    record.persistenceState()
+                } finally {
+                    record.close()
+                }
+            }
+        } catch (_: OnlineMembershipRejectedException) {
+            throw LegacyOnlineCredentialRejectedException()
+        }
+        when (result) {
+            LegacyMembershipTransferPersistenceResult.TRANSFERRED,
+            LegacyMembershipTransferPersistenceResult.REPLAYED,
+            -> Unit
+            LegacyMembershipTransferPersistenceResult.REJECTED ->
+                throw LegacyOnlineCredentialRejectedException()
+            LegacyMembershipTransferPersistenceResult.UNAVAILABLE ->
+                throw LegacyOnlineMigrationUnavailableException()
+        }
+        logger.info(
+            tag = "OnlineIdentityMigration",
+            message = "legacy online membership migration completed",
+            attributes = mapOf(
+                "outcome" to if (result == LegacyMembershipTransferPersistenceResult.REPLAYED) {
+                    "replayed"
+                } else {
+                    "transferred"
+                },
+            ),
+        )
+        return LegacyOnlineMembershipMigrationReceipt(sessionId)
+    }
 
     fun submitSecret(
         playerId: String,
@@ -993,7 +1064,7 @@ class AuthoritativeOnlineDuelService(
     private class SessionRecord(
         val sessionId: String,
         private val match: DuelMatch,
-        private val memberships: Map<String, DuelParticipant>,
+        private var memberships: Map<String, DuelParticipant>,
         private val bot: ServerBotPlayer?,
         private val clock: Clock,
         private val matchDuration: Duration?,
@@ -1021,6 +1092,25 @@ class AuthoritativeOnlineDuelService(
         }
 
         fun isMember(playerId: String): Boolean = memberships.containsKey(playerId)
+
+        @Synchronized
+        fun transferMembership(legacyPlayerId: String, platformPlayerId: String) {
+            val participant = memberships[legacyPlayerId] ?: throw OnlineMembershipRejectedException()
+            if (legacyPlayerId == platformPlayerId || memberships.containsKey(platformPlayerId)) {
+                throw OnlineMembershipRejectedException()
+            }
+            memberships = memberships - legacyPlayerId + (platformPlayerId to participant)
+            val legacyReplayPrefix = "$legacyPlayerId:"
+            val movedReplays = commandReplays
+                .filterKeys { it.startsWith(legacyReplayPrefix) }
+                .mapKeys { (key, _) -> "$platformPlayerId:${key.removePrefix(legacyReplayPrefix)}" }
+            check(movedReplays.keys.none(commandReplays::containsKey)) {
+                "Platform player already owns a command replay in this session"
+            }
+            commandReplays.keys.removeAll { it.startsWith(legacyReplayPrefix) }
+            commandReplays.putAll(movedReplays)
+            revision += 1L
+        }
 
         @Synchronized
         fun currentRevision(): Long = revision
@@ -1456,8 +1546,11 @@ private fun OnlineFriendPlayStyle.toDomainPlayStyle(): DuelPlayStyle = when (thi
 }
 
 private fun fingerprint(type: String, payload: String): String =
+    sha256("$type:$payload")
+
+private fun sha256(value: String): String =
     MessageDigest.getInstance("SHA-256")
-        .digest("$type:$payload".toByteArray(Charsets.UTF_8))
+        .digest(value.toByteArray(Charsets.UTF_8))
         .joinToString(separator = "") { byte -> "%02x".format(byte) }
 
 private fun requireCanonicalUuid(value: String, name: String) {
@@ -1473,6 +1566,7 @@ private fun requireInviteCode(value: String) {
 }
 
 private const val CLEARED_DIGIT: Char = '\u0000'
+private const val MaximumLegacyRefreshTokenCharacters = 512
 private const val PrivateInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val PrivateInviteCodeLength = 8
 private const val MaximumInviteCodeAttempts = 32

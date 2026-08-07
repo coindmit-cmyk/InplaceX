@@ -54,7 +54,49 @@ delete existing players, saves, tickets, or matches.
 The source and tests for the earlier InplaceX guest/bootstrap and direct Google
 adapter remain temporarily available for debug/test compatibility. They are
 not composed by the release backend and are not used by the release Android
-online runtime.
+online runtime as an identity authority. The only release compatibility use is
+the bounded, one-time proof described below for an unfinished online session.
+
+### One-time active-session membership migration
+
+An upgraded client that holds an unfinished session created under the retired
+InplaceX identity first reads it with its Platform token. Only an authoritative
+`403` membership rejection may start compatibility migration. Missing Platform
+credentials, a Platform current/refresh/bootstrap outage, offline transport, a
+timeout, or a `5xx` response is temporary and must preserve both the active
+session pointer and the legacy proof.
+
+`POST /api/v1/sessions/{sessionId}/legacy-membership` requires a valid Platform
+game bearer token and an exact JSON body containing `commandId` and
+`legacyRefreshToken`; the `Idempotency-Key` must equal `commandId`. The body is
+limited to 2 KiB of valid UTF-8 and the opaque proof to 512 non-whitespace
+characters. The raw proof crosses the backend boundary only in this HTTPS
+request, is hashed before repository lookup, and must never appear in a
+response, durable migration row, exception message, metric label, or log.
+
+Under one PostgreSQL transaction the backend locks the legacy refresh
+credential family and encrypted session, verifies that the credential is
+unconsumed, unrevoked and unexpired and belongs to a current participant,
+replaces that participant with the authenticated Platform `pid`, moves its
+viewer-specific command replay ownership, advances the duel revision exactly
+once, consumes the credential, revokes its family, and records the migration.
+A wrong-player proof rolls the entire transaction back. A known expired or
+reused proof fails closed and revokes its family without changing the session.
+
+The same Platform player, session, command and proof fingerprint returns the
+same successful `migrated` receipt after response loss or backend restart,
+although the legacy credential has already been consumed. Reusing the
+migration identity with a changed command or fingerprint returns
+`409 idempotency_key_reused`; an invalid proof or non-member returns
+`403 legacy_credential_rejected`. After a successful receipt Android must read
+the same session again with the Platform token and clears legacy secure state
+only after that read succeeds. Before sending the proof it durably records the
+exact session and command in a non-secret pending marker; unrelated successful
+session reads cannot clear the proof. If the request or confirmation response
+is lost, a recreated runtime reuses that marker and the durable replay finishes
+recovery without a second revision. An authoritative proof rejection is final
+and clears the stale credential and its marker; transport and authority outages
+preserve both.
 
 ### Bootstrap
 
@@ -216,6 +258,7 @@ Every authenticated route checks that the player owns the referenced resource.
 | Read owned friend invite | `GET /api/v1/friends/invites/{inviteCode}` | `FriendInvite` |
 | Accept friend invite | `POST /api/v1/friends/invites/{inviteCode}/accept` | `FriendInviteAcceptCommand` → `FriendInvite` |
 | Read duel snapshot | `GET /api/v1/sessions/{sessionId}` | `SessionSnapshotResponse` |
+| Migrate legacy active-session membership | `POST /api/v1/sessions/{sessionId}/legacy-membership` | `{commandId, legacyRefreshToken}` → `{sessionId, status: "migrated"}` |
 | Reconnect snapshot | `POST /api/v1/sessions/{sessionId}/reconnect` | `ReconnectRequest` → `ReconnectResponse` |
 | Submit secret | `POST /api/v1/sessions/{sessionId}/setup/secret` | `DuelSubmitSecretCommand` → `DuelSecretReceipt` |
 | Submit guess | `POST /api/v1/sessions/{sessionId}/turns` | `DuelSubmitGuessCommand` → `DuelTurnResult` |
@@ -546,6 +589,12 @@ The contract is testable without a running Ktor server:
    the authoritative session state available through REST.
 8. Assert that a private invite cannot be self-accepted, reused by a third
    player, or converted into more than one session.
+9. Assert that legacy membership migration transfers exactly once, consumes and
+   revokes its proof atomically, rejects wrong-player/expired/reused proofs,
+   replays after response loss and restart, and never logs or persists the raw
+   credential. Real PostgreSQL concurrency tests must cover exact replay, one
+   proof racing across sessions, and rollback after a late unique conflict; an
+   H2 compatibility mode is not sufficient evidence for those lock semantics.
 
 These checks apply to backend and client adapters. The Android runtime has one
 canonical transport boundary: `KtorOnlineTransport`, composed by

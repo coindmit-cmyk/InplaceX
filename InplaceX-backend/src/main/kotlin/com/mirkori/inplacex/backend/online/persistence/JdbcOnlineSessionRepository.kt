@@ -24,6 +24,16 @@ data class DurableSessionCoordination<T>(
 class OnlineSessionRevisionConflictException(sessionId: String, expectedRevision: Long) :
     IllegalStateException("Online session $sessionId changed from revision $expectedRevision")
 
+class LegacyMembershipMigrationConflictException :
+    IllegalStateException("Legacy online membership migration idempotency key was reused")
+
+enum class LegacyMembershipTransferPersistenceResult {
+    TRANSFERRED,
+    REPLAYED,
+    REJECTED,
+    UNAVAILABLE,
+}
+
 interface OnlineSessionRepository : AutoCloseable {
     fun deleteExpired(now: Instant)
     fun loadRecoverable(now: Instant): List<DurableOnlineSession>
@@ -36,6 +46,15 @@ interface OnlineSessionRepository : AutoCloseable {
     ): T?
     fun create(session: DurableOnlineSession)
     fun update(session: DurableOnlineSession, expectedRevision: Long)
+    fun transferLegacyMembership(
+        sessionId: String,
+        platformPlayerId: String,
+        presentedTokenHash: String,
+        commandId: String,
+        requestFingerprint: String,
+        now: Instant,
+        transfer: (DurableOnlineSession, legacyPlayerId: String) -> DurableOnlineSession,
+    ): LegacyMembershipTransferPersistenceResult = LegacyMembershipTransferPersistenceResult.UNAVAILABLE
     fun delete(sessionId: String)
     override fun close() = Unit
 }
@@ -236,6 +255,93 @@ class JdbcOnlineSessionRepository(
         dataSource.transaction { connection -> update(connection, session, expectedRevision) }
     }
 
+    override fun transferLegacyMembership(
+        sessionId: String,
+        platformPlayerId: String,
+        presentedTokenHash: String,
+        commandId: String,
+        requestFingerprint: String,
+        now: Instant,
+        transfer: (DurableOnlineSession, legacyPlayerId: String) -> DurableOnlineSession,
+    ): LegacyMembershipTransferPersistenceResult = dataSource.transaction { connection ->
+        existingLegacyMigration(connection, sessionId, platformPlayerId)?.let { existing ->
+            existing.requireReplay(commandId, requestFingerprint)
+            return@transaction LegacyMembershipTransferPersistenceResult.REPLAYED
+        }
+
+        val token = legacyRefreshToken(connection, presentedTokenHash)
+            ?: return@transaction LegacyMembershipTransferPersistenceResult.REJECTED
+
+        // A concurrent first request can commit while this request waits on the token-family lock.
+        existingLegacyMigration(connection, sessionId, platformPlayerId)?.let { existing ->
+            existing.requireReplay(commandId, requestFingerprint)
+            return@transaction LegacyMembershipTransferPersistenceResult.REPLAYED
+        }
+        if (
+            token.consumedAt != null ||
+            token.revokedAt != null ||
+            token.tokenExpiresAt <= now ||
+            token.familyExpiresAt <= now
+        ) {
+            if (token.revokedAt == null) {
+                connection.prepareStatement(
+                    "UPDATE refresh_token_families SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
+                ).use { statement ->
+                    statement.setInstant(1, now)
+                    statement.setString(2, token.familyId)
+                    statement.executeUpdate()
+                }
+            }
+            return@transaction LegacyMembershipTransferPersistenceResult.REJECTED
+        }
+
+        val current = lockedSession(connection, sessionId, now)
+            ?: return@transaction LegacyMembershipTransferPersistenceResult.REJECTED
+        val updated = transfer(current, token.playerId)
+        require(updated.sessionId == current.sessionId) {
+            "Legacy membership migration must not change the session identity"
+        }
+        require(updated.revision == current.revision + 1L) {
+            "Legacy membership migration must advance the session revision exactly once"
+        }
+        update(connection, updated, current.revision)
+
+        val consumed = connection.prepareStatement(
+            "UPDATE refresh_tokens SET consumed_at = ? WHERE token_hash = ? AND consumed_at IS NULL",
+        ).use { statement ->
+            statement.setInstant(1, now)
+            statement.setString(2, presentedTokenHash)
+            statement.executeUpdate()
+        }
+        check(consumed == 1) { "Legacy refresh credential changed during locked migration" }
+        connection.prepareStatement(
+            "UPDATE refresh_token_families SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
+        ).use { statement ->
+            statement.setInstant(1, now)
+            statement.setString(2, token.familyId)
+            check(statement.executeUpdate() == 1) {
+                "Legacy refresh family changed during locked migration"
+            }
+        }
+        connection.prepareStatement(
+            """
+            INSERT INTO legacy_online_session_migrations(
+                session_id, platform_player_id, legacy_player_id, command_id,
+                request_fingerprint, migrated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, sessionId)
+            statement.setString(2, platformPlayerId)
+            statement.setString(3, token.playerId)
+            statement.setString(4, commandId)
+            statement.setString(5, requestFingerprint)
+            statement.setInstant(6, now)
+            statement.executeUpdate()
+        }
+        LegacyMembershipTransferPersistenceResult.TRANSFERRED
+    }
+
     private fun update(connection: Connection, session: DurableOnlineSession, expectedRevision: Long) {
         val encrypted = encrypt(session)
         try {
@@ -268,6 +374,80 @@ class JdbcOnlineSessionRepository(
             )
         } finally {
             encrypted.wipe()
+        }
+    }
+
+    private fun lockedSession(
+        connection: Connection,
+        sessionId: String,
+        now: Instant,
+    ): DurableOnlineSession? = connection.prepareStatement(
+        """
+        SELECT id, version, status, state_iv, state_ciphertext, created_at,
+               started_at, finished_at, expires_at
+        FROM duel_sessions
+        WHERE id = ?
+          AND state_iv IS NOT NULL
+          AND state_ciphertext IS NOT NULL
+          AND (expires_at IS NULL OR expires_at > ?)
+        FOR UPDATE
+        """.trimIndent(),
+    ).use { statement ->
+        statement.setString(1, sessionId)
+        statement.setInstant(2, now)
+        statement.executeQuery().use { results -> if (results.next()) decrypt(results) else null }
+    }
+
+    private fun legacyRefreshToken(
+        connection: Connection,
+        tokenHash: String,
+    ): LegacyRefreshTokenRecord? = connection.prepareStatement(
+        """
+        SELECT families.id, families.player_id, families.expires_at AS family_expires_at,
+               families.revoked_at, tokens.expires_at AS token_expires_at, tokens.consumed_at
+        FROM refresh_tokens tokens
+        JOIN refresh_token_families families ON families.id = tokens.family_id
+        WHERE tokens.token_hash = ?
+        FOR UPDATE
+        """.trimIndent(),
+    ).use { statement ->
+        statement.setString(1, tokenHash)
+        statement.executeQuery().use { results ->
+            if (!results.next()) return@use null
+            LegacyRefreshTokenRecord(
+                familyId = results.getString("id"),
+                playerId = results.getString("player_id"),
+                familyExpiresAt = requireNotNull(results.instant("family_expires_at")),
+                tokenExpiresAt = requireNotNull(results.instant("token_expires_at")),
+                revokedAt = results.instant("revoked_at"),
+                consumedAt = results.instant("consumed_at"),
+            )
+        }
+    }
+
+    private fun existingLegacyMigration(
+        connection: Connection,
+        sessionId: String,
+        platformPlayerId: String,
+    ): LegacyMigrationRecord? = connection.prepareStatement(
+        """
+        SELECT command_id, request_fingerprint
+        FROM legacy_online_session_migrations
+        WHERE session_id = ? AND platform_player_id = ?
+        FOR UPDATE
+        """.trimIndent(),
+    ).use { statement ->
+        statement.setString(1, sessionId)
+        statement.setString(2, platformPlayerId)
+        statement.executeQuery().use { results ->
+            if (results.next()) {
+                LegacyMigrationRecord(
+                    commandId = results.getString("command_id"),
+                    requestFingerprint = results.getString("request_fingerprint"),
+                )
+            } else {
+                null
+            }
         }
     }
 
@@ -319,6 +499,26 @@ class JdbcOnlineSessionRepository(
             )
         } finally {
             plaintext.fill(0)
+        }
+    }
+}
+
+private data class LegacyRefreshTokenRecord(
+    val familyId: String,
+    val playerId: String,
+    val familyExpiresAt: Instant,
+    val tokenExpiresAt: Instant,
+    val revokedAt: Instant?,
+    val consumedAt: Instant?,
+)
+
+private data class LegacyMigrationRecord(
+    val commandId: String,
+    val requestFingerprint: String,
+) {
+    fun requireReplay(expectedCommandId: String, expectedFingerprint: String) {
+        if (commandId != expectedCommandId || requestFingerprint != expectedFingerprint) {
+            throw LegacyMembershipMigrationConflictException()
         }
     }
 }

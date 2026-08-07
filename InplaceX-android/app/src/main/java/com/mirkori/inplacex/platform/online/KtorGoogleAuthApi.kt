@@ -44,6 +44,7 @@ class KtorGoogleAuthApi(
             }
             RemoteCallResult.MissingAccessToken -> GoogleChallengeResult.AuthenticationRequired
             RemoteCallResult.Offline,
+            RemoteCallResult.AccessTokenTemporarilyUnavailable,
             RemoteCallResult.TimedOut,
             is RemoteCallResult.NetworkFailure,
             -> GoogleChallengeResult.TemporarilyUnavailable
@@ -68,6 +69,7 @@ class KtorGoogleAuthApi(
                 }
             }
             RemoteCallResult.Offline -> GuestAuthResult.Offline
+            RemoteCallResult.AccessTokenTemporarilyUnavailable,
             RemoteCallResult.TimedOut,
             is RemoteCallResult.NetworkFailure,
             -> GuestAuthResult.TemporarilyUnavailable

@@ -78,6 +78,52 @@ class KtorOnlineTransportTest {
     }
 
     @Test
+    fun `temporary current token failure stays unavailable without network call`() = runBlocking {
+        var calls = 0
+        val transport = transport(
+            engine = MockEngine {
+                calls += 1
+                respond("unexpected", HttpStatusCode.OK)
+            },
+            tokenProvider = TemporarilyUnavailableTokenProvider(failRefreshOnly = false),
+        )
+
+        val result = transport.execute(
+            RemoteRequestSpec(
+                operation = "session.read",
+                method = RemoteHttpMethod.GET,
+                path = "/api/v1/sessions/session-1",
+            ),
+        )
+
+        assertEquals(RemoteCallResult.AccessTokenTemporarilyUnavailable, result)
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun `temporary refresh failure does not become missing credentials`() = runBlocking {
+        var calls = 0
+        val transport = transport(
+            engine = MockEngine {
+                calls += 1
+                respondError(HttpStatusCode.Unauthorized)
+            },
+            tokenProvider = TemporarilyUnavailableTokenProvider(failRefreshOnly = true),
+        )
+
+        val result = transport.execute(
+            RemoteRequestSpec(
+                operation = "session.read",
+                method = RemoteHttpMethod.GET,
+                path = "/api/v1/sessions/session-1",
+            ),
+        )
+
+        assertEquals(RemoteCallResult.AccessTokenTemporarilyUnavailable, result)
+        assertEquals(1, calls)
+    }
+
+    @Test
     fun `retryable network failure uses deterministic bounded delay`() = runBlocking {
         var calls = 0
         val delays = mutableListOf<Long>()
@@ -266,5 +312,18 @@ private class MutableTokenProvider : AccessTokenProvider {
         refreshCalls += 1
         token = AccessToken.from("access-new")
         return token
+    }
+}
+
+private class TemporarilyUnavailableTokenProvider(
+    private val failRefreshOnly: Boolean,
+) : AccessTokenProvider {
+    override suspend fun currentAccessToken(): AccessToken {
+        if (!failRefreshOnly) throw AccessTokenTemporarilyUnavailableException(IOException("platform unavailable"))
+        return AccessToken.from("access-old")
+    }
+
+    override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken {
+        throw AccessTokenTemporarilyUnavailableException(IOException("platform unavailable"))
     }
 }

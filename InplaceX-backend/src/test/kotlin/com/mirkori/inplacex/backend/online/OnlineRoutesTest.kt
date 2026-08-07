@@ -3,7 +3,11 @@ package com.mirkori.inplacex.backend.online
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineLobbyRepository
+import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionRepository
+import com.mirkori.inplacex.backend.online.persistence.OnlineStateCipher
 import com.mirkori.inplacex.backend.persistence.JdbcMigrationRunner
+import com.mirkori.inplacex.backend.persistence.JdbcPlayerRepository
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
@@ -21,6 +25,7 @@ import io.ktor.websocket.CloseReason
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import java.security.KeyPairGenerator
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
 import java.nio.charset.StandardCharsets
@@ -419,6 +424,83 @@ class OnlineRoutesTest {
         assertEquals("revision_conflict", json(stale.bodyAsText()).getValue("error").jsonPrimitive.content)
     }
 
+    @Test
+    fun `legacy membership endpoint is authenticated bounded and idempotent`() = testApplication {
+        val dataSource = JdbcDataSource().apply {
+            setURL("jdbc:h2:mem:legacy-route-${System.nanoTime()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+        }
+        JdbcMigrationRunner().migrate(dataSource)
+        val legacyPlayerId = UUID.randomUUID().toString()
+        val opponentPlayerId = UUID.randomUUID().toString()
+        val players = JdbcPlayerRepository(dataSource)
+        players.create(legacyPlayerId, "Legacy")
+        players.create(opponentPlayerId, "Opponent")
+        players.create(playerId, "Platform")
+        val legacyRefreshToken = "legacy-${"r".repeat(43)}"
+        insertLegacyRefreshCredential(dataSource, legacyPlayerId, legacyRefreshToken)
+        val sessions = JdbcOnlineSessionRepository(dataSource, OnlineStateCipher(ByteArray(32) { 4 }))
+        val service = AuthoritativeOnlineDuelService(
+            clock = Clock.fixed(now, ZoneOffset.UTC),
+            sessionRepository = sessions,
+            lobbyRepository = JdbcOnlineLobbyRepository(dataSource, sessions),
+        )
+        val invite = service.createPrivateInvite(
+            legacyPlayerId,
+            UUID.randomUUID().toString(),
+            OnlineFriendPlayStyle.RACE,
+            4,
+        )
+        val sessionId = requireNotNull(
+            service.acceptPrivateInvite(
+                opponentPlayerId,
+                UUID.randomUUID().toString(),
+                invite.inviteCode,
+            ).sessionId,
+        )
+        application {
+            configureOnlineRoutes(
+                verifier = verifier,
+                service = service,
+                playerProvisioner = OnlinePlayerProvisioner(players::ensurePlatformPlayer),
+            )
+        }
+        val commandId = UUID.randomUUID().toString()
+        val body = """{"commandId":"$commandId","legacyRefreshToken":"$legacyRefreshToken"}"""
+
+        val unauthenticated = client.post("/api/v1/sessions/$sessionId/legacy-membership") {
+            header("Idempotency-Key", commandId)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+        assertEquals(HttpStatusCode.Unauthorized, unauthenticated.status)
+
+        val oversized = client.post("/api/v1/sessions/$sessionId/legacy-membership") {
+            bearer(playerToken)
+            header("Idempotency-Key", commandId)
+            contentType(ContentType.Application.Json)
+            setBody("x".repeat(2 * 1024 + 1))
+        }
+        assertEquals(HttpStatusCode.BadRequest, oversized.status)
+
+        val migrated = client.post("/api/v1/sessions/$sessionId/legacy-membership") {
+            bearer(playerToken)
+            header("Idempotency-Key", commandId)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+        assertEquals(HttpStatusCode.OK, migrated.status)
+        assertEquals("migrated", json(migrated.bodyAsText()).getValue("status").jsonPrimitive.content)
+
+        val replayed = client.post("/api/v1/sessions/$sessionId/legacy-membership") {
+            bearer(playerToken)
+            header("Idempotency-Key", commandId)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+        assertEquals(HttpStatusCode.OK, replayed.status)
+        assertEquals(HttpStatusCode.OK, client.get("/api/v1/sessions/$sessionId") { bearer(playerToken) }.status)
+    }
+
     private suspend fun io.ktor.server.testing.ApplicationTestBuilder.createTicket(token: String) =
         client.post("/api/v1/matchmaking/tickets") {
             bearer(token)
@@ -482,6 +564,37 @@ class OnlineRoutesTest {
             sign()
         }
         return "$unsigned.${encoder.encodeToString(signature)}"
+    }
+
+    private fun insertLegacyRefreshCredential(
+        dataSource: JdbcDataSource,
+        legacyPlayerId: String,
+        refreshToken: String,
+    ) {
+        val familyId = UUID.randomUUID().toString()
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(
+                "INSERT INTO refresh_token_families(id, player_id, expires_at) VALUES (?, ?, ?)",
+            ).use { statement ->
+                statement.setString(1, familyId)
+                statement.setString(2, legacyPlayerId)
+                statement.setObject(3, now.plusSeconds(600).atOffset(ZoneOffset.UTC))
+                statement.executeUpdate()
+            }
+            connection.prepareStatement(
+                "INSERT INTO refresh_tokens(token_hash, family_id, expires_at) VALUES (?, ?, ?)",
+            ).use { statement ->
+                statement.setString(
+                    1,
+                    MessageDigest.getInstance("SHA-256")
+                        .digest(refreshToken.toByteArray(StandardCharsets.UTF_8))
+                        .joinToString("") { byte -> "%02x".format(byte) },
+                )
+                statement.setString(2, familyId)
+                statement.setObject(3, now.plusSeconds(600).atOffset(ZoneOffset.UTC))
+                statement.executeUpdate()
+            }
+        }
     }
 
     private companion object {

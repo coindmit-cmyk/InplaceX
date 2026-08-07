@@ -6,6 +6,7 @@ import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
 import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEventSequence
+import com.mirkori.inplacex.backend.online.persistence.LegacyMembershipMigrationConflictException
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEvent
 import com.mirkori.inplacex.backend.online.persistence.OnlineSessionEventSequence
 import com.mirkori.inplacex.backend.session.codec.BoundedJsonScanner
@@ -16,6 +17,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -28,6 +30,8 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Instant
@@ -36,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -136,6 +141,29 @@ fun Application.configureOnlineRoutes(
                 service.readSession(principal.playerId, sessionId)
             } ?: return@get
             call.respondJson(HttpStatusCode.OK, codec.encodeSnapshot(result))
+        }
+
+        post("/api/v1/sessions/{sessionId}/legacy-membership") {
+            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val sessionId = call.safeUuidParameter("sessionId") ?: return@post
+            val command = runCatching {
+                codec.decodeLegacyMembershipMigration(
+                    call.receiveBoundedUtf8(MaximumLegacyMigrationBodyBytes),
+                )
+            }.getOrElse {
+                call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
+                return@post
+            }
+            if (!call.hasMatchingIdempotencyKey(command.commandId)) return@post
+            val receipt = runOnlineCommand(call) {
+                service.migrateLegacyMembership(
+                    platformPlayerId = principal.playerId,
+                    sessionId = sessionId,
+                    commandId = command.commandId,
+                    legacyRefreshToken = command.legacyRefreshToken,
+                )
+            } ?: return@post
+            call.respondJson(HttpStatusCode.OK, codec.encodeLegacyMembershipMigration(receipt))
         }
 
         post("/api/v1/sessions/{sessionId}/reconnect") {
@@ -437,6 +465,14 @@ private data class InviteAcceptCommand(
     val commandId: String,
 )
 
+private data class LegacyMembershipMigrationCommand(
+    val commandId: String,
+    val legacyRefreshToken: String,
+) {
+    override fun toString(): String =
+        "LegacyMembershipMigrationCommand(commandId=$commandId, legacyRefreshToken=[redacted])"
+}
+
 private data class WebSocketControlCommand(
     val requestId: String,
     val sessionId: String,
@@ -534,6 +570,26 @@ private class OnlineJsonCodec {
         val value = decodeObject(source, setOf("commandId"))
         return InviteAcceptCommand(value.uuid("commandId"))
     }
+
+    fun decodeLegacyMembershipMigration(source: String): LegacyMembershipMigrationCommand {
+        val value = decodeObject(
+            source = source,
+            requiredFields = setOf("commandId", "legacyRefreshToken"),
+            maximumBytes = MaximumLegacyMigrationBodyBytes,
+        )
+        return LegacyMembershipMigrationCommand(
+            commandId = value.uuid("commandId"),
+            legacyRefreshToken = value.string("legacyRefreshToken", 512).also { token ->
+                require(token.none(Char::isWhitespace))
+            },
+        )
+    }
+
+    fun encodeLegacyMembershipMigration(receipt: LegacyOnlineMembershipMigrationReceipt): String =
+        buildJsonObject {
+            put("sessionId", receipt.sessionId)
+            put("status", "migrated")
+        }.toString()
 
     fun encodeTicket(ticket: MatchmakingTicket): String = buildJsonObject {
         put("ticketId", ticket.ticketId)
@@ -879,6 +935,7 @@ private class OnlineJsonCodec {
 }
 
 private const val MaximumOnlineWebSocketFrameBytes = 64 * 1024
+private const val MaximumLegacyMigrationBodyBytes = 2 * 1024
 private const val MaximumPendingWebSocketFrames = 16
 private const val WebSocketHeartbeatIntervalMillis = 20_000L
 private const val WebSocketEventPollIntervalMillis = 250L
@@ -981,6 +1038,15 @@ private suspend fun <T> runOnlineCommand(
     } catch (_: OnlineInviteUnavailableException) {
         call.respondOnlineError(HttpStatusCode.Conflict, "invite_unavailable")
         null
+    } catch (_: LegacyMembershipMigrationConflictException) {
+        call.respondOnlineError(HttpStatusCode.Conflict, "idempotency_key_reused")
+        null
+    } catch (_: LegacyOnlineCredentialRejectedException) {
+        call.respondOnlineError(HttpStatusCode.Forbidden, "legacy_credential_rejected")
+        null
+    } catch (_: LegacyOnlineMigrationUnavailableException) {
+        call.respondOnlineError(HttpStatusCode.ServiceUnavailable, "legacy_migration_unavailable")
+        null
     } catch (rejected: DuelCommandRejectedException) {
         val (status, code) = when (rejected.rejection) {
             DuelCommandRejection.INVALID_SECRET,
@@ -1008,6 +1074,31 @@ private suspend fun ApplicationCall.respondOnlineError(status: HttpStatusCode, c
 
 private suspend fun ApplicationCall.respondJson(status: HttpStatusCode, body: String) {
     respondText(body, ContentType.Application.Json, status)
+}
+
+private suspend fun ApplicationCall.receiveBoundedUtf8(maximumBytes: Int): String {
+    require(maximumBytes > 0)
+    request.headers[HttpHeaders.ContentLength]?.let { declared ->
+        val parsed = declared.toLongOrNull()
+        require(parsed != null && parsed in 0..maximumBytes.toLong())
+    }
+    val channel = receiveChannel()
+    val bytes = ByteArray(maximumBytes + 1)
+    var offset = 0
+    while (offset < bytes.size) {
+        val read = channel.readAvailable(bytes, offset, bytes.size - offset)
+        when {
+            read < 0 -> break
+            read == 0 -> yield()
+            else -> offset += read
+        }
+    }
+    require(offset <= maximumBytes)
+    return StandardCharsets.UTF_8.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+        .decode(ByteBuffer.wrap(bytes, 0, offset))
+        .toString()
 }
 
 private fun String.isCanonicalUuid(): Boolean =

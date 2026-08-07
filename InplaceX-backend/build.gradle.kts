@@ -32,6 +32,7 @@ dependencies {
     implementation("com.maxmind.db:maxmind-db:4.1.0")
 
     testImplementation("com.h2database:h2:2.3.232")
+    testImplementation("org.testcontainers:postgresql:1.21.4")
     testImplementation(project(":InplaceX-test-support"))
     testImplementation(libs.junit)
     testImplementation(libs.ktor.server.test.host)

@@ -67,6 +67,10 @@ data class OnlineDuelSnapshotState(
     val playerSecretConfigured: Boolean = false,
 )
 
+data class LegacyMembershipMigrationReceipt(
+    val sessionId: String,
+)
+
 sealed interface OnlineClientResult<out T> {
     data class Success<T>(val value: T) : OnlineClientResult<T>
     data object AuthenticationRequired : OnlineClientResult<Nothing>
@@ -129,6 +133,23 @@ class OnlineDuelClient(
     suspend fun readSession(sessionId: String): OnlineClientResult<OnlineDuelSnapshotState> =
         transport.execute(gateway.prepareReadSession(sessionId)).decode(codec::snapshot)
 
+    suspend fun migrateLegacyMembership(
+        sessionId: String,
+        commandId: String,
+        legacyRefreshToken: String,
+    ): OnlineClientResult<LegacyMembershipMigrationReceipt> {
+        return transport.execute(
+            gateway.prepareLegacyMembershipMigration(
+                payload = RemoteLegacyMembershipMigrationPayload(
+                    sessionId = sessionId,
+                    commandId = commandId,
+                    legacyRefreshToken = legacyRefreshToken,
+                ),
+                idempotencyKey = commandId,
+            ),
+        ).decode(codec::legacyMembershipMigration)
+    }
+
     suspend fun submitSecret(
         sessionId: String,
         revision: Long,
@@ -174,6 +195,7 @@ class OnlineDuelClient(
         }
         RemoteCallResult.Offline -> OnlineClientResult.Offline
         RemoteCallResult.MissingAccessToken -> OnlineClientResult.AuthenticationRequired
+        RemoteCallResult.AccessTokenTemporarilyUnavailable,
         RemoteCallResult.TimedOut,
         is RemoteCallResult.NetworkFailure,
         -> OnlineClientResult.TemporarilyUnavailable
@@ -184,6 +206,12 @@ private class OnlineDuelResponseCodec {
     private val json = Json {
         isLenient = false
         ignoreUnknownKeys = false
+    }
+
+    fun legacyMembershipMigration(source: String): LegacyMembershipMigrationReceipt {
+        val value = objectValue(source, setOf("sessionId", "status"))
+        require(value.string("status", 16) == "migrated")
+        return LegacyMembershipMigrationReceipt(value.uuid("sessionId"))
     }
 
     fun ticket(source: String): OnlineMatchTicket {

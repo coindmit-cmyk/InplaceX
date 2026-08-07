@@ -40,6 +40,18 @@ Telegram credentials, provider tokens, or provider payloads. The retired
 InplaceX identity sources remain debug/test compatibility only and are not
 composed by the release backend or Android online runtime.
 
+The bounded upgrade exception is the one-time active-session bridge at
+`POST /api/v1/sessions/{sessionId}/legacy-membership`. It does not issue an
+identity or accept a legacy access token as game authorization. The caller must
+first authenticate with a valid Platform game token; one still-active legacy
+refresh token is accepted only as proof of ownership of the member being
+replaced by that token's `pid`. PostgreSQL commits the encrypted membership
+change, one revision advance, legacy credential consumption and family
+revocation, and the durable idempotency record in one transaction. Raw proof
+material is bounded, hashed on ingress, and never persisted in the migration
+record or written to logs. The bridge can be removed after the supported
+upgrade window and all pre-Platform online sessions have expired.
+
 ## Deployment gate
 
 Staging remains disabled until all of the following are proven together:
@@ -54,3 +66,7 @@ Staging remains disabled until all of the following are proven together:
    tests pass;
 5. authenticated matchmaking, reconnect, and WebSocket E2E pass on the exact
    server and Android revisions selected for staging.
+6. compatibility migration proves wrong-player rejection, atomic rollback,
+   exact replay after response loss and backend restart, credential revocation,
+   and a subsequent Platform-authorized session read; lock/replay/rollback races
+   run against a real PostgreSQL instance rather than an H2 compatibility mode.
