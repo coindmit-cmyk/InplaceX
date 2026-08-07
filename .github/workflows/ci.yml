@@ -173,5 +173,36 @@ jobs:
       - name: Run actionlint
         uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
 
+      - name: Validate backend production contract
+        run: bash scripts/ci/validate_backend_production_contract.sh
+
       - name: Validate CI contract and hostile fixtures
         run: python3 scripts/ci/validate_ci_contract.py --self-test
+
+  backend-production-runtime:
+    name: Production backend deploy and rollback
+    needs:
+      - verify
+      - ci-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install nginx test perimeter
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 nginx
+
+      - name: Run pinned production runtime integration
+        env:
+          INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK: isolated-ci-host
+        run: |
+          sudo env \
+            "PATH=$PATH" \
+            "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+            "INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK=$INPLACEX_PRODUCTION_INTEGRATION_TEST_ACK" \
+            bash scripts/ci/test_backend_production_runtime.sh

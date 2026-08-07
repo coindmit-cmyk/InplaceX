@@ -22,6 +22,33 @@
   clears Android legacy state only after a confirmed Platform-authorized read
   of the exact durably marked session (or a final proof rejection).
 
+- The InplaceX online backend now has a fail-closed production release path:
+  strict non-executable environment/receipt parsing, pre-provisioned global
+  release locking, immutable image digest plus OCI-label verification,
+  root:GID file-secret access proven from each container's real runtime UID,
+  external PostgreSQL volume identity checks, maintenance-gated drain/snapshot,
+  receipt-bound backups and one-shot manual rollback. CI exercises pinned
+  PostgreSQL/backend deploy, restart recovery, a second deploy, hostile release
+  inputs and rollback through the real Compose/nginx perimeter.
+
+- PostgreSQL migration checksums are newline-stable and legacy checksum
+  backfill now requires the exact one-time v1-v8 acknowledgement plus a known
+  schema/index gate. Advisory migration acquisition, pool connectivity,
+  validation, transactions and Compose waits are bounded. JDBC URLs cannot
+  embed userinfo or query/fragment options, and readiness logs safe state
+  transitions without credentials or exception messages.
+
+- Online routes now enforce application-level budgets per verified Platform
+  principal and operation, a separate invalid-authentication budget, and
+  per-principal/global WebSocket caps. REST overload returns `429` with
+  `Retry-After`; nginx adds coarse client limits while preserving Authorization,
+  the v1 WebSocket subprotocol and a maintenance gate on every public route.
+
+- Backend documentation now distinguishes the shipped matchmaking/invite/duel
+  slice from future cloud-save, ticket cancellation, profile, ranking and
+  entitlement APIs; compatibility source or schema alone is no longer treated
+  as a deployed contract.
+
 - Android release identity now comes from one version properties file. PR CI
   runs release unit tests and lint, builds an unsigned release APK, and derives
   package/version/minSdk/size/debuggable/signing evidence from the APK itself.

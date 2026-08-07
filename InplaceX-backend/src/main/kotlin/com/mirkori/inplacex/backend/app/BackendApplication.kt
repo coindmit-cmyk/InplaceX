@@ -7,6 +7,8 @@ import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.health.AlwaysReadyProbe
 import com.mirkori.inplacex.backend.health.ReadinessProbe
+import com.mirkori.inplacex.backend.health.ReadinessMetrics
+import com.mirkori.inplacex.backend.health.ReadinessMetricsSource
 import com.mirkori.inplacex.backend.health.configureHealthRoutes
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
@@ -17,27 +19,69 @@ import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSeq
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionRepository
 import com.mirkori.inplacex.logging.InplaceXLogger
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.application.call
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.path
+import io.ktor.server.response.respondText
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicLong
 
 fun main() {
-    val config = BackendRuntimeConfig.fromEnvironment()
-    embeddedServer(
-        factory = Netty,
-        host = config.host,
-        port = config.port,
-    ) {
-        backendModule(config)
-    }.start(wait = true)
+    val environment = System.getenv()
+    val config = BackendRuntimeConfig.fromEnvironment(environment)
+    val activationGuard = if (config.isProduction) {
+        RuntimeActivationGuard.fromEnvironment(
+            environment = environment,
+            identity = requireNotNull(config.releaseIdentity),
+        ).also {
+            it.requireAuthorized()
+            it.startMonitor()
+        }
+    } else {
+        null
+    }
+    try {
+        embeddedServer(
+            factory = Netty,
+            host = config.host,
+            port = config.port,
+        ) {
+            backendModule(config)
+        }.start(wait = true)
+    } finally {
+        activationGuard?.close()
+    }
 }
 
 fun Application.backendModule(
     config: BackendRuntimeConfig = BackendRuntimeConfig.fromEnvironment(),
     logger: InplaceXLogger = InplaceXLogger(),
-    readinessProbe: ReadinessProbe = AlwaysReadyProbe,
+    readinessProbe: ReadinessProbe? = null,
 ) {
+    val drainController = RuntimeDrainController.fromEnvironment(
+        environment = System.getenv(),
+        production = config.isProduction,
+    )
+    intercept(ApplicationCallPipeline.Plugins) {
+        if (!call.request.path().startsWith("/api/v1/")) return@intercept
+        val lease = drainController.tryAcquireOnlineRequest()
+        if (lease == null) {
+            call.respondText(
+                text = "{\"error\":\"service_draining\"}",
+                contentType = ContentType.Application.Json,
+                status = HttpStatusCode.ServiceUnavailable,
+            )
+            finish()
+            return@intercept
+        }
+        lease.use { proceed() }
+    }
     val database = config.database?.let { databaseConfig ->
         PostgresDatabase.connect(databaseConfig).also { it.migrate() }
     }
@@ -101,6 +145,55 @@ fun Application.backendModule(
             "adMarketSource" to (config.adMarket?.source?.name ?: "NONE"),
         ),
     )
-    configureHealthRoutes(readinessProbe)
+    configureHealthRoutes(
+        readinessProbe ?: database?.let { databaseHandle ->
+            TransitionLoggingDatabaseReadinessProbe(databaseHandle, logger)
+        }
+        ?: AlwaysReadyProbe,
+        config.releaseIdentity,
+        drainController,
+    )
     configureAdMarketRoutes(config.adMarket)
+}
+
+private class TransitionLoggingDatabaseReadinessProbe(
+    private val database: PostgresDatabase,
+    private val logger: InplaceXLogger,
+) : ReadinessProbe, ReadinessMetricsSource {
+    private val previousReady = AtomicReference<Boolean?>(null)
+    private val checks = AtomicLong()
+    private val failures = AtomicLong()
+    private val transitions = AtomicLong()
+
+    override fun isReady(): Boolean {
+        checks.incrementAndGet()
+        var failureType = "none"
+        val ready = database.isReady { error -> failureType = error::class.java.simpleName.take(64) }
+        if (!ready) failures.incrementAndGet()
+        val previous = previousReady.getAndSet(ready)
+        if (previous != ready) {
+            transitions.incrementAndGet()
+            if (ready) {
+                logger.info(
+                    tag = "BackendReadiness",
+                    message = "database readiness recovered",
+                    attributes = mapOf("outcome" to "ready"),
+                )
+            } else {
+                logger.warn(
+                    tag = "BackendReadiness",
+                    message = "database readiness failed",
+                    attributes = mapOf("outcome" to "not_ready", "failureType" to failureType),
+                )
+            }
+        }
+        return ready
+    }
+
+    override fun readinessMetrics(): ReadinessMetrics = ReadinessMetrics(
+        checks = checks.get(),
+        failures = failures.get(),
+        transitions = transitions.get(),
+        ready = previousReady.get() == true,
+    )
 }

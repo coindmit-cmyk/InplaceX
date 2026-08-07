@@ -3,19 +3,29 @@ set -euo pipefail
 
 base_url="${1:-}"
 expected_market="${2:-}"
+operator_prefix="${3:-}"
+market_source="${4:-local-db}"
 
 if [[ ! "$base_url" =~ ^https://[^/]+(:[0-9]+)?$ ]]; then
-    echo "Usage: $0 https://backend.example [RUSSIA|GLOBAL|UNKNOWN]" >&2
+    echo "Usage: $0 https://backend.example [RUSSIA|GLOBAL|UNKNOWN] [/inplacex] [local-db|trusted-header]" >&2
+    exit 2
+fi
+if [[ "$market_source" != "local-db" && "$market_source" != "trusted-header" ]]; then
+    echo "Market source must be local-db or trusted-header." >&2
     exit 2
 fi
 if [[ -n "$expected_market" && ! "$expected_market" =~ ^(RUSSIA|GLOBAL|UNKNOWN)$ ]]; then
     echo "Expected market must be RUSSIA, GLOBAL, or UNKNOWN." >&2
     exit 2
 fi
+if [[ -n "$operator_prefix" && "$operator_prefix" != "/inplacex" ]]; then
+    echo "Operator prefix must be empty or /inplacex." >&2
+    exit 2
+fi
 
-curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}/health" \
+curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}${operator_prefix}/health" \
     | grep -qx '{"status":"ok"}'
-curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}/ready" \
+curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "${base_url}${operator_prefix}/ready" \
     | grep -qx '{"status":"ready"}'
 
 headers_file="$(mktemp)"
@@ -48,8 +58,13 @@ if ! grep -iq '^content-type:.*application/json' "$headers_file"; then
     echo "Ad market response is missing the JSON content type." >&2
     exit 1
 fi
-if ! grep -iq '^link:.*<https://db-ip.com>;[[:space:]]*rel="via"' "$headers_file"; then
-    echo "Ad market response is missing DB-IP attribution." >&2
+if [[ "$market_source" == "local-db" ]]; then
+    if ! grep -iq '^link:.*<https://db-ip.com>;[[:space:]]*rel="via"' "$headers_file"; then
+        echo "Local DB-IP mode is missing the required attribution." >&2
+        exit 1
+    fi
+elif grep -iq '^link:.*<https://db-ip.com>;[[:space:]]*rel="via"' "$headers_file"; then
+    echo "Trusted-header mode unexpectedly claims local DB-IP resolution." >&2
     exit 1
 fi
 if [[ -n "$expected_market" && "$market" != "$expected_market" ]]; then
@@ -57,4 +72,4 @@ if [[ -n "$expected_market" && "$market" != "$expected_market" ]]; then
     exit 1
 fi
 
-echo "Backend health, readiness, and ad market checks passed (${market})."
+echo "Backend health, readiness, and ad market checks passed (${market}, ${market_source})."

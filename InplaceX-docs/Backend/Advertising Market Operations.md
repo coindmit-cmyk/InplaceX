@@ -93,16 +93,16 @@ Backend-порт остаётся закрытым снаружи. Публич�
 После запуска:
 
 ```bash
-./ops/ads/verify-ad-market.sh https://backend.example
+./ops/ads/verify-ad-market.sh https://backend.example '' /inplacex
 ```
 
 Для проверки ожидаемого рынка:
 
 ```bash
-./ops/ads/verify-ad-market.sh https://backend.example RUSSIA
+./ops/ads/verify-ad-market.sh https://backend.example RUSSIA /inplacex
 ```
 
-Smoke проверяет `/health`, `/ready`, точную JSON-схему market,
+Smoke проверяет `/inplacex/health`, `/inplacex/ready`, точную JSON-схему market,
 `Content-Type`, `Cache-Control: no-store` и обязательную DB-IP attribution в
 HTTP `Link`. Все сетевые вызовы имеют ограниченные timeout. Проверку `RUSSIA`
 и `GLOBAL` нужно выполнить из двух сетей; store-аккаунт и locale на результат
@@ -120,7 +120,7 @@ DB-IP Lite обновляется ежемесячно. Операционный
 ```bash
 sudo ./ops/ads/rollback-dbip-country-lite.sh
 sudo systemctl restart <inplacex-backend-service>
-./ops/ads/verify-ad-market.sh https://backend.example
+./ops/ads/verify-ad-market.sh https://backend.example '' /inplacex
 ```
 
 Имя backend service определяется фактическим production-развёртыванием и не

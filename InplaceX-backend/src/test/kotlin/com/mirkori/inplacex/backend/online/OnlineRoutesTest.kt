@@ -79,6 +79,60 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `REST abuse limits are scoped by principal operation and invalid authentication`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            invalidAuthenticationLimit = 1,
+            operationLimits = OnlineOperation.entries.associateWith { 1 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        val acceptedOnce = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, acceptedOnce.status)
+        val principalLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+        assertEquals("60", principalLimited.headers[HttpHeaders.RetryAfter])
+        assertEquals("{\"error\":\"rate_limited\"}", principalLimited.bodyAsText())
+
+        val invalidOnce = client.get("/api/v1/matchmaking/tickets/not-a-uuid")
+        assertEquals(HttpStatusCode.Unauthorized, invalidOnce.status)
+        val invalidLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid")
+        assertEquals(HttpStatusCode.TooManyRequests, invalidLimited.status)
+        assertEquals("60", invalidLimited.headers[HttpHeaders.RetryAfter])
+    }
+
+    @Test
+    fun `legacy membership migration is protected by its own principal budget`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            if (operation == OnlineOperation.MigrateLegacyMembership) 1 else 10
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        val acceptedOnce = client.post("/api/v1/sessions/not-a-uuid/legacy-membership") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, acceptedOnce.status)
+
+        val principalLimited = client.post("/api/v1/sessions/not-a-uuid/legacy-membership") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+        assertEquals("60", principalLimited.headers[HttpHeaders.RetryAfter])
+    }
+
+    @Test
     fun `authenticated REST flow creates and plays an authoritative online duel`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))

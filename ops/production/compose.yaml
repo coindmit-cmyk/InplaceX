@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: ${INPLACEX_POSTGRES_IMAGE:?Set an immutable PostgreSQL image reference with a sha256 digest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${INPLACEX_POSTGRES_DB:?Set INPLACEX_POSTGRES_DB}
+      POSTGRES_USER: ${INPLACEX_POSTGRES_USER:?Set INPLACEX_POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/inplacex_database_password
+    secrets:
+      - inplacex_database_password
+    group_add:
+      - "${INPLACEX_RUNTIME_SECRET_GID:?Set the numeric runtime secret group ID}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=\"$$POSTGRES_USER\" --dbname=\"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    image: ${INPLACEX_BACKEND_IMAGE:?Set an immutable InplaceX backend image reference with a sha256 digest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      INPLACEX_BACKEND_ENVIRONMENT: production
+      INPLACEX_BACKEND_HOST: 0.0.0.0
+      INPLACEX_BACKEND_PORT: 8080
+      INPLACEX_DATABASE_JDBC_URL: jdbc:postgresql://postgres:5432/${INPLACEX_POSTGRES_DB}
+      INPLACEX_DATABASE_USERNAME: ${INPLACEX_POSTGRES_USER}
+      INPLACEX_DATABASE_PASSWORD_PATH: /run/secrets/inplacex_database_password
+      INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK: ${INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK:-}
+      INPLACEX_ONLINE_TOKEN_ISSUER: ${INPLACEX_ONLINE_TOKEN_ISSUER:?Set the exact Mirkori Platform token issuer}
+      INPLACEX_ONLINE_TOKEN_AUDIENCE: ${INPLACEX_ONLINE_TOKEN_AUDIENCE:?Set the exact Mirkori Platform token audience}
+      INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64_PATH: /run/secrets/inplacex_online_public_key
+      INPLACEX_ONLINE_STATE_KEY_BASE64_PATH: /run/secrets/inplacex_online_state_key
+      INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS: ${INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS:-5}
+      INPLACEX_AD_MARKET_REQUIRED: "true"
+      INPLACEX_AD_MARKET_COUNTRY_HEADER: ${INPLACEX_AD_MARKET_COUNTRY_HEADER:-}
+      INPLACEX_AD_MARKET_DB_PATH: ${INPLACEX_AD_MARKET_CONTAINER_DB_PATH-/var/lib/inplacex/geoip/dbip-country-lite.mmdb}
+      INPLACEX_AD_MARKET_CLIENT_IP_HEADER: X-InplaceX-Client-IP
+      INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS: ${INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS:?Set the exact reverse-proxy address visible to the container}
+      INPLACEX_RELEASE_ID: ${INPLACEX_RELEASE_ID:?Set the immutable release ID}
+      INPLACEX_GIT_SHA: ${INPLACEX_GIT_SHA:?Set the exact 40-character source SHA}
+      INPLACEX_IMAGE_DIGEST: ${INPLACEX_IMAGE_DIGEST:?Set the exact sha256 image digest}
+      INPLACEX_SOURCE_ARCHIVE_SHA256: ${INPLACEX_SOURCE_ARCHIVE_SHA256:?Set the exact source archive SHA-256}
+      INPLACEX_RUNTIME_CONFIG_SHA256: ${INPLACEX_RUNTIME_CONFIG_SHA256:?Set the deploy-calculated runtime config SHA-256}
+      INPLACEX_ACTIVATION_GEOIP_FINGERPRINT_PATH: /var/lib/inplacex/geoip/dbip-country-lite.mmdb
+      INPLACEX_VERIFIED_ACTIVATION_STATE_PATH: /run/inplacex-activation/verified/verified-activation.env
+      INPLACEX_PENDING_ACTIVATION_PERMIT_PATH: /run/inplacex-control/activation/pending-activation.env
+      INPLACEX_RUNTIME_DRAIN_FILE_PATH: /run/inplacex-control/drain.flag
+    secrets:
+      - inplacex_database_password
+      - inplacex_online_public_key
+      - inplacex_online_state_key
+    group_add:
+      - "${INPLACEX_RUNTIME_SECRET_GID:?Set the numeric runtime secret group ID}"
+    volumes:
+      - ${INPLACEX_GEOIP_DB_PATH:?Set the host GeoIP MMDB path}:/var/lib/inplacex/geoip/dbip-country-lite.mmdb:ro
+      - ${INPLACEX_RELEASE_STATE_DIRECTORY:?Set the durable release state directory}/activation:/run/inplacex-activation/verified:ro
+      - /run/inplacex-online:/run/inplacex-control:ro
+    ports:
+      - "127.0.0.1:${INPLACEX_BACKEND_LOOPBACK_PORT:?Set a free loopback port}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    init: true
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://127.0.0.1:8080/ready >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+secrets:
+  inplacex_database_password:
+    file: ${INPLACEX_SECRET_DIRECTORY:?Set the root-owned secret directory}/database-password.txt
+  inplacex_online_public_key:
+    file: ${INPLACEX_SECRET_DIRECTORY:?Set the root-owned secret directory}/platform-public-key-x509-base64.txt
+  inplacex_online_state_key:
+    file: ${INPLACEX_SECRET_DIRECTORY:?Set the root-owned secret directory}/online-state-key-base64.txt
+
+volumes:
+  postgres-data:
+    name: ${INPLACEX_POSTGRES_VOLUME:?Set the persistent PostgreSQL volume name}
+    external: true

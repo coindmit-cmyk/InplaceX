@@ -44,6 +44,27 @@
       - `postMatchInterstitialPolicy`
     - `billing`
 
+## Backend production secret inputs
+
+The InplaceX backend production composition accepts secret material only from
+mounted files:
+
+- `INPLACEX_DATABASE_PASSWORD_PATH`;
+- `INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64_PATH`;
+- `INPLACEX_ONLINE_STATE_KEY_BASE64_PATH`.
+
+Their inline counterparts remain development/test compatibility and must not
+appear in a production manifest. The Compose release contract mounts all three
+under `/run/secrets`, adds the numeric `INPLACEX_RUNTIME_SECRET_GID` to both
+non-root containers, and proves readability from the actual PID 1 UID. Host
+directory/files are respectively `root:GID` modes `0750`/`0640`.
+
+`INPLACEX_DATABASE_JDBC_URL` contains only the PostgreSQL endpoint and database.
+User info, query options and fragments are rejected; username and password use
+their explicit fields. `INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK` is empty
+normally and has one documented exact value only for the guarded v1-v8 checksum
+recovery in the production runbook.
+
 ## Design Rule
 
 - UI, repository, and gameplay depend on contracts and entitlements only
