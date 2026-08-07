@@ -103,9 +103,19 @@ keystore должны находиться вне Git.
 Сам builder не знает состояние сервера: сохранение уже активных игр и релизов
 повторно контролирует Platform publisher. Gradle-команда зависит от
 `:app:releaseCandidate` и сверяет полный commit кандидата с текущим Git `HEAD`.
-Затем снимок отдельно проверяется актуальным
-`MirkoriGamesPlatform/ops/catalog_release_tool.py` и только после этого передаётся
-серверному publisher. `/.well-known/assetlinks.json` формирует сама Platform из
+Она требует существующий заранее защищённый output parent, clean checkout
+Platform, его точный commit и SHA-256 tracked `ops/catalog_release_tool.py`.
+Missing parent, symlink, NTFS junction или другой reparse boundary отклоняются
+без создания каталогов. Точная копия проверенного Platform tool запускается до
+публикации снимка.
+
+Рядом со снимком создаётся отдельный immutable-каталог `.provenance` с
+каноническим JSON и checksum. Он связывает InplaceX commit и APK SHA с catalog
+manifest SHA, Platform commit и validator SHA. Это не доказательство активации:
+Platform publisher обязан повторно проверить и сохранить attestation в durable
+activation state, а отдельное activation evidence появляется только после
+переключения, рестарта и live/public HTTPS smoke. Полная команда и контракт
+описаны в `ops/release/README.md`. `/.well-known/assetlinks.json` формирует сама Platform из
 отпечатка сертификата в активном каталоге; отдельного редактируемого файла нет.
 Добавление нового отпечатка в каталог само по себе не даёт ему доверия и не
 изменяет внешний root-owned trust policy Platform. До первого релиза или ротации

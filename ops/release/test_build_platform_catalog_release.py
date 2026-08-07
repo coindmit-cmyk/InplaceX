@@ -8,15 +8,18 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).with_name("build_platform_catalog_release.py")
 SPEC = importlib.util.spec_from_file_location("build_platform_catalog_release", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 release_builder = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = release_builder
 SPEC.loader.exec_module(release_builder)
 
 
@@ -42,6 +45,34 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             artifact = output / "artifacts" / Path(release["relativePath"])
             self.assertEqual(b"signed-production-apk", artifact.read_bytes())
             self.assertEqual(release["sha256"], hashlib.sha256(artifact.read_bytes()).hexdigest())
+            provenance_directory = root / "catalog-release.provenance"
+            provenance_path = provenance_directory / "release-provenance.json"
+            provenance_bytes = provenance_path.read_bytes()
+            provenance = json.loads(provenance_bytes)
+            self.assertFalse(provenance["activationProof"])
+            self.assertEqual("a" * 40, provenance["inplaceX"]["commit"])
+            self.assertEqual(release["sha256"], provenance["release"]["apkSha256"])
+            self.assertEqual(
+                hashlib.sha256((output / "catalog.json").read_bytes()).hexdigest(),
+                provenance["catalog"]["manifestSha256"],
+            )
+            self.assertEqual("c" * 40, provenance["platformValidator"]["repositoryCommit"])
+            self.assertEqual("d" * 64, provenance["platformValidator"]["toolSha256"])
+            self.assertEqual(
+                f"{hashlib.sha256(provenance_bytes).hexdigest()}  release-provenance.json\n",
+                (provenance_directory / "release-provenance.json.sha256").read_text(encoding="ascii"),
+            )
+
+    def test_rejects_missing_output_parent_without_side_effects(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = self.create_candidate(root)
+            missing_parent = root / "must-not-be-created"
+
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                self.run_builder(candidate, missing_parent / "catalog-release", "--allow-empty-base")
+
+            self.assertFalse(missing_parent.exists())
 
     def test_merges_with_existing_catalog_without_losing_other_games(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -274,6 +305,15 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                     "--allow-empty-base",
                 )
 
+            missing_descendant = output_parent_link / "must-not-be-created"
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                self.run_builder(
+                    real_candidate,
+                    missing_descendant / "catalog-release",
+                    "--allow-empty-base",
+                )
+            self.assertFalse(real_output_parent.joinpath("must-not-be-created").exists())
+
             real_output = root / "real-output"
             self.run_builder(real_candidate, real_output, "--allow-empty-base")
             output_link = root / "output-link"
@@ -285,12 +325,43 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         gradle_script = (MODULE_PATH.parents[2] / "build.gradle.kts").read_text(encoding="utf-8")
         for required_fragment in (
             'tasks.register<Exec>("buildPlatformCatalogRelease")',
-            'dependsOn(":app:releaseCandidate")',
+            'dependsOn(":app:releaseCandidate", testPlatformReleaseContract)',
             'releaseDistributionCandidateDirectory',
             '"--expected-commit"',
             'inplacexPlatformCatalogBaseReleaseDir',
+            'inplacexPlatformRepositoryDir',
+            'inplacexPlatformExpectedCommit',
+            'inplacexPlatformValidatorSha256',
+            'verify_platform_release_contract.py',
         ):
             self.assertIn(required_fragment, gradle_script)
+
+    def test_validates_exact_clean_platform_checkout_and_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self.create_platform_repository(Path(directory))
+            commit = self.git(repository, "rev-parse", "HEAD").strip()
+            tool = repository / "ops" / "catalog_release_tool.py"
+            tool_sha256 = hashlib.sha256(tool.read_bytes()).hexdigest()
+
+            identity = release_builder.validate_platform_checkout(repository, commit, tool_sha256)
+
+            self.assertEqual(commit, identity.commit)
+            self.assertEqual(tool_sha256, identity.tool_sha256)
+            tool.write_text(tool.read_text(encoding="utf-8") + "# dirty\n", encoding="utf-8")
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                release_builder.validate_platform_checkout(repository, commit, tool_sha256)
+
+    def test_rejects_platform_schema_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self.create_platform_repository(Path(directory), schema_version=2)
+            commit = self.git(repository, "rev-parse", "HEAD").strip()
+            tool = repository / "ops" / "catalog_release_tool.py"
+            with self.assertRaises(release_builder.ReleaseBuildError):
+                release_builder.validate_platform_checkout(
+                    repository,
+                    commit,
+                    hashlib.sha256(tool.read_bytes()).hexdigest(),
+                )
 
     def run_builder(
         self,
@@ -306,6 +377,12 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             expected_commit,
             "--output-dir",
             str(output),
+            "--platform-repo-dir",
+            str(output.parent),
+            "--expected-platform-commit",
+            "c" * 40,
+            "--expected-platform-validator-sha256",
+            "d" * 64,
             *base_arguments,
             "--minimum-supported-version-code",
             "1",
@@ -314,8 +391,54 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             "--changelog",
             "Первый ограниченный релиз.",
         ]
-        with contextlib.redirect_stdout(io.StringIO()):
+        validator = release_builder.PlatformValidatorIdentity(
+            output.parent,
+            "c" * 40,
+            output.parent / "catalog_release_tool.py",
+            "d" * 64,
+            b"fake exact validator",
+        )
+        with (
+            mock.patch.object(release_builder, "validate_platform_checkout", return_value=validator),
+            mock.patch.object(release_builder, "run_platform_validator"),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
             release_builder.main(arguments)
+
+    def create_platform_repository(self, root: Path, schema_version: int = 1) -> Path:
+        repository = root / "platform"
+        tool = repository / "ops" / "catalog_release_tool.py"
+        tool.parent.mkdir(parents=True)
+        tool.write_text(
+            f"SCHEMA_VERSION = {schema_version}\n"
+            "GAME_FIELDS = {'id', 'slug', 'displayName', 'description', 'releases'}\n"
+            "APP_LINK_FIELDS = {'packageName', 'certificateSha256Fingerprints'}\n"
+            "RELEASE_FIELDS = {\n"
+            "    'id', 'platform', 'channel', 'versionName', 'versionCode',\n"
+            "    'minimumSupportedVersionCode', 'minimumAndroidSdk', 'publishedAt',\n"
+            "    'changelog', 'fileName', 'relativePath', 'sizeBytes', 'sha256',\n"
+            "}\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        self.git(repository, "init", "--quiet")
+        self.git(repository, "config", "user.email", "release-test@example.invalid")
+        self.git(repository, "config", "user.name", "Release Test")
+        self.git(repository, "add", "ops/catalog_release_tool.py")
+        self.git(repository, "commit", "--quiet", "-m", "test validator")
+        return repository
+
+    @staticmethod
+    def git(repository: Path, *arguments: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(repository), *arguments],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise AssertionError(result.stdout + result.stderr)
+        return result.stdout
 
     def create_candidate(
         self,

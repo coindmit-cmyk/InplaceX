@@ -4,16 +4,22 @@
 from __future__ import annotations
 
 import argparse
+import ast
+import contextlib
+import ctypes
 import hashlib
 import json
 import os
 import re
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 
 
 PACKAGE_NAME = "com.mirkori.inplacex"
@@ -28,6 +34,9 @@ FINGERPRINT_PATTERN = re.compile(r"(?:[0-9A-F]{2}:){31}[0-9A-F]{2}\Z")
 RELEASE_ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]{1,63}\Z")
 FILE_NAME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 EXPECTED_SOURCE_FILE_NAME = "app-signedReleaseCandidate.apk"
+PLATFORM_VALIDATOR_RELATIVE_PATH = PurePosixPath("ops/catalog_release_tool.py")
+PROVENANCE_SCHEMA_VERSION = 1
+PROVENANCE_SUFFIX = ".provenance"
 EXPECTED_IDENTITY_FIELDS = {
     "schemaVersion",
     "artifact",
@@ -134,6 +143,234 @@ def real_directory(path: Path, label: str) -> Path:
     require(not stat.S_ISLNK(metadata.st_mode), f"{label} must not be a symlink")
     require(not is_windows_reparse_point(metadata), f"{label} must not be a Windows reparse point")
     return resolved_without_links(path, label)
+
+
+@dataclass(frozen=True)
+class DirectoryIdentity:
+    path: Path
+    device: int
+    inode: int
+    file_attributes: int
+
+
+@dataclass(frozen=True)
+class PlatformValidatorIdentity:
+    repository: Path
+    commit: str
+    tool_path: Path
+    tool_sha256: str
+    tool_bytes: bytes
+
+
+def directory_identity(path: Path, label: str) -> DirectoryIdentity:
+    resolved = real_directory(path, label)
+    metadata = resolved.lstat()
+    return DirectoryIdentity(
+        path=resolved,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        file_attributes=getattr(metadata, "st_file_attributes", 0),
+    )
+
+
+def directory_chain(path: Path) -> tuple[Path, ...]:
+    current = path.absolute()
+    chain: list[Path] = []
+    while True:
+        chain.append(current)
+        if current == current.parent:
+            break
+        current = current.parent
+    return tuple(reversed(chain))
+
+
+class DirectoryBoundaryGuard:
+    """Pins checked directory names and fails closed when a boundary changes."""
+
+    def __init__(self, directories: Iterable[tuple[Path, str]]) -> None:
+        identities: dict[str, tuple[DirectoryIdentity, str]] = {}
+        for directory, label in directories:
+            chain = directory_chain(directory)
+            for index, member in enumerate(chain):
+                member_label = f"{label} parent chain" if index + 1 < len(chain) else label
+                identity = directory_identity(member, member_label)
+                identities[os.path.normcase(str(identity.path))] = (identity, member_label)
+        self._identities = tuple(identities.values())
+        self._windows_handles: list[int] = []
+
+    def verify(self) -> None:
+        for expected, label in self._identities:
+            actual = directory_identity(expected.path, label)
+            require(actual == expected, f"{label} changed during release construction")
+
+    def _lock_windows(self) -> None:
+        if os.name != "nt":
+            return
+        from ctypes import wintypes
+
+        create_file = ctypes.windll.kernel32.CreateFileW
+        create_file.argtypes = (
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        )
+        create_file.restype = wintypes.HANDLE
+        close_handle = ctypes.windll.kernel32.CloseHandle
+        share_read_write = 0x00000001 | 0x00000002
+        open_existing = 3
+        backup_semantics = 0x02000000
+        open_reparse_point = 0x00200000
+        invalid_handle = ctypes.c_void_p(-1).value
+        for identity, label in self._identities:
+            handle = create_file(
+                str(identity.path),
+                0,
+                share_read_write,
+                None,
+                open_existing,
+                backup_semantics | open_reparse_point,
+                None,
+            )
+            if handle == invalid_handle:
+                error = ctypes.get_last_error()
+                for opened in reversed(self._windows_handles):
+                    close_handle(opened)
+                self._windows_handles.clear()
+                raise ReleaseBuildError(f"could not pin {label} against replacement (Windows error {error})")
+            self._windows_handles.append(handle)
+
+    def close(self) -> None:
+        if os.name == "nt" and self._windows_handles:
+            close_handle = ctypes.windll.kernel32.CloseHandle
+            for handle in reversed(self._windows_handles):
+                close_handle(handle)
+            self._windows_handles.clear()
+
+    def __enter__(self) -> "DirectoryBoundaryGuard":
+        self._lock_windows()
+        self.verify()
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.close()
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def git_command(repository: Path, arguments: list[str], *, binary: bool = False) -> bytes | str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), *arguments],
+        capture_output=True,
+        check=False,
+        text=not binary,
+    )
+    if result.returncode != 0:
+        raise ReleaseBuildError("Platform repository Git verification failed")
+    return result.stdout
+
+
+def platform_schema_constants(tool_bytes: bytes) -> dict[str, Any]:
+    require(len(tool_bytes) <= MAX_JSON_BYTES, "Platform validator tool is unexpectedly large")
+    try:
+        tree = ast.parse(tool_bytes.decode("utf-8"), filename=str(PLATFORM_VALIDATOR_RELATIVE_PATH))
+    except (UnicodeDecodeError, SyntaxError) as error:
+        raise ReleaseBuildError("Platform validator tool is not valid UTF-8 Python") from error
+    constants: dict[str, Any] = {}
+    requested = {"SCHEMA_VERSION", "GAME_FIELDS", "APP_LINK_FIELDS", "RELEASE_FIELDS"}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
+            continue
+        name = node.targets[0].id
+        if name in requested:
+            try:
+                constants[name] = ast.literal_eval(node.value)
+            except (ValueError, TypeError) as error:
+                raise ReleaseBuildError(f"Platform validator constant {name} is not literal") from error
+    require(set(constants) == requested, "Platform validator schema constants are incomplete")
+    return constants
+
+
+def validate_platform_schema_contract(tool_bytes: bytes) -> None:
+    constants = platform_schema_constants(tool_bytes)
+    require(constants["SCHEMA_VERSION"] == CATALOG_SCHEMA_VERSION, "Platform catalog schemaVersion differs")
+    require(set(constants["GAME_FIELDS"]) == EXPECTED_GAME_FIELDS, "Platform game fields differ")
+    require(set(constants["APP_LINK_FIELDS"]) == EXPECTED_APP_LINK_FIELDS, "Platform app-link fields differ")
+    require(set(constants["RELEASE_FIELDS"]) == EXPECTED_RELEASE_FIELDS, "Platform release fields differ")
+
+
+def validate_platform_checkout(
+    repository_directory: Path,
+    expected_commit: str,
+    expected_tool_sha256: str,
+) -> PlatformValidatorIdentity:
+    repository = real_directory(repository_directory, "Platform repository directory")
+    require(re.fullmatch(r"[0-9a-f]{40}", expected_commit) is not None, "expected Platform commit is invalid")
+    require(SHA256_PATTERN.fullmatch(expected_tool_sha256) is not None, "expected Platform validator SHA-256 is invalid")
+    top_level = Path(str(git_command(repository, ["rev-parse", "--show-toplevel"])).strip())
+    require(
+        os.path.normcase(str(top_level.resolve(strict=True))) == os.path.normcase(str(repository)),
+        "Platform repository path is not its exact Git top level",
+    )
+    head = str(git_command(repository, ["rev-parse", "HEAD"])).strip().lower()
+    require(head == expected_commit, "Platform checkout HEAD differs from expected commit")
+    status = str(git_command(repository, ["status", "--porcelain=v1", "--untracked-files=all"]))
+    require(status == "", "Platform checkout must be clean")
+    tool_path = repository.joinpath(*PLATFORM_VALIDATOR_RELATIVE_PATH.parts)
+    regular_file(tool_path, "Platform validator tool")
+    git_command(repository, ["ls-files", "--error-unmatch", PLATFORM_VALIDATOR_RELATIVE_PATH.as_posix()])
+    committed_tool = git_command(
+        repository,
+        ["show", f"{expected_commit}:{PLATFORM_VALIDATOR_RELATIVE_PATH.as_posix()}"],
+        binary=True,
+    )
+    require(isinstance(committed_tool, bytes), "Platform validator Git object is invalid")
+    working_tool = tool_path.read_bytes()
+    require(working_tool == committed_tool, "Platform validator working file differs from expected commit")
+    actual_sha256 = sha256_bytes(committed_tool)
+    require(actual_sha256 == expected_tool_sha256, "Platform validator SHA-256 differs from expected value")
+    validate_platform_schema_contract(committed_tool)
+    return PlatformValidatorIdentity(repository, expected_commit, tool_path, actual_sha256, committed_tool)
+
+
+def run_platform_validator(
+    validator: PlatformValidatorIdentity,
+    catalog_directory: Path,
+    previous_release_directory: Path | None,
+    temporary_parent: Path,
+    boundary_guard: DirectoryBoundaryGuard,
+) -> None:
+    boundary_guard.verify()
+    validation_directory = Path(tempfile.mkdtemp(prefix=".platform-validator.tmp.", dir=temporary_parent))
+    try:
+        real_directory(validation_directory, "Platform validator staging directory")
+        tool_copy = validation_directory / PLATFORM_VALIDATOR_RELATIVE_PATH.name
+        tool_copy.write_bytes(validator.tool_bytes)
+        require(sha256_file(tool_copy) == validator.tool_sha256, "private Platform validator copy differs")
+        boundary_guard.verify()
+        command = [sys.executable, str(tool_copy), "validate", str(catalog_directory), "--quiet"]
+        if previous_release_directory is not None:
+            command.extend(["--previous-release-directory", str(previous_release_directory)])
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+        )
+        require(
+            len(result.stdout) <= MAX_JSON_BYTES and len(result.stderr) <= MAX_JSON_BYTES,
+            "Platform validator output is unexpectedly large",
+        )
+        if result.returncode != 0:
+            raise ReleaseBuildError("exact Platform validator rejected the catalog snapshot")
+        boundary_guard.verify()
+    finally:
+        if validation_directory.exists():
+            shutil.rmtree(validation_directory)
 
 
 def normalize_fingerprint(value: Any) -> str:
@@ -452,6 +689,69 @@ def tree_identity(directory: Path) -> tuple[tuple[str, str, str], ...]:
     return tuple(sorted(identity))
 
 
+def canonical_json_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+
+
+def release_provenance(
+    identity: dict[str, Any],
+    catalog_directory_name: str,
+    catalog_manifest_sha256: str,
+    previous_catalog_manifest_sha256: str | None,
+    validator: PlatformValidatorIdentity,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": PROVENANCE_SCHEMA_VERSION,
+        "attestationType": "inplacex-platform-catalog-release",
+        "activationProof": False,
+        "inplaceX": {
+            "commit": identity["commit"],
+            "packageName": identity["packageName"],
+        },
+        "release": {
+            "releaseId": identity["releaseId"],
+            "versionName": identity["versionName"],
+            "versionCode": identity["versionCode"],
+            "apkFileName": identity["fileName"],
+            "apkSizeBytes": identity["sizeBytes"],
+            "apkSha256": identity["sha256"],
+            "certificateSha256Fingerprint": identity["certificateSha256Fingerprint"],
+        },
+        "catalog": {
+            "directoryName": catalog_directory_name,
+            "manifestFileName": "catalog.json",
+            "manifestSha256": catalog_manifest_sha256,
+            "previousManifestSha256": previous_catalog_manifest_sha256,
+        },
+        "platformValidator": {
+            "repositoryCommit": validator.commit,
+            "toolRelativePath": PLATFORM_VALIDATOR_RELATIVE_PATH.as_posix(),
+            "toolSha256": validator.tool_sha256,
+            "validationStatus": "passed",
+        },
+    }
+
+
+def stage_provenance(
+    output_parent: Path,
+    output_name: str,
+    provenance: dict[str, Any],
+) -> Path:
+    staging = Path(tempfile.mkdtemp(prefix=f".{output_name}{PROVENANCE_SUFFIX}.tmp.", dir=output_parent))
+    manifest_name = "release-provenance.json"
+    manifest_bytes = canonical_json_bytes(provenance)
+    manifest_path = staging / manifest_name
+    manifest_path.write_bytes(manifest_bytes)
+    digest = sha256_bytes(manifest_bytes)
+    (staging / f"{manifest_name}.sha256").write_text(
+        f"{digest}  {manifest_name}\n",
+        encoding="ascii",
+        newline="\n",
+    )
+    fsync_tree(staging)
+    return staging
+
+
 def fsync_tree(directory: Path) -> None:
     root = real_directory(directory, "staging directory")
     for current, directories, files in os.walk(root, topdown=False, followlinks=False):
@@ -578,6 +878,9 @@ def main(arguments: Iterable[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--base-release-dir", type=Path)
     parser.add_argument("--allow-empty-base", action="store_true")
+    parser.add_argument("--platform-repo-dir", type=Path, required=True)
+    parser.add_argument("--expected-platform-commit", required=True)
+    parser.add_argument("--expected-platform-validator-sha256", required=True)
     parser.add_argument("--channel", choices=("stable", "beta"), default="stable")
     parser.add_argument("--minimum-supported-version-code", type=int, required=True)
     parser.add_argument("--published-at", required=True)
@@ -595,72 +898,148 @@ def main(arguments: Iterable[str] | None = None) -> int:
     published_at = canonical_utc_instant(args.published_at)
     changelog = safe_text(args.changelog, "changelog", 1, 4000)
     description = safe_text(args.description, "description", 1, 1000)
-    identity, apk = candidate_manifest(args.candidate_dir)
-    require(identity["commit"] == expected_commit, "release candidate commit differs from expected commit")
+    expected_platform_commit = safe_text(args.expected_platform_commit, "expected Platform commit", 40, 40)
+    require(re.fullmatch(r"[0-9a-f]{40}", expected_platform_commit) is not None, "expected Platform commit is invalid")
+    expected_platform_validator_sha256 = safe_text(
+        args.expected_platform_validator_sha256,
+        "expected Platform validator SHA-256",
+        64,
+        64,
+    ).lower()
     require(
-        args.minimum_supported_version_code <= identity["versionCode"],
-        "minimum supported versionCode exceeds candidate versionCode",
+        SHA256_PATTERN.fullmatch(expected_platform_validator_sha256) is not None,
+        "expected Platform validator SHA-256 is invalid",
     )
+
+    candidate_directory = real_directory(args.candidate_dir, "release candidate directory")
+    base_directory = real_directory(args.base_release_dir, "base catalog directory") if args.base_release_dir else None
+    platform_repository = real_directory(args.platform_repo_dir, "Platform repository directory")
     output = args.output_dir.absolute()
-    require(output.name not in {"", ".", ".."}, "output directory is invalid")
-    output.parent.mkdir(parents=True, exist_ok=True)
+    require(
+        FILE_NAME_PATTERN.fullmatch(output.name) is not None,
+        "output directory name must use the safe release filename pattern",
+    )
+    # The parent is intentionally never created here. A release operator must
+    # pre-create and protect it; validation therefore has no filesystem side
+    # effects when a parent is missing or traverses a link/reparse point.
     output_parent = real_directory(output.parent, "output parent directory")
     output = output_parent / output.name
-    source_roots = [apk.parent.resolve()]
-    if args.base_release_dir:
-        source_roots.append(args.base_release_dir.resolve())
-    for source_root in source_roots:
+    provenance_output = output_parent / f"{output.name}{PROVENANCE_SUFFIX}"
+    if os.path.lexists(output):
+        real_directory(output, "existing output directory")
+    if os.path.lexists(provenance_output):
+        real_directory(provenance_output, "existing provenance directory")
+
+    guarded_directories = [
+        (candidate_directory, "release candidate directory"),
+        (output_parent, "output parent directory"),
+        (platform_repository, "Platform repository directory"),
+    ]
+    if base_directory is not None:
+        guarded_directories.append((base_directory, "base catalog directory"))
+
+    staging: Path | None = None
+    provenance_staging: Path | None = None
+    with DirectoryBoundaryGuard(guarded_directories) as boundary_guard:
+        validator = validate_platform_checkout(
+            platform_repository,
+            expected_platform_commit,
+            expected_platform_validator_sha256,
+        )
+        identity, apk = candidate_manifest(candidate_directory)
+        require(identity["commit"] == expected_commit, "release candidate commit differs from expected commit")
         require(
-            output_parent != source_root and source_root not in output_parent.parents,
-            "output parent must not be inside an input directory",
+            args.minimum_supported_version_code <= identity["versionCode"],
+            "minimum supported versionCode exceeds candidate versionCode",
         )
-    base_manifest = validate_base_catalog(args.base_release_dir) if args.base_release_dir else None
-    staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp.", dir=output.parent))
-    try:
-        artifacts = staging / "artifacts"
-        if args.base_release_dir:
-            copy_tree_without_links(args.base_release_dir.resolve() / "artifacts", artifacts)
-        else:
-            artifacts.mkdir()
-        catalog = build_catalog(
-            identity,
-            base_manifest,
-            args.channel,
-            args.minimum_supported_version_code,
-            published_at,
-            changelog,
-            description,
-        )
-        release = next(
-            release
-            for game in catalog["games"]
-            if game["id"] == GAME_ID
-            for release in game["releases"]
-            if release["id"] == identity["releaseId"]
-        )
-        artifact_target = artifacts.joinpath(*PurePosixPath(release["relativePath"]).parts)
-        artifact_target.parent.mkdir(parents=True, exist_ok=True)
-        if artifact_target.exists():
-            require(sha256_file(artifact_target) == identity["sha256"], "base catalog has a different artifact at target path")
-        else:
-            shutil.copyfile(apk, artifact_target)
-        manifest_path = staging / "catalog.json"
-        manifest_path.write_text(
-            json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-            newline="\n",
-        )
-        validate_base_catalog(staging)
-        fsync_tree(staging)
-        publish_directory(staging, output)
-    except BaseException:
-        if staging.exists():
-            shutil.rmtree(staging)
-        raise
+        source_roots = [apk.parent]
+        if base_directory is not None:
+            source_roots.append(base_directory)
+        for source_root in source_roots:
+            require(
+                output_parent != source_root and source_root not in output_parent.parents,
+                "output parent must not be inside an input directory",
+            )
+        base_manifest = validate_base_catalog(base_directory) if base_directory else None
+        previous_manifest_sha256 = sha256_file(base_directory / "catalog.json") if base_directory else None
+        boundary_guard.verify()
+        staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp.", dir=output_parent))
+        try:
+            real_directory(staging, "catalog staging directory")
+            boundary_guard.verify()
+            artifacts = staging / "artifacts"
+            if base_directory is not None:
+                copy_tree_without_links(base_directory / "artifacts", artifacts)
+            else:
+                artifacts.mkdir()
+            catalog = build_catalog(
+                identity,
+                base_manifest,
+                args.channel,
+                args.minimum_supported_version_code,
+                published_at,
+                changelog,
+                description,
+            )
+            release = next(
+                release
+                for game in catalog["games"]
+                if game["id"] == GAME_ID
+                for release in game["releases"]
+                if release["id"] == identity["releaseId"]
+            )
+            artifact_target = artifacts.joinpath(*PurePosixPath(release["relativePath"]).parts)
+            artifact_target.parent.mkdir(parents=True, exist_ok=True)
+            if artifact_target.exists():
+                require(
+                    sha256_file(artifact_target) == identity["sha256"],
+                    "base catalog has a different artifact at target path",
+                )
+            else:
+                shutil.copyfile(apk, artifact_target)
+            manifest_path = staging / "catalog.json"
+            manifest_path.write_text(
+                json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            validate_base_catalog(staging)
+            boundary_guard.verify()
+            run_platform_validator(validator, staging, base_directory, output_parent, boundary_guard)
+            catalog_manifest_sha256 = sha256_file(manifest_path)
+            fsync_tree(staging)
+            boundary_guard.verify()
+            publish_directory(staging, output)
+            staging = None
+            require(
+                sha256_file(output / "catalog.json") == catalog_manifest_sha256,
+                "published catalog manifest differs from its validated staging manifest",
+            )
+            provenance = release_provenance(
+                identity,
+                output.name,
+                catalog_manifest_sha256,
+                previous_manifest_sha256,
+                validator,
+            )
+            boundary_guard.verify()
+            provenance_staging = stage_provenance(output_parent, output.name, provenance)
+            boundary_guard.verify()
+            publish_directory(provenance_staging, provenance_output)
+            provenance_staging = None
+        except BaseException:
+            boundary_guard.verify()
+            for temporary in (provenance_staging, staging):
+                if temporary is not None and temporary.exists():
+                    real_directory(temporary, "release temporary directory")
+                    shutil.rmtree(temporary)
+            raise
     print(
         "catalog_release="
         f"{output} release_id={identity['releaseId']} version_code={identity['versionCode']} "
-        f"sha256={identity['sha256']} certificate_sha256={identity['certificateSha256Fingerprint']}"
+        f"sha256={identity['sha256']} certificate_sha256={identity['certificateSha256Fingerprint']} "
+        f"provenance={provenance_output} platform_commit={validator.commit} "
+        f"platform_validator_sha256={validator.tool_sha256}"
     )
     return 0
 

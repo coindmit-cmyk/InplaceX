@@ -5,12 +5,14 @@
 - Signed InplaceX candidates can now be converted into an immutable Mirkori
   Platform catalog snapshot without dropping other games or prior releases.
   The Gradle workflow binds the exact release-candidate bundle to the current
-  Git commit and requires an operator-supplied export of the active catalog.
-  The builder rejects linked/reparse-point paths, revalidates Platform schema
-  and exact output layout, preserves
-  certificate history for App Links, and leaves certificate authorization,
-  final APK validation, and public HTTPS validation to the exact reviewed
-  Platform release tool and its external trust policy.
+  Git commit, requires an operator-supplied export of the active catalog, and
+  executes an exact clean Platform checkout/tool commit with a pinned tool
+  SHA-256. The builder has no side effects for a missing or linked output parent,
+  pins Windows directory boundaries against replacement, revalidates Platform
+  schema and exact output layout, preserves certificate history for App Links,
+  and publishes a separate canonical provenance bundle that explicitly is not
+  activation proof. Certificate authorization, durable attestation retention,
+  activation, and public HTTPS validation remain Platform responsibilities.
 
 - Platform token lookup, refresh, and bootstrap outages now remain typed as
   temporary unavailability instead of forcing false reauthentication. A

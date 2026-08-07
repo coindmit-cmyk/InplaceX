@@ -138,11 +138,28 @@ releases, and artifacts. An empty base is available only through the explicit
 one-time `--allow-empty-base` bootstrap flag.
 
 The supported Gradle `buildPlatformCatalogRelease` workflow depends on
-`:app:releaseCandidate`, derives its exact versioned directory, and passes the
-current full Git commit as mandatory `--expected-commit`. The builder rechecks
-the exact identity bundle, checksum, package, version, non-debuggable status,
-signer report, and certificate fingerprint, then writes through a
-same-filesystem staging directory without overwriting a different release.
+`:app:releaseCandidate` and the opt-in `testPlatformReleaseContract`, derives its
+exact versioned directory, and passes the current full Git commit as mandatory
+`--expected-commit`. It also requires a clean Platform checkout, exact Platform
+commit, and exact SHA-256 of its tracked `ops/catalog_release_tool.py`. The
+builder rechecks both Git identities, the candidate identity bundle, checksum,
+package, version, non-debuggable status, signer report, certificate fingerprint,
+and Platform schema, then executes a private byte-identical copy of that exact
+validator before publishing through a same-filesystem staging directory.
+
+The output parent must already exist and must not traverse a link, mount, NTFS
+junction, or other reparse point. Validation never creates a missing parent. On
+Windows, checked directory chains are pinned with non-delete-sharing handles and
+their filesystem identities are revalidated at every publication boundary; an
+unavailable lock fails closed.
+
+The exact catalog layout remains `catalog.json` plus `artifacts/**`. A separate
+immutable `<catalog-output>.provenance` sibling contains canonical JSON and its
+SHA-256, binding the exact InplaceX commit/APK/certificate/catalog hash to the
+exact Platform commit and validator hash. Its `activationProof` is always
+`false`: Platform must verify and durably retain the attestation beside its
+activation state, then create separate evidence only after activation, restart,
+and live/public HTTPS smoke checks.
 
 The exact reviewed Mirkori Platform `catalog_release_tool.py` remains the final
 authority: it independently verifies the real APK and complete catalog before
