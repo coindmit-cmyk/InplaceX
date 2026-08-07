@@ -11,7 +11,7 @@ read or written by the Android client.
 
 1. `MirkoriPlatformRuntime` restores one encrypted installation identity or
    creates it once.
-2. The vendored `platform-game-sdk:0.1.0` bootstraps a global guest profile at
+2. The vendored `platform-game-sdk:0.2.0` bootstraps a global guest profile at
    the configured platform origin.
 3. Profile starts a PKCE S256 session and opens its `/connect` URL with the
    system browser. WebView is not used.
@@ -38,15 +38,23 @@ refresh idempotency contract when the response is lost after token rotation.
 If refresh is rejected or expired, the same installation is bootstrapped back
 to a guest credential before a new browser login.
 
-## Compatibility boundary
+## Online identity boundary
 
-The existing Google Play sign-in and InplaceX online backend credentials remain
-separate during this slice. Connecting Mirkori Games does not rewrite local
-progress and does not silently switch online-match identity.
+Mirkori Games is the only release identity authority for InplaceX online play.
+Every online request uses a fresh Platform game token scoped to `gid=inplacex`;
+the backend maps membership and persistence to its `pid` (`game_player_id`),
+never to the global account `sub`. Connecting a linked account therefore keeps
+the same Platform game profile across Google, Telegram, the website, and online
+matches. It does not rewrite local campaign progress. The retired standalone
+guest/Google credential path remains source-level debug/test compatibility and
+is not composed into the release runtime.
 
 No Mirkori Games sign-out button is exposed in v1 because the platform does not
-yet have a provider-session revocation endpoint. Discarding a local refresh
-token while leaving its server family active would present a false logout.
+yet have a provider-session revocation endpoint. When the Platform profile is
+linked, the legacy Google Play sign-out action is hidden as well: discarding
+only local credentials while leaving the server refresh family active would
+present a false logout. A future logout flow must revoke the Platform session
+server-side before clearing the encrypted local state.
 
 ## Build and App Link
 

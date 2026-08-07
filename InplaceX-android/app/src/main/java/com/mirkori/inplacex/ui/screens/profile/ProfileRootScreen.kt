@@ -171,12 +171,14 @@ fun ProfileRootScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (progressState.googlePlaySignedIn) {
-                OutlinedButton(
-                    onClick = onGooglePlaySignOut,
-                    enabled = !authInProgress,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.google_play.sign_out"))
+                if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
+                    OutlinedButton(
+                        onClick = onGooglePlaySignOut,
+                        enabled = !authInProgress,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) {
+                        Text(strings.text("profile.google_play.sign_out"))
+                    }
                 }
             } else {
                 Button(

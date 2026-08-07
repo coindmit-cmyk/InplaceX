@@ -2,7 +2,6 @@ package com.mirkori.inplacex.backend.persistence
 
 import java.sql.Connection
 import java.sql.PreparedStatement
-import java.sql.SQLException
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -49,6 +48,16 @@ data class StoredSessionCommand(
 )
 
 class JdbcPlayerRepository(private val dataSource: DataSource) {
+    private val platformPlayerUpsertSql: String by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        dataSource.connection.use { connection ->
+            when (connection.metaData.databaseProductName) {
+                "PostgreSQL" -> PostgreSqlPlatformPlayerUpsert
+                "H2" -> H2PlatformPlayerUpsert
+                else -> throw IllegalStateException("Unsupported player repository database")
+            }
+        }
+    }
+
     fun create(id: String, displayName: String) = dataSource.transaction { connection ->
         connection.prepareStatement(
             "INSERT INTO players(id, display_name) VALUES (?, ?)",
@@ -71,24 +80,21 @@ class JdbcPlayerRepository(private val dataSource: DataSource) {
      */
     fun ensurePlatformPlayer(id: String) {
         require(id.isCanonicalUuid()) { "platform player id must be a canonical UUID" }
-        try {
-            dataSource.connection.use { connection ->
-                connection.prepareStatement(
-                    "INSERT INTO players(id, display_name) VALUES (?, ?)",
-                ).use { statement ->
-                    statement.setString(1, id)
-                    statement.setString(2, PlatformPlayerDisplayName)
-                    statement.executeUpdate()
-                }
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(platformPlayerUpsertSql).use { statement ->
+                statement.setString(1, id)
+                statement.setString(2, PlatformPlayerDisplayName)
+                statement.executeUpdate()
             }
-        } catch (error: SQLException) {
-            if (error.sqlState != UniqueViolationSqlState) throw error
         }
     }
 
     private companion object {
         const val PlatformPlayerDisplayName = "Mirkori player"
-        const val UniqueViolationSqlState = "23505"
+        const val PostgreSqlPlatformPlayerUpsert =
+            "INSERT INTO players(id, display_name) VALUES (?, ?) ON CONFLICT (id) DO NOTHING"
+        const val H2PlatformPlayerUpsert =
+            "MERGE INTO players (id, display_name) KEY(id) VALUES (?, ?)"
     }
 }
 

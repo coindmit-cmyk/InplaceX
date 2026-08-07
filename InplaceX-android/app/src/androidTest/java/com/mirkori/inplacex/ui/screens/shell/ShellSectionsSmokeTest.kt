@@ -267,6 +267,21 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun linkedMirkoriAccountDoesNotExposeFalseGoogleSignOut() {
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = true),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000803",
+                ),
+            )
+        }
+
+        composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+    }
+
+    @Test
     fun homeCompanyCardChangesGlobalSection() {
         var opened = false
         setContent {
