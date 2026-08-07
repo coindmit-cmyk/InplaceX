@@ -143,9 +143,12 @@ fun requiredProductionReleasePropertyKeys(): List<String> = listOf(
     "platform.release.baseUrl",
     "provider.release.ads.yandex.owner.banner.game",
     "provider.release.ads.yandex.owner.rewarded.general",
-    "provider.release.billing.removeAdsProductId",
-    "provider.release.billing.proSubscriptionId",
-    "provider.release.billing.proPlusSubscriptionId",
+)
+
+val canonicalReleaseBillingProductIds = linkedMapOf(
+    "provider.release.billing.removeAdsProductId" to "inplacex.remove_ads",
+    "provider.release.billing.proSubscriptionId" to "inplacex.pro",
+    "provider.release.billing.proPlusSubscriptionId" to "inplacex.pro_plus",
 )
 
 fun validateDistinctProviderIds(
@@ -278,9 +281,9 @@ android {
             buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.release.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
             buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.release.ads.interstitial.minimumForegroundSeconds", 1_800, 0L..2_592_000L)}L")
             buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.release.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
-            buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
-            buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
-            buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proPlusSubscriptionId", "")}\"")
+            buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${canonicalReleaseBillingProductIds.getValue("provider.release.billing.removeAdsProductId")}\"")
+            buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${canonicalReleaseBillingProductIds.getValue("provider.release.billing.proSubscriptionId")}\"")
+            buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${canonicalReleaseBillingProductIds.getValue("provider.release.billing.proPlusSubscriptionId")}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -354,14 +357,10 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                     ),
                 ),
             )
-            listOf(
-                "provider.release.billing.removeAdsProductId",
-                "provider.release.billing.proSubscriptionId",
-                "provider.release.billing.proPlusSubscriptionId",
-            ).forEach { key ->
-                val value = localProps.getProperty(key).orEmpty().trim()
-                if (value.isNotEmpty() && !value.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) {
-                    add("$key must match the Mirkori Platform product id contract")
+            canonicalReleaseBillingProductIds.forEach { (key, canonicalId) ->
+                val configured = localProps.getProperty(key) ?: return@forEach
+                if (configured != canonicalId) {
+                    add("$key must equal the canonical InplaceX Platform product id")
                 }
             }
             addAll(
@@ -384,6 +383,9 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                         "provider.release.ads.yandex.owner.banner.game",
                         "provider.release.ads.yandex.owner.rewarded.general",
                         "provider.release.ads.yandex.owner.interstitial.postMatch",
+                        "provider.release.billing.removeAdsProductId",
+                        "provider.release.billing.proSubscriptionId",
+                        "provider.release.billing.proPlusSubscriptionId",
                     ),
                 ),
             )

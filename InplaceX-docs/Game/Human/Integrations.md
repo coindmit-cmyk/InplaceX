@@ -25,5 +25,5 @@ So the local game does not have to be rewritten when we later add:
 - account sync
 - Google Play login
 - rewarded ads
-- subscriptions and one-time purchases
+- prepaid timed access and one-time purchases
 - server-backed profile and progression

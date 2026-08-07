@@ -32,10 +32,14 @@ Android и backend уже содержат рабочие границы для 
   - `provider.<variant>.ads.interstitial.minimumCompletedMatches`
   - `provider.<variant>.ads.interstitial.minimumForegroundSeconds`
   - `provider.<variant>.ads.interstitial.gamesBetweenImpressions`
-- Биллинг:
-  - `provider.<variant>.billing.removeAdsProductId`
-  - `provider.<variant>.billing.proSubscriptionId`
-  - `provider.<variant>.billing.proPlusSubscriptionId`
+- Debug-биллинг допускает отдельный sandbox-каталог:
+  - `provider.debug.billing.removeAdsProductId`
+  - `provider.debug.billing.proSubscriptionId`
+  - `provider.debug.billing.proPlusSubscriptionId`
+- Release всегда использует публичные канонические ID
+  `inplacex.remove_ads`, `inplacex.pro`, `inplacex.pro_plus`. Одноимённые
+  `provider.release.billing.*` значения необязательны и служат только
+  проверочными assertions: любое отличие блокирует release-gate
 
 Безопасный шаблон находится в
 `InplaceX-android/provider-config.example.properties`.
@@ -73,6 +77,8 @@ Android и backend уже содержат рабочие границы для 
 - требует Yandex banner и rewarded placement ID владельца;
 - допускает пустой post-match interstitial ID;
 - требует разные ID для всех настроенных Yandex placements;
+- закрепляет release commerce IDs как `inplacex.remove_ads`, `inplacex.pro` и
+  `inplacex.pro_plus`; локальная конфигурация не может их ротировать;
 - отклоняет управляющие символы и чрезмерно длинные значения;
 - не выводит настроенные значения.
 

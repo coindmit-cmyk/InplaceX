@@ -1,5 +1,7 @@
 package com.mirkori.platform.sdk
 
+import java.time.Instant
+
 enum class PlatformHttpMethod {
     GET,
     POST,
@@ -17,6 +19,7 @@ class PlatformHttpRequest(
 class PlatformHttpResponse(
     val status: Int,
     val body: String,
+    val serverTime: Instant? = null,
 ) {
     init {
         require(status in 100..599)

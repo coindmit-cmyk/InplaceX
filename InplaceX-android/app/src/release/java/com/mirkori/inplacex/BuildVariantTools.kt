@@ -13,12 +13,22 @@ import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 
 internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
 internal fun testFriendBotEnabled(): Boolean = false
 
 internal fun legacyGoogleProfileActionsEnabled(): Boolean = false
+
+internal fun variantPaidProgressState(
+    local: GameProgressState,
+    server: MonetizationEntitlements,
+): GameProgressState = local.copy(
+    adFreePurchased = server.adFreePurchased,
+    proSubscriptionActive = server.effectiveProAccessActive,
+    proPlusSubscriptionActive = server.proPlusSubscriptionActive,
+)
 
 internal fun initialProgressState(
     context: Context,

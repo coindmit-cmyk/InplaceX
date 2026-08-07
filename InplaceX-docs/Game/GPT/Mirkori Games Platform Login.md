@@ -27,12 +27,14 @@ read or written by the Android client.
 It contains the installation ID/secret, current account/profile credentials,
 an optional pending browser session/state/verifier, the exact refresh-token
 plus idempotency-key pair for an in-flight refresh, a pending commerce retry
-identity, and the last server-confirmed paid grants with their validity window.
+identity with its immutable offer snapshot, the last server-confirmed paid
+grants, and a trusted server-time/monotonic/boot anchor for timed grants.
 Commerce state is bound to the exact Platform account and `game_player_id`; an
 identity change clears it. Corrupt ciphertext is discarded fail-closed. Secret
 values, checkout URLs, account/profile IDs, idempotency keys, and HTTP bodies
-are never logged. The state codec writes format v3 and continues to read format
-v1/v2 records.
+are never logged. The state codec writes format v4 and continues to read format
+v1/v2/v3 records. Legacy v3 pending purchases restore without inventing a
+historical price; the first authoritative order read supplies that snapshot.
 
 The access token may be refreshed through the stored rotating refresh token.
 The client persists the refresh pair before network I/O, reuses it after an
@@ -55,6 +57,21 @@ the browser redirect or an order status alone as ownership: `Remove Ads`, `Pro`,
 and `Pro+` become active only from matching server entitlements. Guest profiles
 may browse local game content but cannot start a paid checkout until the
 Platform account is linked.
+
+Before a new order, Android reads the linked profile's explicit
+`/api/v1/commerce/orders/pending` projection rather than bounded order history. It
+restores exactly one compatible pending order and fails closed on ambiguous
+state, so reinstall and a second device do not create a duplicate order.
+Pending price/currency is immutable after creation and current catalog changes
+are presentation only. Timed access is prepaid rather than auto-renewing and is
+evaluated from HTTPS server time advanced by the monotonic clock; reboot or
+monotonic rollback requires a fresh server observation.
+
+Release product identity is immutable across builds:
+`inplacex.remove_ads`, `inplacex.pro`, and `inplacex.pro_plus`. Debug may use a
+separate configurable sandbox catalog. A future `order_pending` response
+discards only the losing local attempt and then restores the authoritative
+server pending order through the same projection.
 
 ## Online identity boundary
 

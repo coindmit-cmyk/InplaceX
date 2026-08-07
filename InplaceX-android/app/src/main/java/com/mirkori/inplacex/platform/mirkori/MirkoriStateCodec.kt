@@ -51,6 +51,14 @@ internal object MirkoriStateCodec {
                 pending.orderId?.let(output::writeUTF)
                 output.writeUTF(pending.orderIdempotencyKey.value)
                 output.writeUTF(pending.checkoutIdempotencyKey.value)
+                output.writeBoolean(pending.offerSnapshot != null)
+                pending.offerSnapshot?.let { snapshot ->
+                    output.writeLong(snapshot.amountMinor)
+                    output.writeUTF(snapshot.currency)
+                    output.writeInt(snapshot.entitlementSchemaVersion)
+                    output.writeBoolean(snapshot.productVersion != null)
+                    snapshot.productVersion?.let(output::writeLong)
+                }
             }
             output.writeBoolean(state.confirmedEntitlements != null)
             state.confirmedEntitlements?.let { entitlements ->
@@ -60,6 +68,12 @@ internal object MirkoriStateCodec {
                 output.writeFeatureGrant(entitlements.removeAds)
                 output.writeFeatureGrant(entitlements.pro)
                 output.writeFeatureGrant(entitlements.proPlus)
+            }
+            output.writeBoolean(state.trustedTimeAnchor != null)
+            state.trustedTimeAnchor?.let { anchor ->
+                output.writeLong(anchor.serverEpochMs)
+                output.writeLong(anchor.monotonicAtObservationMs)
+                output.writeLong(anchor.bootMarker)
             }
         }
         bytes.toByteArray().also { require(it.size <= MaximumStateBytes) }
@@ -107,7 +121,7 @@ internal object MirkoriStateCodec {
                 null
             }
             val pendingPurchase = if (formatVersion >= CommerceStateFormatVersion && input.readBoolean()) {
-                PendingMirkoriPurchase(
+                val decoded = PendingMirkoriPurchase(
                     accountId = input.readUTF(),
                     gamePlayerId = input.readUTF(),
                     productId = input.readUTF(),
@@ -116,6 +130,18 @@ internal object MirkoriStateCodec {
                     orderIdempotencyKey = PlatformIdempotencyKey(input.readUTF()),
                     checkoutIdempotencyKey = PlatformIdempotencyKey(input.readUTF()),
                 )
+                if (formatVersion >= ImmutableCommerceFormatVersion && input.readBoolean()) {
+                    decoded.copy(
+                        offerSnapshot = PendingMirkoriOfferSnapshot(
+                            amountMinor = input.readLong(),
+                            currency = input.readUTF(),
+                            entitlementSchemaVersion = input.readInt(),
+                            productVersion = if (input.readBoolean()) input.readLong() else null,
+                        ),
+                    )
+                } else {
+                    decoded
+                }
             } else {
                 null
             }
@@ -131,6 +157,15 @@ internal object MirkoriStateCodec {
             } else {
                 null
             }
+            val trustedTimeAnchor = if (formatVersion >= ImmutableCommerceFormatVersion && input.readBoolean()) {
+                MirkoriTrustedTimeAnchor(
+                    serverEpochMs = input.readLong(),
+                    monotonicAtObservationMs = input.readLong(),
+                    bootMarker = input.readLong(),
+                )
+            } else {
+                null
+            }
             require(input.available() == 0)
             MirkoriPersistedState(
                 installation = installation,
@@ -139,6 +174,7 @@ internal object MirkoriStateCodec {
                 pendingRefresh = pendingRefresh,
                 pendingPurchase = pendingPurchase,
                 confirmedEntitlements = confirmedEntitlements,
+                trustedTimeAnchor = trustedTimeAnchor,
             ).also(::validate)
         }
     }
@@ -214,6 +250,17 @@ internal object MirkoriStateCodec {
             require(pending.productId.matches(ResourceIdPattern))
             require(pending.currency.matches(CurrencyPattern))
             pending.orderId?.let { require(it.isCanonicalUuid()) }
+            pending.offerSnapshot?.let { snapshot ->
+                require(snapshot.amountMinor > 0)
+                require(snapshot.currency == pending.currency && snapshot.currency.matches(CurrencyPattern))
+                require(snapshot.entitlementSchemaVersion == CurrentEntitlementSchemaVersion)
+                snapshot.productVersion?.let { require(it > 0) }
+            }
+        }
+        state.trustedTimeAnchor?.let { anchor ->
+            require(anchor.serverEpochMs > 0)
+            require(anchor.monotonicAtObservationMs >= 0)
+            require(anchor.bootMarker >= 0)
         }
         state.confirmedEntitlements?.let { entitlements ->
             val session = requireNotNull(state.session)
@@ -229,7 +276,9 @@ internal object MirkoriStateCodec {
     private const val MinimumSupportedFormatVersion = 1
     private const val PendingRefreshFormatVersion = 2
     private const val CommerceStateFormatVersion = 3
-    private const val FormatVersion = CommerceStateFormatVersion
+    private const val ImmutableCommerceFormatVersion = 4
+    private const val FormatVersion = ImmutableCommerceFormatVersion
+    private const val CurrentEntitlementSchemaVersion = 1
     private const val MaximumStateBytes = 32 * 1024
     private val HighEntropyTokenPattern = Regex("[A-Za-z0-9_-]{43,128}")
     private val CredentialPattern = Regex("\\S{32,8192}")

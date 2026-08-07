@@ -6,7 +6,9 @@
 - an isolated worktree or CI runner may point to the same private-format file
   with `-PinplacexProviderConfigFile=<absolute-path>`; the file remains outside Git
 - debug reads `provider.debug.*` keys and supplies sandbox product defaults when those keys are absent
-- release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
+- release reads `provider.release.*` provider keys; the release environment is
+  always `live`, while commerce product identity is compiled from canonical
+  constants rather than mutable local configuration
 - `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields
 - the Mirkori Games platform origin uses `platform.debug.baseUrl` or
   `platform.release.baseUrl`; the runtime default is `https://games.dmit.life`,
@@ -45,7 +47,8 @@
 ## Design Rule
 
 - UI, repository, and gameplay depend on contracts and entitlements only
-- provider ids are data, not hardcoded behavior
+- provider ids are data, except the three public release commerce IDs whose
+  stability is part of the persisted-purchase contract
 - beneficiary ownership is code-level policy, not local configuration; the
   active Yandex inventory belongs to the owner
 - real SDK services must consume `PlatformConfig.providers` and preserve the current contract surface
@@ -72,8 +75,12 @@
   state changes only after the provider reports completion
 - billing uses the typed Mirkori Platform SDK/runtime for catalog, checkout,
   order polling, and entitlements; no Google Play Billing adapter is composed
-- release product IDs are Platform product IDs, not client-side entitlement
-  switches, and the three IDs must be valid and distinct
+- release product IDs are immutable Platform IDs:
+  `inplacex.remove_ads`, `inplacex.pro`, and `inplacex.pro_plus`. Debug IDs
+  remain configurable for sandbox catalogs
+- optional legacy `provider.release.billing.*` assertions must equal those
+  canonical IDs exactly; the production gate rejects rotation and surrounding
+  whitespace so a persisted pending purchase never changes identity
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
 
 Absent provider configuration, Credential Manager cancellation, server
@@ -100,8 +107,8 @@ artifact for PR compilation and static checks. The distribution-only
 and `:app:validateReleaseSigningConfig`. It checks strict HTTPS origins for the
 online backend and Mirkori Games Platform, requires live Yandex banner and
 rewarded placement IDs, verifies that configured Yandex IDs are distinct, and
-requires three valid, distinct Mirkori Platform product IDs without printing
-configured values. The post-match interstitial is optional and fails closed
+compiles the three canonical Mirkori Platform product IDs and rejects any
+conflicting optional legacy assertions without printing configured values. The post-match interstitial is optional and fails closed
 when absent.
 
 Android version identity is centralized in

@@ -32,11 +32,14 @@ data class MonetizationEntitlements(
     val proSubscriptionActive: Boolean,
     val proPlusSubscriptionActive: Boolean,
 ) {
+    val effectiveProAccessActive: Boolean
+        get() = proSubscriptionActive || proPlusSubscriptionActive
+
     val adsDisabled: Boolean
-        get() = adFreePurchased || proSubscriptionActive || proPlusSubscriptionActive
+        get() = adFreePurchased || effectiveProAccessActive
 
     val autoTableAssistEnabled: Boolean
-        get() = proSubscriptionActive || proPlusSubscriptionActive
+        get() = effectiveProAccessActive
 
     val infiniteHintsEnabled: Boolean
         get() = proPlusSubscriptionActive
@@ -81,11 +84,13 @@ data class BillingProduct(
     val description: String,
     val currency: String,
     val amountMinor: Long,
+    val accessDurationSeconds: Long? = null,
 ) {
     init {
         require(platformProductId.isNotBlank())
         require(currency.matches(Regex("[A-Z]{3}")))
         require(amountMinor > 0)
+        accessDurationSeconds?.let { require(it > 0) }
     }
 }
 
@@ -96,7 +101,7 @@ data class BillingState(
     val pendingProduct: BillingProductId? = null,
     val pendingOrderId: String? = null,
     val notice: BillingNotice = BillingNotice.NONE,
-    val nextEntitlementExpiryAtMs: Long? = null,
+    val nextEntitlementExpiryDelayMs: Long? = null,
 )
 
 sealed interface BillingPurchaseResult {

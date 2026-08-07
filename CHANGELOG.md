@@ -29,6 +29,22 @@
   The local one-hour coin `Pro` remains a separate bonus, Google Play Billing
   is not used, and release validation now requires valid distinct Platform
   product IDs.
+  Entitlement ownership is now projected from a stable typed contract even
+  after catalog delisting. Pending state format v4 preserves an immutable
+  offer snapshot, restores exactly one server-side pending order after
+  reinstall/second-device use, and fails closed on ambiguity. Repricing cannot
+  mutate an existing attempt, while cancellation/refund remains terminal.
+  Timed Pro access uses trusted HTTPS server time advanced by the monotonic
+  clock and fails closed after rollback/reboot until resynchronization. The
+  shop describes YooKassa Pro/Pro+ as prepaid fixed-term access with no
+  auto-renewal, and release validation rejects whitespace in billing IDs.
+  Pro+ now covers Pro consistently and disables the lower-tier checkout.
+  Debug developer paid toggles are merged only by the debug source-set overlay,
+  while release ignores local premium flags. Reconciliation uses the dedicated
+  pending-order endpoint, recovers safely from `order_pending`, and no longer
+  blocks after a full history page. Oversized Platform responses explicitly
+  cancel their body channel. Release product IDs are immutable canonical
+  `inplacex.*` values; debug catalog IDs remain configurable.
 
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under

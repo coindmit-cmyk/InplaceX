@@ -15,6 +15,8 @@ import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.SecureEntropy
 import java.io.IOException
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
@@ -61,6 +63,12 @@ class MirkoriPlatformRuntimeTest {
                 orderId = "00000000-0000-4000-8000-000000000804",
                 orderIdempotencyKey = PlatformIdempotencyKey("order-attempt-1"),
                 checkoutIdempotencyKey = PlatformIdempotencyKey("checkout-attempt-1"),
+                offerSnapshot = PendingMirkoriOfferSnapshot(
+                    amountMinor = 9_900,
+                    currency = "RUB",
+                    entitlementSchemaVersion = 1,
+                    productVersion = 4,
+                ),
             ),
             confirmedEntitlements = ConfirmedMirkoriEntitlements(
                 accountId = AccountId,
@@ -69,6 +77,11 @@ class MirkoriPlatformRuntimeTest {
                 removeAds = MirkoriFeatureGrant(active = true),
                 pro = MirkoriFeatureGrant(active = true, validUntilEpochMs = ExpiresAtMs),
                 proPlus = MirkoriFeatureGrant(active = false),
+            ),
+            trustedTimeAnchor = MirkoriTrustedTimeAnchor(
+                serverEpochMs = NowMs,
+                monotonicAtObservationMs = 10_000L,
+                bootMarker = 3L,
             ),
         )
 
@@ -88,6 +101,9 @@ class MirkoriPlatformRuntimeTest {
         )
         assertTrue(decoded.confirmedEntitlements?.removeAds?.active == true)
         assertEquals(ExpiresAtMs, decoded.confirmedEntitlements?.pro?.validUntilEpochMs)
+        assertEquals(9_900L, decoded.pendingPurchase?.offerSnapshot?.amountMinor)
+        assertEquals(4L, decoded.pendingPurchase?.offerSnapshot?.productVersion)
+        assertEquals(3L, decoded.trustedTimeAnchor?.bootMarker)
         assertFalse(decoded.pendingRefresh.toString().contains(state.session?.credentials?.refreshToken.orEmpty()))
         assertFalse(decoded.pendingPurchase.toString().contains(AccountId))
         assertThrows(IllegalArgumentException::class.java) {
@@ -100,12 +116,22 @@ class MirkoriPlatformRuntimeTest {
         val encoded = MirkoriStateCodec.encode(
             MirkoriPersistedState(InstallationIdentity(InstallationId, "I".repeat(43))),
         )
-        val legacy = encoded.copyOf(encoded.size - 3).also { ByteBuffer.wrap(it).putInt(1) }
+        val legacy = encoded.copyOf(encoded.size - 4).also { ByteBuffer.wrap(it).putInt(1) }
 
         val decoded = MirkoriStateCodec.decode(legacy)
 
         assertEquals(InstallationId, decoded.installation.installationId)
         assertNull(decoded.pendingRefresh)
+    }
+
+    @Test
+    fun protectedStateCodecMigratesVersionThreePendingPurchaseWithoutInventingOfferSnapshot() {
+        val decoded = MirkoriStateCodec.decode(legacyVersionThreeCommerceState())
+
+        assertEquals("remove_ads", decoded.pendingPurchase?.productId)
+        assertEquals("00000000-0000-4000-8000-000000000804", decoded.pendingPurchase?.orderId)
+        assertNull(decoded.pendingPurchase?.offerSnapshot)
+        assertNull(decoded.trustedTimeAnchor)
     }
 
     @Test
@@ -393,6 +419,37 @@ class MirkoriPlatformRuntimeTest {
 
     private fun exchangeJson(): String =
         """{"accountId":"$AccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"local","credentials":${credentialsJson("linked")}}"""
+
+    private fun legacyVersionThreeCommerceState(): ByteArray = ByteArrayOutputStream().use { bytes ->
+        DataOutputStream(bytes).use { output ->
+            output.writeInt(3)
+            output.writeUTF(InstallationId)
+            output.writeUTF("I".repeat(43))
+            output.writeBoolean(true)
+            output.writeUTF(AccountId)
+            output.writeUTF(PlayerId)
+            output.writeUTF("inplacex")
+            output.writeUTF("local")
+            val credentials = credentials("legacy")
+            output.writeUTF(credentials.accessToken)
+            output.writeUTF(credentials.refreshToken)
+            output.writeLong(credentials.accessExpiresAt.toEpochMilli())
+            output.writeLong(credentials.refreshExpiresAt.toEpochMilli())
+            output.writeBoolean(false)
+            output.writeBoolean(false)
+            output.writeBoolean(true)
+            output.writeUTF(AccountId)
+            output.writeUTF(PlayerId)
+            output.writeUTF("remove_ads")
+            output.writeUTF("RUB")
+            output.writeBoolean(true)
+            output.writeUTF("00000000-0000-4000-8000-000000000804")
+            output.writeUTF("legacy-order-key")
+            output.writeUTF("legacy-checkout-key")
+            output.writeBoolean(false)
+        }
+        bytes.toByteArray()
+    }
 
     private companion object {
         const val AccountId = "00000000-0000-4000-8000-000000000801"

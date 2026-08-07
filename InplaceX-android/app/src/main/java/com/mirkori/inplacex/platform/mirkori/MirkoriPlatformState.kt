@@ -13,6 +13,7 @@ data class MirkoriPersistedState(
     val pendingRefresh: PendingMirkoriRefresh? = null,
     val pendingPurchase: PendingMirkoriPurchase? = null,
     val confirmedEntitlements: ConfirmedMirkoriEntitlements? = null,
+    val trustedTimeAnchor: MirkoriTrustedTimeAnchor? = null,
 )
 
 data class PendingMirkoriRefresh(
@@ -30,9 +31,23 @@ data class PendingMirkoriPurchase(
     val orderId: String? = null,
     val orderIdempotencyKey: PlatformIdempotencyKey,
     val checkoutIdempotencyKey: PlatformIdempotencyKey,
+    val offerSnapshot: PendingMirkoriOfferSnapshot? = null,
 ) {
     override fun toString(): String = "PendingMirkoriPurchase(productId=$productId, [redacted])"
 }
+
+data class PendingMirkoriOfferSnapshot(
+    val amountMinor: Long,
+    val currency: String,
+    val entitlementSchemaVersion: Int,
+    val productVersion: Long?,
+)
+
+data class MirkoriTrustedTimeAnchor(
+    val serverEpochMs: Long,
+    val monotonicAtObservationMs: Long,
+    val bootMarker: Long,
+)
 
 data class MirkoriFeatureGrant(
     val active: Boolean,
@@ -42,7 +57,10 @@ data class MirkoriFeatureGrant(
         require(active || validUntilEpochMs == null)
     }
 
-    fun activeAt(nowMs: Long): Boolean = active && (validUntilEpochMs == null || validUntilEpochMs > nowMs)
+    fun activeAt(trustedNowMs: Long?): Boolean = active && when (val expiresAt = validUntilEpochMs) {
+        null -> true
+        else -> trustedNowMs != null && expiresAt > trustedNowMs
+    }
 }
 
 data class ConfirmedMirkoriEntitlements(
@@ -53,12 +71,13 @@ data class ConfirmedMirkoriEntitlements(
     val pro: MirkoriFeatureGrant,
     val proPlus: MirkoriFeatureGrant,
 ) {
-    fun nextExpiryAfter(nowMs: Long): Long? =
+    fun nextExpiryDelayMs(trustedNowMs: Long?): Long? = trustedNowMs?.let { nowMs ->
         listOfNotNull(
             removeAds.validUntilEpochMs,
             pro.validUntilEpochMs,
             proPlus.validUntilEpochMs,
-        ).filter { it > nowMs }.minOrNull()
+        ).filter { it > nowMs }.minOrNull()?.minus(nowMs)
+    }
 
     override fun toString(): String = "ConfirmedMirkoriEntitlements([redacted])"
 }

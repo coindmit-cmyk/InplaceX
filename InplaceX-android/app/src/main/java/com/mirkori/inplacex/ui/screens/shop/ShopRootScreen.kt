@@ -432,7 +432,7 @@ private fun PremiumCatalog(
         productId = BillingProductId.PRO_SUBSCRIPTION,
         title = strings.text("shop.product.pro"),
         description = strings.text("shop.product.pro.desc"),
-        active = billingState.entitlements.proSubscriptionActive,
+        active = billingState.entitlements.effectiveProAccessActive,
         billingState = billingState,
         inProgress = billingInProgress,
         onBuy = onBuyPro,
@@ -522,6 +522,18 @@ private fun BillingPremiumCard(
     val strings = LocalAppStrings.current
     val product = billingState.products[productId]
     val isPending = billingState.pendingProduct == productId
+    val prepaidAccessDescription = if (productId == BillingProductId.REMOVE_ADS) {
+        description
+    } else {
+        val duration = product?.accessDurationSeconds?.let { seconds ->
+            formatPrepaidAccessDuration(seconds) { key -> strings.text(key) }
+        }
+        "$description ${if (duration == null) {
+            strings.text("shop.product.prepaid_duration_unknown")
+        } else {
+            strings.text("shop.product.prepaid_duration").replace("{duration}", duration)
+        }}"
+    }
     val actionLabel = when {
         active -> strings.text(if (productId == BillingProductId.REMOVE_ADS) "shop.owned" else "shop.active")
         inProgress -> strings.text("shop.billing.checking")
@@ -536,13 +548,26 @@ private fun BillingPremiumCard(
     }
     PremiumCard(
         title = title,
-        description = description,
+        description = prepaidAccessDescription,
         active = active,
         priceLabel = product?.let { formatBillingPrice(it.amountMinor, it.currency) },
         actionLabel = actionLabel,
         actionEnabled = canStartBillingAction(billingState, productId, inProgress),
         onAction = if (isPending) onRetry else onBuy,
     )
+}
+
+internal fun formatPrepaidAccessDuration(
+    durationSeconds: Long,
+    text: (String) -> String,
+): String {
+    require(durationSeconds > 0)
+    val (count, key) = when {
+        durationSeconds % 86_400L == 0L -> durationSeconds / 86_400L to "shop.product.duration_days"
+        durationSeconds % 3_600L == 0L -> durationSeconds / 3_600L to "shop.product.duration_hours"
+        else -> (durationSeconds + 59L) / 60L to "shop.product.duration_minutes"
+    }
+    return text(key).replace("{count}", count.toString())
 }
 
 @Composable
@@ -717,7 +742,7 @@ internal fun canStartBillingAction(
     if (state.products[productId] == null) return false
     val alreadyActive = when (productId) {
         BillingProductId.REMOVE_ADS -> state.entitlements.adFreePurchased
-        BillingProductId.PRO_SUBSCRIPTION -> state.entitlements.proSubscriptionActive
+        BillingProductId.PRO_SUBSCRIPTION -> state.entitlements.effectiveProAccessActive
         BillingProductId.PRO_PLUS_SUBSCRIPTION -> state.entitlements.proPlusSubscriptionActive
     }
     if (alreadyActive) return false

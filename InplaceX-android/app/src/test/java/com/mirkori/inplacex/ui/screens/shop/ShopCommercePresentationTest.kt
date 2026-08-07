@@ -55,9 +55,36 @@ class ShopCommercePresentationTest {
     }
 
     @Test
+    fun proPlusDisablesLowerProCheckoutBecauseItIncludesProAccess() {
+        val state = readyState().copy(
+            entitlements = MonetizationEntitlements(
+                adFreePurchased = false,
+                proSubscriptionActive = false,
+                proPlusSubscriptionActive = true,
+            ),
+        )
+
+        assertTrue(state.entitlements.effectiveProAccessActive)
+        assertFalse(canStartBillingAction(state, BillingProductId.PRO_SUBSCRIPTION, inProgress = false))
+        assertFalse(canStartBillingAction(state, BillingProductId.PRO_PLUS_SUBSCRIPTION, inProgress = false))
+    }
+
+    @Test
     fun serverPriceFormattingDoesNotMixWithLocalCoinPrices() {
         assertEquals("99,00 ₽", formatBillingPrice(9_900, "RUB"))
         assertEquals("4.99 USD", formatBillingPrice(499, "USD"))
+    }
+
+    @Test
+    fun prepaidTimedAccessShowsTypedOfferDurationWithoutRecurringClaim() {
+        val rendered = formatPrepaidAccessDuration(30L * 86_400L) { key ->
+            when (key) {
+                "shop.product.duration_days" -> "{count} days"
+                else -> error("Unexpected key")
+            }
+        }
+
+        assertEquals("30 days", rendered)
     }
 
     private fun readyState(): BillingState = BillingState(

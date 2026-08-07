@@ -388,10 +388,9 @@ class MainActivity : ComponentActivity() {
                         billingOperation.finish(operationId)
                     }
                 }
-                LaunchedEffect(billingState.nextEntitlementExpiryAtMs) {
-                    val expiresAtMs = billingState.nextEntitlementExpiryAtMs ?: return@LaunchedEffect
-                    val waitMs = (expiresAtMs - System.currentTimeMillis()).coerceAtLeast(1L)
-                    delay(waitMs)
+                LaunchedEffect(billingState.nextEntitlementExpiryDelayMs) {
+                    val waitMs = billingState.nextEntitlementExpiryDelayMs ?: return@LaunchedEffect
+                    delay(waitMs.coerceAtLeast(1L))
                     currentTimeMs = System.currentTimeMillis()
                     billingState = billingService.cachedState()
                 }
@@ -402,11 +401,9 @@ class MainActivity : ComponentActivity() {
                     progressState.withServerPaidEntitlements(billingState.entitlements)
                 }
                 val entitlements = remember(billingState.entitlements, progressState, currentTimeMs) {
-                    MonetizationEntitlements(
-                        adFreePurchased = billingState.entitlements.adFreePurchased,
-                        proSubscriptionActive = billingState.entitlements.proSubscriptionActive ||
-                            progressState.temporaryProActiveAt(currentTimeMs),
-                        proPlusSubscriptionActive = billingState.entitlements.proPlusSubscriptionActive,
+                    progressState.effectiveMonetizationEntitlements(
+                        serverEntitlements = billingState.entitlements,
+                        nowMs = currentTimeMs,
                     )
                 }
                 val refreshBilling: () -> Unit = {
@@ -1232,11 +1229,19 @@ internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSectio
 
 internal fun GameProgressState.withServerPaidEntitlements(
     entitlements: MonetizationEntitlements,
-): GameProgressState = copy(
-    adFreePurchased = entitlements.adFreePurchased,
-    proSubscriptionActive = entitlements.proSubscriptionActive,
-    proPlusSubscriptionActive = entitlements.proPlusSubscriptionActive,
-)
+): GameProgressState = variantPaidProgressState(this, entitlements)
+
+internal fun GameProgressState.effectiveMonetizationEntitlements(
+    serverEntitlements: MonetizationEntitlements,
+    nowMs: Long,
+): MonetizationEntitlements {
+    val paidProgress = withServerPaidEntitlements(serverEntitlements)
+    return MonetizationEntitlements(
+        adFreePurchased = paidProgress.adFreePurchased,
+        proSubscriptionActive = paidProgress.proSubscriptionActive || temporaryProActiveAt(nowMs),
+        proPlusSubscriptionActive = paidProgress.proPlusSubscriptionActive,
+    )
+}
 
 internal fun isExternalHttpsCheckoutUrl(value: String): Boolean = runCatching {
     val uri = URI(value)

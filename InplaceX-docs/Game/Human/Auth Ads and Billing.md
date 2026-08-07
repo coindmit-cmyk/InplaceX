@@ -73,34 +73,48 @@ must go through the future authenticated cloud-save contract, not an implicit de
   - enables auto table mode
   - removes banner ads and post-match ads while active
   - does not grant the infinite hints included in `Pro+`
-  - cannot be bought while permanent `Pro` or `Pro+` is active
+  - cannot be bought while Platform `Pro` or `Pro+` access is active
 
 - `Remove Ads`
   - one-time purchase
   - disables banner ads and post-match ads
 
 - `Pro`
-  - subscription
+  - prepaid access for the fixed term shown in the Platform offer
+  - one-time checkout with no automatic renewal
   - enables auto table mode
   - removes banner ads and post-match ads
 
 - `Pro+`
-  - subscription
+  - prepaid access for the fixed term shown in the Platform offer
+  - one-time checkout with no automatic renewal
   - includes everything in `Pro`
   - disables all ads
   - grants infinite hints
+  - includes Pro access, so the lower Pro purchase is unavailable while Pro+
+    is active
 
-Permanent products are sold by Mirkori Games Platform, not Google Play Billing.
+Platform-paid products are sold by Mirkori Games Platform, not Google Play Billing.
 The shop requires a linked Mirkori account, shows the Platform price, and opens
 only the Platform's HTTPS payment page in the system browser. Returning from
 the browser does not grant the product: the game checks the order and then
 waits for the matching server entitlement. This prevents a redirect, local
 flag, or interrupted payment from looking like a successful purchase.
 
+Reinstalling the app or opening the same linked profile on another device first
+restores exactly one unfinished server order through the dedicated pending-order
+endpoint, not purchase history. If the server state is ambiguous,
+the game blocks a new payment instead of risking a duplicate charge. Repricing
+or removing an offer does not change an already started order and does not
+revoke a server-confirmed entitlement.
+
 If the device is offline, the payment provider is temporarily unavailable, or
 the payment was cancelled, the shop keeps a truthful retry/status action.
 Retries reuse the already created purchase attempt. A confirmed time-limited
 entitlement can remain available offline only until its confirmed expiry time.
+That countdown uses trusted server time and the device monotonic clock; changing
+the date/time cannot extend it, and a reboot requires an online refresh before
+timed access becomes active again.
 Switching the linked Platform account/profile clears that cached purchase
 state. The one-hour temporary `Pro` bought with coins stays completely local
 and separate from these permanent products.

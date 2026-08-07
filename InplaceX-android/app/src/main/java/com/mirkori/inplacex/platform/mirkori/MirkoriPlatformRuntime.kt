@@ -1,6 +1,8 @@
 package com.mirkori.inplacex.platform.mirkori
 
 import android.content.Context
+import android.os.SystemClock
+import android.provider.Settings
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.AndroidConnectivityGate
@@ -30,6 +32,8 @@ class MirkoriPlatformRuntime internal constructor(
     private val store: SecureMirkoriStateStore,
     private val client: HttpClient? = null,
     private val clockMs: () -> Long = System::currentTimeMillis,
+    private val monotonicClockMs: () -> Long = { System.nanoTime() / 1_000_000L },
+    private val bootMarker: () -> Long? = { 0L },
 ) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
     @Volatile
@@ -43,6 +47,32 @@ class MirkoriPlatformRuntime internal constructor(
     internal fun currentPersistedState(): MirkoriPersistedState? = persistedState
 
     internal fun nowMs(): Long = clockMs()
+
+    internal fun serverTimeRevision(): Long = sdk.latestServerTimeObservation()?.revision ?: 0L
+
+    internal fun captureTrustedTimeAfter(revisionBefore: Long): MirkoriTrustedTimeAnchor? {
+        val observation = sdk.latestServerTimeObservation()
+            ?.takeIf { it.revision > revisionBefore }
+            ?: return null
+        val currentBoot = bootMarker() ?: return null
+        val monotonicNow = monotonicClockMs()
+        if (currentBoot < 0 || monotonicNow < 0 || observation.serverEpochMs <= 0) return null
+        return MirkoriTrustedTimeAnchor(
+            serverEpochMs = observation.serverEpochMs,
+            monotonicAtObservationMs = monotonicNow,
+            bootMarker = currentBoot,
+        )
+    }
+
+    internal fun trustedNowMs(anchor: MirkoriTrustedTimeAnchor? = persistedState?.trustedTimeAnchor): Long? {
+        anchor ?: return null
+        val currentBoot = bootMarker() ?: return null
+        val monotonicNow = monotonicClockMs()
+        if (currentBoot != anchor.bootMarker || monotonicNow < anchor.monotonicAtObservationMs) return null
+        return runCatching {
+            Math.addExact(anchor.serverEpochMs, monotonicNow - anchor.monotonicAtObservationMs)
+        }.getOrNull()
+    }
 
     internal suspend fun <T> withOperationLock(
         block: suspend MirkoriPlatformRuntime.() -> T,
@@ -241,6 +271,12 @@ class MirkoriPlatformRuntime internal constructor(
                     sdk = sdk,
                     store = AndroidKeystoreMirkoriStateStore(context),
                     client = client,
+                    monotonicClockMs = SystemClock::elapsedRealtime,
+                    bootMarker = {
+                        runCatching {
+                            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT).toLong()
+                        }.getOrNull()
+                    },
                 )
             } catch (error: Exception) {
                 client.close()

@@ -8,6 +8,7 @@ import java.security.SecureRandom
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 class MirkoriGameSdk(
     val config: MirkoriGameSdkConfig,
@@ -17,6 +18,7 @@ class MirkoriGameSdk(
     private val codec = SdkJsonCodec()
     private val baseUri = validateBaseUrl(config.platformBaseUrl, config.allowCleartextLoopback)
     private val callbackUri = validateCallbackUri(config.redirectUri)
+    private val serverTimeObservation = AtomicReference<PlatformServerTimeObservation?>()
 
     init {
         require(config.gameId.matches(GameIdPattern))
@@ -28,6 +30,8 @@ class MirkoriGameSdk(
     )
 
     fun newIdempotencyKey(): PlatformIdempotencyKey = PlatformIdempotencyKey(entropy.token(32))
+
+    fun latestServerTimeObservation(): PlatformServerTimeObservation? = serverTimeObservation.get()
 
     suspend fun bootstrapGuest(
         installation: InstallationIdentity,
@@ -229,6 +233,18 @@ class MirkoriGameSdk(
         ).also { orders -> orders.forEach(::validateOrder) }
     }
 
+    suspend fun pendingOrders(profileAccessToken: String): List<PlatformOrder> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.ordersResponse(
+            get("/api/v1/commerce/orders/pending", profileAccessToken),
+        ).also { orders ->
+            orders.forEach { order ->
+                validateOrder(order)
+                require(order.status == PlatformOrderStatus.PENDING)
+            }
+        }
+    }
+
     suspend fun entitlements(profileAccessToken: String): List<PlatformEntitlement> {
         require(profileAccessToken.matches(CredentialPattern))
         return codec.entitlementsResponse(
@@ -311,6 +327,16 @@ class MirkoriGameSdk(
                 body = body,
             ),
         )
+        response.serverTime
+            ?.takeIf { baseUri.scheme.equals("https", ignoreCase = true) }
+            ?.let { serverTime ->
+                serverTimeObservation.updateAndGet { previous ->
+                    PlatformServerTimeObservation(
+                        serverEpochMs = serverTime.toEpochMilli(),
+                        revision = (previous?.revision ?: 0L) + 1L,
+                    )
+                }
+            }
         if (response.status !in 200..299) {
             throw PlatformApiException(response.status, codec.errorCode(response.body))
         }

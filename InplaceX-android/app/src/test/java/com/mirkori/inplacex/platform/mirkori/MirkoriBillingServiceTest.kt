@@ -22,11 +22,13 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class MirkoriBillingServiceTest {
@@ -49,6 +51,7 @@ class MirkoriBillingServiceTest {
         val store = linkedStore()
         val firstTransport = ScriptedTransport(
             response(productsJson()),
+            response(ordersJson()),
             MirkoriTransportException(MirkoriTransportFailure.NETWORK),
         )
         val firstResult = runSuspend {
@@ -57,7 +60,7 @@ class MirkoriBillingServiceTest {
         val persisted = requireNotNull(store.value?.pendingPurchase)
 
         assertTrue(firstResult is BillingPurchaseResult.StateUpdated)
-        assertEquals(persisted.orderIdempotencyKey.value, firstTransport.requests[1].headers["Idempotency-Key"])
+        assertEquals(persisted.orderIdempotencyKey.value, firstTransport.requests[2].headers["Idempotency-Key"])
         assertNull(persisted.orderId)
 
         val orderId = "00000000-0000-4000-8000-000000000901"
@@ -86,6 +89,7 @@ class MirkoriBillingServiceTest {
         val store = linkedStore()
         val transport = ScriptedTransport(
             response(productsJson()),
+            response(ordersJson()),
             response("""{"error":"profile_auth_required"}""", status = 401),
             response(billingCredentialsJson("refreshed")),
             response(orderJson(orderId, "pending", "remove_ads"), status = 201),
@@ -96,8 +100,8 @@ class MirkoriBillingServiceTest {
 
         assertTrue(result is BillingPurchaseResult.OpenExternalCheckout)
         assertEquals(
-            transport.requests[1].headers["Idempotency-Key"],
-            transport.requests[3].headers["Idempotency-Key"],
+            transport.requests[2].headers["Idempotency-Key"],
+            transport.requests[4].headers["Idempotency-Key"],
         )
         assertTrue(store.value?.session?.credentials?.accessToken.orEmpty().startsWith("refreshed."))
         assertFalse(result.state.entitlements.adsDisabled)
@@ -147,6 +151,7 @@ class MirkoriBillingServiceTest {
         val store = linkedStore()
         val transport = ScriptedTransport(
             response(productsJson()),
+            response(ordersJson()),
             response(orderJson(orderId, "pending", "remove_ads"), status = 201),
             response("""{"error":"checkout_unavailable"}""", status = 503),
             response(productsJson()),
@@ -161,20 +166,20 @@ class MirkoriBillingServiceTest {
 
         assertEquals(BillingNotice.PROVIDER_UNAVAILABLE, first.state.notice)
         assertEquals(BillingNotice.PROVIDER_UNAVAILABLE, second.state.notice)
-        assertEquals(key, transport.requests[2].headers["Idempotency-Key"])
-        assertEquals(key, transport.requests[5].headers["Idempotency-Key"])
+        assertEquals(key, transport.requests[3].headers["Idempotency-Key"])
+        assertEquals(key, transport.requests[6].headers["Idempotency-Key"])
         assertNotNull(store.value?.pendingPurchase)
     }
 
     @Test
-    fun checkoutExpiryKeepsOriginalAttemptUntilServerConfirmsCancellation() {
+    fun checkoutReconciliationRequiredKeepsOriginalAttemptUntilServerConfirmsCancellation() {
         val orderId = "00000000-0000-4000-8000-000000000934"
         val store = linkedStore(pending = pendingPurchase(orderId = orderId))
         val originalKey = requireNotNull(store.value?.pendingPurchase).checkoutIdempotencyKey.value
         val transport = ScriptedTransport(
             response(productsJson()),
             response(orderJson(orderId, "pending", "remove_ads")),
-            response("""{"error":"checkout_expired"}""", status = 409),
+            response("""{"error":"checkout_reconciliation_required"}""", status = 409),
         )
 
         val result = runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
@@ -192,6 +197,7 @@ class MirkoriBillingServiceTest {
         val store = linkedStore()
         val transport = ScriptedTransport(
             response(productsJson()),
+            response(ordersJson()),
             response(orderJson(orderId, "pending", "remove_ads", amountMinor = 19_900), status = 201),
         )
 
@@ -200,7 +206,7 @@ class MirkoriBillingServiceTest {
         assertTrue(result is BillingPurchaseResult.StateUpdated)
         assertEquals(BillingNotice.RETRY_REQUIRED, result.state.notice)
         assertFalse(result.state.entitlements.adsDisabled)
-        assertEquals(2, transport.requests.size)
+        assertEquals(3, transport.requests.size)
         assertNotNull(store.value?.pendingPurchase)
     }
 
@@ -290,10 +296,260 @@ class MirkoriBillingServiceTest {
         assertTrue(store.value?.confirmedEntitlements?.removeAds?.active == true)
     }
 
+    @Test
+    fun delistedProductDoesNotRevokeStableTypedEntitlement() {
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson(includeRemoveAds = false)),
+            response(ordersJson()),
+            response(entitlementsJson("""{"key":"ads.disabled","type":"durable","quantity":1}""")),
+        )
+
+        val state = runSuspend { service(transport, store).refresh() }
+
+        assertTrue(state.entitlements.adFreePurchased)
+        assertFalse(state.products.containsKey(BillingProductId.REMOVE_ADS))
+        assertTrue(store.value?.confirmedEntitlements?.removeAds?.active == true)
+    }
+
+    @Test
+    fun currentPriceChangeDoesNotMutatePersistedPendingOffer() {
+        val orderId = "00000000-0000-4000-8000-000000000961"
+        val store = linkedStore(pending = pendingPurchase(orderId))
+        val transport = ScriptedTransport(
+            response(productsJson(removeAdsAmountMinor = 19_900)),
+            response(orderJson(orderId, "pending", "remove_ads", amountMinor = 9_900)),
+            response(entitlementsJson()),
+        )
+
+        val state = runSuspend { service(transport, store).refresh() }
+
+        assertEquals(BillingNotice.AWAITING_PAYMENT, state.notice)
+        assertEquals(9_900L, store.value?.pendingPurchase?.offerSnapshot?.amountMinor)
+        assertEquals(1L, store.value?.pendingPurchase?.offerSnapshot?.productVersion)
+    }
+
+    @Test
+    fun legacyPendingStateAdoptsAuthoritativeOrderPriceWithoutUsingCurrentCatalogPrice() {
+        val orderId = "00000000-0000-4000-8000-000000000967"
+        val legacyPending = pendingPurchase(orderId).copy(offerSnapshot = null)
+        val store = linkedStore(pending = legacyPending)
+        val transport = ScriptedTransport(
+            response(productsJson(removeAdsAmountMinor = 19_900)),
+            response(orderJson(orderId, "pending", "remove_ads", amountMinor = 9_900)),
+            response(entitlementsJson()),
+        )
+
+        val state = runSuspend { service(transport, store).refresh() }
+
+        assertEquals(BillingNotice.AWAITING_PAYMENT, state.notice)
+        assertEquals(9_900L, store.value?.pendingPurchase?.offerSnapshot?.amountMinor)
+        assertNull(store.value?.pendingPurchase?.offerSnapshot?.productVersion)
+    }
+
+    @Test
+    fun terminalCancellationClearsPendingEvenWhenOfferWasDelistedAndAmountChanged() {
+        val orderId = "00000000-0000-4000-8000-000000000962"
+        val store = linkedStore(pending = pendingPurchase(orderId))
+        val transport = ScriptedTransport(
+            response(productsJson(includeRemoveAds = false)),
+            response(orderJson(orderId, "cancelled", "remove_ads", amountMinor = 19_900)),
+            response(entitlementsJson()),
+        )
+
+        val state = runSuspend { service(transport, store).refresh() }
+
+        assertEquals(BillingNotice.PAYMENT_CANCELLED, state.notice)
+        assertNull(store.value?.pendingPurchase)
+    }
+
+    @Test
+    fun reinstallRestoresExactlyOneServerPendingOrderBeforeCreatingAnything() {
+        val orderId = "00000000-0000-4000-8000-000000000963"
+        val checkoutId = "00000000-0000-4000-8000-000000000964"
+        val order = orderJson(orderId, "pending", "remove_ads")
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson(order)),
+            response(order),
+            response(checkoutJson(checkoutId, orderId)),
+        )
+
+        val result = runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
+
+        assertTrue(result is BillingPurchaseResult.OpenExternalCheckout)
+        assertEquals(orderId, store.value?.pendingPurchase?.orderId)
+        assertEquals(9_900L, store.value?.pendingPurchase?.offerSnapshot?.amountMinor)
+        assertTrue(transport.requests[1].url.endsWith("/api/v1/commerce/orders/pending"))
+        assertFalse(
+            transport.requests.any {
+                it.method.name == "GET" && it.url.endsWith("/api/v1/commerce/orders")
+            },
+        )
+        assertFalse(
+            transport.requests.any { request ->
+                request.url.endsWith("/api/v1/commerce/orders") && request.method.name == "POST"
+            },
+        )
+    }
+
+    @Test
+    fun proPlusEntitlementCoversProAndCompletesLowerTierPendingOrder() {
+        val orderId = "00000000-0000-4000-8000-000000000968"
+        val expiresAt = Instant.ofEpochMilli(NowMs + 60_000L)
+        val store = linkedStore(
+            pending = pendingPurchase(
+                orderId = orderId,
+                productId = "pro_subscription",
+                amountMinor = 19_900,
+            ),
+        )
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(orderJson(orderId, "paid", "pro_subscription", amountMinor = 19_900)),
+            response(
+                entitlementsJson(
+                    """{"key":"pro-plus.active","type":"timed","quantity":1,"validUntil":"$expiresAt"}""",
+                ),
+            ),
+        )
+
+        val state = runSuspend { service(transport, store).refresh() }
+
+        assertEquals(BillingNotice.PAYMENT_CONFIRMED, state.notice)
+        assertTrue(state.entitlements.proSubscriptionActive)
+        assertTrue(state.entitlements.proPlusSubscriptionActive)
+        assertNull(store.value?.pendingPurchase)
+    }
+
+    @Test
+    fun multipleServerPendingOrdersFailClosedWithoutCreatingAnotherOrder() {
+        val first = orderJson("00000000-0000-4000-8000-000000000965", "pending", "remove_ads")
+        val second = orderJson(
+            "00000000-0000-4000-8000-000000000966",
+            "pending",
+            "pro_subscription",
+            amountMinor = 19_900,
+        )
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson(first, second)),
+        )
+
+        val result = runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
+
+        assertTrue(result is BillingPurchaseResult.StateUpdated)
+        assertEquals(BillingNotice.BUSY, result.state.notice)
+        assertEquals(2, transport.requests.size)
+        assertNull(store.value?.pendingPurchase)
+    }
+
+    @Test
+    fun cancellationDuringAlreadyOwnedRecoveryIsRethrown() {
+        val transport = ScriptedTransport(
+            response("""{"error":"product_already_owned"}""", status = 409),
+            CancellationException("cancelled by caller"),
+        )
+
+        assertThrows(CancellationException::class.java) {
+            runSuspend { service(transport, linkedStore()).refresh() }
+        }
+    }
+
+    @Test
+    fun purchaseCancellationDuringAlreadyOwnedRecoveryIsRethrown() {
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson()),
+            response("""{"error":"product_already_owned"}""", status = 409),
+            CancellationException("cancelled by caller"),
+        )
+
+        assertThrows(CancellationException::class.java) {
+            runSuspend { service(transport, linkedStore()).purchase(BillingProductId.REMOVE_ADS) }
+        }
+    }
+
+    @Test
+    fun orderPendingDropsLosingLocalAttemptAndRestoresAuthoritativeServerPending() {
+        val serverOrderId = "00000000-0000-4000-8000-000000000969"
+        val serverOrder = orderJson(serverOrderId, "pending", "remove_ads")
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson()),
+            response("""{"error":"order_pending"}""", status = 409),
+            response(productsJson()),
+            response(ordersJson(serverOrder)),
+            response(serverOrder),
+            response(entitlementsJson()),
+        )
+
+        val result = runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
+
+        assertTrue(result is BillingPurchaseResult.StateUpdated)
+        assertEquals(BillingNotice.AWAITING_PAYMENT, result.state.notice)
+        assertEquals(serverOrderId, store.value?.pendingPurchase?.orderId)
+        assertTrue(transport.requests[4].url.endsWith("/api/v1/commerce/orders/pending"))
+        assertFalse(
+            transport.requests.any {
+                it.method.name == "GET" && it.url.endsWith("/api/v1/commerce/orders")
+            },
+        )
+    }
+
+    @Test
+    fun cancellationDuringOrderPendingRecoveryIsRethrownAfterLosingAttemptIsCleared() {
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson()),
+            response("""{"error":"order_pending"}""", status = 409),
+            CancellationException("cancelled by caller"),
+        )
+
+        assertThrows(CancellationException::class.java) {
+            runSuspend { service(transport, store).purchase(BillingProductId.REMOVE_ADS) }
+        }
+        assertNull(store.value?.pendingPurchase)
+    }
+
+    @Test
+    fun timedAccessUsesServerAnchorAndFailsClosedAfterRollbackOrReboot() {
+        val expiresAt = Instant.ofEpochMilli(NowMs + 60_000L)
+        val store = linkedStore()
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson()),
+            response(
+                entitlementsJson(
+                    """{"key":"pro.active","type":"timed","quantity":1,"validUntil":"$expiresAt"}""",
+                ),
+            ),
+        )
+
+        val synchronized = runSuspend { service(transport, store).refresh() }
+        val rolledBack = service(ScriptedTransport(), store, nowMs = NowMs - 1L).cachedState()
+        val rebooted = service(
+            ScriptedTransport(),
+            store,
+            nowMs = NowMs + 1_000L,
+            bootMarker = TestBootMarker + 1L,
+        ).cachedState()
+
+        assertTrue(synchronized.entitlements.proSubscriptionActive)
+        assertEquals(60_000L, synchronized.nextEntitlementExpiryDelayMs)
+        assertFalse(rolledBack.entitlements.proSubscriptionActive)
+        assertFalse(rebooted.entitlements.proSubscriptionActive)
+    }
+
     private fun service(
         transport: PlatformTransport,
         store: BillingMemoryStore,
         nowMs: Long = NowMs,
+        bootMarker: Long = TestBootMarker,
     ): MirkoriBillingService {
         val sdk = MirkoriGameSdk(
             MirkoriGameSdkConfig(
@@ -305,7 +561,13 @@ class MirkoriBillingServiceTest {
             BillingCountingEntropy(),
         )
         return MirkoriBillingService(
-            runtime = MirkoriPlatformRuntime(sdk, store, clockMs = { nowMs }),
+            runtime = MirkoriPlatformRuntime(
+                sdk = sdk,
+                store = store,
+                clockMs = { nowMs },
+                monotonicClockMs = { nowMs },
+                bootMarker = { bootMarker },
+            ),
             config = BillingProviderConfig("remove_ads", "pro_subscription", "pro_plus_subscription"),
         )
     }
@@ -327,17 +589,34 @@ class MirkoriBillingServiceTest {
             ),
             pendingPurchase = pending,
             confirmedEntitlements = confirmed,
+            trustedTimeAnchor = confirmed?.let {
+                MirkoriTrustedTimeAnchor(
+                    serverEpochMs = NowMs,
+                    monotonicAtObservationMs = NowMs,
+                    bootMarker = TestBootMarker,
+                )
+            },
         ),
     )
 
-    private fun pendingPurchase(orderId: String?): PendingMirkoriPurchase = PendingMirkoriPurchase(
+    private fun pendingPurchase(
+        orderId: String?,
+        productId: String = "remove_ads",
+        amountMinor: Long = 9_900,
+    ): PendingMirkoriPurchase = PendingMirkoriPurchase(
         accountId = AccountId,
         gamePlayerId = PlayerId,
-        productId = "remove_ads",
+        productId = productId,
         currency = "RUB",
         orderId = orderId,
         orderIdempotencyKey = PlatformIdempotencyKey("stable-order-key"),
         checkoutIdempotencyKey = PlatformIdempotencyKey("stable-checkout-key"),
+        offerSnapshot = PendingMirkoriOfferSnapshot(
+            amountMinor = amountMinor,
+            currency = "RUB",
+            entitlementSchemaVersion = 1,
+            productVersion = 1,
+        ),
     )
 
     private companion object {
@@ -345,6 +624,7 @@ class MirkoriBillingServiceTest {
         const val PlayerId = "00000000-0000-4000-8000-000000000952"
         const val InstallationId = "00000000-0000-4000-8000-000000000953"
         const val NowMs = 1_786_000_000_000L
+        const val TestBootMarker = 7L
     }
 }
 
@@ -395,12 +675,25 @@ private fun credentials() = PlatformCredentials(
 private fun billingCredentialsJson(prefix: String): String =
     """{"accessToken":"$prefix.${"a".repeat(43)}","refreshToken":"$prefix-${"r".repeat(43)}","accessExpiresAtEpochMs":1786032600000,"refreshExpiresAtEpochMs":1788624600000}"""
 
-private fun productsJson(): String =
-    """{"schemaVersion":1,"products":[
-       {"id":"remove_ads","gameId":"inplacex","slug":"remove-ads","displayName":"Без рекламы","description":"Без рекламы","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":9900},"grants":[{"entitlementKey":"ads.disabled","type":"durable","quantity":1}]},
-       {"id":"pro_subscription","gameId":"inplacex","slug":"pro","displayName":"Pro","description":"Pro","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":19900},"grants":[{"entitlementKey":"pro.active","type":"timed","quantity":1,"durationSeconds":2592000}]},
-       {"id":"pro_plus_subscription","gameId":"inplacex","slug":"pro-plus","displayName":"Pro+","description":"Pro+","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":29900},"grants":[{"entitlementKey":"pro-plus.active","type":"timed","quantity":1,"durationSeconds":2592000}]}
-    ]}""".replace("\n", "")
+private fun productsJson(
+    includeRemoveAds: Boolean = true,
+    removeAdsAmountMinor: Long = 9_900,
+): String {
+    val offers = buildList {
+        if (includeRemoveAds) {
+            add(
+                """{"id":"remove_ads","gameId":"inplacex","slug":"remove-ads","displayName":"Без рекламы","description":"Без рекламы","productKind":"addon","version":2,"price":{"currency":"RUB","amountMinor":$removeAdsAmountMinor},"grants":[{"entitlementKey":"ads.disabled","type":"durable","quantity":1}]}""",
+            )
+        }
+        add(
+            """{"id":"pro_subscription","gameId":"inplacex","slug":"pro","displayName":"Pro","description":"Pro","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":19900},"grants":[{"entitlementKey":"pro.active","type":"timed","quantity":1,"durationSeconds":2592000}]}""",
+        )
+        add(
+            """{"id":"pro_plus_subscription","gameId":"inplacex","slug":"pro-plus","displayName":"Pro+","description":"Pro+","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":29900},"grants":[{"entitlementKey":"pro-plus.active","type":"timed","quantity":1,"durationSeconds":2592000}]}""",
+        )
+    }
+    return """{"schemaVersion":1,"products":[${offers.joinToString(",")}]}"""
+}
 
 private fun orderJson(
     orderId: String,
@@ -416,7 +709,11 @@ private fun checkoutJson(checkoutId: String, orderId: String): String =
 private fun entitlementsJson(vararg entitlements: String): String =
     """{"schemaVersion":1,"entitlements":[${entitlements.joinToString(",") }]}"""
 
-private fun response(body: String, status: Int = 200) = PlatformHttpResponse(status, body)
+private fun ordersJson(vararg orders: String): String =
+    """{"schemaVersion":1,"orders":[${orders.joinToString(",") }]}"""
+
+private fun response(body: String, status: Int = 200) =
+    PlatformHttpResponse(status, body, Instant.ofEpochMilli(1_786_000_000_000L))
 
 private fun <T> runSuspend(block: suspend () -> T): T {
     val latch = CountDownLatch(1)

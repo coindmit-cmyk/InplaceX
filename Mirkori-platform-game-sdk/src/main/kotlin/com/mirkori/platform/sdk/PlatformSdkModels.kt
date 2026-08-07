@@ -116,6 +116,11 @@ data class PlatformEntitlement(
     val validUntil: Instant?,
 )
 
+data class PlatformServerTimeObservation(
+    val serverEpochMs: Long,
+    val revision: Long,
+)
+
 class PlatformCheckout(
     val id: String,
     val orderId: String,
