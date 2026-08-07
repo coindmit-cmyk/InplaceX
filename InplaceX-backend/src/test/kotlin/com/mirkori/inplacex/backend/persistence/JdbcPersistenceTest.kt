@@ -108,12 +108,23 @@ class JdbcPersistenceTest {
         val players = JdbcPlayerRepository(dataSource)
         val playerId = "00000000-0000-4000-8000-000000000701"
 
+        players.create(playerId, "Existing player")
         players.ensurePlatformPlayer(playerId)
         players.ensurePlatformPlayer(playerId)
 
         dataSource.connection.use { connection ->
             assertEquals(1, count(connection, "SELECT COUNT(*) FROM players WHERE id = '$playerId'"))
             assertEquals(0, count(connection, "SELECT COUNT(*) FROM player_identities WHERE player_id = '$playerId'"))
+            val displayName = connection.prepareStatement(
+                "SELECT display_name FROM players WHERE id = ?",
+            ).use { statement ->
+                statement.setString(1, playerId)
+                statement.executeQuery().use { result ->
+                    require(result.next())
+                    result.getString(1)
+                }
+            }
+            assertEquals("Existing player", displayName)
         }
     }
 

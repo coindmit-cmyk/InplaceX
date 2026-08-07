@@ -18,6 +18,7 @@ class ReleaseVariantIsolationTest {
         assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
         assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
         assertFalse(testFriendBotEnabled())
+        assertFalse(legacyGoogleProfileActionsEnabled())
     }
 
     @Test

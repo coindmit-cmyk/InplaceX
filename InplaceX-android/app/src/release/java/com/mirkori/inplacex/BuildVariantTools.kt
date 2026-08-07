@@ -18,6 +18,8 @@ internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = fal
 
 internal fun testFriendBotEnabled(): Boolean = false
 
+internal fun legacyGoogleProfileActionsEnabled(): Boolean = false
+
 internal fun initialProgressState(
     context: Context,
     progressRepository: GameProgressRepository,

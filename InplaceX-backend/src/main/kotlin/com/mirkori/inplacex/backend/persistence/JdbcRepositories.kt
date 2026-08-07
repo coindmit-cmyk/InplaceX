@@ -94,7 +94,13 @@ class JdbcPlayerRepository(private val dataSource: DataSource) {
         const val PostgreSqlPlatformPlayerUpsert =
             "INSERT INTO players(id, display_name) VALUES (?, ?) ON CONFLICT (id) DO NOTHING"
         const val H2PlatformPlayerUpsert =
-            "MERGE INTO players (id, display_name) KEY(id) VALUES (?, ?)"
+            """
+            MERGE INTO players AS target
+            USING (VALUES (?, ?)) AS source(id, display_name)
+            ON target.id = source.id
+            WHEN NOT MATCHED THEN
+                INSERT (id, display_name) VALUES (source.id, source.display_name)
+            """
     }
 }
 

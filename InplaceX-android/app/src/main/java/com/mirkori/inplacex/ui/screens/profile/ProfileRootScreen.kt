@@ -45,6 +45,7 @@ fun ProfileRootScreen(
     mirkoriAuthInProgress: Boolean = false,
     authResultKey: String? = null,
     authInProgress: Boolean = false,
+    showLegacyGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
@@ -154,7 +155,8 @@ fun ProfileRootScreen(
             }
         }
 
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+        if (showLegacyGooglePlayCard) {
+            SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.google_play.title"),
                 modifier = Modifier.semantics { heading() },
@@ -211,6 +213,7 @@ fun ProfileRootScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+            }
             }
         }
 
