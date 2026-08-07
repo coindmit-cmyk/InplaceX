@@ -367,6 +367,8 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             'inplacexPlatformValidatorSha256',
             'verify_platform_release_contract.py',
             '"-I"',
+            '"--no-replace-objects"',
+            'setEnvironment(releaseDistributionProcessEnvironment)',
         ):
             self.assertIn(required_fragment, gradle_script)
 

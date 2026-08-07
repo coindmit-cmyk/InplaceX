@@ -32,6 +32,8 @@ val releaseDistributionPython = if (System.getProperty("os.name").startsWith("Wi
 } else {
     "python3"
 }
+val releaseDistributionProcessEnvironment = System.getenv()
+    .filterKeys { !it.startsWith("GIT_", ignoreCase = true) }
 
 val releaseDistributionVersionProperties = Properties().apply {
     rootProject.file("InplaceX-android/version.properties").inputStream().use(::load)
@@ -79,6 +81,7 @@ val testPlatformReleaseContract = tasks.register<Exec>("testPlatformReleaseContr
     inputs.file(rootProject.file("ops/release/build_platform_catalog_release.py"))
     outputs.upToDateWhen { false }
     notCompatibleWithConfigurationCache("Verifies an external Git checkout and exact tool bytes at execution time")
+    setEnvironment(releaseDistributionProcessEnvironment)
     environment("PYTHONDONTWRITEBYTECODE", "1")
     doFirst {
         val platformRepositoryDirectory = rootProject.file(
@@ -117,6 +120,7 @@ tasks.register<Exec>("buildPlatformCatalogRelease") {
     inputs.dir(releaseDistributionCandidateDirectory)
     outputs.upToDateWhen { false }
     notCompatibleWithConfigurationCache("Consumes an external catalog and validator checkout at execution time")
+    setEnvironment(releaseDistributionProcessEnvironment)
     environment("PYTHONDONTWRITEBYTECODE", "1")
     doFirst {
         val baseReleaseDirectory = rootProject.file(
@@ -148,8 +152,9 @@ tasks.register<Exec>("buildPlatformCatalogRelease") {
             throw GradleException("inplacexPlatformCatalogChannel must be stable or beta")
         }
         val expectedCommit = providers.exec {
+            setEnvironment(releaseDistributionProcessEnvironment)
             workingDir(rootDir)
-            commandLine("git", "rev-parse", "HEAD")
+            commandLine("git", "--no-replace-objects", "rev-parse", "HEAD")
         }.standardOutput.asText.get().trim()
         if (!expectedCommit.matches(Regex("[0-9a-f]{40}"))) {
             throw GradleException("Could not resolve the exact lowercase Git HEAD for release distribution")

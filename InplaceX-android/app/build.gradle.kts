@@ -423,6 +423,8 @@ val releaseCandidateBash = if (System.getProperty("os.name").startsWith("Windows
 } else {
     "bash"
 }
+val releaseCandidateProcessEnvironment = System.getenv()
+    .filterKeys { !it.startsWith("GIT_", ignoreCase = true) }
 
 tasks.register<Exec>("releaseCandidate") {
     group = "distribution"
@@ -434,6 +436,7 @@ tasks.register<Exec>("releaseCandidate") {
     inputs.property("expectedCertificateSha256", expectedReleaseCertificateSha256.orEmpty())
     outputs.dir(rootProject.layout.buildDirectory.dir("release-candidates"))
     outputs.upToDateWhen { false }
+    setEnvironment(releaseCandidateProcessEnvironment)
     commandLine(
         releaseCandidateBash,
         "scripts/ci/artifact_identity.sh",
