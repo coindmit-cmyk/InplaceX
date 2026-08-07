@@ -9,7 +9,8 @@
 - release reads `provider.release.*` keys; absent values are empty and the release environment is always `live`
 - `app/build.gradle.kts` exports those variant-specific values as `BuildConfig` string fields
 - the Mirkori Games platform origin uses `platform.debug.baseUrl` or
-  `platform.release.baseUrl`; both default to `https://games.dmit.life`
+  `platform.release.baseUrl`; the runtime default is `https://games.dmit.life`,
+  while a production candidate requires an explicit release origin
 - shared `defaultConfig` contains no sandbox provider mode, test ad id, or mock billing product default
 
 ## Canonical BuildConfig Fields
@@ -89,8 +90,28 @@ resolved without a header. `INPLACEX_AD_MARKET_REQUIRED=true` makes missing or
 ambiguous production configuration fail at startup. The older trusted country
 header remains an exclusive compatibility mode.
 
-`preReleaseBuild` and `preInternalDistributionBuild` automatically depend on
-`:app:validateReleaseAdsConfig`. It checks a strict HTTPS backend origin,
-requires the live Yandex banner and rewarded placement IDs, and verifies that
-all configured Yandex placement IDs are distinct without printing any value.
-The post-match interstitial is optional and fails closed when it is absent.
+Ordinary `:app:assembleRelease` is deliberately allowed to produce an unsigned
+artifact for PR compilation and static checks. The distribution-only
+`:app:releaseCandidate` task depends on `:app:validateProductionReleaseConfig`
+and `:app:validateReleaseSigningConfig`. It checks strict HTTPS origins for the
+online backend and Mirkori Games Platform, requires live Yandex banner and
+rewarded placement IDs, verifies that configured Yandex IDs are distinct, and
+never prints a configured value. The post-match interstitial is optional and
+fails closed when absent.
+
+Android version identity is centralized in
+`InplaceX-android/version.properties`. Release signing is accepted only as a
+complete external properties file (`-PinplacexReleaseSigningFile=...`) or the
+five `INPLACEX_RELEASE_*` environment variables, including the mandatory
+owner-approved `INPLACEX_RELEASE_EXPECTED_CERT_SHA256`. Partial signing fails
+during Gradle configuration. The separate `signedReleaseCandidate` build type
+uses that key, and `releaseCandidate` compares the real APK signer certificate
+to the expected fingerprint through `apksigner`. Ordinary release and
+internal-distribution variants remain unsigned even when the signing config is
+present; no production-like variant falls back to the debug key.
+
+Verified production bundles are atomically published under
+`build/release-candidates/<releaseId>`. The ID follows the Mirkori catalog
+pattern `[a-z0-9][a-z0-9._-]{1,63}`. Reusing an ID with another APK SHA-256 or
+with a stale/incomplete directory is rejected without modifying the existing
+bundle.

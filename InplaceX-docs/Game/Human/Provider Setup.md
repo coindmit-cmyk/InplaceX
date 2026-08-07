@@ -61,19 +61,35 @@ Android и backend уже содержат рабочие границы для 
 
 ## Release-gate
 
-`preReleaseBuild` и `preInternalDistributionBuild` автоматически запускают
-`:app:validateReleaseAdsConfig`.
+Обычная команда `:app:assembleRelease` остаётся unsigned-проверкой для PR CI.
+Публикуемый APK создаётся отдельной командой `:app:releaseCandidate`, которая
+автоматически запускает `:app:validateProductionReleaseConfig` и
+`:app:validateReleaseSigningConfig`.
 
 Проверка:
 
-- требует HTTPS origin backend без user info, path, query и fragment;
+- требует HTTPS origins online backend и Mirkori Platform без user info, path,
+  query и fragment;
 - требует Yandex banner и rewarded placement ID владельца;
 - допускает пустой post-match interstitial ID;
 - требует разные ID для всех настроенных Yandex placements;
 - отклоняет управляющие символы и чрезмерно длинные значения;
 - не выводит настроенные значения.
 
-Таким образом release-сборка не создаётся с частично активированной рекламой.
+Также подписанный кандидат требует полный внешний signing config. Частичный
+набор отклоняется без вывода значений, а debug key не используется ни для
+release, ни для internal distribution. Обязательный
+`expectedCertificateSha256` закрепляет owner-approved сертификат: кандидат
+принимается только если `apksigner` извлёк тот же SHA-256. Формат показан в
+`InplaceX-android/release-signing.example.properties`; реальные значения и
+keystore должны находиться вне Git.
+
+Обычные `assembleRelease` и `assembleInternalDistribution` всегда unsigned,
+даже при наличии signing config. Только отдельный `signedReleaseCandidate`
+получает production key. Команда `releaseCandidate` атомарно создаёт чистый
+каталог `build/release-candidates/<releaseId>`; `releaseId` ограничен 64
+символами по контракту Mirkori. Повтор с другим APK SHA-256 либо stale-файлами
+останавливается без перезаписи уже созданного кандидата.
 
 ## Backend и определение рынка
 

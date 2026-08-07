@@ -37,12 +37,11 @@ InplaceX — Kotlin/Gradle проект логической игры на уг�
 ## CI и артефакты
 
 GitHub Actions запускает blocking-проверки `verifyProject` и `assembleDebug` с
-Java 21 launcher и Java 11 project toolchains. Debug APK сопровождается
-манифестом версии, полного commit SHA и SHA-256; детали описаны в
+Java 21 launcher и Java 11 project toolchains. Release unit tests, release lint,
+unsigned release assembly и API 35 instrumentation также блокируют CI. APK
+сопровождаются манифестом фактических package/version/minSdk, полного commit
+SHA, размера, SHA-256 и проверенного signing state; детали описаны в
 [`docs/automation/CI_FOUNDATION.md`](docs/automation/CI_FOUNDATION.md).
-
-Instrumentation и release checks пока отображаются как non-blocking jobs до
-завершения выделенных задач.
 
 ## Рабочее разделение
 

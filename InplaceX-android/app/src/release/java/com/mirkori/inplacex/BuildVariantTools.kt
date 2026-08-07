@@ -16,7 +16,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 
 internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = false
 
-internal fun testFriendBotEnabled(): Boolean = true
+internal fun testFriendBotEnabled(): Boolean = false
 
 internal fun initialProgressState(
     context: Context,

@@ -1,3 +1,4 @@
+import java.io.File
 import java.net.URI
 import java.util.Properties
 import org.gradle.api.DefaultTask
@@ -20,6 +21,99 @@ val localProps = Properties().apply {
         file.inputStream().use(::load)
     }
 }
+
+val versionProps = Properties().apply {
+    val file = rootProject.file("InplaceX-android/version.properties")
+    if (!file.isFile) {
+        throw GradleException("Missing canonical Android version file: InplaceX-android/version.properties")
+    }
+    file.inputStream().use(::load)
+}
+
+val appVersionCode = versionProps.getProperty("versionCode")
+    ?.toIntOrNull()
+    ?.takeIf { it > 0 }
+    ?: throw GradleException("versionCode must be a positive integer")
+val appVersionName = versionProps.getProperty("versionName")
+    ?.trim()
+    ?.takeIf { it.matches(Regex("[0-9A-Za-z][0-9A-Za-z._-]{0,63}")) }
+    ?: throw GradleException("versionName has an invalid format")
+
+data class ReleaseSigningValues(
+    val storeFile: String,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String,
+    val expectedCertificateSha256: String,
+)
+
+val releaseSigningFilePath = providers.gradleProperty("inplacexReleaseSigningFile")
+    .orElse(providers.environmentVariable("INPLACEX_RELEASE_SIGNING_FILE"))
+    .orNull
+    ?.takeIf(String::isNotBlank)
+val releaseSigningProps = Properties().apply {
+    releaseSigningFilePath?.let { configuredPath ->
+        val file = rootProject.file(configuredPath)
+        if (!file.isFile) {
+            throw GradleException("Configured release signing properties file does not exist")
+        }
+        file.inputStream().use(::load)
+    }
+}
+
+fun releaseSigningValue(environmentKey: String, propertyKey: String): String? =
+    providers.environmentVariable(environmentKey)
+        .orNull
+        ?.takeIf(String::isNotEmpty)
+        ?: releaseSigningProps.getProperty(propertyKey)
+            ?.takeIf(String::isNotEmpty)
+
+val releaseSigningFields = linkedMapOf(
+    "storeFile" to releaseSigningValue("INPLACEX_RELEASE_STORE_FILE", "storeFile"),
+    "storePassword" to releaseSigningValue("INPLACEX_RELEASE_STORE_PASSWORD", "storePassword"),
+    "keyAlias" to releaseSigningValue("INPLACEX_RELEASE_KEY_ALIAS", "keyAlias"),
+    "keyPassword" to releaseSigningValue("INPLACEX_RELEASE_KEY_PASSWORD", "keyPassword"),
+    "expectedCertificateSha256" to releaseSigningValue(
+        "INPLACEX_RELEASE_EXPECTED_CERT_SHA256",
+        "expectedCertificateSha256",
+    ),
+)
+val configuredReleaseSigningFields = releaseSigningFields.values.count { it != null }
+if (configuredReleaseSigningFields in 1 until releaseSigningFields.size) {
+    val missing = releaseSigningFields.filterValues { it == null }.keys
+    throw GradleException("Partial release signing configuration; missing: ${missing.joinToString()}")
+}
+if (releaseSigningFilePath != null && configuredReleaseSigningFields == 0) {
+    throw GradleException("Release signing properties file does not contain the required keys")
+}
+val releaseSigningValues = if (configuredReleaseSigningFields == releaseSigningFields.size) {
+    ReleaseSigningValues(
+        storeFile = requireNotNull(releaseSigningFields["storeFile"]),
+        storePassword = requireNotNull(releaseSigningFields["storePassword"]),
+        keyAlias = requireNotNull(releaseSigningFields["keyAlias"]),
+        keyPassword = requireNotNull(releaseSigningFields["keyPassword"]),
+        expectedCertificateSha256 = requireNotNull(releaseSigningFields["expectedCertificateSha256"]),
+    ).also { values ->
+        if (!rootProject.file(values.storeFile).isFile) {
+            throw GradleException("Configured release keystore does not exist")
+        }
+    }
+} else {
+    null
+}
+
+fun normalizeCertificateSha256(value: String): String? {
+    val compact = when {
+        value.matches(Regex("[0-9A-Fa-f]{64}")) -> value
+        value.matches(Regex("(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}")) -> value.replace(":", "")
+        else -> return null
+    }
+    return compact.uppercase().chunked(2).joinToString(":")
+}
+
+val expectedReleaseCertificateSha256 = releaseSigningValues
+    ?.expectedCertificateSha256
+    ?.let(::normalizeCertificateSha256)
 
 fun localProp(key: String, default: String): String =
     (localProps.getProperty(key) ?: default).replace("\"", "\\\"")
@@ -44,8 +138,9 @@ fun localLongProp(
         ?.takeIf(range::contains)
         ?: default
 
-fun requiredReleaseAdPropertyKeys(): List<String> = listOf(
+fun requiredProductionReleasePropertyKeys(): List<String> = listOf(
     "online.release.baseUrl",
+    "platform.release.baseUrl",
     "provider.release.ads.yandex.owner.banner.game",
     "provider.release.ads.yandex.owner.rewarded.general",
 )
@@ -75,6 +170,11 @@ fun validateProviderValueShape(keys: List<String>): List<String> = keys.mapNotNu
     }
 }
 
+fun validateNoSurroundingWhitespace(keys: List<String>): List<String> = keys.mapNotNull { key ->
+    val value = localProps.getProperty(key) ?: return@mapNotNull null
+    if (value != value.trim()) "$key must not contain surrounding whitespace" else null
+}
+
 fun isHttpsOrigin(value: String): Boolean =
     runCatching { URI(value) }
         .getOrNull()
@@ -89,7 +189,7 @@ fun isHttpsOrigin(value: String): Boolean =
         }
         ?: false
 
-abstract class ValidateReleaseAdsConfigTask : DefaultTask() {
+abstract class ValidateReleaseConfigTask : DefaultTask() {
     @get:Input
     abstract val validationErrors: ListProperty<String>
 
@@ -123,11 +223,20 @@ android {
         applicationId = "com.mirkori.inplacex"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+    }
+
+    val releaseCandidateSigning = releaseSigningValues?.let { values ->
+        signingConfigs.create("releaseCandidate") {
+            storeFile = rootProject.file(values.storeFile)
+            storePassword = values.storePassword
+            keyAlias = values.keyAlias
+            keyPassword = values.keyPassword
+        }
     }
 
     buildTypes {
@@ -179,11 +288,19 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
-            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+        create("signedReleaseCandidate") {
+            initWith(getByName("release"))
+            isDebuggable = false
+            releaseCandidateSigning?.let { signingConfig = it }
             matchingFallbacks += listOf("release")
         }
     }
     sourceSets.getByName("internalDistribution") {
+        kotlin.srcDir("src/release/java")
+    }
+    sourceSets.getByName("signedReleaseCandidate") {
         kotlin.srcDir("src/release/java")
     }
     compileOptions {
@@ -192,28 +309,28 @@ android {
     }
 }
 
-val validateReleaseAdsConfig = tasks.register<ValidateReleaseAdsConfigTask>(
-    "validateReleaseAdsConfig",
+val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
+    "validateProductionReleaseConfig",
 ) {
     group = "verification"
-    description = "Validates the release backend endpoint and Yandex placement ids without printing values."
+    description = "Validates production HTTPS origins and required Yandex placement ids without printing values."
     validationErrors.set(
         buildList {
-            val missing = requiredReleaseAdPropertyKeys()
+            val missing = requiredProductionReleasePropertyKeys()
                 .filter { localProps.getProperty(it).orEmpty().isBlank() }
             if (missing.isNotEmpty()) {
                 add("Missing required release properties: ${missing.joinToString()}")
             }
-            localProps.getProperty("online.release.baseUrl")
-                ?.trim()
-                ?.takeIf(String::isNotEmpty)
-                ?.let { baseUrl ->
-                    if (!isHttpsOrigin(baseUrl)) {
-                        add(
-                            "online.release.baseUrl must be an HTTPS origin without user info, path, query, or fragment",
-                        )
+            listOf("online.release.baseUrl", "platform.release.baseUrl").forEach { key ->
+                localProps.getProperty(key)
+                    ?.trim()
+                    ?.takeIf(String::isNotEmpty)
+                    ?.let { baseUrl ->
+                        if (!isHttpsOrigin(baseUrl)) {
+                            add("$key must be an HTTPS origin without user info, path, query, or fragment")
+                        }
                     }
-                }
+            }
             addAll(
                 validateDistinctProviderPlacements(
                     providerName = "owner Yandex",
@@ -233,14 +350,76 @@ val validateReleaseAdsConfig = tasks.register<ValidateReleaseAdsConfigTask>(
                     ),
                 ),
             )
+            addAll(
+                validateNoSurroundingWhitespace(
+                    listOf(
+                        "online.release.baseUrl",
+                        "platform.release.baseUrl",
+                        "provider.release.ads.yandex.owner.banner.game",
+                        "provider.release.ads.yandex.owner.rewarded.general",
+                        "provider.release.ads.yandex.owner.interstitial.postMatch",
+                    ),
+                ),
+            )
         },
     )
 }
 
-tasks.matching {
-    it.name == "preReleaseBuild" || it.name == "preInternalDistributionBuild"
-}.configureEach {
-    dependsOn(validateReleaseAdsConfig)
+val validateReleaseSigningConfig = tasks.register<ValidateReleaseConfigTask>(
+    "validateReleaseSigningConfig",
+) {
+    group = "verification"
+    description = "Requires one complete external release signing configuration without printing secret values."
+    validationErrors.set(
+        buildList {
+            if (releaseSigningValues == null) {
+                add(
+                    "Release signing is not configured; provide all INPLACEX_RELEASE_* values or an external signing properties file",
+                )
+            } else if (expectedReleaseCertificateSha256 == null) {
+                add("expectedCertificateSha256 must be a SHA-256 fingerprint with 64 hex digits")
+            }
+        },
+    )
+}
+
+tasks.matching { it.name == "preSignedReleaseCandidateBuild" }.configureEach {
+    dependsOn(validateProductionReleaseConfig, validateReleaseSigningConfig)
+}
+
+val releaseCandidateBash = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+    File(System.getenv("ProgramFiles") ?: "C:\\Program Files", "Git/bin/bash.exe")
+        .takeIf(File::isFile)
+        ?.absolutePath
+        ?: "bash"
+} else {
+    "bash"
+}
+
+tasks.register<Exec>("releaseCandidate") {
+    group = "distribution"
+    description = "Builds and verifies a signed production APK and writes its immutable release identity bundle."
+    dependsOn("assembleSignedReleaseCandidate")
+    workingDir(rootProject.rootDir)
+    inputs.file(layout.buildDirectory.file("outputs/apk/signedReleaseCandidate/app-signedReleaseCandidate.apk"))
+    inputs.file(rootProject.file("scripts/ci/artifact_identity.sh"))
+    inputs.property("expectedCertificateSha256", expectedReleaseCertificateSha256.orEmpty())
+    outputs.dir(rootProject.layout.buildDirectory.dir("release-candidates"))
+    outputs.upToDateWhen { false }
+    commandLine(
+        releaseCandidateBash,
+        "scripts/ci/artifact_identity.sh",
+        "--apk",
+        "InplaceX-android/app/build/outputs/apk/signedReleaseCandidate/app-signedReleaseCandidate.apk",
+        "--output-dir",
+        "build/release-candidates",
+        "--artifact-type",
+        "release",
+        "--expected-signing",
+        "verified",
+        "--expected-certificate-sha256",
+        expectedReleaseCertificateSha256.orEmpty(),
+    )
 }
 
 androidComponents {

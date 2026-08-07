@@ -21,7 +21,7 @@ ARTIFACT_SCRIPT = ROOT / "scripts/ci/artifact_identity.sh"
 INSTRUMENTATION_SCRIPT = ROOT / "scripts/ci/run_instrumentation.sh"
 HOSTILE_FIXTURES = ROOT / "scripts/ci/contract_mutations/hostile_fixtures.json"
 
-ARTIFACT_SCRIPT_SHA256 = "8a361a33885fe4b47f80d2b9e0ed41076152759f291324823730859ebdbdce53"
+ARTIFACT_SCRIPT_SHA256 = "b22e695b41b58bd8b01153458ca84a2d75049245ff95032b48158976418076fc"
 INSTRUMENTATION_SCRIPT_SHA256 = "ac415fe647a3a7bbf4d752c021debb8e00c3ce8b8332886cac2844d81ad7291a"
 EMULATOR_ACTION = "ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d"
 ACTIONLINT_ACTION = "raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7"
@@ -191,7 +191,19 @@ def validate(
 
     require_exact_run(
         release,
-        "Assemble unsigned release candidate",
+        "Run release unit tests",
+        "./gradlew :app:testReleaseUnitTest",
+        "step.release.unit.exact-run",
+    )
+    require_exact_run(
+        release,
+        "Run release lint",
+        "./gradlew :app:lintRelease",
+        "step.release.lint.exact-run",
+    )
+    require_exact_run(
+        release,
+        "Assemble unsigned release artifact",
         "./gradlew :app:assembleRelease",
         "step.release.assemble.exact-run",
     )
@@ -274,25 +286,37 @@ def bash_executable() -> str:
     return str(candidate)
 
 
-def run_artifact_script(apk: Path, output: Path, signer: Path, expected: str) -> subprocess.CompletedProcess[str]:
+def run_artifact_script(
+    apk: Path,
+    output: Path,
+    signer: Path,
+    metadata_tool: Path,
+    expected: str,
+    artifact_type: str = "debug",
+    expected_certificate: str | None = None,
+) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["APKSIGNER"] = bash_path(signer)
+    environment["AAPT"] = bash_path(metadata_tool)
     environment["GITHUB_SHA"] = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+    command = [
+        bash_executable(),
+        bash_path(ARTIFACT_SCRIPT),
+        "--apk",
+        bash_path(apk),
+        "--output-dir",
+        bash_path(output),
+        "--artifact-type",
+        artifact_type,
+        "--expected-signing",
+        expected,
+    ]
+    if expected_certificate is not None:
+        command.extend(["--expected-certificate-sha256", expected_certificate])
     return subprocess.run(
-        [
-            bash_executable(),
-            bash_path(ARTIFACT_SCRIPT),
-            "--apk",
-            bash_path(apk),
-            "--output-dir",
-            bash_path(output),
-            "--artifact-type",
-            "debug",
-            "--expected-signing",
-            expected,
-        ],
+        command,
         cwd=ROOT,
         env=environment,
         text=True,
@@ -302,45 +326,276 @@ def run_artifact_script(apk: Path, output: Path, signer: Path, expected: str) ->
     )
 
 
-def run_fake_apksigner_tests() -> int:
+def write_fake_aapt(
+    path: Path,
+    debuggable: bool,
+    version_name: str = "1.0",
+    version_code: int = 1,
+) -> None:
+    debug_line = "application-debuggable\n" if debuggable else ""
+    path.write_text(
+        "#!/usr/bin/env bash\n"
+        "cat <<'EOF'\n"
+        f"package: name='com.mirkori.inplacex' versionCode='{version_code}' versionName='{version_name}'\n"
+        "sdkVersion:'29'\n"
+        f"{debug_line}"
+        "EOF\n",
+        encoding="utf-8",
+    )
+    path.chmod(0o755)
+
+
+def run_fake_artifact_tests() -> int:
     passed = 0
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
         apk = temporary / "candidate.apk"
         apk.write_bytes(b"fake-apk-for-contract-test")
+        metadata_tool = temporary / "aapt"
+        write_fake_aapt(metadata_tool, debuggable=True)
         signer = temporary / "apksigner"
-        signer.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+        signer.write_text(
+            "#!/usr/bin/env bash\n"
+            f"printf '%s\\n' 'Signer #1 certificate SHA-256 digest: {'a' * 64}'\n"
+            "exit 0\n",
+            encoding="utf-8",
+        )
         signer.chmod(0o755)
 
         verified_output = temporary / "verified"
-        result = run_artifact_script(apk, verified_output, signer, "verified")
+        result = run_artifact_script(apk, verified_output, signer, metadata_tool, "verified")
         if result.returncode != 0:
             raise ContractError("fake-apksigner.verified", result.stderr)
         manifest = json.loads(next(verified_output.glob("*.json")).read_text(encoding="utf-8"))
-        if manifest["signing_status"] != "verified":
+        expected_fields = {
+            "packageName": "com.mirkori.inplacex",
+            "versionName": "1.0",
+            "versionCode": 1,
+            "minimumAndroidSdk": 29,
+            "sizeBytes": len(b"fake-apk-for-contract-test"),
+            "signing_status": "verified",
+            "debuggable": True,
+            "releaseId": "inplacex-1.0-1",
+            "sourceFileName": "candidate.apk",
+        }
+        if any(manifest.get(key) != value for key, value in expected_fields.items()):
             raise ContractError("fake-apksigner.verified-manifest")
+        fingerprint = manifest.get("certificateSha256Fingerprint")
+        if not isinstance(fingerprint, str) or fingerprint.count(":") != 31:
+            raise ContractError("fake-apksigner.verified-fingerprint")
         passed += 1
 
         signer.write_text("#!/usr/bin/env bash\nexit 1\n", encoding="utf-8")
         unverified_output = temporary / "unverified"
-        result = run_artifact_script(apk, unverified_output, signer, "unverified")
+        result = run_artifact_script(apk, unverified_output, signer, metadata_tool, "unverified")
         if result.returncode != 0:
             raise ContractError("fake-apksigner.unverified", result.stderr)
         manifest = json.loads(next(unverified_output.glob("*.json")).read_text(encoding="utf-8"))
-        if manifest["signing_status"] != "unverified":
+        if manifest["signing_status"] != "unverified" or manifest["certificateSha256Fingerprint"] is not None:
             raise ContractError("fake-apksigner.unverified-manifest")
         passed += 1
 
         mismatch_output = temporary / "mismatch"
-        result = run_artifact_script(apk, mismatch_output, signer, "verified")
+        result = run_artifact_script(apk, mismatch_output, signer, metadata_tool, "verified")
         if result.returncode == 0 or "expected signing status verified" not in result.stderr:
             raise ContractError("fake-apksigner.mismatch")
         passed += 1
 
         missing = temporary / "missing-apksigner"
-        result = run_artifact_script(apk, temporary / "missing", missing, "verified")
+        result = run_artifact_script(apk, temporary / "missing", missing, metadata_tool, "verified")
         if result.returncode == 0 or "APKSIGNER does not exist" not in result.stderr:
             raise ContractError("fake-apksigner.missing")
+        passed += 1
+
+        missing_aapt = temporary / "missing-aapt"
+        result = run_artifact_script(apk, temporary / "missing-aapt-output", signer, missing_aapt, "verified")
+        if result.returncode == 0 or "AAPT does not exist" not in result.stderr:
+            raise ContractError("fake-aapt.missing")
+        passed += 1
+
+        write_fake_aapt(metadata_tool, debuggable=True)
+        result = run_artifact_script(
+            apk,
+            temporary / "debuggable-release",
+            signer,
+            metadata_tool,
+            "unverified",
+            artifact_type="release",
+        )
+        if result.returncode == 0 or "release APK must not be debuggable" not in result.stderr:
+            raise ContractError("fake-release.debuggable")
+        passed += 1
+
+        write_fake_aapt(metadata_tool, debuggable=False)
+        signer.write_text(
+            "#!/usr/bin/env bash\n"
+            f"printf '%s\\n' 'V2 Signer: certificate SHA-256 digest: {'b' * 64}'\n"
+            "exit 0\n",
+            encoding="utf-8",
+        )
+        signer_certificate = "b" * 64
+
+        missing_policy_output = temporary / "missing-owner-policy"
+        result = run_artifact_script(
+            apk,
+            missing_policy_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+        )
+        if result.returncode == 0 or "--expected-certificate-sha256 is required" not in result.stderr:
+            raise ContractError("fake-release.missing-owner-policy")
+        if missing_policy_output.exists():
+            raise ContractError("fake-release.missing-owner-policy-output")
+        passed += 1
+
+        wrong_policy_output = temporary / "wrong-owner-policy"
+        result = run_artifact_script(
+            apk,
+            wrong_policy_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate="c" * 64,
+        )
+        if result.returncode == 0 or "owner certificate SHA-256 does not match expected policy" not in result.stderr:
+            raise ContractError("fake-release.wrong-owner-policy")
+        if any(wrong_policy_output.iterdir()):
+            raise ContractError("fake-release.wrong-owner-policy-output")
+        passed += 1
+
+        signed_release_output = temporary / "signed-release"
+        result = run_artifact_script(
+            apk,
+            signed_release_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=":".join(
+                signer_certificate[index : index + 2] for index in range(0, len(signer_certificate), 2)
+            ),
+        )
+        if result.returncode != 0:
+            raise ContractError("fake-release.verified", result.stderr)
+        release_directory = signed_release_output / "inplacex-1.0-1"
+        manifest_path = release_directory / "InplaceX-1.0-1.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest["fileName"] != "InplaceX-1.0-1.apk" or manifest["debuggable"] is not False:
+            raise ContractError("fake-release.manifest")
+        expected_bundle_files = {
+            "InplaceX-1.0-1.apk",
+            "InplaceX-1.0-1.json",
+            "InplaceX-1.0-1.apk.sha256",
+            "apksigner-release.txt",
+            "apk-metadata-release.txt",
+        }
+        if {path.name for path in release_directory.iterdir()} != expected_bundle_files:
+            raise ContractError("fake-release.bundle-files")
+        original_apk = apk.read_bytes()
+        passed += 1
+
+        result = run_artifact_script(
+            apk,
+            signed_release_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode != 0:
+            raise ContractError("fake-release.idempotent-replay", result.stderr)
+        if any(path.name.startswith(".inplacex-1.0-1") for path in signed_release_output.iterdir()):
+            raise ContractError("fake-release.idempotent-replay-temp")
+        passed += 1
+
+        apk.write_bytes(b"different-apk-with-the-same-release-id")
+        result = run_artifact_script(
+            apk,
+            signed_release_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode == 0 or "releaseId already exists with different APK SHA-256" not in result.stderr:
+            raise ContractError("fake-release.release-id-conflict")
+        if (release_directory / "InplaceX-1.0-1.apk").read_bytes() != original_apk:
+            raise ContractError("fake-release.release-id-conflict-overwrite")
+        if any(path.name.startswith(".inplacex-1.0-1") for path in signed_release_output.iterdir()):
+            raise ContractError("fake-release.release-id-conflict-temp")
+        passed += 1
+
+        apk.write_bytes(original_apk)
+        stale_output = temporary / "stale-release"
+        result = run_artifact_script(
+            apk,
+            stale_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode != 0:
+            raise ContractError("fake-release.stale-setup", result.stderr)
+        passed += 1
+        stale_directory = stale_output / "inplacex-1.0-1"
+        (stale_directory / "stale.txt").write_text("stale", encoding="utf-8")
+        result = run_artifact_script(
+            apk,
+            stale_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode == 0 or "stale or incomplete files" not in result.stderr:
+            raise ContractError("fake-release.stale-rejected")
+        if any(path.name.startswith(".inplacex-1.0-1") for path in stale_output.iterdir()):
+            raise ContractError("fake-release.stale-temp")
+        passed += 1
+
+        maximum_version_name = "1" + ("a" * 52)
+        write_fake_aapt(metadata_tool, debuggable=False, version_name=maximum_version_name)
+        maximum_id_output = temporary / "maximum-release-id"
+        result = run_artifact_script(
+            apk,
+            maximum_id_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode != 0:
+            raise ContractError("fake-release.maximum-release-id", result.stderr)
+        maximum_release_id = f"inplacex-{maximum_version_name}-1"
+        if len(maximum_release_id) != 64 or not (maximum_id_output / maximum_release_id).is_dir():
+            raise ContractError("fake-release.maximum-release-id-directory")
+        passed += 1
+
+        excessive_version_name = "1" + ("a" * 53)
+        write_fake_aapt(metadata_tool, debuggable=False, version_name=excessive_version_name)
+        excessive_id_output = temporary / "excessive-release-id"
+        result = run_artifact_script(
+            apk,
+            excessive_id_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode == 0 or "releaseId exceeds Mirkori catalog limit of 64 characters" not in result.stderr:
+            raise ContractError("fake-release.excessive-release-id")
+        if any(excessive_id_output.iterdir()):
+            raise ContractError("fake-release.excessive-release-id-output")
         passed += 1
     return passed
 
@@ -356,8 +611,8 @@ def main() -> int:
         validate(workflow, artifact, instrumentation)
         if args.self_test:
             hostile_count = run_hostile_fixtures(workflow, artifact, instrumentation)
-            signer_count = run_fake_apksigner_tests()
-            print(f"OK: {hostile_count} hostile fixtures and {signer_count} apksigner executions passed")
+            artifact_count = run_fake_artifact_tests()
+            print(f"OK: {hostile_count} hostile fixtures and {artifact_count} artifact executions passed")
     except (ContractError, OSError, ValueError, KeyError, json.JSONDecodeError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

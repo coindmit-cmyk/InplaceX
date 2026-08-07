@@ -6,6 +6,13 @@ local.properties
 .env
 .env.local
 .env.*.local
+*.jks
+*.keystore
+*.p12
+*.pfx
+signing.properties
+*.signing.properties
+release-signing.properties
 *.dump
 backups/
 .obsidian/

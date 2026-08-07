@@ -14,6 +14,7 @@ class ReleaseVariantIsolationTest {
         assertEquals("com.mirkori.inplacex", BuildConfig.APPLICATION_ID)
         assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
         assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
+        assertFalse(testFriendBotEnabled())
     }
 
     @Test

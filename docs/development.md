@@ -23,21 +23,33 @@ InplaceX-android/provider-config.example.properties
 ```powershell
 .\gradlew.bat verifyProject
 .\gradlew.bat assembleDebug
-.\gradlew.bat :app:validateReleaseAdsConfig
+.\gradlew.bat :app:validateProductionReleaseConfig `
+  -PinplacexProviderConfigFile=D:\private\inplacex-provider.properties
 .\gradlew.bat cleanLocalDiagnostics
 ```
 
-`validateReleaseAdsConfig` не печатает значения: он сообщает только имена
-отсутствующих release-полей, проверяет HTTPS origin backend и запрещает
-повторяющиеся, управляющие или чрезмерно длинные Yandex placement ID.
+`validateProductionReleaseConfig` не печатает значения: он сообщает только
+имена отсутствующих release-полей, проверяет HTTPS origins online backend и
+Mirkori Platform, а также запрещает повторяющиеся, управляющие или чрезмерно
+длинные Yandex placement ID.
 
 В изолированном worktree можно использовать уже существующий приватный файл
 настроек без копирования:
 
 ```powershell
-.\gradlew.bat :app:validateReleaseAdsConfig `
+.\gradlew.bat :app:validateProductionReleaseConfig `
   -PinplacexProviderConfigFile=D:\private\inplacex-provider.properties
 ```
+
+Обычный `:app:assembleRelease` собирает unsigned APK и подходит для PR CI.
+Подписанный кандидат создаётся только через `:app:releaseCandidate` с внешним
+provider config и полным signing config. Его безопасный формат показан в
+`InplaceX-android/release-signing.example.properties`; файл с реальными
+значениями и keystore должны оставаться вне Git. В config обязателен ожидаемый
+SHA-256 owner-сертификата. Обычные `assembleRelease` и
+`assembleInternalDistribution` остаются unsigned даже с настроенным ключом;
+подпись получает только отдельный `signedReleaseCandidate`. Проверенный bundle
+появляется атомарно в `build/release-candidates/<releaseId>`.
 
 На Unix-like shell используйте `./gradlew`.
 

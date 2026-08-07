@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Android release identity now comes from one version properties file. PR CI
+  runs release unit tests and lint, builds an unsigned release APK, and derives
+  package/version/minSdk/size/debuggable/signing evidence from the APK itself.
+  A separate fail-closed `releaseCandidate` task requires explicit production
+  online/platform/Yandex configuration plus complete external signing, never
+  falls back to the debug key, verifies the owner-approved certificate, and
+  atomically writes an immutable signed artifact bundle. Ordinary release and
+  internal-distribution builds remain unsigned even when signing is configured.
+
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under
   Android Keystore-backed encryption, opens account login in the system browser,

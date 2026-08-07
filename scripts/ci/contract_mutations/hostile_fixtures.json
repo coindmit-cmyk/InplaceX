@@ -49,6 +49,20 @@
     "expected": "step.instrumentation.emulator.pinned-action"
   },
   {
+    "name": "release_unit_short_circuit",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew :app:testReleaseUnitTest",
+    "replacement": "        run: ./gradlew :app:testReleaseUnitTest || true",
+    "expected": "step.release.unit.exact-run"
+  },
+  {
+    "name": "release_lint_echo",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew :app:lintRelease",
+    "replacement": "        run: echo ./gradlew :app:lintRelease",
+    "expected": "step.release.lint.exact-run"
+  },
+  {
     "name": "release_short_circuit",
     "target": "workflow",
     "anchor": "        run: ./gradlew :app:assembleRelease",

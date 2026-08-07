@@ -140,7 +140,13 @@ jobs:
       - name: Install CI-only provider configuration
         run: install -m 0600 InplaceX-android/provider-config.ci.properties local.properties
 
-      - name: Assemble unsigned release candidate
+      - name: Run release unit tests
+        run: ./gradlew :app:testReleaseUnitTest
+
+      - name: Run release lint
+        run: ./gradlew :app:lintRelease
+
+      - name: Assemble unsigned release artifact
         run: ./gradlew :app:assembleRelease
 
       - name: Write release artifact identity
