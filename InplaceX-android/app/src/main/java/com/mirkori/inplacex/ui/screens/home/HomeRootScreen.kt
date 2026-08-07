@@ -83,7 +83,10 @@ fun HomeRootScreen(
     onConsumeOpenPositionHint: () -> Boolean = { false },
     onConsumeCheckDigitHint: () -> Boolean = { false },
     onConsumeCheckPositionHint: () -> Boolean = { false },
-    onWatchRewardedHintAd: (com.mirkori.inplacex.data.local.HintStockType) -> Boolean = { false },
+    onWatchRewardedHintAd: (
+        com.mirkori.inplacex.data.local.HintStockType,
+        (Boolean) -> Unit,
+    ) -> Unit = { _, completed -> completed(false) },
     onMatchStarted: () -> Unit = {},
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},

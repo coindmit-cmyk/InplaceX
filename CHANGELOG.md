@@ -88,6 +88,24 @@
 - Rebased campaign budgets on deterministic measured solver performance,
   centralized rating/progression in core, and guaranteed zero stars for losses
   and one star for a last-attempt win.
+- Added the advertising runtime and activated Yandex Mobile Ads SDK 8 for the
+  owner's Russian-market banner, rewarded, and optional post-match inventory.
+  Global and unknown markets fail closed until a separate provider is approved.
+  The implementation
+  includes explicit, versioned privacy choice before SDK initialization,
+  invalidation of loaded ads when that choice changes, backend
+  IP-derived coarse-market routing through a trusted proxy boundary and local
+  MMDB, persisted foreground/completed-game cadence, callback-verified rewards,
+  bounded SDK operations, variant-specific thresholds, release-config validation, and
+  production GeoIP/nginx scripts. Production-like builds now run the provider
+  validation automatically, an absent optional interstitial cannot disable
+  banner/rewarded ads, and ad-free entitlements suppress forced ads without removing voluntary
+  rewarded offers. Unknown market results are retried after connectivity
+  recovery, including a bounded active-game banner retry loop. GeoIP updates
+  retain a rollback copy, and production smoke checks now enforce timeouts,
+  JSON headers, no-store, and DB-IP attribution. The release validator also
+  rejects malformed backend origins and reused or malformed placement IDs
+  without exposing their values.
 - Added provider-neutral `InplaceX-auth-core` security rules for Google,
   passwordless email codes, opaque provider subjects, and signed/fresh Telegram
   login payloads; provider secrets remain outside Android and Git.
@@ -189,7 +207,7 @@
 - Hardened the authoritative duel engine with single-use mutable digit
   commands, ASCII-only validation, viewer-neutral attempt snapshots, and
   deterministic secret-buffer zeroization after finish, close, or failure.
-- Isolated sandbox provider stubs and test identifiers to the debug Android variant. Release provider wiring now fails closed until real Google Play, Billing, and AdMob SDK results are integrated.
+- Isolated sandbox provider stubs and test identifiers to the debug Android variant. Release provider wiring fails closed until each configured live SDK returns a real provider result.
 - Added closed backend session read contracts with deterministic 64 KiB JSON
   frames, strict bounded JSON scanning, server-keyed secret fingerprints, and
   pseudonymous read-log attributes. Client intents, authenticated actor binding,

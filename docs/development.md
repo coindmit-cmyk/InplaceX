@@ -23,7 +23,20 @@ InplaceX-android/provider-config.example.properties
 ```powershell
 .\gradlew.bat verifyProject
 .\gradlew.bat assembleDebug
+.\gradlew.bat :app:validateReleaseAdsConfig
 .\gradlew.bat cleanLocalDiagnostics
+```
+
+`validateReleaseAdsConfig` не печатает значения: он сообщает только имена
+отсутствующих release-полей, проверяет HTTPS origin backend и запрещает
+повторяющиеся, управляющие или чрезмерно длинные Yandex placement ID.
+
+В изолированном worktree можно использовать уже существующий приватный файл
+настроек без копирования:
+
+```powershell
+.\gradlew.bat :app:validateReleaseAdsConfig `
+  -PinplacexProviderConfigFile=D:\private\inplacex-provider.properties
 ```
 
 На Unix-like shell используйте `./gradlew`.

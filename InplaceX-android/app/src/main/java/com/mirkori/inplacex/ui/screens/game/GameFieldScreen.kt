@@ -54,7 +54,9 @@ fun GameFieldScreen(
     onConsumeOpenPositionHint: () -> Boolean = { false },
     onConsumeCheckDigitHint: () -> Boolean = { false },
     onConsumeCheckPositionHint: () -> Boolean = { false },
-    onWatchRewardedHintAd: (HintStockType) -> Boolean = { false },
+    onWatchRewardedHintAd: (HintStockType, (Boolean) -> Unit) -> Unit = { _, completed ->
+        completed(false)
+    },
     onConsumeExtraMovesBoost: () -> Boolean = { false },
     onConsumeExtraTimeBoost: () -> Boolean = { false },
     onMatchStarted: () -> Unit = {},
@@ -208,10 +210,12 @@ fun GameFieldScreen(
                 )
             },
             onRewardedHintConfirmed = { mode ->
-                routeController.confirmRewardedHint(
-                    mode = mode,
-                    granted = onWatchRewardedHintAd(mode.toStockType()),
-                )
+                onWatchRewardedHintAd(mode.toStockType()) { granted ->
+                    routeController.confirmRewardedHint(
+                        mode = mode,
+                        granted = granted,
+                    )
+                }
             },
             onRewardedHintDismissed = routeController::dismissRewardedHint,
         ),

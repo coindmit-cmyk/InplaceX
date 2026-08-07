@@ -15,6 +15,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,12 +29,24 @@ import com.mirkori.inplacex.data.local.GameModeStatType
 import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.HintStockType
 import com.mirkori.inplacex.data.local.MonetizationProductType
+import com.mirkori.inplacex.ads.AdFormat
+import com.mirkori.inplacex.ads.AdDecision
+import com.mirkori.inplacex.ads.AdEntitlements
+import com.mirkori.inplacex.ads.AdPlacement
+import com.mirkori.inplacex.ads.AdPolicy
+import com.mirkori.inplacex.ads.AdPresentationResult
+import com.mirkori.inplacex.ads.AdPreloadResult
+import com.mirkori.inplacex.ads.AdProviderId
+import com.mirkori.inplacex.ads.AdRequest
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
 import com.mirkori.inplacex.data.local.LocalRelationshipStatus
 import com.mirkori.inplacex.data.local.LocalRelationshipType
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
+import com.mirkori.inplacex.platform.ads.YandexGameBanner
+import com.mirkori.inplacex.platform.ads.AdUsageTracker
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
@@ -48,19 +61,17 @@ import com.mirkori.inplacex.platform.online.GuestAuthResult
 import com.mirkori.inplacex.platform.online.GoogleChallengeResult
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.AdPlacementPolicy
-import com.mirkori.inplacex.platform.services.GAME_BANNER_SLOT_ID
-import com.mirkori.inplacex.platform.services.InterstitialPlacement
 import com.mirkori.inplacex.platform.services.GoogleCredentialResult
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
-import com.mirkori.inplacex.platform.services.RewardedPlacement
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
+import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
@@ -80,10 +91,12 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
+    private lateinit var adUsageTracker: AdUsageTracker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         captureMirkoriCallback(intent)
+        adUsageTracker = AdUsageTracker.create(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         applyImmersiveMode()
 
@@ -96,8 +109,13 @@ class MainActivity : ComponentActivity() {
                         platformConfig = AppConfigCatalog.platformConfig,
                     )
                 }
-                val adService = providerServices.adService
                 val billingService = providerServices.billingService
+                val adConsentRequired = remember {
+                    AppConfigCatalog.platformConfig
+                        .providers
+                        .ads
+                        .isConfigured
+                }
                 val googleCredentialSignIn = remember {
                     GoogleCredentialSignIn(
                         context = applicationContext,
@@ -105,6 +123,13 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val coroutineScope = rememberCoroutineScope()
+                DisposableEffect(providerServices) {
+                    providerServices.adActivityHost.attach(this@MainActivity)
+                    onDispose {
+                        providerServices.adActivityHost.detach(this@MainActivity)
+                        providerServices.adRuntime.close()
+                    }
+                }
 
                 val activeOnlineSessionStore = remember {
                     ActiveOnlineSessionStore(applicationContext)
@@ -122,6 +147,23 @@ class MainActivity : ComponentActivity() {
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+                var selectedBannerProviderName by rememberSaveable {
+                    mutableStateOf<String?>(null)
+                }
+                var bannerLoaded by rememberSaveable { mutableStateOf(false) }
+                var failedBannerProviderNames by remember {
+                    mutableStateOf(emptySet<String>())
+                }
+                var adConsentDecisionName by rememberSaveable {
+                    mutableStateOf(providerServices.adConsent.currentDecision().name)
+                }
+                var isAdPrivacyOpen by rememberSaveable {
+                    mutableStateOf(
+                        adConsentRequired &&
+                            providerServices.adConsent.currentDecision() ==
+                            AdConsentDecision.UNDECIDED,
+                    )
+                }
                 var isVariantToolsOpen by rememberSaveable { mutableStateOf(false) }
                 var variantToolsEnabled by rememberSaveable { mutableStateOf(false) }
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
@@ -156,6 +198,37 @@ class MainActivity : ComponentActivity() {
                     platformLocalRepository
                         .loadRelationships(LocalRelationshipStatus.ACTIVE)
                         .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                }
+
+                LaunchedEffect(Unit) {
+                    adUsageTracker.ensureCompletedMatchBaseline(
+                        initialProgressState.matchesPlayed,
+                    )
+                }
+
+                LaunchedEffect(adConsentDecisionName, providerServices) {
+                    if (
+                        AdConsentDecision.valueOf(adConsentDecisionName) !=
+                        AdConsentDecision.UNDECIDED
+                    ) {
+                        providerServices.adRuntime.preload(
+                            AdRequest(
+                                placement = AdPlacement.SHOP_COINS_REWARD,
+                                format = AdFormat.REWARDED,
+                            ),
+                        )
+                        if (
+                            AppConfigCatalog.platformConfig.providers.ads.ownerYandex
+                                .postMatchInterstitialAdUnitId.isNotBlank()
+                        ) {
+                            providerServices.adRuntime.preload(
+                                AdRequest(
+                                    placement = AdPlacement.POST_MATCH_INTERSTITIAL,
+                                    format = AdFormat.INTERSTITIAL,
+                                ),
+                            )
+                        }
+                    }
                 }
 
                 LaunchedEffect(progressState.temporaryProExpiresAtMs) {
@@ -273,12 +346,85 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val isPremium = entitlements.adsDisabled
+                val showPostMatchInterstitial: () -> Unit = {
+                    if (
+                        AppConfigCatalog.platformConfig.providers.ads.ownerYandex
+                            .postMatchInterstitialAdUnitId.isNotBlank()
+                    ) {
+                        val usage = adUsageTracker.snapshot()
+                        val request = AdRequest(
+                            placement = AdPlacement.POST_MATCH_INTERSTITIAL,
+                            format = AdFormat.INTERSTITIAL,
+                            matchesPlayed = usage.completedMatches,
+                            foregroundUsageSeconds = usage.foregroundUsageMillis / 1_000,
+                            matchesSinceLastInterstitial = usage.matchesSinceLastInterstitial,
+                        )
+                        val decision = AdPolicy.evaluate(
+                            request = request,
+                            entitlements = AdEntitlements(adsDisabled = entitlements.adsDisabled),
+                            interstitialPolicy = AppConfigCatalog.platformConfig
+                                .providers
+                                .ads
+                                .postMatchInterstitialPolicy,
+                        )
+                        if (decision == AdDecision.Allowed) {
+                            coroutineScope.launch {
+                                providerServices.adRuntime.preload(request)
+                                val presentation = providerServices.adRuntime.show(request)
+                                if (
+                                    presentation.shownBy != null &&
+                                    (
+                                        presentation.result == AdPresentationResult.Completed ||
+                                            presentation.result == AdPresentationResult.Dismissed
+                                        )
+                                ) {
+                                    adUsageTracker.recordInterstitialPresented()
+                                }
+                                providerServices.adRuntime.preload(request)
+                            }
+                        }
+                    }
+                }
                 val gameBannerEligible = AdPlacementPolicy.canRequestGameBanner(
                     isInGame = isInGame,
                     entitlements = entitlements,
                 )
-                val gameBannerAccepted = remember(adService, gameBannerEligible) {
-                    gameBannerEligible && adService.showBanner(GAME_BANNER_SLOT_ID)
+                LaunchedEffect(
+                    gameBannerEligible,
+                    adConsentDecisionName,
+                    providerServices,
+                    failedBannerProviderNames,
+                ) {
+                    if (!gameBannerEligible) {
+                        selectedBannerProviderName = null
+                        bannerLoaded = false
+                        failedBannerProviderNames = emptySet()
+                        return@LaunchedEffect
+                    }
+                    val request = AdRequest(
+                        placement = AdPlacement.GAME_BANNER,
+                        format = AdFormat.BANNER,
+                    )
+                    while (true) {
+                        selectedBannerProviderName = providerServices.adRuntime.preload(request)
+                            .firstOrNull {
+                                (
+                                    it.result == AdPreloadResult.READY ||
+                                        it.result == AdPreloadResult.ALREADY_READY
+                                    ) &&
+                                    it.providerId.name !in failedBannerProviderNames
+                            }
+                            ?.providerId
+                            ?.name
+                        if (selectedBannerProviderName != null) {
+                            bannerLoaded = false
+                            return@LaunchedEffect
+                        }
+                        delay(BannerRetryDelayMillis)
+                        if (failedBannerProviderNames.isNotEmpty()) {
+                            failedBannerProviderNames = emptySet()
+                        }
+                    }
                 }
                 val appBackgroundStyle = ScreenBackgroundStyle.DrawableResource(
                     resourceId = R.drawable.toy_room_bg_v6,
@@ -286,7 +432,9 @@ class MainActivity : ComponentActivity() {
                 )
                 val bottomMode = when {
                     isInGame && isPremium -> BottomLayerMode.NONE
-                    isInGame && gameBannerAccepted -> BottomLayerMode.AD
+                    isInGame && selectedBannerProviderName != null && bannerLoaded ->
+                        BottomLayerMode.AD
+                    isInGame && selectedBannerProviderName != null -> BottomLayerMode.AD_LOADING
                     isInGame -> BottomLayerMode.NONE
                     else -> BottomLayerMode.MENU
                 }
@@ -324,11 +472,29 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomAdContent = {
-                            VariantBottomAdContent(
-                                inspectionValue = currentInspectionValue,
-                                adsDisabled = progressState.adsDisabledAt(currentTimeMs),
-                                toolsEnabled = variantToolsEnabled,
-                            )
+                            when (selectedBannerProviderName) {
+                                AdProviderId.OWNER_YANDEX.name -> key(adConsentDecisionName) {
+                                    YandexGameBanner(
+                                        adUnitId = AppConfigCatalog.platformConfig
+                                            .providers
+                                            .ads
+                                            .ownerYandex
+                                            .gameBannerAdUnitId,
+                                        onLoaded = { bannerLoaded = true },
+                                        onFailed = {
+                                            selectedBannerProviderName = null
+                                            bannerLoaded = false
+                                            failedBannerProviderNames +=
+                                                AdProviderId.OWNER_YANDEX.name
+                                        },
+                                    )
+                                }
+                                else -> VariantBottomAdContent(
+                                    inspectionValue = currentInspectionValue,
+                                    adsDisabled = progressState.adsDisabledAt(currentTimeMs),
+                                    toolsEnabled = variantToolsEnabled,
+                                )
+                            }
                         },
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
@@ -375,28 +541,27 @@ class MainActivity : ComponentActivity() {
                                             false
                                         }
                                     },
-                                    onWatchRewardedHintAd = { hintType ->
-                                        val placement = when (hintType) {
-                                            HintStockType.OPEN_POSITION -> RewardedPlacement.GAME_OPEN_POSITION_HINT
-                                            HintStockType.CHECK_DIGIT -> RewardedPlacement.GAME_CHECK_DIGIT_HINT
-                                            HintStockType.CHECK_POSITION -> RewardedPlacement.GAME_CHECK_POSITION_HINT
+                                    onWatchRewardedHintAd = { hintType, completed ->
+                                        val request = rewardedHintRequest(hintType)
+                                        coroutineScope.launch {
+                                            providerServices.adRuntime.preload(request)
+                                            val presentation = providerServices.adRuntime.show(request)
+                                            completed(AdPolicy.canGrantReward(presentation.result))
+                                            providerServices.adRuntime.preload(request)
                                         }
-                                        adService.showRewardedAd(placement)
                                     },
                                     onMatchStarted = {
                                         progressState = progressRepository.recordMatchStarted()
                                     },
                                     onRecordPveResult = { won ->
                                         progressState = progressRepository.recordModeResult(GameModeStatType.PVE_RACE, won)
-                                        if (adService.shouldShowPostGameInterstitial(progressState.matchesPlayed, entitlements)) {
-                                            adService.showInterstitial(InterstitialPlacement.POST_MATCH)
-                                        }
+                                        adUsageTracker.recordCompletedMatch()
+                                        showPostMatchInterstitial()
                                     },
                                     onRecordPvpResult = { won ->
                                         progressState = progressRepository.recordModeResult(GameModeStatType.PVP_DUEL, won)
-                                        if (adService.shouldShowPostGameInterstitial(progressState.matchesPlayed, entitlements)) {
-                                            adService.showInterstitial(InterstitialPlacement.POST_MATCH)
-                                        }
+                                        adUsageTracker.recordCompletedMatch()
+                                        showPostMatchInterstitial()
                                     },
                                     onOpenCompany = {
                                         currentSection = AppSection.COMPANY
@@ -477,13 +642,14 @@ class MainActivity : ComponentActivity() {
                                         false
                                     }
                                 },
-                                onWatchRewardedHintAd = { hintType ->
-                                    val placement = when (hintType) {
-                                        HintStockType.OPEN_POSITION -> RewardedPlacement.GAME_OPEN_POSITION_HINT
-                                        HintStockType.CHECK_DIGIT -> RewardedPlacement.GAME_CHECK_DIGIT_HINT
-                                        HintStockType.CHECK_POSITION -> RewardedPlacement.GAME_CHECK_POSITION_HINT
+                                onWatchRewardedHintAd = { hintType, completed ->
+                                    val request = rewardedHintRequest(hintType)
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.preload(request)
+                                        val presentation = providerServices.adRuntime.show(request)
+                                        completed(AdPolicy.canGrantReward(presentation.result))
+                                        providerServices.adRuntime.preload(request)
                                     }
-                                    adService.showRewardedAd(placement)
                                 },
                                 onConsumeExtraMovesBoost = {
                                     if (progressRepository.consumeBoost(BoostStockType.EXTRA_MOVES)) {
@@ -512,6 +678,8 @@ class MainActivity : ComponentActivity() {
                                     campaignProgress = campaignProgress.map { existing ->
                                         if (existing.levelNumber == level) recorded else existing
                                     }
+                                    adUsageTracker.recordCompletedMatch()
+                                    showPostMatchInterstitial()
                                 },
                                 onClaimChapterReward = { chapterNumber ->
                                     val claimedState = progressRepository
@@ -544,6 +712,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onRecordCompanyLoss = {
                                     progressState = progressRepository.recordCompanyLoss()
+                                    adUsageTracker.recordCompletedMatch()
+                                    showPostMatchInterstitial()
                                 },
                                 onMatchStarted = {
                                     progressState = progressRepository.recordMatchStarted()
@@ -553,12 +723,21 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = progressState,
                                 nowMs = currentTimeMs,
-                                onWatchRewardedCoins = {
-                                    val rewarded = adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD)
-                                    if (rewarded) {
-                                        progressState = progressRepository.grantRewardedCoins(20)
+                                onWatchRewardedCoins = { completed ->
+                                    val request = AdRequest(
+                                        placement = AdPlacement.SHOP_COINS_REWARD,
+                                        format = AdFormat.REWARDED,
+                                    )
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.preload(request)
+                                        val presentation = providerServices.adRuntime.show(request)
+                                        val rewarded = AdPolicy.canGrantReward(presentation.result)
+                                        if (rewarded) {
+                                            progressState = progressRepository.grantRewardedCoins(20)
+                                        }
+                                        completed(rewarded)
+                                        providerServices.adRuntime.preload(request)
                                     }
-                                    rewarded
                                 },
                                 onBuyOpenPositionHint = {
                                     val purchased = progressRepository.buyHint(HintStockType.OPEN_POSITION, costCoins = 20)
@@ -803,8 +982,16 @@ class MainActivity : ComponentActivity() {
                         if (isSettingsOpen) {
                             SettingsRootScreen(
                                 currentLanguage = currentLanguage,
+                                adConsentDecision = AdConsentDecision.valueOf(adConsentDecisionName),
                                 onLanguageChange = { language ->
                                     currentLanguageName = language.name
+                                },
+                                onOpenAdPrivacy = {
+                                    isSettingsOpen = false
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.showProviderPrivacyOptions()
+                                        isAdPrivacyOpen = true
+                                    }
                                 },
                                 onOpenInternalTools = {
                                     isSettingsOpen = false
@@ -819,6 +1006,39 @@ class MainActivity : ComponentActivity() {
                                 isSettingsOpen = false
                             }
                         }
+
+                        if (isAdPrivacyOpen) {
+                            AdPrivacyConsentDialog(
+                                onAccept = {
+                                    providerServices.adConsent.updateDecision(
+                                        AdConsentDecision.ACCEPTED,
+                                    )
+                                    selectedBannerProviderName = null
+                                    bannerLoaded = false
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.onConsentChanged(
+                                            AdConsentDecision.ACCEPTED,
+                                        )
+                                        adConsentDecisionName = AdConsentDecision.ACCEPTED.name
+                                        isAdPrivacyOpen = false
+                                    }
+                                },
+                                onDecline = {
+                                    providerServices.adConsent.updateDecision(
+                                        AdConsentDecision.DECLINED,
+                                    )
+                                    selectedBannerProviderName = null
+                                    bannerLoaded = false
+                                    coroutineScope.launch {
+                                        providerServices.adRuntime.onConsentChanged(
+                                            AdConsentDecision.DECLINED,
+                                        )
+                                        adConsentDecisionName = AdConsentDecision.DECLINED.name
+                                        isAdPrivacyOpen = false
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -831,6 +1051,16 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         captureMirkoriCallback(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        adUsageTracker.onForeground()
+    }
+
+    override fun onStop() {
+        adUsageTracker.onBackground()
+        super.onStop()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -867,3 +1097,15 @@ class MainActivity : ComponentActivity() {
 
 internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSection =
     if (sessionId == null) AppSection.HOME else AppSection.SOCIAL
+
+private fun rewardedHintRequest(hintType: HintStockType): AdRequest =
+    AdRequest(
+        placement = when (hintType) {
+            HintStockType.OPEN_POSITION -> AdPlacement.GAME_OPEN_POSITION_HINT
+            HintStockType.CHECK_DIGIT -> AdPlacement.GAME_CHECK_DIGIT_HINT
+            HintStockType.CHECK_POSITION -> AdPlacement.GAME_CHECK_POSITION_HINT
+        },
+        format = AdFormat.REWARDED,
+    )
+
+private const val BannerRetryDelayMillis = 30_000L

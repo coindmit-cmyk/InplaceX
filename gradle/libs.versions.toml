@@ -15,6 +15,7 @@ ktor = "2.3.13"
 kotlinxSerializationJson = "1.8.1"
 credentials = "1.6.0"
 googleId = "1.2.0"
+yandexMobileAds = "8.2.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -47,6 +48,8 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 google-identity-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
+yandex-mobileads = { group = "com.yandex.android", name = "mobileads", version.ref = "yandexMobileAds" }
+yandex-mobileads-compose = { group = "com.yandex.android", name = "mobileads-compose", version.ref = "yandexMobileAds" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -19,7 +19,9 @@ fun AppBottomSlot(
             modifier = modifier
         )
 
-        BottomLayerMode.AD -> AppBottomAd(
+        BottomLayerMode.AD,
+        BottomLayerMode.AD_LOADING,
+        -> AppBottomAd(
             modifier = modifier,
             content = adContent
         )

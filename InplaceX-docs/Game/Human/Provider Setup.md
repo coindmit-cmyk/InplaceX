@@ -1,57 +1,109 @@
-# Provider Setup
+# Настройка провайдеров
 
-## Goal
+## Цель
 
-Prepare provider adapters so Google, email, Telegram, ads, and billing can be
-enabled without rewriting UI or game logic.
+Android и backend уже содержат рабочие границы для авторизации, рекламы и
+биллинга. Значения из кабинетов и секреты остаются вне Git: Android читает
+идентификаторы из `local.properties`, а сервер получает секреты только через
+переменные окружения или утверждённое хранилище секретов.
 
-## Current Model
+Изолированная рабочая копия или CI могут читать общий приватный файл:
 
-- provider ids are read from `local.properties`
-- fallback defaults keep the app working in stub mode
-- the canonical example file is `provider-config.example.properties`
-- email and Telegram credentials are server-only environment secrets and never
-  belong in `local.properties`, Android resources, or Git
+```powershell
+.\gradlew.bat <task> -PinplacexProviderConfigFile=C:\private\local.properties
+```
 
-## Keys To Add Later
+## Android-параметры
 
-- `provider.environment`
-  - `sandbox` or `live`
+Для каждого варианта используются отдельные ключи: `<variant>` — `debug` или
+`release`.
 
-- Google Play
-  - `provider.googlePlay.webClientId`
-  - `provider.googlePlay.serverClientId`
-  - `provider.googlePlay.gamesProjectId`
+- Backend:
+  - `online.<variant>.baseUrl`
+- Google Play:
+  - `provider.<variant>.googlePlay.webClientId`
+  - `provider.<variant>.googlePlay.serverClientId`
+  - `provider.<variant>.googlePlay.gamesProjectId`
+- Личный Yandex владельца:
+  - `provider.<variant>.ads.yandex.owner.banner.game`
+  - `provider.<variant>.ads.yandex.owner.rewarded.general`
+  - `provider.<variant>.ads.yandex.owner.interstitial.postMatch`
+- Ограничения post-match рекламы:
+  - `provider.<variant>.ads.interstitial.minimumCompletedMatches`
+  - `provider.<variant>.ads.interstitial.minimumForegroundSeconds`
+  - `provider.<variant>.ads.interstitial.gamesBetweenImpressions`
+- Биллинг:
+  - `provider.<variant>.billing.removeAdsProductId`
+  - `provider.<variant>.billing.proSubscriptionId`
+  - `provider.<variant>.billing.proPlusSubscriptionId`
 
-- Ads
-  - `provider.ads.admobAppId`
-  - `provider.ads.banner.game`
-  - `provider.ads.rewarded.general`
-  - `provider.ads.interstitial.postMatch`
+Безопасный шаблон находится в
+`InplaceX-android/provider-config.example.properties`.
 
-- Billing
-  - `provider.billing.removeAdsProductId`
-  - `provider.billing.proSubscriptionId`
-  - `provider.billing.proPlusSubscriptionId`
+## Текущая рекламная схема
 
-- Identity service / VPS secret store
-  - Google OAuth web client ID
-  - email delivery provider credentials and the email-code HMAC key
-  - Telegram bot token and the provider-subject HMAC key
+- Yandex принадлежит владельцу и используется только для российского рынка.
+- Для `GLOBAL` отдельный провайдер пока не подключён, поэтому реклама там
+  безопасно отключена.
+- Неизвестный рынок, отсутствие privacy-решения или неполная конфигурация
+  приводят к нулю рекламных запросов.
+- `UNKNOWN` не кэшируется; активный игровой экран повторяет banner-проверку с
+  паузой, поэтому показ восстанавливается после возвращения сети.
+- Banner, rewarded и optional post-match interstitial используют один
+  Yandex-маршрут.
+- Reward выдаётся только после reward callback рекламной сети.
+- `Remove Ads`, временный `Pro`, постоянный `Pro` и `Pro+` отключают
+  принудительный banner и post-match interstitial. Добровольные rewarded
+  предложения за подсказки и монеты остаются доступны.
+- Release по умолчанию допускает первый post-match interstitial не раньше
+  `20` завершённых игр и `1800` секунд активного использования, затем через
+  каждые `4` завершённые игры.
 
-## Android Preparation Already Done
+## Release-gate
 
-- `BuildConfig` fields are generated for provider ids
-- AdMob app id is already wired through `manifestPlaceholders`
-- the manifest already has the ad application meta-data entry
+`preReleaseBuild` и `preInternalDistributionBuild` автоматически запускают
+`:app:validateReleaseAdsConfig`.
 
-## Future Activation Path
+Проверка:
 
-1. add real ids to `local.properties`
-2. switch `provider.environment` to `live`
-3. fill the SDK-ready adapter classes with real platform calls
-4. keep the same UI flows and repository contracts
+- требует HTTPS origin backend без user info, path, query и fragment;
+- требует Yandex banner и rewarded placement ID владельца;
+- допускает пустой post-match interstitial ID;
+- требует разные ID для всех настроенных Yandex placements;
+- отклоняет управляющие символы и чрезмерно длинные значения;
+- не выводит настроенные значения.
 
-Email and Telegram activation additionally requires identity-service routes,
-one-time challenge persistence, rate limiting, and a configured delivery
-adapter. The shared verifier alone must not be presented as a live sign-in.
+Таким образом release-сборка не создаётся с частично активированной рекламой.
+
+## Backend и определение рынка
+
+Предпочтительный production-режим использует локальную MMDB:
+
+- `INPLACEX_AD_MARKET_REQUIRED=true`
+- `INPLACEX_AD_MARKET_DB_PATH=/var/lib/inplacex/geoip/dbip-country-lite.mmdb`
+- `INPLACEX_AD_MARKET_CLIENT_IP_HEADER=X-InplaceX-Client-IP`
+- `INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS=127.0.0.1,::1`
+
+Nginx обязан перезаписывать client-IP header своим `$remote_addr`. Backend
+принимает его только от явно доверенного proxy host. Прямой числовой IP
+определяется без заголовка. Поддельный, неоднозначный или невалидный адрес даёт
+`UNKNOWN`, и Android не показывает рекламу.
+
+Старый trusted-country-header режим сохранён только как взаимоисключающая
+совместимость. Полный production runbook:
+`InplaceX-docs/Backend/Advertising Market Operations.md`.
+
+## Что требуется для активации
+
+1. Добавить отдельные реальные ID для banner и rewarded Yandex; post-match
+   interstitial можно добавить позже.
+2. Подтвердить privacy-текст, договорную схему получателей дохода и store
+   disclosures.
+3. Развернуть подготовленные backend/nginx/MMDB-настройки в production после
+   отдельного разрешения владельца.
+4. Проверить demo/test placements, затем реальные placements на разрешённом
+   тестовом устройстве.
+
+Email и Telegram дополнительно требуют server-side delivery adapters,
+одноразового challenge storage и rate limiting. Наличие общего verifier само
+по себе не означает активный вход.

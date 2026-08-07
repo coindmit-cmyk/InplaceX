@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh InplaceX DB-IP Country Lite database
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/inplacex/ads.env
+ExecStart=/usr/local/libexec/inplacex/ads/refresh-dbip-country-lite.sh
+Nice=10
+IOSchedulingClass=best-effort

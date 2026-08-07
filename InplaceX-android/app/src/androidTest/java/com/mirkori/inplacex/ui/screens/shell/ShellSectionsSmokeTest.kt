@@ -32,6 +32,7 @@ import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.localization.AppLanguage
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
@@ -93,7 +94,9 @@ class ShellSectionsSmokeTest {
         setContent {
             SettingsRootScreen(
                 currentLanguage = AppLanguage.RU,
+                adConsentDecision = AdConsentDecision.DECLINED,
                 onLanguageChange = {},
+                onOpenAdPrivacy = {},
                 onOpenInternalTools = {},
                 onClose = {},
             )

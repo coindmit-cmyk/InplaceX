@@ -2,6 +2,9 @@ package com.mirkori.inplacex.platform.services
 
 import android.content.ContextWrapper
 import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.platform.ads.AdConsentController
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
+import com.mirkori.inplacex.platform.config.AdSdkConfig
 import com.mirkori.inplacex.platform.config.AdsProviderConfig
 import com.mirkori.inplacex.platform.config.BillingProviderConfig
 import com.mirkori.inplacex.platform.config.GooglePlayProviderConfig
@@ -23,7 +26,13 @@ class ReleaseProviderServicesTest {
                 providers = ProviderConfig(
                     environment = ProviderEnvironment.SANDBOX,
                     googlePlay = GooglePlayProviderConfig(webClientId = "configured-id"),
-                    ads = AdsProviderConfig(admobAppId = "configured-id"),
+                    ads = AdsProviderConfig(
+                        ownerYandex = AdSdkConfig(
+                            gameBannerAdUnitId = "banner-id",
+                            rewardedAdUnitId = "rewarded-id",
+                            postMatchInterstitialAdUnitId = "interstitial-id",
+                        ),
+                    ),
                     billing = BillingProviderConfig(
                         removeAdsProductId = "remove_ads",
                         proSubscriptionId = "pro",
@@ -31,6 +40,7 @@ class ReleaseProviderServicesTest {
                     ),
                 ),
             ),
+            adConsentController = TestAdConsentController,
         )
 
         val beforeSignIn = services.authService.currentSession()
@@ -46,5 +56,11 @@ class ReleaseProviderServicesTest {
                 "com/mirkori/inplacex/platform/services/StubGooglePlayAuthService.class",
             ),
         )
+    }
+
+    private object TestAdConsentController : AdConsentController {
+        override fun currentDecision(): AdConsentDecision = AdConsentDecision.ACCEPTED
+
+        override fun updateDecision(decision: AdConsentDecision) = Unit
     }
 }

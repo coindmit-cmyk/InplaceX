@@ -25,12 +25,15 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.VariantSettingsToolsAction
+import com.mirkori.inplacex.platform.ads.AdConsentDecision
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsRootScreen(
     currentLanguage: AppLanguage,
+    adConsentDecision: AdConsentDecision,
     onLanguageChange: (AppLanguage) -> Unit,
+    onOpenAdPrivacy: () -> Unit,
     onOpenInternalTools: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -96,10 +99,26 @@ fun SettingsRootScreen(
                     }
                 }
 
+                TextButton(
+                    onClick = onOpenAdPrivacy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        strings.text("settings.ad_privacy") + ": " +
+                            strings.text(adConsentDecision.localizationKey()),
+                    )
+                }
+
                 VariantSettingsToolsAction(onOpen = onOpenInternalTools)
             }
         }
     )
+}
+
+private fun AdConsentDecision.localizationKey(): String = when (this) {
+    AdConsentDecision.UNDECIDED -> "ads.privacy.status.undecided"
+    AdConsentDecision.ACCEPTED -> "ads.privacy.status.accepted"
+    AdConsentDecision.DECLINED -> "ads.privacy.status.declined"
 }
 
 private fun languageLabel(language: AppLanguage, strings: LocalizationProvider): String {
