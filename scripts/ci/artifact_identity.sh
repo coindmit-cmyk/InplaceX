@@ -115,8 +115,14 @@ if [[ "$artifact_type" == 'release' && "$expected_signing" == 'verified' && -z "
     die '--expected-certificate-sha256 is required for a verified release APK'
 fi
 
+while IFS= read -r inherited_variable; do
+    case "${inherited_variable^^}" in
+        GIT_*) unset "$inherited_variable" ;;
+    esac
+done < <(compgen -e)
+
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-repo_root=$(cd -- "$script_dir/../.." && git rev-parse --show-toplevel)
+repo_root=$(cd -- "$script_dir/../.." && git --no-replace-objects rev-parse --show-toplevel)
 
 resolve_path() {
     case "$1" in
@@ -129,7 +135,7 @@ apk_path=$(resolve_path "$apk_path")
 output_dir=$(resolve_path "$output_dir")
 [[ -f "$apk_path" ]] || die 'APK does not exist'
 
-head_commit=$(git -C "$repo_root" rev-parse HEAD | tr '[:upper:]' '[:lower:]')
+head_commit=$(git --no-replace-objects -C "$repo_root" rev-parse HEAD | tr '[:upper:]' '[:lower:]')
 commit=${GITHUB_SHA:-$head_commit}
 [[ "$commit" =~ ^[0-9a-fA-F]{40}$ ]] || die 'commit must be a full SHA-1'
 commit=$(printf '%s' "$commit" | tr '[:upper:]' '[:lower:]')
@@ -197,7 +203,7 @@ if [[ "$signing_status" == 'verified' ]]; then
 fi
 
 if [[ "$artifact_type" == 'release' && "$signing_status" == 'verified' ]]; then
-    if [[ -n "$(git -C "$repo_root" status --porcelain=v1 --untracked-files=all)" ]]; then
+    if [[ -n "$(git --no-replace-objects -C "$repo_root" status --porcelain=v1 --untracked-files=all)" ]]; then
         die 'verified release APK requires a clean Git checkout'
     fi
 fi

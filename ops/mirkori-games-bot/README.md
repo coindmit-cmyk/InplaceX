@@ -4,6 +4,12 @@
 Он не собирает приложения, не загружает APK через Telegram и не принимает
 произвольные пути или URL от пользователя.
 
+> Этот каталог относится только к старому standalone Telegram-боту. Он не
+> является production-каталогом Mirkori Games Platform. Для нового релиза
+> InplaceX используйте `ops/release/README.md`, Platform catalog publisher и
+> динамический `/.well-known/assetlinks.json`. Не запускайте
+> `publish_release.py` вместо Platform-публикации.
+
 ## Безопасность
 
 - токен хранится только в `/etc/mirkori-games-bot.env`;
@@ -24,7 +30,7 @@ MIRKORI_GAMES_ALLOWED_CHAT_IDS=<comma separated ids>
 MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 ```
 
-## Публикация сборки
+## Публикация сборки в legacy standalone-бот
 
 `internalDistribution` является намеренно unsigned-проверкой и не публикуется:
 

@@ -21,7 +21,7 @@ ARTIFACT_SCRIPT = ROOT / "scripts/ci/artifact_identity.sh"
 INSTRUMENTATION_SCRIPT = ROOT / "scripts/ci/run_instrumentation.sh"
 HOSTILE_FIXTURES = ROOT / "scripts/ci/contract_mutations/hostile_fixtures.json"
 
-ARTIFACT_SCRIPT_SHA256 = "897be3f9603130f23bc9d069f3c2a2110dc24c65306ed2770377694da3c0d49a"
+ARTIFACT_SCRIPT_SHA256 = "534b632e95854e547f73d10e0d7bdfae3b7eaa195193703fd7c4d7e4f354e4c8"
 INSTRUMENTATION_SCRIPT_SHA256 = "ac415fe647a3a7bbf4d752c021debb8e00c3ce8b8332886cac2844d81ad7291a"
 EMULATOR_ACTION = "ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d"
 ACTIONLINT_ACTION = "raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7"
@@ -294,13 +294,16 @@ def run_artifact_script(
     expected: str,
     artifact_type: str = "debug",
     expected_certificate: str | None = None,
+    environment_overrides: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["APKSIGNER"] = bash_path(signer)
     environment["AAPT"] = bash_path(metadata_tool)
     environment["GITHUB_SHA"] = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ["git", "--no-replace-objects", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+    if environment_overrides is not None:
+        environment.update(environment_overrides)
     command = [
         bash_executable(),
         bash_path(ARTIFACT_SCRIPT),
@@ -495,6 +498,52 @@ def run_fake_artifact_tests() -> int:
         if {path.name for path in release_directory.iterdir()} != expected_bundle_files:
             raise ContractError("fake-release.bundle-files")
         original_apk = apk.read_bytes()
+        passed += 1
+
+        hostile_repository = temporary / "hostile-git-repository"
+        hostile_repository.mkdir()
+        subprocess.run(["git", "init", "--quiet"], cwd=hostile_repository, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "release-test@example.invalid"],
+            cwd=hostile_repository,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Release Test"],
+            cwd=hostile_repository,
+            check=True,
+        )
+        (hostile_repository / "marker.txt").write_text("hostile repository\n", encoding="utf-8")
+        subprocess.run(["git", "add", "marker.txt"], cwd=hostile_repository, check=True)
+        subprocess.run(
+            ["git", "commit", "--quiet", "-m", "hostile repository"],
+            cwd=hostile_repository,
+            check=True,
+        )
+        hostile_commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=hostile_repository,
+            text=True,
+        ).strip()
+        hostile_git_output = temporary / "hostile-git-release"
+        result = run_artifact_script(
+            apk,
+            hostile_git_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+            environment_overrides={
+                "GIT_DIR": bash_path(hostile_repository / ".git"),
+                "GIT_WORK_TREE": bash_path(hostile_repository),
+                "GITHUB_SHA": hostile_commit,
+            },
+        )
+        if result.returncode == 0 or "GITHUB_SHA does not match checked-out HEAD" not in result.stderr:
+            raise ContractError("fake-release.hostile-git-environment")
+        if hostile_git_output.exists():
+            raise ContractError("fake-release.hostile-git-environment-output")
         passed += 1
 
         foreign_lock_output = temporary / "foreign-lock-release"
