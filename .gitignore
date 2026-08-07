@@ -25,6 +25,8 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+**/__pycache__/
+*.py[cod]
 
 # Local diagnostics and one-off debug captures
 *.hprof

@@ -128,7 +128,6 @@ resolve_path() {
 apk_path=$(resolve_path "$apk_path")
 output_dir=$(resolve_path "$output_dir")
 [[ -f "$apk_path" ]] || die 'APK does not exist'
-mkdir -p "$output_dir"
 
 head_commit=$(git -C "$repo_root" rev-parse HEAD | tr '[:upper:]' '[:lower:]')
 commit=${GITHUB_SHA:-$head_commit}
@@ -139,11 +138,12 @@ commit=$(printf '%s' "$commit" | tr '[:upper:]' '[:lower:]')
 temporary_dir=$(mktemp -d)
 staging_dir=''
 lock_dir=''
+lock_owned=false
 cleanup() {
     if [[ -n "$staging_dir" && -d "$staging_dir" ]]; then
         rm -rf -- "$staging_dir"
     fi
-    if [[ -n "$lock_dir" && -d "$lock_dir" ]]; then
+    if [[ "$lock_owned" == true && -n "$lock_dir" && -d "$lock_dir" ]]; then
         rmdir -- "$lock_dir" 2>/dev/null || true
     fi
     rm -rf -- "$temporary_dir"
@@ -196,6 +196,12 @@ if [[ "$signing_status" == 'verified' ]]; then
     certificate_fingerprint=$(printf '%s' "$certificate_digest" | sed 's/../&:/g; s/:$//')
 fi
 
+if [[ "$artifact_type" == 'release' && "$signing_status" == 'verified' ]]; then
+    if [[ -n "$(git -C "$repo_root" status --porcelain=v1 --untracked-files=all)" ]]; then
+        die 'verified release APK requires a clean Git checkout'
+    fi
+fi
+
 if command -v sha256sum >/dev/null 2>&1; then
     sha256=$(sha256sum "$apk_path" | awk '{print $1}')
 elif command -v shasum >/dev/null 2>&1; then
@@ -221,6 +227,7 @@ fi
 source_file_name=$(basename -- "$apk_path")
 manifest_name="${artifact_name%.apk}.json"
 checksum_name="${artifact_name}.sha256"
+mkdir -p "$output_dir"
 staging_dir=$(mktemp -d "$output_dir/.${release_id}.${artifact_type}.tmp.XXXXXX") \
     || die 'could not create a clean artifact staging directory'
 cp "$apk_path" "$staging_dir/$artifact_name"
@@ -274,6 +281,7 @@ if [[ "$artifact_type" == 'release' && "$signing_status" == 'verified' ]]; then
     final_dir="$output_dir/$release_id"
     lock_dir="$output_dir/.${release_id}.lock"
     mkdir -- "$lock_dir" 2>/dev/null || die 'releaseId publication is already in progress'
+    lock_owned=true
     if [[ -e "$final_dir" ]]; then
         [[ -d "$final_dir" && ! -L "$final_dir" ]] \
             || die 'existing releaseId path is not a regular directory'
@@ -300,6 +308,7 @@ if [[ "$artifact_type" == 'release' && "$signing_status" == 'verified' ]]; then
         staging_dir=''
     fi
     rmdir -- "$lock_dir"
+    lock_owned=false
     lock_dir=''
     published_dir=$final_dir
 else

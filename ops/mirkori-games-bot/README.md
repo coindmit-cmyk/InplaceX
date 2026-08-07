@@ -26,24 +26,35 @@ MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 
 ## Публикация сборки
 
-Для внутренней раздачи используется минифицированный, подписанный тестовым
-ключом вариант. Он не является Play-релизом:
+`internalDistribution` является намеренно unsigned-проверкой и не публикуется:
 
 ```powershell
 .\gradlew.bat :app:assembleInternalDistribution
 ```
 
-Сначала соберите, установите и проверьте APK. Затем на VPS:
+Для установки на локальные тестовые устройства используйте debug APK. Для
+каталога и Telegram-бота допускается только owner-signed production candidate,
+созданный из чистого checkout отдельной задачей:
+
+```powershell
+.\gradlew.bat :app:releaseCandidate
+```
+
+Перед публикацией проверьте точный каталог
+`build/release-candidates/<releaseId>`: в нём должны быть ровно APK, identity
+manifest, SHA-256, отчёт `apksigner` и APK metadata. Отпечаток сертификата в
+manifest должен совпадать с owner policy. Затем на VPS передайте APK именно из
+этого immutable-каталога:
 
 ```bash
 python3 current/publish_release.py \
-  --apk /path/to/app-internalDistribution.apk \
+  --apk /path/to/release-candidates/<releaseId>/InplaceX-<version>-<versionCode>.apk \
   --artifact-root /srv/agent-projects/mirkori-games-bot/downloads \
   --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
   --game-id inplacex \
   --title InplaceX \
-  --version 0.1.0-debug \
-  --notes "Тестовая сборка" \
+  --version <version> \
+  --notes "Ограниченный owner-signed rollout" \
   --download-url https://inplacex.dmit.life/downloads/InplaceX.apk
 
 python3 current/bot.py \

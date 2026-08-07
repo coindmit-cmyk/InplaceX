@@ -21,7 +21,7 @@ ARTIFACT_SCRIPT = ROOT / "scripts/ci/artifact_identity.sh"
 INSTRUMENTATION_SCRIPT = ROOT / "scripts/ci/run_instrumentation.sh"
 HOSTILE_FIXTURES = ROOT / "scripts/ci/contract_mutations/hostile_fixtures.json"
 
-ARTIFACT_SCRIPT_SHA256 = "b22e695b41b58bd8b01153458ca84a2d75049245ff95032b48158976418076fc"
+ARTIFACT_SCRIPT_SHA256 = "897be3f9603130f23bc9d069f3c2a2110dc24c65306ed2770377694da3c0d49a"
 INSTRUMENTATION_SCRIPT_SHA256 = "ac415fe647a3a7bbf4d752c021debb8e00c3ce8b8332886cac2844d81ad7291a"
 EMULATOR_ACTION = "ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d"
 ACTIONLINT_ACTION = "raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7"
@@ -462,7 +462,7 @@ def run_fake_artifact_tests() -> int:
         )
         if result.returncode == 0 or "owner certificate SHA-256 does not match expected policy" not in result.stderr:
             raise ContractError("fake-release.wrong-owner-policy")
-        if any(wrong_policy_output.iterdir()):
+        if wrong_policy_output.exists() and any(wrong_policy_output.iterdir()):
             raise ContractError("fake-release.wrong-owner-policy-output")
         passed += 1
 
@@ -495,6 +495,53 @@ def run_fake_artifact_tests() -> int:
         if {path.name for path in release_directory.iterdir()} != expected_bundle_files:
             raise ContractError("fake-release.bundle-files")
         original_apk = apk.read_bytes()
+        passed += 1
+
+        foreign_lock_output = temporary / "foreign-lock-release"
+        foreign_lock_output.mkdir()
+        foreign_lock = foreign_lock_output / ".inplacex-1.0-1.lock"
+        foreign_lock.mkdir()
+        result = run_artifact_script(
+            apk,
+            foreign_lock_output,
+            signer,
+            metadata_tool,
+            "verified",
+            artifact_type="release",
+            expected_certificate=signer_certificate,
+        )
+        if result.returncode == 0 or "publication is already in progress" not in result.stderr:
+            raise ContractError("fake-release.foreign-lock-rejected")
+        if not foreign_lock.is_dir():
+            raise ContractError("fake-release.foreign-lock-preserved")
+        passed += 1
+
+        dirty_marker = ROOT / f"artifact_identity_dirty_fixture_{os.getpid()}"
+        try:
+            dirty_marker.write_text("dirty checkout fixture\n", encoding="utf-8")
+            dirty_status = subprocess.check_output(
+                ["git", "status", "--porcelain=v1", "--untracked-files=all", "--", dirty_marker.name],
+                cwd=ROOT,
+                text=True,
+            )
+            if not dirty_status.strip():
+                raise ContractError("fake-release.dirty-fixture-not-visible")
+            dirty_output = temporary / "dirty-release"
+            result = run_artifact_script(
+                apk,
+                dirty_output,
+                signer,
+                metadata_tool,
+                "verified",
+                artifact_type="release",
+                expected_certificate=signer_certificate,
+            )
+            if result.returncode == 0 or "requires a clean Git checkout" not in result.stderr:
+                raise ContractError("fake-release.dirty-checkout-rejected")
+            if dirty_output.exists():
+                raise ContractError("fake-release.dirty-checkout-output")
+        finally:
+            dirty_marker.unlink(missing_ok=True)
         passed += 1
 
         result = run_artifact_script(
@@ -594,7 +641,7 @@ def run_fake_artifact_tests() -> int:
         )
         if result.returncode == 0 or "releaseId exceeds Mirkori catalog limit of 64 characters" not in result.stderr:
             raise ContractError("fake-release.excessive-release-id")
-        if any(excessive_id_output.iterdir()):
+        if excessive_id_output.exists() and any(excessive_id_output.iterdir()):
             raise ContractError("fake-release.excessive-release-id-output")
         passed += 1
     return passed
