@@ -1,11 +1,14 @@
 package com.mirkori.inplacex.backend.app
 
+import com.mirkori.inplacex.backend.ads.AdMarketRuntimeConfig
+
 data class BackendRuntimeConfig(
     val host: String,
     val port: Int,
     val environment: String,
     val database: DatabaseRuntimeConfig? = null,
     val online: OnlineRuntimeConfig? = null,
+    val adMarket: AdMarketRuntimeConfig? = null,
 ) {
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): BackendRuntimeConfig {
@@ -27,6 +30,7 @@ data class BackendRuntimeConfig(
                     ?: DefaultEnvironment,
                 database = database,
                 online = online,
+                adMarket = AdMarketRuntimeConfig.fromEnvironmentOrNull(environment),
             )
         }
 

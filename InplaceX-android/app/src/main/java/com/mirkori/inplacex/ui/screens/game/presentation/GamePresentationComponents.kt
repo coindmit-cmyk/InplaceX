@@ -706,16 +706,26 @@ private fun GameDialogs(
     val strings = LocalAppStrings.current
     uiState.route.pendingRewardedHint?.let { mode ->
         AlertDialog(
-            onDismissRequest = callbacks.onRewardedHintDismissed,
+            onDismissRequest = {
+                if (!uiState.route.rewardedHintInFlight) {
+                    callbacks.onRewardedHintDismissed()
+                }
+            },
             title = { Text(strings.text("game.dialog.bonus_hint.title")) },
             text = { Text(strings.text("game.dialog.bonus_hint.text")) },
             confirmButton = {
-                TextButton(onClick = { callbacks.onRewardedHintConfirmed(mode) }) {
+                TextButton(
+                    onClick = { callbacks.onRewardedHintConfirmed(mode) },
+                    enabled = !uiState.route.rewardedHintInFlight,
+                ) {
                     Text(strings.text("game.action.watch"))
                 }
             },
             dismissButton = {
-                TextButton(onClick = callbacks.onRewardedHintDismissed) {
+                TextButton(
+                    onClick = callbacks.onRewardedHintDismissed,
+                    enabled = !uiState.route.rewardedHintInFlight,
+                ) {
                     Text(strings.text("game.action.cancel"))
                 }
             },

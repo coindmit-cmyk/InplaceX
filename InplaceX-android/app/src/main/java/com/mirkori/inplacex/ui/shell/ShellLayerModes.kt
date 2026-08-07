@@ -3,6 +3,7 @@ package com.mirkori.inplacex.ui.shell
 enum class BottomLayerMode {
     MENU,
     AD,
+    AD_LOADING,
     NONE,
 }
 

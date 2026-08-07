@@ -49,7 +49,7 @@ private enum class ShopCategory {
 fun ShopRootScreen(
     progressState: GameProgressState,
     nowMs: Long = System.currentTimeMillis(),
-    onWatchRewardedCoins: () -> Boolean,
+    onWatchRewardedCoins: ((Boolean) -> Unit) -> Unit,
     onBuyOpenPositionHint: () -> Boolean,
     onBuyCheckDigitHint: () -> Boolean,
     onBuyCheckPositionHint: () -> Boolean,
@@ -177,7 +177,7 @@ fun ShopRootScreen(
 private fun BoostsCatalog(
     progressState: GameProgressState,
     onReport: (Boolean) -> Unit,
-    onWatchRewardedCoins: () -> Boolean,
+    onWatchRewardedCoins: ((Boolean) -> Unit) -> Unit,
     onBuyOpenPositionHint: () -> Boolean,
     onBuyCheckDigitHint: () -> Boolean,
     onBuyCheckPositionHint: () -> Boolean,
@@ -198,7 +198,7 @@ private fun BoostsCatalog(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Button(
-            onClick = { onReport(onWatchRewardedCoins()) },
+            onClick = { onWatchRewardedCoins(onReport) },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp),

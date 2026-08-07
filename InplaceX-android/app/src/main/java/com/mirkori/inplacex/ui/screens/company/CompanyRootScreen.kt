@@ -45,7 +45,10 @@ fun CompanyRootScreen(
     onConsumeOpenPositionHint: () -> Boolean = { false },
     onConsumeCheckDigitHint: () -> Boolean = { false },
     onConsumeCheckPositionHint: () -> Boolean = { false },
-    onWatchRewardedHintAd: (com.mirkori.inplacex.data.local.HintStockType) -> Boolean = { false },
+    onWatchRewardedHintAd: (
+        com.mirkori.inplacex.data.local.HintStockType,
+        (Boolean) -> Unit,
+    ) -> Unit = { _, completed -> completed(false) },
     onConsumeExtraMovesBoost: () -> Boolean = { false },
     onConsumeExtraTimeBoost: () -> Boolean = { false },
     onBuyEnergy: () -> Unit = {},

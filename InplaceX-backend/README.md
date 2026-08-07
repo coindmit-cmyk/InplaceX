@@ -20,6 +20,8 @@ Current state:
 - `GET /health` returns `200 {"status":"ok"}` when the process is alive
 - `GET /ready` returns `200 {"status":"ready"}` when configured modules are ready;
   startup applies database migrations before the module is ready when a database is configured
+- `GET /api/v1/runtime/ad-market` returns only `RUSSIA`, `GLOBAL`, or `UNKNOWN`
+  for Android advertising routing and never returns the client IP
 - runtime host, port, and deployment label are read from `INPLACEX_BACKEND_HOST`,
   `INPLACEX_BACKEND_PORT` (or conventional `PORT`), and
   `INPLACEX_BACKEND_ENVIRONMENT`
@@ -46,6 +48,20 @@ Current state:
   the duel and both matched tickets commit together, and bot fallback locks the
   same row. Ticket polling reloads database truth and sessions created by a
   peer instance are restored lazily for reconnect reads.
+- preferred advertising market resolution uses a local MMDB country database
+  configured by `INPLACEX_AD_MARKET_DB_PATH`. Direct connections are resolved
+  from their numeric remote address. Behind nginx, the backend accepts
+  `INPLACEX_AD_MARKET_CLIENT_IP_HEADER` only from
+  `INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS`; nginx must overwrite that header.
+- the legacy trusted-country-header mode remains available through
+  `INPLACEX_AD_MARKET_COUNTRY_HEADER` plus trusted proxy hosts. The two source
+  modes are mutually exclusive.
+- `INPLACEX_AD_MARKET_REQUIRED=true` makes startup fail when neither safe
+  source is configured. Missing database files also fail during startup,
+  preventing a falsely ready production process.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.
+
+Production GeoIP setup and verification:
+[`InplaceX-docs/Backend/Advertising Market Operations.md`](../InplaceX-docs/Backend/Advertising%20Market%20Operations.md).

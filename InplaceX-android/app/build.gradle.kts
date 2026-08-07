@@ -1,4 +1,10 @@
+import java.net.URI
 import java.util.Properties
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
 
 plugins {
     id("com.android.application")
@@ -17,6 +23,84 @@ val localProps = Properties().apply {
 
 fun localProp(key: String, default: String): String =
     (localProps.getProperty(key) ?: default).replace("\"", "\\\"")
+
+fun localIntProp(
+    key: String,
+    default: Int,
+    range: IntRange,
+): Int =
+    localProps.getProperty(key)
+        ?.toIntOrNull()
+        ?.takeIf(range::contains)
+        ?: default
+
+fun localLongProp(
+    key: String,
+    default: Long,
+    range: LongRange,
+): Long =
+    localProps.getProperty(key)
+        ?.toLongOrNull()
+        ?.takeIf(range::contains)
+        ?: default
+
+fun requiredReleaseAdPropertyKeys(): List<String> = listOf(
+    "online.release.baseUrl",
+    "provider.release.ads.yandex.owner.banner.game",
+    "provider.release.ads.yandex.owner.rewarded.general",
+)
+
+fun validateDistinctProviderPlacements(
+    providerName: String,
+    keys: List<String>,
+): List<String> {
+    val configuredValues = keys
+        .map { localProps.getProperty(it).orEmpty().trim() }
+        .filter(String::isNotEmpty)
+    return if (
+        configuredValues.distinct().size != configuredValues.size
+    ) {
+        listOf("$providerName placement ids must be distinct: ${keys.joinToString()}")
+    } else {
+        emptyList()
+    }
+}
+
+fun validateProviderValueShape(keys: List<String>): List<String> = keys.mapNotNull { key ->
+    val value = localProps.getProperty(key).orEmpty()
+    when {
+        value.any(Char::isISOControl) -> "$key must not contain control characters"
+        value.length > 256 -> "$key must not exceed 256 characters"
+        else -> null
+    }
+}
+
+fun isHttpsOrigin(value: String): Boolean =
+    runCatching { URI(value) }
+        .getOrNull()
+        ?.let { uri ->
+            uri.scheme.equals("https", ignoreCase = true) &&
+                !uri.host.isNullOrBlank() &&
+                uri.userInfo == null &&
+                uri.rawPath.isNullOrEmpty() &&
+                uri.rawQuery == null &&
+                uri.rawFragment == null &&
+                (uri.port == -1 || uri.port in 1..65_535)
+        }
+        ?: false
+
+abstract class ValidateReleaseAdsConfigTask : DefaultTask() {
+    @get:Input
+    abstract val validationErrors: ListProperty<String>
+
+    @TaskAction
+    fun validate() {
+        val errors = validationErrors.get()
+        if (errors.isNotEmpty()) {
+            throw GradleException(errors.joinToString(separator = "\n"))
+        }
+    }
+}
 
 android {
     namespace = "com.mirkori.inplacex"
@@ -56,17 +140,15 @@ android {
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.serverClientId", "")}\"")
-            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.debug.ads.admobAppId", "ca-app-pub-3940256099942544~3347511713")}\"")
-            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.banner.game", "ca-app-pub-3940256099942544/6300978111")}\"")
-            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.rewarded.general", "ca-app-pub-3940256099942544/5224354917")}\"")
-            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.interstitial.postMatch", "ca-app-pub-3940256099942544/1033173712")}\"")
+            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.banner.game", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.rewarded.general", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.interstitial.postMatch", "")}\"")
+            buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.debug.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
+            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.debug.ads.interstitial.minimumForegroundSeconds", 0, 0L..2_592_000L)}L")
+            buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.debug.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.debug.billing.removeAdsProductId", "remove_ads")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proSubscriptionId", "pro_subscription")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
-            manifestPlaceholders["admobAppId"] = localProp(
-                "provider.debug.ads.admobAppId",
-                "ca-app-pub-3940256099942544~3347511713",
-            )
         }
         release {
             isMinifyEnabled = false
@@ -78,14 +160,15 @@ android {
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.release.googlePlay.serverClientId", "")}\"")
-            buildConfigField("String", "ADMOB_APP_ID", "\"${localProp("provider.release.ads.admobAppId", "")}\"")
-            buildConfigField("String", "ADMOB_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.banner.game", "")}\"")
-            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.rewarded.general", "")}\"")
-            buildConfigField("String", "ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.banner.game", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.rewarded.general", "")}\"")
+            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.release.ads.yandex.owner.interstitial.postMatch", "")}\"")
+            buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.release.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
+            buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.release.ads.interstitial.minimumForegroundSeconds", 1_800, 0L..2_592_000L)}L")
+            buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.release.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())
             buildConfigField("String", "BILLING_REMOVE_ADS_PRODUCT_ID", "\"${localProp("provider.release.billing.removeAdsProductId", "")}\"")
             buildConfigField("String", "BILLING_PRO_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proSubscriptionId", "")}\"")
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.release.billing.proPlusSubscriptionId", "")}\"")
-            manifestPlaceholders["admobAppId"] = localProp("provider.release.ads.admobAppId", "")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -107,6 +190,57 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+val validateReleaseAdsConfig = tasks.register<ValidateReleaseAdsConfigTask>(
+    "validateReleaseAdsConfig",
+) {
+    group = "verification"
+    description = "Validates the release backend endpoint and Yandex placement ids without printing values."
+    validationErrors.set(
+        buildList {
+            val missing = requiredReleaseAdPropertyKeys()
+                .filter { localProps.getProperty(it).orEmpty().isBlank() }
+            if (missing.isNotEmpty()) {
+                add("Missing required release properties: ${missing.joinToString()}")
+            }
+            localProps.getProperty("online.release.baseUrl")
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+                ?.let { baseUrl ->
+                    if (!isHttpsOrigin(baseUrl)) {
+                        add(
+                            "online.release.baseUrl must be an HTTPS origin without user info, path, query, or fragment",
+                        )
+                    }
+                }
+            addAll(
+                validateDistinctProviderPlacements(
+                    providerName = "owner Yandex",
+                    keys = listOf(
+                        "provider.release.ads.yandex.owner.banner.game",
+                        "provider.release.ads.yandex.owner.rewarded.general",
+                        "provider.release.ads.yandex.owner.interstitial.postMatch",
+                    ),
+                ),
+            )
+            addAll(
+                validateProviderValueShape(
+                    listOf(
+                        "provider.release.ads.yandex.owner.banner.game",
+                        "provider.release.ads.yandex.owner.rewarded.general",
+                        "provider.release.ads.yandex.owner.interstitial.postMatch",
+                    ),
+                ),
+            )
+        },
+    )
+}
+
+tasks.matching {
+    it.name == "preReleaseBuild" || it.name == "preInternalDistributionBuild"
+}.configureEach {
+    dependsOn(validateReleaseAdsConfig)
 }
 
 androidComponents {
@@ -139,6 +273,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.google.identity.googleid)
+    implementation(libs.yandex.mobileads)
+    implementation(libs.yandex.mobileads.compose)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)

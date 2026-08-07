@@ -137,6 +137,9 @@ jobs:
       - name: Install Android platform and signing tools
         run: sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Install CI-only provider configuration
+        run: install -m 0600 InplaceX-android/provider-config.ci.properties local.properties
+
       - name: Assemble unsigned release candidate
         run: ./gradlew :app:assembleRelease
 

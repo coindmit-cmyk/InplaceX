@@ -1,10 +1,12 @@
 package com.mirkori.inplacex.backend.app
 
+import com.mirkori.inplacex.backend.ads.AdMarketSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.security.KeyPairGenerator
+import java.nio.file.Path
 import java.time.Duration
 import java.util.Base64
 
@@ -144,5 +146,64 @@ class BackendRuntimeConfigTest {
 
         assertNotNull(config.online?.stateEncryptionKey)
         assertFalse(config.toString().contains(encodedStateKey))
+    }
+
+    @Test
+    fun `ad market accepts only a complete trusted proxy configuration`() {
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+                "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1, 10.0.0.5",
+            ),
+        )
+
+        assertEquals(AdMarketSource.TRUSTED_COUNTRY_HEADER, config.adMarket?.source)
+        assertEquals("CF-IPCountry", config.adMarket?.trustedCountryHeader)
+        assertEquals(setOf("127.0.0.1", "10.0.0.5"), config.adMarket?.trustedProxyHosts)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `partial ad market configuration fails closed`() {
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf("INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry"),
+        )
+    }
+
+    @Test
+    fun `ad market accepts local IP database with a dedicated proxy header`() {
+        val config = BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                "INPLACEX_AD_MARKET_REQUIRED" to "true",
+                "INPLACEX_AD_MARKET_DB_PATH" to "/var/lib/inplacex/geoip/dbip-country-lite.mmdb",
+                "INPLACEX_AD_MARKET_CLIENT_IP_HEADER" to "X-InplaceX-Client-IP",
+                "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1, ::1",
+            ),
+        )
+
+        assertEquals(AdMarketSource.LOCAL_IP_DATABASE, config.adMarket?.source)
+        assertEquals("X-InplaceX-Client-IP", config.adMarket?.trustedClientIpHeader)
+        assertEquals(setOf("127.0.0.1", "::1"), config.adMarket?.trustedProxyHosts)
+        assertEquals(
+            Path.of("/var/lib/inplacex/geoip/dbip-country-lite.mmdb"),
+            config.adMarket?.databasePath,
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `required ad market rejects missing source`() {
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf("INPLACEX_AD_MARKET_REQUIRED" to "true"),
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `ad market rejects ambiguous country and database sources`() {
+        BackendRuntimeConfig.fromEnvironment(
+            mapOf(
+                "INPLACEX_AD_MARKET_COUNTRY_HEADER" to "CF-IPCountry",
+                "INPLACEX_AD_MARKET_DB_PATH" to "/tmp/country.mmdb",
+                "INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS" to "127.0.0.1",
+            ),
+        )
     }
 }

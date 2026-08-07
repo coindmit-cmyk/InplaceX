@@ -2,6 +2,7 @@ package com.mirkori.inplacex.platform.config
 
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.core.bot.BotDifficulty
+import com.mirkori.inplacex.ads.PostMatchInterstitialPolicy
 import com.mirkori.inplacex.core.campaign.CampaignLevelGenerator
 import com.mirkori.inplacex.core.match.OpponentKind
 import com.mirkori.inplacex.core.match.PreMatchConfig
@@ -41,10 +42,20 @@ object AppConfigCatalog {
                 gamesProjectId = BuildConfig.GOOGLE_PLAY_GAMES_PROJECT_ID,
             ),
             ads = AdsProviderConfig(
-                admobAppId = BuildConfig.ADMOB_APP_ID,
-                gameBannerAdUnitId = BuildConfig.ADMOB_GAME_BANNER_AD_UNIT_ID,
-                rewardedAdUnitId = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID,
-                postMatchInterstitialAdUnitId = BuildConfig.ADMOB_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ownerYandex = AdSdkConfig(
+                    gameBannerAdUnitId = BuildConfig.YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID,
+                    rewardedAdUnitId = BuildConfig.YANDEX_OWNER_REWARDED_AD_UNIT_ID,
+                    postMatchInterstitialAdUnitId =
+                        BuildConfig.YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID,
+                ),
+                postMatchInterstitialPolicy = PostMatchInterstitialPolicy(
+                    minimumCompletedMatches =
+                        BuildConfig.ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES,
+                    minimumForegroundUsageSeconds =
+                        BuildConfig.ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS,
+                    gamesBetweenImpressions =
+                        BuildConfig.ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS,
+                ),
             ),
             billing = BillingProviderConfig(
                 removeAdsProductId = BuildConfig.BILLING_REMOVE_ADS_PRODUCT_ID,

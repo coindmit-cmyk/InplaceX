@@ -37,7 +37,24 @@ must go through the future authenticated cloud-save contract, not an implicit de
 - players with `Remove Ads`, temporary `Pro`, permanent `Pro`, or `Pro+` do not see banner ads
 - post-match ads are rare and delayed:
   - never in the first `20` matches
-  - later only on some matches, not every game
+  - only after the configured minimum active-use time
+  - later after every configured `N` completed games, not every game
+  - a failed/no-fill attempt does not count as an impression
+
+## Advertising Networks And Revenue Priority
+
+- the current network location is resolved to a coarse `Russia`, `Global`, or
+  `Unknown` market; the store used to install the app does not define location
+- the owner's Yandex inventory is used only in Russia
+- Global and Unknown markets show no ad until a separate non-Russian provider
+  is implemented and approved
+- an unknown market is not cached; an active game retries an unavailable
+  banner with a bounded delay so routing can recover after connectivity returns
+- the first configured launch asks whether personalized advertising is
+  allowed; declining keeps advertising non-personalized, while closing the app
+  before making a choice causes no advertising request
+- changing that choice clears already loaded ads before the game requests a
+  new banner, rewarded ad, or interstitial
 
 ## Paid Products
 
@@ -72,10 +89,22 @@ must go through the future authenticated cloud-save contract, not an implicit de
   client ID in the Android build and identity-service environment
 - common email and Telegram verification rules are implemented and tested, but
   their delivery adapters and public endpoints are intentionally not active yet
-- the shared advertising policy is implemented and used by Android; the real
-  network SDK and ad inventory are not active, so release presentation still
-  fails closed
+- Yandex Mobile Ads SDK is connected as the owner's live adapter for banner,
+  rewarded, and optional post-match formats; it becomes active only when the
+  player has made a privacy choice and the backend returns `Russia`
+- the backend market endpoint resolves the current numeric IP through a local
+  country database and returns only a coarse market; nginx overwrites the
+  client-IP header and the backend trusts it only from the configured proxy
+- active-use time, completed matches, and games since the last presented
+  interstitial are persisted locally and are not transferred through Android
+  backup
+- release and internal-distribution builds automatically validate the HTTPS
+  backend origin plus required, distinct owner Yandex banner/rewarded IDs;
+  post-match remains optional
 - billing remains a local/debug stub and fails closed in release
-- UI and local persistence use the provider contracts
+- UI and local persistence use asynchronous provider callbacks; dismissal
+  without the Yandex reward callback never grants coins or a hint
 - temporary `Pro` is a local coin purchase rather than a billing-provider product
-- real SDK integration comes later without changing the game flow again
+- code integration is complete; activation needs production deployment of the
+  prepared backend/nginx/MMDB configuration. A separate Yandex post-match ID
+  may be added later without blocking banner and rewarded placements.

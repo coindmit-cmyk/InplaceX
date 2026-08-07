@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.app
 
+import com.mirkori.inplacex.backend.ads.configureAdMarketRoutes
 import com.mirkori.inplacex.backend.persistence.PostgresDatabase
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
@@ -89,7 +90,10 @@ fun Application.backendModule(
             "databaseConfigured" to (database != null).toString(),
             "onlineConfigured" to (onlineService != null).toString(),
             "onlinePersistenceConfigured" to (database != null && onlineService != null).toString(),
+            "adMarketConfigured" to (config.adMarket != null).toString(),
+            "adMarketSource" to (config.adMarket?.source?.name ?: "NONE"),
         ),
     )
     configureHealthRoutes(readinessProbe)
+    configureAdMarketRoutes(config.adMarket)
 }

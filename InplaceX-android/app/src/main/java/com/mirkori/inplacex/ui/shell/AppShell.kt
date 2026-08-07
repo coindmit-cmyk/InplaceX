@@ -80,6 +80,7 @@ private fun ShellBackground(
     val bottomSlotBottomPadding = when (bottomMode) {
         BottomLayerMode.MENU -> 0.dp
         BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
+        BottomLayerMode.AD_LOADING -> 0.dp
         BottomLayerMode.NONE -> 0.dp
     }
 
@@ -109,6 +110,7 @@ private fun ShellBackground(
                     72.dp,
                 )
                 BottomLayerMode.AD -> screenHeight * layoutConfig.bottomSlotHeightPercent
+                BottomLayerMode.AD_LOADING -> 0.dp
             }
 
             if (topMode != TopLayerMode.NONE && topContent != null) {
