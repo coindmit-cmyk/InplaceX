@@ -6,6 +6,13 @@ local.properties
 .env
 .env.local
 .env.*.local
+*.jks
+*.keystore
+*.p12
+*.pfx
+signing.properties
+*.signing.properties
+release-signing.properties
 *.dump
 backups/
 .obsidian/
@@ -18,6 +25,8 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+**/__pycache__/
+*.py[cod]
 
 # Local diagnostics and one-off debug captures
 *.hprof

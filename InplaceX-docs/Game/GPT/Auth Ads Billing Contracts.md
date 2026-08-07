@@ -136,6 +136,10 @@ This is intentionally separate from permanent hint inventory.
   `UNKNOWN` is not cached, so a later request can recover after connectivity
   returns, while invalid response, network failure, or missing HTTPS endpoint
   still fail closed
-- `preReleaseBuild` and `preInternalDistributionBuild` depend on
-  `validateReleaseAdsConfig`, so a production-like artifact cannot bypass the
-  required HTTPS/Yandex gate
+- ordinary `assembleRelease` may produce an unsigned CI artifact, while the
+  separate signed-candidate variant and distribution-only `releaseCandidate`
+  depend on both
+  `validateProductionReleaseConfig` and `validateReleaseSigningConfig`; they
+  cannot bypass the online/platform HTTPS, Yandex, external signing, or
+  owner-certificate fingerprint gates; ordinary release/internal-distribution
+  variants remain unsigned even when the key is configured
