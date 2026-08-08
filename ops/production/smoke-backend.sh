@@ -1,5 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -p
 set -euo pipefail
+
+script_directory="$(builtin cd -- "${BASH_SOURCE[0]%/*}" && builtin pwd -P)"
+readonly script_directory
+# shellcheck source=ops/production/release-shell-bootstrap.sh
+builtin source "$script_directory/release-shell-bootstrap.sh"
 
 if [[ $# -ne 5 ]]; then
     echo "Usage: $0 <loopback|external> <base-url> <release-id> <git-sha> <image-digest>" >&2
@@ -52,7 +57,7 @@ curl "${curl_common[@]}" "$base_url$health_path" > "$temporary_directory/health.
 curl "${curl_common[@]}" "$base_url$ready_path" > "$temporary_directory/ready.json"
 curl "${curl_common[@]}" "$base_url$release_path" > "$temporary_directory/release.json"
 
-python3 - "$temporary_directory" "$expected_release_id" "$expected_git_sha" "$expected_image_digest" <<'PY'
+python3 -I - "$temporary_directory" "$expected_release_id" "$expected_git_sha" "$expected_image_digest" <<'PY'
 import json
 import pathlib
 import sys

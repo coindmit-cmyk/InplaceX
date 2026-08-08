@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.online
 
+import com.mirkori.inplacex.backend.app.RuntimeDrainController
 import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
 import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
@@ -40,10 +41,14 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -62,8 +67,19 @@ fun Application.configureOnlineRoutes(
     nanoTime: () -> Long = System::nanoTime,
     playerProvisioner: OnlinePlayerProvisioner = NoOpOnlinePlayerProvisioner,
     abuseProtector: OnlineAbuseProtector = OnlineAbuseProtector(),
+    drainController: RuntimeDrainController = RuntimeDrainController.disabled(),
 ) {
     val codec = OnlineJsonCodec()
+    val drainState = flow {
+        while (true) {
+            emit(drainController.snapshot().draining)
+            delay(WebSocketDrainPollIntervalMillis)
+        }
+    }.stateIn(
+        scope = this,
+        started = SharingStarted.Eagerly,
+        initialValue = drainController.snapshot().draining,
+    )
     install(WebSockets) {
         maxFrameSize = MaximumOnlineWebSocketFrameBytes.toLong()
     }
@@ -343,6 +359,15 @@ fun Application.configureOnlineRoutes(
             val writer = launch {
                 for (message in outbound) send(Frame.Text(message))
             }
+            val webSocketJob = coroutineContext[Job]
+            val drainWatcher = launch {
+                drainState.first { it }
+                launch {
+                    delay(WebSocketDrainForceCloseDelayMillis)
+                    webSocketJob?.cancel()
+                }
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "service_draining"))
+            }
             fun queueObservedEvent(event: OnlineSessionEvent): Boolean {
                 val response = event.sessionRevision?.let {
                     val snapshot = service.readSession(principal.playerId, sessionId)
@@ -521,6 +546,7 @@ fun Application.configureOnlineRoutes(
                     }
                 }
             } finally {
+                drainWatcher.cancel()
                 heartbeat.cancel()
                 sessionChanges.cancel()
                 outbound.close()
@@ -1032,6 +1058,8 @@ private const val MaximumRemoteIdentityCharacters = 128
 private const val MaximumPendingWebSocketFrames = 16
 private const val WebSocketHeartbeatIntervalMillis = 20_000L
 private const val WebSocketEventPollIntervalMillis = 250L
+private const val WebSocketDrainPollIntervalMillis = 100L
+private const val WebSocketDrainForceCloseDelayMillis = 1_000L
 private const val WebSocketPingTimeoutNanos = 45_000_000_000L
 private const val MaximumEventPollBatch = 32
 private const val UnsubscribedEventSequence = -1L

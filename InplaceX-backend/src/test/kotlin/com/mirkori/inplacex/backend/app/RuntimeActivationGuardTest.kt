@@ -18,6 +18,7 @@ class RuntimeActivationGuardTest {
     val temporaryFolder = TemporaryFolder()
 
     private lateinit var root: Path
+    private lateinit var databasePassword: Path
     private lateinit var stateKey: Path
     private lateinit var publicKey: Path
     private lateinit var geoIp: Path
@@ -29,6 +30,7 @@ class RuntimeActivationGuardTest {
     @Before
     fun prepare() {
         root = temporaryFolder.root.toPath()
+        databasePassword = write("database-password.txt", "database-password")
         stateKey = write("state.key", "state-key")
         publicKey = write("public.key", "public-key")
         geoIp = write("geo.mmdb", "geo-db")
@@ -56,6 +58,28 @@ class RuntimeActivationGuardTest {
     }
 
     @Test
+    fun `live v2 lease authorizes migration candidate beside legacy verified state`() {
+        writeLegacyActivation(verified)
+        writeActivation(pending, clock.instant().epochSecond + 8)
+
+        assertTrue(guard().refreshAuthorization())
+    }
+
+    @Test
+    fun `malformed legacy state blocks a live v2 lease`() {
+        Files.writeString(
+            verified,
+            listOf(
+                "INPLACEX_ACTIVATION_VERSION=1",
+                "INPLACEX_ACTIVATION_RELEASE_ID=legacy-release",
+            ).joinToString("\n", postfix = "\n"),
+        )
+        writeActivation(pending, clock.instant().epochSecond + 8)
+
+        assertFalse(guard().refreshAuthorization())
+    }
+
+    @Test
     fun `expired lease and changed secret fail closed`() {
         writeActivation(pending, clock.instant().epochSecond - 1)
         assertFalse(guard().refreshAuthorization())
@@ -68,6 +92,7 @@ class RuntimeActivationGuardTest {
     @Test
     fun `duplicate or unknown activation fields fail closed`() {
         writeActivation(verified)
+        writeActivation(pending, clock.instant().epochSecond + 8)
         Files.writeString(
             verified,
             Files.readString(verified) + "INPLACEX_ACTIVATION_RELEASE_ID=release-1\n",
@@ -76,10 +101,19 @@ class RuntimeActivationGuardTest {
         assertFalse(guard().refreshAuthorization())
     }
 
+    @Test
+    fun `changed database password fails closed`() {
+        writeActivation(verified)
+        Files.writeString(databasePassword, "rotated-database-password")
+
+        assertFalse(guard().refreshAuthorization())
+    }
+
     private fun guard(): RuntimeActivationGuard = RuntimeActivationGuard.fromEnvironment(
         environment = mapOf(
             OnlineRuntimeConfig.StateEncryptionKeyPath to stateKey.toString(),
             OnlineRuntimeConfig.PublicKeyPathKey to publicKey.toString(),
+            DatabaseRuntimeConfig.PasswordPathEnvironmentKey to databasePassword.toString(),
             RuntimeActivationGuard.GeoIpFingerprintPathEnvironmentKey to geoIp.toString(),
             RuntimeActivationGuard.RuntimeConfigShaEnvironmentKey to "c".repeat(64),
             RuntimeActivationGuard.VerifiedStatePathEnvironmentKey to verified.toString(),
@@ -91,16 +125,31 @@ class RuntimeActivationGuardTest {
 
     private fun writeActivation(path: Path, expiresAt: Long? = null) {
         val lines = mutableListOf(
-            "INPLACEX_ACTIVATION_VERSION=1",
+            "INPLACEX_ACTIVATION_VERSION=2",
             "INPLACEX_ACTIVATION_RELEASE_ID=${identity.releaseId}",
             "INPLACEX_ACTIVATION_GIT_SHA=${identity.gitSha}",
             "INPLACEX_ACTIVATION_IMAGE_DIGEST=${identity.imageDigest}",
+            "INPLACEX_ACTIVATION_DATABASE_PASSWORD_SHA256=${sha256(databasePassword)}",
             "INPLACEX_ACTIVATION_STATE_KEY_SHA256=${sha256(stateKey)}",
             "INPLACEX_ACTIVATION_PUBLIC_KEY_SHA256=${sha256(publicKey)}",
             "INPLACEX_ACTIVATION_GEOIP_SHA256=${sha256(geoIp)}",
             "INPLACEX_ACTIVATION_RUNTIME_CONFIG_SHA256=${"c".repeat(64)}",
         )
         expiresAt?.let { lines += "INPLACEX_ACTIVATION_EXPIRES_AT_EPOCH_SECOND=$it" }
+        Files.writeString(path, lines.joinToString("\n", postfix = "\n"))
+    }
+
+    private fun writeLegacyActivation(path: Path) {
+        val lines = listOf(
+            "INPLACEX_ACTIVATION_VERSION=1",
+            "INPLACEX_ACTIVATION_RELEASE_ID=legacy-release",
+            "INPLACEX_ACTIVATION_GIT_SHA=${"d".repeat(40)}",
+            "INPLACEX_ACTIVATION_IMAGE_DIGEST=sha256:${"e".repeat(64)}",
+            "INPLACEX_ACTIVATION_STATE_KEY_SHA256=${sha256(stateKey)}",
+            "INPLACEX_ACTIVATION_PUBLIC_KEY_SHA256=${sha256(publicKey)}",
+            "INPLACEX_ACTIVATION_GEOIP_SHA256=${sha256(geoIp)}",
+            "INPLACEX_ACTIVATION_RUNTIME_CONFIG_SHA256=${"f".repeat(64)}",
+        )
         Files.writeString(path, lines.joinToString("\n", postfix = "\n"))
     }
 

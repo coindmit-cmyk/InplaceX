@@ -5,12 +5,44 @@ set -euo pipefail
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 production_directory="$repository_root/ops/production"
 
-for command_name in grep mktemp; do
+for command_name in awk grep mktemp; do
     command -v "$command_name" >/dev/null || {
         echo "Required production-contract command is missing: $command_name" >&2
         exit 69
     }
 done
+if [[ -n "${WSL_DISTRO_NAME:-}" ]] && command -v git.exe >/dev/null && command -v wslpath >/dev/null; then
+    git_command=(git.exe -C "$(wslpath -w "$repository_root")")
+elif command -v git >/dev/null && git -C "$repository_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git_command=(git -C "$repository_root")
+elif command -v git.exe >/dev/null && command -v wslpath >/dev/null; then
+    git_command=(git.exe -C "$(wslpath -w "$repository_root")")
+else
+    echo "Required production-contract command cannot read the Git worktree." >&2
+    exit 69
+fi
+for executable_script in \
+    "$production_directory/build-backend-release.sh" \
+    "$production_directory/rotate-geoip.sh"; do
+    [[ -x "$executable_script" ]] || {
+        echo "Production entrypoint is not executable: $executable_script" >&2
+        exit 67
+    }
+    executable_relative_path="${executable_script#"$repository_root/"}"
+    [[ "$("${git_command[@]}" ls-files --stage -- "$executable_relative_path" | awk '{print $1}')" == "100755" ]] || {
+        echo "Production entrypoint must be tracked with Git mode 100755: $executable_relative_path" >&2
+        exit 67
+    }
+done
+production_runtime_timeout="$(awk '
+    $0 ~ /^  backend-production-runtime:\r?$/ { in_runtime = 1; next }
+    in_runtime && $0 ~ /^  [A-Za-z0-9_-]+:\r?$/ { exit }
+    in_runtime && $1 == "timeout-minutes:" { gsub(/\r/, "", $2); print $2; exit }
+' "$repository_root/.github/workflows/ci.yml")"
+[[ "$production_runtime_timeout" == "75" ]] || {
+    echo "Production runtime CI job must retain timeout-minutes: 75." >&2
+    exit 67
+}
 if command -v docker.exe >/dev/null && command -v wslpath >/dev/null; then
     docker_command=(docker.exe)
     windows_docker=true
@@ -82,6 +114,17 @@ if grep -q '@@INPLACEX_' "$rendered_nginx"; then
 fi
 expect_exit 65 bash "$production_directory/render-nginx-config.sh" 0 192.0.2.10/32 "$temporary_directory/invalid.conf"
 expect_exit 65 bash "$production_directory/render-nginx-config.sh" 18081 192.0.2.10/24 "$temporary_directory/invalid-cidr.conf"
+
+hostile_python_path="$temporary_directory/hostile-python"
+mkdir "$hostile_python_path"
+printf 'import os\nos._exit(0)\n' > "$hostile_python_path/sitecustomize.py"
+PYTHONPATH="$hostile_python_path" expect_exit 65 \
+    bash "$production_directory/render-nginx-config.sh" \
+    18081 192.0.2.10/24 "$temporary_directory/hostile-python.conf"
+[[ ! -e "$temporary_directory/hostile-python.conf" ]] || {
+    echo "Production Python validation accepted inherited Python startup injection." >&2
+    exit 67
+}
 
 export COMPOSE_PROJECT_NAME=inplacex-production-contract-test
 export INPLACEX_BACKEND_IMAGE="registry.example/inplacex-backend@sha256:$(printf 'a%.0s' {1..64})"
@@ -162,5 +205,14 @@ expect_exit 65 bash "$production_directory/smoke-backend.sh" external \
     http://example.invalid "$INPLACEX_RELEASE_ID" "$INPLACEX_GIT_SHA" "$INPLACEX_IMAGE_DIGEST"
 
 bash "$repository_root/scripts/ci/test_backend_release_helpers.sh"
+
+geoip_service="$repository_root/ops/ads/systemd/inplacex-geoip-update.service"
+grep -Fxq \
+    'ExecStart=/usr/bin/bash -p /usr/local/libexec/inplacex/production/rotate-geoip.sh /etc/inplacex-online/backend.env' \
+    "$geoip_service"
+if grep -q '^EnvironmentFile=' "$geoip_service"; then
+    echo "Production GeoIP timer must use the canonical backend release environment." >&2
+    exit 67
+fi
 
 echo "InplaceX backend production contract is valid."
