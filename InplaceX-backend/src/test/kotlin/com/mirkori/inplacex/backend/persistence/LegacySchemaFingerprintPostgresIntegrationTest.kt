@@ -3,6 +3,7 @@ package com.mirkori.inplacex.backend.persistence
 import javax.sql.DataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.postgresql.ds.PGSimpleDataSource
@@ -10,6 +11,57 @@ import org.testcontainers.DockerClientFactory
 import org.testcontainers.containers.PostgreSQLContainer
 
 class LegacySchemaFingerprintPostgresIntegrationTest {
+    @Test
+    fun `production restore preserves exact legacy order and rejects current order`() {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable)
+        PostgreSQLContainer<Nothing>("postgres:16-alpine").use { postgres ->
+            postgres.start()
+            val source = dataSource(postgres, postgres.databaseName)
+            JdbcMigrationRunner().migrate(source)
+            source.connection.use { connection ->
+                connection.createStatement().use {
+                    it.execute("UPDATE inplacex_schema_history SET checksum = NULL")
+                }
+            }
+            val currentOrderError = assertThrows(IllegalArgumentException::class.java) {
+                JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(source)
+            }
+            assertTrue(currentOrderError.message.orEmpty().contains("schema fingerprint"))
+            source.connection.use { connection ->
+                connection.createStatement().use {
+                    it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")
+                }
+            }
+            val dump = postgres.execInContainer(
+                "pg_dump",
+                "--format=custom",
+                "--no-owner",
+                "--no-privileges",
+                "--username=${postgres.username}",
+                "--dbname=${postgres.databaseName}",
+                "--file=/tmp/legacy.dump",
+            )
+            check(dump.exitCode == 0) { dump.stderr }
+            postgres.createConnection("").use { connection ->
+                connection.createStatement().use { it.execute("CREATE DATABASE restored") }
+            }
+            val restore = postgres.execInContainer(
+                "pg_restore",
+                "--exit-on-error",
+                "--no-owner",
+                "--no-privileges",
+                "--username=${postgres.username}",
+                "--dbname=restored",
+                "/tmp/legacy.dump",
+            )
+            check(restore.exitCode == 0) { restore.stderr }
+
+            val restored = dataSource(postgres, "restored")
+            JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(restored)
+            JdbcMigrationRunner().verify(restored)
+        }
+    }
+
     @Test
     fun `only exact schema-qualified PostgreSQL legacy baseline is acknowledged`() {
         assumeTrue(DockerClientFactory.instance().isDockerAvailable)

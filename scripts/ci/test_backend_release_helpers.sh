@@ -492,6 +492,64 @@ for marker in (
         raise SystemExit(f"Legacy checksum recovery order is incomplete at: {marker}")
     cursor += len(marker)
 
+on_exit_start = deploy.find('on_exit() {', recovery_end)
+on_exit_end = deploy.find('\ntrap on_exit EXIT', on_exit_start)
+if on_exit_start < 0 or on_exit_end < 0:
+    raise SystemExit("Cannot locate deploy exit recovery")
+on_exit = deploy[on_exit_start:on_exit_end]
+failed_recovery_start = on_exit.find('elif recover_previous_release; then')
+failed_recovery_end = on_exit.find('\n        fi', failed_recovery_start)
+if failed_recovery_start < 0 or failed_recovery_end < 0:
+    raise SystemExit("Cannot locate deploy failed-recovery branch")
+failed_recovery = on_exit[failed_recovery_start:failed_recovery_end]
+ordered(
+    failed_recovery,
+    'release_stop_activation_lease || true',
+    'release_stop_backend_fail_closed compose_command',
+)
+failed_recovery_harness = test_directory / "deploy-failed-recovery-harness.sh"
+failed_recovery_permit = test_directory / "deploy-failed-recovery.permit"
+failed_recovery_env = test_directory / "deploy-failed-recovery.env"
+failed_recovery_harness.write_text(
+    """#!/usr/bin/env bash
+set -u
+permit="$1"
+sanitized_env="$2"
+activation_v1_migration_acknowledged=false
+maintenance_active=true
+candidate_activated=false
+deployment_succeeded=false
+RELEASE_BACKEND_STOP_PROOF_FAILED=false
+release_stop_activation_lease() { rm -f -- "$permit"; }
+verified_activation_matches_requested_candidate() { return 1; }
+recover_previous_release() { printf 'pending\n' > "$permit"; return 1; }
+release_stop_backend_fail_closed() { [[ ! -e "$permit" ]]; }
+compose_command() { return 0; }
+""" + on_exit + """
+: > "$sanitized_env"
+set +e
+false
+on_exit
+""",
+    encoding="utf-8",
+)
+failed_recovery_result = subprocess.run(
+    ["bash", str(failed_recovery_harness), str(failed_recovery_permit), str(failed_recovery_env)],
+    text=True,
+    capture_output=True,
+    check=False,
+)
+if (
+    failed_recovery_result.returncode != 1
+    or failed_recovery_permit.exists()
+    or failed_recovery_env.exists()
+    or "Automatic recovery could not be verified" not in failed_recovery_result.stderr
+):
+    raise SystemExit(
+        "Deploy failed-recovery path did not revoke its replacement activation lease: "
+        f"status={failed_recovery_result.returncode}, stderr={failed_recovery_result.stderr.strip()!r}"
+    )
+
 ordered(deploy, 'if ! compose_command up --detach --force-recreate --wait',
         'compose_command logs --no-color --tail 200 backend >&2 || true')
 ordered(deploy, 'compose_command logs --no-color --tail 200 backend >&2 || true',

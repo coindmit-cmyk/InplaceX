@@ -680,6 +680,7 @@ on_exit() {
         elif recover_previous_release; then
             echo "Previous verified backend and pre-deploy database were restored." >&2
         else
+            release_stop_activation_lease || true
             if ! release_stop_backend_fail_closed compose_command; then
                 echo "Backend stop could not be proven during failed recovery." >&2
             fi

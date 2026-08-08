@@ -355,9 +355,9 @@ class JdbcMigrationRunner(
         val LegacyV1ToV8 = (1..8).map(Int::toString).toSet()
         val LegacyV1ToV9 = (1..9).map(Int::toString).toSet()
         const val LegacyPostgresV1ToV8SchemaSha256 =
-            "7aeb43b1aa277285c1e0370946adfc66ecdebcd16e7ea2b21faf338e5cf53af8"
+            "2b4467c0d68a20de18ee4df08f285a4386e246d73c868387ebc30d17a76aae5d"
         const val LegacyPostgresV1ToV9SchemaSha256 =
-            "ecfd7f776d8d7e5fabc7cdf804851882c0f24582765fd42d38fc847e2fe65ac5"
+            "a612721cba6f83be81c6827458b185686a1f2d061d92300636382fe7ce272640"
         val PostgresSchemaFingerprintSql =
             """
             WITH managed_tables AS (
@@ -371,8 +371,8 @@ class JdbcMigrationRunner(
                 FROM managed_tables
                 UNION ALL
                 SELECT 'column|' || tables.schema_name || '|' || tables.table_name || '|' ||
-                       attribute.attnum || '|' || attribute.attname || '|' ||
-                       format_type(attribute.atttypid, attribute.atttypmod) || '|' ||
+                       row_number() OVER (PARTITION BY tables.oid ORDER BY attribute.attnum) || '|' ||
+                       attribute.attname || '|' || format_type(attribute.atttypid, attribute.atttypmod) || '|' ||
                        attribute.attnotnull::text || '|' || attribute.attidentity::text || '|' ||
                        attribute.attgenerated::text || '|' ||
                        COALESCE(pg_get_expr(default_value.adbin, default_value.adrelid, false), '')

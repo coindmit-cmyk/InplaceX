@@ -1497,7 +1497,7 @@ grep -Fq 'Verified activation v1 must first be migrated by deploy-backend.sh' \
 release_v2="integration-v2-$test_id"
 image_v2="$(build_release_image "$release_v2")"
 "${compose[@]}" exec -T postgres sh -ec \
-    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="UPDATE inplacex_schema_history SET checksum = NULL;"' \
+    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="ALTER TABLE inplacex_schema_history DROP COLUMN checksum;"' \
     >/dev/null
 write_environment \
     "$release_v2" "$image_v2" false acknowledge-inplacex-schema-v1-v8 \
@@ -1533,7 +1533,7 @@ final_legacy_ack_environment="$(docker inspect --format '{{range .Config.Env}}{{
     "$backend_container" | grep '^INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=')"
 [[ "$final_legacy_ack_environment" == "INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=" ]]
 "${compose[@]}" exec -T postgres sh -ec \
-    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="UPDATE inplacex_schema_history SET checksum = NULL;"' \
+    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="ALTER TABLE inplacex_schema_history DROP COLUMN checksum;"' \
     >/dev/null
 set +e
 INPLACEX_RELEASE_FAULT_PHASE=during_backup_staging \
