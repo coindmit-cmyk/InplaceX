@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.online
 
+import com.mirkori.inplacex.backend.app.RuntimeDrainController
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
@@ -20,28 +21,29 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
-import io.ktor.websocket.Frame
 import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.util.UUID
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.coroutines.withTimeout
 import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -76,6 +78,139 @@ class OnlineRoutesTest {
         assertFalse(deadline.hasExpired())
         ticker.set(122)
         assertTrue(deadline.hasExpired())
+    }
+
+    @Test
+    fun `REST abuse limits are scoped by principal operation and invalid authentication`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            invalidAuthenticationLimit = 1,
+            operationLimits = OnlineOperation.entries.associateWith { 1 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        val acceptedOnce = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, acceptedOnce.status)
+        val principalLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+        assertEquals("60", principalLimited.headers[HttpHeaders.RetryAfter])
+        assertEquals("{\"error\":\"rate_limited\"}", principalLimited.bodyAsText())
+
+        val invalidOnce = client.get("/api/v1/matchmaking/tickets/not-a-uuid")
+        assertEquals(HttpStatusCode.Unauthorized, invalidOnce.status)
+        val invalidLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid")
+        assertEquals(HttpStatusCode.TooManyRequests, invalidLimited.status)
+        assertEquals("60", invalidLimited.headers[HttpHeaders.RetryAfter])
+    }
+
+    @Test
+    fun `successful REST authentication bypasses the failed auth IP budget`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 10,
+            operationLimits = OnlineOperation.entries.associateWith { 1 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        listOf(playerToken, attackerToken).forEach { token ->
+            val authenticated = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+                bearer(token)
+            }
+            assertEquals(HttpStatusCode.BadRequest, authenticated.status)
+        }
+        assertEquals(
+            HttpStatusCode.Unauthorized,
+            client.get("/api/v1/matchmaking/tickets/not-a-uuid").status,
+        )
+        val authenticationAttemptLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            header(HttpHeaders.Authorization, "Basic invalid")
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, authenticationAttemptLimited.status)
+        assertEquals("60", authenticationAttemptLimited.headers[HttpHeaders.RetryAfter])
+
+        val principalLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+    }
+
+    @Test
+    fun `exhausted failed-auth budget gates REST and WebSocket before token verification`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 10,
+            operationLimits = OnlineOperation.entries.associateWith { 10 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+        val forgedKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val forgedToken = platformToken(playerId, forgedKeys.private)
+
+        val rejectedRest = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(forgedToken)
+        }
+        assertEquals(HttpStatusCode.Unauthorized, rejectedRest.status)
+        val gatedValidRest = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, gatedValidRest.status)
+
+        serviceClock.advance(Duration.ofMinutes(1))
+        val wsClient = createClient { install(WebSockets) }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(forgedToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+    }
+
+    @Test
+    fun `legacy membership migration is protected by its own principal budget`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            if (operation == OnlineOperation.MigrateLegacyMembership) 1 else 10
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        val acceptedOnce = client.post("/api/v1/sessions/not-a-uuid/legacy-membership") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, acceptedOnce.status)
+
+        val principalLimited = client.post("/api/v1/sessions/not-a-uuid/legacy-membership") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+        assertEquals("60", principalLimited.headers[HttpHeaders.RetryAfter])
     }
 
     @Test
@@ -235,6 +370,53 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `drain marker actively closes an established WebSocket`() = testApplication {
+        val temporaryDirectory = Files.createTempDirectory("inplacex-ws-drain-")
+        val drainMarker = temporaryDirectory.resolve("drain.flag")
+        try {
+            val drainController = RuntimeDrainController.fromEnvironment(
+                mapOf(RuntimeDrainController.DrainMarkerPathEnvironmentKey to drainMarker.toString()),
+                production = true,
+            )
+            val serviceClock = RouteMutableClock(now)
+            val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+            application {
+                configureOnlineRoutes(
+                    verifier = verifier,
+                    service = service,
+                    drainController = drainController,
+                )
+            }
+            val sessionId = createMatchedTicket(playerToken, serviceClock)
+                .getValue("sessionId").jsonPrimitive.content
+            val wsClient = createClient { install(WebSockets) }
+
+            wsClient.webSocket(
+                urlString = "/api/v1/ws/sessions/$sessionId",
+                request = {
+                    bearer(playerToken)
+                    header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+                },
+            ) {
+                send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.subscribe", "{}")))
+                assertEquals(
+                    "session.snapshot",
+                    json((incoming.receive() as Frame.Text).readText()).getValue("type").jsonPrimitive.content,
+                )
+
+                Files.writeString(drainMarker, "deployment-id\n")
+
+                val reason = withTimeout(3_000) { closeReason.await() }
+                assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, reason?.code)
+                assertEquals("service_draining", reason?.message)
+            }
+        } finally {
+            Files.deleteIfExists(drainMarker)
+            Files.deleteIfExists(temporaryDirectory)
+        }
+    }
+
+    @Test
     fun `WebSocket receives a session change written through another database event store instance`() =
         testApplication {
             val dataSource = JdbcDataSource().apply {
@@ -309,7 +491,16 @@ class OnlineRoutesTest {
     fun `WebSocket rejects query credentials foreign members and legacy frames`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
-        application { configureOnlineRoutes(verifier, service) }
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            if (operation == OnlineOperation.OpenWebSocket) 1 else 20
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 2,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
         val sessionId = createMatchedTicket(playerToken, serviceClock)
             .getValue("sessionId").jsonPrimitive.content
         val wsClient = createClient { install(WebSockets) }
@@ -320,6 +511,16 @@ class OnlineRoutesTest {
         ) {
             assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
         }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                header(HttpHeaders.Authorization, "Basic invalid")
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+        serviceClock.advance(Duration.ofMinutes(1))
         wsClient.webSocket(
             urlString = "/api/v1/ws/sessions/$sessionId",
             request = {
@@ -338,6 +539,70 @@ class OnlineRoutesTest {
         ) {
             send(Frame.Text("""{"type":"snapshot.request"}"""))
             assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+    }
+
+    @Test
+    fun `WebSocket charges malformed upgrades and control frames to principal budgets`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            when (operation) {
+                OnlineOperation.OpenWebSocket, OnlineOperation.WebSocketControl -> 1
+                else -> 20
+            }
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+        val sessionId = createMatchedTicket(attackerToken, serviceClock)
+            .getValue("sessionId").jsonPrimitive.content
+        val wsClient = createClient { install(WebSockets) }
+
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(attackerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.subscribe", "{}")))
+            assertEquals(
+                "session.snapshot",
+                json((incoming.receive() as Frame.Text).readText()).getValue("type").jsonPrimitive.content,
+            )
+            send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.ping", "{}")))
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
         }
     }
 

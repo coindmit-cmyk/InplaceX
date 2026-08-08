@@ -13,3 +13,4 @@ This section is reserved for backend-specific documentation:
 - [Ktor Architecture](Ktor%20Architecture.md)
 - [Локальные контейнеры и операции PostgreSQL](Local%20Containers%20Runbook.md)
 - [Геомаршрутизация рекламы в production](Advertising%20Market%20Operations.md)
+- [Production deployment InplaceX online backend](Production%20Deployment.md)

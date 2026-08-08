@@ -93,16 +93,16 @@ Backend-порт остаётся закрытым снаружи. Публич�
 После запуска:
 
 ```bash
-./ops/ads/verify-ad-market.sh https://backend.example
+./ops/ads/verify-ad-market.sh https://backend.example '' /inplacex
 ```
 
 Для проверки ожидаемого рынка:
 
 ```bash
-./ops/ads/verify-ad-market.sh https://backend.example RUSSIA
+./ops/ads/verify-ad-market.sh https://backend.example RUSSIA /inplacex
 ```
 
-Smoke проверяет `/health`, `/ready`, точную JSON-схему market,
+Smoke проверяет `/inplacex/health`, `/inplacex/ready`, точную JSON-схему market,
 `Content-Type`, `Cache-Control: no-store` и обязательную DB-IP attribution в
 HTTP `Link`. Все сетевые вызовы имеют ограниченные timeout. Проверку `RUSSIA`
 и `GLOBAL` нужно выполнить из двух сетей; store-аккаунт и locale на результат
@@ -110,28 +110,61 @@ HTTP `Link`. Все сетевые вызовы имеют ограниченн�
 
 ## Обновление
 
-DB-IP Lite обновляется ежемесячно. Операционный таймер должен:
-
-1. запустить `update-dbip-country-lite.sh`;
-2. перезапустить backend только после успешной установки;
-3. выполнить `verify-ad-market.sh`;
-4. при ошибке вернуть предыдущий backend image и MMDB:
+После первого production deploy активную MMDB нельзя заменять отдельно от
+release activation: её SHA-256 входит в разрешение запуска backend. Каноническая
+ротация использует тот же lock, durable journal, maintenance/drain gate и
+activation record, что deploy и rollback:
 
 ```bash
-sudo ./ops/ads/rollback-dbip-country-lite.sh
-sudo systemctl restart <inplacex-backend-service>
-./ops/ads/verify-ad-market.sh https://backend.example
+sudo ./ops/production/rotate-geoip.sh /etc/inplacex-online/backend.env
 ```
 
-Имя backend service определяется фактическим production-развёртыванием и не
-зашивается в скрипт репозитория.
+Для воспроизводимой ротации можно передать месяц `YYYY-MM`, а для заранее
+проверенного локального артефакта — `--candidate-file /absolute/path.mmdb`.
+Скрипт проверяет текущие release/image/secrets, PostgreSQL system identifier и
+старый fingerprint, сохраняет durable backup,
+закрывает новые запросы, дожидается активных REST/WebSocket lease, атомарно
+устанавливает candidate и выдаёт backend короткий activation permit с новым
+fingerprint. Gate снимается только после exact smoke и durable activation.
+Перед заменой active MMDB общий release helper требует успешный bounded backend
+stop и независимо подтверждает `State.Running=false` для exact compose container.
+При stop error, исчезнувшем inspection target или всё ещё running container
+MMDB не меняется, automatic restore не запускается, а gate и journal остаются.
+Activation v1 сначала мигрируется только через документированный deploy с
+одноразовым ack; GeoIP timer и manual rotation на v1 завершаются fail closed.
+
+При обычной ошибке до подтверждения новый файл автоматически откатывается. После
+SIGKILL или reboot повтор той же команды продолжает journal; backend с новым
+неподтверждённым fingerprint остаётся fail closed. Скрипты
+`refresh-dbip-country-lite.sh` и `rollback-dbip-country-lite.sh` остаются только
+для legacy standalone/systemd deployment и не применяются к production Compose.
+Application rollback сохраняет последнюю transactionally verified MMDB и
+переносит её fingerprint в activation предыдущего release; hash из старого
+release receipt не откатывает GeoIP-данные.
 
 ## Автоматическое ежемесячное обновление
 
-Production unit и timer находятся в `ops/ads/systemd/`. Скрипты из `ops/ads/`
-устанавливаются вместе в `/usr/local/libexec/inplacex/ads/`, после чего:
+Production unit и timer находятся в `ops/ads/systemd/`. На host устанавливается
+всё дерево `ops/` из того же проверенного release checkout: `rotate-geoip.sh`
+сравнивает установленные nginx snippets со своими исходниками и использует
+соседние `compose.yaml`, `release-common.sh`, `smoke-backend.sh` и downloader.
+Например:
 
 ```bash
+sudo install -d -o root -g root -m 0755 \
+  /usr/local/libexec/inplacex/production \
+  /usr/local/libexec/inplacex/ads
+sudo cp -R --no-preserve=ownership ops/production/. \
+  /usr/local/libexec/inplacex/production/
+sudo cp -R --no-preserve=ownership ops/ads/. \
+  /usr/local/libexec/inplacex/ads/
+sudo chown -R root:root \
+  /usr/local/libexec/inplacex/production \
+  /usr/local/libexec/inplacex/ads
+sudo chmod -R u=rwX,go=rX \
+  /usr/local/libexec/inplacex/production \
+  /usr/local/libexec/inplacex/ads
+sudo chmod 0755 /usr/local/libexec/inplacex/production/rotate-geoip.sh
 sudo install -m 0644 \
   ops/ads/systemd/inplacex-geoip-update.service \
   /etc/systemd/system/inplacex-geoip-update.service
@@ -142,15 +175,15 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now inplacex-geoip-update.timer
 ```
 
-Перед включением timer создаётся root-owned `/etc/inplacex/ads.env` с режимом
-`0600`. В нём задаются точное имя backend service и реальный loopback URL из
-примера `ops/ads/ad-market.environment.example`; значения нельзя угадывать по
+Timer читает тот же root-owned `/etc/inplacex-online/backend.env` с режимом
+`0600`, который использует deploy. Отдельный `/etc/inplacex/ads.env` ему не
+нужен. Фактический loopback port берётся из этого файла; нельзя угадывать его по
 старому deployment или порту другого сервиса.
 
 Timer запускается пятого числа каждого месяца с задержкой до шести часов, чтобы
-не зависеть от точного времени публикации новой базы. Wrapper обновляет MMDB,
-перезапускает backend, проверяет health/readiness, обе ветки рынка, заголовки
-кэша и атрибуцию. При ошибке он автоматически возвращает `.previous`,
-перезапускает backend ещё раз и оставляет unit в failed для внимания оператора.
+не зависеть от точного времени публикации новой базы. Транзакция проверяет
+health/readiness и exact release identity после перезапуска. Внешние проверки
+`RUSSIA` и `GLOBAL` из соответствующих сетей остаются обязательной
+послеротационной эксплуатационной проверкой.
 
 В репозиторий не коммитятся MMDB, `.env`, SDK IDs или доступы сервера.

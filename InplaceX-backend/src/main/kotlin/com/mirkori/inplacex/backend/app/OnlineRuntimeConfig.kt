@@ -4,6 +4,7 @@ import java.security.KeyFactory
 import java.security.PublicKey
 import java.security.interfaces.RSAKey
 import java.security.spec.X509EncodedKeySpec
+import java.nio.file.Path
 import java.time.Duration
 import java.util.Base64
 import com.mirkori.inplacex.backend.online.persistence.OnlineStateCipher
@@ -14,6 +15,8 @@ data class OnlineRuntimeConfig(
     val verificationKey: PublicKey,
     val botFallbackDelay: Duration,
     val stateEncryptionKey: OnlineStateEncryptionKey?,
+    val usesExternalVerificationKey: Boolean = false,
+    val usesExternalStateEncryptionKey: Boolean = false,
 ) {
     val gameId: String = GameId
 
@@ -23,17 +26,33 @@ data class OnlineRuntimeConfig(
 
     companion object {
         fun fromEnvironmentOrNull(environment: Map<String, String>): OnlineRuntimeConfig? {
-            val supplied = listOf(IssuerKey, AudienceKey, PublicKeyKey).filter(environment::containsKey)
-            if (supplied.isEmpty()) return null
-            require(supplied.size == 3) {
+            val publicKeyConfigured = environment.containsKey(PublicKeyKey) || environment.containsKey(PublicKeyPathKey)
+            val supplied = listOf(
+                environment.containsKey(IssuerKey),
+                environment.containsKey(AudienceKey),
+                publicKeyConfigured,
+            ).count { it }
+            val auxiliaryConfigured = listOf(
+                BotFallbackSecondsKey,
+                StateEncryptionKey,
+                StateEncryptionKeyPath,
+            ).any(environment::containsKey)
+            if (supplied == 0 && !auxiliaryConfigured) return null
+            require(supplied == 3) {
                 "Online verification configuration must provide issuer, audience, and public key together"
             }
             val issuer = environment.getValue(IssuerKey).takeIf(String::isSafePolicyValue)
                 ?: throw IllegalArgumentException("$IssuerKey has an invalid format")
             val audience = environment.getValue(AudienceKey).takeIf(String::isSafePolicyValue)
                 ?: throw IllegalArgumentException("$AudienceKey has an invalid format")
-            val encoded = environment.getValue(PublicKeyKey).takeIf(String::isNotBlank)
-                ?: throw IllegalArgumentException("$PublicKeyKey is required")
+            val inlinePublicKey = environment[PublicKeyKey]?.trim()?.takeIf(String::isNotEmpty)
+            val publicKeyPath = environment[PublicKeyPathKey]?.trim()?.takeIf(String::isNotEmpty)
+            require(inlinePublicKey == null || publicKeyPath == null) {
+                "Configure either $PublicKeyKey or $PublicKeyPathKey, not both"
+            }
+            val encoded = inlinePublicKey ?: publicKeyPath?.let { path ->
+                RuntimeSecretFile.readText(Path.of(path), minimumCharacters = 64, maximumBytes = 16 * 1024)
+            } ?: throw IllegalArgumentException("$PublicKeyKey or $PublicKeyPathKey is required")
             val key = runCatching {
                 val bytes = Base64.getDecoder().decode(encoded)
                 try {
@@ -58,8 +77,14 @@ data class OnlineRuntimeConfig(
                 } else {
                     DefaultBotFallbackSeconds
                 }
-            val stateEncryptionKey = environment[StateEncryptionKey]
-                ?.takeIf(String::isNotBlank)
+            val inlineStateKey = environment[StateEncryptionKey]?.trim()?.takeIf(String::isNotEmpty)
+            val stateKeyPath = environment[StateEncryptionKeyPath]?.trim()?.takeIf(String::isNotEmpty)
+            require(inlineStateKey == null || stateKeyPath == null) {
+                "Configure either $StateEncryptionKey or $StateEncryptionKeyPath, not both"
+            }
+            val stateEncryptionKey = (inlineStateKey ?: stateKeyPath?.let { path ->
+                RuntimeSecretFile.readText(Path.of(path), minimumCharacters = 43, maximumBytes = 128)
+            })
                 ?.let { encodedKey ->
                     val keyBytes = runCatching { Base64.getDecoder().decode(encodedKey) }
                         .getOrElse { throw IllegalArgumentException("$StateEncryptionKey is not valid Base64") }
@@ -78,14 +103,18 @@ data class OnlineRuntimeConfig(
                 verificationKey = key,
                 botFallbackDelay = Duration.ofSeconds(fallbackSeconds),
                 stateEncryptionKey = stateEncryptionKey,
+                usesExternalVerificationKey = publicKeyPath != null,
+                usesExternalStateEncryptionKey = stateKeyPath != null,
             )
         }
 
         const val IssuerKey = "INPLACEX_ONLINE_TOKEN_ISSUER"
         const val AudienceKey = "INPLACEX_ONLINE_TOKEN_AUDIENCE"
         const val PublicKeyKey = "INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64"
+        const val PublicKeyPathKey = "INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64_PATH"
         const val BotFallbackSecondsKey = "INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS"
         const val StateEncryptionKey = "INPLACEX_ONLINE_STATE_KEY_BASE64"
+        const val StateEncryptionKeyPath = "INPLACEX_ONLINE_STATE_KEY_BASE64_PATH"
         const val DefaultBotFallbackSeconds = 5L
         const val MinimumBotFallbackSeconds = 1L
         const val MaximumBotFallbackSeconds = 60L

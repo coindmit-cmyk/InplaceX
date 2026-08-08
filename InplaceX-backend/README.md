@@ -3,12 +3,10 @@
 This module contains the first backend-facing runtime contract for PvP bots and
 a modular Ktor application foundation.
 
-Planned responsibilities:
+Future responsibilities, not release routes yet:
 
 - player profile sync
 - cloud save
-- PvP matchmaking
-- server-side bot player runtime
 - rankings and seasonal progression
 - entitlement validation for ads, Pro, and Pro+
 
@@ -25,18 +23,23 @@ Current state:
 - runtime host, port, and deployment label are read from `INPLACEX_BACKEND_HOST`,
   `INPLACEX_BACKEND_PORT` (or conventional `PORT`), and
   `INPLACEX_BACKEND_ENVIRONMENT`
-- PostgreSQL is optional for the foundation and is enabled only when all of
-  `INPLACEX_DATABASE_JDBC_URL`, `INPLACEX_DATABASE_USERNAME`, and
-  `INPLACEX_DATABASE_PASSWORD` are supplied by the process environment. These
-  values are never written to configuration files or logs.
+- PostgreSQL is optional outside production and is enabled only when JDBC URL,
+  username, and exactly one password source are present. Production uses
+  `INPLACEX_DATABASE_PASSWORD_PATH`; inline
+  `INPLACEX_DATABASE_PASSWORD` is a development/test compatibility input and
+  must not be used in a production manifest. JDBC URLs containing user info,
+  query parameters or fragments are rejected so credentials and options cannot
+  bypass the explicit runtime policy.
 - versioned SQL migrations create player, cloud-save revision, matchmaking ticket,
   duel session, idempotent command, and event storage; startup records applied
-  versions in `inplacex_schema_history`
+  versions in `inplacex_schema_history`. Checksums are based on canonical LF content,
+  so Windows CRLF checkouts do not change migration identity.
 - JDBC repositories use database constraints, transactional writes, and optimistic
   revisions for cloud saves; session commands are idempotent per client command id
 - when PostgreSQL and the online API are enabled together,
-  `INPLACEX_ONLINE_STATE_KEY_BASE64` is required and must decode to 32 random
-  bytes. The runtime encrypts each recoverable duel aggregate with AES-256-GCM,
+  a state key is required and must decode to 32 random bytes. Production uses
+  `INPLACEX_ONLINE_STATE_KEY_BASE64_PATH`; the inline form is development/test
+  compatibility only. The runtime encrypts each recoverable duel aggregate with AES-256-GCM,
   restores active/recently-finished matches during startup, and preserves exact
   command replays across a backend restart. Never commit or log this key.
 - the same PostgreSQL runtime restores non-expired matchmaking tickets and
@@ -47,7 +50,8 @@ Current state:
   game tokens. Configure `INPLACEX_ONLINE_TOKEN_ISSUER` and
   `INPLACEX_ONLINE_TOKEN_AUDIENCE` to the Platform values (normally
   `mirkori-platform` and `mirkori-games`) and provide only the Platform X509
-  RSA public key through `INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64`. Keys below
+  RSA public key through `INPLACEX_ONLINE_PUBLIC_KEY_X509_BASE64_PATH`. The
+  inline form is development/test compatibility only. Keys below
   2048 bits are rejected during configuration and verifier construction. The
   verifier requires `pid` plus exact `gid=inplacex`; it never treats account
   `sub` as the player. PostgreSQL creates only an idempotent local player
@@ -68,9 +72,35 @@ Current state:
 - `INPLACEX_AD_MARKET_REQUIRED=true` makes startup fail when neither safe
   source is configured. Missing database files also fail during startup,
   preventing a falsely ready production process.
+- the production activation guard also fingerprints the mounted canonical
+  GeoIP artifact through internal
+  `INPLACEX_ACTIVATION_GEOIP_FINGERPRINT_PATH` wiring. Operators continue to
+  configure the source with `INPLACEX_GEOIP_DB_PATH`; the internal variable is
+  owned by the reviewed Compose manifest and is not a second provider setting.
+- online REST requests have bounded in-process limits keyed by verified
+  Platform principal plus operation. Invalid authentication has a separate
+  bounded budget, `429` includes `Retry-After`, and concurrent WebSockets are
+  capped per principal and globally. Nginx supplies an additional coarse
+  per-client perimeter; one process-local limiter assumes the production
+  single-backend Compose topology.
+- database readiness uses bounded connection/validation/query timeouts and logs
+  only state transitions plus a safe exception type. Credentials, JDBC query
+  strings, payloads and exception messages are not emitted. A database-backed
+  runtime also exposes counter/gauge telemetry at loopback-only `GET /metrics`;
+  nginx deliberately does not publish this endpoint.
+
+The release runtime currently exposes matchmaking create/read, friend invite
+create/read/accept, session read/reconnect/secret/turn routes, the v1 session
+WebSocket, ad-market routing, health/readiness and release metadata. Profile,
+cloud-save HTTP routes, ticket cancellation, rankings and entitlements remain
+future Platform/backend integration work; their schemas and repository code do
+not make them deployed endpoints.
 
 Run the local server with `./gradlew :InplaceX-backend:run`. It binds to
 `0.0.0.0:8080` by default.
 
 Production GeoIP setup and verification:
 [`InplaceX-docs/Backend/Advertising Market Operations.md`](../InplaceX-docs/Backend/Advertising%20Market%20Operations.md).
+
+Production deployment, secret file modes, immutable image evidence and rollback:
+[`InplaceX-docs/Backend/Production Deployment.md`](../InplaceX-docs/Backend/Production%20Deployment.md).

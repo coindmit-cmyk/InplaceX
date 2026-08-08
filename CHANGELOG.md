@@ -22,6 +22,65 @@
   clears Android legacy state only after a confirmed Platform-authorized read
   of the exact durably marked session (or a final proof rejection).
 
+- The InplaceX online backend now has a fail-closed production release path:
+  strict non-executable environment/receipt parsing, pre-provisioned global
+  release locking, immutable image digest plus OCI-label verification,
+  root:GID file-secret access proven from each container's real runtime UID,
+  external PostgreSQL volume identity checks, maintenance-gated drain/snapshot,
+  receipt-bound backups and one-shot manual rollback. CI exercises pinned
+  PostgreSQL/backend deploy, restart recovery, a second deploy, hostile release
+  inputs and rollback through the real Compose/nginx perimeter. Database and
+  GeoIP mutation now require a successful backend stop plus an independent
+  `State.Running=false` proof. Existing activation v1 hosts have an explicit,
+  journaled one-time deploy migration that fingerprints the database password
+  inside the exact running legacy container before atomically committing v2.
+  The release builder now binds its Dockerfile and context to one verified Git
+  archive, disables replacement refs, proves published provenance/SBOM, and
+  production entrypoints reject shell startup hooks, hostile PATH/Docker
+  selection, or changed socket/server-ID/data-root/plugin identities before
+  mutation. Schema-v2 manifests retain concrete attestation-manifest and
+  predicate evidence while remaining deploy-compatible with reviewed v1
+  manifests. Source archives are reconstructed from commit blobs without
+  checkout filters/attributes, reject repository-local attributes/alternates,
+  and require a root-owned, non-writable, ordinary embedded-Git source clone.
+  The root-executed release toolset must be single-link, exact-mode files that
+  match exact HEAD blobs; filesystem identity and Git identity are rechecked at
+  every archive/build/attestation/manifest publication boundary.
+  Registry push authentication is now an explicit root-owned 0600 single-link
+  JSON input with one exact authority and inline auth only; helper/plugin/header
+  fields are rejected and a normalized config is fsynced into the isolated
+  Docker config. Every Docker/Buildx subprocess receives a strict `env -i`
+  allowlist, and ambient Buildx config, source policy, default platform and
+  extra plugin directories are rejected. Anonymous pushes are limited to
+  acknowledged loopback CI. Manifest destinations must be new and are published
+  with an atomic no-replace rename plus directory fsync; schema versions must be
+  JSON integers. The destructive production job has a contract-pinned 75-minute
+  budget and now proves a real Basic-auth registry build/push/inspect/pull path
+  without credential disclosure. It invokes the production builder for every
+  image, deploys a positive strict schema-v1 compatibility fixture, and derives
+  activation v1 only from an immutable archive plus a deterministic fixture
+  commit. Failed CI builds now retain a credential-redacted bounded excerpt from
+  both the beginning and end of the build log, and SLSA v1 provenance validation
+  reads the pinned BuildKit `buildDefinition.buildType` identity.
+
+- PostgreSQL migration checksums are newline-stable and legacy checksum
+  backfill now requires the exact one-time v1-v8 acknowledgement plus a known
+  schema/index gate. Advisory migration acquisition, pool connectivity,
+  validation, transactions and Compose waits are bounded. JDBC URLs cannot
+  embed userinfo or query/fragment options, and readiness logs safe state
+  transitions without credentials or exception messages.
+
+- Online routes now enforce application-level budgets per verified Platform
+  principal and operation, a separate invalid-authentication budget, and
+  per-principal/global WebSocket caps. REST overload returns `429` with
+  `Retry-After`; nginx adds coarse client limits while preserving Authorization,
+  the v1 WebSocket subprotocol and a maintenance gate on every public route.
+
+- Backend documentation now distinguishes the shipped matchmaking/invite/duel
+  slice from future cloud-save, ticket cancellation, profile, ranking and
+  entitlement APIs; compatibility source or schema alone is no longer treated
+  as a deployed contract.
+
 - Android release identity now comes from one version properties file. PR CI
   runs release unit tests and lint, builds an unsigned release APK, and derives
   package/version/minSdk/size/debuggable/signing evidence from the APK itself.
@@ -162,7 +221,9 @@
   banner/rewarded ads, and ad-free entitlements suppress forced ads without removing voluntary
   rewarded offers. Unknown market results are retried after connectivity
   recovery, including a bounded active-game banner retry loop. GeoIP updates
-  retain a rollback copy, and production smoke checks now enforce timeouts,
+  now use the release lock, bounded drain, durable journal, atomic activation
+  fingerprint and automatic recovery instead of an out-of-band restart;
+  production smoke checks now enforce timeouts,
   JSON headers, no-store, and DB-IP attribution. The release validator also
   rejects malformed backend origins and reused or malformed placement IDs
   without exposing their values.

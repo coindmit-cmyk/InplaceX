@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.online
 
+import com.mirkori.inplacex.backend.app.RuntimeDrainController
 import com.mirkori.inplacex.backend.auth.AccessTokenAuthentication
 import com.mirkori.inplacex.backend.auth.AuthenticatedPrincipal
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
@@ -37,12 +38,17 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -60,14 +66,31 @@ fun Application.configureOnlineRoutes(
     clock: Clock = Clock.systemUTC(),
     nanoTime: () -> Long = System::nanoTime,
     playerProvisioner: OnlinePlayerProvisioner = NoOpOnlinePlayerProvisioner,
+    abuseProtector: OnlineAbuseProtector = OnlineAbuseProtector(),
+    drainController: RuntimeDrainController = RuntimeDrainController.disabled(),
 ) {
     val codec = OnlineJsonCodec()
+    val drainState = flow {
+        while (true) {
+            emit(drainController.snapshot().draining)
+            delay(WebSocketDrainPollIntervalMillis)
+        }
+    }.stateIn(
+        scope = this,
+        started = SharingStarted.Eagerly,
+        initialValue = drainController.snapshot().draining,
+    )
     install(WebSockets) {
         maxFrameSize = MaximumOnlineWebSocketFrameBytes.toLong()
     }
     routing {
         post("/api/v1/matchmaking/tickets") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.CreateMatchmakingTicket,
+            ) ?: return@post
             val command = runCatching { codec.decodeTicket(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
@@ -85,7 +108,12 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/matchmaking/tickets/{ticketId}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.ReadMatchmakingTicket,
+            ) ?: return@get
             val ticketId = call.safeUuidParameter("ticketId") ?: return@get
             val result = runOnlineCommand(call) {
                 service.readTicket(principal.playerId, ticketId)
@@ -94,7 +122,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/friends/invites") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.CreateFriendInvite,
+            ) ?: return@post
             val command = runCatching { codec.decodeFriendInvite(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
                 return@post
@@ -112,7 +145,12 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/friends/invites/{inviteCode}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.ReadFriendInvite,
+            ) ?: return@get
             val inviteCode = call.safeInviteCodeParameter() ?: return@get
             val result = runOnlineCommand(call) {
                 service.readPrivateInvite(principal.playerId, inviteCode)
@@ -121,7 +159,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/friends/invites/{inviteCode}/accept") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.AcceptFriendInvite,
+            ) ?: return@post
             val inviteCode = call.safeInviteCodeParameter() ?: return@post
             val command = runCatching { codec.decodeInviteAccept(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -135,7 +178,12 @@ fun Application.configureOnlineRoutes(
         }
 
         get("/api/v1/sessions/{sessionId}") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@get
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.ReadSession,
+            ) ?: return@get
             val sessionId = call.safeUuidParameter("sessionId") ?: return@get
             val result = runOnlineCommand(call) {
                 service.readSession(principal.playerId, sessionId)
@@ -144,7 +192,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/legacy-membership") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.MigrateLegacyMembership,
+            ) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching {
                 codec.decodeLegacyMembershipMigration(
@@ -167,7 +220,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/reconnect") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.ReconnectSession,
+            ) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeReconnect(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -181,7 +239,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/setup/secret") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.SubmitSecret,
+            ) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeSecret(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -201,7 +264,12 @@ fun Application.configureOnlineRoutes(
         }
 
         post("/api/v1/sessions/{sessionId}/turns") {
-            val principal = call.authenticatedPrincipalOrRespond(verifier, playerProvisioner) ?: return@post
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.SubmitTurn,
+            ) ?: return@post
             val sessionId = call.safeUuidParameter("sessionId") ?: return@post
             val command = runCatching { codec.decodeGuess(call.receiveText()) }.getOrElse {
                 call.respondOnlineError(HttpStatusCode.BadRequest, "invalid_request")
@@ -224,22 +292,67 @@ fun Application.configureOnlineRoutes(
             path = "/api/v1/ws/sessions/{sessionId}",
             protocol = "inplacex.online.v1",
         ) {
+            val remoteIdentity = call.remoteIdentity()
+            val authenticationPreCheck = abuseProtector.checkAuthenticationFailureBudget(remoteIdentity)
+            if (authenticationPreCheck is OnlineAbuseDecision.Rejected) {
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                return@webSocket
+            }
             val authentication = verifier.authenticate(call.request.headers[HttpHeaders.Authorization])
             val principal = (authentication as? AccessTokenAuthentication.Accepted)?.principal
             val sessionId = call.parameters["sessionId"]?.takeIf(String::isCanonicalUuid)
-            if (principal == null || sessionId == null) {
+            if (principal == null) {
+                if (
+                    abuseProtector.acquireAuthenticationAttempt(remoteIdentity) is
+                    OnlineAbuseDecision.Rejected
+                ) {
+                    close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                    return@webSocket
+                }
+                val decision = abuseProtector.acquireInvalidAuthentication(remoteIdentity)
+                val closeCode = if (decision is OnlineAbuseDecision.Rejected) {
+                    CloseReason.Codes.TRY_AGAIN_LATER
+                } else {
+                    CloseReason.Codes.VIOLATED_POLICY
+                }
+                close(CloseReason(closeCode, "unauthorized"))
+                return@webSocket
+            }
+            if (
+                abuseProtector.acquire(principal.playerId, OnlineOperation.OpenWebSocket) is
+                OnlineAbuseDecision.Rejected
+            ) {
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                return@webSocket
+            }
+            if (sessionId == null) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "unauthorized"))
                 return@webSocket
             }
+            val webSocketLease = abuseProtector.openWebSocket(principal.playerId)
+            if (webSocketLease == null) {
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                return@webSocket
+            }
+            val sessionJob = coroutineContext[Job]
+            if (sessionJob == null) {
+                webSocketLease.close()
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
+                return@webSocket
+            }
+            sessionJob.invokeOnCompletion { webSocketLease.close() }
             val initial = try {
                 service.readSession(principal.playerId, sessionId)
             } catch (_: OnlineMembershipRejectedException) {
+                webSocketLease.close()
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "membership_rejected"))
                 return@webSocket
             } catch (_: NoSuchElementException) {
+                webSocketLease.close()
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "membership_rejected"))
                 return@webSocket
             } catch (_: Throwable) {
+                webSocketLease.close()
                 close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "server_failure"))
                 return@webSocket
             }
@@ -251,6 +364,15 @@ fun Application.configureOnlineRoutes(
             val heartbeatDeadline = WebSocketHeartbeatDeadline(nanoTime, WebSocketPingTimeoutNanos)
             val writer = launch {
                 for (message in outbound) send(Frame.Text(message))
+            }
+            val webSocketJob = coroutineContext[Job]
+            val drainWatcher = launch {
+                drainState.first { it }
+                launch {
+                    delay(WebSocketDrainForceCloseDelayMillis)
+                    webSocketJob?.cancel()
+                }
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "service_draining"))
             }
             fun queueObservedEvent(event: OnlineSessionEvent): Boolean {
                 val response = event.sessionRevision?.let {
@@ -360,6 +482,13 @@ fun Application.configureOnlineRoutes(
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "invalid_frame"))
                         return@webSocket
                     }
+                    if (
+                        abuseProtector.acquire(principal.playerId, OnlineOperation.WebSocketControl) is
+                        OnlineAbuseDecision.Rejected
+                    ) {
+                        close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                        return@webSocket
+                    }
                     if (command.sessionId != sessionId) {
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "session_mismatch"))
                         return@webSocket
@@ -430,10 +559,12 @@ fun Application.configureOnlineRoutes(
                     }
                 }
             } finally {
+                drainWatcher.cancel()
                 heartbeat.cancel()
                 sessionChanges.cancel()
                 outbound.close()
                 writer.cancel()
+                webSocketLease.close()
             }
         }
     }
@@ -936,9 +1067,12 @@ private class OnlineJsonCodec {
 
 private const val MaximumOnlineWebSocketFrameBytes = 64 * 1024
 private const val MaximumLegacyMigrationBodyBytes = 2 * 1024
+private const val MaximumRemoteIdentityCharacters = 128
 private const val MaximumPendingWebSocketFrames = 16
 private const val WebSocketHeartbeatIntervalMillis = 20_000L
 private const val WebSocketEventPollIntervalMillis = 250L
+private const val WebSocketDrainPollIntervalMillis = 100L
+private const val WebSocketDrainForceCloseDelayMillis = 1_000L
 private const val WebSocketPingTimeoutNanos = 45_000_000_000L
 private const val MaximumEventPollBatch = 32
 private const val UnsubscribedEventSequence = -1L
@@ -965,16 +1099,54 @@ internal class WebSocketHeartbeatDeadline(
 private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
     verifier: JwtAccessTokenVerifier,
     playerProvisioner: OnlinePlayerProvisioner,
+    abuseProtector: OnlineAbuseProtector,
+    operation: OnlineOperation,
 ): AuthenticatedPrincipal? {
+    val remoteIdentity = remoteIdentity()
+    when (val decision = abuseProtector.checkAuthenticationFailureBudget(remoteIdentity)) {
+        OnlineAbuseDecision.Allowed -> Unit
+        is OnlineAbuseDecision.Rejected -> {
+            respondRateLimited(decision.retryAfterSeconds)
+            return null
+        }
+    }
     return when (val result = verifier.authenticate(request.headers[HttpHeaders.Authorization])) {
-        is AccessTokenAuthentication.Accepted -> result.principal.also {
-            playerProvisioner.ensurePlayer(it.playerId)
+        is AccessTokenAuthentication.Accepted -> {
+            when (val decision = abuseProtector.acquire(result.principal.playerId, operation)) {
+                OnlineAbuseDecision.Allowed -> result.principal.also {
+                    playerProvisioner.ensurePlayer(it.playerId)
+                }
+                is OnlineAbuseDecision.Rejected -> {
+                    respondRateLimited(decision.retryAfterSeconds)
+                    null
+                }
+            }
         }
         is AccessTokenAuthentication.Rejected -> {
-            respondOnlineError(HttpStatusCode.Unauthorized, "unauthorized")
+            when (val authenticationDecision = abuseProtector.acquireAuthenticationAttempt(remoteIdentity)) {
+                OnlineAbuseDecision.Allowed -> {
+                    when (val invalidDecision = abuseProtector.acquireInvalidAuthentication(remoteIdentity)) {
+                        OnlineAbuseDecision.Allowed -> {
+                            respondOnlineError(HttpStatusCode.Unauthorized, "unauthorized")
+                        }
+                        is OnlineAbuseDecision.Rejected -> respondRateLimited(invalidDecision.retryAfterSeconds)
+                    }
+                }
+                is OnlineAbuseDecision.Rejected -> respondRateLimited(authenticationDecision.retryAfterSeconds)
+            }
             null
         }
     }
+}
+
+private fun ApplicationCall.remoteIdentity(): String =
+    request.headers["X-Real-IP"]
+        ?.takeIf { it.isNotBlank() && it.length <= MaximumRemoteIdentityCharacters && it.none(Char::isISOControl) }
+        ?: request.local.remoteHost.take(MaximumRemoteIdentityCharacters)
+
+private suspend fun ApplicationCall.respondRateLimited(retryAfterSeconds: Long) {
+    response.headers.append(HttpHeaders.RetryAfter, retryAfterSeconds.toString())
+    respondOnlineError(HttpStatusCode.TooManyRequests, "rate_limited")
 }
 
 fun interface OnlinePlayerProvisioner {
