@@ -221,7 +221,8 @@ commit. Но любое отличие working-copy release toolset от HEAD с
 
 Новый builder пишет manifest schema v2. Помимо совместимых identity-полей v1,
 он сохраняет digest каждого attestation manifest, SHA-256 извлечённых
-provenance/SBOM и фактические `SLSA.buildType`/`SPDX.spdxVersion`. Deploy
+provenance/SBOM и фактические
+`SLSA.buildDefinition.buildType`/`SPDX.spdxVersion`. Deploy
 продолжает принимать ранее выпущенный строгий schema-v1 manifest, но новый
 release без проверенного schema-v2 attestation evidence не публикуется.
 `schemaVersion` принимается только как JSON integer `1` или `2`; boolean и

@@ -34,6 +34,43 @@ expect_status() {
     }
 }
 
+sanitized_log_fixture="$temporary_directory/sanitized-ci-log.input"
+sanitized_log_output="$temporary_directory/sanitized-ci-log.output"
+sanitized_password='diagnostic-secret'
+sanitized_basic="diagnostic-user:$sanitized_password"
+sanitized_auth_base64='ZGlhZ25vc3RpYy11c2VyOmRpYWdub3N0aWMtc2VjcmV0'
+python3 -I - "$sanitized_log_fixture" \
+    "$sanitized_password" "$sanitized_basic" "$sanitized_auth_base64" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+lines = [f"diagnostic-line-{line_number:03d}" for line_number in range(1, 242)]
+lines[0] = f"diagnostic-head {sys.argv[2]} {sys.argv[3]}"
+lines[120] = f"diagnostic-middle {sys.argv[2]} {sys.argv[4]}"
+lines[-1] = f"diagnostic-tail {sys.argv[3]} {sys.argv[4]}"
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+python3 -I "$repository_root/scripts/ci/print_sanitized_ci_log.py" \
+    "$sanitized_log_fixture" \
+    "$sanitized_password" "$sanitized_basic" "$sanitized_auth_base64" \
+    > "$sanitized_log_output"
+grep -Fxq \
+    'diagnostic-head [redacted-test-credential] [redacted-test-credential]' \
+    "$sanitized_log_output"
+grep -Fxq \
+    'diagnostic-tail [redacted-test-credential] [redacted-test-credential]' \
+    "$sanitized_log_output"
+grep -Fxq '... 41 additional lines omitted ...' "$sanitized_log_output"
+[[ "$(wc -l < "$sanitized_log_output")" -eq 201 ]]
+for sanitized_secret in \
+    "$sanitized_password" "$sanitized_basic" "$sanitized_auth_base64"; do
+    if grep -Fq -- "$sanitized_secret" "$sanitized_log_output"; then
+        echo "Sanitized CI diagnostics exposed a protected credential variant." >&2
+        exit 67
+    fi
+done
+
 declare -Ar parser_allowlist=([SAFE_VALUE]=1 [EMPTY_VALUE]=1)
 parse_fixture() {
     local fixture="$1" fd
@@ -545,6 +582,7 @@ for required in (
     'assert_no_inplacex_release_builders',
     'name=^/buildx_buildkit_inplacex-release-',
     'schema_v1_environment',
+    'print_sanitized_ci_log.py',
 ):
     if required not in runtime_test:
         raise SystemExit(f"Destructive runtime CI lost production release coverage: {required}")

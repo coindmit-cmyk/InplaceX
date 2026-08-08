@@ -446,7 +446,10 @@ sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
 index = json.loads(index_path.read_text(encoding="utf-8"))
 if set(provenance) != {"SLSA"} or not isinstance(provenance["SLSA"], dict):
     raise SystemExit("Published image provenance predicate is not one exact SLSA object")
-build_type = provenance["SLSA"].get("buildType")
+build_definition = provenance["SLSA"].get("buildDefinition")
+if not isinstance(build_definition, dict):
+    raise SystemExit("Published provenance build definition is missing")
+build_type = build_definition.get("buildType")
 if not isinstance(build_type, str) or not build_type.startswith("https://"):
     raise SystemExit("Published provenance buildType identity is missing")
 if set(sbom) != {"SPDX"} or not isinstance(sbom["SPDX"], dict):

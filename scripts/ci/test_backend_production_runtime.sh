@@ -159,23 +159,10 @@ trap cleanup EXIT
 print_sanitized_ci_log() {
     local log_path="$1"
     [[ -f "$log_path" ]] || return 0
-    python3 -I - "$log_path" \
+    python3 -I "$repository_root/scripts/ci/print_sanitized_ci_log.py" "$log_path" \
         "$authenticated_registry_password" \
         "$authenticated_registry_basic" \
-        "$authenticated_registry_auth_base64" <<'PY' >&2
-import pathlib
-import sys
-
-text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
-for secret in sys.argv[2:]:
-    if secret:
-        text = text.replace(secret, "[redacted-test-credential]")
-lines = text.splitlines()
-limit = 200
-sys.stderr.write("\n".join(lines[:limit]) + ("\n" if lines else ""))
-if len(lines) > limit:
-    sys.stderr.write(f"... {len(lines) - limit} additional lines omitted ...\n")
-PY
+        "$authenticated_registry_auth_base64" >&2
 }
 
 print_registry_diagnostics() {

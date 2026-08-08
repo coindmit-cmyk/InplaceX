@@ -59,7 +59,9 @@
   without credential disclosure. It invokes the production builder for every
   image, deploys a positive strict schema-v1 compatibility fixture, and derives
   activation v1 only from an immutable archive plus a deterministic fixture
-  commit.
+  commit. Failed CI builds now retain a credential-redacted bounded excerpt from
+  both the beginning and end of the build log, and SLSA v1 provenance validation
+  reads the pinned BuildKit `buildDefinition.buildType` identity.
 
 - PostgreSQL migration checksums are newline-stable and legacy checksum
   backfill now requires the exact one-time v1-v8 acknowledgement plus a known
