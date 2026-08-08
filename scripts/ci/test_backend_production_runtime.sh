@@ -778,7 +778,7 @@ build_legacy_activation_v1_image() {
     local release_id="$1"
     local legacy_source_root="$test_root/legacy-activation-v1-source"
     local fixture_patch="$legacy_source_root/scripts/ci/fixtures/runtime-activation-v1.patch"
-    local fixture_sha256=f6af7acbc341481c640855cccd8a34e3c128cbd31b2aebfa453882af5a94a2e6
+    local fixture_sha256=f138b8189119c9e49899c548fac8ebe8b5a4c922f1ba697eb093d310cb316249
     local activation_guard=InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
     local image_tag="127.0.0.1:$registry_port/inplacex-backend:$release_id-activation-v1"
     local immutable_image manifest_path fixture_git_sha fixture_source_sha
