@@ -196,6 +196,7 @@ class OnlineAbuseProtector(
             OnlineOperation.SubmitSecret to 30,
             OnlineOperation.SubmitTurn to 120,
             OnlineOperation.OpenWebSocket to 30,
+            OnlineOperation.WebSocketControl to 240,
         )
     }
 }
@@ -212,6 +213,7 @@ enum class OnlineOperation(val wireName: String) {
     SubmitSecret("sessions.secret.submit"),
     SubmitTurn("sessions.turn.submit"),
     OpenWebSocket("websocket.open"),
+    WebSocketControl("websocket.control"),
 }
 
 sealed interface OnlineAbuseDecision {

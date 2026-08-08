@@ -318,15 +318,15 @@ fun Application.configureOnlineRoutes(
                 close(CloseReason(closeCode, "unauthorized"))
                 return@webSocket
             }
-            if (sessionId == null) {
-                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "unauthorized"))
-                return@webSocket
-            }
             if (
                 abuseProtector.acquire(principal.playerId, OnlineOperation.OpenWebSocket) is
                 OnlineAbuseDecision.Rejected
             ) {
                 close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                return@webSocket
+            }
+            if (sessionId == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "unauthorized"))
                 return@webSocket
             }
             val webSocketLease = abuseProtector.openWebSocket(principal.playerId)
@@ -480,6 +480,13 @@ fun Application.configureOnlineRoutes(
                     }
                     val command = runCatching { codec.decodeWebSocketControl(source) }.getOrElse {
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "invalid_frame"))
+                        return@webSocket
+                    }
+                    if (
+                        abuseProtector.acquire(principal.playerId, OnlineOperation.WebSocketControl) is
+                        OnlineAbuseDecision.Rejected
+                    ) {
+                        close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
                         return@webSocket
                     }
                     if (command.sessionId != sessionId) {

@@ -552,6 +552,61 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `WebSocket charges malformed upgrades and control frames to principal budgets`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            when (operation) {
+                OnlineOperation.OpenWebSocket, OnlineOperation.WebSocketControl -> 1
+                else -> 20
+            }
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+        val sessionId = createMatchedTicket(attackerToken, serviceClock)
+            .getValue("sessionId").jsonPrimitive.content
+        val wsClient = createClient { install(WebSockets) }
+
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(attackerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.subscribe", "{}")))
+            assertEquals(
+                "session.snapshot",
+                json((incoming.receive() as Frame.Text).readText()).getValue("type").jsonPrimitive.content,
+            )
+            send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.ping", "{}")))
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+    }
+
+    @Test
     fun `private friend invite creates one shared human session for two tokens`() = testApplication {
         val service = AuthoritativeOnlineDuelService(
             Clock.fixed(now, ZoneOffset.UTC),

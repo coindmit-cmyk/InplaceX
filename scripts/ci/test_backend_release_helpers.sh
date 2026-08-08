@@ -104,6 +104,32 @@ expect_status 65 release_validate_durable_directory_path /run/inplacex-online "t
 expect_status 65 release_validate_durable_directory_path /var/lib/inplacex/../../../run/state "test durable path"
 expect_status 65 release_validate_durable_directory_path /tmp/inplacex-online "test durable path"
 
+(
+    COMPOSE_PROJECT_NAME=inplacex-online
+    INPLACEX_POSTGRES_IMAGE=postgres@sha256:fixture
+    INPLACEX_POSTGRES_DB=inplacex
+    INPLACEX_POSTGRES_USER=inplacex
+    INPLACEX_POSTGRES_VOLUME=inplacex-postgres
+    INPLACEX_BACKEND_LOOPBACK_PORT=18080
+    INPLACEX_PUBLIC_HOSTNAME=online.example.com
+    INPLACEX_OPERATOR_NETWORK_CIDR=192.0.2.10/32
+    INPLACEX_SECRET_DIRECTORY=/etc/inplacex-online/secrets
+    INPLACEX_RUNTIME_SECRET_GID=991
+    INPLACEX_GEOIP_DB_PATH=/var/lib/inplacex/geoip.mmdb
+    INPLACEX_ONLINE_TOKEN_ISSUER=https://games.example.com
+    INPLACEX_ONLINE_TOKEN_AUDIENCE=inplacex
+    INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS=5
+    INPLACEX_AD_MARKET_TRUSTED_PROXY_HOSTS=172.16.0.1
+    INPLACEX_AD_MARKET_COUNTRY_HEADER=X-Country
+    INPLACEX_AD_MARKET_CONTAINER_DB_PATH=/var/lib/inplacex/geoip.mmdb
+    baseline_runtime_fingerprint="$(release_runtime_config_fingerprint)"
+    INPLACEX_PUBLIC_HOSTNAME=online-next.example.com
+    [[ "$(release_runtime_config_fingerprint)" != "$baseline_runtime_fingerprint" ]]
+    INPLACEX_PUBLIC_HOSTNAME=online.example.com
+    INPLACEX_OPERATOR_NETWORK_CIDR=198.51.100.0/24
+    [[ "$(release_runtime_config_fingerprint)" != "$baseline_runtime_fingerprint" ]]
+)
+
 buildkit_test_directory="$(mktemp -d /tmp/inplacex-buildkit-contract.XXXXXX)"
 local_buildkitd_config="$buildkit_test_directory/local-buildkitd.toml"
 remote_buildkitd_config="$buildkit_test_directory/remote-buildkitd.toml"
