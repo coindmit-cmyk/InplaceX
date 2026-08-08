@@ -167,10 +167,11 @@ protected_git=(
 "${protected_git[@]}" -C "$repository_root" checkout --detach "$git_sha" >/dev/null
 [[ "$("${protected_git[@]}" -C "$repository_root" rev-parse --verify 'HEAD^{commit}')" == \
     "$git_sha" ]]
-chmod 0755 "$production_directory/build-backend-release.sh"
+chmod 0755 \
+    "$production_directory/build-backend-release.sh" \
+    "$production_directory/release-common.sh"
 chmod 0644 \
     "$production_directory/release-shell-bootstrap.sh" \
-    "$production_directory/release-common.sh" \
     "$production_directory/create-source-archive.py" \
     "$repository_root/ops/Dockerfile"
 
@@ -218,10 +219,23 @@ assert_builder_rejects_untrusted_source() {
         > "$case_log" 2>&1
     status=$?
     set -e
-    [[ "$status" -ne 0 && ! -e "$case_manifest" ]]
-    grep -Fq "$expected_error" "$case_log"
+    local failed=false
+    if [[ "$status" -eq 0 || -e "$case_manifest" ]]; then
+        echo "Builder trust case '$case_name' did not fail closed (status=$status, manifest=$case_manifest)." >&2
+        failed=true
+    fi
+    if ! grep -Fq "$expected_error" "$case_log"; then
+        echo "Builder trust case '$case_name' did not report the expected error: $expected_error" >&2
+        failed=true
+    fi
+    if [[ "$failed" == "true" ]]; then
+        echo "--- builder trust case '$case_name' log ---" >&2
+        sed -n '1,120p' "$case_log" >&2
+        echo "--- end builder trust case '$case_name' log ---" >&2
+    fi
     chmod 0700 "$case_root"
     rm -rf -- "$case_root"
+    [[ "$failed" == "false" ]]
 }
 
 assert_builder_rejects_untrusted_source \
@@ -677,10 +691,11 @@ build_legacy_activation_v1_image() {
         echo "Runtime-activation v1 fixture still contains v2 fields." >&2
         exit 70
     fi
-    chmod 0755 "$legacy_source_root/ops/production/build-backend-release.sh"
+    chmod 0755 \
+        "$legacy_source_root/ops/production/build-backend-release.sh" \
+        "$legacy_source_root/ops/production/release-common.sh"
     chmod 0644 \
         "$legacy_source_root/ops/production/release-shell-bootstrap.sh" \
-        "$legacy_source_root/ops/production/release-common.sh" \
         "$legacy_source_root/ops/production/create-source-archive.py" \
         "$legacy_source_root/ops/Dockerfile"
     "${fixture_git[@]}" -C "$legacy_source_root" \

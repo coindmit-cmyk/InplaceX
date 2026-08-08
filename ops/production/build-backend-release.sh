@@ -62,7 +62,7 @@ done
 for bootstrap_specification in \
     "755|$invoked_builder_path" \
     "644|$script_directory/release-shell-bootstrap.sh" \
-    "644|$script_directory/release-common.sh"; do
+    "755|$script_directory/release-common.sh"; do
     IFS='|' read -r bootstrap_mode bootstrap_path <<< "$bootstrap_specification"
     [[ -f "$bootstrap_path" && ! -L "$bootstrap_path" &&
         "$(/usr/bin/stat -Lc '%F|%u|%g|%a|%h' -- "$bootstrap_path")" == \
@@ -230,7 +230,7 @@ verify_release_toolset() {
     for specification in \
         '100755|755|ops/production/build-backend-release.sh' \
         '100644|644|ops/production/release-shell-bootstrap.sh' \
-        '100644|644|ops/production/release-common.sh' \
+        '100755|755|ops/production/release-common.sh' \
         "100644|644|$source_archive_helper" \
         "100644|644|$archive_dockerfile"; do
         IFS='|' read -r tree_mode working_mode tool_path <<< "$specification"

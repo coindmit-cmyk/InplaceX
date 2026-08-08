@@ -183,8 +183,8 @@ Source должен быть отдельным exact-SHA clone под root-owne
 записи group/world цепочкой каталогов (например,
 `/var/lib/inplacex-online/release-source-<sha>`). Builder требует обычный
 embedded `.git` (не linked worktree), root-owned защищённые Git metadata и
-single-link files с Git mode `100755` для builder и `100644` для
-bootstrap/common/archive helper/Dockerfile. CI создаёт такой clone через
+single-link files с Git mode `100755` для builder/common library и `100644` для
+bootstrap/archive helper/Dockerfile. CI создаёт такой clone через
 `--no-local --no-hardlinks --no-checkout`, затем делает detached checkout
 reviewed SHA. Метаданные, inode, bytes и HEAD повторно проверяются непосредственно
 перед archive helper, Buildx push, чтением attestations и публикацией manifest.

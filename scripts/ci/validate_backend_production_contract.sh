@@ -34,6 +34,21 @@ for executable_script in \
         exit 67
     }
 done
+
+while IFS='|' read -r expected_mode protected_path; do
+    actual_mode="$("${git_command[@]}" ls-files --stage -- "$protected_path" | awk '{print $1}')"
+    [[ "$actual_mode" == "$expected_mode" ]] || {
+        echo "Protected release source has Git mode $actual_mode, expected $expected_mode: $protected_path" >&2
+        exit 67
+    }
+done <<'MODES'
+100755|ops/production/build-backend-release.sh
+100755|ops/production/release-common.sh
+100644|ops/production/release-shell-bootstrap.sh
+100644|ops/production/create-source-archive.py
+100644|ops/Dockerfile
+MODES
+
 production_runtime_timeout="$(awk '
     $0 ~ /^  backend-production-runtime:\r?$/ { in_runtime = 1; next }
     in_runtime && $0 ~ /^  [A-Za-z0-9_-]+:\r?$/ { exit }
