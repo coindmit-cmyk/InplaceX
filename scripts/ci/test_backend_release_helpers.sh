@@ -9,10 +9,14 @@ source "$production_directory/release-common.sh"
 
 temporary_directory="$(mktemp -d "$repository_root/.release-helper-test.XXXXXX")"
 publication_directory=""
+buildkit_test_directory=""
 cleanup() {
     rm -rf -- "$temporary_directory"
     if [[ "$publication_directory" == /tmp/inplacex-release-publication.* ]]; then
         rm -rf -- "$publication_directory"
+    fi
+    if [[ "$buildkit_test_directory" == /tmp/inplacex-buildkit-contract.* ]]; then
+        rm -rf -- "$buildkit_test_directory"
     fi
 }
 trap cleanup EXIT
@@ -62,6 +66,50 @@ expect_status 65 release_validate_canonical_absolute_path /var/lib//inplacex/sta
 expect_status 65 release_validate_durable_directory_path /run/inplacex-online "test durable path"
 expect_status 65 release_validate_durable_directory_path /var/lib/inplacex/../../../run/state "test durable path"
 expect_status 65 release_validate_durable_directory_path /tmp/inplacex-online "test durable path"
+
+buildkit_test_directory="$(mktemp -d /tmp/inplacex-buildkit-contract.XXXXXX)"
+local_buildkitd_config="$buildkit_test_directory/local-buildkitd.toml"
+remote_buildkitd_config="$buildkit_test_directory/remote-buildkitd.toml"
+release_write_buildkitd_config "$local_buildkitd_config" "127.0.0.1:5012"
+release_write_buildkitd_config "$remote_buildkitd_config" "registry.example"
+[[ "$(<"$local_buildkitd_config")" == \
+    $'debug = false\n\n[registry."127.0.0.1:5012"]\n  http = true' ]]
+[[ "$(<"$remote_buildkitd_config")" == 'debug = false' ]]
+if grep -Fq 'insecure' "$local_buildkitd_config" "$remote_buildkitd_config"; then
+    echo "Generated BuildKit configuration enabled insecure TLS handling." >&2
+    exit 67
+fi
+
+buildx_lifecycle_log="$buildkit_test_directory/buildx-lifecycle.log"
+(
+    RELEASE_DOCKER_HOST=unix:///var/run/docker.sock
+    release_docker() {
+        printf '%s\n' "$*" >> "$buildx_lifecycle_log"
+    }
+    release_create_isolated_buildx_builder \
+        local-builder "$local_buildkitd_config" "127.0.0.1:5012"
+    release_create_isolated_buildx_builder \
+        remote-builder "$remote_buildkitd_config" "registry.example"
+    release_remove_isolated_buildx_builder local-builder
+    release_remove_isolated_buildx_builder remote-builder
+)
+grep -Fxq "buildx create --name local-builder --driver docker-container --driver-opt image=$RELEASE_BUILDKIT_IMAGE --buildkitd-config $local_buildkitd_config --driver-opt network=host unix:///var/run/docker.sock" \
+    "$buildx_lifecycle_log"
+grep -Fxq "buildx create --name remote-builder --driver docker-container --driver-opt image=$RELEASE_BUILDKIT_IMAGE --buildkitd-config $remote_buildkitd_config unix:///var/run/docker.sock" \
+    "$buildx_lifecycle_log"
+grep -Fxq 'buildx rm --force --timeout 30s local-builder' "$buildx_lifecycle_log"
+grep -Fxq 'buildx rm --force --timeout 30s remote-builder' "$buildx_lifecycle_log"
+if grep -F 'remote-builder' "$buildx_lifecycle_log" | grep -Eq 'network=host|http|insecure'; then
+    echo "Remote Buildx builder inherited a loopback-only transport option." >&2
+    exit 67
+fi
+
+tampered_buildkitd_config="$buildkit_test_directory/tampered-buildkitd.toml"
+printf '%s\n' 'debug = false' 'insecure = true' > "$tampered_buildkitd_config"
+chmod 0600 "$tampered_buildkitd_config"
+RELEASE_DOCKER_HOST=unix:///var/run/docker.sock
+expect_status 77 release_create_isolated_buildx_builder \
+    rejected-builder "$tampered_buildkitd_config" "registry.example"
 
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|1'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|8'
@@ -422,6 +470,13 @@ for required in (
     '--file "$archive_dockerfile"',
     '--push - < "$source_archive"',
     'release_prepare_docker_control_plane buildx "$temporary_directory/docker-cli"',
+    'release_write_buildkitd_config "$buildkitd_config" "$registry_authority"',
+    'release_create_isolated_buildx_builder',
+    'buildx_builder_cleanup_required=true',
+    'cleanup_buildx_builder || exit 70',
+    'print_buildx_diagnostics',
+    'verify_buildx_builder_runtime_identity',
+    'buildx_buildkit_${buildx_builder_name}0',
     'attestationManifestDigests',
     '"schemaVersion": 2',
 ):
@@ -433,6 +488,18 @@ if (
     or '--file "$dockerfile"' in builder
 ):
     raise SystemExit("Release builder must not mix a mutable Dockerfile with an archive context")
+if builder.count('--builder "$buildx_builder_name"') != 4:
+    raise SystemExit("Release build and every attestation inspection must select the exact isolated builder")
+ordered(
+    builder,
+    'buildx_builder_cleanup_required=true',
+    'release_create_isolated_buildx_builder',
+)
+ordered(
+    builder,
+    'release_docker buildx imagetools inspect --builder "$buildx_builder_name"',
+    'cleanup_buildx_builder || exit 70',
+)
 for required in (
     'BASH_ENV', 'ENV', 'BASH_FUNC_', 'LD_PRELOAD', 'DOCKER_HOST', 'DOCKER_CONTEXT',
     'BUILDX_CONFIG', 'EXPERIMENTAL_BUILDKIT_SOURCE_POLICY', 'DOCKER_DEFAULT_PLATFORM',
@@ -450,10 +517,14 @@ for required in (
     'REGISTRY_AUTH=htpasswd',
     '--registry-auth-config "$registry_auth_config"',
     'Authenticated registry credential leaked into release evidence or logs.',
+    'assert_no_inplacex_release_builders',
+    'name=^/buildx_buildkit_inplacex-release-',
     'schema_v1_environment',
 ):
     if required not in runtime_test:
         raise SystemExit(f"Destructive runtime CI lost production release coverage: {required}")
+if runtime_test.count('assert_no_inplacex_release_builders') < 4:
+    raise SystemExit("Every destructive release-builder path must prove successful builder cleanup")
 if 'docker build \\' in runtime_test or 'docker push "$image_tag"' in runtime_test:
     raise SystemExit("Destructive runtime CI must not hand-build release images")
 if 'tar -xf "$current_source_archive"' not in runtime_test:
@@ -462,6 +533,16 @@ if 'git archive' in runtime_test:
     raise SystemExit("Destructive CI source fixtures must bypass Git attributes and filters")
 for required in (
     'release_normalize_registry_auth_config()',
+    'moby/buildkit:buildx-stable-1@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec',
+    'release_expected_buildkitd_config()',
+    'release_write_buildkitd_config()',
+    'release_create_isolated_buildx_builder()',
+    'release_remove_isolated_buildx_builder()',
+    '--driver docker-container',
+    '--driver-opt "image=$RELEASE_BUILDKIT_IMAGE"',
+    'create_arguments+=(--driver-opt network=host)',
+    'create_arguments+=("$RELEASE_DOCKER_HOST")',
+    'release_docker buildx rm --force --timeout 30s "$builder_name"',
     'set(value) != {"auths"}',
     'set(auths) != {authority}',
     'set(entry) != {"auth"}',
@@ -472,6 +553,8 @@ for required in (
 ):
     if required not in common:
         raise SystemExit(f"Protected registry/manifest validation is missing: {required}")
+if 'insecure = true' in common or 'insecure = true' in builder:
+    raise SystemExit("Production builder must never configure insecure registry TLS handling")
 for required in (
     '--no-local --no-hardlinks --no-checkout',
     'assert_builder_rejects_untrusted_source',

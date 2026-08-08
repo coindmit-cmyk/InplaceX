@@ -118,6 +118,7 @@ done
 cleanup() {
     local status=$?
     local cleanup_env_file="$env_file"
+    local -a leftover_release_builders=()
     trap - EXIT
     if [[ -n "${legacy_env_file:-}" && -f "$legacy_env_file" ]]; then
         cleanup_env_file="$legacy_env_file"
@@ -133,6 +134,13 @@ cleanup() {
             -f "$compose_file" down --remove-orphans >/dev/null 2>&1 || true
     fi
     docker rm -f "$registry_name" "$authenticated_registry_name" >/dev/null 2>&1 || true
+    mapfile -t leftover_release_builders < <(
+        docker ps --all --quiet \
+            --filter 'name=^/buildx_buildkit_inplacex-release-' 2>/dev/null || true
+    )
+    if (( ${#leftover_release_builders[@]} > 0 )); then
+        docker rm -f "${leftover_release_builders[@]}" >/dev/null 2>&1 || true
+    fi
     docker volume rm "$postgres_volume" >/dev/null 2>&1 || true
     rm -f -- "${nginx_files[@]}"
     nginx -t >/dev/null 2>&1 && nginx -s reload >/dev/null 2>&1 || true
@@ -185,6 +193,18 @@ print_registry_diagnostics() {
             --format 'name={{.Names}} status={{.Status}} image={{.Image}}' >&2 || true
     fi
     echo "--- end $label registry diagnostics ---" >&2
+}
+
+assert_no_inplacex_release_builders() {
+    local leftover_builders
+    leftover_builders="$(docker ps --all \
+        --filter 'name=^/buildx_buildkit_inplacex-release-' \
+        --format '{{.ID}}|{{.Names}}')"
+    [[ -z "$leftover_builders" ]] || {
+        echo "Release builder lifecycle left BuildKit containers behind:" >&2
+        printf '%s\n' "$leftover_builders" >&2
+        return 70
+    }
 }
 
 wait_for_registry() {
@@ -657,6 +677,7 @@ build_authenticated_registry_probe() {
         print_registry_diagnostics authenticated "$authenticated_registry_name"
         return "$build_status"
     fi
+    assert_no_inplacex_release_builders
     immutable_image="$(python3 -I - "$manifest_path" "$release_id" "$git_sha" \
         "$source_archive_sha256" <<'PY'
 import json
@@ -738,6 +759,7 @@ build_release_image() {
         "$production_directory/build-backend-release.sh" \
         "$image_tag" "$release_id" "$manifest_path" --push --anonymous-loopback \
         > "$build_log"
+    assert_no_inplacex_release_builders
     immutable_image="$(python3 -I - "$manifest_path" "$release_id" "$git_sha" \
         "$source_archive_sha256" <<'PY'
 import json
@@ -824,6 +846,7 @@ build_legacy_activation_v1_image() {
         "$legacy_source_root/ops/production/build-backend-release.sh" \
         "$image_tag" "$release_id" "$manifest_path" --push --anonymous-loopback \
         > "$build_log"
+    assert_no_inplacex_release_builders
     IFS='|' read -r immutable_image fixture_git_sha fixture_source_sha < <(
         python3 -I - "$manifest_path" "$release_id" "$fixture_git_sha" <<'PY'
 import json

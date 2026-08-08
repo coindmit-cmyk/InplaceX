@@ -152,10 +152,70 @@ temporary_directory="$(mktemp -d /run/inplacex-release-build.XXXXXX)"
 chown root:root "$temporary_directory"
 chmod 0700 "$temporary_directory"
 temporary_manifest=""
+buildx_builder_name=""
+buildx_builder_cleanup_required=false
+
+print_buildx_diagnostics() {
+    [[ -n "$buildx_builder_name" ]] || return 0
+    echo "--- isolated Buildx builder diagnostics ($buildx_builder_name) ---" >&2
+    (release_docker buildx inspect "$buildx_builder_name" --timeout 20s) >&2 || true
+    local builder_container="buildx_buildkit_${buildx_builder_name}0"
+    if (release_docker inspect "$builder_container") >/dev/null 2>&1; then
+        echo "BuildKit container: $builder_container" >&2
+        (release_docker inspect --format \
+            '{{json .State}} {{json .Config.Image}} {{json .HostConfig.NetworkMode}}' \
+            "$builder_container") >&2 || true
+        (release_docker logs --tail 200 "$builder_container") >&2 || true
+    else
+        echo "BuildKit container does not exist: $builder_container" >&2
+    fi
+    echo "--- end isolated Buildx builder diagnostics ---" >&2
+}
+
+verify_buildx_builder_runtime_identity() {
+    local builder_container="buildx_buildkit_${buildx_builder_name}0"
+    local expected_network_mode=bridge
+    if [[ "$registry_authority" =~ ^127\.0\.0\.1:([1-9][0-9]{0,4})$ ]]; then
+        expected_network_mode=host
+    fi
+    local runtime_identity
+    runtime_identity="$(release_docker inspect --format \
+        '{{.State.Running}}|{{.Config.Image}}|{{.HostConfig.NetworkMode}}|{{.Name}}' \
+        "$builder_container")" || return 1
+    [[ "$runtime_identity" == \
+        "true|$RELEASE_BUILDKIT_IMAGE|$expected_network_mode|/$builder_container" ]]
+}
+
+cleanup_buildx_builder() {
+    [[ "$buildx_builder_cleanup_required" == "true" ]] || return 0
+    local removal_log="$temporary_directory/buildx-remove.log"
+    if (release_remove_isolated_buildx_builder "$buildx_builder_name") \
+        > "$removal_log" 2>&1 &&
+        ! (release_docker inspect "buildx_buildkit_${buildx_builder_name}0") \
+            >/dev/null 2>&1; then
+        buildx_builder_cleanup_required=false
+        return 0
+    fi
+    echo "Isolated Buildx builder cleanup failed: $buildx_builder_name" >&2
+    [[ ! -s "$removal_log" ]] || tail -n 200 "$removal_log" >&2
+    return 1
+}
+
 cleanup() {
+    local cleanup_status=$?
+    trap - EXIT
+    if [[ "$buildx_builder_cleanup_required" == "true" ]]; then
+        if (( cleanup_status != 0 )); then
+            print_buildx_diagnostics
+        fi
+        if ! cleanup_buildx_builder && (( cleanup_status == 0 )); then
+            cleanup_status=70
+        fi
+    fi
     [[ -z "$temporary_manifest" || ( ! -e "$temporary_manifest" && ! -L "$temporary_manifest" ) ]] ||
         rm -f -- "$temporary_manifest"
     rm -rf -- "$temporary_directory"
+    exit "$cleanup_status"
 }
 trap cleanup EXIT
 readonly source_archive="$temporary_directory/source.tar"
@@ -304,9 +364,31 @@ else
         exit 77
     }
 fi
+readonly buildkitd_config="$temporary_directory/buildkitd.toml"
+release_write_buildkitd_config "$buildkitd_config" "$registry_authority"
+buildx_builder_suffix="${temporary_directory##*.}"
+buildx_builder_name="inplacex-release-${buildx_builder_suffix,,}"
+unset buildx_builder_suffix
+buildx_builder_cleanup_required=true
+verify_release_toolset
+if ! release_create_isolated_buildx_builder \
+    "$buildx_builder_name" "$buildkitd_config" "$registry_authority"; then
+    echo "Cannot create the isolated pinned Buildx builder." >&2
+    exit 70
+fi
+if ! release_docker buildx inspect "$buildx_builder_name" \
+    --bootstrap --timeout 120s; then
+    echo "Cannot bootstrap the isolated pinned Buildx builder." >&2
+    exit 70
+fi
+if ! verify_buildx_builder_runtime_identity; then
+    echo "Isolated Buildx builder runtime identity is invalid." >&2
+    exit 70
+fi
 
 verify_release_toolset
-release_docker buildx build \
+if ! release_docker buildx build \
+    --builder "$buildx_builder_name" \
     --file "$archive_dockerfile" \
     --build-arg "INPLACEX_BUILD_VERSION=$release_id" \
     --build-arg "INPLACEX_BUILD_REVISION=$git_sha" \
@@ -315,7 +397,10 @@ release_docker buildx build \
     --provenance=mode=max \
     --sbom=true \
     --metadata-file "$metadata_path" \
-    --push - < "$source_archive"
+    --push - < "$source_archive"; then
+    echo "Isolated Buildx release build failed." >&2
+    exit 70
+fi
 
 image_digest="$(python3 -I - "$metadata_path" <<'PY'
 import json
@@ -335,14 +420,18 @@ sbom_path="$temporary_directory/sbom.json"
 image_index_path="$temporary_directory/image-index.json"
 attestation_evidence_path="$temporary_directory/attestation-evidence.json"
 verify_release_toolset
-release_docker buildx imagetools inspect "$image_repository@$image_digest" \
+release_docker buildx imagetools inspect --builder "$buildx_builder_name" \
+    "$image_repository@$image_digest" \
     --format '{{json .Provenance}}' > "$provenance_path"
 verify_release_toolset
-release_docker buildx imagetools inspect "$image_repository@$image_digest" \
+release_docker buildx imagetools inspect --builder "$buildx_builder_name" \
+    "$image_repository@$image_digest" \
     --format '{{json .SBOM}}' > "$sbom_path"
 verify_release_toolset
-release_docker buildx imagetools inspect "$image_repository@$image_digest" \
+release_docker buildx imagetools inspect --builder "$buildx_builder_name" \
+    "$image_repository@$image_digest" \
     --raw > "$image_index_path"
+cleanup_buildx_builder || exit 70
 python3 -I - "$provenance_path" "$sbom_path" "$image_index_path" \
     "$attestation_evidence_path" <<'PY'
 import hashlib

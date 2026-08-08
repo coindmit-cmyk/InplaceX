@@ -14,6 +14,7 @@ readonly RELEASE_PENDING_ACTIVATION_FILE="$RELEASE_PENDING_ACTIVATION_DIRECTORY/
 readonly RELEASE_MAINTENANCE_SNIPPET="/etc/nginx/snippets/inplacex-online-maintenance-gate.conf"
 readonly RELEASE_INSTALLED_LOCATIONS="/etc/nginx/snippets/inplacex-online.locations.conf"
 readonly RELEASE_ACTIVATION_V1_MIGRATION_ACK="acknowledge-inplacex-activation-v1-to-v2"
+readonly RELEASE_BUILDKIT_IMAGE="moby/buildkit:buildx-stable-1@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec"
 if [[ -z "${RELEASE_DOCKER_BIN+x}" ]]; then
     RELEASE_DOCKER_BIN=docker
 fi
@@ -213,6 +214,81 @@ release_docker() {
             release_die 77 "Docker $RELEASE_DOCKER_PLUGIN_NAME plugin identity changed"
     fi
     release_docker_raw "$@"
+}
+
+release_expected_buildkitd_config() {
+    local registry_authority="$1"
+    local registry_port=""
+    [[ "$registry_authority" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[1-9][0-9]{0,4})?$ ]] ||
+        release_die 65 "BuildKit registry authority is invalid"
+    if [[ "$registry_authority" == *:* ]]; then
+        registry_port="${registry_authority##*:}"
+        (( 10#$registry_port <= 65535 )) ||
+            release_die 65 "BuildKit registry port is invalid"
+    fi
+
+    printf '%s\n' 'debug = false'
+    if [[ "$registry_authority" =~ ^127\.0\.0\.1:([1-9][0-9]{0,4})$ ]]; then
+        printf '\n[registry."%s"]\n  http = true\n' "$registry_authority"
+    fi
+}
+
+release_write_buildkitd_config() {
+    local destination_path="$1"
+    local registry_authority="$2"
+    [[ "$destination_path" == /* && ! -e "$destination_path" &&
+        ! -L "$destination_path" ]] ||
+        release_die 66 "BuildKit configuration destination must be a new absolute path"
+    local destination_parent="${destination_path%/*}"
+    [[ -n "$destination_parent" ]] || destination_parent=/
+    [[ -d "$destination_parent" && ! -L "$destination_parent" ]] ||
+        release_die 66 "BuildKit configuration parent must be a real directory"
+
+    local expected_config
+    expected_config="$(release_expected_buildkitd_config "$registry_authority")"
+    (umask 077; printf '%s\n' "$expected_config" > "$destination_path")
+    chmod 0600 "$destination_path"
+    [[ -f "$destination_path" && ! -L "$destination_path" &&
+        "$(stat -Lc '%F %u %a %h' -- "$destination_path")" == \
+            "regular file ${EUID:-$(id -u)} 600 1" &&
+        "$(<"$destination_path")" == "$expected_config" ]] ||
+        release_die 77 "Generated BuildKit configuration identity is unsafe"
+}
+
+release_create_isolated_buildx_builder() {
+    local builder_name="$1"
+    local buildkitd_config="$2"
+    local registry_authority="$3"
+    [[ "$builder_name" =~ ^[a-z0-9][a-z0-9_.-]{0,63}$ ]] ||
+        release_die 65 "Buildx builder name is invalid"
+    [[ "${RELEASE_DOCKER_HOST:-}" == "unix:///var/run/docker.sock" ]] ||
+        release_die 77 "Buildx builder requires the exact local Docker socket"
+    [[ -f "$buildkitd_config" && ! -L "$buildkitd_config" &&
+        "$(stat -Lc '%F %u %a %h' -- "$buildkitd_config")" == \
+        "regular file ${EUID:-$(id -u)} 600 1" &&
+        "$(<"$buildkitd_config")" == \
+            "$(release_expected_buildkitd_config "$registry_authority")" ]] ||
+        release_die 77 "BuildKit daemon configuration is not the exact generated contract"
+
+    local -a create_arguments=(
+        buildx create
+        --name "$builder_name"
+        --driver docker-container
+        --driver-opt "image=$RELEASE_BUILDKIT_IMAGE"
+        --buildkitd-config "$buildkitd_config"
+    )
+    if [[ "$registry_authority" =~ ^127\.0\.0\.1:([1-9][0-9]{0,4})$ ]]; then
+        create_arguments+=(--driver-opt network=host)
+    fi
+    create_arguments+=("$RELEASE_DOCKER_HOST")
+    release_docker "${create_arguments[@]}"
+}
+
+release_remove_isolated_buildx_builder() {
+    local builder_name="$1"
+    [[ "$builder_name" =~ ^[a-z0-9][a-z0-9_.-]{0,63}$ ]] ||
+        release_die 65 "Buildx builder name is invalid"
+    release_docker buildx rm --force --timeout 30s "$builder_name"
 }
 
 release_validate_absolute_parent_chain() {
