@@ -1,5 +1,5 @@
 diff --git a/InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt b/InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
-index 3c6eaec..2d9abdb 100644
+index 3c6eaec..abb439f 100644
 --- a/InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
 +++ b/InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
 @@ -13,6 +13,7 @@ internal data class BackendActivationSnapshot(
@@ -10,7 +10,18 @@ index 3c6eaec..2d9abdb 100644
      val stateKeySha256: String,
      val publicKeySha256: String,
      val geoIpSha256: String,
-@@ -42,10 +43,15 @@ internal class RuntimeActivationGuard private constructor(
+@@ -25,6 +26,10 @@ internal class RuntimeActivationGuard private constructor(
+  */
+ internal class RuntimeActivationGuard private constructor(
+     private val expectedSnapshot: BackendActivationSnapshot,
++    private val databasePasswordPath: Path,
++    private val stateKeyPath: Path,
++    private val publicKeyPath: Path,
++    private val geoIpPath: Path,
+     private val verifiedStatePath: Path,
+     private val pendingPermitPath: Path,
+     private val clock: Clock,
+@@ -42,10 +47,21 @@ internal class RuntimeActivationGuard private constructor(
 
      fun refreshAuthorization(): Boolean {
          val result = runCatching {
@@ -18,19 +29,25 @@ index 3c6eaec..2d9abdb 100644
 -                readState(pendingPermitPath, pending = true)?.let { state ->
 -                    state.snapshot == expectedSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
 -                } == true
++            val currentSnapshot = expectedSnapshot.copy(
++                databasePasswordSha256 = sha256(databasePasswordPath),
++                stateKeySha256 = sha256(stateKeyPath),
++                publicKeySha256 = sha256(publicKeyPath),
++                geoIpSha256 = sha256(geoIpPath),
++            )
 +            val verifiedLines = readStateLines(verifiedStatePath)
 +            val verifiedMatches = when {
 +                verifiedLines == null -> false
 +                isLegacyV1VerifiedState(verifiedLines) -> false
-+                else -> parseState(verifiedLines, pending = false).snapshot == expectedSnapshot
++                else -> parseState(verifiedLines, pending = false).snapshot == currentSnapshot
 +            }
 +            verifiedMatches || readState(pendingPermitPath, pending = true)?.let { state ->
-+                state.snapshot == expectedSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
++                state.snapshot == currentSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
 +            } == true
          }.getOrDefault(false)
          authorized.set(result)
          return result
-@@ -83,14 +89,23 @@ internal class RuntimeActivationGuard private constructor(
+@@ -83,14 +99,23 @@ internal class RuntimeActivationGuard private constructor(
      }
 
      private fun readState(path: Path, pending: Boolean): ActivationState? {
@@ -55,7 +72,7 @@ index 3c6eaec..2d9abdb 100644
              require(line.isNotEmpty() && !line.startsWith("#") && line.count { it == '=' } == 1) {
                  "Activation state line is invalid"
              }
-@@ -100,12 +115,15 @@ internal class RuntimeActivationGuard private constructor(
+@@ -100,12 +125,15 @@ internal class RuntimeActivationGuard private constructor(
              require(entries.put(key, value) == null) { "Duplicate activation state field" }
          }
          val expectedFields = if (pending) CommonFields + ExpiresField else CommonFields
@@ -72,7 +89,7 @@ index 3c6eaec..2d9abdb 100644
              stateKeySha256 = entries.getValue(StateKeyShaField),
              publicKeySha256 = entries.getValue(PublicKeyShaField),
              geoIpSha256 = entries.getValue(GeoIpShaField),
-@@ -116,6 +134,7 @@ internal class RuntimeActivationGuard private constructor(
+@@ -116,6 +144,7 @@ internal class RuntimeActivationGuard private constructor(
          require(ImageDigestPattern.matches(snapshot.imageDigest)) { "Activation image digest is invalid" }
          require(
              listOf(
@@ -80,7 +97,7 @@ index 3c6eaec..2d9abdb 100644
                  snapshot.stateKeySha256,
                  snapshot.publicKeySha256,
                  snapshot.geoIpSha256,
-@@ -127,6 +146,41 @@ internal class RuntimeActivationGuard private constructor(
+@@ -127,6 +156,41 @@ internal class RuntimeActivationGuard private constructor(
          return ActivationState(snapshot, expiresAt)
      }
 
@@ -122,7 +139,7 @@ index 3c6eaec..2d9abdb 100644
      private data class ActivationState(
          val snapshot: BackendActivationSnapshot,
          val expiresAtEpochSecond: Long?,
-@@ -142,17 +196,30 @@ internal class RuntimeActivationGuard private constructor(
+@@ -142,17 +206,30 @@ internal class RuntimeActivationGuard private constructor(
          private const val MonitorIntervalMillis = 250L
          private const val MaximumLeaseFutureSeconds = 30L
          private const val MaximumStateBytes = 8L * 1024L
@@ -154,7 +171,7 @@ index 3c6eaec..2d9abdb 100644
              VersionField,
              ReleaseIdField,
              GitShaField,
-@@ -180,6 +247,7 @@ internal class RuntimeActivationGuard private constructor(
+@@ -180,6 +257,7 @@ internal class RuntimeActivationGuard private constructor(
 
              val stateKeyPath = requiredPath(OnlineRuntimeConfig.StateEncryptionKeyPath)
              val publicKeyPath = requiredPath(OnlineRuntimeConfig.PublicKeyPathKey)
@@ -162,7 +179,7 @@ index 3c6eaec..2d9abdb 100644
              val geoIpPath = requiredPath(GeoIpFingerprintPathEnvironmentKey)
              val runtimeConfigSha = environment[RuntimeConfigShaEnvironmentKey]?.trim().orEmpty()
              require(Sha256Pattern.matches(runtimeConfigSha)) {
-@@ -190,6 +258,7 @@ internal class RuntimeActivationGuard private constructor(
+@@ -190,11 +268,16 @@ internal class RuntimeActivationGuard private constructor(
                      releaseId = identity.releaseId,
                      gitSha = identity.gitSha,
                      imageDigest = identity.imageDigest,
@@ -170,3 +187,12 @@ index 3c6eaec..2d9abdb 100644
                      stateKeySha256 = sha256(stateKeyPath),
                      publicKeySha256 = sha256(publicKeyPath),
                      geoIpSha256 = sha256(geoIpPath),
+                     runtimeConfigSha256 = runtimeConfigSha,
+                 ),
++                databasePasswordPath = databasePasswordPath,
++                stateKeyPath = stateKeyPath,
++                publicKeyPath = publicKeyPath,
++                geoIpPath = geoIpPath,
+                 verifiedStatePath = requiredPath(VerifiedStatePathEnvironmentKey),
+                 pendingPermitPath = requiredPath(PendingPermitPathEnvironmentKey),
+                 clock = clock,

@@ -263,7 +263,7 @@ load_journal() {
         [[ -z "$requested_legacy_checksum_ack" ]] ||
             release_die 75 "Pending deploy did not authorize a legacy checksum baseline"
     elif [[ "$legacy_checksum_completed" == "false" ]]; then
-        [[ "$requested_legacy_checksum_ack" == "acknowledge-inplacex-schema-v1-v8" ]] ||
+        [[ "$requested_legacy_checksum_ack" == "$RELEASE_LEGACY_CHECKSUM_BASELINE_ACK" ]] ||
             release_die 75 "Pending legacy checksum baseline still requires the exact acknowledgement"
     fi
     [[ "$activation_v1_migration_acknowledged" == "true" ||
@@ -609,7 +609,11 @@ recover_previous_release() {
     export INPLACEX_GIT_SHA="$previous_git_sha"
     export INPLACEX_IMAGE_DIGEST="$previous_image_digest"
     export INPLACEX_SOURCE_ARCHIVE_SHA256="$previous_source_archive_sha256"
-    export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=""
+    if [[ "$legacy_checksum_acknowledged" == "true" ]]; then
+        export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK="$RELEASE_LEGACY_CHECKSUM_BASELINE_ACK"
+    else
+        export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=""
+    fi
     rm -f -- "$sanitized_env"
     release_write_sanitized_env "$sanitized_env" environment_allowlist
     release_start_activation_lease \
@@ -618,6 +622,17 @@ recover_previous_release() {
         "$geoip_sha256" "$runtime_config_sha256"
     compose_command up --detach --force-recreate --wait \
         --wait-timeout "$INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS" backend || return 1
+    if [[ "$legacy_checksum_acknowledged" == "true" ]]; then
+        export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=""
+        rm -f -- "$sanitized_env"
+        release_write_sanitized_env "$sanitized_env" environment_allowlist
+        release_start_activation_lease \
+            "$previous_release_id" "$previous_git_sha" "$previous_image_digest" \
+            "$database_password_sha256" "$state_key_sha256" "$public_key_sha256" \
+            "$geoip_sha256" "$runtime_config_sha256"
+        compose_command up --detach --force-recreate --wait \
+            --wait-timeout "$INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS" backend || return 1
+    fi
     "$smoke_script" loopback "http://127.0.0.1:$INPLACEX_BACKEND_LOOPBACK_PORT" \
         "$previous_release_id" "$previous_git_sha" "$previous_image_digest" || return 1
     if [[ "$activation_v1_migration_acknowledged" == "true" &&
@@ -811,8 +826,11 @@ release_start_activation_lease \
     "$database_password_sha256" "$state_key_sha256" "$public_key_sha256" \
     "$geoip_sha256" "$runtime_config_sha256"
 write_journal candidate_starting
-compose_command up --detach --force-recreate --wait \
-    --wait-timeout "$INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS" backend
+if ! compose_command up --detach --force-recreate --wait \
+    --wait-timeout "$INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS" backend; then
+    compose_command logs --no-color --tail 200 backend >&2 || true
+    release_die 70 "Candidate backend failed to become healthy"
+fi
 candidate_container="$(compose_command ps -q backend)"
 release_validate_container_id "$candidate_container" backend
 [[ -n "$candidate_container" ]] || release_die 70 "Candidate backend did not start"

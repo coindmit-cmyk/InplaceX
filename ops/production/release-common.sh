@@ -13,6 +13,7 @@ readonly RELEASE_PENDING_ACTIVATION_DIRECTORY="$RELEASE_RUNTIME_DIRECTORY/activa
 readonly RELEASE_PENDING_ACTIVATION_FILE="$RELEASE_PENDING_ACTIVATION_DIRECTORY/pending-activation.env"
 readonly RELEASE_MAINTENANCE_SNIPPET="/etc/nginx/snippets/inplacex-online-maintenance-gate.conf"
 readonly RELEASE_INSTALLED_LOCATIONS="/etc/nginx/snippets/inplacex-online.locations.conf"
+readonly RELEASE_LEGACY_CHECKSUM_BASELINE_ACK="acknowledge-inplacex-schema-v1-v8"
 readonly RELEASE_ACTIVATION_V1_MIGRATION_ACK="acknowledge-inplacex-activation-v1-to-v2"
 readonly RELEASE_BUILDKIT_IMAGE="moby/buildkit:buildx-stable-1@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec"
 if [[ -z "${RELEASE_DOCKER_BIN+x}" ]]; then
@@ -81,7 +82,7 @@ release_docker_raw() {
         local test_environment_name
         for test_environment_name in \
             INPLACEX_TEST_REAL_DOCKER INPLACEX_TEST_DOCKER_LOG \
-            INPLACEX_TEST_STOP_MODE INPLACEX_TEST_CONTROL_MODE \
+            INPLACEX_TEST_STOP_MODE INPLACEX_TEST_CONTROL_MODE INPLACEX_TEST_BACKEND_UP_MODE \
             INPLACEX_TEST_CONTROL_COUNTER INPLACEX_TEST_UNSAFE_PLUGIN \
             INPLACEX_TEST_BACKEND_STATE INPLACEX_TEST_RELEASE_ID \
             INPLACEX_TEST_GIT_SHA INPLACEX_TEST_SOURCE_SHA; do
@@ -611,7 +612,7 @@ release_validate_env_values() {
         release_die 65 "INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS must be in 30..600"
     fi
     [[ -z "${INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK:-}" ||
-        "$INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK" == "acknowledge-inplacex-schema-v1-v8" ]] ||
+        "$INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK" == "$RELEASE_LEGACY_CHECKSUM_BASELINE_ACK" ]] ||
         release_die 65 "Legacy checksum acknowledgement is not the exact documented value"
     local fallback_seconds="${INPLACEX_MATCHMAKING_BOT_FALLBACK_SECONDS:-5}"
     if [[ ! "$fallback_seconds" =~ ^[0-9]+$ || ${#fallback_seconds} -gt 2 ]] ||
@@ -1235,6 +1236,7 @@ hostname = sys.argv[3]
 if configuration.count(include_line) != 1:
     raise SystemExit("The exact InplaceX locations file must be included exactly once")
 
+server_name_directive = re.compile(r"(?m)^\s*server_name\s+([^;\n]+);")
 servers = []
 for match in re.finditer(r"\bserver\s*\{", configuration):
     depth = 1
@@ -1251,7 +1253,7 @@ matches = [
     block for block in servers
     if include_line in block
     and re.search(r"\blisten\s+[^;]*\b443\b[^;]*\bssl\b[^;]*;", block)
-    and re.search(rf"\bserver_name\s+[^;\n]*\b{re.escape(hostname)}\b[^;\n]*;", block)
+    and any(hostname in arguments.split() for arguments in server_name_directive.findall(block))
 ]
 if len(matches) != 1:
     raise SystemExit("InplaceX locations must belong to exactly one HTTPS server for the configured hostname")

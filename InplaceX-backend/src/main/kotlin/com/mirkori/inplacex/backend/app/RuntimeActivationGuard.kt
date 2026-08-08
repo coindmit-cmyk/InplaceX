@@ -26,6 +26,10 @@ internal data class BackendActivationSnapshot(
  */
 internal class RuntimeActivationGuard private constructor(
     private val expectedSnapshot: BackendActivationSnapshot,
+    private val databasePasswordPath: Path,
+    private val stateKeyPath: Path,
+    private val publicKeyPath: Path,
+    private val geoIpPath: Path,
     private val verifiedStatePath: Path,
     private val pendingPermitPath: Path,
     private val clock: Clock,
@@ -43,14 +47,20 @@ internal class RuntimeActivationGuard private constructor(
 
     fun refreshAuthorization(): Boolean {
         val result = runCatching {
+            val currentSnapshot = expectedSnapshot.copy(
+                databasePasswordSha256 = sha256(databasePasswordPath),
+                stateKeySha256 = sha256(stateKeyPath),
+                publicKeySha256 = sha256(publicKeyPath),
+                geoIpSha256 = sha256(geoIpPath),
+            )
             val verifiedLines = readStateLines(verifiedStatePath)
             val verifiedMatches = when {
                 verifiedLines == null -> false
                 isLegacyV1VerifiedState(verifiedLines) -> false
-                else -> parseState(verifiedLines, pending = false).snapshot == expectedSnapshot
+                else -> parseState(verifiedLines, pending = false).snapshot == currentSnapshot
             }
             verifiedMatches || readState(pendingPermitPath, pending = true)?.let { state ->
-                state.snapshot == expectedSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
+                state.snapshot == currentSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
             } == true
         }.getOrDefault(false)
         authorized.set(result)
@@ -264,6 +274,10 @@ internal class RuntimeActivationGuard private constructor(
                     geoIpSha256 = sha256(geoIpPath),
                     runtimeConfigSha256 = runtimeConfigSha,
                 ),
+                databasePasswordPath = databasePasswordPath,
+                stateKeyPath = stateKeyPath,
+                publicKeyPath = publicKeyPath,
+                geoIpPath = geoIpPath,
                 verifiedStatePath = requiredPath(VerifiedStatePathEnvironmentKey),
                 pendingPermitPath = requiredPath(PendingPermitPathEnvironmentKey),
                 clock = clock,

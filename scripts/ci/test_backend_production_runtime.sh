@@ -493,13 +493,29 @@ if [[ "${1:-}" == "info" && "${2:-}" == "--format" &&
         'import json,os,sys; value=json.load(sys.stdin); [item.__setitem__("Path" if "Path" in item else "path",os.environ["INPLACEX_TEST_UNSAFE_PLUGIN"]) for item in value if item.get("Name",item.get("name")) == "compose"]; json.dump(value,sys.stdout)'
     exit 0
 fi
-case "$*" in
-    *pg_dump*|*pg_restore*|*'DROP DATABASE'*)
-        printf 'FORBIDDEN_STATE_MUTATION %s\n' "$*" >> "$INPLACEX_TEST_DOCKER_LOG"
-        exit 98
-        ;;
-esac
-if [[ "$*" == *' stop --timeout 30 backend' ]]; then
+if [[ "${INPLACEX_TEST_BACKEND_UP_MODE:-}" == "fail-once" &&
+    "$*" == *' up --detach --force-recreate --wait '* && "${!#}" == "backend" ]]; then
+    backend_up_count=0
+    [[ ! -f "$INPLACEX_TEST_CONTROL_COUNTER" ]] ||
+        backend_up_count="$(cat "$INPLACEX_TEST_CONTROL_COUNTER")"
+    backend_up_count=$((backend_up_count + 1))
+    printf '%s\n' "$backend_up_count" > "$INPLACEX_TEST_CONTROL_COUNTER"
+    if [[ "$backend_up_count" -eq 1 ]]; then
+        printf 'INTERCEPTED_BACKEND_UP fail-once\n' >> "$INPLACEX_TEST_DOCKER_LOG"
+        "$INPLACEX_TEST_REAL_DOCKER" "$@" || exit $?
+        printf 'COMPLETED_BACKEND_UP fail-once\n' >> "$INPLACEX_TEST_DOCKER_LOG"
+        exit 42
+    fi
+fi
+if [[ "${INPLACEX_TEST_BACKEND_UP_MODE:-}" != "fail-once" ]]; then
+    case "$*" in
+        *pg_dump*|*pg_restore*|*'DROP DATABASE'*)
+            printf 'FORBIDDEN_STATE_MUTATION %s\n' "$*" >> "$INPLACEX_TEST_DOCKER_LOG"
+            exit 98
+            ;;
+    esac
+fi
+if [[ -n "${INPLACEX_TEST_STOP_MODE:-}" && "$*" == *' stop --timeout 30 backend' ]]; then
     printf 'INTERCEPTED_BACKEND_STOP %s\n' "$INPLACEX_TEST_STOP_MODE" >> "$INPLACEX_TEST_DOCKER_LOG"
     case "$INPLACEX_TEST_STOP_MODE" in
         failure) exit 42 ;;
@@ -778,7 +794,7 @@ build_legacy_activation_v1_image() {
     local release_id="$1"
     local legacy_source_root="$test_root/legacy-activation-v1-source"
     local fixture_patch="$legacy_source_root/scripts/ci/fixtures/runtime-activation-v1.patch"
-    local fixture_sha256=f138b8189119c9e49899c548fac8ebe8b5a4c922f1ba697eb093d310cb316249
+    local fixture_sha256=f9eb90d7c12e9b10b46bb03377226e14b7320420085aa2e7bd9af6c51d9730cb
     local activation_guard=InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
     local image_tag="127.0.0.1:$registry_port/inplacex-backend:$release_id-activation-v1"
     local immutable_image manifest_path fixture_git_sha fixture_source_sha
@@ -972,6 +988,35 @@ run_with_hostile_backend_stop() {
     [[ -f /run/inplacex-online/maintenance.flag ]]
     [[ -f /run/inplacex-online/drain.flag ]]
     [[ -f "$release_state_directory/release-transaction.env" ]]
+}
+
+run_with_failed_candidate_start() {
+    local candidate_failure_log="$test_root/candidate-start-failure.log"
+    local candidate_failure_status
+    local backend_up_counter="$test_root/hostile-backend-up-counter"
+    : > "$hostile_docker_log"
+    rm -f -- "$backend_up_counter"
+    set +e
+    env \
+        INPLACEX_RELEASE_ISOLATED_CI_ACK=acknowledge-inplacex-isolated-release-ci \
+        INPLACEX_RELEASE_TEST_DOCKER_BIN="$hostile_docker_directory/docker" \
+        INPLACEX_TEST_REAL_DOCKER="$real_docker" \
+        INPLACEX_TEST_DOCKER_LOG="$hostile_docker_log" \
+        INPLACEX_TEST_BACKEND_UP_MODE=fail-once \
+        INPLACEX_TEST_CONTROL_COUNTER="$backend_up_counter" \
+        bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory" \
+        > "$candidate_failure_log" 2>&1
+    candidate_failure_status=$?
+    set -e
+    [[ "$candidate_failure_status" -eq 70 ]]
+    grep -Fq 'Candidate backend failed to become healthy' "$candidate_failure_log"
+    grep -Fq 'Previous verified backend and pre-deploy database were restored.' \
+        "$candidate_failure_log"
+    grep -Fq 'INTERCEPTED_BACKEND_UP fail-once' "$hostile_docker_log"
+    grep -Fq 'COMPLETED_BACKEND_UP fail-once' "$hostile_docker_log"
+    grep -Fq 'logs --no-color --tail 200 backend' "$hostile_docker_log"
+    grep -Fq 'pg_restore --exit-on-error --no-owner --no-privileges' "$hostile_docker_log"
+    [[ "$(cat "$backend_up_counter")" == "3" ]]
 }
 
 run_with_hostile_docker_control() {
@@ -1407,13 +1452,31 @@ for hostile_stop_mode in failure still-running; do
     [[ "$(docker inspect --format '{{.State.Running}}' "$("${compose[@]}" ps --all -q backend)")" == "true" ]]
     clear_hostile_release_attempt
 done
+run_with_failed_candidate_start
+[[ ! -e "$release_state_directory/release-transaction.env" ]]
+[[ ! -e /run/inplacex-online/maintenance.flag && ! -e /run/inplacex-online/drain.flag ]]
+grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v1" \
+    "$release_state_directory/activation/verified-activation.env"
+"$production_directory/smoke-backend.sh" loopback \
+    "http://127.0.0.1:$backend_port" "$release_v1" "$legacy_git_sha" "${legacy_image_v1##*@}"
+recovered_migration_state="$("${compose[@]}" exec -T postgres sh -ec \
+    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT count(*), count(*) FILTER (WHERE checksum IS NULL) FROM inplacex_schema_history;"' |
+    tr -d '[:space:]')"
+[[ "$recovered_migration_state" == "9|0" ]]
+backend_container="$("${compose[@]}" ps --all -q backend)"
+final_legacy_ack_environment="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    "$backend_container" | grep '^INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=')"
+[[ "$final_legacy_ack_environment" == "INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=" ]]
+"${compose[@]}" exec -T postgres sh -ec \
+    'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="UPDATE inplacex_schema_history SET checksum = NULL;"' \
+    >/dev/null
 set +e
 INPLACEX_RELEASE_FAULT_PHASE=during_backup_staging \
 INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 deploy_fault_status=$?
 set -e
-[[ "$deploy_fault_status" -ne 0 ]]
+[[ "$deploy_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_OPERATION=deploy' "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_PHASE=postgres_ready' "$release_state_directory/release-transaction.env"
 pending_backup_path="$(sed -n 's/^RELEASE_TRANSACTION_BACKUP_PATH=//p' \
@@ -1431,7 +1494,7 @@ INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 deploy_start_fault_status=$?
 set -e
-[[ "$deploy_start_fault_status" -ne 0 ]]
+[[ "$deploy_start_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=candidate_starting' "$release_state_directory/release-transaction.env"
 [[ -f "$pending_backup_path" && ! -e "$pending_backup_path.partial" ]]
 [[ -f /run/inplacex-online/maintenance.flag ]]
@@ -1448,8 +1511,7 @@ timeout 25 env \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 legacy_checksum_fault_status=$?
 set -e
-[[ "$legacy_checksum_fault_status" -ne 0 ]]
-[[ "$legacy_checksum_fault_status" -ne 124 ]]
+[[ "$legacy_checksum_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=candidate_starting' \
     "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_LEGACY_CHECKSUM_ACKNOWLEDGED=true' \
@@ -1467,8 +1529,7 @@ timeout 25 env \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 activation_v1_record_fault_status=$?
 set -e
-[[ "$activation_v1_record_fault_status" -ne 0 ]]
-[[ "$activation_v1_record_fault_status" -ne 124 ]]
+[[ "$activation_v1_record_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=candidate_verified' \
     "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_ACTIVATION_V1_MIGRATION_ACKNOWLEDGED=true' \
@@ -1489,8 +1550,7 @@ timeout 25 env \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 deploy_activation_fault_status=$?
 set -e
-[[ "$deploy_activation_fault_status" -ne 0 ]]
-[[ "$deploy_activation_fault_status" -ne 124 ]]
+[[ "$deploy_activation_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=candidate_verified' \
     "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_ACTIVATION_V1_MIGRATION_COMPLETED=true' \
@@ -1507,8 +1567,7 @@ timeout 25 env \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 deploy_redrain_fault_status=$?
 set -e
-[[ "$deploy_redrain_fault_status" -ne 0 ]]
-[[ "$deploy_redrain_fault_status" -ne 124 ]]
+[[ "$deploy_redrain_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=candidate_verified' \
     "$release_state_directory/release-transaction.env"
 [[ -f /run/inplacex-online/maintenance.flag && -f /run/inplacex-online/drain.flag ]]
@@ -1519,7 +1578,7 @@ INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
 deploy_finalize_fault_status=$?
 set -e
-[[ "$deploy_finalize_fault_status" -ne 0 ]]
+[[ "$deploy_finalize_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=activation_committed' \
     "$release_state_directory/release-transaction.env"
 [[ ! -e /run/inplacex-online/maintenance.flag && ! -e /run/inplacex-online/drain.flag ]]
@@ -1574,7 +1633,7 @@ INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
         "$env_file" --candidate-file "$geoip_candidate"
 geoip_install_fault_status=$?
 set -e
-[[ "$geoip_install_fault_status" -ne 0 ]]
+[[ "$geoip_install_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_OPERATION=geoip' "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_PHASE=geoip_installed' \
     "$release_state_directory/release-transaction.env"
@@ -1591,8 +1650,7 @@ timeout 25 env \
         "$env_file" --candidate-file "$geoip_candidate"
 geoip_verified_activation_fault_status=$?
 set -e
-[[ "$geoip_verified_activation_fault_status" -ne 0 ]]
-[[ "$geoip_verified_activation_fault_status" -ne 124 ]]
+[[ "$geoip_verified_activation_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=geoip_installed' \
     "$release_state_directory/release-transaction.env"
 grep -qx "INPLACEX_ACTIVATION_GEOIP_SHA256=$geoip_candidate_sha256" \
@@ -1608,8 +1666,7 @@ timeout 25 env \
         "$env_file" --candidate-file "$geoip_candidate"
 geoip_activation_fault_status=$?
 set -e
-[[ "$geoip_activation_fault_status" -ne 0 ]]
-[[ "$geoip_activation_fault_status" -ne 124 ]]
+[[ "$geoip_activation_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=activation_committed' \
     "$release_state_directory/release-transaction.env"
 grep -qx "INPLACEX_ACTIVATION_GEOIP_SHA256=$geoip_candidate_sha256" \
@@ -1700,7 +1757,7 @@ INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
         "$env_file" "$receipt_path" --confirm-data-restore
 rollback_fault_status=$?
 set -e
-[[ "$rollback_fault_status" -ne 0 ]]
+[[ "$rollback_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_OPERATION=rollback' "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_TRANSACTION_PHASE=database_restored' "$release_state_directory/release-transaction.env"
 [[ ! -e "$release_state_directory/activation/verified-activation.env" ]]
@@ -1716,8 +1773,7 @@ timeout 25 env \
         "$env_file" "$receipt_path" --confirm-data-restore
 rollback_verified_activation_fault_status=$?
 set -e
-[[ "$rollback_verified_activation_fault_status" -ne 0 ]]
-[[ "$rollback_verified_activation_fault_status" -ne 124 ]]
+[[ "$rollback_verified_activation_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=previous_starting' \
     "$release_state_directory/release-transaction.env"
 grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v2" \
@@ -1733,8 +1789,7 @@ timeout 25 env \
         "$env_file" "$receipt_path" --confirm-data-restore
 rollback_finalize_fault_status=$?
 set -e
-[[ "$rollback_finalize_fault_status" -ne 0 ]]
-[[ "$rollback_finalize_fault_status" -ne 124 ]]
+[[ "$rollback_finalize_fault_status" -eq 137 ]]
 grep -qx 'RELEASE_TRANSACTION_PHASE=activation_committed' \
     "$release_state_directory/release-transaction.env"
 grep -qx 'RELEASE_POINTER_STATE=rolled_back' "$latest_pointer"

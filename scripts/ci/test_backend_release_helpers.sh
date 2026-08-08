@@ -404,8 +404,11 @@ python3 -I - \
     "$production_directory/rotate-geoip.sh" \
     "$production_directory/build-backend-release.sh" \
     "$production_directory/release-shell-bootstrap.sh" \
-    "$repository_root/scripts/ci/test_backend_production_runtime.sh" <<'PY'
+    "$repository_root/scripts/ci/test_backend_production_runtime.sh" \
+    "$temporary_directory" <<'PY'
 import pathlib
+import re
+import subprocess
 import sys
 
 deploy = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
@@ -414,13 +417,93 @@ geoip = pathlib.Path(sys.argv[3]).read_text(encoding="utf-8")
 builder = pathlib.Path(sys.argv[4]).read_text(encoding="utf-8")
 bootstrap = pathlib.Path(sys.argv[5]).read_text(encoding="utf-8")
 runtime_test = pathlib.Path(sys.argv[6]).read_text(encoding="utf-8")
+test_directory = pathlib.Path(sys.argv[7])
 common = pathlib.Path(sys.argv[1]).with_name('release-common.sh').read_text(encoding='utf-8')
+
+validator_marker = '''    python3 -I - "$nginx_configuration" "$RELEASE_INSTALLED_LOCATIONS" "$INPLACEX_PUBLIC_HOSTNAME" <<'PY'\n'''
+validator_start = common.find(validator_marker)
+validator_end = common.find("\nPY\n", validator_start + len(validator_marker))
+if validator_start < 0 or validator_end < 0:
+    raise SystemExit("Cannot locate the production nginx server validator")
+nginx_validator = common[validator_start + len(validator_marker):validator_end] + "\n"
+installed_locations = "/etc/nginx/snippets/inplacex-online.locations.conf"
+hostname = "online.example.com"
+for case_name, server_names, expected_success in (
+    ("exact", hostname, True),
+    ("exact-among-multiple", f"api.example.com {hostname}", True),
+    ("prefixed-substring", f"evil-{hostname}", False),
+    ("suffixed-substring", f"{hostname}.evil", False),
+):
+    configuration = test_directory / f"nginx-server-name-{case_name}.conf"
+    configuration.write_text(
+        "\n".join((
+            "server {",
+            "    listen 443 ssl;",
+            f"    server_name {server_names};",
+            f"    include {installed_locations};",
+            "}",
+            "",
+        )),
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-", str(configuration), installed_locations, hostname],
+        input=nginx_validator,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if (result.returncode == 0) != expected_success:
+        raise SystemExit(
+            f"Production nginx hostname validator case {case_name!r} returned {result.returncode}: "
+            f"{result.stderr.strip()}"
+        )
 
 def ordered(source, first, second):
     first_index = source.find(first)
     second_index = source.find(second, first_index + len(first)) if first_index >= 0 else -1
     if first_index < 0 or second_index < 0:
         raise SystemExit(f"Expected ordering not preserved: {first!r} before {second!r}")
+
+legacy_ack_definition = (
+    'readonly RELEASE_LEGACY_CHECKSUM_BASELINE_ACK="acknowledge-inplacex-schema-v1-v8"'
+)
+if common.count(legacy_ack_definition) != 1 or 'acknowledge-inplacex-schema-v1-v8' in deploy:
+    raise SystemExit("Deploy must use one shared legacy checksum acknowledgement")
+
+recovery_start = deploy.find('recover_previous_release() {')
+recovery_end = deploy.find('\non_exit() {', recovery_start)
+if recovery_start < 0 or recovery_end < 0:
+    raise SystemExit("Cannot locate deploy recovery function")
+recovery = deploy[recovery_start:recovery_end]
+cursor = 0
+for marker in (
+    'restore_database_backup || return 1',
+    'export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK="$RELEASE_LEGACY_CHECKSUM_BASELINE_ACK"',
+    'compose_command up --detach --force-recreate --wait',
+    'export INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=""',
+    'release_write_sanitized_env',
+    'release_start_activation_lease',
+    'compose_command up --detach --force-recreate --wait',
+    '"$smoke_script" loopback',
+):
+    cursor = recovery.find(marker, cursor)
+    if cursor < 0:
+        raise SystemExit(f"Legacy checksum recovery order is incomplete at: {marker}")
+    cursor += len(marker)
+
+ordered(deploy, 'if ! compose_command up --detach --force-recreate --wait',
+        'compose_command logs --no-color --tail 200 backend >&2 || true')
+ordered(deploy, 'compose_command logs --no-color --tail 200 backend >&2 || true',
+        'release_die 70 "Candidate backend failed to become healthy"')
+
+exact_fault_assertions = re.findall(
+    r'\[\[ "\$[a-z0-9_]+_fault_status" -eq 137 \]\]', runtime_test
+)
+if len(exact_fault_assertions) != 13:
+    raise SystemExit("Every SIGKILL release fault must assert exact status 137")
+if re.search(r'\$[a-z0-9_]+_fault_status" -ne (?:0|124)', runtime_test):
+    raise SystemExit("Release faults must not accept generic startup failure or timeout status")
 
 ordered(deploy, 'release_verify_pulled_image "$INPLACEX_BACKEND_IMAGE"', 'release_enable_maintenance "$deployment_id"')
 ordered(deploy, 'release_verify_pulled_image "$previous_image"', 'release_enable_maintenance "$deployment_id"')
@@ -585,6 +668,11 @@ for required in (
     'name=^/buildx_buildkit_inplacex-release-',
     'schema_v1_environment',
     'print_sanitized_ci_log.py',
+    'run_with_failed_candidate_start',
+    'COMPLETED_BACKEND_UP fail-once',
+    '[[ "$(cat "$backend_up_counter")" == "3" ]]',
+    '[[ "$recovered_migration_state" == "9|0" ]]',
+    'final_legacy_ack_environment',
 ):
     if required not in runtime_test:
         raise SystemExit(f"Destructive runtime CI lost production release coverage: {required}")

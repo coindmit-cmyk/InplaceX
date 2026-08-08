@@ -80,13 +80,23 @@ class RuntimeActivationGuardTest {
     }
 
     @Test
-    fun `expired lease and changed secret fail closed`() {
+    fun `expired lease fails closed`() {
         writeActivation(pending, clock.instant().epochSecond - 1)
         assertFalse(guard().refreshAuthorization())
+    }
 
-        writeActivation(verified)
-        Files.writeString(stateKey, "rotated-state-key")
-        assertFalse(guard().refreshAuthorization())
+    @Test
+    fun `mounted fingerprint changes after startup fail closed`() {
+        listOf(databasePassword, stateKey, publicKey, geoIp).forEach { path ->
+            writeActivation(verified)
+            val runningGuard = guard()
+            assertTrue(runningGuard.refreshAuthorization())
+
+            val original = Files.readString(path)
+            Files.writeString(path, "$original-tampered")
+            assertFalse(runningGuard.refreshAuthorization())
+            Files.writeString(path, original)
+        }
     }
 
     @Test
@@ -97,14 +107,6 @@ class RuntimeActivationGuardTest {
             verified,
             Files.readString(verified) + "INPLACEX_ACTIVATION_RELEASE_ID=release-1\n",
         )
-
-        assertFalse(guard().refreshAuthorization())
-    }
-
-    @Test
-    fun `changed database password fails closed`() {
-        writeActivation(verified)
-        Files.writeString(databasePassword, "rotated-database-password")
 
         assertFalse(guard().refreshAuthorization())
     }
