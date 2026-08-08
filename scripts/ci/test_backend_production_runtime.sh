@@ -12,7 +12,7 @@ umask 077
     exit 77
 }
 
-for command_name in base64 cmp cp curl docker find git htpasswd ln nginx openssl patch python3 rm sha256sum ss stat sync tar timeout; do
+for command_name in base64 cmp cp curl docker find git htpasswd ln nginx openssl python3 rm sha256sum ss stat sync tar timeout; do
     command -v "$command_name" >/dev/null || {
         echo "Missing integration-test command: $command_name" >&2
         exit 69
@@ -794,7 +794,7 @@ build_legacy_activation_v1_image() {
     local release_id="$1"
     local legacy_source_root="$test_root/legacy-activation-v1-source"
     local fixture_patch="$legacy_source_root/scripts/ci/fixtures/runtime-activation-v1.patch"
-    local fixture_sha256=f9eb90d7c12e9b10b46bb03377226e14b7320420085aa2e7bd9af6c51d9730cb
+    local fixture_sha256=10a26762994b592b3ce8ff3815818ad7e7a7d67f1b49444edb7ef516d38d0333
     local activation_guard=InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/app/RuntimeActivationGuard.kt
     local image_tag="127.0.0.1:$registry_port/inplacex-backend:$release_id-activation-v1"
     local immutable_image manifest_path fixture_git_sha fixture_source_sha
@@ -824,7 +824,8 @@ build_legacy_activation_v1_image() {
         exit 70
     }
     grep -q 'private const val StateVersion = "2"' "$legacy_source_root/$activation_guard"
-    patch --directory="$legacy_source_root" --strip=1 --reverse --fuzz=0 < "$fixture_patch" >&2
+    "${fixture_git[@]}" -C "$legacy_source_root" apply --reverse --check "$fixture_patch"
+    "${fixture_git[@]}" -C "$legacy_source_root" apply --reverse --verbose "$fixture_patch" >&2
     grep -q 'private const val StateVersion = "1"' \
         "$legacy_source_root/$activation_guard"
     if grep -q 'DatabasePasswordShaField' "$legacy_source_root/$activation_guard"; then
