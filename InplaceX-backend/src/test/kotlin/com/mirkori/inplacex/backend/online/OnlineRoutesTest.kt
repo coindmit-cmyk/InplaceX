@@ -110,6 +110,40 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `successful REST authentication bypasses the failed auth IP budget`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 10,
+            operationLimits = OnlineOperation.entries.associateWith { 1 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+
+        listOf(playerToken, attackerToken).forEach { token ->
+            val authenticated = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+                bearer(token)
+            }
+            assertEquals(HttpStatusCode.BadRequest, authenticated.status)
+        }
+        assertEquals(
+            HttpStatusCode.Unauthorized,
+            client.get("/api/v1/matchmaking/tickets/not-a-uuid").status,
+        )
+        val authenticationAttemptLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            header(HttpHeaders.Authorization, "Basic invalid")
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, authenticationAttemptLimited.status)
+        assertEquals("60", authenticationAttemptLimited.headers[HttpHeaders.RetryAfter])
+
+        val principalLimited = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, principalLimited.status)
+    }
+
+    @Test
     fun `legacy membership migration is protected by its own principal budget`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
@@ -412,7 +446,16 @@ class OnlineRoutesTest {
     fun `WebSocket rejects query credentials foreign members and legacy frames`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
-        application { configureOnlineRoutes(verifier, service) }
+        val operationLimits = OnlineOperation.entries.associateWith { operation ->
+            if (operation == OnlineOperation.OpenWebSocket) 1 else 20
+        }
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 2,
+            operationLimits = operationLimits,
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
         val sessionId = createMatchedTicket(playerToken, serviceClock)
             .getValue("sessionId").jsonPrimitive.content
         val wsClient = createClient { install(WebSockets) }
@@ -422,6 +465,15 @@ class OnlineRoutesTest {
             request = { header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1") },
         ) {
             assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                header(HttpHeaders.Authorization, "Basic invalid")
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
         }
         wsClient.webSocket(
             urlString = "/api/v1/ws/sessions/$sessionId",
@@ -441,6 +493,15 @@ class OnlineRoutesTest {
         ) {
             send(Frame.Text("""{"type":"snapshot.request"}"""))
             assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/$sessionId",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
         }
     }
 

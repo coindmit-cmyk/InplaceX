@@ -292,18 +292,19 @@ fun Application.configureOnlineRoutes(
             path = "/api/v1/ws/sessions/{sessionId}",
             protocol = "inplacex.online.v1",
         ) {
-            if (
-                abuseProtector.acquireAuthenticationAttempt(call.remoteIdentity()) is
-                OnlineAbuseDecision.Rejected
-            ) {
-                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
-                return@webSocket
-            }
             val authentication = verifier.authenticate(call.request.headers[HttpHeaders.Authorization])
             val principal = (authentication as? AccessTokenAuthentication.Accepted)?.principal
             val sessionId = call.parameters["sessionId"]?.takeIf(String::isCanonicalUuid)
             if (principal == null) {
-                val decision = abuseProtector.acquireInvalidAuthentication(call.remoteIdentity())
+                val remoteIdentity = call.remoteIdentity()
+                if (
+                    abuseProtector.acquireAuthenticationAttempt(remoteIdentity) is
+                    OnlineAbuseDecision.Rejected
+                ) {
+                    close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                    return@webSocket
+                }
+                val decision = abuseProtector.acquireInvalidAuthentication(remoteIdentity)
                 val closeCode = if (decision is OnlineAbuseDecision.Rejected) {
                     CloseReason.Codes.TRY_AGAIN_LATER
                 } else {
@@ -1089,13 +1090,6 @@ private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
     abuseProtector: OnlineAbuseProtector,
     operation: OnlineOperation,
 ): AuthenticatedPrincipal? {
-    when (val decision = abuseProtector.acquireAuthenticationAttempt(remoteIdentity())) {
-        OnlineAbuseDecision.Allowed -> Unit
-        is OnlineAbuseDecision.Rejected -> {
-            respondRateLimited(decision.retryAfterSeconds)
-            return null
-        }
-    }
     return when (val result = verifier.authenticate(request.headers[HttpHeaders.Authorization])) {
         is AccessTokenAuthentication.Accepted -> {
             when (val decision = abuseProtector.acquire(result.principal.playerId, operation)) {
@@ -1109,11 +1103,17 @@ private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
             }
         }
         is AccessTokenAuthentication.Rejected -> {
-            when (val decision = abuseProtector.acquireInvalidAuthentication(remoteIdentity())) {
+            val remoteIdentity = remoteIdentity()
+            when (val authenticationDecision = abuseProtector.acquireAuthenticationAttempt(remoteIdentity)) {
                 OnlineAbuseDecision.Allowed -> {
-                    respondOnlineError(HttpStatusCode.Unauthorized, "unauthorized")
+                    when (val invalidDecision = abuseProtector.acquireInvalidAuthentication(remoteIdentity)) {
+                        OnlineAbuseDecision.Allowed -> {
+                            respondOnlineError(HttpStatusCode.Unauthorized, "unauthorized")
+                        }
+                        is OnlineAbuseDecision.Rejected -> respondRateLimited(invalidDecision.retryAfterSeconds)
+                    }
                 }
-                is OnlineAbuseDecision.Rejected -> respondRateLimited(decision.retryAfterSeconds)
+                is OnlineAbuseDecision.Rejected -> respondRateLimited(authenticationDecision.retryAfterSeconds)
             }
             null
         }
