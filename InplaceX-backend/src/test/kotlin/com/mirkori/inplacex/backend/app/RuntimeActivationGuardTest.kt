@@ -2,10 +2,12 @@ package com.mirkori.inplacex.backend.app
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -100,6 +102,26 @@ class RuntimeActivationGuardTest {
     }
 
     @Test
+    fun `unchanged GeoIP metadata reuses digest and a mounted change is rehashed`() {
+        writeActivation(verified)
+        var geoIpReads = 0
+        val runningGuard = guard { path ->
+            geoIpReads += 1
+            sha256(path)
+        }
+
+        repeat(4) { assertTrue(runningGuard.refreshAuthorization()) }
+        assertEquals(1, geoIpReads)
+
+        val modifiedTime = Files.getLastModifiedTime(geoIp)
+        Files.writeString(geoIp, "geo-xx")
+        Files.setLastModifiedTime(geoIp, FileTime.fromMillis(modifiedTime.toMillis() + 1_000L))
+
+        assertFalse(runningGuard.refreshAuthorization())
+        assertEquals(2, geoIpReads)
+    }
+
+    @Test
     fun `duplicate or unknown activation fields fail closed`() {
         writeActivation(verified)
         writeActivation(pending, clock.instant().epochSecond + 8)
@@ -111,7 +133,9 @@ class RuntimeActivationGuardTest {
         assertFalse(guard().refreshAuthorization())
     }
 
-    private fun guard(): RuntimeActivationGuard = RuntimeActivationGuard.fromEnvironment(
+    private fun guard(
+        geoIpDigest: (Path) -> String = ::sha256,
+    ): RuntimeActivationGuard = RuntimeActivationGuard.fromEnvironment(
         environment = mapOf(
             OnlineRuntimeConfig.StateEncryptionKeyPath to stateKey.toString(),
             OnlineRuntimeConfig.PublicKeyPathKey to publicKey.toString(),
@@ -123,6 +147,7 @@ class RuntimeActivationGuardTest {
         ),
         identity = identity,
         clock = clock,
+        geoIpDigest = geoIpDigest,
     )
 
     private fun writeActivation(path: Path, expiresAt: Long? = null) {

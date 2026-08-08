@@ -596,6 +596,8 @@ if 'GeoIP database differs from the durable verified activation; use rotate-geoi
     raise SystemExit("Deploy must reject an unmanaged GeoIP fingerprint change")
 if 'RELEASE_TRANSACTION_PREVIOUS_PUBLIC_KEY_SHA256' not in deploy:
     raise SystemExit("Deploy must preserve the previous public-key fingerprint for graceful key rotation")
+if 'previous_backend_running' not in deploy or 'unless an exact public-key rotation is acknowledged' not in deploy:
+    raise SystemExit("Deploy must admit an exact stopped predecessor only for acknowledged public-key rotation")
 if 'INPLACEX_ACTIVATION_DATABASE_PASSWORD_SHA256' not in pathlib.Path(sys.argv[1]).with_name('release-common.sh').read_text(encoding='utf-8'):
     raise SystemExit("Durable activation must bind the database-password fingerprint")
 if 'RELEASE_TRANSACTION_DATABASE_PASSWORD_SHA256' not in deploy:

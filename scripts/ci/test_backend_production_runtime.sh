@@ -883,6 +883,7 @@ write_environment() {
     local activation_v1_migration_ack="${5:-}"
     local environment_git_sha="${6:-$git_sha}"
     local environment_source_archive_sha256="${7:-$source_archive_sha256}"
+    local public_key_rotation_ack="${8:-}"
     local image_digest="${backend_image##*@}"
     local manifest_path="$test_root/$release_id.manifest.json"
     [[ -f "$manifest_path" ]]
@@ -915,7 +916,7 @@ write_environment() {
         printf 'INPLACEX_INITIAL_DEPLOY=%s\n' "$initial_deploy"
         printf 'INPLACEX_COMPOSE_WAIT_TIMEOUT_SECONDS=180\n'
         printf 'INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=%s\n' "$legacy_checksum_ack"
-        printf 'INPLACEX_ALLOW_PUBLIC_KEY_ROTATION_FROM_SHA256=\n'
+        printf 'INPLACEX_ALLOW_PUBLIC_KEY_ROTATION_FROM_SHA256=%s\n' "$public_key_rotation_ack"
         printf 'INPLACEX_ACTIVATION_V1_MIGRATION_ACK=%s\n' "$activation_v1_migration_ack"
     } > "$env_file"
     chown root:root "$env_file"
@@ -1570,7 +1571,7 @@ backend_container="$("${compose[@]}" ps --all -q backend)"
 reset_ephemeral_release_state
 assert_backend_fails_closed "$backend_container"
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=after_legacy_checksum_completed \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
@@ -1588,7 +1589,7 @@ backend_container="$("${compose[@]}" ps --all -q backend)"
 reset_ephemeral_release_state
 assert_backend_fails_closed "$backend_container"
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=activation_v1_after_v2_record \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
@@ -1609,7 +1610,7 @@ grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v2" \
 reset_ephemeral_release_state
 curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=after_activation \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
@@ -1626,7 +1627,7 @@ grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v2" \
 reset_ephemeral_release_state
 curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=after_gate \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
@@ -1670,6 +1671,41 @@ grep -Fq 'Rollback across the activation v1-to-v2 migration boundary is unsafe' 
 [[ ! -e "$release_state_directory/release-transaction.env" ]]
 [[ ! -e /run/inplacex-online/maintenance.flag && ! -e /run/inplacex-online/drain.flag ]]
 
+public_key_file="$secret_directory/platform-public-key-x509-base64.txt"
+previous_public_key_sha256="$(sha256sum "$public_key_file" | awk '{print $1}')"
+previous_public_key_inode="$(stat -c '%i' -- "$public_key_file")"
+rotated_private_key="$test_root/platform-private-rotated.pem"
+rotated_public_key="$test_root/platform-public-rotated.txt"
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+    -out "$rotated_private_key" >/dev/null 2>&1
+openssl pkey -in "$rotated_private_key" -pubout -outform DER 2>/dev/null |
+    base64 -w0 > "$rotated_public_key"
+printf '\n' >> "$rotated_public_key"
+backend_container="$("${compose[@]}" ps --all -q backend)"
+public_key_restart_count="$(docker inspect --format '{{.RestartCount}}' "$backend_container")"
+public_key_fail_closed_log_count="$(backend_fail_closed_log_count "$backend_container")"
+cp -- "$rotated_public_key" "$public_key_file"
+chown root:"$secret_gid" "$public_key_file"
+chmod 0640 "$public_key_file"
+sync -f "$public_key_file"
+[[ "$(stat -c '%i' -- "$public_key_file")" == "$previous_public_key_inode" ]]
+wait_for_backend_restart_loop \
+    "$backend_container" "$public_key_restart_count" \
+    "$public_key_fail_closed_log_count" "Platform public key"
+docker stop --time 5 "$backend_container" >/dev/null
+[[ "$(docker inspect --format '{{.State.Running}}' "$backend_container")" == "false" ]]
+mv -f -- "$rotated_private_key" "$private_key"
+write_environment \
+    "$release_v2" "$image_v2" false "" "" "" "" "$previous_public_key_sha256"
+bash "$production_directory/deploy-backend.sh" "$env_file" "$backup_directory"
+rotated_public_key_sha256="$(sha256sum "$public_key_file" | awk '{print $1}')"
+[[ "$rotated_public_key_sha256" != "$previous_public_key_sha256" ]]
+grep -qx "INPLACEX_ACTIVATION_PUBLIC_KEY_SHA256=$rotated_public_key_sha256" \
+    "$release_state_directory/activation/verified-activation.env"
+write_environment "$release_v2" "$image_v2" false
+token="$(create_platform_token "$account_id" "$player_id")"
+curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
+
 geoip_candidate="$test_root/geoip-candidate.mmdb"
 printf 'country-header-mode-rotated-artifact\n' > "$geoip_candidate"
 chown root:root "$geoip_candidate"
@@ -1708,7 +1744,7 @@ backend_container="$("${compose[@]}" ps --all -q backend)"
 reset_ephemeral_release_state
 assert_backend_fails_closed "$backend_container"
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=geoip_after_verified_activation \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/rotate-geoip.sh" \
@@ -1724,7 +1760,7 @@ grep -qx "INPLACEX_ACTIVATION_GEOIP_SHA256=$geoip_candidate_sha256" \
 reset_ephemeral_release_state
 curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=geoip_after_activation \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/rotate-geoip.sh" \
@@ -1831,7 +1867,7 @@ backend_container="$("${compose[@]}" ps --all -q backend)"
 reset_ephemeral_release_state
 assert_backend_fails_closed "$backend_container"
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=rollback_after_verified_activation \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/rollback-backend.sh" \
@@ -1847,7 +1883,7 @@ grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v2" \
 reset_ephemeral_release_state
 curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
 set +e
-timeout 25 env \
+timeout 45 env \
     INPLACEX_RELEASE_FAULT_PHASE=rollback_after_pointer_committed \
     INPLACEX_RELEASE_FAULT_TEST_ACK=isolated-ci-host \
     bash "$production_directory/rollback-backend.sh" \

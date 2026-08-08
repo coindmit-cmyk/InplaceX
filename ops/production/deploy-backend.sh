@@ -496,8 +496,13 @@ if [[ "$transaction_resumed" == "false" ]]; then
             release_die 75 "Existing deployment requires both backend and PostgreSQL containers"
         release_validate_backend_port "$current_backend_container"
         release_validate_postgres_container "$current_postgres_container"
-        [[ "$(release_docker inspect --format '{{.State.Running}}' "$current_backend_container")" == "true" ]] ||
-            release_die 75 "The previous verified backend must be running before a new deployment"
+        previous_backend_running="$(release_docker inspect --format '{{.State.Running}}' "$current_backend_container")"
+        if [[ "$previous_backend_running" != "true" ]]; then
+            [[ "$previous_backend_running" == "false" &&
+                "$public_key_sha256" != "$VERIFIED_PUBLIC_KEY_SHA256" &&
+                "${INPLACEX_ALLOW_PUBLIC_KEY_ROTATION_FROM_SHA256:-}" == "$VERIFIED_PUBLIC_KEY_SHA256" ]] ||
+                release_die 75 "The previous verified backend must be running unless an exact public-key rotation is acknowledged"
+        fi
         previous_image="$(release_docker inspect --format '{{.Config.Image}}' "$current_backend_container")"
         previous_release_id="$(release_inspect_environment "$current_backend_container" INPLACEX_RELEASE_ID)"
         previous_git_sha="$(release_inspect_environment "$current_backend_container" INPLACEX_GIT_SHA)"

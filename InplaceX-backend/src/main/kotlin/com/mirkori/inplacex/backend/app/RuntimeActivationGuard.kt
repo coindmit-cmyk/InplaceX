@@ -3,6 +3,8 @@ package com.mirkori.inplacex.backend.app
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.FileTime
 import java.security.MessageDigest
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicBoolean
@@ -29,7 +31,7 @@ internal class RuntimeActivationGuard private constructor(
     private val databasePasswordPath: Path,
     private val stateKeyPath: Path,
     private val publicKeyPath: Path,
-    private val geoIpPath: Path,
+    private val geoIpFingerprint: CachedFileSha256,
     private val verifiedStatePath: Path,
     private val pendingPermitPath: Path,
     private val clock: Clock,
@@ -51,7 +53,7 @@ internal class RuntimeActivationGuard private constructor(
                 databasePasswordSha256 = sha256(databasePasswordPath),
                 stateKeySha256 = sha256(stateKeyPath),
                 publicKeySha256 = sha256(publicKeyPath),
-                geoIpSha256 = sha256(geoIpPath),
+                geoIpSha256 = geoIpFingerprint.current(),
             )
             val verifiedLines = readStateLines(verifiedStatePath)
             val verifiedMatches = when {
@@ -248,6 +250,7 @@ internal class RuntimeActivationGuard private constructor(
             environment: Map<String, String>,
             identity: BackendReleaseIdentity,
             clock: Clock = Clock.systemUTC(),
+            geoIpDigest: (Path) -> String = ::sha256,
         ): RuntimeActivationGuard {
             fun requiredPath(key: String): Path {
                 val value = environment[key]?.trim().orEmpty()
@@ -259,6 +262,7 @@ internal class RuntimeActivationGuard private constructor(
             val publicKeyPath = requiredPath(OnlineRuntimeConfig.PublicKeyPathKey)
             val databasePasswordPath = requiredPath(DatabaseRuntimeConfig.PasswordPathEnvironmentKey)
             val geoIpPath = requiredPath(GeoIpFingerprintPathEnvironmentKey)
+            val geoIpFingerprint = CachedFileSha256(geoIpPath, geoIpDigest)
             val runtimeConfigSha = environment[RuntimeConfigShaEnvironmentKey]?.trim().orEmpty()
             require(Sha256Pattern.matches(runtimeConfigSha)) {
                 "$RuntimeConfigShaEnvironmentKey must be a lowercase SHA-256"
@@ -271,13 +275,13 @@ internal class RuntimeActivationGuard private constructor(
                     databasePasswordSha256 = sha256(databasePasswordPath),
                     stateKeySha256 = sha256(stateKeyPath),
                     publicKeySha256 = sha256(publicKeyPath),
-                    geoIpSha256 = sha256(geoIpPath),
+                    geoIpSha256 = geoIpFingerprint.current(),
                     runtimeConfigSha256 = runtimeConfigSha,
                 ),
                 databasePasswordPath = databasePasswordPath,
                 stateKeyPath = stateKeyPath,
                 publicKeyPath = publicKeyPath,
-                geoIpPath = geoIpPath,
+                geoIpFingerprint = geoIpFingerprint,
                 verifiedStatePath = requiredPath(VerifiedStatePathEnvironmentKey),
                 pendingPermitPath = requiredPath(PendingPermitPathEnvironmentKey),
                 clock = clock,
@@ -299,5 +303,51 @@ internal class RuntimeActivationGuard private constructor(
             }
             return digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
         }
+    }
+
+    private class CachedFileSha256(
+        private val path: Path,
+        private val digest: (Path) -> String,
+    ) {
+        private var cached: CachedFingerprint? = null
+
+        @Synchronized
+        fun current(): String {
+            val before = metadata()
+            cached?.takeIf { it.metadata == before }?.let { return it.sha256 }
+
+            val sha256 = digest(path)
+            val after = metadata()
+            require(before == after) { "Activation fingerprint input changed while being read" }
+            cached = CachedFingerprint(after, sha256)
+            return sha256
+        }
+
+        private fun metadata(): FileMetadata {
+            val attributes = Files.readAttributes(
+                path,
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS,
+            )
+            require(attributes.isRegularFile) {
+                "Activation fingerprint input must be a regular non-symlink file"
+            }
+            return FileMetadata(
+                fileKey = attributes.fileKey(),
+                size = attributes.size(),
+                lastModifiedTime = attributes.lastModifiedTime(),
+            )
+        }
+
+        private data class CachedFingerprint(
+            val metadata: FileMetadata,
+            val sha256: String,
+        )
+
+        private data class FileMetadata(
+            val fileKey: Any?,
+            val size: Long,
+            val lastModifiedTime: FileTime,
+        )
     }
 }

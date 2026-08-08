@@ -133,6 +133,21 @@ Checklist перед build:
 - после использования credential удаляется либо ротируется согласно registry
   policy.
 
+### Ротация публичного ключа платформы
+
+Перед заменой сохраните SHA-256 из текущего durable
+`verified-activation.env`. После записи нового
+`platform-public-key-x509-base64.txt` работающий backend обнаружит изменение и
+завершится fail closed. Убедитесь, что старый exact container остановлен, затем
+для одного deploy установите сохранённый SHA-256 в
+`INPLACEX_ALLOW_PUBLIC_KEY_ROTATION_FROM_SHA256` и запустите
+`deploy-backend.sh`. Deploy принимает остановленный container только когда новый
+fingerprint отличается от verified activation, acknowledgement точно совпадает
+со старым fingerprint, а release/image/container identity остаются прежними.
+После успешного smoke уберите acknowledgement из environment. Любая остановка
+без точного acknowledgement или любое другое изменение secrets продолжает
+блокировать deploy до создания journal и изменения БД.
+
 ### Одноразовая миграция activation v1 -> v2
 
 Если на host уже существует корректный `verified-activation.env` версии 1,
