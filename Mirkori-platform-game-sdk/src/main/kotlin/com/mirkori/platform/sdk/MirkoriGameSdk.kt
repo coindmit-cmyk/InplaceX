@@ -395,6 +395,10 @@ class MirkoriGameSdk(
         require(release.versionCode > 0)
         require(release.minimumSupportedVersionCode in 1..release.versionCode)
         require(release.minimumAndroidSdk != null && release.minimumAndroidSdk in 21..100)
+        require(release.packageName != null && release.packageName.matches(AndroidPackageNamePattern))
+        require(release.signingCertificateSha256Fingerprints.isNotEmpty())
+        require(release.signingCertificateSha256Fingerprints.distinct().size == release.signingCertificateSha256Fingerprints.size)
+        require(release.signingCertificateSha256Fingerprints.all { it.matches(CertificateFingerprintPattern) })
         require(release.changelog.length in 1..4000 && release.changelog.trim() == release.changelog)
         require(release.fileName.matches(ArtifactFileNamePattern) && release.fileName.endsWith(".apk", true))
         require(release.sizeBytes in 1..MaximumArtifactBytes)
@@ -461,6 +465,8 @@ class MirkoriGameSdk(
         val ProviderPattern = Regex("[a-z0-9][a-z0-9_-]{1,31}")
         val ArtifactFileNamePattern = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
         val Sha256Pattern = Regex("[0-9a-f]{64}")
+        val AndroidPackageNamePattern = Regex("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+")
+        val CertificateFingerprintPattern = Regex("(?:[0-9A-F]{2}:){31}[0-9A-F]{2}")
         const val MaximumArtifactBytes = 4L * 1024L * 1024L * 1024L
     }
 }

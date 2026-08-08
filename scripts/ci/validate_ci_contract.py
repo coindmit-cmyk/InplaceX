@@ -214,12 +214,83 @@ def validate(
         "step.release.artifact.exact-run",
     )
 
+    ephemeral_signing = release.step("Create ephemeral CI signing identity")
+    if ephemeral_signing.scalar("id") != "ephemeral_signing" or ephemeral_signing.scalar("shell") != "bash":
+        raise ContractError("step.release.candidate-signing.contract")
+    ephemeral_source = "\n".join(ephemeral_signing.lines)
+    required_ephemeral_fragments = (
+        "          set -euo pipefail",
+        "          umask 077",
+        'signing_directory="$(mktemp -d "${RUNNER_TEMP}/inplacex-ci-signing.XXXXXX")"',
+        'signing_password="$(od -An -N24 -tx1 /dev/urandom | tr -d \'[:space:]\')"',
+        "          keytool -genkeypair \\",
+        "            -storetype PKCS12 \\",
+        "            -sigalg SHA256withRSA \\",
+        "            -validity 2 \\",
+        "            -noprompt",
+        "            keytool -exportcert \\",
+        "              sha256sum |",
+        "              awk '{ print toupper($1) }' |",
+        "              sed 's/../&:/g; s/:$//'",
+        "            printf 'expectedCertificateSha256=%s\\n' \"$certificate_sha256\"",
+        '          chmod 0600 "$signing_store" "$signing_properties"',
+        "          printf 'properties=%s\\n' \"$signing_properties\" >> \"$GITHUB_OUTPUT\"",
+        "          printf 'directory=%s\\n' \"$signing_directory\" >> \"$GITHUB_OUTPUT\"",
+    )
+    if ephemeral_signing.scalar("run") != "|" or any(
+        ephemeral_source.count(fragment) != 1 for fragment in required_ephemeral_fragments
+    ):
+        raise ContractError("step.release.candidate-signing.contract")
+    if "INPLACEX_RELEASE_" in ephemeral_source or "rm -rf" in ephemeral_source:
+        raise ContractError("step.release.candidate-signing.contract")
+
+    candidate_signing_property = '-PinplacexReleaseSigningFile="${{ steps.ephemeral_signing.outputs.properties }}"'
+    require_exact_run(
+        release,
+        "Run signed candidate unit tests",
+        f"./gradlew :app:testSignedReleaseCandidateUnitTest {candidate_signing_property}",
+        "step.release.candidate-unit.exact-run",
+    )
+    require_exact_run(
+        release,
+        "Generate signed candidate merged manifest",
+        f"./gradlew :app:processSignedReleaseCandidateManifest {candidate_signing_property}",
+        "step.release.candidate-manifest.exact-run",
+    )
+    require_exact_run(
+        release,
+        "Verify signed candidate merged manifest includes isolated sideload capability",
+        "python3 scripts/ci/validate_sideload_update_contract.py --merged-manifest InplaceX-android/app/build/intermediates/merged_manifests/signedReleaseCandidate/processSignedReleaseCandidateManifest/AndroidManifest.xml --updater-enabled",
+        "step.release.candidate-contract.exact-run",
+    )
+
+    cleanup = release.step("Remove ephemeral CI signing identity")
+    cleanup_source = "\n".join(cleanup.lines)
+    if (
+        cleanup.scalar("if") != "always()"
+        or cleanup.scalar("shell") != "bash"
+        or cleanup.nested_scalar("SIGNING_DIRECTORY") != "${{ steps.ephemeral_signing.outputs.directory }}"
+        or cleanup.scalar("run") != "|"
+        or 'case "$SIGNING_DIRECTORY" in' not in cleanup_source
+        or '"${RUNNER_TEMP}"/inplacex-ci-signing.*) ;;' not in cleanup_source
+        or 'rm -f -- "$SIGNING_DIRECTORY/signing.properties" "$SIGNING_DIRECTORY/ci-only.p12"' not in cleanup_source
+        or 'rmdir -- "$SIGNING_DIRECTORY"' not in cleanup_source
+        or "rm -rf" in cleanup_source
+    ):
+        raise ContractError("step.release.candidate-signing-cleanup.contract")
+
     require_exact_action(guard, "Run actionlint", ACTIONLINT_ACTION, "step.guard.actionlint.pinned-action")
     require_exact_run(
         guard,
         "Validate CI contract and hostile fixtures",
         "python3 scripts/ci/validate_ci_contract.py --self-test",
         "step.guard.contract.exact-run",
+    )
+    require_exact_run(
+        guard,
+        "Validate signed-candidate sideload isolation",
+        "python3 scripts/ci/validate_sideload_update_contract.py",
+        "step.guard.sideload.exact-run",
     )
 
     require_script_hash(artifact_script, ARTIFACT_SCRIPT_SHA256, "script.artifact.sha256")

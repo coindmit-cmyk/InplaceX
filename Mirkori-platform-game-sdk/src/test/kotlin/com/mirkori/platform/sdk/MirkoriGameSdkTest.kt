@@ -297,6 +297,8 @@ class MirkoriGameSdkTest {
         assertTrue(decision.required)
         assertEquals(100L, requireNotNull(decision.release).versionCode)
         assertEquals(50L, decision.release?.minimumSupportedVersionCode)
+        assertEquals("com.mirkori.inplacex", decision.release?.packageName)
+        assertEquals(listOf(fingerprint()), decision.release?.signingCertificateSha256Fingerprints)
         val request = transport.requests.single()
         assertEquals(PlatformHttpMethod.GET, request.method)
         assertEquals(
@@ -322,6 +324,38 @@ class MirkoriGameSdkTest {
                 sdk(
                     QueueTransport(
                         success(updateJson(required = true, downloadUrl = "https://evil.example/InplaceX.apk")),
+                    ),
+                ).stableAndroidUpdate(installedVersionCode = 42)
+            }
+        }
+    }
+
+    @Test
+    fun stableAndroidUpdateRequiresExactAndroidPackageAndOrderedFingerprintFields() {
+        val identityFields = ",\"packageName\":\"com.mirkori.inplacex\"," +
+            "\"signingCertificateSha256Fingerprints\":[\"${fingerprint()}\"]"
+        assertThrows(IllegalArgumentException::class.java) {
+            runSuspend {
+                sdk(QueueTransport(success(updateJson(required = true).replace(identityFields, ""))))
+                    .stableAndroidUpdate(installedVersionCode = 42)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            runSuspend {
+                sdk(QueueTransport(success(updateJson(required = true).replace(fingerprint(), fingerprint().lowercase()))))
+                    .stableAndroidUpdate(installedVersionCode = 42)
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            runSuspend {
+                sdk(
+                    QueueTransport(
+                        success(
+                            updateJson(required = true).replace(
+                                "[\"${fingerprint()}\"]",
+                                "[\"${fingerprint()}\",\"${fingerprint()}\"]",
+                            ),
+                        ),
                     ),
                 ).stableAndroidUpdate(installedVersionCode = 42)
             }
@@ -390,7 +424,9 @@ class MirkoriGameSdkTest {
         downloadUrl: String =
             "https://games.dmit.life/downloads/inplacex-1.0.0-100/InplaceX-1.0.0.apk",
     ): String =
-        """{"schemaVersion":1,"gameId":"inplacex","platform":"android","channel":"stable","currentVersionCode":42,"updateAvailable":true,"required":$required,"release":{"id":"inplacex-1.0.0-100","gameId":"inplacex","platform":"android","channel":"stable","versionName":"1.0.0","versionCode":100,"minimumSupportedVersionCode":50,"minimumAndroidSdk":29,"publishedAt":"2026-08-07T12:00:00Z","changelog":"Release notes","fileName":"InplaceX-1.0.0.apk","sizeBytes":12345678,"sha256":"${"a".repeat(64)}","downloadUrl":"$downloadUrl"}}"""
+        """{"schemaVersion":1,"gameId":"inplacex","platform":"android","channel":"stable","currentVersionCode":42,"updateAvailable":true,"required":$required,"release":{"id":"inplacex-1.0.0-100","gameId":"inplacex","platform":"android","channel":"stable","versionName":"1.0.0","versionCode":100,"minimumSupportedVersionCode":50,"minimumAndroidSdk":29,"publishedAt":"2026-08-07T12:00:00Z","changelog":"Release notes","fileName":"InplaceX-1.0.0.apk","sizeBytes":12345678,"sha256":"${"a".repeat(64)}","downloadUrl":"$downloadUrl","packageName":"com.mirkori.inplacex","signingCertificateSha256Fingerprints":["${fingerprint()}"]}}"""
+
+    private fun fingerprint(): String = List(32) { "AA" }.joinToString(":")
 }
 
 private class QueueTransport(vararg initial: PlatformHttpResponse) : PlatformTransport {

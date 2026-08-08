@@ -270,6 +270,7 @@ internal class SdkJsonCodec {
     }
 
     private fun release(value: JsonObject): PlatformGameRelease {
+        val platform = PlatformReleasePlatform.fromWireName(value.string("platform", 16)) ?: reject()
         val requiredFields = setOf(
             "id",
             "gameId",
@@ -285,11 +286,19 @@ internal class SdkJsonCodec {
             "sha256",
             "downloadUrl",
         )
-        require(value.keys == requiredFields || value.keys == requiredFields + "minimumAndroidSdk")
+        val platformFields = when (platform) {
+            PlatformReleasePlatform.ANDROID -> setOf(
+                "minimumAndroidSdk",
+                "packageName",
+                "signingCertificateSha256Fingerprints",
+            )
+            PlatformReleasePlatform.WINDOWS -> emptySet()
+        }
+        require(value.keys == requiredFields + platformFields)
         return PlatformGameRelease(
             id = value.string("id", 64),
             gameId = value.string("gameId", 64),
-            platform = PlatformReleasePlatform.fromWireName(value.string("platform", 16)) ?: reject(),
+            platform = platform,
             channel = PlatformReleaseChannel.fromWireName(value.string("channel", 16)) ?: reject(),
             versionName = value.string("versionName", 64),
             versionCode = value.long("versionCode"),
@@ -301,6 +310,11 @@ internal class SdkJsonCodec {
             sizeBytes = value.long("sizeBytes"),
             sha256 = value.string("sha256", 64),
             downloadUrl = value.string("downloadUrl", 4096),
+            packageName = value["packageName"]?.let { value.string("packageName", 255) },
+            signingCertificateSha256Fingerprints = value["signingCertificateSha256Fingerprints"]
+                ?.let { value.array("signingCertificateSha256Fingerprints", 16) }
+                ?.map { it.jsonPrimitive.content }
+                .orEmpty(),
         )
     }
 

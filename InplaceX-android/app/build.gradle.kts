@@ -247,6 +247,7 @@ android {
 
     buildTypes {
         getByName("debug") {
+            buildConfigField("boolean", "SIDELOAD_UPDATES_ENABLED", "false")
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")
@@ -266,6 +267,7 @@ android {
             buildConfigField("String", "BILLING_PRO_PLUS_SUBSCRIPTION_ID", "\"${localProp("provider.debug.billing.proPlusSubscriptionId", "pro_plus_subscription")}\"")
         }
         release {
+            buildConfigField("boolean", "SIDELOAD_UPDATES_ENABLED", "false")
             isMinifyEnabled = false
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.release.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "false")
@@ -299,6 +301,7 @@ android {
         create("signedReleaseCandidate") {
             initWith(getByName("release"))
             isDebuggable = false
+            buildConfigField("boolean", "SIDELOAD_UPDATES_ENABLED", "true")
             releaseCandidateSigning?.let { signingConfig = it }
             matchingFallbacks += listOf("release")
         }
@@ -452,6 +455,9 @@ tasks.register<Exec>("releaseCandidate") {
 
 androidComponents {
     beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+        (variantBuilder as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
+    }
+    beforeVariants(selector().withBuildType("signedReleaseCandidate")) { variantBuilder ->
         (variantBuilder as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
     }
 }

@@ -37,6 +37,12 @@ The same Mirkori Platform origin owns the public stable release-catalog check.
 No separate update origin or bearer credential is configured. See
 `Sideload Update Contract.md`.
 
+The sideload runtime is enabled only in `signedReleaseCandidate`. It is created
+from a separate public catalog client and does not depend on Mirkori account
+bootstrap, login, refresh tokens, or online authorization. Other build types
+compile the runtime gate as disabled and merge no installer permission or
+update `FileProvider`.
+
 ## Canonical Runtime Model
 
 - `PlatformConfig.providers`
@@ -131,3 +137,10 @@ Verified production bundles are atomically published under
 pattern `[a-z0-9][a-z0-9._-]{1,63}`. Reusing an ID with another APK SHA-256 or
 with a stale/incomplete directory is rejected without modifying the existing
 bundle.
+
+PR CI generates a fresh, short-lived self-signed identity only to run
+`testSignedReleaseCandidateUnitTest` and materialize the candidate merged
+manifest. Its random credentials stay in a mode-`0600` runner-temporary file,
+are deleted after those checks, and are never uploaded. CI does not run
+`releaseCandidate` or publish an APK with this identity; the owner-approved
+certificate check remains mandatory for every distributable candidate.

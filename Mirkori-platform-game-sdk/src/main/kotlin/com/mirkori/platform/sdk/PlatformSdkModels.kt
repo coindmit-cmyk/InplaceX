@@ -52,6 +52,8 @@ class PlatformGameRelease internal constructor(
     val sizeBytes: Long,
     val sha256: String,
     val downloadUrl: String,
+    val packageName: String?,
+    val signingCertificateSha256Fingerprints: List<String>,
 )
 
 class PlatformGameUpdateDecision internal constructor(

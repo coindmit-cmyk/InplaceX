@@ -70,6 +70,27 @@
     "expected": "step.release.assemble.exact-run"
   },
   {
+    "name": "candidate_unit_short_circuit",
+    "target": "workflow",
+    "anchor": "        run: ./gradlew :app:testSignedReleaseCandidateUnitTest -PinplacexReleaseSigningFile=\"${{ steps.ephemeral_signing.outputs.properties }}\"",
+    "replacement": "        run: ./gradlew :app:testSignedReleaseCandidateUnitTest -PinplacexReleaseSigningFile=\"${{ steps.ephemeral_signing.outputs.properties }}\" || true",
+    "expected": "step.release.candidate-unit.exact-run"
+  },
+  {
+    "name": "candidate_manifest_disabled_check",
+    "target": "workflow",
+    "anchor": " --updater-enabled",
+    "replacement": "",
+    "expected": "step.release.candidate-contract.exact-run"
+  },
+  {
+    "name": "candidate_signing_fixed_password",
+    "target": "workflow",
+    "anchor": "          signing_password=\"$(od -An -N24 -tx1 /dev/urandom | tr -d '[:space:]')\"",
+    "replacement": "          signing_password=\"ci-only-static-password\"",
+    "expected": "step.release.candidate-signing.contract"
+  },
+  {
     "name": "artifact_script_noop",
     "target": "artifact_script",
     "anchor": "set -euo pipefail",

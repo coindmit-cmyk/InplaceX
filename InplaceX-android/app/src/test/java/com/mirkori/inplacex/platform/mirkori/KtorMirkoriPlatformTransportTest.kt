@@ -118,6 +118,40 @@ class KtorMirkoriPlatformTransportTest {
     }
 
     @Test
+    fun `configured transport returns first redirect without a follow up request`() = runBlocking {
+        var calls = 0
+        val policy = MirkoriTransportPolicy(maxAttempts = 1, retryDelayMillis = 0L)
+        val client = HttpClient(
+            MockEngine {
+                calls += 1
+                if (calls == 1) {
+                    respond(
+                        content = "",
+                        status = HttpStatusCode.TemporaryRedirect,
+                        headers = headersOf(
+                            HttpHeaders.Location,
+                            "https://games.dmit.life/api/v1/catalog/redirected",
+                        ),
+                    )
+                } else {
+                    respond("{}", HttpStatusCode.OK)
+                }
+            },
+        ) {
+            applyMirkoriHttpClientPolicy(policy)
+        }
+        val transport = KtorMirkoriPlatformTransport(client, ConnectivityGate { true }, policy)
+
+        val response = transport.execute(
+            request("https://games.dmit.life/api/v1/catalog/games/inplacex/updates"),
+        )
+
+        assertEquals(HttpStatusCode.TemporaryRedirect.value, response.status)
+        assertEquals(1, calls)
+        client.close()
+    }
+
+    @Test
     fun `network retries stop at the configured maximum`() {
         var calls = 0
         val transport = transport(

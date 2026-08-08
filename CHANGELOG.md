@@ -50,13 +50,38 @@
 
 - Added the first Google Play-independent Android update flow backed by the
   public Mirkori Games stable catalog. The typed SDK verifies exact update and
-  `minimumSupportedVersionCode` semantics, accepts only immutable same-origin
-  HTTPS APK links (debug loopback remains explicitly gated), and sends no
-  account token. Android checks on startup/foreground return with bounded
-  transport retries and persisted cooldown/dismissal, presents localized
-  optional or non-dismissible required prompts, and opens the verified URL in
-  the external browser without storing APK bytes or requesting install
-  permissions.
+  `minimumSupportedVersionCode` semantics plus exact Android package and
+  ordered signer-lineage fields, accepts only immutable same-origin HTTPS APK
+  links, and sends no account token. The updater is isolated to the signed
+  release candidate, continuously refreshes open prompts, and durably restores
+  a required gate across restart/offline. Its bounded no-redirect downloader
+  fsyncs and atomically publishes only an exact size/SHA match; PackageManager
+  then verifies package, greater exact version, minSdk, non-debuggable status,
+  singular current signer, full target lineage, and installed-lineage prefix
+  before the narrow FileProvider and system installer are reachable. Russian
+  and English UI expose download, verification, unknown-source permission,
+  ready, unsupported, and recoverable states.
+  Installer handoff is now a serialized one-shot operation that rechecks the
+  exact durable release and artifact and keeps the runtime mutex through the
+  Android launch callback, giving handoff, refresh, replacement, and revocation
+  one linear order. Corrupt,
+  unreadable, unknown-schema, or configuration-drifted policy blocks in an
+  explicit recovery state until an authoritative response arrives, while
+  stale directories and symlinks are removed without traversal and cleanup
+  failures can no longer leave a verified artifact installable. Authoritative
+  replacement/revocation persists a recovery marker before cleanup, and both
+  the Platform and APK clients disable redirects at the Ktor and engine layers.
+  A durable refresh tombstone is now written before every authority query,
+  including when no APK is cached, so crash/restart cannot revive a revoked
+  downloadable policy or forget a newly required response. Response-marker
+  persistence and physical invalidation then run independently, so either
+  outcome still blocks stale offline restore. PR CI now runs the signed-candidate
+  unit suite and verifies its merged provider/permission boundary with a fresh
+  ephemeral CI-only signing identity that is never published.
+  Post-install cleanup now retains a blocking installed-release marker until
+  the verified cache is physically removed, so cleanup retries safely after an
+  offline restart. APK status and required-header rejection now also cancel
+  the streaming response body before returning an error.
 
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under

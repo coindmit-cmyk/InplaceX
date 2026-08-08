@@ -14,6 +14,7 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.update.AppUpdateRelease
+import com.mirkori.inplacex.platform.update.AppUpdateState
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import java.time.Instant
 import org.junit.Assert.assertFalse
@@ -43,7 +44,7 @@ class AppUpdateDialogSmokeTest {
 
         composeRule.onNodeWithTag("required-update-dialog").assertIsDisplayed()
         composeRule.onAllNodesWithText("Позже").assertCountEquals(0)
-        composeRule.onNodeWithTag("update-download").performClick()
+        composeRule.onNodeWithTag("update-primary-action").performClick()
         composeRule.runOnIdle { assertTrue(downloadRequested) }
     }
 
@@ -71,10 +72,12 @@ class AppUpdateDialogSmokeTest {
             ) {
                 InplaceXTheme {
                     AppUpdateDialog(
-                        release = release(),
-                        required = required,
-                        downloadError = false,
-                        onDownload = onDownload,
+                        state = if (required) {
+                            AppUpdateState.Required(release())
+                        } else {
+                            AppUpdateState.Optional(release())
+                        },
+                        onPrimaryAction = onDownload,
                         onDismissOptional = onDismiss,
                     )
                 }
@@ -94,5 +97,7 @@ class AppUpdateDialogSmokeTest {
         sizeBytes = 12_345_678,
         sha256 = "a".repeat(64),
         downloadUrl = "https://games.dmit.life/downloads/inplacex-1.0.0-100/InplaceX-1.0.0.apk",
+        packageName = "com.mirkori.inplacex",
+        signingCertificateSha256Fingerprints = listOf(List(32) { "AA" }.joinToString(":")),
     )
 }

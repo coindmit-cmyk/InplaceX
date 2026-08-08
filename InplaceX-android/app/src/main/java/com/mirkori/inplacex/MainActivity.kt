@@ -2,7 +2,6 @@ package com.mirkori.inplacex
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -60,9 +59,8 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.OnlineRuntime
-import com.mirkori.inplacex.platform.update.AndroidAppUpdatePolicyStore
-import com.mirkori.inplacex.platform.update.AppUpdateCheckResult
-import com.mirkori.inplacex.platform.update.AppUpdateRuntime
+import com.mirkori.inplacex.platform.update.AndroidAppUpdateFactory
+import com.mirkori.inplacex.platform.update.AppUpdateState
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingAvailability
 import com.mirkori.inplacex.platform.services.BillingNotice
@@ -233,11 +231,30 @@ class MainActivity : ComponentActivity() {
                 }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
-                var updatePrompt by remember {
-                    mutableStateOf<AppUpdateCheckResult.Prompt?>(null)
+                var appUpdateFactoryRetry by remember { mutableLongStateOf(0L) }
+                val appUpdateComponents = remember(appUpdateFactoryRetry) {
+                    runCatching { AndroidAppUpdateFactory.createOrNull(applicationContext) }
+                        .onFailure { error ->
+                            AppLog.warn(
+                                tag = "MainActivity",
+                                message = "Public app update runtime is unavailable",
+                                attributes = mapOf("errorClass" to error.javaClass.name),
+                            )
+                        }
+                        .getOrNull()
                 }
-                var updateDownloadError by rememberSaveable { mutableStateOf(false) }
-                var updateCheckGeneration by remember { mutableLongStateOf(0L) }
+                val appUpdateRuntime = appUpdateComponents?.runtime
+                var appUpdateState by remember(appUpdateRuntime, appUpdateFactoryRetry) {
+                    mutableStateOf(
+                        initialAppUpdateCompositionState(
+                            updaterEnabled = BuildConfig.SIDELOAD_UPDATES_ENABLED,
+                            runtimeState = appUpdateRuntime?.state?.value,
+                        ),
+                    )
+                }
+                DisposableEffect(appUpdateRuntime) {
+                    onDispose { appUpdateRuntime?.close() }
+                }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
                 val savedFriends = remember(platformLocalRepository) {
                     platformLocalRepository
@@ -313,34 +330,17 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val appUpdateRuntime = remember(mirkoriPlatformRuntime) {
-                    mirkoriPlatformRuntime?.let { platformRuntime ->
-                        AppUpdateRuntime.create(
-                            platformRuntime = platformRuntime,
-                            store = AndroidAppUpdatePolicyStore(applicationContext),
-                            platformBaseUrl = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
-                            allowCleartextLoopback = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
-                            installedAndroidSdk = Build.VERSION.SDK_INT,
-                        )
-                    }
+                LaunchedEffect(appUpdateRuntime) {
+                    appUpdateRuntime?.state?.collect { state -> appUpdateState = state }
                 }
-                LaunchedEffect(updateCheckSignal, appUpdateRuntime, updatePrompt?.release?.id) {
+                LaunchedEffect(updateCheckSignal, appUpdateRuntime) {
                     val runtime = appUpdateRuntime ?: return@LaunchedEffect
-                    if (updateCheckSignal <= 0L || updatePrompt != null) return@LaunchedEffect
-                    val generation = updateCheckGeneration + 1L
-                    updateCheckGeneration = generation
-                    val result = withContext(Dispatchers.IO) {
-                        runtime.check(BuildConfig.VERSION_CODE.toLong())
-                    }
-                    if (generation != updateCheckGeneration) return@LaunchedEffect
-                    when (result) {
-                        is AppUpdateCheckResult.Prompt -> {
-                            updateDownloadError = false
-                            updatePrompt = result
-                        }
-                        AppUpdateCheckResult.NoAction,
-                        AppUpdateCheckResult.Unavailable,
-                        -> Unit
+                    if (updateCheckSignal <= 0L) return@LaunchedEffect
+                    withContext(Dispatchers.IO) { runtime.refresh() }
+                }
+                LaunchedEffect(resumeGeneration, appUpdateRuntime) {
+                    if (appUpdateRuntime != null && resumeGeneration > 0L) {
+                        withContext(Dispatchers.IO) { appUpdateRuntime.refreshInstallPermission() }
                     }
                 }
                 val onlineRuntime = remember(mirkoriPlatformRuntime) {
@@ -1175,23 +1175,81 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        val currentUpdatePrompt = updatePrompt
-                        if (currentUpdatePrompt != null) {
+                        if (appUpdateState.hasVisibleUpdateDialog()) {
                             AppUpdateDialog(
-                                release = currentUpdatePrompt.release,
-                                required = currentUpdatePrompt.required,
-                                downloadError = updateDownloadError,
-                                onDownload = {
-                                    updateDownloadError = !openUpdateDownload(
-                                        currentUpdatePrompt.release.downloadUrl,
-                                    )
+                                state = appUpdateState,
+                                onPrimaryAction = {
+                                    val runtime = appUpdateRuntime
+                                    if (runtime == null) {
+                                        if (BuildConfig.SIDELOAD_UPDATES_ENABLED) appUpdateFactoryRetry += 1L
+                                        return@AppUpdateDialog
+                                    }
+                                    when (val state = appUpdateState) {
+                                        is AppUpdateState.NeedsPermission,
+                                        is AppUpdateState.Ready,
+                                        -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                runtime.performInstallAction { claim ->
+                                                    withContext(Dispatchers.Main.immediate) {
+                                                        val installer = requireNotNull(appUpdateComponents).installer
+                                                        startActivity(
+                                                            if (claim.needsPermission) {
+                                                                installer.permissionIntent()
+                                                            } else {
+                                                                installer.installIntent(claim.artifact)
+                                                            },
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        is AppUpdateState.RecoverableError -> coroutineScope.launch {
+                                            if (state.artifact != null) {
+                                                withContext(Dispatchers.IO) {
+                                                    runtime.performInstallAction { claim ->
+                                                        withContext(Dispatchers.Main.immediate) {
+                                                            val installer = requireNotNull(appUpdateComponents).installer
+                                                            startActivity(
+                                                                if (claim.needsPermission) {
+                                                                    installer.permissionIntent()
+                                                                } else {
+                                                                    installer.installIntent(claim.artifact)
+                                                                },
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                withContext(Dispatchers.IO) { runtime.prepareInstall() }
+                                            }
+                                        }
+                                        is AppUpdateState.Unsupported -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.refresh() }
+                                        }
+                                        AppUpdateState.PolicyRecovery -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.refresh() }
+                                        }
+                                        is AppUpdateState.Optional,
+                                        is AppUpdateState.Required,
+                                        -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.prepareInstall() }
+                                        }
+                                        AppUpdateState.Checking,
+                                        AppUpdateState.Current,
+                                        is AppUpdateState.Downloading,
+                                        is AppUpdateState.Verifying,
+                                        is AppUpdateState.Refreshing,
+                                        is AppUpdateState.HandingOff,
+                                        -> Unit
+                                    }
                                 },
                                 onDismissOptional = {
-                                    if (!currentUpdatePrompt.required) {
-                                        appUpdateRuntime?.dismissOptional(currentUpdatePrompt.release.id)
-                                        updateDownloadError = false
-                                        updatePrompt = null
-                                    }
+                                    appUpdateState.releaseIdForOptionalDismissal()
+                                        ?.let { releaseId ->
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                appUpdateRuntime?.dismissOptional(releaseId)
+                                            }
+                                        }
                                 },
                             )
                         } else if (isAdPrivacyOpen) {
@@ -1271,22 +1329,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openUpdateDownload(downloadUrl: String): Boolean = try {
-        startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-            },
-        )
-        true
-    } catch (error: Exception) {
-        AppLog.warn(
-            tag = "MainActivity",
-            message = "App update browser could not be opened",
-            attributes = mapOf("errorClass" to error.javaClass.name),
-        )
-        false
-    }
-
     private fun captureMirkoriCallback(intent: Intent?) {
         val data = intent?.data ?: return
         if (
@@ -1302,6 +1344,34 @@ class MainActivity : ComponentActivity() {
         mirkoriCallbackUrl = null
         setIntent(Intent(intent).setData(null))
     }
+}
+
+private fun AppUpdateState.releaseIdForOptionalDismissal(): String? = when (this) {
+    is AppUpdateState.Optional -> release.id
+    is AppUpdateState.Unsupported -> release.id.takeIf { !required }
+    is AppUpdateState.RecoverableError -> release?.id?.takeIf { !required }
+    is AppUpdateState.NeedsPermission -> release.id.takeIf { !required }
+    is AppUpdateState.Ready -> release.id.takeIf { !required }
+    is AppUpdateState.Refreshing -> release.id.takeIf { !required }
+    else -> null
+}
+
+private fun AppUpdateState.hasVisibleUpdateDialog(): Boolean = when (this) {
+    AppUpdateState.Checking,
+    AppUpdateState.Current,
+    -> false
+    AppUpdateState.PolicyRecovery -> true
+    is AppUpdateState.RecoverableError -> release != null
+    else -> true
+}
+
+internal fun initialAppUpdateCompositionState(
+    updaterEnabled: Boolean,
+    runtimeState: AppUpdateState?,
+): AppUpdateState = runtimeState ?: if (updaterEnabled) {
+    AppUpdateState.PolicyRecovery
+} else {
+    AppUpdateState.Current
 }
 
 internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSection =
