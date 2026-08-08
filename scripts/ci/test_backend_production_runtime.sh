@@ -148,6 +148,85 @@ cleanup() {
 }
 trap cleanup EXIT
 
+print_sanitized_ci_log() {
+    local log_path="$1"
+    [[ -f "$log_path" ]] || return 0
+    python3 -I - "$log_path" \
+        "$authenticated_registry_password" \
+        "$authenticated_registry_basic" \
+        "$authenticated_registry_auth_base64" <<'PY' >&2
+import pathlib
+import sys
+
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+for secret in sys.argv[2:]:
+    if secret:
+        text = text.replace(secret, "[redacted-test-credential]")
+lines = text.splitlines()
+limit = 200
+sys.stderr.write("\n".join(lines[:limit]) + ("\n" if lines else ""))
+if len(lines) > limit:
+    sys.stderr.write(f"... {len(lines) - limit} additional lines omitted ...\n")
+PY
+}
+
+print_registry_diagnostics() {
+    local label="$1"
+    local container_name="$2"
+    echo "--- $label registry diagnostics ---" >&2
+    if docker inspect "$container_name" >/dev/null 2>&1; then
+        docker inspect --format \
+            'name={{.Name}} running={{.State.Running}} status={{.State.Status}} exit={{.State.ExitCode}} error={{json .State.Error}}' \
+            "$container_name" >&2 || true
+        docker logs --tail 200 "$container_name" >&2 || true
+    else
+        echo "Registry container does not exist: $container_name" >&2
+        docker ps --all --filter "name=^/${container_name}$" \
+            --format 'name={{.Names}} status={{.Status}} image={{.Image}}' >&2 || true
+    fi
+    echo "--- end $label registry diagnostics ---" >&2
+}
+
+wait_for_registry() {
+    local label="$1"
+    local container_name="$2"
+    local port="$3"
+    local authentication_mode="$4"
+    local attempt container_running curl_status http_code
+    local -a authentication_arguments=()
+    if [[ "$authentication_mode" == "authenticated" ]]; then
+        authentication_arguments=(
+            --user "$authenticated_registry_username:$authenticated_registry_password"
+        )
+    elif [[ "$authentication_mode" != "anonymous" ]]; then
+        echo "Unknown registry probe authentication mode: $authentication_mode" >&2
+        return 64
+    fi
+
+    for attempt in {1..30}; do
+        container_running="$(docker inspect --format '{{.State.Running}}' \
+            "$container_name" 2>/dev/null || true)"
+        if [[ "$container_running" == "false" ]]; then
+            echo "$label registry container exited before readiness (attempt=$attempt)." >&2
+            print_registry_diagnostics "$label" "$container_name"
+            return 70
+        fi
+        curl_status=0
+        http_code="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "${authentication_arguments[@]}" "http://127.0.0.1:$port/v2/")" || curl_status=$?
+        if [[ "$curl_status" -eq 0 && "$http_code" == "200" ]]; then
+            echo "$label registry ready (attempt=$attempt, http_code=$http_code)."
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo "$label registry readiness failed after 30 attempts "\
+        "(curl_status=$curl_status, http_code=${http_code:-none})." >&2
+    print_registry_diagnostics "$label" "$container_name"
+    return 70
+}
+
 install -d -o root -g root -m 0700 "$test_root" "$backup_directory"
 install -d -o root -g "$secret_gid" -m 0750 "$secret_directory"
 install -d -o root -g root -m 0700 "$test_root/clone-git-home"
@@ -480,41 +559,68 @@ chmod 0644 /etc/nginx/conf.d/inplacex-online-ci-server.conf
 nginx -t
 nginx -s reload >/dev/null 2>&1 || nginx
 
-docker run --detach --name "$registry_name" \
-    --publish "127.0.0.1:$registry_port:5000" registry:2 >/dev/null
-for _ in {1..30}; do
-    curl --fail --silent "http://127.0.0.1:$registry_port/v2/" >/dev/null && break
-    sleep 1
-done
-curl --fail --silent "http://127.0.0.1:$registry_port/v2/" >/dev/null
+if ! docker run --detach --name "$registry_name" \
+    --publish "127.0.0.1:$registry_port:5000" registry:2 >/dev/null; then
+    echo "Anonymous registry container failed to start." >&2
+    print_registry_diagnostics anonymous "$registry_name"
+    exit 70
+fi
+wait_for_registry anonymous "$registry_name" "$registry_port" anonymous
 
 install -d -o root -g root -m 0700 "$authenticated_registry_directory"
-htpasswd -Bbn "$authenticated_registry_username" "$authenticated_registry_password" \
-    > "$authenticated_registry_directory/htpasswd"
+if ! htpasswd -Bbn "$authenticated_registry_username" "$authenticated_registry_password" \
+    > "$authenticated_registry_directory/htpasswd"; then
+    echo "Authenticated registry htpasswd fixture generation failed." >&2
+    exit 70
+fi
 chown root:root "$authenticated_registry_directory/htpasswd"
 chmod 0600 "$authenticated_registry_directory/htpasswd"
-docker run --detach --name "$authenticated_registry_name" \
+if [[ "$(stat -Lc '%F %u %g %a %h' -- "$authenticated_registry_directory/htpasswd")" != \
+    "regular file 0 0 600 1" ]]; then
+    echo "Authenticated registry htpasswd fixture identity is unsafe." >&2
+    exit 70
+fi
+if ! docker run --detach --name "$authenticated_registry_name" \
     --publish "127.0.0.1:$authenticated_registry_port:5000" \
     --env REGISTRY_AUTH=htpasswd \
     --env REGISTRY_AUTH_HTPASSWD_REALM=InplaceX-CI \
     --env REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
     --volume "$authenticated_registry_directory:/auth:ro" \
-    registry:2 >/dev/null
-for _ in {1..30}; do
-    curl --fail --silent \
-        --user "$authenticated_registry_username:$authenticated_registry_password" \
-        "http://127.0.0.1:$authenticated_registry_port/v2/" >/dev/null && break
-    sleep 1
-done
-curl --fail --silent \
-    --user "$authenticated_registry_username:$authenticated_registry_password" \
-    "http://127.0.0.1:$authenticated_registry_port/v2/" >/dev/null
-[[ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
-    "http://127.0.0.1:$authenticated_registry_port/v2/")" == "401" ]]
+    registry:2 >/dev/null; then
+    echo "Authenticated registry container failed to start." >&2
+    print_registry_diagnostics authenticated "$authenticated_registry_name"
+    exit 70
+fi
+wait_for_registry authenticated "$authenticated_registry_name" \
+    "$authenticated_registry_port" authenticated
+unauthenticated_registry_status=0
+unauthenticated_registry_http_code="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    "http://127.0.0.1:$authenticated_registry_port/v2/")" || unauthenticated_registry_status=$?
+if [[ "$unauthenticated_registry_status" -ne 0 || \
+    "$unauthenticated_registry_http_code" != "401" ]]; then
+    echo "Authenticated registry did not fail closed for an anonymous request "\
+        "(curl_status=$unauthenticated_registry_status, "\
+        "http_code=${unauthenticated_registry_http_code:-none})." >&2
+    print_registry_diagnostics authenticated "$authenticated_registry_name"
+    exit 70
+fi
+echo "Authenticated registry rejected anonymous access (http_code=401)."
 
-docker pull postgres:16-alpine >/dev/null
-postgres_image="$(docker image inspect --format '{{index .RepoDigests 0}}' postgres:16-alpine)"
-[[ "$postgres_image" =~ @sha256:[0-9a-f]{64}$ ]]
+postgres_pull_log="$test_root/postgres-image.pull.log"
+if ! docker pull postgres:16-alpine > "$postgres_pull_log" 2>&1; then
+    echo "PostgreSQL integration image pull failed." >&2
+    print_sanitized_ci_log "$postgres_pull_log"
+    exit 69
+fi
+postgres_image="$(docker image inspect --format '{{index .RepoDigests 0}}' \
+    postgres:16-alpine 2>/dev/null || true)"
+if [[ ! "$postgres_image" =~ @sha256:[0-9a-f]{64}$ ]]; then
+    echo "PostgreSQL integration image has no immutable repository digest: "\
+        "${postgres_image:-missing}." >&2
+    print_sanitized_ci_log "$postgres_pull_log"
+    exit 70
+fi
+echo "PostgreSQL integration image resolved to ${postgres_image##*@}."
 docker volume create \
     --label com.mirkori.product=inplacex \
     --label com.mirkori.component=online-postgres \
@@ -531,6 +637,7 @@ build_authenticated_registry_probe() {
     local inspect_log="$test_root/$release_id.imagetools.json"
     local pull_log="$test_root/$release_id.pull.log"
     local image_inspect_log="$test_root/$release_id.image-inspect.json"
+    local build_status=0
     local immutable_image repo_digests credential_marker
 
     printf '{"auths":{"127.0.0.1:%s":{"auth":"%s"}}}\n' \
@@ -541,7 +648,15 @@ build_authenticated_registry_probe() {
 
     "$production_directory/build-backend-release.sh" \
         "$image_tag" "$release_id" "$manifest_path" --push \
-        --registry-auth-config "$registry_auth_config" > "$build_log" 2>&1
+        --registry-auth-config "$registry_auth_config" > "$build_log" 2>&1 || build_status=$?
+    if [[ "$build_status" -ne 0 ]]; then
+        echo "Authenticated registry release build failed (status=$build_status)." >&2
+        echo "--- authenticated registry release build log ---" >&2
+        print_sanitized_ci_log "$build_log"
+        echo "--- end authenticated registry release build log ---" >&2
+        print_registry_diagnostics authenticated "$authenticated_registry_name"
+        return "$build_status"
+    fi
     immutable_image="$(python3 -I - "$manifest_path" "$release_id" "$git_sha" \
         "$source_archive_sha256" <<'PY'
 import json
