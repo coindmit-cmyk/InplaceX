@@ -13,6 +13,7 @@ internal data class BackendActivationSnapshot(
     val releaseId: String,
     val gitSha: String,
     val imageDigest: String,
+    val databasePasswordSha256: String,
     val stateKeySha256: String,
     val publicKeySha256: String,
     val geoIpSha256: String,
@@ -42,10 +43,15 @@ internal class RuntimeActivationGuard private constructor(
 
     fun refreshAuthorization(): Boolean {
         val result = runCatching {
-            readState(verifiedStatePath, pending = false)?.snapshot == expectedSnapshot ||
-                readState(pendingPermitPath, pending = true)?.let { state ->
-                    state.snapshot == expectedSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
-                } == true
+            val verifiedLines = readStateLines(verifiedStatePath)
+            val verifiedMatches = when {
+                verifiedLines == null -> false
+                isLegacyV1VerifiedState(verifiedLines) -> false
+                else -> parseState(verifiedLines, pending = false).snapshot == expectedSnapshot
+            }
+            verifiedMatches || readState(pendingPermitPath, pending = true)?.let { state ->
+                state.snapshot == expectedSnapshot && state.expiresAtEpochSecond?.let(::leaseIsLive) == true
+            } == true
         }.getOrDefault(false)
         authorized.set(result)
         return result
@@ -83,14 +89,23 @@ internal class RuntimeActivationGuard private constructor(
     }
 
     private fun readState(path: Path, pending: Boolean): ActivationState? {
+        val lines = readStateLines(path) ?: return null
+        return parseState(lines, pending)
+    }
+
+    private fun readStateLines(path: Path): List<String>? {
         if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return null
         require(path.isAbsolute) { "Activation state path must be absolute" }
         require(Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
             "Activation state must be a regular non-symlink file"
         }
         require(Files.size(path) in 1..MaximumStateBytes) { "Activation state size is invalid" }
+        return Files.readAllLines(path, Charsets.UTF_8)
+    }
+
+    private fun parseState(lines: List<String>, pending: Boolean): ActivationState {
         val entries = linkedMapOf<String, String>()
-        Files.readAllLines(path, Charsets.UTF_8).forEach { line ->
+        lines.forEach { line ->
             require(line.isNotEmpty() && !line.startsWith("#") && line.count { it == '=' } == 1) {
                 "Activation state line is invalid"
             }
@@ -100,12 +115,15 @@ internal class RuntimeActivationGuard private constructor(
             require(entries.put(key, value) == null) { "Duplicate activation state field" }
         }
         val expectedFields = if (pending) CommonFields + ExpiresField else CommonFields
-        require(entries.keys == expectedFields) { "Activation state fields are incomplete or out of order" }
+        require(entries.keys.toList() == expectedFields.toList()) {
+            "Activation state fields are incomplete or out of order"
+        }
         require(entries.getValue(VersionField) == StateVersion) { "Unsupported activation state version" }
         val snapshot = BackendActivationSnapshot(
             releaseId = entries.getValue(ReleaseIdField),
             gitSha = entries.getValue(GitShaField),
             imageDigest = entries.getValue(ImageDigestField),
+            databasePasswordSha256 = entries.getValue(DatabasePasswordShaField),
             stateKeySha256 = entries.getValue(StateKeyShaField),
             publicKeySha256 = entries.getValue(PublicKeyShaField),
             geoIpSha256 = entries.getValue(GeoIpShaField),
@@ -116,6 +134,7 @@ internal class RuntimeActivationGuard private constructor(
         require(ImageDigestPattern.matches(snapshot.imageDigest)) { "Activation image digest is invalid" }
         require(
             listOf(
+                snapshot.databasePasswordSha256,
                 snapshot.stateKeySha256,
                 snapshot.publicKeySha256,
                 snapshot.geoIpSha256,
@@ -125,6 +144,41 @@ internal class RuntimeActivationGuard private constructor(
         val expiresAt = entries[ExpiresField]?.toLongOrNull()
         require(!pending || expiresAt != null) { "Activation permit expiry is invalid" }
         return ActivationState(snapshot, expiresAt)
+    }
+
+    private fun isLegacyV1VerifiedState(lines: List<String>): Boolean {
+        if (lines.firstOrNull() != "$VersionField=$LegacyStateVersion") return false
+        val entries = linkedMapOf<String, String>()
+        lines.forEach { line ->
+            require(line.isNotEmpty() && !line.startsWith("#") && line.count { it == '=' } == 1) {
+                "Legacy activation state line is invalid"
+            }
+            val key = line.substringBefore('=')
+            val value = line.substringAfter('=')
+            require(key in LegacyCommonFields) { "Unknown legacy activation state field" }
+            require(entries.put(key, value) == null) { "Duplicate legacy activation state field" }
+        }
+        require(entries.keys.toList() == LegacyCommonFields.toList()) {
+            "Legacy activation state fields are incomplete or out of order"
+        }
+        require(ReleaseIdPattern.matches(entries.getValue(ReleaseIdField))) {
+            "Legacy activation release id is invalid"
+        }
+        require(GitShaPattern.matches(entries.getValue(GitShaField))) {
+            "Legacy activation Git SHA is invalid"
+        }
+        require(ImageDigestPattern.matches(entries.getValue(ImageDigestField))) {
+            "Legacy activation image digest is invalid"
+        }
+        require(
+            listOf(
+                entries.getValue(StateKeyShaField),
+                entries.getValue(PublicKeyShaField),
+                entries.getValue(GeoIpShaField),
+                entries.getValue(RuntimeConfigShaField),
+            ).all(Sha256Pattern::matches),
+        ) { "Legacy activation fingerprint is invalid" }
+        return true
     }
 
     private data class ActivationState(
@@ -142,17 +196,30 @@ internal class RuntimeActivationGuard private constructor(
         private const val MonitorIntervalMillis = 250L
         private const val MaximumLeaseFutureSeconds = 30L
         private const val MaximumStateBytes = 8L * 1024L
-        private const val StateVersion = "1"
+        private const val StateVersion = "2"
+        private const val LegacyStateVersion = "1"
         private const val VersionField = "INPLACEX_ACTIVATION_VERSION"
         private const val ReleaseIdField = "INPLACEX_ACTIVATION_RELEASE_ID"
         private const val GitShaField = "INPLACEX_ACTIVATION_GIT_SHA"
         private const val ImageDigestField = "INPLACEX_ACTIVATION_IMAGE_DIGEST"
+        private const val DatabasePasswordShaField = "INPLACEX_ACTIVATION_DATABASE_PASSWORD_SHA256"
         private const val StateKeyShaField = "INPLACEX_ACTIVATION_STATE_KEY_SHA256"
         private const val PublicKeyShaField = "INPLACEX_ACTIVATION_PUBLIC_KEY_SHA256"
         private const val GeoIpShaField = "INPLACEX_ACTIVATION_GEOIP_SHA256"
         private const val RuntimeConfigShaField = "INPLACEX_ACTIVATION_RUNTIME_CONFIG_SHA256"
         private const val ExpiresField = "INPLACEX_ACTIVATION_EXPIRES_AT_EPOCH_SECOND"
         private val CommonFields = linkedSetOf(
+            VersionField,
+            ReleaseIdField,
+            GitShaField,
+            ImageDigestField,
+            DatabasePasswordShaField,
+            StateKeyShaField,
+            PublicKeyShaField,
+            GeoIpShaField,
+            RuntimeConfigShaField,
+        )
+        private val LegacyCommonFields = linkedSetOf(
             VersionField,
             ReleaseIdField,
             GitShaField,
@@ -180,6 +247,7 @@ internal class RuntimeActivationGuard private constructor(
 
             val stateKeyPath = requiredPath(OnlineRuntimeConfig.StateEncryptionKeyPath)
             val publicKeyPath = requiredPath(OnlineRuntimeConfig.PublicKeyPathKey)
+            val databasePasswordPath = requiredPath(DatabaseRuntimeConfig.PasswordPathEnvironmentKey)
             val geoIpPath = requiredPath(GeoIpFingerprintPathEnvironmentKey)
             val runtimeConfigSha = environment[RuntimeConfigShaEnvironmentKey]?.trim().orEmpty()
             require(Sha256Pattern.matches(runtimeConfigSha)) {
@@ -190,6 +258,7 @@ internal class RuntimeActivationGuard private constructor(
                     releaseId = identity.releaseId,
                     gitSha = identity.gitSha,
                     imageDigest = identity.imageDigest,
+                    databasePasswordSha256 = sha256(databasePasswordPath),
                     stateKeySha256 = sha256(stateKeyPath),
                     publicKeySha256 = sha256(publicKeyPath),
                     geoIpSha256 = sha256(geoIpPath),

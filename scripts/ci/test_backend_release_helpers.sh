@@ -8,7 +8,13 @@ production_directory="$repository_root/ops/production"
 source "$production_directory/release-common.sh"
 
 temporary_directory="$(mktemp -d "$repository_root/.release-helper-test.XXXXXX")"
-cleanup() { rm -rf -- "$temporary_directory"; }
+publication_directory=""
+cleanup() {
+    rm -rf -- "$temporary_directory"
+    if [[ "$publication_directory" == /tmp/inplacex-release-publication.* ]]; then
+        rm -rf -- "$publication_directory"
+    fi
+}
 trap cleanup EXIT
 
 expect_status() {
@@ -49,14 +55,66 @@ expect_status 65 parse_fixture "$temporary_directory/duplicate.env"
 printf 'SAFE_VALUE=one\ttwo\n' > "$temporary_directory/control.env"
 expect_status 65 parse_fixture "$temporary_directory/control.env"
 
+release_validate_canonical_absolute_path /var/lib/inplacex-online/release-state "test path"
+release_validate_durable_directory_path /var/backups/inplacex-online "test durable path"
+expect_status 65 release_validate_canonical_absolute_path /var/lib/inplacex/../run/state "test path"
+expect_status 65 release_validate_canonical_absolute_path /var/lib//inplacex/state "test path"
+expect_status 65 release_validate_durable_directory_path /run/inplacex-online "test durable path"
+expect_status 65 release_validate_durable_directory_path /var/lib/inplacex/../../../run/state "test durable path"
+expect_status 65 release_validate_durable_directory_path /tmp/inplacex-online "test durable path"
+
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|1'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|8'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|1'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|9'
+release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8|0'
+release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8,9|0'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|9'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|0'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10|1'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,9|1'
+expect_status 75 release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8|1'
+
+publication_directory="$(mktemp -d /tmp/inplacex-release-publication.XXXXXX)"
+publication_source_one="$publication_directory/source-one"
+publication_source_two="$publication_directory/source-two"
+publication_destination="$publication_directory/manifest.json"
+printf 'manifest-one\n' > "$publication_source_one"
+printf 'manifest-two\n' > "$publication_source_two"
+chmod 0600 "$publication_source_one" "$publication_source_two"
+(
+    set +e
+    release_publish_new_file_no_replace \
+        "$publication_source_one" "$publication_destination" \
+        > "$publication_directory/one.log" 2>&1
+    publication_status=$?
+    set -e
+    printf '%s\n' "$publication_status" > "$publication_directory/one.status"
+) &
+publication_pid_one=$!
+(
+    set +e
+    release_publish_new_file_no_replace \
+        "$publication_source_two" "$publication_destination" \
+        > "$publication_directory/two.log" 2>&1
+    publication_status=$?
+    set -e
+    printf '%s\n' "$publication_status" > "$publication_directory/two.status"
+) &
+publication_pid_two=$!
+wait "$publication_pid_one" "$publication_pid_two"
+publication_status_one="$(<"$publication_directory/one.status")"
+publication_status_two="$(<"$publication_directory/two.status")"
+if [[ "$publication_status_one" == "0" ]]; then
+    [[ "$publication_status_two" == "75" &&
+        "$(<"$publication_destination")" == "manifest-one" &&
+        ! -e "$publication_source_one" && -f "$publication_source_two" ]]
+else
+    [[ "$publication_status_one" == "75" && "$publication_status_two" == "0" &&
+        "$(<"$publication_destination")" == "manifest-two" &&
+        -f "$publication_source_one" && ! -e "$publication_source_two" ]]
+fi
+[[ "$(stat -Lc '%F %a %h' -- "$publication_destination")" == "regular file 600 1" ]]
 
 mock_directory="$temporary_directory/mock-bin"
 mkdir "$mock_directory"
@@ -64,53 +122,377 @@ mock_log="$temporary_directory/docker.log"
 cat > "$mock_directory/docker" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s\n' "$*" >> "$MOCK_DOCKER_LOG"
+for forbidden_environment_name in \
+    BUILDX_CONFIG EXPERIMENTAL_BUILDKIT_SOURCE_POLICY DOCKER_DEFAULT_PLATFORM \
+    DOCKER_CLI_PLUGIN_EXTRA_DIRS; do
+    [[ -z "${!forbidden_environment_name+x}" ]] || {
+        printf 'forbidden environment reached Docker: %s\n' "$forbidden_environment_name" >&2
+        exit 91
+    }
+done
+printf '%s\n' "$*" >> "$INPLACEX_TEST_DOCKER_LOG"
+if [[ "$1" == "inspect" && "$2" == "--format" && "$3" == "{{.State.Running}}" ]]; then
+    printf '%s\n' "${INPLACEX_TEST_BACKEND_STATE:-false}"
+    exit 0
+fi
 if [[ "$1 $2" == "image inspect" ]]; then
     case "$4" in
         *RepoDigests*) printf '["registry.example/app@sha256:%s"]\n' "$(printf 'a%.0s' {1..64})" ;;
-        *version*) printf '%s\n' "${MOCK_RELEASE_ID:-release-1}" ;;
-        *revision*) printf '%s\n' "${MOCK_GIT_SHA:-$(printf 'b%.0s' {1..40})}" ;;
-        *source-archive*) printf '%s\n' "${MOCK_SOURCE_SHA:-$(printf 'c%.0s' {1..64})}" ;;
+        *version*) printf '%s\n' "${INPLACEX_TEST_RELEASE_ID:-release-1}" ;;
+        *revision*) printf '%s\n' "${INPLACEX_TEST_GIT_SHA:-$(printf 'b%.0s' {1..40})}" ;;
+        *source-archive*) printf '%s\n' "${INPLACEX_TEST_SOURCE_SHA:-$(printf 'c%.0s' {1..64})}" ;;
         *) exit 67 ;;
     esac
 fi
 MOCK
 chmod +x "$mock_directory/docker"
 export MOCK_DOCKER_LOG="$mock_log"
-export PATH="$mock_directory:$PATH"
+export INPLACEX_RELEASE_ISOLATED_CI_ACK=acknowledge-inplacex-isolated-release-ci
+export INPLACEX_RELEASE_TEST_DOCKER_BIN="$mock_directory/docker"
+export INPLACEX_TEST_DOCKER_LOG="$mock_log"
+RELEASE_DOCKER_BIN="$mock_directory/docker"
 image="registry.example/app@sha256:$(printf 'a%.0s' {1..64})"
 git_sha="$(printf 'b%.0s' {1..40})"
 source_sha="$(printf 'c%.0s' {1..64})"
+export BUILDX_CONFIG="$temporary_directory/hostile-buildx-state"
+export EXPERIMENTAL_BUILDKIT_SOURCE_POLICY="$temporary_directory/hostile-source-policy.json"
+export DOCKER_DEFAULT_PLATFORM=linux/arm64
+export DOCKER_CLI_PLUGIN_EXTRA_DIRS="$temporary_directory/hostile-plugins"
 release_verify_pulled_image "$image" release-1 "$git_sha" "$source_sha"
+unset BUILDX_CONFIG EXPERIMENTAL_BUILDKIT_SOURCE_POLICY DOCKER_DEFAULT_PLATFORM
+unset DOCKER_CLI_PLUGIN_EXTRA_DIRS
 grep -Fxq "pull $image" "$mock_log"
-export MOCK_RELEASE_ID=hostile-label
+export INPLACEX_TEST_RELEASE_ID=hostile-label
 expect_status 75 release_verify_pulled_image "$image" release-1 "$git_sha" "$source_sha"
+unset INPLACEX_TEST_RELEASE_ID
 
-python3 - "$production_directory/deploy-backend.sh" "$production_directory/rollback-backend.sh" <<'PY'
+mock_backend_id="$(printf 'd%.0s' {1..64})"
+mock_mutation_log="$temporary_directory/state-mutations.log"
+mock_gate="$temporary_directory/maintenance.flag"
+mock_journal="$temporary_directory/release-transaction.env"
+mock_compose() {
+    printf 'compose %s\n' "$*" >> "$MOCK_DOCKER_LOG"
+    if [[ "$1 $2 $3 $4" == "ps --all -q backend" ]]; then
+        printf '%s\n' "${MOCK_BACKEND_IDS:-$mock_backend_id}"
+        return 0
+    fi
+    if [[ "$1 $2 $3 $4" == "stop --timeout 30 backend" ]]; then
+        return "${MOCK_COMPOSE_STOP_STATUS:-0}"
+    fi
+    return 67
+}
+guarded_database_mutation() {
+    release_stop_backend_fail_closed mock_compose || return 1
+    printf '%s\n' pg_dump pg_restore 'DROP DATABASE' >> "$mock_mutation_log"
+}
+guarded_geoip_mutation() {
+    release_stop_backend_fail_closed mock_compose || return 1
+    printf '%s\n' MMDB_SWAP >> "$mock_mutation_log"
+}
+
+: > "$mock_gate"
+: > "$mock_journal"
+export MOCK_COMPOSE_STOP_STATUS=42 INPLACEX_TEST_BACKEND_STATE=false
+RELEASE_BACKEND_STOP_PROOF_FAILED=false
+set +e
+guarded_database_mutation >/dev/null 2>&1
+guard_status=$?
+set -e
+[[ "$guard_status" -eq 1 && "$RELEASE_BACKEND_STOP_PROOF_FAILED" == "true" ]]
+[[ -f "$mock_gate" && -f "$mock_journal" && ! -e "$mock_mutation_log" ]]
+export MOCK_COMPOSE_STOP_STATUS=0 INPLACEX_TEST_BACKEND_STATE=true
+RELEASE_BACKEND_STOP_PROOF_FAILED=false
+set +e
+guarded_geoip_mutation >/dev/null 2>&1
+guard_status=$?
+set -e
+[[ "$guard_status" -eq 1 && "$RELEASE_BACKEND_STOP_PROOF_FAILED" == "true" ]]
+[[ -f "$mock_gate" && -f "$mock_journal" && ! -e "$mock_mutation_log" ]]
+MOCK_BACKEND_IDS=$'dddddddddddd\neeeeeeeeeeee'
+export MOCK_COMPOSE_STOP_STATUS=0 INPLACEX_TEST_BACKEND_STATE=false
+RELEASE_BACKEND_STOP_PROOF_FAILED=false
+set +e
+guarded_database_mutation >/dev/null 2>&1
+guard_status=$?
+set -e
+[[ "$guard_status" -eq 1 && "$RELEASE_BACKEND_STOP_PROOF_FAILED" == "true" ]]
+[[ -f "$mock_gate" && -f "$mock_journal" && ! -e "$mock_mutation_log" ]]
+unset MOCK_BACKEND_IDS
+export INPLACEX_TEST_BACKEND_STATE=false
+RELEASE_BACKEND_STOP_PROOF_FAILED=false
+guarded_database_mutation
+grep -Fxq pg_dump "$mock_mutation_log"
+
+entrypoint_probe_log="$temporary_directory/entrypoint-probe.log"
+cat > "$mock_directory/git" <<'MOCK'
+#!/usr/bin/env bash
+printf 'hostile git\n' >> "$ENTRYPOINT_PROBE_LOG"
+exit 70
+MOCK
+chmod +x "$mock_directory/git"
+export ENTRYPOINT_PROBE_LOG="$entrypoint_probe_log"
+if [[ -z "${WSL_DISTRO_NAME:-}" ]]; then
+    expect_status 77 env DOCKER_HOST=tcp://127.0.0.1:2375 \
+        bash "$production_directory/build-backend-release.sh"
+    expect_status 77 env BASH_ENV=/dev/null \
+        bash "$production_directory/build-backend-release.sh"
+    expect_status 77 env DOCKER_CONFIG="$temporary_directory/ambient-docker-config" \
+        bash --noprofile --norc -c 'builtin source "$1"' _ \
+            "$production_directory/release-shell-bootstrap.sh"
+    for hostile_docker_environment in \
+        BUILDX_CONFIG EXPERIMENTAL_BUILDKIT_SOURCE_POLICY DOCKER_DEFAULT_PLATFORM \
+        DOCKER_CLI_PLUGIN_EXTRA_DIRS; do
+        expect_status 77 env "$hostile_docker_environment=$temporary_directory/hostile-value" \
+            bash --noprofile --norc -c 'builtin source "$1"' _ \
+                "$production_directory/release-shell-bootstrap.sh"
+    done
+    expect_status 77 env LD_PRELOAD=/definitely/missing/inplacex-hostile.so \
+        bash --noprofile --norc -c 'builtin source "$1"' _ \
+            "$production_directory/release-shell-bootstrap.sh"
+    env PATH="$mock_directory:$PATH" \
+        bash --noprofile --norc -c 'builtin source "$1"' _ \
+            "$production_directory/release-shell-bootstrap.sh"
+fi
+[[ ! -e "$entrypoint_probe_log" ]] || {
+    echo "Release bootstrap executed a hostile PATH command." >&2
+    exit 67
+}
+
+filter_repository="$temporary_directory/hostile-filter-repository"
+filter_home="$temporary_directory/hostile-filter-home"
+filter_archive="$temporary_directory/hostile-filter.tar"
+filter_marker="$temporary_directory/hostile-filter.executed"
+filter_command="$temporary_directory/hostile-filter.sh"
+mkdir "$filter_repository" "$filter_home"
+cat > "$filter_command" <<MOCK
+#!/usr/bin/env bash
+touch "$filter_marker"
+cat
+MOCK
+chmod +x "$filter_command"
+/usr/bin/git -C "$filter_repository" init --initial-branch=fixture >/dev/null
+printf 'payload.txt filter=hostile\n' > "$filter_repository/.gitattributes"
+printf 'immutable-payload\n' > "$filter_repository/payload.txt"
+/usr/bin/git -C "$filter_repository" config filter.hostile.clean "$filter_command"
+/usr/bin/git -C "$filter_repository" add --all
+/usr/bin/git -C "$filter_repository" \
+    -c user.name=InplaceX-CI -c user.email=ci@inplacex.invalid \
+    commit --message='hostile filter fixture' >/dev/null
+rm -f -- "$filter_marker"
+filter_commit="$(/usr/bin/git -C "$filter_repository" rev-parse HEAD)"
+python3 -I "$production_directory/create-source-archive.py" \
+    "$filter_repository" "$filter_commit" "$filter_archive" "$filter_home"
+[[ ! -e "$filter_marker" ]]
+[[ "$(tar -xOf "$filter_archive" payload.txt)" == "immutable-payload" ]]
+printf 'payload.txt filter=hostile\n' > "$filter_repository/.git/info/attributes"
+expect_status 1 python3 -I "$production_directory/create-source-archive.py" \
+    "$filter_repository" "$filter_commit" "$temporary_directory/rejected-filter.tar" "$filter_home"
+[[ ! -e "$filter_marker" ]]
+
+python3 -I - \
+    "$production_directory/deploy-backend.sh" \
+    "$production_directory/rollback-backend.sh" \
+    "$production_directory/rotate-geoip.sh" \
+    "$production_directory/build-backend-release.sh" \
+    "$production_directory/release-shell-bootstrap.sh" \
+    "$repository_root/scripts/ci/test_backend_production_runtime.sh" <<'PY'
 import pathlib
 import sys
 
 deploy = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
 rollback = pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
+geoip = pathlib.Path(sys.argv[3]).read_text(encoding="utf-8")
+builder = pathlib.Path(sys.argv[4]).read_text(encoding="utf-8")
+bootstrap = pathlib.Path(sys.argv[5]).read_text(encoding="utf-8")
+runtime_test = pathlib.Path(sys.argv[6]).read_text(encoding="utf-8")
+common = pathlib.Path(sys.argv[1]).with_name('release-common.sh').read_text(encoding='utf-8')
 
 def ordered(source, first, second):
-    if source.find(first) < 0 or source.find(second) < 0 or source.find(first) >= source.find(second):
+    first_index = source.find(first)
+    second_index = source.find(second, first_index + len(first)) if first_index >= 0 else -1
+    if first_index < 0 or second_index < 0:
         raise SystemExit(f"Expected ordering not preserved: {first!r} before {second!r}")
 
 ordered(deploy, 'release_verify_pulled_image "$INPLACEX_BACKEND_IMAGE"', 'release_enable_maintenance "$deployment_id"')
 ordered(deploy, 'release_verify_pulled_image "$previous_image"', 'release_enable_maintenance "$deployment_id"')
 ordered(deploy, 'write_journal intent', 'release_enable_maintenance "$deployment_id"')
-ordered(deploy, 'compose_command stop --timeout 30 backend', 'exec pg_dump --format=custom')
+ordered(deploy, 'release_enable_maintenance "$deployment_id"', 'release_stop_backend_fail_closed compose_command')
+ordered(deploy, 'release_stop_backend_fail_closed compose_command', 'exec pg_dump --format=custom')
+ordered(deploy, 'release_fault_inject during_backup_staging', 'exec pg_dump --format=custom')
+ordered(deploy, '> "$backup_staging_path"', 'mv -- "$backup_staging_path" "$backup_path"')
+ordered(deploy, 'write_journal activation_committed', 'release_disable_maintenance')
+ordered(deploy, 'release_write_activation_record', 'release_fault_inject after_activation')
+ordered(deploy, 'release_fault_inject deploy_after_gates_removed', 'release_remove_durable_file "$RELEASE_TRANSACTION_JOURNAL"')
 ordered(rollback, '"$ROLLBACK_PREVIOUS_IMAGE" "$ROLLBACK_PREVIOUS_RELEASE_ID"', 'release_enable_maintenance "$ROLLBACK_DEPLOYMENT_ID"')
 ordered(rollback, 'write_journal intent', 'release_enable_maintenance "$ROLLBACK_DEPLOYMENT_ID"')
 ordered(rollback, 'release_remove_durable_file "$RELEASE_VERIFIED_ACTIVATION_FILE"', 'restore_database "$ROLLBACK_BACKUP_PATH"')
-for source in (deploy, rollback):
+ordered(rollback, 'release_enable_maintenance "$ROLLBACK_DEPLOYMENT_ID"', 'release_stop_backend_fail_closed compose_command')
+ordered(rollback, 'release_stop_backend_fail_closed compose_command', 'exec pg_dump --format=custom')
+ordered(rollback, '> "$emergency_backup_staging"', 'mv -- "$emergency_backup_staging" "$emergency_backup"')
+ordered(rollback, 'RELEASE_POINTER_STATE=rolled_back', 'release_disable_maintenance')
+ordered(rollback, 'release_write_activation_record', 'release_fault_inject rollback_after_verified_activation')
+ordered(rollback, 'release_disable_maintenance', 'release_remove_durable_file "$RELEASE_TRANSACTION_JOURNAL"')
+ordered(geoip, 'write_journal candidate_ready', 'release_enable_maintenance "$deployment_id"')
+ordered(geoip, 'release_enable_maintenance "$deployment_id"', 'release_stop_backend_fail_closed compose_command')
+ordered(geoip, 'release_stop_backend_fail_closed compose_command', 'mv -- "$candidate_path" "$INPLACEX_GEOIP_DB_PATH"')
+ordered(geoip, 'write_journal activation_committed', 'release_disable_maintenance')
+ordered(geoip, 'release_write_activation_record', 'release_fault_inject geoip_after_verified_activation')
+ordered(geoip, 'release_disable_maintenance', 'release_remove_durable_file "$RELEASE_TRANSACTION_JOURNAL"')
+if '> "$backup_path"' in deploy or '> "$emergency_backup"' in rollback:
+    raise SystemExit("PostgreSQL backups must never stream directly into their durable final path")
+if 'information_schema.columns' not in deploy:
+    raise SystemExit("Legacy checksum preflight must feature-detect the checksum column")
+if 'GeoIP database differs from the durable verified activation; use rotate-geoip.sh' not in deploy:
+    raise SystemExit("Deploy must reject an unmanaged GeoIP fingerprint change")
+if 'RELEASE_TRANSACTION_PREVIOUS_PUBLIC_KEY_SHA256' not in deploy:
+    raise SystemExit("Deploy must preserve the previous public-key fingerprint for graceful key rotation")
+if 'INPLACEX_ACTIVATION_DATABASE_PASSWORD_SHA256' not in pathlib.Path(sys.argv[1]).with_name('release-common.sh').read_text(encoding='utf-8'):
+    raise SystemExit("Durable activation must bind the database-password fingerprint")
+if 'RELEASE_TRANSACTION_DATABASE_PASSWORD_SHA256' not in deploy:
+    raise SystemExit("Deploy journal must bind the database-password fingerprint")
+if 'ROLLBACK_PREVIOUS_ACTIVATION_VERSION' not in deploy or 'ROLLBACK_PREVIOUS_ACTIVATION_VERSION' not in rollback:
+    raise SystemExit("Rollback receipts must mark the activation v1-to-v2 compatibility boundary")
+if 'ROLLBACK_RECEIPT_VERSION=3' not in deploy or 'ROLLBACK_RECEIPT_VERSION" == "3"' not in rollback:
+    raise SystemExit("The compatibility-bound rollback receipt schema must be version 3")
+for field in (
+    'RELEASE_TRANSACTION_ACTIVATION_V1_MIGRATION_ACKNOWLEDGED',
+    'RELEASE_TRANSACTION_ACTIVATION_V1_MIGRATION_COMPLETED',
+):
+    if field not in deploy:
+        raise SystemExit(f"Activation v1 migration recovery must journal {field}")
+if 'release_verify_v1_activation_migration_source' not in deploy:
+    raise SystemExit("Deploy must prove the exact running activation v1 source")
+if 'activation_v1_after_v2_record' not in deploy:
+    raise SystemExit("Activation v1 migration needs a crash boundary after the atomic v2 record")
+if '"$VERIFIED_PUBLIC_KEY_SHA256" == "$public_key_sha256"' not in deploy:
+    raise SystemExit("Same-release fast path must reject an unactivated public-key rotation")
+for field in (
+    'RELEASE_TRANSACTION_LEGACY_CHECKSUM_ACKNOWLEDGED',
+    'RELEASE_TRANSACTION_LEGACY_CHECKSUM_COMPLETED',
+):
+    if field not in deploy:
+        raise SystemExit(f"Legacy checksum recovery must journal {field}")
+ordered(
+    deploy,
+    'legacy_checksum_completed=true\n        write_journal "$transaction_phase"',
+    'release_fault_inject after_legacy_checksum_completed',
+)
+ordered(
+    rollback,
+    'compose_command config --quiet',
+    'Rollback to $ROLLBACK_PREVIOUS_RELEASE_ID was already durably finalized.',
+)
+if '"$geoip_sha256" == "$ROLLBACK_GEOIP_SHA256"' in rollback:
+    raise SystemExit("Rollback must preserve the current transactionally verified GeoIP artifact")
+for source in (deploy, rollback, geoip):
     if 'source "$env_file"' in source or 'source "$receipt_file"' in source:
         raise SystemExit("Production data file must never be sourced")
     if '--wait-timeout' not in source:
         raise SystemExit("Production Compose waits must be bounded")
     if 'release_fault_inject' not in source or 'RELEASE_TRANSACTION_JOURNAL' not in source:
         raise SystemExit("Production mutation must retain durable journal and fault-injection hooks")
+    if 'release_running_backend_matches_verified_activation' not in source:
+        raise SystemExit("Production resume must drain only an exact durable running activation")
+    if 'compose_command stop --timeout 30 backend' in source:
+        raise SystemExit("Production state mutation must not bypass the common stop-and-inspect proof")
+    if 'release_stop_backend_fail_closed compose_command' not in source:
+        raise SystemExit("Production state mutation must use the common stop-and-inspect proof")
+    if 'release_prepare_docker_control_plane' not in source or 'release_docker compose' not in source:
+        raise SystemExit("Production state mutation must pin and verify its Docker control plane")
+
+for required in (
+    '/usr/bin/git --no-replace-objects -c core.fsmonitor=false -c core.hooksPath=/dev/null',
+    'GIT_CONFIG_GLOBAL=/dev/null',
+    'GIT_CONFIG_NOSYSTEM=1',
+    '"$repository_root/.git/HEAD"',
+    '"755|$invoked_builder_path"',
+    'rev-parse --path-format=absolute --git-common-dir',
+    'find "$repository_root/.git" -xdev',
+    'rev-parse --show-toplevel',
+    'verify_release_toolset',
+    'cat-file blob "$git_sha:$tool_path"',
+    '/proc/self/fd/$opened_fd',
+    'regular file|0|0|$working_mode|1|',
+    'create-source-archive.py',
+    '--registry-auth-config',
+    '--anonymous-loopback',
+    'release_normalize_registry_auth_config',
+    '! -e "$manifest_path" && ! -L "$manifest_path"',
+    'release_publish_new_file_no_replace "$temporary_manifest" "$manifest_path"',
+    '--file "$archive_dockerfile"',
+    '--push - < "$source_archive"',
+    'release_prepare_docker_control_plane buildx "$temporary_directory/docker-cli"',
+    'attestationManifestDigests',
+    '"schemaVersion": 2',
+):
+    if required not in builder:
+        raise SystemExit(f"Release builder lost immutable-source binding: {required}")
+if (
+    'git archive' in builder
+    or 'status --porcelain' in builder
+    or '--file "$dockerfile"' in builder
+):
+    raise SystemExit("Release builder must not mix a mutable Dockerfile with an archive context")
+for required in (
+    'BASH_ENV', 'ENV', 'BASH_FUNC_', 'LD_PRELOAD', 'DOCKER_HOST', 'DOCKER_CONTEXT',
+    'BUILDX_CONFIG', 'EXPERIMENTAL_BUILDKIT_SOURCE_POLICY', 'DOCKER_DEFAULT_PLATFORM',
+    'DOCKER_CLI_PLUGIN_EXTRA_DIRS', 'PATH=/usr/sbin:/usr/bin:/sbin:/bin',
+):
+    if required not in bootstrap:
+        raise SystemExit(f"Release shell bootstrap lost hostile-environment guard: {required}")
+if 'runtime-activation-v1.patch' not in runtime_test or 'patch --directory="$legacy_source_root"' not in runtime_test:
+    raise SystemExit("Destructive runtime test must build the immutable activation-v1 fixture")
+if 'install -m 0644 "$repository_root/$activation_guard"' in runtime_test:
+    raise SystemExit("Activation-v1 fixture must not copy mutable checkout source")
+if '"$production_directory/build-backend-release.sh"' not in runtime_test:
+    raise SystemExit("Destructive runtime CI must invoke the real production release builder")
+for required in (
+    'REGISTRY_AUTH=htpasswd',
+    '--registry-auth-config "$registry_auth_config"',
+    'Authenticated registry credential leaked into release evidence or logs.',
+    'schema_v1_environment',
+):
+    if required not in runtime_test:
+        raise SystemExit(f"Destructive runtime CI lost production release coverage: {required}")
+if 'docker build \\' in runtime_test or 'docker push "$image_tag"' in runtime_test:
+    raise SystemExit("Destructive runtime CI must not hand-build release images")
+if 'tar -xf "$current_source_archive"' not in runtime_test:
+    raise SystemExit("Activation-v1 fixture must not infer v1 behavior from HEAD")
+if 'git archive' in runtime_test:
+    raise SystemExit("Destructive CI source fixtures must bypass Git attributes and filters")
+for required in (
+    'release_normalize_registry_auth_config()',
+    'set(value) != {"auths"}',
+    'set(auths) != {authority}',
+    'set(entry) != {"auth"}',
+    'regular file 0 0 600 1',
+    'type(schema_version) is not int',
+    '/usr/bin/env -i',
+    'renameat2',
+):
+    if required not in common:
+        raise SystemExit(f"Protected registry/manifest validation is missing: {required}")
+for required in (
+    '--no-local --no-hardlinks --no-checkout',
+    'assert_builder_rejects_untrusted_source',
+    'writable-parent writable-parent',
+    'symlink-tool symlink-tool',
+    'hardlink-tool hardlink-tool',
+    'assert_builder_rejects_manifest_target',
+    'assert_builder_rejects_registry_auth',
+    'ambient-helpers',
+    'wrong-host',
+    'wrong-mode',
+    'schema_bool_manifest',
+):
+    if required not in runtime_test:
+        raise SystemExit(f"Destructive CI lost protected-builder source coverage: {required}")
+for required in (
+    'RELEASE_DOCKER_HOME', 'RELEASE_DOCKER_CONFIG', 'DockerRootDir',
+    '.ClientInfo.Plugins', 'RELEASE_DOCKER_PLUGIN_IDENTITY',
+):
+    if required not in pathlib.Path(sys.argv[1]).with_name('release-common.sh').read_text(encoding='utf-8'):
+        raise SystemExit(f"Docker control-plane identity contract is missing: {required}")
 PY
 
 echo "InplaceX release helper hostile tests passed."

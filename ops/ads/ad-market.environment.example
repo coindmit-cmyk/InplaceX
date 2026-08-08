@@ -1,4 +1,6 @@
-# Safe production contract for a backend process behind nginx on loopback.
+# Legacy standalone-service contract. The production Compose GeoIP timer reads
+# /etc/inplacex-online/backend.env and does not load this file.
+# Safe contract for a backend process behind nginx on loopback.
 # The MMDB file is public geolocation data, not a secret.
 INPLACEX_AD_MARKET_REQUIRED=true
 INPLACEX_AD_MARKET_DB_PATH=/var/lib/inplacex/geoip/dbip-country-lite.mmdb

@@ -7,8 +7,6 @@ Future responsibilities, not release routes yet:
 
 - player profile sync
 - cloud save
-- PvP matchmaking
-- server-side bot player runtime
 - rankings and seasonal progression
 - entitlement validation for ads, Pro, and Pro+
 

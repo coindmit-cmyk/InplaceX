@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.online
 
+import com.mirkori.inplacex.backend.app.RuntimeDrainController
 import com.mirkori.inplacex.backend.auth.JwtAccessTokenVerifier
 import com.mirkori.inplacex.backend.auth.JwtVerificationPolicy
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
@@ -20,28 +21,29 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
-import io.ktor.websocket.Frame
 import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.util.UUID
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.coroutines.withTimeout
 import org.h2.jdbcx.JdbcDataSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -285,6 +287,53 @@ class OnlineRoutesTest {
             val replayGap = json((incoming.receive() as Frame.Text).readText())
             assertEquals("session.replayGap", replayGap.getValue("type").jsonPrimitive.content)
             assertEquals(missingCursorRequestId, replayGap.getValue("requestId").jsonPrimitive.content)
+        }
+    }
+
+    @Test
+    fun `drain marker actively closes an established WebSocket`() = testApplication {
+        val temporaryDirectory = Files.createTempDirectory("inplacex-ws-drain-")
+        val drainMarker = temporaryDirectory.resolve("drain.flag")
+        try {
+            val drainController = RuntimeDrainController.fromEnvironment(
+                mapOf(RuntimeDrainController.DrainMarkerPathEnvironmentKey to drainMarker.toString()),
+                production = true,
+            )
+            val serviceClock = RouteMutableClock(now)
+            val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+            application {
+                configureOnlineRoutes(
+                    verifier = verifier,
+                    service = service,
+                    drainController = drainController,
+                )
+            }
+            val sessionId = createMatchedTicket(playerToken, serviceClock)
+                .getValue("sessionId").jsonPrimitive.content
+            val wsClient = createClient { install(WebSockets) }
+
+            wsClient.webSocket(
+                urlString = "/api/v1/ws/sessions/$sessionId",
+                request = {
+                    bearer(playerToken)
+                    header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+                },
+            ) {
+                send(Frame.Text(webSocketControl(sessionId, UUID.randomUUID().toString(), "session.subscribe", "{}")))
+                assertEquals(
+                    "session.snapshot",
+                    json((incoming.receive() as Frame.Text).readText()).getValue("type").jsonPrimitive.content,
+                )
+
+                Files.writeString(drainMarker, "deployment-id\n")
+
+                val reason = withTimeout(3_000) { closeReason.await() }
+                assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, reason?.code)
+                assertEquals("service_draining", reason?.message)
+            }
+        } finally {
+            Files.deleteIfExists(drainMarker)
+            Files.deleteIfExists(temporaryDirectory)
         }
     }
 

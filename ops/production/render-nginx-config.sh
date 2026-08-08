@@ -1,5 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -p
 set -euo pipefail
+
+script_directory="$(builtin cd -- "${BASH_SOURCE[0]%/*}" && builtin pwd -P)"
+readonly script_directory
+# shellcheck source=ops/production/release-shell-bootstrap.sh
+builtin source "$script_directory/release-shell-bootstrap.sh"
 
 if [[ $# -ne 3 ]]; then
     echo "Usage: $0 <loopback-port> <operator-network-cidr> <absolute-output-path>" >&2
@@ -9,7 +14,6 @@ fi
 loopback_port="$1"
 operator_network_cidr="$2"
 output_path="$3"
-script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 template="$script_directory/nginx-inplacex-online.locations.conf.template"
 
 if [[ ! "$loopback_port" =~ ^[0-9]+$ ]] ||
@@ -21,7 +25,7 @@ command -v python3 >/dev/null || {
     echo "Required command is missing: python3" >&2
     exit 69
 }
-if ! python3 - "$operator_network_cidr" <<'PY'
+if ! python3 -I - "$operator_network_cidr" <<'PY'
 import ipaddress
 import sys
 

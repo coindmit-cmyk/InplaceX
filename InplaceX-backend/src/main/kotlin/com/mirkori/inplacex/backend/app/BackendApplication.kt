@@ -128,6 +128,7 @@ fun Application.backendModule(
                     val players = JdbcPlayerRepository(databaseHandle.dataSource)
                     OnlinePlayerProvisioner(players::ensurePlatformPlayer)
                 } ?: OnlinePlayerProvisioner { },
+                drainController = drainController,
             )
         }
     }
