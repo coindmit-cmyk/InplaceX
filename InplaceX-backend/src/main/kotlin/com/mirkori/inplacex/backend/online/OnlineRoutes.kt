@@ -292,11 +292,16 @@ fun Application.configureOnlineRoutes(
             path = "/api/v1/ws/sessions/{sessionId}",
             protocol = "inplacex.online.v1",
         ) {
+            val remoteIdentity = call.remoteIdentity()
+            val authenticationPreCheck = abuseProtector.checkAuthenticationFailureBudget(remoteIdentity)
+            if (authenticationPreCheck is OnlineAbuseDecision.Rejected) {
+                close(CloseReason(CloseReason.Codes.TRY_AGAIN_LATER, "rate_limited"))
+                return@webSocket
+            }
             val authentication = verifier.authenticate(call.request.headers[HttpHeaders.Authorization])
             val principal = (authentication as? AccessTokenAuthentication.Accepted)?.principal
             val sessionId = call.parameters["sessionId"]?.takeIf(String::isCanonicalUuid)
             if (principal == null) {
-                val remoteIdentity = call.remoteIdentity()
                 if (
                     abuseProtector.acquireAuthenticationAttempt(remoteIdentity) is
                     OnlineAbuseDecision.Rejected
@@ -1090,6 +1095,14 @@ private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
     abuseProtector: OnlineAbuseProtector,
     operation: OnlineOperation,
 ): AuthenticatedPrincipal? {
+    val remoteIdentity = remoteIdentity()
+    when (val decision = abuseProtector.checkAuthenticationFailureBudget(remoteIdentity)) {
+        OnlineAbuseDecision.Allowed -> Unit
+        is OnlineAbuseDecision.Rejected -> {
+            respondRateLimited(decision.retryAfterSeconds)
+            return null
+        }
+    }
     return when (val result = verifier.authenticate(request.headers[HttpHeaders.Authorization])) {
         is AccessTokenAuthentication.Accepted -> {
             when (val decision = abuseProtector.acquire(result.principal.playerId, operation)) {
@@ -1103,7 +1116,6 @@ private suspend fun ApplicationCall.authenticatedPrincipalOrRespond(
             }
         }
         is AccessTokenAuthentication.Rejected -> {
-            val remoteIdentity = remoteIdentity()
             when (val authenticationDecision = abuseProtector.acquireAuthenticationAttempt(remoteIdentity)) {
                 OnlineAbuseDecision.Allowed -> {
                     when (val invalidDecision = abuseProtector.acquireInvalidAuthentication(remoteIdentity)) {

@@ -12,7 +12,7 @@ umask 077
     exit 77
 }
 
-for command_name in base64 cp curl docker find git htpasswd ln nginx openssl patch python3 rm sha256sum ss stat sync tar timeout; do
+for command_name in base64 cmp cp curl docker find git htpasswd ln nginx openssl patch python3 rm sha256sum ss stat sync tar timeout; do
     command -v "$command_name" >/dev/null || {
         echo "Missing integration-test command: $command_name" >&2
         exit 69
@@ -964,6 +964,55 @@ assert_backend_fails_closed() {
     done
 }
 
+backend_fail_closed_log_count() {
+    docker logs "$1" 2>&1 |
+        grep -Fc 'InplaceX activation authorization expired; terminating fail-closed' || true
+}
+
+wait_for_backend_restart_loop() {
+    local container_id="$1"
+    local initial_restart_count="$2"
+    local initial_fail_closed_log_count="$3"
+    local drift_label="$4"
+    local fail_closed_log_count restart_count
+    [[ "$initial_restart_count" =~ ^[0-9]+$ && "$initial_fail_closed_log_count" =~ ^[0-9]+$ ]]
+    for _ in {1..30}; do
+        restart_count="$(docker inspect --format '{{.RestartCount}}' "$container_id" 2>/dev/null || true)"
+        if [[ "$restart_count" =~ ^[0-9]+$ ]] &&
+            (( restart_count >= initial_restart_count + 2 )) &&
+            ! curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null 2>&1; then
+            fail_closed_log_count="$(backend_fail_closed_log_count "$container_id")"
+            if [[ "$fail_closed_log_count" =~ ^[0-9]+$ ]] &&
+                (( fail_closed_log_count > initial_fail_closed_log_count )); then
+                return 0
+            fi
+        fi
+        sleep 1
+    done
+    echo "$drift_label drift did not force the backend into a fail-closed restart loop." >&2
+    docker inspect --format \
+        'status={{.State.Status}} restarting={{.State.Restarting}} restartCount={{.RestartCount}}' \
+        "$container_id" >&2 || true
+    return 1
+}
+
+wait_for_backend_ready_after_restore() {
+    local container_id="$1"
+    local drift_label="$2"
+    for _ in {1..90}; do
+        if [[ "$(docker inspect --format '{{.State.Running}}' "$container_id" 2>/dev/null || true)" == "true" ]] &&
+            curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    echo "$drift_label bytes were restored, but the backend did not become ready." >&2
+    docker inspect --format \
+        'status={{.State.Status}} restarting={{.State.Restarting}} restartCount={{.RestartCount}}' \
+        "$container_id" >&2 || true
+    return 1
+}
+
 run_with_hostile_backend_stop() {
     local stop_mode="$1"
     local hostile_status
@@ -1155,9 +1204,15 @@ run_with_hostile_docker_control \
 [[ "$(stat -c '%u %g %a' -- /run/lock/mirkori-games/inplacex-online-release.lock)" == "0 0 600" ]]
 [[ ! -e "$release_state_directory/release-transaction.env" ]]
 
+drift_backend_container="$(docker compose --env-file "$env_file" \
+    --project-directory "$repository_root" -f "$compose_file" ps -q backend)"
+[[ -n "$drift_backend_container" ]]
 database_password_file="$secret_directory/database-password.txt"
 database_password_original="$test_root/database-password.original"
-cp -- "$database_password_file" "$database_password_original"
+cp --preserve=mode,ownership -- "$database_password_file" "$database_password_original"
+database_password_restart_count="$(docker inspect --format '{{.RestartCount}}' \
+    "$drift_backend_container")"
+database_password_fail_closed_log_count="$(backend_fail_closed_log_count "$drift_backend_container")"
 printf 'unmanaged-database-password-drift\n' > "$database_password_file"
 chown root:"$secret_gid" "$database_password_file"
 chmod 0640 "$database_password_file"
@@ -1168,13 +1223,20 @@ set -e
 [[ "$database_password_drift_status" -ne 0 ]]
 [[ ! -e "$release_state_directory/release-transaction.env" ]]
 [[ ! -e /run/inplacex-online/maintenance.flag && ! -e /run/inplacex-online/drain.flag ]]
-cp -- "$database_password_original" "$database_password_file"
-chown root:"$secret_gid" "$database_password_file"
-chmod 0640 "$database_password_file"
+wait_for_backend_restart_loop \
+    "$drift_backend_container" "$database_password_restart_count" \
+    "$database_password_fail_closed_log_count" "Database password"
+cp --preserve=mode,ownership -- "$database_password_original" "$database_password_file"
 sync -f "$database_password_file"
+cmp --silent "$database_password_original" "$database_password_file"
+[[ "$(stat -c '%u %g %a' -- "$database_password_file")" == \
+    "$(stat -c '%u %g %a' -- "$database_password_original")" ]]
+wait_for_backend_ready_after_restore "$drift_backend_container" "Database password"
 
 geoip_original="$test_root/geoip-original.mmdb"
-cp -- "$geoip_file" "$geoip_original"
+cp --preserve=mode,ownership -- "$geoip_file" "$geoip_original"
+geoip_restart_count="$(docker inspect --format '{{.RestartCount}}' "$drift_backend_container")"
+geoip_fail_closed_log_count="$(backend_fail_closed_log_count "$drift_backend_container")"
 printf 'unmanaged-geoip-drift\n' > "$geoip_file"
 chown root:root "$geoip_file"
 chmod 0644 "$geoip_file"
@@ -1185,11 +1247,14 @@ set -e
 [[ "$geoip_drift_status" -ne 0 ]]
 [[ ! -e "$release_state_directory/release-transaction.env" ]]
 [[ ! -e /run/inplacex-online/maintenance.flag && ! -e /run/inplacex-online/drain.flag ]]
-curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null
-cp -- "$geoip_original" "$geoip_file"
-chown root:root "$geoip_file"
-chmod 0644 "$geoip_file"
+wait_for_backend_restart_loop \
+    "$drift_backend_container" "$geoip_restart_count" "$geoip_fail_closed_log_count" "GeoIP"
+cp --preserve=mode,ownership -- "$geoip_original" "$geoip_file"
 sync -f "$geoip_file"
+cmp --silent "$geoip_original" "$geoip_file"
+[[ "$(stat -c '%u %g %a' -- "$geoip_file")" == \
+    "$(stat -c '%u %g %a' -- "$geoip_original")" ]]
+wait_for_backend_ready_after_restore "$drift_backend_container" "GeoIP"
 
 "${nginx_curl[@]}" --fail --silent "$nginx_origin/inplacex/ready" >/dev/null
 metrics="$(curl --fail --silent "http://127.0.0.1:$backend_port/metrics")"

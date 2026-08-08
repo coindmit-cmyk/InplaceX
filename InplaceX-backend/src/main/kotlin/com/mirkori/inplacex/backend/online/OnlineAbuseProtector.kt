@@ -46,15 +46,34 @@ class OnlineAbuseProtector(
             limit = requireNotNull(operationLimits[operation]),
         )
 
+    /** Checks both failed-auth windows without charging a potentially valid token. */
+    fun checkAuthenticationFailureBudget(remoteIdentity: String): OnlineAbuseDecision = synchronized(lock) {
+        val now = clock.millis()
+        evictExpiredWindows(now)
+        val attemptDecision = checkWindow(
+            key = authenticationAttemptKey(remoteIdentity),
+            limit = authenticationAttemptLimit,
+            now = now,
+        )
+        if (attemptDecision is OnlineAbuseDecision.Rejected) {
+            return@synchronized attemptDecision
+        }
+        checkWindow(
+            key = invalidAuthenticationKey(remoteIdentity),
+            limit = invalidAuthenticationLimit,
+            now = now,
+        )
+    }
+
     fun acquireAuthenticationAttempt(remoteIdentity: String): OnlineAbuseDecision =
         acquireWindow(
-            key = RateLimitKey("auth-attempt", remoteIdentity.take(MaximumRemoteIdentityCharacters), "verify"),
+            key = authenticationAttemptKey(remoteIdentity),
             limit = authenticationAttemptLimit,
         )
 
     fun acquireInvalidAuthentication(remoteIdentity: String): OnlineAbuseDecision =
         acquireWindow(
-            key = RateLimitKey("invalid-auth", remoteIdentity.take(MaximumRemoteIdentityCharacters), "verify"),
+            key = invalidAuthenticationKey(remoteIdentity),
             limit = invalidAuthenticationLimit,
         )
 
@@ -94,6 +113,25 @@ class OnlineAbuseProtector(
         current.requests += 1
         OnlineAbuseDecision.Allowed
     }
+
+    private fun checkWindow(key: RateLimitKey, limit: Int, now: Long): OnlineAbuseDecision {
+        val current = windows[key]
+            ?: return if (windows.size >= maximumTrackedKeys) {
+                OnlineAbuseDecision.Rejected(DefaultRetryAfterSeconds)
+            } else {
+                OnlineAbuseDecision.Allowed
+            }
+        if (current.requests < limit) return OnlineAbuseDecision.Allowed
+        val remainingMillis = windowMillis - (now - current.startedAtMillis)
+        val retryAfterSeconds = max(1L, (remainingMillis + 999L) / 1_000L)
+        return OnlineAbuseDecision.Rejected(retryAfterSeconds)
+    }
+
+    private fun authenticationAttemptKey(remoteIdentity: String): RateLimitKey =
+        RateLimitKey("auth-attempt", remoteIdentity.take(MaximumRemoteIdentityCharacters), "verify")
+
+    private fun invalidAuthenticationKey(remoteIdentity: String): RateLimitKey =
+        RateLimitKey("invalid-auth", remoteIdentity.take(MaximumRemoteIdentityCharacters), "verify")
 
     private fun evictExpiredWindows(now: Long) {
         windows.entries.removeIf { (_, window) ->

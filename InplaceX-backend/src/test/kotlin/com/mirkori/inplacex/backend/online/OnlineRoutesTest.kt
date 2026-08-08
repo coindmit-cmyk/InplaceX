@@ -144,6 +144,51 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `exhausted failed-auth budget gates REST and WebSocket before token verification`() = testApplication {
+        val serviceClock = RouteMutableClock(now)
+        val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
+        val abuseProtector = OnlineAbuseProtector(
+            clock = serviceClock,
+            authenticationAttemptLimit = 1,
+            invalidAuthenticationLimit = 10,
+            operationLimits = OnlineOperation.entries.associateWith { 10 },
+        )
+        application { configureOnlineRoutes(verifier, service, abuseProtector = abuseProtector) }
+        val forgedKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val forgedToken = platformToken(playerId, forgedKeys.private)
+
+        val rejectedRest = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(forgedToken)
+        }
+        assertEquals(HttpStatusCode.Unauthorized, rejectedRest.status)
+        val gatedValidRest = client.get("/api/v1/matchmaking/tickets/not-a-uuid") {
+            bearer(playerToken)
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, gatedValidRest.status)
+
+        serviceClock.advance(Duration.ofMinutes(1))
+        val wsClient = createClient { install(WebSockets) }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(forgedToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.VIOLATED_POLICY.code, closeReason.await()?.code)
+        }
+        wsClient.webSocket(
+            urlString = "/api/v1/ws/sessions/not-a-uuid",
+            request = {
+                bearer(playerToken)
+                header(HttpHeaders.SecWebSocketProtocol, "inplacex.online.v1")
+            },
+        ) {
+            assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
+        }
+    }
+
+    @Test
     fun `legacy membership migration is protected by its own principal budget`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))
@@ -475,6 +520,7 @@ class OnlineRoutesTest {
         ) {
             assertEquals(CloseReason.Codes.TRY_AGAIN_LATER.code, closeReason.await()?.code)
         }
+        serviceClock.advance(Duration.ofMinutes(1))
         wsClient.webSocket(
             urlString = "/api/v1/ws/sessions/$sessionId",
             request = {
