@@ -716,6 +716,11 @@ if 'runtime-activation-v1.patch' not in runtime_test or 'apply --reverse --check
     raise SystemExit("Destructive runtime test must build the immutable activation-v1 fixture")
 if 'apply --reverse --verbose "$fixture_patch" >&2' not in runtime_test:
     raise SystemExit("Activation-v1 fixture patch progress must stay off the process-substitution result pipe")
+if (
+    'find /run/inplacex-online -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +' not in runtime_test
+    or 'runtime_directory_inode' not in runtime_test
+):
+    raise SystemExit("Ephemeral-state recovery tests must preserve the bind-mounted runtime directory inode")
 if 'install -m 0644 "$repository_root/$activation_guard"' in runtime_test:
     raise SystemExit("Activation-v1 fixture must not copy mutable checkout source")
 if '"$production_directory/build-backend-release.sh"' not in runtime_test:

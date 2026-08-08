@@ -949,8 +949,14 @@ reset_ephemeral_release_state() {
         echo "Refusing to reset unexpected runtime state." >&2
         exit 77
     }
-    rm -rf -- /run/inplacex-online
-    sync -f /run
+    local runtime_directory_inode
+    runtime_directory_inode="$(stat -c '%i' -- /run/inplacex-online)"
+    find /run/inplacex-online -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+    sync -f /run/inplacex-online
+    [[ "$(stat -c '%i' -- /run/inplacex-online)" == "$runtime_directory_inode" ]] || {
+        echo "Ephemeral runtime reset replaced the bind-mounted directory." >&2
+        exit 77
+    }
 }
 
 assert_backend_fails_closed() {
