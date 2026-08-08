@@ -257,16 +257,16 @@ release_write_buildkitd_config() {
 
 release_create_isolated_buildx_builder() {
     local builder_name="$1"
-    local buildkitd_config="$2"
+    local buildkit_config_path="$2"
     local registry_authority="$3"
     [[ "$builder_name" =~ ^[a-z0-9][a-z0-9_.-]{0,63}$ ]] ||
         release_die 65 "Buildx builder name is invalid"
     [[ "${RELEASE_DOCKER_HOST:-}" == "unix:///var/run/docker.sock" ]] ||
         release_die 77 "Buildx builder requires the exact local Docker socket"
-    [[ -f "$buildkitd_config" && ! -L "$buildkitd_config" &&
-        "$(stat -Lc '%F %u %a %h' -- "$buildkitd_config")" == \
+    [[ -f "$buildkit_config_path" && ! -L "$buildkit_config_path" &&
+        "$(stat -Lc '%F %u %a %h' -- "$buildkit_config_path")" == \
         "regular file ${EUID:-$(id -u)} 600 1" &&
-        "$(<"$buildkitd_config")" == \
+        "$(<"$buildkit_config_path")" == \
             "$(release_expected_buildkitd_config "$registry_authority")" ]] ||
         release_die 77 "BuildKit daemon configuration is not the exact generated contract"
 
@@ -275,7 +275,7 @@ release_create_isolated_buildx_builder() {
         --name "$builder_name"
         --driver docker-container
         --driver-opt "image=$RELEASE_BUILDKIT_IMAGE"
-        --buildkitd-config "$buildkitd_config"
+        --buildkitd-config "$buildkit_config_path"
     )
     if [[ "$registry_authority" =~ ^127\.0\.0\.1:([1-9][0-9]{0,4})$ ]]; then
         create_arguments+=(--driver-opt network=host)
@@ -289,6 +289,24 @@ release_remove_isolated_buildx_builder() {
     [[ "$builder_name" =~ ^[a-z0-9][a-z0-9_.-]{0,63}$ ]] ||
         release_die 65 "Buildx builder name is invalid"
     release_docker buildx rm --force --timeout 30s "$builder_name"
+}
+
+release_assert_docker_container_absent_exact() {
+    local container_name="$1"
+    [[ "$container_name" =~ ^[a-z0-9][a-z0-9_-]{0,127}$ ]] ||
+        release_die 65 "Docker container name is invalid"
+
+    local container_ids
+    if ! container_ids="$(release_docker ps --all --quiet \
+        --filter "name=^/${container_name}$")"; then
+        echo "Cannot verify Docker container absence: $container_name" >&2
+        return 70
+    fi
+    if [[ -n "$container_ids" ]]; then
+        echo "Docker container still exists after cleanup: $container_name" >&2
+        printf '%s\n' "$container_ids" >&2
+        return 75
+    fi
 }
 
 release_validate_absolute_parent_chain() {

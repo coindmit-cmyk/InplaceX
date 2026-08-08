@@ -191,8 +191,8 @@ cleanup_buildx_builder() {
     local removal_log="$temporary_directory/buildx-remove.log"
     if (release_remove_isolated_buildx_builder "$buildx_builder_name") \
         > "$removal_log" 2>&1 &&
-        ! (release_docker inspect "buildx_buildkit_${buildx_builder_name}0") \
-            >/dev/null 2>&1; then
+        release_assert_docker_container_absent_exact \
+            "buildx_buildkit_${buildx_builder_name}0"; then
         buildx_builder_cleanup_required=false
         return 0
     fi

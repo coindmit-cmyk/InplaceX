@@ -83,6 +83,7 @@ fi
 buildx_lifecycle_log="$buildkit_test_directory/buildx-lifecycle.log"
 (
     RELEASE_DOCKER_HOST=unix:///var/run/docker.sock
+    readonly buildkitd_config="$buildkit_test_directory/caller-readonly.toml"
     release_docker() {
         printf '%s\n' "$*" >> "$buildx_lifecycle_log"
     }
@@ -103,6 +104,29 @@ if grep -F 'remote-builder' "$buildx_lifecycle_log" | grep -Eq 'network=host|htt
     echo "Remote Buildx builder inherited a loopback-only transport option." >&2
     exit 67
 fi
+
+(
+    container_enumeration_mode=empty
+    release_docker() {
+        [[ "$#" -eq 5 && "$1" == "ps" && "$2" == "--all" &&
+            "$3" == "--quiet" && "$4" == "--filter" &&
+            "$5" == 'name=^/buildx_buildkit_test-builder0$' ]] || return 92
+        case "$container_enumeration_mode" in
+            empty) return 0 ;;
+            present) printf '%s\n' '0123456789abcdef' ;;
+            failure) return 91 ;;
+            *) return 93 ;;
+        esac
+    }
+
+    release_assert_docker_container_absent_exact buildx_buildkit_test-builder0
+    container_enumeration_mode=present
+    expect_status 75 \
+        release_assert_docker_container_absent_exact buildx_buildkit_test-builder0
+    container_enumeration_mode=failure
+    expect_status 70 \
+        release_assert_docker_container_absent_exact buildx_buildkit_test-builder0
+)
 
 tampered_buildkitd_config="$buildkit_test_directory/tampered-buildkitd.toml"
 printf '%s\n' 'debug = false' 'insecure = true' > "$tampered_buildkitd_config"
@@ -477,6 +501,7 @@ for required in (
     'print_buildx_diagnostics',
     'verify_buildx_builder_runtime_identity',
     'buildx_buildkit_${buildx_builder_name}0',
+    'release_assert_docker_container_absent_exact',
     'attestationManifestDigests',
     '"schemaVersion": 2',
 ):
@@ -538,11 +563,13 @@ for required in (
     'release_write_buildkitd_config()',
     'release_create_isolated_buildx_builder()',
     'release_remove_isolated_buildx_builder()',
+    'release_assert_docker_container_absent_exact()',
     '--driver docker-container',
     '--driver-opt "image=$RELEASE_BUILDKIT_IMAGE"',
     'create_arguments+=(--driver-opt network=host)',
     'create_arguments+=("$RELEASE_DOCKER_HOST")',
     'release_docker buildx rm --force --timeout 30s "$builder_name"',
+    'release_docker ps --all --quiet',
     'set(value) != {"auths"}',
     'set(auths) != {authority}',
     'set(entry) != {"auth"}',
