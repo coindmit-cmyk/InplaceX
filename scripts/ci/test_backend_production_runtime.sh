@@ -808,7 +808,7 @@ build_legacy_activation_v1_image() {
         exit 70
     }
     grep -q 'private const val StateVersion = "2"' "$legacy_source_root/$activation_guard"
-    patch --directory="$legacy_source_root" --strip=1 --reverse --fuzz=0 < "$fixture_patch"
+    patch --directory="$legacy_source_root" --strip=1 --reverse --fuzz=0 < "$fixture_patch" >&2
     grep -q 'private const val StateVersion = "1"' \
         "$legacy_source_root/$activation_guard"
     if grep -q 'DatabasePasswordShaField' "$legacy_source_root/$activation_guard"; then

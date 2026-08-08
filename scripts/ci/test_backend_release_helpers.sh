@@ -571,6 +571,8 @@ for required in (
         raise SystemExit(f"Release shell bootstrap lost hostile-environment guard: {required}")
 if 'runtime-activation-v1.patch' not in runtime_test or 'patch --directory="$legacy_source_root"' not in runtime_test:
     raise SystemExit("Destructive runtime test must build the immutable activation-v1 fixture")
+if 'patch --directory="$legacy_source_root" --strip=1 --reverse --fuzz=0 < "$fixture_patch" >&2' not in runtime_test:
+    raise SystemExit("Activation-v1 fixture patch progress must stay off the process-substitution result pipe")
 if 'install -m 0644 "$repository_root/$activation_guard"' in runtime_test:
     raise SystemExit("Activation-v1 fixture must not copy mutable checkout source")
 if '"$production_directory/build-backend-release.sh"' not in runtime_test:
