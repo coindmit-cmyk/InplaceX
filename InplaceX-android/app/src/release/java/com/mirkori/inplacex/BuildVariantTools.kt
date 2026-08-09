@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
+import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 
@@ -19,7 +20,9 @@ internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = fal
 
 internal fun testFriendBotEnabled(): Boolean = false
 
-internal fun legacyGoogleProfileActionsEnabled(): Boolean = false
+internal fun googleProfileActionsEnabled(): Boolean =
+    AppConfigCatalog.platformConfig.featureFlags.googlePlayAuthEnabled &&
+        AppConfigCatalog.platformConfig.providers.googlePlay.isConfigured
 
 internal fun variantPaidProgressState(
     local: GameProgressState,

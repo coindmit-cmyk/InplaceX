@@ -124,13 +124,45 @@ class MirkoriGameSdk(
             if (callback.error == "profile_conflict") throw PlatformProfileConflictException()
             throw PlatformCallbackRejectedException()
         }
-        val result = codec.exchangeResponse(
-            post(
-                path = "/api/v1/game-auth/exchange",
-                body = codec.exchangeRequest(pending.session, pending.codeVerifier),
-                idempotencyKey = idempotencyKey,
+        return gameIdentitySession(
+            codec.exchangeResponse(
+                post(
+                    path = "/api/v1/game-auth/exchange",
+                    body = codec.exchangeRequest(pending.session, pending.codeVerifier),
+                    idempotencyKey = idempotencyKey,
+                ),
             ),
         )
+    }
+
+    suspend fun completeGoogleAccountLogin(
+        profileAccessToken: String,
+        idToken: String,
+        pending: PendingGameLogin,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): GameIdentitySession {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(idToken.length in 100..8_192 && idToken.none(Char::isWhitespace))
+        require(pending.session.matches(SessionPattern))
+        require(pending.state.matches(PkceValuePattern))
+        require(pending.codeVerifier.matches(PkceValuePattern))
+        val result = try {
+            codec.exchangeResponse(
+                post(
+                    path = "/api/v1/game-auth/google",
+                    body = codec.nativeGoogleGameAuthRequest(pending.session, pending.codeVerifier, idToken),
+                    idempotencyKey = idempotencyKey,
+                    bearerToken = profileAccessToken,
+                ),
+            )
+        } catch (error: PlatformApiException) {
+            if (error.status == 409 && error.errorCode == "profile_conflict") throw PlatformProfileConflictException()
+            throw error
+        }
+        return gameIdentitySession(result)
+    }
+
+    private fun gameIdentitySession(result: SdkJsonCodec.ExchangeResponse): GameIdentitySession {
         require(result.accountId.isCanonicalUuid())
         require(result.gamePlayerId.isCanonicalUuid())
         require(result.gameId == config.gameId)

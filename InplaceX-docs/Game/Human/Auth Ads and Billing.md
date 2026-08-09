@@ -8,6 +8,9 @@
   guest profile with one stable InplaceX player ID
 - the Profile action opens the Mirkori Games connection page in the system
   browser; WebView is not used
+- the separate Google action opens Android's native account chooser instead of
+  the Mirkori website, then links the selected Google account through Mirkori
+  Games Platform without changing the existing InplaceX player ID
 - linking Google, Telegram, or a website account keeps the same InplaceX game
   profile and does not replace local campaign progress
 - online matches use the refreshed Mirkori game token directly; the InplaceX
@@ -20,15 +23,18 @@ must go through the future authenticated cloud-save contract, not an implicit de
 
 ## Google, Email, And Telegram Providers
 
-- production provider login is owned by Mirkori Games Platform and happens on
-  its browser connection page
-- Android and the InplaceX online backend never receive raw Google or Telegram
-  tokens and do not verify provider credentials directly
+- production provider login is owned by Mirkori Games Platform; Mirkori,
+  Telegram, and website-account linking use its browser connection page, while
+  the dedicated Google button uses Android's native account chooser
+- Android forwards the one-time Google ID token directly to Mirkori Games
+  Platform and does not put it in a URL or log; the InplaceX online backend
+  never receives raw Google or Telegram credentials and never verifies them
 - provider availability depends on the Platform deployment and its own
   provider configuration
-- the former Credential Manager plus InplaceX VPS identity-service flow and
-  the shared direct-provider verification module remain debug/test or
-  historical compatibility only; they are not the current release login path
+- the former Credential Manager plus InplaceX VPS identity-service flow and the
+  shared direct-provider verification module remain debug/test or historical
+  compatibility only; production Credential Manager exchange now terminates at
+  Mirkori Games Platform instead
 - no logout action is shown for a linked Platform profile until Mirkori can
   revoke the server session before encrypted local credentials are cleared
 
@@ -122,8 +128,8 @@ and separate from these permanent products.
 ## Current Stage
 
 - production account linking and online identity are connected through the
-  Mirkori Games SDK, browser/PKCE flow, rotating Platform credentials, and the
-  stable game-scoped player ID
+  Mirkori Games SDK, browser/PKCE plus native Google flow, rotating Platform
+  credentials, and the stable game-scoped player ID
 - the InplaceX backend accepts only verified Mirkori game tokens for release
   online routes; direct Google bootstrap, provider-token verification, and
   backend JWT issuing remain debug/test compatibility rather than deployment

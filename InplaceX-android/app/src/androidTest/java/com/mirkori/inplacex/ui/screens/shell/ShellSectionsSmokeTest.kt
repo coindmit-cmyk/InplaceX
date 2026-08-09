@@ -240,7 +240,7 @@ class ShellSectionsSmokeTest {
             ProfileRootScreen(
                 progressState = progress(),
                 authResultKey = "profile.auth.unavailable",
-                showLegacyGooglePlayCard = true,
+                showGooglePlayCard = true,
             )
         }
 
@@ -320,7 +320,7 @@ class ShellSectionsSmokeTest {
                     kind = MirkoriAccountStateKind.GUEST,
                     gamePlayerId = "00000000-0000-4000-8000-000000000805",
                 ),
-                showLegacyGooglePlayCard = false,
+                showGooglePlayCard = false,
             )
         }
 

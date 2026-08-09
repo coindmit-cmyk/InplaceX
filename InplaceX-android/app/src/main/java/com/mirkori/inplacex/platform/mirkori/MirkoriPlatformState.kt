@@ -102,6 +102,8 @@ data class MirkoriAccountState(
 sealed interface MirkoriLoginResult {
     data class BrowserReady(val connectUrl: String) : MirkoriLoginResult
 
+    data class GoogleCredentialRequired(val nonce: String) : MirkoriLoginResult
+
     data class Connected(val accountState: MirkoriAccountState) : MirkoriLoginResult
 
     data object AlreadyConnected : MirkoriLoginResult

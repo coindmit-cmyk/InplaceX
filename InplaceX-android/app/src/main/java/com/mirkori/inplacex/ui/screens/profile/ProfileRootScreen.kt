@@ -45,7 +45,7 @@ fun ProfileRootScreen(
     mirkoriAuthInProgress: Boolean = false,
     authResultKey: String? = null,
     authInProgress: Boolean = false,
-    showLegacyGooglePlayCard: Boolean = false,
+    showGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
@@ -155,7 +155,7 @@ fun ProfileRootScreen(
             }
         }
 
-        if (showLegacyGooglePlayCard) {
+        if (showGooglePlayCard) {
             SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
             Text(
                 text = strings.text("profile.google_play.title"),

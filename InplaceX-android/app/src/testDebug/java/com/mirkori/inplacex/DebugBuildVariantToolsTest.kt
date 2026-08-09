@@ -12,8 +12,8 @@ import org.junit.Test
 
 class DebugBuildVariantToolsTest {
     @Test
-    fun `legacy Google profile actions remain debug only`() {
-        assertTrue(legacyGoogleProfileActionsEnabled())
+    fun `Google profile action remains available for debug verification`() {
+        assertTrue(googleProfileActionsEnabled())
     }
 
     @Test
