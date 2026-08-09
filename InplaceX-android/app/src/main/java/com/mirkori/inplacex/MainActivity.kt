@@ -966,7 +966,7 @@ class MainActivity : ComponentActivity() {
                                 mirkoriAuthInProgress = mirkoriAuthOperation.inProgress,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
-                                showLegacyGooglePlayCard = legacyGoogleProfileActionsEnabled(),
+                                showGooglePlayCard = googleProfileActionsEnabled(),
                                 onMirkoriSignIn = {
                                     mirkoriAuthOperation.start()?.let { operationId ->
                                         mirkoriAuthResultKey = null

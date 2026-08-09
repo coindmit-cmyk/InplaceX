@@ -22,7 +22,7 @@ internal fun variantToolsBottomSlotEnabled(toolsEnabled: Boolean): Boolean = fal
 
 internal fun testFriendBotEnabled(): Boolean = true
 
-internal fun legacyGoogleProfileActionsEnabled(): Boolean = true
+internal fun googleProfileActionsEnabled(): Boolean = true
 
 internal fun variantPaidProgressState(
     local: GameProgressState,
