@@ -54,6 +54,13 @@ internal class SdkJsonCodec {
         put("codeVerifier", verifier)
     }.toString()
 
+    fun nativeGoogleGameAuthRequest(session: String, verifier: String, credential: String): String =
+        buildJsonObject {
+            put("session", session)
+            put("codeVerifier", verifier)
+            put("credential", credential)
+        }.toString()
+
     fun createOrderRequest(productId: String, currency: String): String = buildJsonObject {
         put("productId", productId)
         put("currency", currency)

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The Profile Google action now uses Android Credential Manager instead of
+  opening the Mirkori website. Its nonce is bound to the existing Platform PKCE
+  session, the Google ID token is exchanged only with Mirkori Games Platform,
+  and a successful link keeps the current InplaceX `gamePlayerId`.
+
 - Signed InplaceX candidates can now be converted into an immutable Mirkori
   Platform catalog snapshot without dropping other games or prior releases.
   The Gradle workflow binds the exact release-candidate bundle to the current

@@ -113,6 +113,31 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
+    suspend fun beginGoogleLogin(): MirkoriLoginResult = operationMutex.withLock {
+        try {
+            val current = ensureFreshSession()
+            if (current.authMode == PlatformAuthMode.GOOGLE) return@withLock MirkoriLoginResult.AlreadyConnected
+            if (current.authMode != PlatformAuthMode.GUEST) return@withLock MirkoriLoginResult.Rejected
+            val state = requireNotNull(persistedState)
+            val pending = sdk.beginAccountLogin(
+                profileAccessToken = current.credentials.accessToken,
+                installationId = state.installation.installationId,
+            )
+            persist(state.copy(pendingLogin = pending))
+            AppLog.info(
+                tag = LogTag,
+                message = "Mirkori Games native Google login prepared",
+                attributes = mapOf("outcome" to "credential_required"),
+            )
+            MirkoriLoginResult.GoogleCredentialRequired(pending.state)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            error.toLoginFailure()
+        }
+    }
+
     suspend fun completeLogin(callbackUrl: String): MirkoriLoginResult = operationMutex.withLock {
         val state = persistedState ?: return@withLock MirkoriLoginResult.Rejected
         val pending = state.pendingLogin ?: return@withLock MirkoriLoginResult.Rejected
@@ -136,6 +161,43 @@ class MirkoriPlatformRuntime internal constructor(
             AppLog.warn(
                 tag = LogTag,
                 message = "Mirkori Games account connection rejected",
+                attributes = mapOf("outcome" to "profile_conflict"),
+            )
+            MirkoriLoginResult.ProfileConflict
+        } catch (error: Exception) {
+            logFailure(error)
+            error.toLoginFailure()
+        }
+    }
+
+    suspend fun completeGoogleLogin(idToken: String): MirkoriLoginResult = operationMutex.withLock {
+        try {
+            val current = ensureFreshSession()
+            val state = requireNotNull(persistedState)
+            val pending = state.pendingLogin ?: return@withLock MirkoriLoginResult.Rejected
+            if (pending.expiresAt.toEpochMilli() <= clockMs()) {
+                persist(state.copy(pendingLogin = null))
+                return@withLock MirkoriLoginResult.Rejected
+            }
+            val linked = sdk.completeGoogleAccountLogin(
+                profileAccessToken = current.credentials.accessToken,
+                idToken = idToken,
+                pending = pending,
+            )
+            persist(state.withSession(linked).copy(pendingLogin = null))
+            AppLog.info(
+                tag = LogTag,
+                message = "Mirkori Games Google account connected",
+                attributes = mapOf("authMode" to linked.authMode.wireName),
+            )
+            MirkoriLoginResult.Connected(linked.toAccountState())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: PlatformProfileConflictException) {
+            persistedState?.let { state -> persist(state.copy(pendingLogin = null)) }
+            AppLog.warn(
+                tag = LogTag,
+                message = "Mirkori Games Google account connection rejected",
                 attributes = mapOf("outcome" to "profile_conflict"),
             )
             MirkoriLoginResult.ProfileConflict

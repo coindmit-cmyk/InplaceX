@@ -179,6 +179,42 @@ class MirkoriPlatformRuntimeTest {
     }
 
     @Test
+    fun nativeGoogleLoginUsesPendingStateAsNonceAndPreservesGameProfile() {
+        val sessionHandle = "G".repeat(64)
+        val idToken = "google-id-token-" + "x".repeat(120)
+        val transport = QueueTransport(
+            ok(bootstrapJson()),
+            ok(
+                """{"session":"$sessionHandle","connectUrl":"https://games.dmit.life/connect?session=$sessionHandle","expiresAtEpochMs":$ExpiresAtMs}""",
+            ),
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"google","credentials":${credentialsJson("google-linked")}}""",
+            ),
+        )
+        val store = installationStore()
+        val runtime = runtime(transport, store)
+        runSuspend { runtime.restoreOrBootstrap() }
+
+        val prepared = runSuspend { runtime.beginGoogleLogin() } as MirkoriLoginResult.GoogleCredentialRequired
+        val pending = requireNotNull(store.value?.pendingLogin)
+        assertEquals(pending.state, prepared.nonce)
+
+        val completed = runSuspend { runtime.completeGoogleLogin(idToken) } as MirkoriLoginResult.Connected
+
+        assertEquals(PlatformAuthMode.GOOGLE, completed.accountState.authMode)
+        assertEquals(PlayerId, completed.accountState.gamePlayerId)
+        assertEquals(PlayerId, store.value?.session?.gamePlayerId)
+        assertNull(store.value?.pendingLogin)
+        val request = transport.requests.last()
+        assertEquals("https://games.dmit.life/api/v1/game-auth/google", request.url)
+        assertTrue(request.headers["Authorization"].orEmpty().startsWith("Bearer guest."))
+        assertTrue(request.body.contains(idToken))
+        assertTrue(request.body.contains(pending.codeVerifier))
+        assertFalse(request.url.contains(idToken))
+        assertFalse(request.toString().contains(idToken))
+    }
+
+    @Test
     fun profileConflictClearsPendingStateWithoutCallingExchange() {
         val sessionHandle = "Q".repeat(64)
         val transport = QueueTransport(

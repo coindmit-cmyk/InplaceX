@@ -115,6 +115,57 @@ class MirkoriGameSdkTest {
     }
 
     @Test
+    fun nativeGoogleLoginKeepsProviderCredentialOutOfUrlsAndReturnsGameSession() {
+        val session = "G".repeat(64)
+        val idToken = "google-id-token-" + "x".repeat(120)
+        val transport = QueueTransport(
+            success(
+                """{"session":"$session","connectUrl":"https://games.dmit.life/connect?session=$session","expiresAtEpochMs":1786032600000}""",
+            ),
+            success(
+                """
+                {
+                  "accountId":"00000000-0000-4000-8000-000000000211",
+                  "gamePlayerId":"00000000-0000-4000-8000-000000000212",
+                  "gameId":"inplacex",
+                  "authMode":"google",
+                  "credentials":${credentialsJson("google-linked")}
+                }
+                """.trimIndent(),
+            ),
+        )
+        val sdk = sdk(transport, CountingEntropy())
+        val accessToken = "access." + "g".repeat(40)
+        val pending = runSuspend {
+            sdk.beginAccountLogin(
+                profileAccessToken = accessToken,
+                installationId = "00000000-0000-4000-8000-000000000213",
+                idempotencyKey = PlatformIdempotencyKey("native-google-create"),
+            )
+        }
+
+        val linked = runSuspend {
+            sdk.completeGoogleAccountLogin(
+                profileAccessToken = accessToken,
+                idToken = idToken,
+                pending = pending,
+                idempotencyKey = PlatformIdempotencyKey("native-google-complete"),
+            )
+        }
+
+        assertEquals(PlatformAuthMode.GOOGLE, linked.authMode)
+        assertEquals("00000000-0000-4000-8000-000000000212", linked.gamePlayerId)
+        val request = transport.requests.last()
+        assertEquals("https://games.dmit.life/api/v1/game-auth/google", request.url)
+        assertEquals("Bearer $accessToken", request.headers["Authorization"])
+        assertEquals("native-google-complete", request.headers["Idempotency-Key"])
+        assertTrue(request.body.contains(idToken))
+        assertTrue(request.body.contains(pending.codeVerifier))
+        assertFalse(request.url.contains(idToken))
+        assertFalse(request.toString().contains(idToken))
+    }
+
+    @Test
     fun callbackMismatchAndProfileConflictNeverExchangeCredentials() {
         val session = "Q".repeat(64)
         val transport = QueueTransport(

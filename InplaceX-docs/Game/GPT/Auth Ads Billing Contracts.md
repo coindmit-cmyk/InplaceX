@@ -6,6 +6,8 @@
   - `restoreOrBootstrap()`
   - `beginLogin()`
   - `completeLogin(callbackUrl)`
+  - `beginGoogleLogin()`
+  - `completeGoogleLogin(idToken)`
 - production `AccessTokenProvider`
   - `currentAccessToken()`
   - `refreshAccessToken(rejectedToken)`
@@ -36,11 +38,14 @@ state; opening a browser is never proof of payment.
 - Mirkori Games Platform is the only production identity and token authority
 - offline gameplay does not require a linked account; when online identity is
   needed, the Platform SDK restores or bootstraps a guest game profile
-- account linking uses the Platform browser/PKCE flow and preserves the same
-  stable InplaceX `gamePlayerId` across `GOOGLE`, `TELEGRAM`, `LOCAL`/email,
-  website, and future providers
-- Android and the InplaceX online backend never receive Google or Telegram
-  provider credentials; those credentials, provider subjects, and verification
+- account linking preserves the same stable InplaceX `gamePlayerId` across
+  `GOOGLE`, `TELEGRAM`, `LOCAL`/email, website, and future providers
+- the Mirkori action uses the Platform browser/PKCE flow; the dedicated Google
+  action uses Android Credential Manager with the pending PKCE `state` as the
+  Google nonce and submits the returned ID token only to Mirkori Games Platform
+- Android holds the Google ID token only for the duration of that native
+  exchange and never places it in a URL or log; the InplaceX online backend
+  never receives provider credentials, and provider subjects plus verification
   rules remain inside Mirkori Games Platform
 - every release online request uses the same refreshed game-scoped Platform
   bearer token; the backend verifies `RS256`, configured issuer/audience,
