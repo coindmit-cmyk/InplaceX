@@ -1440,7 +1440,7 @@ curl --fail --silent \
 migration_state="$("${compose[@]}" exec -T postgres sh -ec \
     'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT count(*), count(*) FILTER (WHERE checksum IS NULL) FROM inplacex_schema_history;"' |
     tr -d '[:space:]')"
-[[ "$migration_state" == "9|0" ]]
+[[ "$migration_state" == "10|0" ]]
 
 legacy_runtime_config_sha256="$(sed -n 's/^INPLACEX_ACTIVATION_RUNTIME_CONFIG_SHA256=//p' \
     "$release_state_directory/activation/verified-activation.env")"
@@ -1535,7 +1535,7 @@ grep -qx "INPLACEX_ACTIVATION_RELEASE_ID=$release_v1" \
 recovered_migration_state="$("${compose[@]}" exec -T postgres sh -ec \
     'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT count(*), count(*) FILTER (WHERE checksum IS NULL) FROM inplacex_schema_history;"' |
     tr -d '[:space:]')"
-[[ "$recovered_migration_state" == "9|0" ]]
+[[ "$recovered_migration_state" == "10|0" ]]
 backend_container="$("${compose[@]}" ps --all -q backend)"
 final_legacy_ack_environment="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' \
     "$backend_container" | grep '^INPLACEX_DATABASE_LEGACY_CHECKSUM_BASELINE_ACK=')"

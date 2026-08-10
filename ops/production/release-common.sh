@@ -665,14 +665,14 @@ PY
 
 release_validate_legacy_checksum_history() {
     local legacy_history="$1"
-    [[ "$legacy_history" =~ ^(1,2,3,4,5,6,7,8\|[1-8]|1,2,3,4,5,6,7,8,9\|[1-9])$ ]] ||
-        release_die 75 "Legacy checksum acknowledgement requires exact known v1-v8 or v1-v9 history with missing checksums"
+    [[ "$legacy_history" =~ ^(1,2,3,4,5,6,7,8\|[1-8]|1,2,3,4,5,6,7,8,9\|[1-9]|1,2,3,4,5,6,7,8,9,10\|([1-9]|10))$ ]] ||
+        release_die 75 "Legacy checksum acknowledgement requires exact known v1-v8, v1-v9, or v1-v10 history with missing checksums"
 }
 
 release_validate_completed_legacy_checksum_history() {
     local legacy_history="$1"
-    [[ "$legacy_history" =~ ^(1,2,3,4,5,6,7,8|1,2,3,4,5,6,7,8,9)\|0$ ]] ||
-        release_die 75 "Completed legacy checksum baseline requires exact known v1-v8 or v1-v9 history"
+    [[ "$legacy_history" =~ ^(1,2,3,4,5,6,7,8|1,2,3,4,5,6,7,8,9|1,2,3,4,5,6,7,8,9,10)\|0$ ]] ||
+        release_die 75 "Completed legacy checksum baseline requires exact known v1-v8, v1-v9, or v1-v10 history"
 }
 
 release_validate_port() {
