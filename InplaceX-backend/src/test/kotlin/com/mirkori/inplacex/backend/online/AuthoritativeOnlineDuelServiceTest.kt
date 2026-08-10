@@ -309,6 +309,49 @@ class AuthoritativeOnlineDuelServiceTest {
     }
 
     @Test
+    fun `targeted invite is listed and can only be accepted by its recipient`() {
+        val recipient = UUID.randomUUID().toString()
+        val stranger = UUID.randomUUID().toString()
+        val invite = service.createPrivateInvite(
+            playerId = playerId,
+            commandId = UUID.randomUUID().toString(),
+            playStyle = OnlineFriendPlayStyle.RACE,
+            codeLength = 5,
+            targetPlayerId = recipient,
+        )
+
+        assertEquals(listOf(invite), service.listIncomingPrivateInvites(recipient))
+        assertTrue(service.listIncomingPrivateInvites(stranger).isEmpty())
+        assertThrows(OnlineInviteUnavailableException::class.java) {
+            service.acceptPrivateInvite(stranger, UUID.randomUUID().toString(), invite.inviteCode)
+        }
+
+        val accepted = service.acceptPrivateInvite(
+            recipient,
+            UUID.randomUUID().toString(),
+            invite.inviteCode,
+        )
+        assertEquals(PrivateInviteStatus.MATCHED, accepted.status)
+        assertTrue(service.listIncomingPrivateInvites(recipient).isEmpty())
+    }
+
+    @Test
+    fun `incoming targeted invite collection is bounded`() {
+        val recipient = UUID.randomUUID().toString()
+        repeat(51) {
+            service.createPrivateInvite(
+                playerId = playerId,
+                commandId = UUID.randomUUID().toString(),
+                playStyle = OnlineFriendPlayStyle.RACE,
+                codeLength = 4,
+                targetPlayerId = recipient,
+            )
+        }
+
+        assertEquals(50, service.listIncomingPrivateInvites(recipient).size)
+    }
+
+    @Test
     fun `private invite expires and cannot be joined by its owner or a late guest`() {
         val invite = service.createPrivateInvite(
             playerId,

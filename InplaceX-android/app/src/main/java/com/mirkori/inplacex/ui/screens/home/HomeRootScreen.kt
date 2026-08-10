@@ -50,6 +50,7 @@ import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameModeDefinition
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
@@ -91,7 +92,7 @@ fun HomeRootScreen(
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
     onOpenCompany: () -> Unit = {},
-    onOpenOnlineDuel: () -> Unit = {},
+    onOpenOnlineMatch: (RemoteFriendPlayStyle) -> Unit = {},
     onlineAvailable: Boolean = false,
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
@@ -173,6 +174,7 @@ fun HomeRootScreen(
 
         when (screenState) {
             HomeScreenState.ROOT -> Unit
+            HomeScreenState.RACE_MODES,
             HomeScreenState.PVP_MODES -> onScreenStateChange(HomeScreenState.ROOT)
             HomeScreenState.PVE_GAME,
             HomeScreenState.PVP_GAME,
@@ -208,7 +210,7 @@ fun HomeRootScreen(
         }
     }
     BackHandler(
-        enabled = screenState == HomeScreenState.PVP_MODES &&
+        enabled = screenState in setOf(HomeScreenState.RACE_MODES, HomeScreenState.PVP_MODES) &&
             !showExitDialog &&
             !showPreMatchDialog &&
             !showDuelResultDialog &&
@@ -231,7 +233,7 @@ fun HomeRootScreen(
             HomeSelectionScreen(
                 pveMode = pveMode,
                 pvpMode = pvpMode,
-                onOpenPve = { onScreenStateChange(HomeScreenState.PVE_GAME) },
+                onOpenPve = { onScreenStateChange(HomeScreenState.RACE_MODES) },
                 onOpenPvp = { onScreenStateChange(HomeScreenState.PVP_MODES) },
                 onOpenCompany = onOpenCompany,
             )
@@ -247,7 +249,16 @@ fun HomeRootScreen(
                     preMatchError = null
                     showPreMatchDialog = true
                 },
-                onPlayOnline = onOpenOnlineDuel,
+                onPlayOnline = { onOpenOnlineMatch(RemoteFriendPlayStyle.TURN_BASED) },
+                onlineAvailable = onlineAvailable,
+                onBack = { onScreenStateChange(HomeScreenState.ROOT) },
+            )
+        }
+
+        HomeScreenState.RACE_MODES -> {
+            PvpModesScreen(
+                onPlayWithBot = { onScreenStateChange(HomeScreenState.PVE_GAME) },
+                onPlayOnline = { onOpenOnlineMatch(RemoteFriendPlayStyle.RACE) },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
             )

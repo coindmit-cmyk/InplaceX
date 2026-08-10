@@ -7,7 +7,7 @@ Status: normative design contract with an explicitly identified release subset.
 The production Ktor composition currently routes only:
 
 - matchmaking ticket create/read;
-- friend invite create/read/accept;
+- friend invite create/list/read/accept;
 - session read/reconnect/secret/turn commands and the one-time authenticated
   legacy-membership transfer to the stable Platform `pid`;
 - `/api/v1/ws/sessions/{sessionId}` with `inplacex.online.v1`;
@@ -273,6 +273,7 @@ Every authenticated route checks that the player owns the referenced resource.
 | Read ticket | `GET /api/v1/matchmaking/tickets/{ticketId}` | `MatchmakingTicket` | Implemented |
 | Cancel ticket | `DELETE /api/v1/matchmaking/tickets/{ticketId}` | idempotent empty response or `MatchmakingTicket` | Future; not routed |
 | Create friend invite | `POST /api/v1/friends/invites` | `FriendInviteCreateCommand` → `FriendInvite` | Implemented |
+| List incoming friend invites | `GET /api/v1/friends/invites` | `FriendInvite[]` | Implemented |
 | Read owned friend invite | `GET /api/v1/friends/invites/{inviteCode}` | `FriendInvite` | Implemented |
 | Accept friend invite | `POST /api/v1/friends/invites/{inviteCode}/accept` | `FriendInviteAcceptCommand` → `FriendInvite` | Implemented |
 | Read duel snapshot | `GET /api/v1/sessions/{sessionId}` | `SessionSnapshotResponse` | Implemented |
@@ -339,7 +340,8 @@ A private friend invite is an authenticated, human-only alternative to public
 matchmaking:
 
 1. the owner chooses the private play style (`race` or `turn_based`) and a
-   secret length from 4 through 10 digits;
+   secret length from 4 through 10 digits; it may also provide an authenticated
+   platform `targetPlayerId` for a direct friend invitation;
 2. the server returns an eight-character code with at least 40 bits of
    entropy and a bounded expiry;
 3. a different authenticated player accepts the code;
@@ -353,6 +355,11 @@ another session. Before matching, only the owner can read the invite; after
 matching, only its two participants can read it. The code is a discovery
 capability, not an authentication credential: every route still requires a
 valid access token and all session routes enforce server-owned membership.
+When `targetPlayerId` is present, only that player sees the invite in
+`GET /api/v1/friends/invites` and only that player may accept the code. A code
+therefore remains a fallback discovery path, not a way to bypass the selected
+recipient. The incoming collection is ordered newest first and bounded to 50
+waiting, non-expired invitations.
 With PostgreSQL enabled, owner/create-command and guest/accept-command pairs
 are unique. Acceptance locks the invite row and creates the duel session plus
 the matched invite link in one transaction, so concurrent backend instances

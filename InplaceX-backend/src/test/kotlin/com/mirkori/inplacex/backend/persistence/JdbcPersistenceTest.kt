@@ -57,13 +57,13 @@ class JdbcPersistenceTest {
                     )
                 },
             )
-            assertEquals(9, connection.createStatement().use { statement ->
+            assertEquals(10, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
                 }
             })
-            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+            assertEquals(10, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
         }
     }
 
@@ -84,7 +84,7 @@ class JdbcPersistenceTest {
         acknowledgedRunner.verify(dataSource)
 
         dataSource.connection.use { connection ->
-            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+            assertEquals(10, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
         }
     }
 
@@ -114,7 +114,7 @@ class JdbcPersistenceTest {
         }
 
         dataSource.connection.use { connection ->
-            assertEquals(9, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE checksum IS NULL"))
+            assertEquals(10, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE checksum IS NULL"))
         }
     }
 

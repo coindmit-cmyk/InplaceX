@@ -35,9 +35,13 @@ class OnlineRuntime private constructor(
     suspend fun createFriendInvite(
         playStyle: RemoteFriendPlayStyle,
         codeLength: Int,
+        targetPlayerId: String? = null,
     ): OnlineClientResult<OnlineFriendInvite> {
-        return duel.createFriendInvite(playStyle, codeLength)
+        return duel.createFriendInvite(playStyle, codeLength, targetPlayerId)
     }
+
+    suspend fun listIncomingFriendInvites(): OnlineClientResult<List<OnlineFriendInvite>> =
+        duel.listIncomingFriendInvites()
 
     suspend fun readFriendInvite(
         inviteCode: String,

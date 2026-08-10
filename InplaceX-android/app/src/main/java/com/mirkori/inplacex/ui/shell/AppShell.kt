@@ -32,6 +32,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun AppShell(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    socialNotificationCount: Int = 0,
     bottomMode: BottomLayerMode = BottomLayerMode.MENU,
     topMode: TopLayerMode = TopLayerMode.NONE,
     centerMode: CenterLayerMode = CenterLayerMode.SURFACE,
@@ -49,6 +50,7 @@ fun AppShell(
             paddingValues = paddingValues,
             currentSection = currentSection,
             onSectionChange = onSectionChange,
+            socialNotificationCount = socialNotificationCount,
             bottomMode = bottomMode,
             topMode = topMode,
             centerMode = centerMode,
@@ -66,6 +68,7 @@ private fun ShellBackground(
     paddingValues: PaddingValues,
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    socialNotificationCount: Int,
     bottomMode: BottomLayerMode,
     topMode: TopLayerMode,
     centerMode: CenterLayerMode,
@@ -193,6 +196,7 @@ private fun ShellBackground(
                     AppBottomSlot(
                         currentSection = currentSection,
                         onSectionChange = onSectionChange,
+                        socialNotificationCount = socialNotificationCount,
                         bottomMode = bottomMode,
                         adContent = bottomAdContent,
                         modifier = Modifier.fillMaxSize()

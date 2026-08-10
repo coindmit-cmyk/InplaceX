@@ -254,8 +254,8 @@ adapter, not the current release model.
     ownership with `FOR UPDATE`, restore the latest memento, and commit any next
     version before releasing the transaction; process memory is not authority
 - `private_duel_invites`
-  - owner/guest, create/accept command ids, immutable rules and session link are
-    restored through the invite retention window
+  - owner, optional direct target, guest, create/accept command ids, immutable
+    rules and session link are restored through the invite retention window
   - `owner_player_id + create_command_id` and non-null
     `guest_player_id + accept_command_id` are unique
   - acceptance locks the invite row and writes the session plus matched invite
@@ -292,7 +292,7 @@ adapter, not the current release model.
   - `payload_json`
   - `created_at`
 - `private_duel_invites`
-  - owner/guest player IDs
+  - owner, optional target, and guest player IDs
   - create/accept command IDs
   - immutable rules JSON
   - status, session ID, and expiry

@@ -39,6 +39,7 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.AccessToken
 import com.mirkori.inplacex.platform.online.AccessTokenProvider
+import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
@@ -55,6 +56,7 @@ import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.platform.sdk.PlatformAuthMode
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -461,13 +463,13 @@ class ShellSectionsSmokeTest {
 
     @Test
     fun duelModeChoiceRoutesOnlineMatchToSocialRuntime() {
-        var openedOnline = false
+        var openedOnline: RemoteFriendPlayStyle? = null
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
             HomeRootScreen(
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
-                onOpenOnlineDuel = { openedOnline = true },
+                onOpenOnlineMatch = { openedOnline = it },
                 onlineAvailable = true,
             )
         }
@@ -475,7 +477,30 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText("Дуэль").performClick()
         composeRule.onNodeWithText("Онлайн-матч").performClick()
 
-        composeRule.runOnIdle { assertTrue(openedOnline) }
+        composeRule.runOnIdle {
+            assertEquals(RemoteFriendPlayStyle.TURN_BASED, openedOnline)
+        }
+    }
+
+    @Test
+    fun raceModeChoiceRoutesOnlineMatchWithRaceStyle() {
+        var openedOnline: RemoteFriendPlayStyle? = null
+        setContent {
+            var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
+            HomeRootScreen(
+                screenState = screenState,
+                onScreenStateChange = { screenState = it },
+                onOpenOnlineMatch = { openedOnline = it },
+                onlineAvailable = true,
+            )
+        }
+
+        composeRule.onNodeWithText("Гонка").performClick()
+        composeRule.onNodeWithText("Онлайн-матч").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(RemoteFriendPlayStyle.RACE, openedOnline)
+        }
     }
 
     @Test

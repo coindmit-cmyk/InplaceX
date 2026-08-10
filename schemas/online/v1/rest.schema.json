@@ -244,6 +244,9 @@
           "type": "integer",
           "minimum": 4,
           "maximum": 10
+        },
+        "targetPlayerId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
         }
       }
     },
@@ -308,6 +311,13 @@
           "type": "integer",
           "minimum": 1
         }
+      }
+    },
+    "FriendInviteCollection": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/FriendInvite"
       }
     },
     "DuelSubmitSecretCommand": {
@@ -502,6 +512,9 @@
     },
     {
       "$ref": "#/$defs/FriendInvite"
+    },
+    {
+      "$ref": "#/$defs/FriendInviteCollection"
     },
     {
       "$ref": "#/$defs/DuelSubmitSecretCommand"
