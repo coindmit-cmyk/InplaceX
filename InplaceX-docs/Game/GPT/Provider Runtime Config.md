@@ -6,6 +6,9 @@
 - an isolated worktree or CI runner may point to the same private-format file
   with `-PinplacexProviderConfigFile=<absolute-path>`; the file remains outside Git
 - debug reads `provider.debug.*` keys and supplies sandbox product defaults when those keys are absent
+- debug/sandbox treats non-empty Yandex placement values as enablement flags:
+  rewarded, banner, and interstitial calls use the corresponding official
+  `demo-*-yandex` placement instead of the configured value
 - release reads `provider.release.*` provider keys; the release environment is
   always `live`, while commerce product identity is compiled from canonical
   constants rather than mutable local configuration
@@ -89,9 +92,13 @@ recovery in the production runbook.
 - Yandex Mobile Ads SDK automatic initialization is disabled in the manifest;
   initialization occurs only after a persisted `ACCEPTED` or `DECLINED`
   privacy choice
-- `AndroidAdRuntime` resolves `/api/v1/runtime/ad-market` through the configured
-  online HTTPS base URL and routes Yandex only for `RUSSIA`; `GLOBAL` and
-  `UNKNOWN` fail closed until another provider is explicitly implemented
+- release `AndroidAdRuntime` resolves `/api/v1/runtime/ad-market` through the
+  configured online HTTPS base URL and routes Yandex only for `RUSSIA`;
+  `GLOBAL` and `UNKNOWN` fail closed until another provider is explicitly
+  implemented
+- debug/sandbox deliberately bypasses backend market detection and routes as
+  `RUSSIA`, so the official Yandex demo placements can be exercised from any
+  developer network; debug/live retains the backend market resolver
 - banner, rewarded, and post-match UI call sites use `AndroidAdRuntime`; reward
   state changes only after the provider reports completion
 - billing uses the typed Mirkori Platform SDK/runtime for catalog, checkout,

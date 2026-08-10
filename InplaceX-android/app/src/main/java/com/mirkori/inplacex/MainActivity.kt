@@ -613,11 +613,7 @@ class MainActivity : ComponentActivity() {
                             when (selectedBannerProviderName) {
                                 AdProviderId.OWNER_YANDEX.name -> key(adConsentDecisionName) {
                                     YandexGameBanner(
-                                        adUnitId = AppConfigCatalog.platformConfig
-                                            .providers
-                                            .ads
-                                            .ownerYandex
-                                            .gameBannerAdUnitId,
+                                        adUnitId = providerServices.gameBannerAdUnitId,
                                         onLoaded = { bannerLoaded = true },
                                         onFailed = {
                                             selectedBannerProviderName = null

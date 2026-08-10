@@ -43,6 +43,7 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
+            gameBannerAdUnitId = providers.ads.ownerYandex.gameBannerAdUnitId,
             billingService = billingService ?: UnavailableBillingService(
                 notice = if (providers.billing.isConfigured) {
                     BillingNotice.PROVIDER_UNAVAILABLE

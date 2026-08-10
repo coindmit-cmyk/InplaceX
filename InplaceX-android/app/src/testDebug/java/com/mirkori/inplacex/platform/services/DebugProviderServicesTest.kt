@@ -65,6 +65,7 @@ class DebugProviderServicesTest {
                 )
 
                 assertEquals(listOf(AdProviderId.OWNER_YANDEX), plan.providers)
+                assertEquals("", services.gameBannerAdUnitId)
             } finally {
                 services.adRuntime.close()
             }
@@ -90,6 +91,31 @@ class DebugProviderServicesTest {
             configured,
             selectDebugYandexConfig(ProviderEnvironment.LIVE, configured),
         )
+    }
+
+    @Test
+    fun `sandbox debug factory exposes demo banner id to banner UI`() {
+        val services = ProviderServicesFactory.create(
+            context = ContextWrapper(null),
+            platformConfig = PlatformConfig(
+                navigationItems = emptyList(),
+                providers = ProviderConfig(
+                    environment = ProviderEnvironment.SANDBOX,
+                    ads = AdsProviderConfig(
+                        ownerYandex = AdSdkConfig(
+                            gameBannerAdUnitId = "R-M-owner-banner",
+                        ),
+                    ),
+                ),
+            ),
+            adConsentController = TestAdConsentController,
+        )
+
+        try {
+            assertEquals("demo-banner-yandex", services.gameBannerAdUnitId)
+        } finally {
+            services.adRuntime.close()
+        }
     }
 
     private object TestAdConsentController : AdConsentController {

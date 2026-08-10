@@ -92,12 +92,13 @@ object ProviderServicesFactory {
                 )
             },
         )
+        val effectiveYandexConfig = selectDebugYandexConfig(
+            environment = platformConfig.providers.environment,
+            configured = platformConfig.providers.ads.ownerYandex,
+        )
         val yandex = YandexAdProvider(
             appContext = context,
-            config = selectDebugYandexConfig(
-                environment = platformConfig.providers.environment,
-                configured = platformConfig.providers.ads.ownerYandex,
-            ),
+            config = effectiveYandexConfig,
             consentProvider = adConsent,
             activityHost = adActivityHost,
         )
@@ -113,6 +114,7 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
+            gameBannerAdUnitId = effectiveYandexConfig.gameBannerAdUnitId,
             billingService = billingService ?: StubBillingService(),
         )
     }
