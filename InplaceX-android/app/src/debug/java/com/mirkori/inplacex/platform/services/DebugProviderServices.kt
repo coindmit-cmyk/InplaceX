@@ -1,14 +1,18 @@
 package com.mirkori.inplacex.platform.services
 
 import android.content.Context
+import com.mirkori.inplacex.ads.AdMarket
 import com.mirkori.inplacex.BuildConfig
 import com.mirkori.inplacex.platform.ads.AdConsentController
 import com.mirkori.inplacex.platform.ads.AdActivityHost
+import com.mirkori.inplacex.platform.ads.AdMarketResolver
 import com.mirkori.inplacex.platform.ads.YandexAdProvider
 import com.mirkori.inplacex.platform.ads.createAdRuntime
 import com.mirkori.inplacex.platform.ads.SharedPreferencesAdConsentController
 import com.mirkori.inplacex.platform.ads.createBackendAdMarketResolverOrUnknown
+import com.mirkori.inplacex.platform.config.AdSdkConfig
 import com.mirkori.inplacex.platform.config.PlatformConfig
+import com.mirkori.inplacex.platform.config.ProviderEnvironment
 
 class StubAdService(
     private val rewardedResult: Boolean = false,
@@ -79,13 +83,21 @@ object ProviderServicesFactory {
         val auth = StubGooglePlayAuthService()
         val adConsent = adConsentController ?: SharedPreferencesAdConsentController(context)
         val adActivityHost = AdActivityHost()
-        val marketResolver = createBackendAdMarketResolverOrUnknown(
-            baseUrl = BuildConfig.ONLINE_BASE_URL,
-            allowCleartextLoopback = BuildConfig.ONLINE_ALLOW_CLEARTEXT_LOOPBACK,
+        val marketResolver = selectDebugAdMarketResolver(
+            environment = platformConfig.providers.environment,
+            backendResolver = {
+                createBackendAdMarketResolverOrUnknown(
+                    baseUrl = BuildConfig.ONLINE_BASE_URL,
+                    allowCleartextLoopback = BuildConfig.ONLINE_ALLOW_CLEARTEXT_LOOPBACK,
+                )
+            },
         )
         val yandex = YandexAdProvider(
             appContext = context,
-            config = platformConfig.providers.ads.ownerYandex,
+            config = selectDebugYandexConfig(
+                environment = platformConfig.providers.environment,
+                configured = platformConfig.providers.ads.ownerYandex,
+            ),
             consentProvider = adConsent,
             activityHost = adActivityHost,
         )
@@ -104,4 +116,33 @@ object ProviderServicesFactory {
             billingService = billingService ?: StubBillingService(),
         )
     }
+}
+
+internal fun selectDebugAdMarketResolver(
+    environment: ProviderEnvironment,
+    backendResolver: () -> AdMarketResolver,
+): AdMarketResolver = when (environment) {
+    ProviderEnvironment.SANDBOX -> AdMarketResolver { AdMarket.RUSSIA }
+    ProviderEnvironment.LIVE -> backendResolver()
+}
+
+internal fun selectDebugYandexConfig(
+    environment: ProviderEnvironment,
+    configured: AdSdkConfig,
+): AdSdkConfig = when (environment) {
+    ProviderEnvironment.SANDBOX -> AdSdkConfig(
+        gameBannerAdUnitId = configured.gameBannerAdUnitId
+            .takeIf(String::isNotBlank)
+            ?.let { "demo-banner-yandex" }
+            .orEmpty(),
+        rewardedAdUnitId = configured.rewardedAdUnitId
+            .takeIf(String::isNotBlank)
+            ?.let { "demo-rewarded-yandex" }
+            .orEmpty(),
+        postMatchInterstitialAdUnitId = configured.postMatchInterstitialAdUnitId
+            .takeIf(String::isNotBlank)
+            ?.let { "demo-interstitial-yandex" }
+            .orEmpty(),
+    )
+    ProviderEnvironment.LIVE -> configured
 }
