@@ -1007,17 +1007,10 @@ wait_for_backend_restart_loop() {
 wait_for_backend_ready_after_restore() {
     local container_id="$1"
     local drift_label="$2"
-    local stable_ready_checks=0
-    docker restart "$container_id" >/dev/null
     for _ in {1..90}; do
         if [[ "$(docker inspect --format '{{.State.Running}}' "$container_id" 2>/dev/null || true)" == "true" ]] &&
             curl --fail --silent "http://127.0.0.1:$backend_port/ready" >/dev/null 2>&1; then
-            (( stable_ready_checks += 1 ))
-            if (( stable_ready_checks >= 3 )); then
-                return 0
-            fi
-        else
-            stable_ready_checks=0
+            return 0
         fi
         sleep 1
     done
