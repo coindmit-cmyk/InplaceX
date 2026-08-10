@@ -181,6 +181,7 @@ class OnlineSessionRestartRecoveryTest {
                 commandId = createCommandId,
                 playStyle = OnlineFriendPlayStyle.RACE,
                 codeLength = 6,
+                targetPlayerId = guest,
             ).inviteCode
         }
 
@@ -195,10 +196,15 @@ class OnlineSessionRestartRecoveryTest {
                 commandId = createCommandId,
                 playStyle = OnlineFriendPlayStyle.RACE,
                 codeLength = 6,
+                targetPlayerId = guest,
             )
             assertEquals(inviteCode, replayedCreate.inviteCode)
             assertEquals(PrivateInviteStatus.WAITING, replayedCreate.status)
             assertEquals(Duration.ofMinutes(10).seconds, replayedCreate.matchDurationSeconds)
+            assertEquals(
+                listOf(inviteCode),
+                restartedRuntime.listIncomingPrivateInvites(guest).map { it.inviteCode },
+            )
             val accepted = restartedRuntime.acceptPrivateInvite(guest, acceptCommandId, inviteCode)
             assertEquals(PrivateInviteStatus.MATCHED, accepted.status)
             requireNotNull(accepted.sessionId)

@@ -1,11 +1,15 @@
 package com.mirkori.inplacex
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.core.view.WindowCompat
@@ -39,6 +43,7 @@ import com.mirkori.inplacex.ads.AdPreloadResult
 import com.mirkori.inplacex.ads.AdProviderId
 import com.mirkori.inplacex.ads.AdRequest
 import com.mirkori.inplacex.data.local.PlatformLocalRepository
+import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.data.local.LocalRelationshipStatus
 import com.mirkori.inplacex.data.local.LocalRelationshipType
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
@@ -58,6 +63,9 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
+import com.mirkori.inplacex.platform.online.IncomingFriendInviteNotifier
+import com.mirkori.inplacex.platform.online.OnlineClientResult
+import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingAvailability
@@ -200,7 +208,7 @@ class MainActivity : ComponentActivity() {
                 var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
-                var requestOnlineDuel by rememberSaveable { mutableStateOf(false) }
+                var requestedOnlinePlayStyleName by rememberSaveable { mutableStateOf<String?>(null) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 val initialProgressState = remember {
                     initialProgressState(
@@ -229,10 +237,15 @@ class MainActivity : ComponentActivity() {
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
-                val savedFriends = remember(platformLocalRepository) {
-                    platformLocalRepository
-                        .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                val localPlayerProfile = remember(platformLocalRepository) {
+                    platformLocalRepository.loadPlayerProfile()
+                }
+                var savedFriends by remember(platformLocalRepository) {
+                    mutableStateOf(
+                        platformLocalRepository
+                            .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                            .filter { it.relationshipType == LocalRelationshipType.FRIEND },
+                    )
                 }
 
                 LaunchedEffect(Unit) {
@@ -311,8 +324,39 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                var incomingFriendInvites by remember {
+                    mutableStateOf(emptyList<OnlineFriendInvite>())
+                }
+                val incomingInviteNotifier = remember {
+                    IncomingFriendInviteNotifier(applicationContext)
+                }
+                val notifiedInviteCodes = remember { mutableSetOf<String>() }
+                var notificationPermissionRequested by rememberSaveable { mutableStateOf(false) }
+                var notificationPermissionGranted by remember {
+                    mutableStateOf(incomingInviteNotifier.canPostNotifications())
+                }
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { granted ->
+                    notificationPermissionGranted = granted
+                }
                 DisposableEffect(onlineRuntime) {
                     onDispose { onlineRuntime?.close() }
+                }
+                LaunchedEffect(onlineRuntime) {
+                    if (onlineRuntime == null) {
+                        incomingFriendInvites = emptyList()
+                        return@LaunchedEffect
+                    }
+                    while (true) {
+                        when (val result = onlineRuntime.listIncomingFriendInvites()) {
+                            is OnlineClientResult.Success -> incomingFriendInvites = result.value
+                            OnlineClientResult.AuthenticationRequired ->
+                                incomingFriendInvites = emptyList()
+                            else -> Unit
+                        }
+                        delay(IncomingInvitePollMillis)
+                    }
                 }
                 LaunchedEffect(mirkoriPlatformRuntime, mirkoriCallbackUrl) {
                     if (mirkoriCallbackUrl == null) {
@@ -402,6 +446,40 @@ class MainActivity : ComponentActivity() {
                 }
                 val strings = remember(currentLanguage) {
                     StaticLocalizationProvider.forLanguage(currentLanguage)
+                }
+                LaunchedEffect(
+                    incomingFriendInvites,
+                    notificationPermissionGranted,
+                    currentLanguage,
+                ) {
+                    if (
+                        incomingFriendInvites.isNotEmpty() &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        !incomingInviteNotifier.canPostNotifications() &&
+                        !notificationPermissionRequested
+                    ) {
+                        notificationPermissionRequested = true
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        return@LaunchedEffect
+                    }
+                    if (!incomingInviteNotifier.canPostNotifications()) return@LaunchedEffect
+                    incomingFriendInvites.forEach { invite ->
+                        if (notifiedInviteCodes.add(invite.inviteCode)) {
+                            val messageKey = if (
+                                invite.playStyle ==
+                                com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle.RACE
+                            ) {
+                                "social.notification.race"
+                            } else {
+                                "social.notification.turn_based"
+                            }
+                            incomingInviteNotifier.post(
+                                invite = invite,
+                                title = strings.text("social.notification.title"),
+                                message = strings.text(messageKey),
+                            )
+                        }
+                    }
                 }
                 val effectiveProgressState = remember(progressState, billingState.entitlements) {
                     progressState.withServerPaidEntitlements(billingState.entitlements)
@@ -580,6 +658,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalAppStrings provides strings) {
                     AppShell(
                         currentSection = currentSection,
+                        socialNotificationCount = incomingFriendInvites.size,
                         onSectionChange = { section ->
                             currentSection = section
                             isSettingsOpen = false
@@ -700,8 +779,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenCompany = {
                                         currentSection = AppSection.COMPANY
                                     },
-                                    onOpenOnlineDuel = {
-                                        requestOnlineDuel = true
+                                    onOpenOnlineMatch = { playStyle ->
+                                        requestedOnlinePlayStyleName = playStyle.name
                                         currentSection = AppSection.SOCIAL
                                     },
                                     onlineAvailable = onlineRuntime != null,
@@ -721,9 +800,28 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 friends = savedFriends,
+                                currentPlayerId = mirkoriAccountState.gamePlayerId,
+                                onAddFriend = { displayName, targetPlayerId ->
+                                    platformLocalRepository.upsertRelationship(
+                                        LocalSocialRelationship(
+                                            playerId = localPlayerProfile.playerId,
+                                            targetPlayerId = targetPlayerId,
+                                            targetDisplayName = displayName,
+                                            relationshipType = LocalRelationshipType.FRIEND,
+                                            status = LocalRelationshipStatus.ACTIVE,
+                                            source = "manual_player_id",
+                                        ),
+                                    )
+                                    savedFriends = platformLocalRepository
+                                        .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                },
+                                incomingInvites = incomingFriendInvites,
                                 showTestFriendBot = testFriendBotEnabled(),
-                                requestQuickMatch = requestOnlineDuel,
-                                onQuickMatchRequestConsumed = { requestOnlineDuel = false },
+                                requestedQuickMatchPlayStyle = requestedOnlinePlayStyleName?.let(
+                                    com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle::valueOf,
+                                ),
+                                onQuickMatchRequestConsumed = { requestedOnlinePlayStyleName = null },
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },
@@ -1320,3 +1418,4 @@ private fun rewardedHintRequest(hintType: HintStockType): AdRequest =
     )
 
 private const val BannerRetryDelayMillis = 30_000L
+private const val IncomingInvitePollMillis = 5_000L

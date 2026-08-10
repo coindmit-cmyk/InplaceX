@@ -139,9 +139,23 @@ fun Application.configureOnlineRoutes(
                     commandId = command.commandId,
                     playStyle = command.playStyle,
                     codeLength = command.codeLength,
+                    targetPlayerId = command.targetPlayerId,
                 )
             } ?: return@post
             call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvite(result))
+        }
+
+        get("/api/v1/friends/invites") {
+            val principal = call.authenticatedPrincipalOrRespond(
+                verifier,
+                playerProvisioner,
+                abuseProtector,
+                OnlineOperation.ListFriendInvites,
+            ) ?: return@get
+            val result = runOnlineCommand(call) {
+                service.listIncomingPrivateInvites(principal.playerId)
+            } ?: return@get
+            call.respondJson(HttpStatusCode.OK, codec.encodePrivateInvites(result))
         }
 
         get("/api/v1/friends/invites/{inviteCode}") {
@@ -586,6 +600,7 @@ private data class FriendInviteCommand(
     val commandId: String,
     val playStyle: OnlineFriendPlayStyle,
     val codeLength: Int,
+    val targetPlayerId: String?,
 )
 
 private data class ReconnectCommand(
@@ -664,7 +679,8 @@ private class OnlineJsonCodec {
     fun decodeFriendInvite(source: String): FriendInviteCommand {
         val value = decodeObject(
             source,
-            setOf("commandId", "playStyle", "codeLength"),
+            requiredFields = setOf("commandId", "playStyle", "codeLength"),
+            allowedFields = setOf("commandId", "playStyle", "codeLength", "targetPlayerId"),
         )
         return FriendInviteCommand(
             commandId = value.uuid("commandId"),
@@ -674,6 +690,7 @@ private class OnlineJsonCodec {
                 else -> throw IllegalArgumentException("unsupported play style")
             },
             codeLength = value.intInRange("codeLength", 4..10),
+            targetPlayerId = value["targetPlayerId"]?.let { value.uuid("targetPlayerId") },
         )
     }
 
@@ -751,6 +768,10 @@ private class OnlineJsonCodec {
         put("allowDuplicates", invite.allowDuplicates)
         put("maxConsecutiveDuplicateDigits", invite.maxConsecutiveDuplicateDigits)
         put("matchDurationSeconds", invite.matchDurationSeconds)
+    }.toString()
+
+    fun encodePrivateInvites(invites: List<PrivateDuelInvite>): String = buildJsonArray {
+        invites.forEach { invite -> add(json.parseToJsonElement(encodePrivateInvite(invite))) }
     }.toString()
 
     fun decodeWebSocketControl(source: String): WebSocketControlCommand {

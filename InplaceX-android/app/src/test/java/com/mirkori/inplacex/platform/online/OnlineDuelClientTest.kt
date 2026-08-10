@@ -148,6 +148,7 @@ class OnlineDuelClientTest {
 
     @Test
     fun `friend room creation sends owner selected style and length`() = runBlocking {
+        val targetPlayerId = UUID.randomUUID().toString()
         val boundary = QueueBoundary(
             RemoteCallResult.Success(
                 RemoteResponse(
@@ -174,6 +175,7 @@ class OnlineDuelClientTest {
         val result = OnlineDuelClient(boundary).createFriendInvite(
             RemoteFriendPlayStyle.TURN_BASED,
             8,
+            targetPlayerId,
         )
 
         assertTrue(result is OnlineClientResult.Success)
@@ -181,6 +183,26 @@ class OnlineDuelClientTest {
         val body = Json.parseToJsonElement(requireNotNull(request.bodyJson)).jsonObject
         assertEquals("turn_based", body.getValue("playStyle").jsonPrimitive.content)
         assertEquals("8", body.getValue("codeLength").jsonPrimitive.content)
+        assertEquals(targetPlayerId, body.getValue("targetPlayerId").jsonPrimitive.content)
+    }
+
+    @Test
+    fun `incoming friend invitations use collection endpoint and strict array decoding`() = runBlocking {
+        val boundary = QueueBoundary(
+            RemoteCallResult.Success(
+                RemoteResponse(
+                    200,
+                    emptyMap(),
+                    """[{"inviteCode":"7KMQ3NWP","status":"waiting","sessionId":null,"createdAtEpochMs":1000,"expiresAtEpochMs":601000,"playStyle":"race","codeLength":4,"allowDuplicates":true,"maxConsecutiveDuplicateDigits":3,"matchDurationSeconds":600}]""",
+                ),
+            ),
+        )
+
+        val result = OnlineDuelClient(boundary).listIncomingFriendInvites()
+
+        assertEquals(1, (result as OnlineClientResult.Success).value.size)
+        assertEquals("/api/v1/friends/invites", boundary.requests.single().path)
+        assertEquals(RemoteHttpMethod.GET, boundary.requests.single().method)
     }
 
     @Test

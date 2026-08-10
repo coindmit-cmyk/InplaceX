@@ -8,6 +8,7 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 fun AppBottomSlot(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    socialNotificationCount: Int = 0,
     bottomMode: BottomLayerMode,
     adContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -16,6 +17,7 @@ fun AppBottomSlot(
         BottomLayerMode.MENU -> AppBottomMenu(
             currentSection = currentSection,
             onSectionChange = onSectionChange,
+            socialNotificationCount = socialNotificationCount,
             modifier = modifier
         )
 

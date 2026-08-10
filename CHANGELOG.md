@@ -8,6 +8,14 @@
   and a successful link keeps the current InplaceX `gamePlayerId`. The action is
   now also present in configured release builds rather than being debug-only.
 
+- Race now opens the same bot-or-online opponent choice as Duel, while each
+  quick-match entry preserves its intended play style. Saved friends can be
+  added by their public Mirkori player ID and invited directly: the recipient
+  gets an Android notification while the app is running, an in-app Social badge,
+  and an incoming invitation card. The sender still receives a private room
+  code as a fallback. Targeted invitations are PostgreSQL-backed, restart-safe,
+  and can be accepted only by the intended authenticated player.
+
 - Signed InplaceX candidates can now be converted into an immutable Mirkori
   Platform catalog snapshot without dropping other games or prior releases.
   The Gradle workflow binds the exact release-candidate bundle to the current

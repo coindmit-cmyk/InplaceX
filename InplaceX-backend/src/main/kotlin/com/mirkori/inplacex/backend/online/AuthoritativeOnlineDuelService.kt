@@ -371,9 +371,14 @@ class AuthoritativeOnlineDuelService(
         commandId: String,
         playStyle: OnlineFriendPlayStyle,
         codeLength: Int,
+        targetPlayerId: String? = null,
     ): PrivateDuelInvite {
         requireCanonicalUuid(playerId, "playerId")
         requireCanonicalUuid(commandId, "commandId")
+        targetPlayerId?.let {
+            requireCanonicalUuid(it, "targetPlayerId")
+            require(it != playerId) { "targetPlayerId must differ from playerId" }
+        }
         val rules = OnlineMatchRules(playStyle, codeLength)
         synchronized(lock) {
             val replayKey = "$playerId:$commandId"
@@ -382,7 +387,8 @@ class AuthoritativeOnlineDuelService(
                     ?: privateInvites.getValue(replay.inviteCode)
                 if (
                     replayed.invite.playStyle != playStyle ||
-                    replayed.invite.codeLength != codeLength
+                    replayed.invite.codeLength != codeLength ||
+                    replayed.targetPlayerId != targetPlayerId
                 ) {
                     throw OnlineCommandIdReusedException()
                 }
@@ -405,6 +411,7 @@ class AuthoritativeOnlineDuelService(
                 )
                 val candidate = PrivateInviteRecord(
                     ownerPlayerId = playerId,
+                    targetPlayerId = targetPlayerId,
                     createCommandId = commandId,
                     invite = invite,
                 )
@@ -415,18 +422,38 @@ class AuthoritativeOnlineDuelService(
                     privateInviteCreateReplays[replayKey] = PrivateInviteCreateReplay(
                         playStyle,
                         codeLength,
+                        targetPlayerId,
                         inviteCode,
                     )
                 }
                 if (
                     coordinated.invite.playStyle != playStyle ||
-                    coordinated.invite.codeLength != codeLength
+                    coordinated.invite.codeLength != codeLength ||
+                    coordinated.targetPlayerId != targetPlayerId
                 ) {
                     throw OnlineCommandIdReusedException()
                 }
                 return coordinated.invite
             }
             throw IllegalStateException("could not allocate private duel invite code")
+        }
+    }
+
+    fun listIncomingPrivateInvites(playerId: String): List<PrivateDuelInvite> {
+        requireCanonicalUuid(playerId, "playerId")
+        synchronized(lock) {
+            val now = clock.instant()
+            val records = lobbyRepository?.loadIncomingInvites(playerId, now)
+                ?.map(::cacheInvite)
+                ?: privateInvites.values.filter { record ->
+                    record.targetPlayerId == playerId &&
+                        record.invite.status == PrivateInviteStatus.WAITING &&
+                        now.isBefore(record.invite.expiresAt)
+                }
+            return records
+                .sortedByDescending { it.invite.createdAt }
+                .take(MaximumIncomingFriendInvites)
+                .map { it.invite }
         }
     }
 
@@ -506,6 +533,9 @@ class AuthoritativeOnlineDuelService(
             val record = privateInvites[inviteCode] ?: throw NoSuchElementException("private duel invite not found")
             expirePrivateInvite(record, clock.instant())
             if (playerId == record.ownerPlayerId) throw OnlineInviteUnavailableException()
+            if (record.targetPlayerId?.let { it != playerId } == true) {
+                throw OnlineInviteUnavailableException()
+            }
             if (record.invite.status != PrivateInviteStatus.WAITING) {
                 if (record.guestPlayerId == playerId && record.invite.status == PrivateInviteStatus.MATCHED) {
                     return record.invite
@@ -684,6 +714,7 @@ class AuthoritativeOnlineDuelService(
         val rules = OnlineLobbyRulesCodec.decodeInvite(stored.rulesJson)
         return PrivateInviteRecord(
             ownerPlayerId = stored.ownerPlayerId,
+            targetPlayerId = stored.targetPlayerId,
             guestPlayerId = stored.guestPlayerId,
             createCommandId = stored.createCommandId,
             acceptCommandId = stored.acceptCommandId,
@@ -709,6 +740,7 @@ class AuthoritativeOnlineDuelService(
                 PrivateInviteCreateReplay(
                     record.invite.playStyle,
                     record.invite.codeLength,
+                    stored.targetPlayerId,
                     stored.inviteCode,
                 )
             if (stored.guestPlayerId != null && stored.acceptCommandId != null) {
@@ -1033,6 +1065,7 @@ class AuthoritativeOnlineDuelService(
     private data class PrivateInviteCreateReplay(
         val playStyle: OnlineFriendPlayStyle,
         val codeLength: Int,
+        val targetPlayerId: String?,
         val inviteCode: String,
     )
 
@@ -1042,6 +1075,7 @@ class AuthoritativeOnlineDuelService(
 
     private data class PrivateInviteRecord(
         val ownerPlayerId: String,
+        val targetPlayerId: String? = null,
         var guestPlayerId: String? = null,
         val createCommandId: String,
         var acceptCommandId: String? = null,
@@ -1050,6 +1084,7 @@ class AuthoritativeOnlineDuelService(
         fun toDurable(): DurablePrivateInvite = DurablePrivateInvite(
             inviteCode = invite.inviteCode,
             ownerPlayerId = ownerPlayerId,
+            targetPlayerId = targetPlayerId,
             guestPlayerId = guestPlayerId,
             createCommandId = createCommandId,
             acceptCommandId = acceptCommandId,
@@ -1570,6 +1605,7 @@ private const val MaximumLegacyRefreshTokenCharacters = 512
 private const val PrivateInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val PrivateInviteCodeLength = 8
 private const val MaximumInviteCodeAttempts = 32
+private const val MaximumIncomingFriendInvites = 50
 private val OnlineCodeLengthRange = 4..10
 private const val OnlineMaximumConsecutiveDuplicateDigits = 3
 private const val OnlineInternalAttemptCapacity = 1_000

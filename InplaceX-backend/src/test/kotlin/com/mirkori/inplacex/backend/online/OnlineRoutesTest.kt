@@ -658,6 +658,28 @@ class OnlineRoutesTest {
     }
 
     @Test
+    fun `targeted friend invite appears only in recipient collection`() = testApplication {
+        val service = AuthoritativeOnlineDuelService(Clock.fixed(now, ZoneOffset.UTC))
+        application { configureOnlineRoutes(verifier, service) }
+        val commandId = UUID.randomUUID().toString()
+
+        val created = client.post("/api/v1/friends/invites") {
+            bearer(playerToken)
+            header("Idempotency-Key", commandId)
+            contentType(ContentType.Application.Json)
+            setBody(
+                """{"commandId":"$commandId","playStyle":"race","codeLength":4,"targetPlayerId":"$attackerId"}""",
+            )
+        }
+        assertEquals(HttpStatusCode.OK, created.status)
+
+        val ownerList = client.get("/api/v1/friends/invites") { bearer(playerToken) }
+        val recipientList = client.get("/api/v1/friends/invites") { bearer(attackerToken) }
+        assertEquals(0, Json.parseToJsonElement(ownerList.bodyAsText()).jsonArray.size)
+        assertEquals(1, Json.parseToJsonElement(recipientList.bodyAsText()).jsonArray.size)
+    }
+
+    @Test
     fun `forged token and stale revision fail closed`() = testApplication {
         val serviceClock = RouteMutableClock(now)
         val service = AuthoritativeOnlineDuelService(serviceClock, Duration.ofSeconds(5))

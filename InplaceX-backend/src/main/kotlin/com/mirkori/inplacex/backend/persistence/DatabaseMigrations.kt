@@ -64,6 +64,11 @@ object DatabaseMigrations {
             description = "add one-time legacy online membership migration",
             sql = readResource("db/migration/V9__add_legacy_online_membership_migration.sql"),
         ),
+        SqlMigration(
+            version = "10",
+            description = "add targeted friend invites",
+            sql = readResource("db/migration/V10__add_targeted_friend_invites.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(
@@ -253,14 +258,18 @@ class JdbcMigrationRunner(
         missingChecksumVersions: Set<String>,
     ) {
         require(missingChecksumVersions.isNotEmpty())
-        require(appliedVersions == LegacyV1ToV8 || appliedVersions == LegacyV1ToV9) {
+        require(
+            appliedVersions == LegacyV1ToV8 ||
+                appliedVersions == LegacyV1ToV9 ||
+                appliedVersions == LegacyV1ToV10,
+        ) {
             "Legacy checksum baseline requires an exact known migration history"
         }
         if (connection.metaData.databaseProductName.equals("PostgreSQL", ignoreCase = true)) {
-            val expected = if (appliedVersions == LegacyV1ToV8) {
-                LegacyPostgresV1ToV8SchemaSha256
-            } else {
-                LegacyPostgresV1ToV9SchemaSha256
+            val expected = when (appliedVersions) {
+                LegacyV1ToV8 -> LegacyPostgresV1ToV8SchemaSha256
+                LegacyV1ToV9 -> LegacyPostgresV1ToV9SchemaSha256
+                else -> LegacyPostgresV1ToV10SchemaSha256
             }
             val actual = postgresSchemaFingerprint(connection)
             require(actual == expected) {
@@ -354,10 +363,13 @@ class JdbcMigrationRunner(
         val MigrationVersionPattern = Regex("[0-9]{1,40}")
         val LegacyV1ToV8 = (1..8).map(Int::toString).toSet()
         val LegacyV1ToV9 = (1..9).map(Int::toString).toSet()
+        val LegacyV1ToV10 = (1..10).map(Int::toString).toSet()
         const val LegacyPostgresV1ToV8SchemaSha256 =
             "2b4467c0d68a20de18ee4df08f285a4386e246d73c868387ebc30d17a76aae5d"
         const val LegacyPostgresV1ToV9SchemaSha256 =
             "a612721cba6f83be81c6827458b185686a1f2d061d92300636382fe7ce272640"
+        const val LegacyPostgresV1ToV10SchemaSha256 =
+            "74d30af53909d7cdfd4a21db26cabc4e907d7663e7345e4437d1d0dd54049ee0"
         val PostgresSchemaFingerprintSql =
             """
             WITH managed_tables AS (
@@ -445,6 +457,7 @@ class JdbcMigrationRunner(
                     "migrated_at",
                 ),
             ),
+            "10" to mapOf("private_duel_invites" to setOf("target_player_id")),
         )
         val KnownLegacyIndexesByVersion: Map<String, Map<String, Set<String>>> = mapOf(
             "6" to mapOf("matchmaking_tickets" to setOf("idx_matchmaking_command_replay")),
@@ -455,6 +468,9 @@ class JdbcMigrationRunner(
                 ),
             ),
             "8" to mapOf("duel_events" to setOf("idx_duel_events_session_cursor")),
+            "10" to mapOf(
+                "private_duel_invites" to setOf("idx_private_invites_target_waiting"),
+            ),
         )
     }
 }

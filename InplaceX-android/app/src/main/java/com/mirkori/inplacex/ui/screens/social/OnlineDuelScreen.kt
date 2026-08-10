@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 
 internal enum class OnlineDuelEntryPoint {
     INVITES,
+    FRIEND,
     QUICK_MATCH,
 }
 
@@ -55,6 +56,10 @@ internal fun OnlineDuelScreen(
     initialSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
+    initialPlayStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.RACE,
+    targetPlayerId: String? = null,
+    targetDisplayName: String? = null,
+    autoAcceptInviteCode: String? = null,
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -62,7 +67,8 @@ internal fun OnlineDuelScreen(
     var state by remember {
         mutableStateOf<OnlineDuelUiState>(
             if (initialSessionId == null) {
-                OnlineDuelUiState.Ready
+                if (autoAcceptInviteCode == null) OnlineDuelUiState.Ready
+                else OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
             } else {
                 OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
             },
@@ -73,7 +79,7 @@ internal fun OnlineDuelScreen(
     val guessSubmission = remember { TransientOperationGate() }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPlayStyleName by rememberSaveable {
-        mutableStateOf(RemoteFriendPlayStyle.RACE.name)
+        mutableStateOf(initialPlayStyle.name)
     }
     var selectedCodeLength by rememberSaveable { mutableStateOf(4) }
     val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
@@ -134,6 +140,14 @@ internal fun OnlineDuelScreen(
         } else {
             onActiveSessionChange(sessionId)
             applySnapshotResult(runtime.readSession(sessionId))
+        }
+    }
+
+    LaunchedEffect(autoAcceptInviteCode) {
+        val code = autoAcceptInviteCode ?: return@LaunchedEffect
+        when (val result = runtime.acceptFriendInvite(code)) {
+            is OnlineClientResult.Success -> openInviteSession(result.value)
+            else -> state = inviteError(result)
         }
     }
 
@@ -257,22 +271,25 @@ internal fun OnlineDuelScreen(
             contentColor = androidx.compose.ui.graphics.Color.White,
         ) {
             Text(
-                text = strings.text(
-                    if (entryPoint == OnlineDuelEntryPoint.INVITES) {
-                        "social.invites"
-                    } else {
-                        "social.match.title"
-                    },
-                ),
+                text = when (entryPoint) {
+                    OnlineDuelEntryPoint.FRIEND -> targetDisplayName
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { name ->
+                            strings.text("social.friend.match.title").replace("{name}", name)
+                        }
+                        ?: strings.text("social.friend.match.title.generic")
+                    OnlineDuelEntryPoint.INVITES -> strings.text("social.invites")
+                    OnlineDuelEntryPoint.QUICK_MATCH -> strings.text("social.match.title")
+                },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
             Text(
                 text = strings.text(
-                    if (entryPoint == OnlineDuelEntryPoint.INVITES) {
-                        "social.invites.screen_description"
-                    } else {
-                        "social.online.screen_description"
+                    when (entryPoint) {
+                        OnlineDuelEntryPoint.FRIEND -> "social.friend.match.description"
+                        OnlineDuelEntryPoint.INVITES -> "social.invites.screen_description"
+                        OnlineDuelEntryPoint.QUICK_MATCH -> "social.online.screen_description"
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -360,7 +377,7 @@ internal fun OnlineDuelScreen(
                     }
                 }
 
-                if (entryPoint == OnlineDuelEntryPoint.INVITES) {
+                if (entryPoint != OnlineDuelEntryPoint.QUICK_MATCH) {
                     Text(strings.text("social.online.play_friend"), fontWeight = FontWeight.SemiBold)
                     Button(
                         modifier = Modifier.fillMaxWidth(),
@@ -371,6 +388,7 @@ internal fun OnlineDuelScreen(
                                     val result = runtime.createFriendInvite(
                                         playStyle = selectedPlayStyle,
                                         codeLength = selectedCodeLength,
+                                        targetPlayerId = targetPlayerId,
                                     )
                                 ) {
                                     is OnlineClientResult.Success ->
@@ -380,32 +398,44 @@ internal fun OnlineDuelScreen(
                             }
                         },
                     ) {
-                        Text(strings.text("social.online.create_code"))
+                        Text(
+                            strings.text(
+                                if (entryPoint == OnlineDuelEntryPoint.FRIEND) {
+                                    "social.online.send_invite"
+                                } else {
+                                    "social.online.create_code"
+                                },
+                            ),
+                        )
                     }
-                    OutlinedTextField(
-                        value = inviteCode,
-                        onValueChange = { value ->
-                            inviteCode = normalizeFriendInviteCode(value)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(strings.text("social.online.friend_code")) },
-                        singleLine = true,
-                    )
-                    OutlinedButton(
-                        enabled = inviteCode.length == FriendInviteCodeLength,
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            val submittedCode = inviteCode
-                            state = OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
-                            scope.launch {
-                                when (val result = runtime.acceptFriendInvite(submittedCode)) {
-                                    is OnlineClientResult.Success -> openInviteSession(result.value)
-                                    else -> state = inviteError(result)
+                    if (entryPoint == OnlineDuelEntryPoint.INVITES) {
+                        OutlinedTextField(
+                            value = inviteCode,
+                            onValueChange = { value ->
+                                inviteCode = normalizeFriendInviteCode(value)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(strings.text("social.online.friend_code")) },
+                            singleLine = true,
+                        )
+                        OutlinedButton(
+                            enabled = inviteCode.length == FriendInviteCodeLength,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                val submittedCode = inviteCode
+                                state = OnlineDuelUiState.Loading(
+                                    strings.text("social.online.joining_friend"),
+                                )
+                                scope.launch {
+                                    when (val result = runtime.acceptFriendInvite(submittedCode)) {
+                                        is OnlineClientResult.Success -> openInviteSession(result.value)
+                                        else -> state = inviteError(result)
+                                    }
                                 }
-                            }
-                        },
-                    ) {
-                        Text(strings.text("social.online.join_code"))
+                            },
+                        ) {
+                            Text(strings.text("social.online.join_code"))
+                        }
                     }
                 }
             }
@@ -422,7 +452,16 @@ internal fun OnlineDuelScreen(
             }
 
             is OnlineDuelUiState.WaitingForFriend -> SceneCard {
-                Text(strings.text("social.online.share_code"), fontWeight = FontWeight.SemiBold)
+                Text(
+                    strings.text(
+                        if (entryPoint == OnlineDuelEntryPoint.FRIEND) {
+                            "social.online.invite_sent"
+                        } else {
+                            "social.online.share_code"
+                        },
+                    ),
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Text(
                     text = current.invite.inviteCode,
                     style = MaterialTheme.typography.displaySmall,

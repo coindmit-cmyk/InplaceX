@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,11 +40,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import java.util.UUID
 
 @Composable
 fun SocialRootScreen(
@@ -51,8 +55,11 @@ fun SocialRootScreen(
     initialActiveSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
+    currentPlayerId: String? = null,
+    onAddFriend: (displayName: String, targetPlayerId: String) -> Unit = { _, _ -> },
     showTestFriendBot: Boolean = false,
-    requestQuickMatch: Boolean = false,
+    incomingInvites: List<OnlineFriendInvite> = emptyList(),
+    requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
     onQuickMatchRequestConsumed: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
@@ -64,6 +71,9 @@ fun SocialRootScreen(
             if (initialActiveSessionId == null) null else SocialDestination.ONLINE_MATCH,
         )
     }
+    var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
+    var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
+    var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
 
     LaunchedEffect(activeDestination) {
         onInGameChange(activeDestination != null)
@@ -74,10 +84,11 @@ fun SocialRootScreen(
             activeDestination = null
         }
     }
-    LaunchedEffect(requestQuickMatch, onlineRuntime) {
-        if (!requestQuickMatch) return@LaunchedEffect
+    LaunchedEffect(requestedQuickMatchPlayStyle, onlineRuntime) {
+        val requestedPlayStyle = requestedQuickMatchPlayStyle ?: return@LaunchedEffect
 
         if (onlineRuntime != null) {
+            quickMatchPlayStyle = requestedPlayStyle
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -96,26 +107,55 @@ fun SocialRootScreen(
     if (activeDestination == SocialDestination.FRIENDS) {
         SocialFriendsScreen(
             friends = friends,
+            currentPlayerId = currentPlayerId,
+            onAddFriend = onAddFriend,
             showTestFriendBot = showTestFriendBot,
             onlineConfigured = onlineRuntime != null,
-            onPlayTestFriend = { activeDestination = SocialDestination.ONLINE_MATCH },
+            incomingInvites = incomingInvites,
+            onAcceptInvite = { invite ->
+                selectedFriend = null
+                autoAcceptInviteCode = invite.inviteCode
+                activeDestination = SocialDestination.FRIEND_MATCH
+            },
+            onPlayTestFriend = {
+                selectedFriend = null
+                autoAcceptInviteCode = null
+                quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
+                activeDestination = SocialDestination.ONLINE_MATCH
+            },
+            onPlayFriend = { friend ->
+                selectedFriend = friend
+                autoAcceptInviteCode = null
+                activeDestination = SocialDestination.FRIEND_MATCH
+            },
         )
         return
     }
 
     if (
-        activeDestination in setOf(SocialDestination.INVITES, SocialDestination.ONLINE_MATCH) &&
+        activeDestination in setOf(
+            SocialDestination.INVITES,
+            SocialDestination.FRIEND_MATCH,
+            SocialDestination.ONLINE_MATCH,
+        ) &&
         onlineRuntime != null
     ) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
             initialSessionId = initialActiveSessionId,
             onActiveSessionChange = onActiveSessionChange,
-            entryPoint = if (activeDestination == SocialDestination.INVITES) {
-                OnlineDuelEntryPoint.INVITES
-            } else {
-                OnlineDuelEntryPoint.QUICK_MATCH
+            entryPoint = when (activeDestination) {
+                SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
+                SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND
+                else -> OnlineDuelEntryPoint.QUICK_MATCH
             },
+            initialPlayStyle = quickMatchPlayStyle,
+            targetPlayerId = selectedFriend?.targetPlayerId
+                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+            targetDisplayName = selectedFriend?.targetDisplayName
+                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+            autoAcceptInviteCode = autoAcceptInviteCode
+                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
         )
         return
     }
@@ -144,6 +184,18 @@ fun SocialRootScreen(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (incomingInvites.isNotEmpty()) {
+                SceneCard(accentColor = InplaceXColors.ToyOrangeTop) {
+                    Text(
+                        text = strings.text("social.invites.incoming.notice")
+                            .replace("{count}", incomingInvites.size.toString()),
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
+                        Text(strings.text("social.invites.open"))
+                    }
+                }
+            }
             SceneActionTile(
                 title = strings.text("social.friends"),
                 subtitle = strings.text("social.friends.subtitle"),
@@ -163,7 +215,11 @@ fun SocialRootScreen(
                     listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
                 ),
                 enabled = onlineRuntime != null,
-                onClick = { activeDestination = SocialDestination.INVITES },
+                onClick = {
+                    selectedFriend = null
+                    autoAcceptInviteCode = null
+                    activeDestination = SocialDestination.INVITES
+                },
             )
             SceneActionTile(
                 title = strings.text("social.online.title"),
@@ -174,7 +230,10 @@ fun SocialRootScreen(
                 accentBrush = Brush.verticalGradient(
                     listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
                 ),
-                onClick = { activeDestination = SocialDestination.ONLINE_MATCH },
+                onClick = {
+                    quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
+                    activeDestination = SocialDestination.ONLINE_MATCH
+                },
             )
         }
     }
@@ -182,6 +241,7 @@ fun SocialRootScreen(
 
 private enum class SocialDestination {
     FRIENDS,
+    FRIEND_MATCH,
     INVITES,
     ONLINE_MATCH,
 }
@@ -189,11 +249,19 @@ private enum class SocialDestination {
 @Composable
 private fun SocialFriendsScreen(
     friends: List<LocalSocialRelationship>,
+    currentPlayerId: String?,
+    onAddFriend: (displayName: String, targetPlayerId: String) -> Unit,
     showTestFriendBot: Boolean,
     onlineConfigured: Boolean,
+    incomingInvites: List<OnlineFriendInvite>,
+    onAcceptInvite: (OnlineFriendInvite) -> Unit,
     onPlayTestFriend: () -> Unit,
+    onPlayFriend: (LocalSocialRelationship) -> Unit,
 ) {
     val strings = LocalAppStrings.current
+    var newFriendName by remember { mutableStateOf("") }
+    var newFriendPlayerId by remember { mutableStateOf("") }
+    var addFriendResultKey by remember { mutableStateOf<String?>(null) }
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
@@ -209,6 +277,67 @@ private fun SocialFriendsScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(strings.text("social.friends.subtitle"))
+        }
+
+        SceneCard(accentColor = InplaceXColors.ToyGreenTop.copy(alpha = 0.92f)) {
+            Text(
+                text = strings.text("social.friend.add.title"),
+                fontWeight = FontWeight.Bold,
+            )
+            Text(strings.text("social.friend.add.description"))
+            OutlinedTextField(
+                value = newFriendName,
+                onValueChange = { newFriendName = it.take(40) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text(strings.text("social.friend.add.name")) },
+            )
+            OutlinedTextField(
+                value = newFriendPlayerId,
+                onValueChange = { newFriendPlayerId = it.take(36) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text(strings.text("social.friend.add.player_id")) },
+            )
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val normalizedPlayerId = runCatching {
+                        UUID.fromString(newFriendPlayerId.trim()).toString()
+                    }.getOrNull()
+                    addFriendResultKey = when {
+                        newFriendName.isBlank() -> "social.friend.add.invalid_name"
+                        normalizedPlayerId == null -> "social.friend.add.invalid_player_id"
+                        normalizedPlayerId == currentPlayerId -> "social.friend.add.self"
+                        else -> {
+                            onAddFriend(newFriendName.trim(), normalizedPlayerId)
+                            newFriendName = ""
+                            newFriendPlayerId = ""
+                            "social.friend.add.saved"
+                        }
+                    }
+                },
+            ) {
+                Text(strings.text("social.friend.add.action"))
+            }
+            addFriendResultKey?.let { Text(strings.text(it)) }
+        }
+
+        incomingInvites.forEach { invite ->
+            FriendCard(
+                title = strings.text("social.invites.incoming.title"),
+                subtitle = strings.text(
+                    if (invite.playStyle == RemoteFriendPlayStyle.RACE) {
+                        "social.match.timed"
+                    } else {
+                        "social.match.turn_based"
+                    },
+                ),
+                actionLabelKey = "social.invites.accept",
+                showPlay = true,
+                playEnabled = onlineConfigured,
+                onPlay = { onAcceptInvite(invite) },
+            )
         }
 
         if (showTestFriendBot) {
@@ -231,6 +360,9 @@ private fun SocialFriendsScreen(
             FriendCard(
                 title = friend.targetDisplayName,
                 subtitle = strings.text("social.friend.saved"),
+                showPlay = true,
+                playEnabled = onlineConfigured,
+                onPlay = { onPlayFriend(friend) },
             )
         }
 
@@ -256,6 +388,7 @@ private fun FriendCard(
     showPlay: Boolean = false,
     playEnabled: Boolean = false,
     onPlay: () -> Unit = {},
+    actionLabelKey: String = "social.test_friend.play",
 ) {
     val strings = LocalAppStrings.current
     SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f)) {
@@ -288,7 +421,7 @@ private fun FriendCard(
             }
             if (showPlay) {
                 Button(onClick = onPlay, enabled = playEnabled) {
-                    Text(strings.text("social.test_friend.play"))
+                    Text(strings.text(actionLabelKey))
                 }
             }
         }

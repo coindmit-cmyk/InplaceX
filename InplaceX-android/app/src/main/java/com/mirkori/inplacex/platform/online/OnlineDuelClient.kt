@@ -106,11 +106,12 @@ class OnlineDuelClient(
     suspend fun createFriendInvite(
         playStyle: RemoteFriendPlayStyle,
         codeLength: Int,
+        targetPlayerId: String? = null,
     ): OnlineClientResult<OnlineFriendInvite> {
         val commandId = UUID.randomUUID().toString()
         return transport.execute(
             gateway.prepareCreateFriendInvite(
-                payload = RemoteFriendInvitePayload(commandId, playStyle, codeLength),
+                payload = RemoteFriendInvitePayload(commandId, playStyle, codeLength, targetPlayerId),
                 idempotencyKey = commandId,
             ),
         ).decode(codec::friendInvite)
@@ -118,6 +119,9 @@ class OnlineDuelClient(
 
     suspend fun readFriendInvite(inviteCode: String): OnlineClientResult<OnlineFriendInvite> =
         transport.execute(gateway.prepareReadFriendInvite(inviteCode)).decode(codec::friendInvite)
+
+    suspend fun listIncomingFriendInvites(): OnlineClientResult<List<OnlineFriendInvite>> =
+        transport.execute(gateway.prepareListIncomingFriendInvites()).decode(codec::friendInvites)
 
     suspend fun acceptFriendInvite(inviteCode: String): OnlineClientResult<OnlineFriendInvite> {
         val commandId = UUID.randomUUID().toString()
@@ -329,6 +333,14 @@ private class OnlineDuelResponseCodec {
         }
     }
 
+    fun friendInvites(source: String): List<OnlineFriendInvite> {
+        require(source.toByteArray(StandardCharsets.UTF_8).size <= MaximumOnlineResponseBytes)
+        val value = json.parseToJsonElement(source) as? JsonArray
+            ?: throw IllegalArgumentException("response must be an array")
+        require(value.size <= MaximumIncomingFriendInvites)
+        return value.map { friendInvite(it.toString()) }
+    }
+
     private fun objectValue(source: String, expectedFields: Set<String>): JsonObject {
         require(source.toByteArray(StandardCharsets.UTF_8).size <= MaximumOnlineResponseBytes)
         val value = json.parseToJsonElement(source) as? JsonObject
@@ -445,6 +457,7 @@ private class OnlineDuelResponseCodec {
         val AllowedPhases = setOf("setup", "active", "finished")
         val AllowedFinishReasons = setOf("solved", "attempts_exhausted", "time_expired")
         const val MaximumOnlineResponseBytes = 64 * 1024
+        const val MaximumIncomingFriendInvites = 50
     }
 }
 

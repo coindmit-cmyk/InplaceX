@@ -65,6 +65,22 @@ Each first-level screen must preserve:
 - localized user-facing strings;
 - release isolation for debug-only controls.
 
+## Online Entry And Invitation Contract
+
+- Both Race and Duel open an opponent choice before gameplay: bot or online.
+- The online transition carries the selected play style; it must not silently
+  fall back to the screen default.
+- `Play` on a saved friend opens private match settings and the primary action
+  is `Send invitation`, never public matchmaking.
+- The Friends screen accepts a full public Mirkori player UUID and a local
+  display name; Profile exposes a copy action for the current full player ID.
+- A direct invitation produces both a recipient-only in-app Social badge/card
+  and an eight-character fallback code for that same recipient. While the app
+  process is active, polling also emits an Android system notification after
+  the runtime permission is granted.
+- Provider push after the application process has been removed remains a
+  separate concern and must not be implied by the polling state.
+
 ## Verification
 
 For each redesigned screen:

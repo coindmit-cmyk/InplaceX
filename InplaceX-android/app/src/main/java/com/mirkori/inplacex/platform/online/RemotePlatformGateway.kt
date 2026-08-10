@@ -175,6 +175,7 @@ data class RemoteFriendInvitePayload(
     val commandId: String,
     val playStyle: RemoteFriendPlayStyle,
     val codeLength: Int,
+    val targetPlayerId: String? = null,
 )
 
 data class RemoteSubmitGuessPayload(
@@ -238,6 +239,8 @@ interface RemotePlatformGateway : MatchmakingStub {
     ): RemoteRequestSpec
 
     fun prepareReadFriendInvite(inviteCode: String): RemoteRequestSpec
+
+    fun prepareListIncomingFriendInvites(): RemoteRequestSpec
 
     fun prepareAcceptFriendInvite(
         inviteCode: String,
@@ -425,16 +428,18 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
         idempotencyKey: String,
     ): RemoteRequestSpec {
         requireSafeUuid(payload.commandId, "commandId")
+        payload.targetPlayerId?.let { requireSafeUuid(it, "targetPlayerId") }
         require(payload.codeLength in 4..10) { "friend code length must be in 4..10" }
         return RemoteRequestSpec(
             operation = "friends.invite.create",
             method = RemoteHttpMethod.POST,
             path = "/api/v1/friends/invites",
-            bodyJson = jsonObject(
-                "commandId" to JsonPrimitive(payload.commandId),
-                "playStyle" to JsonPrimitive(payload.playStyle.name.lowercase()),
-                "codeLength" to JsonPrimitive(payload.codeLength),
-            ),
+            bodyJson = JsonObject(buildMap {
+                put("commandId", JsonPrimitive(payload.commandId))
+                put("playStyle", JsonPrimitive(payload.playStyle.name.lowercase()))
+                put("codeLength", JsonPrimitive(payload.codeLength))
+                payload.targetPlayerId?.let { put("targetPlayerId", JsonPrimitive(it)) }
+            }).toString(),
             idempotencyKey = idempotencyKey,
         )
     }
@@ -447,6 +452,12 @@ class ContractRemotePlatformGateway : RemotePlatformGateway {
             path = "/api/v1/friends/invites/${inviteCode.uppercase()}",
         )
     }
+
+    override fun prepareListIncomingFriendInvites(): RemoteRequestSpec = RemoteRequestSpec(
+        operation = "friends.invite.list",
+        method = RemoteHttpMethod.GET,
+        path = "/api/v1/friends/invites",
+    )
 
     override fun prepareAcceptFriendInvite(
         inviteCode: String,

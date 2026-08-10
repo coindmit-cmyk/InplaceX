@@ -21,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
@@ -51,6 +53,7 @@ fun ProfileRootScreen(
     onGooglePlaySignOut: () -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
+    val clipboardManager = LocalClipboardManager.current
 
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
@@ -116,6 +119,12 @@ fun ProfileRootScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                OutlinedButton(
+                    onClick = { clipboardManager.setText(AnnotatedString(playerId)) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                ) {
+                    Text(strings.text("profile.mirkori.copy_player_id"))
+                }
             }
 
             if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {

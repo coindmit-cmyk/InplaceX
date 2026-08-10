@@ -72,7 +72,7 @@ class LegacySchemaFingerprintPostgresIntegrationTest {
 
             JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(exact)
             JdbcMigrationRunner().verify(exact)
-            assertEquals(9, countHistory(exact))
+            assertEquals(10, countHistory(exact))
             exact.connection.use { connection ->
                 connection.createStatement().use {
                     it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")

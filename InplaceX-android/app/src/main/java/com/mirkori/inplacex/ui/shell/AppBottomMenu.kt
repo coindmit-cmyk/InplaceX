@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,6 +43,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun AppBottomMenu(
     currentSection: AppSection,
     onSectionChange: (AppSection) -> Unit,
+    socialNotificationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -73,6 +76,7 @@ fun AppBottomMenu(
                 BottomMenuItem(
                     section = section,
                     selected = section == currentSection,
+                    notificationCount = if (section == AppSection.SOCIAL) socialNotificationCount else 0,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
@@ -87,6 +91,7 @@ fun AppBottomMenu(
 private fun BottomMenuItem(
     section: AppSection,
     selected: Boolean,
+    notificationCount: Int,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
@@ -129,11 +134,19 @@ private fun BottomMenuItem(
                     .size(34.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
-                    contentDescription = title,
-                    tint = if (selected) Color.White else InplaceXColors.ToyCream
-                )
+                BadgedBox(
+                    badge = {
+                        if (notificationCount > 0) {
+                            Badge { Text(notificationCount.coerceAtMost(99).toString()) }
+                        }
+                    },
+                ) {
+                    Icon(
+                        imageVector = AppSectionIconCatalog.spec(section).fallbackIcon,
+                        contentDescription = title,
+                        tint = if (selected) Color.White else InplaceXColors.ToyCream,
+                    )
+                }
             }
             Text(
                 text = title,

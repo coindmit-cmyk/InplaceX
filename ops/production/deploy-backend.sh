@@ -759,11 +759,11 @@ if [[ "$legacy_checksum_acknowledged" == "true" ]]; then
         release_die 75 "Could not determine legacy checksum-column state"
     if [[ "$legacy_checksum_column_present" == "t" ]]; then
         legacy_history="$(compose_command exec -T postgres sh -ec \
-            'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT string_agg(version::text, chr(44) ORDER BY version), count(*) FILTER (WHERE checksum IS NULL) FROM inplacex_schema_history;"' |
+            'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT string_agg(version::text, chr(44) ORDER BY version::bigint), count(*) FILTER (WHERE checksum IS NULL) FROM inplacex_schema_history;"' |
             tr -d '[:space:]')"
     else
         legacy_history="$(compose_command exec -T postgres sh -ec \
-            'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT string_agg(version::text, chr(44) ORDER BY version), count(*) FROM inplacex_schema_history;"' |
+            'export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"; exec psql --tuples-only --no-align --set=ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --command="SELECT string_agg(version::text, chr(44) ORDER BY version::bigint), count(*) FROM inplacex_schema_history;"' |
             tr -d '[:space:]')"
     fi
     if [[ "$legacy_checksum_completed" == "true" ]]; then

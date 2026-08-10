@@ -24,6 +24,7 @@ data class DurableMatchmakingTicket(
 data class DurablePrivateInvite(
     val inviteCode: String,
     val ownerPlayerId: String,
+    val targetPlayerId: String? = null,
     val guestPlayerId: String?,
     val createCommandId: String,
     val acceptCommandId: String?,
@@ -61,6 +62,7 @@ interface OnlineLobbyRepository : AutoCloseable {
     ): DurableTicketCoordination?
     fun deleteTickets(ticketIds: Collection<String>)
     fun loadInvites(retainedAfter: Instant): List<DurablePrivateInvite>
+    fun loadIncomingInvites(targetPlayerId: String, now: Instant): List<DurablePrivateInvite>
     fun loadInvite(inviteCode: String): DurablePrivateInvite?
     fun coordinateInvite(candidate: DurablePrivateInvite): DurablePrivateInvite?
     fun coordinateInviteAcceptance(
@@ -269,7 +271,7 @@ class JdbcOnlineLobbyRepository(
         dataSource.connection.use { connection ->
             connection.prepareStatement(
                 """
-                SELECT invite_code, owner_player_id, guest_player_id, create_command_id,
+                SELECT invite_code, owner_player_id, target_player_id, guest_player_id, create_command_id,
                        accept_command_id, status, rules_json, session_id, created_at, expires_at
                 FROM private_duel_invites
                 WHERE expires_at > ?
@@ -284,6 +286,7 @@ class JdbcOnlineLobbyRepository(
                                 DurablePrivateInvite(
                                     inviteCode = results.getString("invite_code"),
                                     ownerPlayerId = results.getString("owner_player_id"),
+                                    targetPlayerId = results.getString("target_player_id"),
                                     guestPlayerId = results.getString("guest_player_id"),
                                     createCommandId = results.getString("create_command_id"),
                                     acceptCommandId = results.getString("accept_command_id"),
@@ -299,6 +302,29 @@ class JdbcOnlineLobbyRepository(
                 }
             }
         }
+
+    override fun loadIncomingInvites(
+        targetPlayerId: String,
+        now: Instant,
+    ): List<DurablePrivateInvite> = dataSource.connection.use { connection ->
+        connection.prepareStatement(
+            """
+            SELECT invite_code, owner_player_id, target_player_id, guest_player_id,
+                   create_command_id, accept_command_id, status, rules_json, session_id,
+                   created_at, expires_at
+            FROM private_duel_invites
+            WHERE target_player_id = ? AND status = 'WAITING' AND expires_at > ?
+            ORDER BY created_at DESC, invite_code
+            LIMIT 50
+            """.trimIndent(),
+        ).use { statement ->
+            statement.setString(1, targetPlayerId)
+            statement.setInstant(2, now)
+            statement.executeQuery().use { results ->
+                buildList { while (results.next()) add(results.invite()) }
+            }
+        }
+    }
 
     override fun loadInvite(inviteCode: String): DurablePrivateInvite? =
         dataSource.connection.use { connection -> connection.inviteByCode(inviteCode, lock = false) }
@@ -340,7 +366,11 @@ class JdbcOnlineLobbyRepository(
                 }
                 val current = connection.inviteByCode(inviteCode, lock = true)
                     ?: return@transaction null
-                if (current.status != "WAITING" || current.ownerPlayerId == guestPlayerId) {
+                if (
+                    current.status != "WAITING" ||
+                    current.ownerPlayerId == guestPlayerId ||
+                    current.targetPlayerId?.let { it != guestPlayerId } == true
+                ) {
                     return@transaction DurableInviteCoordination(current)
                 }
                 if (!now.isBefore(current.expiresAt)) {
@@ -384,9 +414,9 @@ class JdbcOnlineLobbyRepository(
         connection.prepareStatement(
             """
             INSERT INTO private_duel_invites(
-                owner_player_id, guest_player_id, create_command_id, accept_command_id,
+                owner_player_id, target_player_id, guest_player_id, create_command_id, accept_command_id,
                 status, rules_json, session_id, expires_at, invite_code, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
         ).use { statement ->
             statement.bindInvite(invite, includeCreatedAt = true)
@@ -398,7 +428,7 @@ class JdbcOnlineLobbyRepository(
         connection.prepareStatement(
             """
             UPDATE private_duel_invites
-            SET owner_player_id = ?, guest_player_id = ?, create_command_id = ?,
+            SET owner_player_id = ?, target_player_id = ?, guest_player_id = ?, create_command_id = ?,
                 accept_command_id = ?, status = ?, rules_json = ?, session_id = ?,
                 expires_at = ?, updated_at = CURRENT_TIMESTAMP
             WHERE invite_code = ?
@@ -494,7 +524,7 @@ private fun Connection.invite(
     bind: (PreparedStatement) -> Unit,
 ): DurablePrivateInvite? = prepareStatement(
     """
-    SELECT invite_code, owner_player_id, guest_player_id, create_command_id,
+    SELECT invite_code, owner_player_id, target_player_id, guest_player_id, create_command_id,
            accept_command_id, status, rules_json, session_id, created_at, expires_at
     FROM private_duel_invites
     WHERE $where
@@ -525,6 +555,7 @@ private fun ResultSet.ticket(): DurableMatchmakingTicket = DurableMatchmakingTic
 private fun ResultSet.invite(): DurablePrivateInvite = DurablePrivateInvite(
     inviteCode = getString("invite_code"),
     ownerPlayerId = getString("owner_player_id"),
+    targetPlayerId = getString("target_player_id"),
     guestPlayerId = getString("guest_player_id"),
     createCommandId = getString("create_command_id"),
     acceptCommandId = getString("accept_command_id"),
@@ -559,17 +590,18 @@ private fun PreparedStatement.bindTicket(ticket: DurableMatchmakingTicket, inclu
 
 private fun PreparedStatement.bindInvite(invite: DurablePrivateInvite, includeCreatedAt: Boolean) {
     setString(1, invite.ownerPlayerId)
-    setString(2, invite.guestPlayerId)
-    setString(3, invite.createCommandId)
-    setString(4, invite.acceptCommandId)
-    setString(5, invite.status)
-    setString(6, invite.rulesJson)
-    setString(7, invite.sessionId)
-    setInstant(8, invite.expiresAt)
-    setString(9, invite.inviteCode)
+    setString(2, invite.targetPlayerId)
+    setString(3, invite.guestPlayerId)
+    setString(4, invite.createCommandId)
+    setString(5, invite.acceptCommandId)
+    setString(6, invite.status)
+    setString(7, invite.rulesJson)
+    setString(8, invite.sessionId)
+    setInstant(9, invite.expiresAt)
+    setString(10, invite.inviteCode)
     if (includeCreatedAt) {
-        setInstant(10, invite.createdAt)
         setInstant(11, invite.createdAt)
+        setInstant(12, invite.createdAt)
     }
 }
 
