@@ -95,7 +95,7 @@ Compact-height:
 
 1. RU и EN.
 2. compact portrait и tall portrait.
-3. landscape или compact-height.
+3. compact-height в портретном окне.
 4. font scale не меньше `1.3`.
 5. TalkBack-заголовки, состояния и минимум `48dp` для действий.
 6. `testDebugUnitTest`, `assembleDebug` и smoke на физическом устройстве.

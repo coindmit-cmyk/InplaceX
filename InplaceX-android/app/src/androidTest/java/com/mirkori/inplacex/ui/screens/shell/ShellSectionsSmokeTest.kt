@@ -654,7 +654,7 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun landscapeCompanyKeepsChapterRewardAccessible() {
+    fun compactHeightPortraitCompanyKeepsChapterRewardAccessible() {
         setContent {
             Box(
                 modifier = Modifier
