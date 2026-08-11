@@ -167,6 +167,7 @@ fun SceneActionTile(
     subtitle: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    singleLineTitle: Boolean = false,
     stateDescription: String? = null,
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
@@ -226,10 +227,15 @@ fun SceneActionTile(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = if (singleLineTitle) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
                     fontWeight = FontWeight.Black,
                     color = Color.White,
-                    maxLines = 2,
+                    maxLines = if (singleLineTitle) 1 else 2,
+                    softWrap = !singleLineTitle,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(

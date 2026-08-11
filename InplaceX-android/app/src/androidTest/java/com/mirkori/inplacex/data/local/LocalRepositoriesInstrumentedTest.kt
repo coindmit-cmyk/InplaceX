@@ -444,6 +444,66 @@ class LocalRepositoriesInstrumentedTest {
         }
     }
 
+    @Test
+    fun confirmedFriendsReplaceStaleLocalFriendsWithoutRemovingPendingRequests() {
+        withIsolatedDatabase("platform_friend_sync", { FIXED_NOW_MS }) { context, config ->
+            val repository = PlatformLocalRepository(context, config)
+            val playerId = repository.loadPlayerProfile().playerId
+            repository.upsertRelationship(
+                LocalSocialRelationship(
+                    playerId = playerId,
+                    targetPlayerId = "stale-player",
+                    targetDisplayName = "Stale Local Friend",
+                    relationshipType = LocalRelationshipType.FRIEND,
+                    status = LocalRelationshipStatus.ACTIVE,
+                    source = "manual_player_id",
+                ),
+            )
+            val pending = repository.upsertRelationship(
+                LocalSocialRelationship(
+                    playerId = playerId,
+                    targetPlayerId = "pending-player",
+                    targetDisplayName = "Pending Player",
+                    relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+                    status = LocalRelationshipStatus.PENDING,
+                    source = "platform_friend_request",
+                ),
+            )
+            val confirmed = LocalSocialRelationship(
+                playerId = playerId,
+                targetPlayerId = "confirmed-player",
+                targetDisplayName = "Confirmed Friend",
+                relationshipType = LocalRelationshipType.FRIEND,
+                status = LocalRelationshipStatus.ACTIVE,
+                source = "platform_friendship",
+            )
+
+            val replaced = repository.replaceRelationships(
+                playerId = playerId,
+                relationshipType = LocalRelationshipType.FRIEND,
+                relationships = listOf(confirmed),
+            )
+
+            assertEquals(replaced, repository.loadRelationships(LocalRelationshipStatus.ACTIVE))
+            assertEquals(listOf(pending), repository.loadRelationships(LocalRelationshipStatus.PENDING))
+            assertTrue(
+                repository.deleteRelationship(
+                    playerId = playerId,
+                    targetPlayerId = pending.targetPlayerId,
+                    relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+                ),
+            )
+            assertEquals(emptyList<LocalSocialRelationship>(), repository.loadRelationships(LocalRelationshipStatus.PENDING))
+
+            repository.replaceRelationships(
+                playerId = playerId,
+                relationshipType = LocalRelationshipType.FRIEND,
+                relationships = emptyList(),
+            )
+            assertEquals(emptyList<LocalSocialRelationship>(), repository.loadRelationships(LocalRelationshipStatus.ACTIVE))
+        }
+    }
+
     companion object {
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val PLAYER_ID = "player-42"

@@ -20,10 +20,13 @@
 
 - Adding a player now creates a server-side friend request instead of a local
   relationship. The recipient sees an Android notification, Social badge, and
-  incoming request card, while accepted friends synchronize from Mirkori Games
-  Platform. Tapping the profile name edits the shared display name and tapping
-  the avatar selects a built-in profile picture. The Russian `Онлайн‑матч`
-  label is kept on one line with a non-breaking hyphen.
+  incoming request card, while the sender sees a non-playable pending-request
+  card until the recipient accepts. Accepted friends are replaced from the
+  authoritative Mirkori Games Platform list so legacy local rows cannot appear
+  as confirmed friends. Tapping the profile name edits the shared display name
+  and tapping the avatar selects a built-in profile picture. The Russian
+  `Онлайн‑матч` and `Онлайн‑матчи` labels are kept on one line with a
+  non-breaking hyphen.
 
 - The shared analysis table now treats authoritative and automatic facts as
   locked before manual colors, enforces one manual confirmation per digit in
