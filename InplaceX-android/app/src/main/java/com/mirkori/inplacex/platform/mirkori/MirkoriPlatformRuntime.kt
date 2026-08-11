@@ -18,6 +18,7 @@ import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCallbackRejectedException
 import com.mirkori.platform.sdk.PlatformCredentials
 import com.mirkori.platform.sdk.PlatformProfileConflictException
+import com.mirkori.platform.sdk.PlatformPublicPlayerProfile
 import io.ktor.client.HttpClient
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -207,6 +208,68 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
+    suspend fun loadPublicProfile(): MirkoriPublicProfileResult = operationMutex.withLock {
+        try {
+            MirkoriPublicProfileResult.Success(
+                authenticatedPlatformRequest { accessToken -> sdk.publicProfile(accessToken) }.toAppProfile(),
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            if (error.status in 400..499) MirkoriPublicProfileResult.Rejected
+            else MirkoriPublicProfileResult.Unavailable
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriPublicProfileResult.Unavailable
+        }
+    }
+
+    suspend fun searchPlayers(query: String): MirkoriPlayerSearchResult = operationMutex.withLock {
+        try {
+            val players = authenticatedPlatformRequest { accessToken ->
+                sdk.searchPlayers(accessToken, query)
+            }.map(PlatformPublicPlayerProfile::toAppProfile)
+            MirkoriPlayerSearchResult.Success(players)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: IllegalArgumentException) {
+            MirkoriPlayerSearchResult.Rejected
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriPlayerSearchResult.Unavailable
+        }
+    }
+
+    suspend fun updatePublicHandle(
+        handle: String,
+        displayName: String,
+    ): MirkoriPublicProfileResult = operationMutex.withLock {
+        try {
+            val profile = authenticatedPlatformRequest { accessToken ->
+                sdk.updatePublicProfile(accessToken, handle, displayName)
+            }
+            MirkoriPublicProfileResult.Success(profile.toAppProfile())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: PlatformApiException) {
+            when {
+                error.status == 409 && error.errorCode == "handle_taken" ->
+                    MirkoriPublicProfileResult.HandleTaken
+                error.status in 400..499 -> MirkoriPublicProfileResult.Rejected
+                else -> {
+                    logFailure(error)
+                    MirkoriPublicProfileResult.Unavailable
+                }
+            }
+        } catch (error: IllegalArgumentException) {
+            MirkoriPublicProfileResult.Rejected
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriPublicProfileResult.Unavailable
+        }
+    }
+
     override suspend fun currentAccessToken(): AccessToken? = accessTokenOrNull(forceRefresh = false)
 
     override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? =
@@ -292,6 +355,17 @@ class MirkoriPlatformRuntime internal constructor(
         return guest
     }
 
+    private suspend fun <T> authenticatedPlatformRequest(block: suspend (String) -> T): T {
+        var session = ensureFreshSession()
+        return try {
+            block(session.credentials.accessToken)
+        } catch (error: PlatformApiException) {
+            if (error.status != 401) throw error
+            session = ensureFreshSession(forceRefresh = true)
+            block(session.credentials.accessToken)
+        }
+    }
+
     internal fun persist(state: MirkoriPersistedState) {
         store.write(state)
         persistedState = state
@@ -350,6 +424,14 @@ class MirkoriPlatformRuntime internal constructor(
         private const val LogTag = "MirkoriPlatform"
     }
 }
+
+private fun PlatformPublicPlayerProfile.toAppProfile(): MirkoriPublicPlayerProfile =
+    MirkoriPublicPlayerProfile(
+        gamePlayerId = gamePlayerId,
+        handle = handle,
+        displayName = displayName,
+        avatarUrl = avatarUrl,
+    )
 
 private fun MirkoriPersistedState.withSession(newSession: GameIdentitySession): MirkoriPersistedState {
     val sameProfile = session?.let { current ->

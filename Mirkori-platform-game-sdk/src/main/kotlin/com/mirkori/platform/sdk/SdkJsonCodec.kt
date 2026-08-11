@@ -70,6 +70,11 @@ internal class SdkJsonCodec {
         put("quantity", quantity)
     }.toString()
 
+    fun publicProfileUpdateRequest(handle: String, displayName: String?): String = buildJsonObject {
+        put("handle", handle)
+        displayName?.let { put("displayName", it) }
+    }.toString()
+
     fun bootstrapResponse(body: String): BootstrapResponse {
         val root = objectBody(body)
         root.requireExactFields("accountId", "gamePlayerId", "gameId", "installationId", "credentials")
@@ -164,6 +169,15 @@ internal class SdkJsonCodec {
         )
     }
 
+    fun publicProfileResponse(body: String): PlatformPublicPlayerProfile = publicProfile(objectBody(body))
+
+    fun publicProfileSearchResponse(body: String): List<PlatformPublicPlayerProfile> {
+        val root = objectBody(body)
+        root.requireExactFields("schemaVersion", "players")
+        require(root.long("schemaVersion") == 1L)
+        return root.array("players", 20).map { publicProfile(it.objectValue()) }
+    }
+
     fun errorCode(body: String): String = runCatching {
         val root = objectBody(body)
         root.requireExactFields("error")
@@ -250,6 +264,16 @@ internal class SdkJsonCodec {
         )
     }
 
+    private fun publicProfile(value: JsonObject): PlatformPublicPlayerProfile {
+        value.requireExactFields("gamePlayerId", "handle", "displayName", "avatarUrl")
+        return PlatformPublicPlayerProfile(
+            gamePlayerId = value.string("gamePlayerId", 64),
+            handle = value.nullableString("handle", 24),
+            displayName = value.string("displayName", 120),
+            avatarUrl = value.nullableString("avatarUrl", 2048),
+        )
+    }
+
     private fun objectBody(body: String): JsonObject {
         require(body.toByteArray(Charsets.UTF_8).size in 2..MaximumResponseBytes)
         return json.parseToJsonElement(body) as? JsonObject ?: reject()
@@ -267,6 +291,14 @@ internal class SdkJsonCodec {
 
     private fun JsonObject.credential(name: String, maximum: Int): String =
         string(name, maximum).takeIf { it.none(Char::isWhitespace) } ?: reject()
+
+    private fun JsonObject.nullableString(name: String, maximum: Int): String? {
+        val element = get(name) ?: reject()
+        if (element.toString() == "null") return null
+        val primitive = element as? JsonPrimitive ?: reject()
+        require(primitive.isString)
+        return primitive.content.takeIf { it.length in 1..maximum && it.none(Char::isISOControl) } ?: reject()
+    }
 
     private fun JsonObject.long(name: String): Long =
         runCatching { get(name)?.jsonPrimitive?.long }.getOrNull() ?: reject()

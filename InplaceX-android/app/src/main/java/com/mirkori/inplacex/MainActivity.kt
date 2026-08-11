@@ -57,9 +57,17 @@ import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.feedback.AndroidAppFeedbackRuntime
+import com.mirkori.inplacex.platform.feedback.AppFeedbackSettingsStore
+import com.mirkori.inplacex.platform.feedback.AppHapticCue
+import com.mirkori.inplacex.platform.feedback.AppSoundCue
+import com.mirkori.inplacex.platform.feedback.LocalAppFeedbackRuntime
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
+import com.mirkori.inplacex.platform.mirkori.MirkoriPublicProfileResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
@@ -77,6 +85,7 @@ import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
 import com.mirkori.inplacex.platform.services.GoogleCredentialResult
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
+import com.mirkori.inplacex.platform.web.MirkoriWebsiteLauncher
 import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
@@ -108,16 +117,24 @@ class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
     private var resumeGeneration by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
+    private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
+    private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         captureMirkoriCallback(intent)
         adUsageTracker = AdUsageTracker.create(applicationContext)
+        feedbackSettingsStore = AppFeedbackSettingsStore(applicationContext)
+        feedbackRuntime = AndroidAppFeedbackRuntime(applicationContext)
+        feedbackRuntime.updateSettings(feedbackSettingsStore.read())
         WindowCompat.setDecorFitsSystemWindows(window, false)
         applyImmersiveMode()
 
         setContent {
             InplaceXTheme {
+                var feedbackSettings by remember {
+                    mutableStateOf(feedbackSettingsStore.read())
+                }
                 val progressRepository = remember { GameProgressRepository(applicationContext) }
                 val mirkoriPlatformRuntime = remember {
                     runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
@@ -184,6 +201,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(restoredActiveOnlineSessionId)
                 }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
+                var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by remember {
@@ -236,6 +254,11 @@ class MainActivity : ComponentActivity() {
                 }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
+                var publicPlayerProfile by remember {
+                    mutableStateOf<MirkoriPublicPlayerProfile?>(null)
+                }
+                var publicProfileResultKey by rememberSaveable { mutableStateOf<String?>(null) }
+                val publicProfileOperation = remember { TransientOperationGate() }
                 val platformLocalRepository = remember { PlatformLocalRepository(applicationContext) }
                 val localPlayerProfile = remember(platformLocalRepository) {
                     platformLocalRepository.loadPlayerProfile()
@@ -314,6 +337,25 @@ class MainActivity : ComponentActivity() {
                         mirkoriPlatformRuntime.accountState.collect { state ->
                             mirkoriAccountState = state
                         }
+                    }
+                }
+                LaunchedEffect(
+                    mirkoriPlatformRuntime,
+                    mirkoriAccountState.kind,
+                    mirkoriAccountState.gamePlayerId,
+                ) {
+                    val runtime = mirkoriPlatformRuntime
+                    if (
+                        runtime == null ||
+                        mirkoriAccountState.kind == MirkoriAccountStateKind.INITIALIZING ||
+                        mirkoriAccountState.gamePlayerId == null
+                    ) {
+                        publicPlayerProfile = null
+                        return@LaunchedEffect
+                    }
+                    when (val result = withContext(Dispatchers.IO) { runtime.loadPublicProfile() }) {
+                        is MirkoriPublicProfileResult.Success -> publicPlayerProfile = result.profile
+                        else -> publicPlayerProfile = null
                     }
                 }
                 val onlineRuntime = remember(mirkoriPlatformRuntime) {
@@ -478,6 +520,8 @@ class MainActivity : ComponentActivity() {
                                 title = strings.text("social.notification.title"),
                                 message = strings.text(messageKey),
                             )
+                            feedbackRuntime.playSound(AppSoundCue.NOTIFICATION)
+                            feedbackRuntime.performHaptic(AppHapticCue.CONFIRM)
                         }
                     }
                 }
@@ -655,11 +699,16 @@ class MainActivity : ComponentActivity() {
                     else -> BottomLayerMode.MENU
                 }
 
-                CompositionLocalProvider(LocalAppStrings provides strings) {
+                CompositionLocalProvider(
+                    LocalAppStrings provides strings,
+                    LocalAppFeedbackRuntime provides feedbackRuntime,
+                ) {
                     AppShell(
                         currentSection = currentSection,
                         socialNotificationCount = incomingFriendInvites.size,
                         onSectionChange = { section ->
+                            feedbackRuntime.playSound(AppSoundCue.TAP)
+                            feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
                             currentSection = section
                             isSettingsOpen = false
                             isVariantToolsOpen = false
@@ -673,7 +722,7 @@ class MainActivity : ComponentActivity() {
                                 energy = progressState.campaignEnergy,
                                 energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
-                                showBack = isInGame || isVariantToolsOpen,
+                                showBack = isNestedSocialScreen || isInGame || isVariantToolsOpen,
                                 showShop = !isInGame,
                                 onBackClick = {
                                     when {
@@ -685,7 +734,11 @@ class MainActivity : ComponentActivity() {
                                     currentSection = AppSection.SHOP
                                     isSettingsOpen = false
                                 },
-                                onSettingsClick = { isSettingsOpen = true },
+                                onSettingsClick = {
+                                    feedbackRuntime.playSound(AppSoundCue.TAP)
+                                    feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
+                                    isSettingsOpen = true
+                                },
                             )
                         },
                         bottomAdContent = {
@@ -801,15 +854,24 @@ class MainActivity : ComponentActivity() {
                                 },
                                 friends = savedFriends,
                                 currentPlayerId = mirkoriAccountState.gamePlayerId,
-                                onAddFriend = { displayName, targetPlayerId ->
+                                onSearchPlayers = { query ->
+                                    val runtime = mirkoriPlatformRuntime
+                                    if (runtime == null) {
+                                        MirkoriPlayerSearchResult.Unavailable
+                                    } else {
+                                        withContext(Dispatchers.IO) { runtime.searchPlayers(query) }
+                                    }
+                                },
+                                onAddFriend = { player ->
                                     platformLocalRepository.upsertRelationship(
                                         LocalSocialRelationship(
                                             playerId = localPlayerProfile.playerId,
-                                            targetPlayerId = targetPlayerId,
-                                            targetDisplayName = displayName,
+                                            targetPlayerId = player.gamePlayerId,
+                                            targetDisplayName = player.displayName,
                                             relationshipType = LocalRelationshipType.FRIEND,
                                             status = LocalRelationshipStatus.ACTIVE,
-                                            source = "manual_player_id",
+                                            source = "platform_player_search",
+                                            note = player.handle,
                                         ),
                                     )
                                     savedFriends = platformLocalRepository
@@ -825,6 +887,7 @@ class MainActivity : ComponentActivity() {
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },
+                                onNestedScreenChange = { nested -> isNestedSocialScreen = nested },
                             )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
@@ -1058,6 +1121,9 @@ class MainActivity : ComponentActivity() {
                                 mirkoriAccountState = mirkoriAccountState,
                                 mirkoriAuthResultKey = mirkoriAuthResultKey,
                                 mirkoriAuthInProgress = mirkoriAuthOperation.inProgress,
+                                publicPlayerProfile = publicPlayerProfile,
+                                publicProfileResultKey = publicProfileResultKey,
+                                publicProfileInProgress = publicProfileOperation.inProgress,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
                                 showGooglePlayCard = googleProfileActionsEnabled(),
@@ -1107,6 +1173,39 @@ class MainActivity : ComponentActivity() {
                                                 mirkoriAccountState = mirkoriPlatformRuntime?.currentAccountState()
                                                     ?: MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
                                                 mirkoriAuthOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onPublicHandleChange = { handle ->
+                                    publicProfileOperation.start()?.let { operationId ->
+                                        publicProfileResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val result = if (mirkoriPlatformRuntime == null) {
+                                                    MirkoriPublicProfileResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        mirkoriPlatformRuntime.updatePublicHandle(
+                                                            handle = handle,
+                                                            displayName = progressState.playerDisplayName,
+                                                        )
+                                                    }
+                                                }
+                                                publicProfileResultKey = when (result) {
+                                                    is MirkoriPublicProfileResult.Success -> {
+                                                        publicPlayerProfile = result.profile
+                                                        "profile.mirkori.handle.saved"
+                                                    }
+                                                    MirkoriPublicProfileResult.HandleTaken ->
+                                                        "profile.mirkori.handle.taken"
+                                                    MirkoriPublicProfileResult.Rejected ->
+                                                        "profile.mirkori.handle.invalid"
+                                                    MirkoriPublicProfileResult.Unavailable ->
+                                                        "profile.mirkori.handle.unavailable"
+                                                }
+                                            } finally {
+                                                publicProfileOperation.finish(operationId)
                                             }
                                         }
                                     }
@@ -1259,8 +1358,26 @@ class MainActivity : ComponentActivity() {
                             SettingsRootScreen(
                                 currentLanguage = currentLanguage,
                                 adConsentDecision = AdConsentDecision.valueOf(adConsentDecisionName),
+                                feedbackSettings = feedbackSettings,
                                 onLanguageChange = { language ->
                                     currentLanguageName = language.name
+                                },
+                                onVibrationChange = { enabled ->
+                                    feedbackSettings = feedbackSettings.copy(vibrationEnabled = enabled)
+                                    feedbackSettingsStore.write(feedbackSettings)
+                                    feedbackRuntime.updateSettings(feedbackSettings)
+                                    if (enabled) feedbackRuntime.performHaptic(AppHapticCue.CONFIRM)
+                                },
+                                onSoundChange = { enabled ->
+                                    feedbackSettings = feedbackSettings.copy(soundEnabled = enabled)
+                                    feedbackSettingsStore.write(feedbackSettings)
+                                    feedbackRuntime.updateSettings(feedbackSettings)
+                                    if (enabled) feedbackRuntime.playSound(AppSoundCue.CONFIRM)
+                                },
+                                onMusicChange = { enabled ->
+                                    feedbackSettings = feedbackSettings.copy(musicEnabled = enabled)
+                                    feedbackSettingsStore.write(feedbackSettings)
+                                    feedbackRuntime.updateSettings(feedbackSettings)
                                 },
                                 onOpenAdPrivacy = {
                                     isSettingsOpen = false
@@ -1268,6 +1385,11 @@ class MainActivity : ComponentActivity() {
                                         providerServices.adRuntime.showProviderPrivacyOptions()
                                         isAdPrivacyOpen = true
                                     }
+                                },
+                                onOpenWebsitePage = { page ->
+                                    feedbackRuntime.playSound(AppSoundCue.TAP)
+                                    feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
+                                    MirkoriWebsiteLauncher.open(this@MainActivity, page)
                                 },
                                 onOpenInternalTools = {
                                     isSettingsOpen = false
@@ -1323,6 +1445,16 @@ class MainActivity : ComponentActivity() {
 
     }
 
+    override fun onPause() {
+        if (::feedbackRuntime.isInitialized) feedbackRuntime.onBackground()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (::feedbackRuntime.isInitialized) feedbackRuntime.close()
+        super.onDestroy()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -1331,6 +1463,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (::feedbackRuntime.isInitialized) feedbackRuntime.onForeground()
         resumeGeneration += 1L
     }
 

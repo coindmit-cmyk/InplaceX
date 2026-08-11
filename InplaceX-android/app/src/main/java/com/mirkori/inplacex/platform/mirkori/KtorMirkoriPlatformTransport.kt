@@ -81,10 +81,11 @@ class KtorMirkoriPlatformTransport(
                     method = when (request.method) {
                         PlatformHttpMethod.GET -> HttpMethod.Get
                         PlatformHttpMethod.POST -> HttpMethod.Post
+                        PlatformHttpMethod.PUT -> HttpMethod.Put
                     }
                     url(request.url)
                     request.headers.forEach { (name, value) -> header(name, value) }
-                    if (request.method == PlatformHttpMethod.POST) {
+                    if (request.method != PlatformHttpMethod.GET) {
                         setBody(request.body)
                     }
                 }

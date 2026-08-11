@@ -173,7 +173,7 @@ internal fun OnlineDuelGameField(
                     }
                 },
                 onAnalysisCellPressed = { digit, position ->
-                    editor = editor.changeManualMark(digit, position)
+                    editor = editor.changeManualMark(digit, position, snapshot.allowDuplicates)
                 },
                 onDigitPressed = { digit ->
                     editor = editor.reduce(GameFieldEvent.DigitEntered(digit))
@@ -208,7 +208,11 @@ internal data class OnlineDuelEditorState(
         else -> this
     }
 
-    fun changeManualMark(symbol: Char, position: Int): OnlineDuelEditorState {
+    fun changeManualMark(
+        symbol: Char,
+        position: Int,
+        allowDuplicates: Boolean = true,
+    ): OnlineDuelEditorState {
         if (position !in input.slots.indices || symbol !in '0'..'9') return this
         val type = selectedTool.toManualMarkType()
         val existing = manualMarks.lastOrNull {
@@ -219,7 +223,8 @@ internal data class OnlineDuelEditorState(
         }
         if (type == GameFieldManualMarkType.YES) {
             retained = retained.filterNot {
-                it.position == position && it.type == GameFieldManualMarkType.YES
+                it.type == GameFieldManualMarkType.YES &&
+                    (it.position == position || !allowDuplicates && it.symbol == symbol)
             }
         }
         val nextType = type.takeUnless { existing?.type == it }
@@ -227,10 +232,13 @@ internal data class OnlineDuelEditorState(
             retained + GameFieldManualMark(position, symbol, it)
         } ?: retained
         val slots = input.slots.toMutableList()
-        when {
-            nextType == GameFieldManualMarkType.YES -> slots[position] = symbol
-            existing?.type == GameFieldManualMarkType.YES && slots[position] == symbol ->
-                slots[position] = null
+        manualMarks
+            .filter { it.type == GameFieldManualMarkType.YES && it !in nextMarks }
+            .forEach { removed ->
+                if (slots[removed.position] == removed.symbol) slots[removed.position] = null
+            }
+        if (nextType == GameFieldManualMarkType.YES) {
+            slots[position] = symbol
         }
         return copy(
             input = GameFieldInputState(slots),
@@ -324,7 +332,10 @@ internal fun buildOnlineDuelGameFieldState(
             GameFieldManualMarkType.MAYBE -> null
         }
     }
-    val deduction = EvidenceDeductionEngine(snapshot.codeLength).infer(
+    val deduction = EvidenceDeductionEngine(
+        codeLength = snapshot.codeLength,
+        allowDuplicates = snapshot.allowDuplicates,
+    ).infer(
         EvidenceInput(
             hypotheses = hypotheses,
             acceptedAttempts = acceptedEvidence,

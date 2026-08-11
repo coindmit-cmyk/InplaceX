@@ -48,6 +48,9 @@ import com.mirkori.inplacex.core.engine.GuessValidationReason
 import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.feedback.AppHapticCue
+import com.mirkori.inplacex.platform.feedback.AppSoundCue
+import com.mirkori.inplacex.platform.feedback.LocalAppFeedbackRuntime
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldEvent
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldHintMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
@@ -82,6 +85,21 @@ fun GamePresentationLayout(
     debugSlot: (@Composable () -> Unit)? = null,
 ) {
     val active = uiState.route.inputEnabled && isInputEnabled(uiState.match.phase)
+    val feedback = LocalAppFeedbackRuntime.current
+
+    LaunchedEffect(uiState.match.phase) {
+        when (uiState.match.phase) {
+            MatchPhase.WON -> {
+                feedback.playSound(AppSoundCue.SUCCESS)
+                feedback.performHaptic(AppHapticCue.SUCCESS)
+            }
+            MatchPhase.LOST -> {
+                feedback.playSound(AppSoundCue.FAILURE)
+                feedback.performHaptic(AppHapticCue.FAILURE)
+            }
+            else -> Unit
+        }
+    }
 
     Column(
         modifier = modifier
@@ -114,7 +132,11 @@ fun GamePresentationLayout(
                 GameAnalysisPanel(
                     uiState = uiState,
                     enabled = active,
-                    onCellClick = callbacks.onAnalysisCellPressed,
+                    onCellClick = { digit, position ->
+                        feedback.playSound(AppSoundCue.TAP)
+                        feedback.performHaptic(AppHapticCue.SELECTION)
+                        callbacks.onAnalysisCellPressed(digit, position)
+                    },
                 )
             }
         }
@@ -124,7 +146,11 @@ fun GamePresentationLayout(
                 GameHelpersPanel(
                     uiState = uiState,
                     enabled = active,
-                    onHintSelected = callbacks.onHintRequested,
+                    onHintSelected = { hint ->
+                        feedback.playSound(AppSoundCue.TAP)
+                        feedback.performHaptic(AppHapticCue.SELECTION)
+                        callbacks.onHintRequested(hint)
+                    },
                     onExtraMovesBoostRequested = callbacks.onExtraMovesBoostRequested,
                     onExtraTimeBoostRequested = callbacks.onExtraTimeBoostRequested,
                 )
@@ -134,8 +160,14 @@ fun GamePresentationLayout(
         PresentationCard(modifier = Modifier.height(44.dp)) {
             GameToolsPanel(
                 uiState = uiState,
-                onToolSelected = { callbacks.onEvent(GameFieldEvent.ToolSelected(it)) },
+                onToolSelected = {
+                    feedback.playSound(AppSoundCue.TAP)
+                    feedback.performHaptic(AppHapticCue.SELECTION)
+                    callbacks.onEvent(GameFieldEvent.ToolSelected(it))
+                },
                 onAutoExcludeChanged = {
+                    feedback.playSound(AppSoundCue.CONFIRM)
+                    feedback.performHaptic(AppHapticCue.CONFIRM)
                     callbacks.onEvent(GameFieldEvent.AutoExcludeChanged(it))
                 },
             )
@@ -145,9 +177,25 @@ fun GamePresentationLayout(
             GameInputPanel(
                 uiState = uiState,
                 enabled = active,
-                onEvent = callbacks.onEvent,
+                onEvent = { event ->
+                    when (event) {
+                        GameFieldEvent.GuessSubmitted -> {
+                            feedback.playSound(AppSoundCue.CONFIRM)
+                            feedback.performHaptic(AppHapticCue.CONFIRM)
+                        }
+                        else -> {
+                            feedback.playSound(AppSoundCue.TAP)
+                            feedback.performHaptic(AppHapticCue.SELECTION)
+                        }
+                    }
+                    callbacks.onEvent(event)
+                },
                 onGuessSlotClick = callbacks.onGuessSlotPressed,
-                onDigitClick = callbacks.onDigitPressed,
+                onDigitClick = { digit ->
+                    feedback.playSound(AppSoundCue.TAP)
+                    feedback.performHaptic(AppHapticCue.SELECTION)
+                    callbacks.onDigitPressed(digit)
+                },
             )
         }
 
@@ -785,10 +833,10 @@ private fun analysisVisualFor(
     position: Int,
 ): AnalysisVisual {
     lockedVisual(uiState.evidence.provenFacts, symbol, position)?.let { return it }
-    analysisMarkFor(uiState.manualMarks, symbol, position)?.let { return it.visual }
     if (uiState.tools.autoExcludeEnabled) {
         lockedVisual(uiState.evidence.deduction.provenFacts, symbol, position)?.let { return it }
     }
+    analysisMarkFor(uiState.manualMarks, symbol, position)?.let { return it.visual }
     return AnalysisVisual(Color.Transparent)
 }
 
@@ -797,6 +845,13 @@ private fun analysisCellEditable(
     symbol: Char,
     position: Int,
 ): Boolean {
+    if (lockedVisual(uiState.evidence.provenFacts, symbol, position) != null) return false
+    if (
+        uiState.tools.autoExcludeEnabled &&
+        lockedVisual(uiState.evidence.deduction.provenFacts, symbol, position) != null
+    ) {
+        return false
+    }
     if (analysisMarkFor(uiState.manualMarks, symbol, position) != null) return true
     if (
         uiState.tools.selectedTool == GameFieldTool.YES &&
@@ -806,9 +861,7 @@ private fun analysisCellEditable(
     ) {
         return true
     }
-    if (lockedVisual(uiState.evidence.provenFacts, symbol, position) != null) return false
-    return !uiState.tools.autoExcludeEnabled ||
-        lockedVisual(uiState.evidence.deduction.provenFacts, symbol, position) == null
+    return true
 }
 
 private fun lockedVisual(

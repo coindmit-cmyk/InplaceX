@@ -471,6 +471,7 @@ dependencies {
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.browser)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

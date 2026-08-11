@@ -14,11 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -33,6 +40,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
@@ -45,15 +53,78 @@ fun ProfileRootScreen(
     mirkoriAccountState: MirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING),
     mirkoriAuthResultKey: String? = null,
     mirkoriAuthInProgress: Boolean = false,
+    publicPlayerProfile: MirkoriPublicPlayerProfile? = null,
+    publicProfileResultKey: String? = null,
+    publicProfileInProgress: Boolean = false,
     authResultKey: String? = null,
     authInProgress: Boolean = false,
     showGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
+    onPublicHandleChange: (String) -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     val clipboardManager = LocalClipboardManager.current
+    var handleDialogOpen by remember { mutableStateOf(false) }
+    var handleInput by remember(publicPlayerProfile?.handle) {
+        mutableStateOf(publicPlayerProfile?.handle.orEmpty())
+    }
+    var localHandleError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(publicProfileResultKey) {
+        if (publicProfileResultKey == "profile.mirkori.handle.saved") handleDialogOpen = false
+    }
+
+    if (handleDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!publicProfileInProgress) handleDialogOpen = false },
+            title = { Text(strings.text("profile.mirkori.handle.change")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(strings.text("profile.mirkori.handle.rules"))
+                    OutlinedTextField(
+                        value = handleInput,
+                        onValueChange = {
+                            handleInput = it.lowercase().filter { character ->
+                                character in 'a'..'z' || character in '0'..'9' || character == '_'
+                            }.take(24)
+                            localHandleError = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        prefix = { Text("@") },
+                        label = { Text(strings.text("profile.mirkori.handle")) },
+                        isError = localHandleError,
+                    )
+                    if (localHandleError) Text(strings.text("profile.mirkori.handle.invalid"))
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val normalized = handleInput.trim().lowercase()
+                        if (normalized.matches(Regex("[a-z0-9_]{3,24}"))) {
+                            onPublicHandleChange(normalized)
+                        } else {
+                            localHandleError = true
+                        }
+                    },
+                    enabled = !publicProfileInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.handle.save"))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { handleDialogOpen = false },
+                    enabled = !publicProfileInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.handle.cancel"))
+                }
+            },
+        )
+    }
 
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
@@ -115,6 +186,23 @@ fun ProfileRootScreen(
 
             mirkoriAccountState.gamePlayerId?.let { playerId ->
                 Text(
+                    text = publicPlayerProfile?.handle?.let { "@$it" }
+                        ?: strings.text("profile.mirkori.handle.not_set"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                OutlinedButton(
+                    onClick = {
+                        handleInput = publicPlayerProfile?.handle.orEmpty()
+                        localHandleError = false
+                        handleDialogOpen = true
+                    },
+                    enabled = !publicProfileInProgress,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                ) {
+                    Text(strings.text("profile.mirkori.handle.change"))
+                }
+                Text(
                     text = strings.text("profile.mirkori.player_id").replace("{id}", playerId.takeLast(8)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -125,6 +213,18 @@ fun ProfileRootScreen(
                 ) {
                     Text(strings.text("profile.mirkori.copy_player_id"))
                 }
+            }
+
+            publicProfileResultKey?.let { key ->
+                Text(
+                    text = strings.text(key),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (key == "profile.mirkori.handle.saved") {
+                        InplaceXColors.Mint
+                    } else {
+                        InplaceXColors.Coral
+                    },
+                )
             }
 
             if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
