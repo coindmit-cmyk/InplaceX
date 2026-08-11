@@ -15,7 +15,11 @@ class PortraitOrientationContractTest {
         val mainActivity = manifest
             .substringAfter("android:name=\".MainActivity\"")
             .substringBefore("</activity>")
+        val application = manifest
+            .substringAfter("<application")
+            .substringBefore("<activity")
 
+        assertTrue(application.contains("android:appCategory=\"game\""))
         assertTrue(mainActivity.contains("android:screenOrientation=\"portrait\""))
     }
 }
