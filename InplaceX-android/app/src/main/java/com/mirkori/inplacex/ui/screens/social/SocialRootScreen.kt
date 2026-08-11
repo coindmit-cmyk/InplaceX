@@ -83,6 +83,7 @@ fun SocialRootScreen(
     },
     incomingInvites: List<OnlineFriendInvite> = emptyList(),
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
+    requestedQuickMatchCodeLength: Int = 4,
     onQuickMatchRequestConsumed: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
@@ -98,6 +99,7 @@ fun SocialRootScreen(
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
     var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
     var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
+    var quickMatchCodeLength by remember { mutableStateOf(4) }
 
     LaunchedEffect(activeDestination) {
         onNestedScreenChange(activeDestination != null)
@@ -112,11 +114,12 @@ fun SocialRootScreen(
             activeDestination = null
         }
     }
-    LaunchedEffect(requestedQuickMatchPlayStyle, onlineRuntime) {
+    LaunchedEffect(requestedQuickMatchPlayStyle, requestedQuickMatchCodeLength, onlineRuntime) {
         val requestedPlayStyle = requestedQuickMatchPlayStyle ?: return@LaunchedEffect
 
         if (onlineRuntime != null) {
             quickMatchPlayStyle = requestedPlayStyle
+            quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -187,6 +190,7 @@ fun SocialRootScreen(
                 else -> OnlineDuelEntryPoint.QUICK_MATCH
             },
             initialPlayStyle = quickMatchPlayStyle,
+            initialCodeLength = quickMatchCodeLength,
             targetPlayerId = selectedFriend?.targetPlayerId
                 .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
             targetDisplayName = selectedFriend?.targetDisplayName

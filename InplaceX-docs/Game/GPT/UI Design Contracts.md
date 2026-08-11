@@ -68,6 +68,9 @@ Each first-level screen must preserve:
 ## Online Entry And Invitation Contract
 
 - Both Race and Duel open an opponent choice before gameplay: bot or online.
+- The opponent-choice screen exposes secret length for both Race and Duel. The
+  selected length applies unchanged to the bot match or becomes the initial
+  value of the online match settings.
 - The online transition carries the selected play style; it must not silently
   fall back to the screen default.
 - `Play` on a saved friend opens private match settings and the primary action

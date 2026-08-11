@@ -20,6 +20,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -231,6 +232,7 @@ class MainActivity : ComponentActivity() {
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var requestedOnlinePlayStyleName by rememberSaveable { mutableStateOf<String?>(null) }
+                var requestedOnlineCodeLength by rememberSaveable { mutableIntStateOf(4) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 val initialProgressState = remember {
                     initialProgressState(
@@ -891,8 +893,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenCompany = {
                                         currentSection = AppSection.COMPANY
                                     },
-                                    onOpenOnlineMatch = { playStyle ->
+                                    onOpenOnlineMatch = { playStyle, codeLength ->
                                         requestedOnlinePlayStyleName = playStyle.name
+                                        requestedOnlineCodeLength = codeLength
                                         currentSection = AppSection.SOCIAL
                                     },
                                     onlineAvailable = onlineRuntime != null,
@@ -958,6 +961,7 @@ class MainActivity : ComponentActivity() {
                                 requestedQuickMatchPlayStyle = requestedOnlinePlayStyleName?.let(
                                     com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle::valueOf,
                                 ),
+                                requestedQuickMatchCodeLength = requestedOnlineCodeLength,
                                 onQuickMatchRequestConsumed = { requestedOnlinePlayStyleName = null },
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },

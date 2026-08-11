@@ -31,4 +31,23 @@ class HomeModeContractTest {
         assertEquals(0, params.timeMove)
         assertFalse(params.useHints)
     }
+
+    @Test
+    fun selectedSecretLengthIsAppliedToRaceAndDuelFieldParameters() {
+        val race = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
+            .withCodeLength(7)
+        val duel = AppConfigCatalog.gameModes.first { it.id == "pvp_bot_duel" }
+            .withCodeLength(9)
+
+        assertEquals(7, race.toFieldParams(TypeGame.RaceMatch).lenSecret)
+        assertEquals(9, duel.toFieldParams(TypeGame.DuelMatch).lenSecret)
+        assertEquals(9, localBotDuelConfig(duel).codeLength)
+    }
+
+    @Test
+    fun homeSecretLengthStaysInsideSupportedMatchRange() {
+        assertEquals(4, selectHomeCodeLength(3))
+        assertEquals(6, selectHomeCodeLength(6))
+        assertEquals(10, selectHomeCodeLength(11))
+    }
 }

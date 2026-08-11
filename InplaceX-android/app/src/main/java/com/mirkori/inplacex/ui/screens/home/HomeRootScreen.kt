@@ -92,9 +92,12 @@ fun HomeRootScreen(
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
     onOpenCompany: () -> Unit = {},
-    onOpenOnlineMatch: (RemoteFriendPlayStyle) -> Unit = {},
+    onOpenOnlineMatch: (RemoteFriendPlayStyle, Int) -> Unit = { _, _ -> },
     onlineAvailable: Boolean = false,
 ) {
+    val pveMode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
+    val pvpMode = AppConfigCatalog.gameModes.first { it.id == "pvp_bot_duel" }
+    val strings = LocalAppStrings.current
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
@@ -115,10 +118,14 @@ fun HomeRootScreen(
     var botConfirmedPositions by rememberSaveable { mutableIntStateOf(0) }
     var duelTurnError by rememberSaveable { mutableStateOf<String?>(null) }
     var duelSessionSeed by rememberSaveable { mutableIntStateOf(1) }
-
-    val pveMode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
-    val pvpMode = AppConfigCatalog.gameModes.first { it.id == "pvp_bot_duel" }
-    val strings = LocalAppStrings.current
+    var selectedRaceCodeLength by rememberSaveable {
+        mutableIntStateOf(selectHomeCodeLength(pveMode.config.codeLength))
+    }
+    var selectedDuelCodeLength by rememberSaveable {
+        mutableIntStateOf(selectHomeCodeLength(pvpMode.config.codeLength))
+    }
+    val configuredPveMode = pveMode.withCodeLength(selectedRaceCodeLength)
+    val configuredPvpMode = pvpMode.withCodeLength(selectedDuelCodeLength)
 
     LaunchedEffect(screenState) {
         onInGameChange(screenState != HomeScreenState.ROOT)
@@ -150,7 +157,7 @@ fun HomeRootScreen(
                     playerSecretForDuel = preMatchSecretInput
                     botSecretForDuel = SecretGenerator.generate(
                         localBotDuelConfig(
-                            mode = pvpMode,
+                            mode = configuredPvpMode,
                             seed = duelSessionSeed.toLong() * 37L,
                         ),
                     )
@@ -241,6 +248,8 @@ fun HomeRootScreen(
 
         HomeScreenState.PVP_MODES -> {
             PvpModesScreen(
+                codeLength = selectedDuelCodeLength,
+                onCodeLengthChange = { selectedDuelCodeLength = it },
                 onPlayWithBot = {
                     preMatchPhase = PreMatchPhase.SECRET_SELECTION
                     preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
@@ -249,7 +258,9 @@ fun HomeRootScreen(
                     preMatchError = null
                     showPreMatchDialog = true
                 },
-                onPlayOnline = { onOpenOnlineMatch(RemoteFriendPlayStyle.TURN_BASED) },
+                onPlayOnline = {
+                    onOpenOnlineMatch(RemoteFriendPlayStyle.TURN_BASED, selectedDuelCodeLength)
+                },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
             )
@@ -257,18 +268,22 @@ fun HomeRootScreen(
 
         HomeScreenState.RACE_MODES -> {
             PvpModesScreen(
+                codeLength = selectedRaceCodeLength,
+                onCodeLengthChange = { selectedRaceCodeLength = it },
                 onPlayWithBot = { onScreenStateChange(HomeScreenState.PVE_GAME) },
-                onPlayOnline = { onOpenOnlineMatch(RemoteFriendPlayStyle.RACE) },
+                onPlayOnline = {
+                    onOpenOnlineMatch(RemoteFriendPlayStyle.RACE, selectedRaceCodeLength)
+                },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
             )
         }
 
         HomeScreenState.PVE_GAME -> {
-            key(pveSessionSeed) {
+            key(pveSessionSeed, selectedRaceCodeLength) {
                 GameFieldScreen(
                     title = "",
-                    params = pveMode.toFieldParams(TypeGame.RaceMatch),
+                    params = configuredPveMode.toFieldParams(TypeGame.RaceMatch),
                     onBack = { showExitDialog = true },
                     onDebugSecretChange = onDebugSecretChange,
                     openPositionHints = openPositionHints,
@@ -295,10 +310,11 @@ fun HomeRootScreen(
         }
 
         HomeScreenState.PVP_GAME -> {
-            val botSolver = remember(duelSessionSeed, playerSecretForDuel) {
+            val botSolver = remember(duelSessionSeed, playerSecretForDuel, selectedDuelCodeLength) {
                 BotSolver(
-                    config = localBotDuelConfig(pvpMode),
-                    difficulty = pvpMode.botDifficulty ?: com.mirkori.inplacex.core.bot.BotDifficulty.MEDIUM,
+                    config = localBotDuelConfig(configuredPvpMode),
+                    difficulty = configuredPvpMode.botDifficulty
+                        ?: com.mirkori.inplacex.core.bot.BotDifficulty.MEDIUM,
                     seed = duelSessionSeed.toLong(),
                 )
             }
@@ -310,7 +326,7 @@ fun HomeRootScreen(
                 val botTurn = withContext(Dispatchers.Default) {
                     resolveDuelBotTurn(
                         playerSecret = playerSecretForDuel,
-                        codeLength = pvpMode.config.codeLength,
+                        codeLength = configuredPvpMode.config.codeLength,
                         nextGuess = { botSolver.nextTurn().guess },
                         registerFeedback = botSolver::registerFeedback,
                         confirmedPositions = botSolver::confirmedPositionsCount,
@@ -323,7 +339,7 @@ fun HomeRootScreen(
                         botLastScore = botTurn.score
                         botConfirmedPositions = botTurn.confirmedPositions
 
-                        if (botTurn.score == pvpMode.config.codeLength) {
+                        if (botTurn.score == configuredPvpMode.config.codeLength) {
                             onRecordPvpResult(false)
                             duelResultText = strings.homeDuelResultBotWin(botTurn.score)
                             showDuelResultDialog = true
@@ -339,7 +355,7 @@ fun HomeRootScreen(
                             tag = "HomeRootScreen",
                             message = "duel bot turn failed",
                             attributes = mapOf(
-                                "codeLength" to pvpMode.config.codeLength.toString(),
+                                "codeLength" to configuredPvpMode.config.codeLength.toString(),
                                 "inputLength" to playerSecretForDuel.length.toString(),
                                 "failureStage" to botTurn.stage.name,
                             ),
@@ -360,11 +376,18 @@ fun HomeRootScreen(
                     strings.text("home.duel.turn.opponent")
                 },
                 secondaryStatusText = duelTurnError ?: if (botLastScore >= 0) {
-                    strings.homeDuelStatus(botLastScore, botConfirmedPositions, pvpMode.config.codeLength)
+                    strings.homeDuelStatus(
+                        botLastScore,
+                        botConfirmedPositions,
+                        configuredPvpMode.config.codeLength,
+                    )
                 } else {
-                    strings.homeDuelWaiting(botConfirmedPositions, pvpMode.config.codeLength)
+                    strings.homeDuelWaiting(
+                        botConfirmedPositions,
+                        configuredPvpMode.config.codeLength,
+                    )
                 },
-                params = pvpMode.toFieldParams(TypeGame.DuelMatch),
+                params = configuredPvpMode.toFieldParams(TypeGame.DuelMatch),
                 onBack = { showExitDialog = true },
                 onDebugSecretChange = onDebugSecretChange,
                 fixedSecret = botSecretForDuel,
@@ -437,7 +460,7 @@ fun HomeRootScreen(
         RaceResultDialog(
             won = won,
             attemptsUsed = raceResultAttempts,
-            attemptLimit = pveMode.moveLimit,
+            attemptLimit = configuredPveMode.moveLimit,
             elapsedSeconds = raceResultElapsedSeconds,
             onRetry = {
                 raceResultWon = null
@@ -462,11 +485,14 @@ fun HomeRootScreen(
                             OutlinedTextField(
                                 value = preMatchSecretInput,
                                 onValueChange = { value ->
-                                    preMatchSecretInput = value.filter(Char::isDigit).take(pvpMode.config.codeLength)
+                                    preMatchSecretInput = value.filter(Char::isDigit)
+                                        .take(configuredPvpMode.config.codeLength)
                                     preMatchError = null
                                 },
                                 singleLine = true,
-                                label = { Text(strings.homeSecretLabel(pvpMode.config.codeLength)) }
+                                label = {
+                                    Text(strings.homeSecretLabel(configuredPvpMode.config.codeLength))
+                                }
                             )
                             Text(strings.homeTimeLeft(preMatchTimeoutLeft))
                             preMatchError?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
@@ -494,9 +520,11 @@ fun HomeRootScreen(
                     PreMatchPhase.SECRET_SELECTION -> {
                         TextButton(
                             onClick = {
-                                val preMatchConfig = localBotDuelConfig(pvpMode)
-                                if (preMatchSecretInput.length != pvpMode.config.codeLength) {
-                                    preMatchError = strings.homeEnterDigits(pvpMode.config.codeLength)
+                                val preMatchConfig = localBotDuelConfig(configuredPvpMode)
+                                if (preMatchSecretInput.length != configuredPvpMode.config.codeLength) {
+                                    preMatchError = strings.homeEnterDigits(
+                                        configuredPvpMode.config.codeLength,
+                                    )
                                 } else if (!GuessValidator.validate(preMatchSecretInput, preMatchConfig)) {
                                     preMatchError = strings.text("home.dialog.setup.invalid_secret")
                                 } else {
@@ -594,6 +622,10 @@ internal fun localBotDuelConfig(
 ): GameConfig = mode.config.copy(
     attemptLimit = LOCAL_DUEL_ATTEMPT_CAPACITY,
     seed = seed,
+)
+
+internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
+    config = config.copy(codeLength = selectHomeCodeLength(codeLength)),
 )
 
 private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
