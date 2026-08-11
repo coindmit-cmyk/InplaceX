@@ -55,7 +55,11 @@ fun PvpModesScreen(
                 enabled = onlineAvailable,
                 modifier = Modifier.fillMaxWidth(fraction = 0.68f)
             ) {
-                Text(strings.text("home.pvp.online"))
+                Text(
+                    text = strings.text("home.pvp.online"),
+                    maxLines = 1,
+                    softWrap = false,
+                )
             }
 
             OutlinedButton(

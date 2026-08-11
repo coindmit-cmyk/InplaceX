@@ -37,6 +37,21 @@ optional avatar URL. The Friends UI stores the immutable ID as the target and
 the handle only as display metadata. Changing a handle therefore does not break
 existing friendships or invitations.
 
+`PUT /api/v1/game-profiles/me/public-profile` accepts any non-empty subset of
+`handle`, `displayName`, and the built-in `avatarKey`. The supported avatar
+keys are `rocket`, `robot`, `star`, `gamepad`, `heart`, and `bolt`; the response
+always returns the complete public profile with a nullable HTTPS `avatarUrl`.
+
+Friendships are game-scoped Platform state. Android creates a request with
+`POST /api/v1/game-profiles/me/friend-requests`, polls pending incoming requests
+through `GET /api/v1/game-profiles/me/friend-requests/incoming`, accepts one at
+`POST /api/v1/game-profiles/me/friend-requests/{requestId}/accept`, and
+synchronizes accepted profiles from `GET /api/v1/game-profiles/me/friends`.
+Create and accept operations use idempotency keys. Wire requests expose
+`requestId`, `status` (`pending` or `accepted`), the other player's public
+profile, and `createdAtEpochMs`. A crossed pending request becomes accepted;
+mutable handles and names never identify the relationship.
+
 ## Protected state
 
 `AndroidKeystoreMirkoriStateStore` encrypts one atomic record with AES-256-GCM.

@@ -17,6 +17,7 @@ import com.mirkori.platform.sdk.PlatformApiException
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCallbackRejectedException
 import com.mirkori.platform.sdk.PlatformCredentials
+import com.mirkori.platform.sdk.PlatformFriendRequest
 import com.mirkori.platform.sdk.PlatformProfileConflictException
 import com.mirkori.platform.sdk.PlatformPublicPlayerProfile
 import io.ktor.client.HttpClient
@@ -270,6 +271,108 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
+    suspend fun updatePublicProfile(
+        handle: String? = null,
+        displayName: String? = null,
+        avatarKey: String? = null,
+    ): MirkoriPublicProfileResult = operationMutex.withLock {
+        try {
+            val profile = authenticatedPlatformRequest { accessToken ->
+                sdk.updatePublicProfile(
+                    profileAccessToken = accessToken,
+                    handle = handle,
+                    displayName = displayName,
+                    avatarKey = avatarKey,
+                )
+            }
+            MirkoriPublicProfileResult.Success(profile.toAppProfile())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: PlatformApiException) {
+            when {
+                error.status == 409 && error.errorCode == "handle_taken" ->
+                    MirkoriPublicProfileResult.HandleTaken
+                error.status in 400..499 -> MirkoriPublicProfileResult.Rejected
+                else -> {
+                    logFailure(error)
+                    MirkoriPublicProfileResult.Unavailable
+                }
+            }
+        } catch (error: IllegalArgumentException) {
+            MirkoriPublicProfileResult.Rejected
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriPublicProfileResult.Unavailable
+        }
+    }
+
+    suspend fun sendFriendRequest(targetGamePlayerId: String): MirkoriFriendOperationResult =
+        operationMutex.withLock {
+            try {
+                val request = authenticatedPlatformRequest { accessToken ->
+                    sdk.createFriendRequest(accessToken, targetGamePlayerId)
+                }
+                MirkoriFriendOperationResult.Success(request.toAppFriendRequest())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: PlatformApiException) {
+                if (error.status in 400..499) MirkoriFriendOperationResult.Rejected else {
+                    logFailure(error)
+                    MirkoriFriendOperationResult.Unavailable
+                }
+            } catch (error: Exception) {
+                logFailure(error)
+                MirkoriFriendOperationResult.Unavailable
+            }
+        }
+
+    suspend fun incomingFriendRequests(): MirkoriIncomingFriendRequestsResult = operationMutex.withLock {
+        try {
+            val requests = authenticatedPlatformRequest { accessToken ->
+                sdk.incomingFriendRequests(accessToken)
+            }.map(PlatformFriendRequest::toAppFriendRequest)
+            MirkoriIncomingFriendRequestsResult.Success(requests)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriIncomingFriendRequestsResult.Unavailable
+        }
+    }
+
+    suspend fun acceptFriendRequest(requestId: String): MirkoriFriendOperationResult =
+        operationMutex.withLock {
+            try {
+                val request = authenticatedPlatformRequest { accessToken ->
+                    sdk.acceptFriendRequest(accessToken, requestId)
+                }
+                MirkoriFriendOperationResult.Success(request.toAppFriendRequest())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: PlatformApiException) {
+                if (error.status in 400..499) MirkoriFriendOperationResult.Rejected else {
+                    logFailure(error)
+                    MirkoriFriendOperationResult.Unavailable
+                }
+            } catch (error: Exception) {
+                logFailure(error)
+                MirkoriFriendOperationResult.Unavailable
+            }
+        }
+
+    suspend fun friends(): MirkoriFriendsResult = operationMutex.withLock {
+        try {
+            val players = authenticatedPlatformRequest { accessToken -> sdk.friends(accessToken) }
+                .map(PlatformPublicPlayerProfile::toAppProfile)
+            MirkoriFriendsResult.Success(players)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriFriendsResult.Unavailable
+        }
+    }
+
     override suspend fun currentAccessToken(): AccessToken? = accessTokenOrNull(forceRefresh = false)
 
     override suspend fun refreshAccessToken(rejectedToken: AccessToken): AccessToken? =
@@ -432,6 +535,11 @@ private fun PlatformPublicPlayerProfile.toAppProfile(): MirkoriPublicPlayerProfi
         displayName = displayName,
         avatarUrl = avatarUrl,
     )
+
+private fun PlatformFriendRequest.toAppFriendRequest(): MirkoriFriendRequest = MirkoriFriendRequest(
+    requestId = requestId,
+    player = player.toAppProfile(),
+)
 
 private fun MirkoriPersistedState.withSession(newSession: GameIdentitySession): MirkoriPersistedState {
     val sameProfile = session?.let { current ->

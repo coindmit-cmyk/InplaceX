@@ -207,7 +207,7 @@ class ShellSectionsSmokeTest {
             composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
             composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
             composeRule.onNodeWithText("Играть").performClick()
-            composeRule.onNodeWithText("Онлайн-матч").assertIsDisplayed()
+            composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
             composeRule.onNodeWithText("Настройки онлайн-матча").assertIsDisplayed()
             composeRule.onNodeWithText("4 цифры").assertIsDisplayed()
             composeRule.onNodeWithText("На время").assertIsDisplayed()
@@ -539,7 +539,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("Онлайн-матч").performClick()
+        composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.TURN_BASED, openedOnline)
@@ -560,7 +560,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Гонка").performClick()
-        composeRule.onNodeWithText("Онлайн-матч").performClick()
+        composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.RACE, openedOnline)
@@ -579,7 +579,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("Онлайн-матч").assertIsNotEnabled()
+        composeRule.onNodeWithText("Онлайн‑матч").assertIsNotEnabled()
     }
 
     @Test

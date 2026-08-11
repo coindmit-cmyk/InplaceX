@@ -70,6 +70,11 @@ class HomeLocalizationCatalogTest {
         assertTrue(HomeCatalog.ru.values.values.none { it.contains("premium", ignoreCase = true) })
     }
 
+    @Test
+    fun `online match label uses a non breaking hyphen`() {
+        assertEquals("Онлайн‑матч", HomeCatalog.ru.values.getValue("home.pvp.online"))
+    }
+
     private fun placeholders(value: String): Set<String> =
         placeholderPattern.findAll(value).map { it.value }.toSet()
 

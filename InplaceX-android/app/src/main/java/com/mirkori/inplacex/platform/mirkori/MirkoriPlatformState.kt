@@ -106,6 +106,27 @@ data class MirkoriPublicPlayerProfile(
     val avatarUrl: String?,
 )
 
+data class MirkoriFriendRequest(
+    val requestId: String,
+    val player: MirkoriPublicPlayerProfile,
+)
+
+sealed interface MirkoriFriendOperationResult {
+    data class Success(val request: MirkoriFriendRequest) : MirkoriFriendOperationResult
+    data object Rejected : MirkoriFriendOperationResult
+    data object Unavailable : MirkoriFriendOperationResult
+}
+
+sealed interface MirkoriIncomingFriendRequestsResult {
+    data class Success(val requests: List<MirkoriFriendRequest>) : MirkoriIncomingFriendRequestsResult
+    data object Unavailable : MirkoriIncomingFriendRequestsResult
+}
+
+sealed interface MirkoriFriendsResult {
+    data class Success(val players: List<MirkoriPublicPlayerProfile>) : MirkoriFriendsResult
+    data object Unavailable : MirkoriFriendsResult
+}
+
 sealed interface MirkoriPublicProfileResult {
     data class Success(val profile: MirkoriPublicPlayerProfile) : MirkoriPublicProfileResult
 

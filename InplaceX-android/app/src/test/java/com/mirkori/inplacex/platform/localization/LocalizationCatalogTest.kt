@@ -59,7 +59,11 @@ class LocalizationCatalogTest {
             "social.description",
             "social.online.error.offline",
             "social.online.new_match",
+            "social.friend.request.notification.title",
+            "social.friend.request.accept",
             "shop.hints.subtitle",
+            "profile.mirkori.name.change",
+            "profile.mirkori.avatar.change",
             "profile.match_stats.result",
             "company.dialog.exit_title",
         )
@@ -88,6 +92,10 @@ class LocalizationCatalogTest {
         assertEquals(
             "Turn by turn",
             StaticLocalizationProvider.forLanguage(AppLanguage.EN).text("social.match.turn_based"),
+        )
+        assertEquals(
+            "Онлайн‑матч",
+            StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("social.match.title"),
         )
     }
 }

@@ -263,6 +263,49 @@ class MirkoriGameSdkTest {
     }
 
     @Test
+    fun friendProfileApiSendsRequestsListsIncomingAcceptsAndListsFriends() {
+        val playerId = "00000000-0000-4000-8000-000000000502"
+        val requestId = "00000000-0000-4000-8000-000000000503"
+        val profile = """{"gamePlayerId":"$playerId","handle":"friend","displayName":"Friend","avatarUrl":"https://games.dmit.life/assets/player-avatars/robot"}"""
+        val pending = """{"requestId":"$requestId","status":"pending","player":$profile,"createdAtEpochMs":1786464000000}"""
+        val accepted = pending.replace("\"pending\"", "\"accepted\"")
+        val transport = QueueTransport(
+            success(pending),
+            success("""{"schemaVersion":1,"requests":[$pending]}"""),
+            success(accepted),
+            success("""{"schemaVersion":1,"players":[$profile]}"""),
+        )
+        val sdk = sdk(transport)
+        val accessToken = "access." + "f".repeat(40)
+
+        assertEquals(
+            PlatformFriendRequestStatus.PENDING,
+            runSuspend {
+                sdk.createFriendRequest(
+                    accessToken,
+                    playerId,
+                    PlatformIdempotencyKey("friend-request-create"),
+                )
+            }.status,
+        )
+        assertEquals(requestId, runSuspend { sdk.incomingFriendRequests(accessToken) }.single().requestId)
+        assertEquals(
+            PlatformFriendRequestStatus.ACCEPTED,
+            runSuspend {
+                sdk.acceptFriendRequest(
+                    accessToken,
+                    requestId,
+                    PlatformIdempotencyKey("friend-request-accept"),
+                )
+            }.status,
+        )
+        assertEquals(playerId, runSuspend { sdk.friends(accessToken) }.single().gamePlayerId)
+        assertEquals(PlatformHttpMethod.POST, transport.requests[0].method)
+        assertTrue(transport.requests[0].body.contains(playerId))
+        assertTrue(transport.requests[2].url.endsWith("/$requestId/accept"))
+    }
+
+    @Test
     fun commerceFlowUsesBearerTokensStableKeysAndTypedResponses() {
         val orderId = "00000000-0000-4000-8000-000000000401"
         val checkoutId = "00000000-0000-4000-8000-000000000402"

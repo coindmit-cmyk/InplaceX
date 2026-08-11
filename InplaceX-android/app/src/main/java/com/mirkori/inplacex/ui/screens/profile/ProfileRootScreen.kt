@@ -1,8 +1,8 @@
 package com.mirkori.inplacex.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
@@ -44,6 +43,8 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
+import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
+import com.mirkori.inplacex.ui.screens.shared.PlayerAvatarPresets
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -61,6 +62,8 @@ fun ProfileRootScreen(
     showGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
     onPublicHandleChange: (String) -> Unit = {},
+    onDisplayNameChange: (String) -> Unit = {},
+    onAvatarChange: (String) -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
 ) {
@@ -71,9 +74,97 @@ fun ProfileRootScreen(
         mutableStateOf(publicPlayerProfile?.handle.orEmpty())
     }
     var localHandleError by remember { mutableStateOf(false) }
+    var nameDialogOpen by remember { mutableStateOf(false) }
+    var nameInput by remember(publicPlayerProfile?.displayName, progressState.playerDisplayName) {
+        mutableStateOf(publicPlayerProfile?.displayName ?: progressState.playerDisplayName)
+    }
+    var localNameError by remember { mutableStateOf(false) }
+    var avatarDialogOpen by remember { mutableStateOf(false) }
+    val visibleDisplayName = publicPlayerProfile?.displayName ?: progressState.playerDisplayName
 
     LaunchedEffect(publicProfileResultKey) {
         if (publicProfileResultKey == "profile.mirkori.handle.saved") handleDialogOpen = false
+        if (publicProfileResultKey == "profile.mirkori.name.saved") nameDialogOpen = false
+        if (publicProfileResultKey == "profile.mirkori.avatar.saved") avatarDialogOpen = false
+    }
+
+    if (nameDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!publicProfileInProgress) nameDialogOpen = false },
+            title = { Text(strings.text("profile.mirkori.name.change")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(strings.text("profile.mirkori.name.rules"))
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = {
+                            nameInput = it.take(40)
+                            localNameError = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(strings.text("profile.mirkori.name")) },
+                        isError = localNameError,
+                    )
+                    if (localNameError) Text(strings.text("profile.mirkori.name.invalid"))
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val normalized = nameInput.trim()
+                        if (normalized.isNotEmpty()) onDisplayNameChange(normalized)
+                        else localNameError = true
+                    },
+                    enabled = !publicProfileInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.name.save"))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { nameDialogOpen = false },
+                    enabled = !publicProfileInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.handle.cancel"))
+                }
+            },
+        )
+    }
+
+    if (avatarDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!publicProfileInProgress) avatarDialogOpen = false },
+            title = { Text(strings.text("profile.mirkori.avatar.change")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(strings.text("profile.mirkori.avatar.choose"))
+                    PlayerAvatarPresets.chunked(3).forEach { rowPresets ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            rowPresets.forEach { preset ->
+                                PlayerAvatar(
+                                    displayName = visibleDisplayName,
+                                    avatarUrl = "/${preset.key}",
+                                    modifier = Modifier.size(64.dp),
+                                    onClick = { onAvatarChange(preset.key) },
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                OutlinedButton(
+                    onClick = { avatarDialogOpen = false },
+                    enabled = !publicProfileInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.handle.cancel"))
+                }
+            },
+        )
     }
 
     if (handleDialogOpen) {
@@ -136,27 +227,31 @@ fun ProfileRootScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
+                PlayerAvatar(
+                    displayName = visibleDisplayName,
+                    avatarUrl = publicPlayerProfile?.avatarUrl,
                     modifier = Modifier.size(64.dp),
-                    shape = CircleShape,
-                    color = InplaceXColors.Cobalt,
-                    contentColor = InplaceXColors.White,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = playerInitials(progressState.playerDisplayName),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
+                    onClick = if (mirkoriAccountState.gamePlayerId == null) null else {
+                        { avatarDialogOpen = true }
+                    },
+                )
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     Text(
-                        text = progressState.playerDisplayName,
-                        modifier = Modifier.semantics { heading() },
+                        text = visibleDisplayName,
+                        modifier = Modifier
+                            .semantics { heading() }
+                            .then(
+                                if (mirkoriAccountState.gamePlayerId == null) Modifier else {
+                                    Modifier.clickable {
+                                        nameInput = visibleDisplayName
+                                        localNameError = false
+                                        nameDialogOpen = true
+                                    }
+                                },
+                            ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
@@ -219,7 +314,7 @@ fun ProfileRootScreen(
                 Text(
                     text = strings.text(key),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (key == "profile.mirkori.handle.saved") {
+                    color = if (key in PublicProfileSuccessKeys) {
                         InplaceXColors.Mint
                     } else {
                         InplaceXColors.Coral
@@ -529,3 +624,9 @@ internal fun playerInitials(displayName: String): String {
         else -> "${parts.first().first()}${parts.last().first()}".uppercase()
     }
 }
+
+private val PublicProfileSuccessKeys = setOf(
+    "profile.mirkori.handle.saved",
+    "profile.mirkori.name.saved",
+    "profile.mirkori.avatar.saved",
+)

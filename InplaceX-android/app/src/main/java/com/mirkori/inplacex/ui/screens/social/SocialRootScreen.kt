@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Group
@@ -55,9 +54,12 @@ import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendOperationResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendRequest
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
+import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.launch
 
@@ -71,8 +73,14 @@ fun SocialRootScreen(
     onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult = {
         MirkoriPlayerSearchResult.Unavailable
     },
-    onAddFriend: (MirkoriPublicPlayerProfile) -> Unit = {},
+    onAddFriend: suspend (MirkoriPublicPlayerProfile) -> MirkoriFriendOperationResult = {
+        MirkoriFriendOperationResult.Unavailable
+    },
     showTestFriendBot: Boolean = false,
+    incomingFriendRequests: List<MirkoriFriendRequest> = emptyList(),
+    onAcceptFriendRequest: suspend (MirkoriFriendRequest) -> MirkoriFriendOperationResult = {
+        MirkoriFriendOperationResult.Unavailable
+    },
     incomingInvites: List<OnlineFriendInvite> = emptyList(),
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
     onQuickMatchRequestConsumed: () -> Unit = {},
@@ -137,6 +145,8 @@ fun SocialRootScreen(
             onSearchPlayers = onSearchPlayers,
             onAddFriend = onAddFriend,
             showTestFriendBot = showTestFriendBot,
+            incomingFriendRequests = incomingFriendRequests,
+            onAcceptFriendRequest = onAcceptFriendRequest,
             onlineConfigured = onlineRuntime != null,
             incomingInvites = incomingInvites,
             onAcceptInvite = { invite ->
@@ -278,8 +288,10 @@ private fun SocialFriendsScreen(
     friends: List<LocalSocialRelationship>,
     currentPlayerId: String?,
     onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult,
-    onAddFriend: (MirkoriPublicPlayerProfile) -> Unit,
+    onAddFriend: suspend (MirkoriPublicPlayerProfile) -> MirkoriFriendOperationResult,
     showTestFriendBot: Boolean,
+    incomingFriendRequests: List<MirkoriFriendRequest>,
+    onAcceptFriendRequest: suspend (MirkoriFriendRequest) -> MirkoriFriendOperationResult,
     onlineConfigured: Boolean,
     incomingInvites: List<OnlineFriendInvite>,
     onAcceptInvite: (OnlineFriendInvite) -> Unit,
@@ -293,6 +305,7 @@ private fun SocialFriendsScreen(
     var searchInProgress by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<MirkoriPublicPlayerProfile>>(emptyList()) }
     var addFriendResultKey by remember { mutableStateOf<String?>(null) }
+    var friendOperationInProgress by remember { mutableStateOf(false) }
 
     if (addFriendDialogOpen) {
         AlertDialog(
@@ -362,9 +375,17 @@ private fun SocialFriendsScreen(
                         PlayerSearchResultCard(
                             player = player,
                             alreadyAdded = friends.any { it.targetPlayerId == player.gamePlayerId },
+                            enabled = !friendOperationInProgress,
                             onAdd = {
-                                onAddFriend(player)
-                                addFriendResultKey = "social.friend.add.saved"
+                                friendOperationInProgress = true
+                                coroutineScope.launch {
+                                    addFriendResultKey = when (onAddFriend(player)) {
+                                        is MirkoriFriendOperationResult.Success -> "social.friend.request.sent"
+                                        MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
+                                        MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                                    }
+                                    friendOperationInProgress = false
+                                }
                             },
                         )
                     }
@@ -409,6 +430,27 @@ private fun SocialFriendsScreen(
         ) {
             Icon(Icons.Outlined.PersonAdd, contentDescription = null)
             Text(strings.text("social.friend.add.title"), modifier = Modifier.padding(start = 8.dp))
+        }
+
+        incomingFriendRequests.forEach { request ->
+            FriendCard(
+                title = request.player.displayName,
+                subtitle = strings.text("social.friend.request.incoming"),
+                actionLabelKey = "social.friend.request.accept",
+                showPlay = true,
+                playEnabled = !friendOperationInProgress,
+                onPlay = {
+                    friendOperationInProgress = true
+                    coroutineScope.launch {
+                        addFriendResultKey = when (onAcceptFriendRequest(request)) {
+                            is MirkoriFriendOperationResult.Success -> "social.friend.request.accepted"
+                            MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
+                            MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                        }
+                        friendOperationInProgress = false
+                    }
+                },
+            )
         }
 
         incomingInvites.forEach { invite ->
@@ -475,6 +517,7 @@ private fun SocialFriendsScreen(
 private fun PlayerSearchResultCard(
     player: MirkoriPublicPlayerProfile,
     alreadyAdded: Boolean,
+    enabled: Boolean,
     onAdd: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
@@ -488,16 +531,11 @@ private fun PlayerSearchResultCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Surface(
+            PlayerAvatar(
+                displayName = player.displayName,
+                avatarUrl = player.avatarUrl,
                 modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = InplaceXColors.ToyPurple,
-                contentColor = Color.White,
-            ) {
-                androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
-                    Text(playerInitials(player.displayName), fontWeight = FontWeight.Bold)
-                }
-            }
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(player.displayName, fontWeight = FontWeight.Bold)
                 Text(
@@ -508,7 +546,7 @@ private fun PlayerSearchResultCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Button(onClick = onAdd, enabled = !alreadyAdded) {
+            Button(onClick = onAdd, enabled = enabled && !alreadyAdded) {
                 Text(
                     strings.text(
                         if (alreadyAdded) "social.friend.add.added" else "social.friend.add.action",
@@ -518,18 +556,6 @@ private fun PlayerSearchResultCard(
         }
     }
 }
-
-private fun playerInitials(displayName: String): String = displayName
-    .trim()
-    .split(Regex("\\s+|_+"))
-    .filter(String::isNotBlank)
-    .let { parts ->
-        when {
-            parts.isEmpty() -> "IX"
-            parts.size == 1 -> parts.first().take(2).uppercase()
-            else -> "${parts.first().first()}${parts.last().first()}".uppercase()
-        }
-    }
 
 @Composable
 private fun FriendCard(
