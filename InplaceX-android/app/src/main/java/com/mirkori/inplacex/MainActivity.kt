@@ -201,6 +201,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(restoredActiveOnlineSessionId)
                 }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
+                var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by remember {
@@ -721,7 +722,7 @@ class MainActivity : ComponentActivity() {
                                 energy = progressState.campaignEnergy,
                                 energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
-                                showBack = isInGame || isVariantToolsOpen,
+                                showBack = isNestedSocialScreen || isInGame || isVariantToolsOpen,
                                 showShop = !isInGame,
                                 onBackClick = {
                                     when {
@@ -886,6 +887,7 @@ class MainActivity : ComponentActivity() {
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },
+                                onNestedScreenChange = { nested -> isNestedSocialScreen = nested },
                             )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(

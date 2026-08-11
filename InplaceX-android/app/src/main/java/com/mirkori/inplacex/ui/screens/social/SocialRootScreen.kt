@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.social
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -78,6 +79,7 @@ fun SocialRootScreen(
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
+    onNestedScreenChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var activeDestination by remember {
@@ -90,6 +92,7 @@ fun SocialRootScreen(
     var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
 
     LaunchedEffect(activeDestination) {
+        onNestedScreenChange(activeDestination != null)
         onInGameChange(
             activeDestination == SocialDestination.FRIEND_MATCH ||
                 activeDestination == SocialDestination.ONLINE_MATCH,
@@ -118,7 +121,13 @@ fun SocialRootScreen(
         }
     }
     DisposableEffect(Unit) {
-        onDispose { onInGameChange(false) }
+        onDispose {
+            onNestedScreenChange(false)
+            onInGameChange(false)
+        }
+    }
+    BackHandler(enabled = activeDestination == SocialDestination.FRIENDS) {
+        activeDestination = null
     }
 
     if (activeDestination == SocialDestination.FRIENDS) {
@@ -318,8 +327,10 @@ private fun SocialFriendsScreen(
                                 coroutineScope.launch {
                                     when (val result = onSearchPlayers(query)) {
                                         is MirkoriPlayerSearchResult.Success -> {
-                                            searchResults = result.players
-                                            addFriendResultKey = if (result.players.isEmpty()) {
+                                            searchResults = result.players.filterNot { player ->
+                                                player.gamePlayerId == currentPlayerId
+                                            }
+                                            addFriendResultKey = if (searchResults.isEmpty()) {
                                                 "social.friend.search.empty"
                                             } else {
                                                 null

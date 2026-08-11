@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.shell
 
 import androidx.activity.ComponentActivity
+import androidx.test.espresso.Espresso.pressBack
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +38,8 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.AccessToken
 import com.mirkori.inplacex.platform.online.AccessTokenProvider
@@ -58,6 +61,7 @@ import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.platform.sdk.PlatformAuthMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -131,6 +135,53 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
         composeRule.onNodeWithText("Тестовый друг · онлайн сейчас недоступен").assertIsDisplayed()
         composeRule.onNodeWithText("Играть").assertIsNotEnabled()
+    }
+
+    @Test
+    fun friendsBackReturnsToSocialRootWithoutStartingAGame() {
+        var nested = false
+        setContent {
+            SocialRootScreen(onNestedScreenChange = { nested = it })
+        }
+
+        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithText("Добавить друга").assertIsDisplayed()
+        composeRule.runOnIdle { assertTrue(nested) }
+
+        pressBack()
+
+        composeRule.onNodeWithText("Друзья / Онлайн").assertIsDisplayed()
+        composeRule.runOnIdle { assertFalse(nested) }
+    }
+
+    @Test
+    fun friendSearchDoesNotOfferTheCurrentPlayer() {
+        val currentPlayerId = "00000000-0000-4000-8000-000000000901"
+        setContent {
+            SocialRootScreen(
+                currentPlayerId = currentPlayerId,
+                onSearchPlayers = {
+                    MirkoriPlayerSearchResult.Success(
+                        listOf(
+                            MirkoriPublicPlayerProfile(
+                                gamePlayerId = currentPlayerId,
+                                handle = "self_player",
+                                displayName = "Self Player",
+                                avatarUrl = null,
+                            ),
+                        ),
+                    )
+                },
+            )
+        }
+
+        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithText("Добавить друга").performClick()
+        composeRule.onNodeWithText("Имя или публичный ID").performTextInput("self_player")
+        composeRule.onNodeWithText("Найти").performClick()
+
+        composeRule.onNodeWithText("Игроки не найдены.").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Self Player").assertCountEquals(0)
     }
 
     @Test
