@@ -61,6 +61,8 @@ class LocalizationCatalogTest {
             "social.online.new_match",
             "social.friend.request.notification.title",
             "social.friend.request.accept",
+            "social.friend.request.root_notice",
+            "social.friend.request.sent.short",
             "shop.hints.subtitle",
             "profile.mirkori.name.change",
             "profile.mirkori.avatar.change",
@@ -96,6 +98,10 @@ class LocalizationCatalogTest {
         assertEquals(
             "Онлайн‑матч",
             StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("social.match.title"),
+        )
+        assertEquals(
+            "Онлайн‑матчи",
+            StaticLocalizationProvider.forLanguage(AppLanguage.RU).text("social.online.title"),
         )
     }
 }

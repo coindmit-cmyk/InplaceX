@@ -57,6 +57,7 @@ internal fun OnlineDuelScreen(
     onActiveSessionChange: (String?) -> Unit = {},
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
     initialPlayStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.RACE,
+    initialCodeLength: Int = 4,
     targetPlayerId: String? = null,
     targetDisplayName: String? = null,
     autoAcceptInviteCode: String? = null,
@@ -81,7 +82,9 @@ internal fun OnlineDuelScreen(
     var selectedPlayStyleName by rememberSaveable {
         mutableStateOf(initialPlayStyle.name)
     }
-    var selectedCodeLength by rememberSaveable { mutableStateOf(4) }
+    var selectedCodeLength by rememberSaveable {
+        mutableStateOf(normalizeOnlineCodeLength(initialCodeLength))
+    }
     val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
@@ -768,6 +771,9 @@ private const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 private const val MinimumOnlineCodeLength = 4
 private const val MaximumOnlineCodeLength = 10
+
+internal fun normalizeOnlineCodeLength(value: Int): Int =
+    value.coerceIn(MinimumOnlineCodeLength, MaximumOnlineCodeLength)
 
 internal fun OnlineDuelSnapshotState.knownPlayerGuesses(): Map<Int, String> =
     attempts.mapNotNull { attempt ->

@@ -318,6 +318,52 @@ class PlatformLocalRepository(
         return normalized
     }
 
+    fun replaceRelationships(
+        playerId: String,
+        relationshipType: LocalRelationshipType,
+        relationships: List<LocalSocialRelationship>,
+    ): List<LocalSocialRelationship> {
+        require(relationships.all { relationship ->
+            relationship.playerId == playerId && relationship.relationshipType == relationshipType
+        })
+        val db = helper.writableDatabase
+        val nowMs = databaseConfig.nowMs()
+        val normalized = relationships.map { it.normalizeTimestamps(nowMs) }
+        db.beginTransaction()
+        try {
+            db.delete(
+                GameProgressDbHelper.TABLE_SOCIAL_RELATIONSHIPS,
+                "$COL_PLAYER_ID = ? AND $COL_RELATIONSHIP_TYPE = ?",
+                arrayOf(playerId, relationshipType.name),
+            )
+            normalized.forEach { relationship ->
+                db.insertWithOnConflict(
+                    GameProgressDbHelper.TABLE_SOCIAL_RELATIONSHIPS,
+                    null,
+                    relationship.toContentValues(),
+                    SQLiteDatabase.CONFLICT_REPLACE,
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        return normalized
+    }
+
+    fun deleteRelationship(
+        playerId: String,
+        targetPlayerId: String,
+        relationshipType: LocalRelationshipType,
+    ): Boolean {
+        val deleted = helper.writableDatabase.delete(
+            GameProgressDbHelper.TABLE_SOCIAL_RELATIONSHIPS,
+            "$COL_PLAYER_ID = ? AND $COL_TARGET_PLAYER_ID = ? AND $COL_RELATIONSHIP_TYPE = ?",
+            arrayOf(playerId, targetPlayerId, relationshipType.name),
+        )
+        return deleted > 0
+    }
+
     fun loadRelationships(status: LocalRelationshipStatus? = null): List<LocalSocialRelationship> {
         val db = helper.readableDatabase
         val profile = loadPlayerProfile()

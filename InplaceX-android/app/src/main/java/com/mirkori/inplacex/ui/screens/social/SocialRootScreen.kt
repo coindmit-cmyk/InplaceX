@@ -69,6 +69,7 @@ fun SocialRootScreen(
     initialActiveSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
+    pendingFriendRequests: List<LocalSocialRelationship> = emptyList(),
     currentPlayerId: String? = null,
     onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult = {
         MirkoriPlayerSearchResult.Unavailable
@@ -83,6 +84,7 @@ fun SocialRootScreen(
     },
     incomingInvites: List<OnlineFriendInvite> = emptyList(),
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
+    requestedQuickMatchCodeLength: Int = 4,
     onQuickMatchRequestConsumed: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
@@ -98,6 +100,7 @@ fun SocialRootScreen(
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
     var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
     var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
+    var quickMatchCodeLength by remember { mutableStateOf(4) }
 
     LaunchedEffect(activeDestination) {
         onNestedScreenChange(activeDestination != null)
@@ -112,11 +115,12 @@ fun SocialRootScreen(
             activeDestination = null
         }
     }
-    LaunchedEffect(requestedQuickMatchPlayStyle, onlineRuntime) {
+    LaunchedEffect(requestedQuickMatchPlayStyle, requestedQuickMatchCodeLength, onlineRuntime) {
         val requestedPlayStyle = requestedQuickMatchPlayStyle ?: return@LaunchedEffect
 
         if (onlineRuntime != null) {
             quickMatchPlayStyle = requestedPlayStyle
+            quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -141,6 +145,7 @@ fun SocialRootScreen(
     if (activeDestination == SocialDestination.FRIENDS) {
         SocialFriendsScreen(
             friends = friends,
+            pendingFriendRequests = pendingFriendRequests,
             currentPlayerId = currentPlayerId,
             onSearchPlayers = onSearchPlayers,
             onAddFriend = onAddFriend,
@@ -187,6 +192,7 @@ fun SocialRootScreen(
                 else -> OnlineDuelEntryPoint.QUICK_MATCH
             },
             initialPlayStyle = quickMatchPlayStyle,
+            initialCodeLength = quickMatchCodeLength,
             targetPlayerId = selectedFriend?.targetPlayerId
                 .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
             targetDisplayName = selectedFriend?.targetDisplayName
@@ -233,6 +239,19 @@ fun SocialRootScreen(
                     }
                 }
             }
+            incomingFriendRequests.firstOrNull()?.let { request ->
+                SceneCard(accentColor = InplaceXColors.ToyPurpleTop) {
+                    Text(
+                        text = strings.text("social.friend.request.root_notice")
+                            .replace("{name}", request.player.displayName),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
+                        Text(strings.text("social.friend.request.open"))
+                    }
+                }
+            }
             SceneActionTile(
                 title = strings.text("social.friends"),
                 subtitle = strings.text("social.friends.subtitle"),
@@ -261,6 +280,7 @@ fun SocialRootScreen(
             SceneActionTile(
                 title = strings.text("social.online.title"),
                 subtitle = strings.text("social.online.description"),
+                singleLineTitle = true,
                 leadingIcon = Icons.Outlined.EmojiEvents,
                 trailingIcon = Icons.Outlined.ChevronRight,
                 enabled = onlineRuntime != null,
@@ -286,6 +306,7 @@ private enum class SocialDestination {
 @Composable
 private fun SocialFriendsScreen(
     friends: List<LocalSocialRelationship>,
+    pendingFriendRequests: List<LocalSocialRelationship>,
     currentPlayerId: String?,
     onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult,
     onAddFriend: suspend (MirkoriPublicPlayerProfile) -> MirkoriFriendOperationResult,
@@ -375,6 +396,9 @@ private fun SocialFriendsScreen(
                         PlayerSearchResultCard(
                             player = player,
                             alreadyAdded = friends.any { it.targetPlayerId == player.gamePlayerId },
+                            requestPending = pendingFriendRequests.any {
+                                it.targetPlayerId == player.gamePlayerId
+                            },
                             enabled = !friendOperationInProgress,
                             onAdd = {
                                 friendOperationInProgress = true
@@ -453,6 +477,13 @@ private fun SocialFriendsScreen(
             )
         }
 
+        pendingFriendRequests.forEach { request ->
+            FriendCard(
+                title = request.targetDisplayName,
+                subtitle = strings.text("social.friend.request.sent"),
+            )
+        }
+
         incomingInvites.forEach { invite ->
             FriendCard(
                 title = strings.text("social.invites.incoming.title"),
@@ -498,7 +529,12 @@ private fun SocialFriendsScreen(
             )
         }
 
-        if (friends.isEmpty() && !showTestFriendBot) {
+        if (
+            friends.isEmpty() &&
+            pendingFriendRequests.isEmpty() &&
+            incomingFriendRequests.isEmpty() &&
+            !showTestFriendBot
+        ) {
             SocialEmptyCard(
                 title = strings.text("social.friends"),
                 message = strings.text("social.friends.empty"),
@@ -517,6 +553,7 @@ private fun SocialFriendsScreen(
 private fun PlayerSearchResultCard(
     player: MirkoriPublicPlayerProfile,
     alreadyAdded: Boolean,
+    requestPending: Boolean,
     enabled: Boolean,
     onAdd: () -> Unit,
 ) {
@@ -546,10 +583,17 @@ private fun PlayerSearchResultCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Button(onClick = onAdd, enabled = enabled && !alreadyAdded) {
+            Button(
+                onClick = onAdd,
+                enabled = enabled && !alreadyAdded && !requestPending,
+            ) {
                 Text(
                     strings.text(
-                        if (alreadyAdded) "social.friend.add.added" else "social.friend.add.action",
+                        when {
+                            alreadyAdded -> "social.friend.add.added"
+                            requestPending -> "social.friend.request.sent.short"
+                            else -> "social.friend.add.action"
+                        },
                     ),
                 )
             }

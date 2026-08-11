@@ -20,6 +20,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -231,6 +232,7 @@ class MainActivity : ComponentActivity() {
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var requestedOnlinePlayStyleName by rememberSaveable { mutableStateOf<String?>(null) }
+                var requestedOnlineCodeLength by rememberSaveable { mutableIntStateOf(4) }
                 var companyActiveLevelNumber by rememberSaveable { mutableStateOf<Int?>(null) }
                 val initialProgressState = remember {
                     initialProgressState(
@@ -271,7 +273,17 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(
                         platformLocalRepository
                             .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                            .filter { it.relationshipType == LocalRelationshipType.FRIEND },
+                            .filter {
+                                it.relationshipType == LocalRelationshipType.FRIEND &&
+                                    it.source == "platform_friendship"
+                            },
+                    )
+                }
+                var pendingFriendRequests by remember(platformLocalRepository) {
+                    mutableStateOf(
+                        platformLocalRepository
+                            .loadRelationships(LocalRelationshipStatus.PENDING)
+                            .filter { it.relationshipType == LocalRelationshipType.INVITE_OUTGOING },
                     )
                 }
 
@@ -422,9 +434,8 @@ class MainActivity : ComponentActivity() {
                         }
                         when (val result = runtime.friends()) {
                             is MirkoriFriendsResult.Success -> {
-                                savedFriends = withContext(Dispatchers.IO) {
-                                    platformLocalRepository.upsertRelationships(
-                                        result.players.map { player ->
+                                val (confirmedFriends, pendingRequests) = withContext(Dispatchers.IO) {
+                                    val relationships = result.players.map { player ->
                                             LocalSocialRelationship(
                                                 playerId = localPlayerProfile.playerId,
                                                 targetPlayerId = player.gamePlayerId,
@@ -434,12 +445,34 @@ class MainActivity : ComponentActivity() {
                                                 source = "platform_friendship",
                                                 note = player.handle,
                                             )
-                                        },
+                                        }
+                                    platformLocalRepository.replaceRelationships(
+                                        playerId = localPlayerProfile.playerId,
+                                        relationshipType = LocalRelationshipType.FRIEND,
+                                        relationships = relationships,
                                     )
-                                    platformLocalRepository
+                                    relationships.forEach { relationship ->
+                                        platformLocalRepository.deleteRelationship(
+                                            playerId = localPlayerProfile.playerId,
+                                            targetPlayerId = relationship.targetPlayerId,
+                                            relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+                                        )
+                                    }
+                                    val friends = platformLocalRepository
                                         .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                        .filter {
+                                            it.relationshipType == LocalRelationshipType.FRIEND &&
+                                                it.source == "platform_friendship"
+                                        }
+                                    val pending = platformLocalRepository
+                                        .loadRelationships(LocalRelationshipStatus.PENDING)
+                                        .filter {
+                                            it.relationshipType == LocalRelationshipType.INVITE_OUTGOING
+                                        }
+                                    friends to pending
                                 }
+                                savedFriends = confirmedFriends
+                                pendingFriendRequests = pendingRequests
                             }
                             MirkoriFriendsResult.Unavailable -> Unit
                         }
@@ -891,8 +924,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenCompany = {
                                         currentSection = AppSection.COMPANY
                                     },
-                                    onOpenOnlineMatch = { playStyle ->
+                                    onOpenOnlineMatch = { playStyle, codeLength ->
                                         requestedOnlinePlayStyleName = playStyle.name
+                                        requestedOnlineCodeLength = codeLength
                                         currentSection = AppSection.SOCIAL
                                     },
                                     onlineAvailable = onlineRuntime != null,
@@ -912,6 +946,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 friends = savedFriends,
+                                pendingFriendRequests = pendingFriendRequests,
                                 currentPlayerId = mirkoriAccountState.gamePlayerId,
                                 onSearchPlayers = { query ->
                                     val runtime = mirkoriPlatformRuntime
@@ -922,8 +957,31 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onAddFriend = { player ->
-                                    mirkoriPlatformRuntime?.sendFriendRequest(player.gamePlayerId)
+                                    val result = mirkoriPlatformRuntime
+                                        ?.sendFriendRequest(player.gamePlayerId)
                                         ?: MirkoriFriendOperationResult.Unavailable
+                                    if (result is MirkoriFriendOperationResult.Success) {
+                                        pendingFriendRequests = withContext(Dispatchers.IO) {
+                                            platformLocalRepository.upsertRelationship(
+                                                LocalSocialRelationship(
+                                                    playerId = localPlayerProfile.playerId,
+                                                    targetPlayerId = player.gamePlayerId,
+                                                    targetDisplayName = player.displayName,
+                                                    relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+                                                    status = LocalRelationshipStatus.PENDING,
+                                                    source = "platform_friend_request",
+                                                    note = player.handle,
+                                                ),
+                                            )
+                                            platformLocalRepository
+                                                .loadRelationships(LocalRelationshipStatus.PENDING)
+                                                .filter {
+                                                    it.relationshipType ==
+                                                        LocalRelationshipType.INVITE_OUTGOING
+                                                }
+                                        }
+                                    }
+                                    result
                                 },
                                 incomingFriendRequests = incomingFriendRequests,
                                 onAcceptFriendRequest = { request ->
@@ -932,6 +990,11 @@ class MainActivity : ComponentActivity() {
                                     if (result is MirkoriFriendOperationResult.Success) {
                                         val player = result.request.player
                                         savedFriends = withContext(Dispatchers.IO) {
+                                            platformLocalRepository.deleteRelationship(
+                                                playerId = localPlayerProfile.playerId,
+                                                targetPlayerId = player.gamePlayerId,
+                                                relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+                                            )
                                             platformLocalRepository.upsertRelationship(
                                                 LocalSocialRelationship(
                                                     playerId = localPlayerProfile.playerId,
@@ -945,7 +1008,18 @@ class MainActivity : ComponentActivity() {
                                             )
                                             platformLocalRepository
                                                 .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                                                .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                                .filter {
+                                                    it.relationshipType == LocalRelationshipType.FRIEND &&
+                                                        it.source == "platform_friendship"
+                                                }
+                                        }
+                                        pendingFriendRequests = withContext(Dispatchers.IO) {
+                                            platformLocalRepository
+                                                .loadRelationships(LocalRelationshipStatus.PENDING)
+                                                .filter {
+                                                    it.relationshipType ==
+                                                        LocalRelationshipType.INVITE_OUTGOING
+                                                }
                                         }
                                         incomingFriendRequests = incomingFriendRequests.filterNot {
                                             it.requestId == request.requestId
@@ -958,6 +1032,7 @@ class MainActivity : ComponentActivity() {
                                 requestedQuickMatchPlayStyle = requestedOnlinePlayStyleName?.let(
                                     com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle::valueOf,
                                 ),
+                                requestedQuickMatchCodeLength = requestedOnlineCodeLength,
                                 onQuickMatchRequestConsumed = { requestedOnlinePlayStyleName = null },
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },

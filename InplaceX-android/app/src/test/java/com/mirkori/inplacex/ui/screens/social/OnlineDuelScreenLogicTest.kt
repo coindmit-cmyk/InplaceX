@@ -40,4 +40,11 @@ class OnlineDuelScreenLogicTest {
         assertEquals("4 digits", formatOnlineCodeLength(english, 4))
         assertEquals("10 digits", formatOnlineCodeLength(english, 10))
     }
+
+    @Test
+    fun mainMenuCodeLengthIsNormalizedForOnlineMatches() {
+        assertEquals(4, normalizeOnlineCodeLength(3))
+        assertEquals(8, normalizeOnlineCodeLength(8))
+        assertEquals(10, normalizeOnlineCodeLength(11))
+    }
 }

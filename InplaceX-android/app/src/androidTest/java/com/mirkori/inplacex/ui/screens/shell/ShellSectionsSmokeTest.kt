@@ -28,6 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
+import com.mirkori.inplacex.data.local.LocalRelationshipStatus
+import com.mirkori.inplacex.data.local.LocalRelationshipType
+import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.core.retention.RetentionRewardType
@@ -38,6 +41,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendRequest
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.platform.online.OnlineRuntime
@@ -152,6 +156,44 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Друзья / Онлайн").assertIsDisplayed()
         composeRule.runOnIdle { assertFalse(nested) }
+    }
+
+    @Test
+    fun incomingFriendRequestIsVisibleAtSocialRootAndInsideFriends() {
+        val request = MirkoriFriendRequest(
+            requestId = "00000000-0000-4000-8000-000000000902",
+            player = MirkoriPublicPlayerProfile(
+                gamePlayerId = "00000000-0000-4000-8000-000000000903",
+                handle = "friendly_player",
+                displayName = "Friendly Player",
+                avatarUrl = null,
+            ),
+        )
+        setContent { SocialRootScreen(incomingFriendRequests = listOf(request)) }
+
+        composeRule.onNodeWithText("Friendly Player предлагает дружить.").assertIsDisplayed()
+        composeRule.onNodeWithText("Открыть запрос").performClick()
+        composeRule.onNodeWithText("Friendly Player").assertIsDisplayed()
+        composeRule.onNodeWithText("Хочет добавить вас в друзья").assertIsDisplayed()
+        composeRule.onNodeWithText("Принять").assertIsDisplayed()
+    }
+
+    @Test
+    fun outgoingFriendRequestIsNotRenderedAsPlayableFriend() {
+        val pendingRequest = LocalSocialRelationship(
+            playerId = "00000000-0000-4000-8000-000000000904",
+            targetPlayerId = "00000000-0000-4000-8000-000000000905",
+            targetDisplayName = "Pending Player",
+            relationshipType = LocalRelationshipType.INVITE_OUTGOING,
+            status = LocalRelationshipStatus.PENDING,
+            source = "platform_friend_request",
+        )
+        setContent { SocialRootScreen(pendingFriendRequests = listOf(pendingRequest)) }
+
+        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithText("Pending Player").assertIsDisplayed()
+        composeRule.onNodeWithText("Заявка в друзья отправлена.").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Играть").assertCountEquals(0)
     }
 
     @Test
@@ -528,42 +570,54 @@ class ShellSectionsSmokeTest {
     @Test
     fun duelModeChoiceRoutesOnlineMatchToSocialRuntime() {
         var openedOnline: RemoteFriendPlayStyle? = null
+        var openedCodeLength: Int? = null
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
             HomeRootScreen(
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
-                onOpenOnlineMatch = { openedOnline = it },
+                onOpenOnlineMatch = { playStyle, codeLength ->
+                    openedOnline = playStyle
+                    openedCodeLength = codeLength
+                },
                 onlineAvailable = true,
             )
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("+").performClick()
         composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.TURN_BASED, openedOnline)
+            assertEquals(7, openedCodeLength)
         }
     }
 
     @Test
     fun raceModeChoiceRoutesOnlineMatchWithRaceStyle() {
         var openedOnline: RemoteFriendPlayStyle? = null
+        var openedCodeLength: Int? = null
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
             HomeRootScreen(
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
-                onOpenOnlineMatch = { openedOnline = it },
+                onOpenOnlineMatch = { playStyle, codeLength ->
+                    openedOnline = playStyle
+                    openedCodeLength = codeLength
+                },
                 onlineAvailable = true,
             )
         }
 
         composeRule.onNodeWithText("Гонка").performClick()
+        composeRule.onNodeWithText("+").performClick()
         composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.RACE, openedOnline)
+            assertEquals(7, openedCodeLength)
         }
     }
 

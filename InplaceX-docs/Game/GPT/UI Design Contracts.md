@@ -68,12 +68,19 @@ Each first-level screen must preserve:
 ## Online Entry And Invitation Contract
 
 - Both Race and Duel open an opponent choice before gameplay: bot or online.
+- The opponent-choice screen exposes secret length for both Race and Duel. The
+  selected length applies unchanged to the bot match or becomes the initial
+  value of the online match settings.
 - The online transition carries the selected play style; it must not silently
   fall back to the screen default.
 - `Play` on a saved friend opens private match settings and the primary action
   is `Send invitation`, never public matchmaking.
-- The Friends screen accepts a full public Mirkori player UUID and a local
-  display name; Profile exposes a copy action for the current full player ID.
+- Friend search uses the Mirkori display name, public handle, or full player
+  UUID. An outgoing request remains a non-playable pending item until accepted;
+  only the authoritative server friends list may produce playable friends.
+- An incoming friend request is visible on the Social root and inside Friends,
+  where the recipient can accept it without relying on a system notification.
+- Profile exposes a copy action for the current full player ID.
 - A direct invitation produces both a recipient-only in-app Social badge/card
   and an eight-character fallback code for that same recipient. While the app
   process is active, polling also emits an Android system notification after
