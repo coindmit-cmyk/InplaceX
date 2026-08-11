@@ -446,7 +446,7 @@ class ShellSectionsSmokeTest {
             )
         }
 
-        composeRule.onNodeWithText("Продолжить компанию").performClick()
+        composeRule.onNodeWithText("Компания").performClick()
         composeRule.runOnIdle { assertTrue(opened) }
     }
 
