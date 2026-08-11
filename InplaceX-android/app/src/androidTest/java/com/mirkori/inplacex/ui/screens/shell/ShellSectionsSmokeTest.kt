@@ -528,42 +528,54 @@ class ShellSectionsSmokeTest {
     @Test
     fun duelModeChoiceRoutesOnlineMatchToSocialRuntime() {
         var openedOnline: RemoteFriendPlayStyle? = null
+        var openedCodeLength: Int? = null
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
             HomeRootScreen(
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
-                onOpenOnlineMatch = { openedOnline = it },
+                onOpenOnlineMatch = { playStyle, codeLength ->
+                    openedOnline = playStyle
+                    openedCodeLength = codeLength
+                },
                 onlineAvailable = true,
             )
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
+        composeRule.onNodeWithText("+").performClick()
         composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.TURN_BASED, openedOnline)
+            assertEquals(7, openedCodeLength)
         }
     }
 
     @Test
     fun raceModeChoiceRoutesOnlineMatchWithRaceStyle() {
         var openedOnline: RemoteFriendPlayStyle? = null
+        var openedCodeLength: Int? = null
         setContent {
             var screenState by remember { mutableStateOf(HomeScreenState.ROOT) }
             HomeRootScreen(
                 screenState = screenState,
                 onScreenStateChange = { screenState = it },
-                onOpenOnlineMatch = { openedOnline = it },
+                onOpenOnlineMatch = { playStyle, codeLength ->
+                    openedOnline = playStyle
+                    openedCodeLength = codeLength
+                },
                 onlineAvailable = true,
             )
         }
 
         composeRule.onNodeWithText("Гонка").performClick()
+        composeRule.onNodeWithText("+").performClick()
         composeRule.onNodeWithText("Онлайн‑матч").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.RACE, openedOnline)
+            assertEquals(7, openedCodeLength)
         }
     }
 
