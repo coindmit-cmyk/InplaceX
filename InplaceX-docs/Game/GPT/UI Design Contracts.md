@@ -29,6 +29,9 @@ Home, Company, Friends/Online, Shop, Profile, and the Race game field.
   white labels, gold resource symbols, and small green add actions.
 - Content cards use warm cream faces, caramel outlines, rounded corners, and
   visible depth.
+- Active game panels use the same cream face and caramel outline instead of
+  unrelated Material surface colors; compact tool rows must preserve complete
+  RU and EN labels without changing their game semantics.
 - Primary mode identity is stable: Race is orange, Duel is purple, and Company
   is green. Blue remains navigation and structural chrome.
 - Interactive controls should look like tactile game pieces while preserving
@@ -64,6 +67,11 @@ Each first-level screen must preserve:
 - minimum `48dp` touch targets for primary actions;
 - localized user-facing strings;
 - release isolation for debug-only controls.
+
+Home mode cards keep titles to one line and descriptions to two lines on phone
+layouts. The shared opponent-choice surface groups code length and opponent
+actions inside one cream card and uses the current mode color only for the
+primary action.
 
 ## Online Entry And Invitation Contract
 

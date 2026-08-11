@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.game.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -217,7 +218,11 @@ private fun PresentationCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        tonalElevation = 2.dp,
+        color = InplaceXColors.ToyCream.copy(alpha = 0.96f),
+        contentColor = InplaceXColors.ToyBrown,
+        tonalElevation = 0.dp,
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, InplaceXColors.ToyCreamShadow),
     ) {
         content()
     }
@@ -352,7 +357,13 @@ internal fun GameAttemptList(
         Spacer(Modifier.height(6.dp))
         if (attempts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(strings.text("game.attempts.empty"), textAlign = TextAlign.Center)
+                Text(
+                    text = strings.text("game.attempts.empty"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InplaceXColors.ToyBrown.copy(alpha = 0.72f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 3,
+                )
             }
         } else {
             LazyColumn(
@@ -606,6 +617,7 @@ fun GameToolsPanel(
             onClick = { onAutoExcludeChanged(!uiState.tools.autoExcludeEnabled) },
             enabled = uiState.parameters.autoModeAvailable,
             modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
         ) {
             Text(
                 when {
@@ -631,6 +643,7 @@ private fun GameToolButton(
     FilledTonalButton(
         onClick = { onToolSelected(tool) },
         modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = if (tool == selectedTool) {
                 tool.color.copy(alpha = 0.70f)

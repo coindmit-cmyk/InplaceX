@@ -263,6 +263,7 @@ fun HomeRootScreen(
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
+                modeAccentColor = InplaceXColors.ToyPurple,
             )
         }
 
@@ -276,6 +277,7 @@ fun HomeRootScreen(
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
+                modeAccentColor = InplaceXColors.ToyOrange,
             )
         }
 
@@ -698,6 +700,9 @@ private fun HomeSelectionScreen(
                     accentBrush = Brush.verticalGradient(
                         listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
                     ),
+                    singleLineTitle = true,
+                    compact = true,
+                    subtitleMaxLines = 2,
                     onClick = onOpenPve
                 )
                 SceneActionTile(
@@ -709,6 +714,9 @@ private fun HomeSelectionScreen(
                     accentBrush = Brush.verticalGradient(
                         listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
                     ),
+                    singleLineTitle = true,
+                    compact = true,
+                    subtitleMaxLines = 2,
                     onClick = onOpenPvp
                 )
             } else {
@@ -725,6 +733,9 @@ private fun HomeSelectionScreen(
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
                         ),
+                        singleLineTitle = true,
+                        compact = true,
+                        subtitleMaxLines = 2,
                         onClick = onOpenPve,
                     )
                     SceneActionTile(
@@ -736,6 +747,9 @@ private fun HomeSelectionScreen(
                         accentBrush = Brush.verticalGradient(
                             listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
                         ),
+                        singleLineTitle = true,
+                        compact = true,
+                        subtitleMaxLines = 2,
                         onClick = onOpenPvp,
                     )
                 }
@@ -750,6 +764,9 @@ private fun HomeSelectionScreen(
                 accentBrush = Brush.verticalGradient(
                     listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen)
                 ),
+                singleLineTitle = true,
+                compact = true,
+                subtitleMaxLines = 2,
                 onClick = onOpenCompany,
             )
 
