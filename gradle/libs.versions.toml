@@ -1,6 +1,7 @@
 [versions]
 agp = "9.1.1"
 appcompat = "1.7.0"
+browser = "1.8.0"
 coreKtx = "1.18.0"
 coreSplashscreen = "1.0.1"
 junit = "4.13.2"
@@ -19,6 +20,7 @@ yandexMobileAds = "8.2.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

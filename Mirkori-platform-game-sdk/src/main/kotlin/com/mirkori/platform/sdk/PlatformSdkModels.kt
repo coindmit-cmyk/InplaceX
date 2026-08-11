@@ -143,6 +143,13 @@ data class PlatformConsumptionReceipt(
     val createdAt: Instant,
 )
 
+data class PlatformPublicPlayerProfile(
+    val gamePlayerId: String,
+    val handle: String?,
+    val displayName: String,
+    val avatarUrl: String?,
+)
+
 class InstallationIdentity(
     val installationId: String,
     val installationSecret: String,

@@ -5,6 +5,7 @@ import java.time.Instant
 enum class PlatformHttpMethod {
     GET,
     POST,
+    PUT,
 }
 
 class PlatformHttpRequest(

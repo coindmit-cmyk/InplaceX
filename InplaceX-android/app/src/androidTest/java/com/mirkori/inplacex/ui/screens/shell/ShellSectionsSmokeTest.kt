@@ -32,6 +32,7 @@ import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.ads.AdConsentDecision
+import com.mirkori.inplacex.platform.feedback.AppFeedbackSettings
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
@@ -99,14 +100,26 @@ class ShellSectionsSmokeTest {
             SettingsRootScreen(
                 currentLanguage = AppLanguage.RU,
                 adConsentDecision = AdConsentDecision.DECLINED,
+                feedbackSettings = AppFeedbackSettings(),
                 onLanguageChange = {},
+                onVibrationChange = {},
+                onSoundChange = {},
+                onMusicChange = {},
                 onOpenAdPrivacy = {},
+                onOpenWebsitePage = {},
                 onOpenInternalTools = {},
                 onClose = {},
             )
         }
 
         composeRule.onAllNodesWithText("Режим разработчика").assertCountEquals(0)
+        composeRule.onNodeWithText("Вибрация").assertIsDisplayed()
+        composeRule.onNodeWithText("Звуки").assertIsDisplayed()
+        composeRule.onNodeWithText("Связаться с нами").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Условия использования").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Политика конфиденциальности").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("О нас").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Лицензии открытого кода").performScrollTo().assertIsDisplayed()
     }
 
     @Test

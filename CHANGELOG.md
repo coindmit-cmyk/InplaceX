@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Settings now include contact, terms of use, privacy policy, about, and
+  open-source license links. These fixed Mirkori Games routes open in an Android
+  Custom Tab so Back returns to the still-open settings screen; arbitrary URLs
+  and embedded WebView content are not accepted.
+
+- Settings now persist independent vibration, sound-effect, and music toggles.
+  A shared Android feedback runtime handles lifecycle-safe looping music,
+  haptics, and typed game/UI cues; temporary system tones are wired for sound
+  checks while final audio and music assets remain intentionally unbound.
+
+- Friends now open a compact player-search dialog backed by Mirkori Games
+  Platform instead of requiring a manually copied UUID and name. Profile can
+  claim or change a unique public `@handle`; relationships continue to use the
+  immutable game player UUID internally. The Friends screen no longer replaces
+  the bottom menu with a game banner.
+
+- The shared analysis table now treats authoritative and automatic facts as
+  locked before manual colors, enforces one manual confirmation per digit in
+  no-duplicates games, and passes the mode's duplicate rule into deduction for
+  campaign, local, and online fields.
+
 - The Profile Google action now uses Android Credential Manager instead of
   opening the Mirkori website. Its nonce is bound to the existing Platform PKCE
   session, the Google ID token is exchanged only with Mirkori Games Platform,

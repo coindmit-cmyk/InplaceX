@@ -21,6 +21,22 @@ read or written by the Android client.
    exchanges the stored verifier for linked credentials.
 6. A profile conflict is shown without overwriting either game profile.
 
+Settings information and support links use Android Custom Tabs against fixed
+paths at the same configured Platform origin. They do not share app tokens with
+the page and do not introduce an embedded WebView.
+
+## Public profile and friend search
+
+The immutable Platform `gamePlayerId` remains the only relationship and online
+authorization identity. A player may additionally claim a mutable lowercase
+handle matching `[a-z0-9_]{3,24}`. Android reads and updates that public profile
+through the vendored SDK and searches only profiles in `gid=inplacex`.
+
+Search results carry the immutable ID, optional handle, display name, and
+optional avatar URL. The Friends UI stores the immutable ID as the target and
+the handle only as display metadata. Changing a handle therefore does not break
+existing friendships or invitations.
+
 ## Protected state
 
 `AndroidKeystoreMirkoriStateStore` encrypts one atomic record with AES-256-GCM.

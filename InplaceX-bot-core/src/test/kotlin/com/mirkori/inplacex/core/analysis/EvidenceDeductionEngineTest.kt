@@ -83,4 +83,36 @@ class EvidenceDeductionEngineTest {
         assertTrue(first.reachedFixpoint)
         assertEquals(first.iterations, second.iterations)
     }
+
+    @Test
+    fun noDuplicatesRemovesFixedSymbolFromEveryOtherPosition() {
+        val result = EvidenceDeductionEngine(
+            codeLength = 4,
+            allowDuplicates = false,
+        ).infer(
+            provenFacts = listOf(ProvenFact.exactMatch(position = 1, symbol = '7')),
+        )
+
+        assertTrue(result.isConsistent)
+        assertEquals(setOf('7'), result.candidates[1])
+        result.candidates.forEachIndexed { position, candidates ->
+            if (position != 1) assertFalse('7' in candidates)
+        }
+    }
+
+    @Test
+    fun noDuplicatesReportsContradictoryRepeatedExactFacts() {
+        val result = EvidenceDeductionEngine(
+            codeLength = 4,
+            allowDuplicates = false,
+        ).infer(
+            provenFacts = listOf(
+                ProvenFact.exactMatch(position = 0, symbol = '3'),
+                ProvenFact.exactMatch(position = 2, symbol = '3'),
+            ),
+        )
+
+        assertFalse(result.isConsistent)
+        assertTrue(result.contradictions.any { it.type == ContradictionType.UNSATISFIABLE_EVIDENCE })
+    }
 }

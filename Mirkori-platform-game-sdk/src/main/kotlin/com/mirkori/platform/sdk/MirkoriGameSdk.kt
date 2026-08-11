@@ -2,6 +2,7 @@ package com.mirkori.platform.sdk
 
 import java.net.URI
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -318,6 +319,48 @@ class MirkoriGameSdk(
         }
     }
 
+    suspend fun publicProfile(profileAccessToken: String): PlatformPublicPlayerProfile {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.publicProfileResponse(
+            get("/api/v1/game-profiles/me/public-profile", profileAccessToken),
+        ).also(::validatePublicProfile)
+    }
+
+    suspend fun searchPlayers(
+        profileAccessToken: String,
+        query: String,
+    ): List<PlatformPublicPlayerProfile> {
+        require(profileAccessToken.matches(CredentialPattern))
+        val normalized = query.trim().removePrefix("@").trim()
+        require(normalized.length in 1..64 && normalized.none(Char::isISOControl))
+        val encoded = URLEncoder.encode(normalized, StandardCharsets.UTF_8.name())
+        return codec.publicProfileSearchResponse(
+            get("/api/v1/game-profiles/search?query=$encoded", profileAccessToken),
+        ).also { results -> results.forEach(::validatePublicProfile) }
+    }
+
+    suspend fun updatePublicProfile(
+        profileAccessToken: String,
+        handle: String,
+        displayName: String? = null,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformPublicPlayerProfile {
+        require(profileAccessToken.matches(CredentialPattern))
+        val normalizedHandle = handle.trim().removePrefix("@").lowercase()
+        require(normalizedHandle.matches(PublicHandlePattern))
+        val normalizedDisplayName = displayName?.trim()?.also { value ->
+            require(value.length in 1..120 && value.none(Char::isISOControl))
+        }
+        return codec.publicProfileResponse(
+            put(
+                path = "/api/v1/game-profiles/me/public-profile",
+                body = codec.publicProfileUpdateRequest(normalizedHandle, normalizedDisplayName),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also(::validatePublicProfile)
+    }
+
     private suspend fun post(
         path: String,
         body: String,
@@ -338,6 +381,19 @@ class MirkoriGameSdk(
         bearerToken = bearerToken,
     )
 
+    private suspend fun put(
+        path: String,
+        body: String,
+        idempotencyKey: PlatformIdempotencyKey,
+        bearerToken: String,
+    ): String = request(
+        method = PlatformHttpMethod.PUT,
+        path = path,
+        body = body,
+        idempotencyKey = idempotencyKey,
+        bearerToken = bearerToken,
+    )
+
     private suspend fun request(
         method: PlatformHttpMethod,
         path: String,
@@ -348,7 +404,7 @@ class MirkoriGameSdk(
         val headers = linkedMapOf(
             "Accept" to "application/json",
         )
-        if (method == PlatformHttpMethod.POST) headers["Content-Type"] = "application/json"
+        if (method != PlatformHttpMethod.GET) headers["Content-Type"] = "application/json"
         idempotencyKey?.let { headers["Idempotency-Key"] = it.value }
         bearerToken?.let { headers["Authorization"] = "Bearer $it" }
         val response = transport.execute(
@@ -382,6 +438,13 @@ class MirkoriGameSdk(
         require(order.productId.matches(ResourceIdPattern))
         require(order.currency.matches(CurrencyPattern) && order.amountMinor > 0)
         require(order.updatedAt >= order.createdAt)
+    }
+
+    private fun validatePublicProfile(profile: PlatformPublicPlayerProfile) {
+        require(profile.gamePlayerId.isCanonicalUuid())
+        profile.handle?.let { require(it.matches(PublicHandlePattern)) }
+        require(profile.displayName.length in 1..120 && profile.displayName.none(Char::isISOControl))
+        profile.avatarUrl?.let(::validateExternalHttpsUrl)
     }
 
     private fun validateExternalHttpsUrl(value: String) {
@@ -437,6 +500,7 @@ class MirkoriGameSdk(
         val ResourceIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
         val CurrencyPattern = Regex("[A-Z]{3}")
         val ProviderPattern = Regex("[a-z0-9][a-z0-9_-]{1,31}")
+        val PublicHandlePattern = Regex("[a-z0-9_]{3,24}")
     }
 }
 

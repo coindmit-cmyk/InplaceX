@@ -8,19 +8,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.SmartToy
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,11 +52,13 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
+import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.theme.InplaceXColors
-import java.util.UUID
+import kotlinx.coroutines.launch
 
 @Composable
 fun SocialRootScreen(
@@ -56,7 +67,10 @@ fun SocialRootScreen(
     onActiveSessionChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     currentPlayerId: String? = null,
-    onAddFriend: (displayName: String, targetPlayerId: String) -> Unit = { _, _ -> },
+    onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult = {
+        MirkoriPlayerSearchResult.Unavailable
+    },
+    onAddFriend: (MirkoriPublicPlayerProfile) -> Unit = {},
     showTestFriendBot: Boolean = false,
     incomingInvites: List<OnlineFriendInvite> = emptyList(),
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
@@ -76,7 +90,10 @@ fun SocialRootScreen(
     var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
 
     LaunchedEffect(activeDestination) {
-        onInGameChange(activeDestination != null)
+        onInGameChange(
+            activeDestination == SocialDestination.FRIEND_MATCH ||
+                activeDestination == SocialDestination.ONLINE_MATCH,
+        )
     }
     LaunchedEffect(onlineRuntime, initialActiveSessionId) {
         if (initialActiveSessionId != null && onlineRuntime == null) {
@@ -108,6 +125,7 @@ fun SocialRootScreen(
         SocialFriendsScreen(
             friends = friends,
             currentPlayerId = currentPlayerId,
+            onSearchPlayers = onSearchPlayers,
             onAddFriend = onAddFriend,
             showTestFriendBot = showTestFriendBot,
             onlineConfigured = onlineRuntime != null,
@@ -250,7 +268,8 @@ private enum class SocialDestination {
 private fun SocialFriendsScreen(
     friends: List<LocalSocialRelationship>,
     currentPlayerId: String?,
-    onAddFriend: (displayName: String, targetPlayerId: String) -> Unit,
+    onSearchPlayers: suspend (String) -> MirkoriPlayerSearchResult,
+    onAddFriend: (MirkoriPublicPlayerProfile) -> Unit,
     showTestFriendBot: Boolean,
     onlineConfigured: Boolean,
     incomingInvites: List<OnlineFriendInvite>,
@@ -259,9 +278,97 @@ private fun SocialFriendsScreen(
     onPlayFriend: (LocalSocialRelationship) -> Unit,
 ) {
     val strings = LocalAppStrings.current
-    var newFriendName by remember { mutableStateOf("") }
-    var newFriendPlayerId by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    var addFriendDialogOpen by remember { mutableStateOf(false) }
+    var friendQuery by remember { mutableStateOf("") }
+    var searchInProgress by remember { mutableStateOf(false) }
+    var searchResults by remember { mutableStateOf<List<MirkoriPublicPlayerProfile>>(emptyList()) }
     var addFriendResultKey by remember { mutableStateOf<String?>(null) }
+
+    if (addFriendDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!searchInProgress) addFriendDialogOpen = false },
+            title = { Text(strings.text("social.friend.add.title")) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 460.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedTextField(
+                        value = friendQuery,
+                        onValueChange = {
+                            friendQuery = it.take(64)
+                            addFriendResultKey = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(strings.text("social.friend.search.query")) },
+                    )
+                    Button(
+                        onClick = {
+                            val query = friendQuery.trim()
+                            if (query.isEmpty()) {
+                                addFriendResultKey = "social.friend.search.invalid"
+                            } else {
+                                searchInProgress = true
+                                addFriendResultKey = null
+                                coroutineScope.launch {
+                                    when (val result = onSearchPlayers(query)) {
+                                        is MirkoriPlayerSearchResult.Success -> {
+                                            searchResults = result.players
+                                            addFriendResultKey = if (result.players.isEmpty()) {
+                                                "social.friend.search.empty"
+                                            } else {
+                                                null
+                                            }
+                                        }
+                                        MirkoriPlayerSearchResult.Rejected ->
+                                            addFriendResultKey = "social.friend.search.invalid"
+                                        MirkoriPlayerSearchResult.Unavailable ->
+                                            addFriendResultKey = "social.friend.search.unavailable"
+                                    }
+                                    searchInProgress = false
+                                }
+                            }
+                        },
+                        enabled = !searchInProgress && currentPlayerId != null,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (searchInProgress) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(strings.text("social.friend.search.action"))
+                        }
+                    }
+                    addFriendResultKey?.let { Text(strings.text(it)) }
+                    searchResults.forEach { player ->
+                        PlayerSearchResultCard(
+                            player = player,
+                            alreadyAdded = friends.any { it.targetPlayerId == player.gamePlayerId },
+                            onAdd = {
+                                onAddFriend(player)
+                                addFriendResultKey = "social.friend.add.saved"
+                            },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                OutlinedButton(
+                    onClick = { addFriendDialogOpen = false },
+                    enabled = !searchInProgress,
+                ) {
+                    Text(strings.text("social.friend.search.close"))
+                }
+            },
+        )
+    }
     ScenePageColumn(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
@@ -279,48 +386,18 @@ private fun SocialFriendsScreen(
             Text(strings.text("social.friends.subtitle"))
         }
 
-        SceneCard(accentColor = InplaceXColors.ToyGreenTop.copy(alpha = 0.92f)) {
-            Text(
-                text = strings.text("social.friend.add.title"),
-                fontWeight = FontWeight.Bold,
-            )
-            Text(strings.text("social.friend.add.description"))
-            OutlinedTextField(
-                value = newFriendName,
-                onValueChange = { newFriendName = it.take(40) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(strings.text("social.friend.add.name")) },
-            )
-            OutlinedTextField(
-                value = newFriendPlayerId,
-                onValueChange = { newFriendPlayerId = it.take(36) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(strings.text("social.friend.add.player_id")) },
-            )
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    val normalizedPlayerId = runCatching {
-                        UUID.fromString(newFriendPlayerId.trim()).toString()
-                    }.getOrNull()
-                    addFriendResultKey = when {
-                        newFriendName.isBlank() -> "social.friend.add.invalid_name"
-                        normalizedPlayerId == null -> "social.friend.add.invalid_player_id"
-                        normalizedPlayerId == currentPlayerId -> "social.friend.add.self"
-                        else -> {
-                            onAddFriend(newFriendName.trim(), normalizedPlayerId)
-                            newFriendName = ""
-                            newFriendPlayerId = ""
-                            "social.friend.add.saved"
-                        }
-                    }
-                },
-            ) {
-                Text(strings.text("social.friend.add.action"))
-            }
-            addFriendResultKey?.let { Text(strings.text(it)) }
+        Button(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            onClick = {
+                friendQuery = ""
+                searchResults = emptyList()
+                addFriendResultKey = null
+                addFriendDialogOpen = true
+            },
+            enabled = currentPlayerId != null,
+        ) {
+            Icon(Icons.Outlined.PersonAdd, contentDescription = null)
+            Text(strings.text("social.friend.add.title"), modifier = Modifier.padding(start = 8.dp))
         }
 
         incomingInvites.forEach { invite ->
@@ -359,7 +436,9 @@ private fun SocialFriendsScreen(
         friends.forEach { friend ->
             FriendCard(
                 title = friend.targetDisplayName,
-                subtitle = strings.text("social.friend.saved"),
+                subtitle = friend.note?.takeIf(String::isNotBlank)?.let { "@$it" }
+                    ?: strings.text("social.friend.id_fallback")
+                        .replace("{id}", friend.targetPlayerId.takeLast(8)),
                 showPlay = true,
                 playEnabled = onlineConfigured,
                 onPlay = { onPlayFriend(friend) },
@@ -380,6 +459,66 @@ private fun SocialFriendsScreen(
         }
     }
 }
+
+@Composable
+private fun PlayerSearchResultCard(
+    player: MirkoriPublicPlayerProfile,
+    alreadyAdded: Boolean,
+    onAdd: () -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = InplaceXColors.SurfaceMuted,
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape,
+                color = InplaceXColors.ToyPurple,
+                contentColor = Color.White,
+            ) {
+                androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+                    Text(playerInitials(player.displayName), fontWeight = FontWeight.Bold)
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(player.displayName, fontWeight = FontWeight.Bold)
+                Text(
+                    player.handle?.let { "@$it" }
+                        ?: strings.text("social.friend.id_fallback")
+                            .replace("{id}", player.gamePlayerId.takeLast(8)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Button(onClick = onAdd, enabled = !alreadyAdded) {
+                Text(
+                    strings.text(
+                        if (alreadyAdded) "social.friend.add.added" else "social.friend.add.action",
+                    ),
+                )
+            }
+        }
+    }
+}
+
+private fun playerInitials(displayName: String): String = displayName
+    .trim()
+    .split(Regex("\\s+|_+"))
+    .filter(String::isNotBlank)
+    .let { parts ->
+        when {
+            parts.isEmpty() -> "IX"
+            parts.size == 1 -> parts.first().take(2).uppercase()
+            else -> "${parts.first().first()}${parts.last().first()}".uppercase()
+        }
+    }
 
 @Composable
 private fun FriendCard(

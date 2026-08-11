@@ -14,6 +14,7 @@ private const val MAX_ENUMERATED_ASSIGNMENTS = 200_000L
 class EvidenceDeductionEngine(
     val codeLength: Int,
     alphabet: Set<Char> = ('0'..'9').toSet(),
+    private val allowDuplicates: Boolean = true,
 ) {
     private val orderedAlphabet: List<Char> = alphabet.toSortedSet().toList()
 
@@ -105,6 +106,27 @@ class EvidenceDeductionEngine(
                         message = "No symbol can occupy position $position",
                         position = position,
                     )
+                }
+            }
+
+            if (!allowDuplicates && contradictions.isEmpty()) {
+                val fixedPositionsBySymbol = mutableMapOf<Char, Int>()
+                domains.forEachIndexed { position, domain ->
+                    val symbol = domain.singleOrNull() ?: return@forEachIndexed
+                    val previousPosition = fixedPositionsBySymbol.putIfAbsent(symbol, position)
+                    if (previousPosition != null && previousPosition != position) {
+                        contradictions += AnalysisContradiction(
+                            type = ContradictionType.UNSATISFIABLE_EVIDENCE,
+                            message = "Symbol '$symbol' is fixed at multiple positions in a no-duplicates game",
+                            position = position,
+                            symbol = symbol,
+                        )
+                    }
+                }
+                fixedPositionsBySymbol.forEach { (symbol, fixedPosition) ->
+                    domains.forEachIndexed { position, domain ->
+                        if (position != fixedPosition) changed = domain.remove(symbol) || changed
+                    }
                 }
             }
 
@@ -274,6 +296,7 @@ class EvidenceDeductionEngine(
 
         val order = domains.indices.sortedWith(compareBy<Int> { domains[it].size }.thenBy { it })
         val assigned = arrayOfNulls<Char>(codeLength)
+        val assignedSymbols = mutableSetOf<Char>()
         val solutions = mutableListOf<CharArray>()
 
         fun canStillReachEveryScore(): Boolean {
@@ -301,8 +324,11 @@ class EvidenceDeductionEngine(
             }
             val position = order[depth]
             domains[position].toSortedSet().forEach { symbol ->
+                if (!allowDuplicates && symbol in assignedSymbols) return@forEach
                 assigned[position] = symbol
+                if (!allowDuplicates) assignedSymbols += symbol
                 if (canStillReachEveryScore()) visit(depth + 1)
+                if (!allowDuplicates) assignedSymbols -= symbol
                 assigned[position] = null
             }
         }

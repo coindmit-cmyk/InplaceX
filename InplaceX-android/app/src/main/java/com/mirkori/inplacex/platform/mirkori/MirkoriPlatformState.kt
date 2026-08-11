@@ -99,6 +99,31 @@ data class MirkoriAccountState(
         "MirkoriAccountState(kind=$kind, authMode=$authMode, identity=[redacted])"
 }
 
+data class MirkoriPublicPlayerProfile(
+    val gamePlayerId: String,
+    val handle: String?,
+    val displayName: String,
+    val avatarUrl: String?,
+)
+
+sealed interface MirkoriPublicProfileResult {
+    data class Success(val profile: MirkoriPublicPlayerProfile) : MirkoriPublicProfileResult
+
+    data object HandleTaken : MirkoriPublicProfileResult
+
+    data object Rejected : MirkoriPublicProfileResult
+
+    data object Unavailable : MirkoriPublicProfileResult
+}
+
+sealed interface MirkoriPlayerSearchResult {
+    data class Success(val players: List<MirkoriPublicPlayerProfile>) : MirkoriPlayerSearchResult
+
+    data object Rejected : MirkoriPlayerSearchResult
+
+    data object Unavailable : MirkoriPlayerSearchResult
+}
+
 sealed interface MirkoriLoginResult {
     data class BrowserReady(val connectUrl: String) : MirkoriLoginResult
 

@@ -201,30 +201,26 @@ class GameFieldStateHolder(
         }
         if (event.type == GameFieldManualMarkType.YES) {
             retained = retained.filterNot {
-                it.position == event.position && it.type == GameFieldManualMarkType.YES
+                it.type == GameFieldManualMarkType.YES &&
+                    (it.position == event.position || !parameters.allowDuplicates && it.symbol == event.symbol)
             }
         }
         val nextType = event.type?.takeUnless { existing?.type == it }
         val marks = nextType?.let {
             retained + GameFieldManualMark(event.position, event.symbol, it)
         } ?: retained
-        val input = when {
-            nextType == GameFieldManualMarkType.YES -> current.input.withSlot(
-                position = event.position,
-                symbol = event.symbol,
-            )
-
-            existing?.type == GameFieldManualMarkType.YES &&
-                current.input.slots[event.position] == event.symbol -> current.input.withSlot(
-                    position = event.position,
-                    symbol = null,
-                )
-
-            else -> current.input
+        val inputSlots = current.input.slots.toMutableList()
+        current.manualMarks
+            .filter { it.type == GameFieldManualMarkType.YES && it !in marks }
+            .forEach { removed ->
+                if (inputSlots[removed.position] == removed.symbol) inputSlots[removed.position] = null
+            }
+        if (nextType == GameFieldManualMarkType.YES) {
+            inputSlots[event.position] = event.symbol
         }
         update(
             current.copy(
-                input = input,
+                input = GameFieldInputState(inputSlots),
                 manualMarks = marks,
                 status = GameFieldStatus.Idle,
             ),
@@ -426,7 +422,10 @@ class GameFieldStateHolder(
                 GameFieldManualMarkType.MAYBE -> null
             }
         }
-        val deduction = EvidenceDeductionEngine(parameters.codeLength).infer(
+        val deduction = EvidenceDeductionEngine(
+            codeLength = parameters.codeLength,
+            allowDuplicates = parameters.allowDuplicates,
+        ).infer(
             EvidenceInput(hypotheses, acceptedAttempts, state.evidence.provenFacts.toList()),
         )
         return state.copy(
@@ -448,7 +447,10 @@ class GameFieldStateHolder(
         return state.evidence.provenFacts + inferred
     }
 
-    private fun emptyDeduction() = EvidenceDeductionEngine(parameters.codeLength).infer()
+    private fun emptyDeduction() = EvidenceDeductionEngine(
+        codeLength = parameters.codeLength,
+        allowDuplicates = parameters.allowDuplicates,
+    ).infer()
 
     private fun GameFieldCounters.afterHint(hint: GameFieldHintMode): GameFieldCounters = when (hint) {
         GameFieldHintMode.OPEN_POSITION -> copy(openPositionHintUses = openPositionHintUses + 1)
