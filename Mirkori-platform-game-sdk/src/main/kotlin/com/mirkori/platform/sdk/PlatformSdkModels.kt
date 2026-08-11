@@ -150,6 +150,22 @@ data class PlatformPublicPlayerProfile(
     val avatarUrl: String?,
 )
 
+enum class PlatformFriendRequestStatus(val wireName: String) {
+    PENDING("pending"),
+    ACCEPTED("accepted");
+
+    companion object {
+        fun fromWireName(value: String): PlatformFriendRequestStatus? = entries.firstOrNull { it.wireName == value }
+    }
+}
+
+data class PlatformFriendRequest(
+    val requestId: String,
+    val status: PlatformFriendRequestStatus,
+    val player: PlatformPublicPlayerProfile,
+    val createdAt: Instant,
+)
+
 class InstallationIdentity(
     val installationId: String,
     val installationSecret: String,

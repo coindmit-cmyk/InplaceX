@@ -46,7 +46,7 @@ internal object HomeCatalog {
                 "В online-матче ищем игрока; после ожидания сервер может подключить бота.",
             ),
             localizationEntry("home.pvp.bot", "С ботом"),
-            localizationEntry("home.pvp.online", "Онлайн-матч"),
+            localizationEntry("home.pvp.online", "Онлайн‑матч"),
             localizationEntry("home.duel.turn.player", "Ход игрока"),
             localizationEntry("home.duel.turn.opponent", "Ход соперника"),
             localizationEntry("home.duel.status.with_score", "Последний счёт соперника: %d • Подтверждено: %d/%d"),

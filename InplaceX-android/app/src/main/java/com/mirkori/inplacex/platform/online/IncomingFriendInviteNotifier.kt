@@ -40,6 +40,16 @@ class IncomingFriendInviteNotifier(context: Context) {
 
     @SuppressLint("MissingPermission")
     fun post(invite: OnlineFriendInvite, title: String, message: String) {
+        post(invite.inviteCode, title, message)
+    }
+
+    @SuppressLint("MissingPermission")
+    fun postFriendRequest(requestId: String, title: String, message: String) {
+        post("friend-request:$requestId", title, message)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun post(notificationKey: String, title: String, message: String) {
         if (!canPostNotifications()) return
         val openApp = PendingIntent.getActivity(
             applicationContext,
@@ -59,7 +69,7 @@ class IncomingFriendInviteNotifier(context: Context) {
             .setCategory(NotificationCompat.CATEGORY_SOCIAL)
             .build()
         try {
-            notificationManager.notify(invite.inviteCode.hashCode(), notification)
+            notificationManager.notify(notificationKey.hashCode(), notification)
         } catch (_: SecurityException) {
             // The permission may be revoked between the explicit check and this call.
         }

@@ -70,9 +70,14 @@ internal class SdkJsonCodec {
         put("quantity", quantity)
     }.toString()
 
-    fun publicProfileUpdateRequest(handle: String, displayName: String?): String = buildJsonObject {
-        put("handle", handle)
+    fun publicProfileUpdateRequest(handle: String?, displayName: String?, avatarKey: String?): String = buildJsonObject {
+        handle?.let { put("handle", it) }
         displayName?.let { put("displayName", it) }
+        avatarKey?.let { put("avatarKey", it) }
+    }.toString()
+
+    fun friendRequest(targetGamePlayerId: String): String = buildJsonObject {
+        put("targetGamePlayerId", targetGamePlayerId)
     }.toString()
 
     fun bootstrapResponse(body: String): BootstrapResponse {
@@ -178,6 +183,22 @@ internal class SdkJsonCodec {
         return root.array("players", 20).map { publicProfile(it.objectValue()) }
     }
 
+    fun friendRequestResponse(body: String): PlatformFriendRequest = friendRequest(objectBody(body))
+
+    fun friendRequestsResponse(body: String): List<PlatformFriendRequest> {
+        val root = objectBody(body)
+        root.requireExactFields("schemaVersion", "requests")
+        require(root.long("schemaVersion") == 1L)
+        return root.array("requests", 50).map { friendRequest(it.objectValue()) }
+    }
+
+    fun friendsResponse(body: String): List<PlatformPublicPlayerProfile> {
+        val root = objectBody(body)
+        root.requireExactFields("schemaVersion", "players")
+        require(root.long("schemaVersion") == 1L)
+        return root.array("players", 500).map { publicProfile(it.objectValue()) }
+    }
+
     fun errorCode(body: String): String = runCatching {
         val root = objectBody(body)
         root.requireExactFields("error")
@@ -271,6 +292,16 @@ internal class SdkJsonCodec {
             handle = value.nullableString("handle", 24),
             displayName = value.string("displayName", 120),
             avatarUrl = value.nullableString("avatarUrl", 2048),
+        )
+    }
+
+    private fun friendRequest(value: JsonObject): PlatformFriendRequest {
+        value.requireExactFields("requestId", "status", "player", "createdAtEpochMs")
+        return PlatformFriendRequest(
+            requestId = value.string("requestId", 64),
+            status = PlatformFriendRequestStatus.fromWireName(value.string("status", 16)) ?: reject(),
+            player = publicProfile(value["player"]?.objectValue() ?: reject()),
+            createdAt = Instant.ofEpochMilli(value.long("createdAtEpochMs")),
         )
     }
 

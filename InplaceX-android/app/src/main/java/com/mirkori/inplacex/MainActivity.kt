@@ -65,6 +65,10 @@ import com.mirkori.inplacex.platform.feedback.LocalAppFeedbackRuntime
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
 import com.mirkori.inplacex.platform.mirkori.MirkoriLoginResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendOperationResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendRequest
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendsResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriIncomingFriendRequestsResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicProfileResult
@@ -369,10 +373,14 @@ class MainActivity : ComponentActivity() {
                 var incomingFriendInvites by remember {
                     mutableStateOf(emptyList<OnlineFriendInvite>())
                 }
+                var incomingFriendRequests by remember {
+                    mutableStateOf(emptyList<MirkoriFriendRequest>())
+                }
                 val incomingInviteNotifier = remember {
                     IncomingFriendInviteNotifier(applicationContext)
                 }
                 val notifiedInviteCodes = remember { mutableSetOf<String>() }
+                val notifiedFriendRequestIds = remember { mutableSetOf<String>() }
                 var notificationPermissionRequested by rememberSaveable { mutableStateOf(false) }
                 var notificationPermissionGranted by remember {
                     mutableStateOf(incomingInviteNotifier.canPostNotifications())
@@ -396,6 +404,42 @@ class MainActivity : ComponentActivity() {
                             OnlineClientResult.AuthenticationRequired ->
                                 incomingFriendInvites = emptyList()
                             else -> Unit
+                        }
+                        delay(IncomingInvitePollMillis)
+                    }
+                }
+                LaunchedEffect(mirkoriPlatformRuntime, mirkoriAccountState.gamePlayerId) {
+                    val runtime = mirkoriPlatformRuntime
+                    if (runtime == null || mirkoriAccountState.gamePlayerId == null) {
+                        incomingFriendRequests = emptyList()
+                        return@LaunchedEffect
+                    }
+                    while (true) {
+                        when (val result = runtime.incomingFriendRequests()) {
+                            is MirkoriIncomingFriendRequestsResult.Success ->
+                                incomingFriendRequests = result.requests
+                            MirkoriIncomingFriendRequestsResult.Unavailable -> Unit
+                        }
+                        when (val result = runtime.friends()) {
+                            is MirkoriFriendsResult.Success -> {
+                                result.players.forEach { player ->
+                                    platformLocalRepository.upsertRelationship(
+                                        LocalSocialRelationship(
+                                            playerId = localPlayerProfile.playerId,
+                                            targetPlayerId = player.gamePlayerId,
+                                            targetDisplayName = player.displayName,
+                                            relationshipType = LocalRelationshipType.FRIEND,
+                                            status = LocalRelationshipStatus.ACTIVE,
+                                            source = "platform_friendship",
+                                            note = player.handle,
+                                        ),
+                                    )
+                                }
+                                savedFriends = platformLocalRepository
+                                    .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                                    .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                            }
+                            MirkoriFriendsResult.Unavailable -> Unit
                         }
                         delay(IncomingInvitePollMillis)
                     }
@@ -491,11 +535,12 @@ class MainActivity : ComponentActivity() {
                 }
                 LaunchedEffect(
                     incomingFriendInvites,
+                    incomingFriendRequests,
                     notificationPermissionGranted,
                     currentLanguage,
                 ) {
                     if (
-                        incomingFriendInvites.isNotEmpty() &&
+                        (incomingFriendInvites.isNotEmpty() || incomingFriendRequests.isNotEmpty()) &&
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                         !incomingInviteNotifier.canPostNotifications() &&
                         !notificationPermissionRequested
@@ -519,6 +564,18 @@ class MainActivity : ComponentActivity() {
                                 invite = invite,
                                 title = strings.text("social.notification.title"),
                                 message = strings.text(messageKey),
+                            )
+                            feedbackRuntime.playSound(AppSoundCue.NOTIFICATION)
+                            feedbackRuntime.performHaptic(AppHapticCue.CONFIRM)
+                        }
+                    }
+                    incomingFriendRequests.forEach { request ->
+                        if (notifiedFriendRequestIds.add(request.requestId)) {
+                            incomingInviteNotifier.postFriendRequest(
+                                requestId = request.requestId,
+                                title = strings.text("social.friend.request.notification.title"),
+                                message = strings.text("social.friend.request.notification.message")
+                                    .replace("{name}", request.player.displayName),
                             )
                             feedbackRuntime.playSound(AppSoundCue.NOTIFICATION)
                             feedbackRuntime.performHaptic(AppHapticCue.CONFIRM)
@@ -705,7 +762,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AppShell(
                         currentSection = currentSection,
-                        socialNotificationCount = incomingFriendInvites.size,
+                        socialNotificationCount = incomingFriendInvites.size + incomingFriendRequests.size,
                         onSectionChange = { section ->
                             feedbackRuntime.playSound(AppSoundCue.TAP)
                             feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
@@ -863,20 +920,34 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onAddFriend = { player ->
-                                    platformLocalRepository.upsertRelationship(
-                                        LocalSocialRelationship(
-                                            playerId = localPlayerProfile.playerId,
-                                            targetPlayerId = player.gamePlayerId,
-                                            targetDisplayName = player.displayName,
-                                            relationshipType = LocalRelationshipType.FRIEND,
-                                            status = LocalRelationshipStatus.ACTIVE,
-                                            source = "platform_player_search",
-                                            note = player.handle,
-                                        ),
-                                    )
-                                    savedFriends = platformLocalRepository
-                                        .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                    mirkoriPlatformRuntime?.sendFriendRequest(player.gamePlayerId)
+                                        ?: MirkoriFriendOperationResult.Unavailable
+                                },
+                                incomingFriendRequests = incomingFriendRequests,
+                                onAcceptFriendRequest = { request ->
+                                    val result = mirkoriPlatformRuntime?.acceptFriendRequest(request.requestId)
+                                        ?: MirkoriFriendOperationResult.Unavailable
+                                    if (result is MirkoriFriendOperationResult.Success) {
+                                        val player = result.request.player
+                                        platformLocalRepository.upsertRelationship(
+                                            LocalSocialRelationship(
+                                                playerId = localPlayerProfile.playerId,
+                                                targetPlayerId = player.gamePlayerId,
+                                                targetDisplayName = player.displayName,
+                                                relationshipType = LocalRelationshipType.FRIEND,
+                                                status = LocalRelationshipStatus.ACTIVE,
+                                                source = "platform_friendship",
+                                                note = player.handle,
+                                            ),
+                                        )
+                                        savedFriends = platformLocalRepository
+                                            .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                                            .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                        incomingFriendRequests = incomingFriendRequests.filterNot {
+                                            it.requestId == request.requestId
+                                        }
+                                    }
+                                    result
                                 },
                                 incomingInvites = incomingFriendInvites,
                                 showTestFriendBot = testFriendBotEnabled(),
@@ -1203,6 +1274,70 @@ class MainActivity : ComponentActivity() {
                                                         "profile.mirkori.handle.invalid"
                                                     MirkoriPublicProfileResult.Unavailable ->
                                                         "profile.mirkori.handle.unavailable"
+                                                }
+                                            } finally {
+                                                publicProfileOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onDisplayNameChange = { displayName ->
+                                    publicProfileOperation.start()?.let { operationId ->
+                                        publicProfileResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val result = if (mirkoriPlatformRuntime == null) {
+                                                    MirkoriPublicProfileResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        mirkoriPlatformRuntime.updatePublicProfile(
+                                                            displayName = displayName,
+                                                        )
+                                                    }
+                                                }
+                                                publicProfileResultKey = when (result) {
+                                                    is MirkoriPublicProfileResult.Success -> {
+                                                        publicPlayerProfile = result.profile
+                                                        progressState = progressRepository
+                                                            .updatePlayerDisplayName(result.profile.displayName)
+                                                        "profile.mirkori.name.saved"
+                                                    }
+                                                    MirkoriPublicProfileResult.Rejected ->
+                                                        "profile.mirkori.name.invalid"
+                                                    MirkoriPublicProfileResult.HandleTaken,
+                                                    MirkoriPublicProfileResult.Unavailable ->
+                                                        "profile.mirkori.name.unavailable"
+                                                }
+                                            } finally {
+                                                publicProfileOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onAvatarChange = { avatarKey ->
+                                    publicProfileOperation.start()?.let { operationId ->
+                                        publicProfileResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val result = if (mirkoriPlatformRuntime == null) {
+                                                    MirkoriPublicProfileResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        mirkoriPlatformRuntime.updatePublicProfile(
+                                                            avatarKey = avatarKey,
+                                                        )
+                                                    }
+                                                }
+                                                publicProfileResultKey = when (result) {
+                                                    is MirkoriPublicProfileResult.Success -> {
+                                                        publicPlayerProfile = result.profile
+                                                        "profile.mirkori.avatar.saved"
+                                                    }
+                                                    MirkoriPublicProfileResult.Rejected ->
+                                                        "profile.mirkori.avatar.invalid"
+                                                    MirkoriPublicProfileResult.HandleTaken,
+                                                    MirkoriPublicProfileResult.Unavailable ->
+                                                        "profile.mirkori.avatar.unavailable"
                                                 }
                                             } finally {
                                                 publicProfileOperation.finish(operationId)

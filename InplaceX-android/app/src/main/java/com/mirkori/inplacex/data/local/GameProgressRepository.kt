@@ -129,6 +129,13 @@ class GameProgressRepository(
         return refreshed.toState()
     }
 
+    fun updatePlayerDisplayName(displayName: String): GameProgressState {
+        val normalized = displayName.trim()
+        require(normalized.isNotEmpty()) { "displayName must not be blank" }
+        require(normalized.length <= 120) { "displayName must be at most 120 characters" }
+        return mutate { row -> row.copy(playerDisplayName = normalized) }
+    }
+
     fun loadCampaignProgress(levelNumber: Int): CampaignLevelProgress {
         return loadCampaignProgress(helper.readableDatabase, levelNumber)
     }

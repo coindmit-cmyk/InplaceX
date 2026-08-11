@@ -342,23 +342,94 @@ class MirkoriGameSdk(
     suspend fun updatePublicProfile(
         profileAccessToken: String,
         handle: String,
+        displayName: String?,
+        idempotencyKey: PlatformIdempotencyKey,
+    ): PlatformPublicPlayerProfile = updatePublicProfile(
+        profileAccessToken = profileAccessToken,
+        handle = handle,
+        displayName = displayName,
+        avatarKey = null,
+        idempotencyKey = idempotencyKey,
+    )
+
+    suspend fun updatePublicProfile(
+        profileAccessToken: String,
+        handle: String? = null,
         displayName: String? = null,
+        avatarKey: String? = null,
         idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
     ): PlatformPublicPlayerProfile {
         require(profileAccessToken.matches(CredentialPattern))
-        val normalizedHandle = handle.trim().removePrefix("@").lowercase()
-        require(normalizedHandle.matches(PublicHandlePattern))
+        val normalizedHandle = handle?.trim()?.removePrefix("@")?.lowercase()?.also { value ->
+            require(value.matches(PublicHandlePattern))
+        }
         val normalizedDisplayName = displayName?.trim()?.also { value ->
             require(value.length in 1..120 && value.none(Char::isISOControl))
         }
+        val normalizedAvatarKey = avatarKey?.trim()?.lowercase()?.also { value ->
+            require(value in PublicAvatarKeys)
+        }
+        require(normalizedHandle != null || normalizedDisplayName != null || normalizedAvatarKey != null)
         return codec.publicProfileResponse(
             put(
                 path = "/api/v1/game-profiles/me/public-profile",
-                body = codec.publicProfileUpdateRequest(normalizedHandle, normalizedDisplayName),
+                body = codec.publicProfileUpdateRequest(
+                    normalizedHandle,
+                    normalizedDisplayName,
+                    normalizedAvatarKey,
+                ),
                 idempotencyKey = idempotencyKey,
                 bearerToken = profileAccessToken,
             ),
         ).also(::validatePublicProfile)
+    }
+
+    suspend fun createFriendRequest(
+        profileAccessToken: String,
+        targetGamePlayerId: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformFriendRequest {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(targetGamePlayerId.isCanonicalUuid())
+        return codec.friendRequestResponse(
+            post(
+                path = "/api/v1/game-profiles/me/friend-requests",
+                body = codec.friendRequest(targetGamePlayerId),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also(::validateFriendRequest)
+    }
+
+    suspend fun incomingFriendRequests(profileAccessToken: String): List<PlatformFriendRequest> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.friendRequestsResponse(
+            get("/api/v1/game-profiles/me/friend-requests/incoming", profileAccessToken),
+        ).also { requests -> requests.forEach(::validateFriendRequest) }
+    }
+
+    suspend fun acceptFriendRequest(
+        profileAccessToken: String,
+        requestId: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformFriendRequest {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(requestId.isCanonicalUuid())
+        return codec.friendRequestResponse(
+            post(
+                path = "/api/v1/game-profiles/me/friend-requests/$requestId/accept",
+                body = "{}",
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also(::validateFriendRequest)
+    }
+
+    suspend fun friends(profileAccessToken: String): List<PlatformPublicPlayerProfile> {
+        require(profileAccessToken.matches(CredentialPattern))
+        return codec.friendsResponse(
+            get("/api/v1/game-profiles/me/friends", profileAccessToken),
+        ).also { profiles -> profiles.forEach(::validatePublicProfile) }
     }
 
     private suspend fun post(
@@ -373,6 +444,11 @@ class MirkoriGameSdk(
         idempotencyKey = idempotencyKey,
         bearerToken = bearerToken,
     )
+
+    private fun validateFriendRequest(request: PlatformFriendRequest) {
+        require(request.requestId.isCanonicalUuid())
+        validatePublicProfile(request.player)
+    }
 
     private suspend fun get(path: String, bearerToken: String? = null): String = request(
         method = PlatformHttpMethod.GET,
@@ -501,6 +577,7 @@ class MirkoriGameSdk(
         val CurrencyPattern = Regex("[A-Z]{3}")
         val ProviderPattern = Regex("[a-z0-9][a-z0-9_-]{1,31}")
         val PublicHandlePattern = Regex("[a-z0-9_]{3,24}")
+        val PublicAvatarKeys = setOf("rocket", "robot", "star", "gamepad", "heart", "bolt")
     }
 }
 

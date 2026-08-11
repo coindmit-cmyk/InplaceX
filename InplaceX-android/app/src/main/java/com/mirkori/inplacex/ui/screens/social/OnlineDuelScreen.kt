@@ -283,6 +283,8 @@ internal fun OnlineDuelScreen(
                 },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false,
             )
             Text(
                 text = strings.text(
