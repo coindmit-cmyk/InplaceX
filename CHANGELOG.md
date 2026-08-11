@@ -18,6 +18,13 @@
   immutable game player UUID internally. The Friends screen no longer replaces
   the bottom menu with a game banner.
 
+- Adding a player now creates a server-side friend request instead of a local
+  relationship. The recipient sees an Android notification, Social badge, and
+  incoming request card, while accepted friends synchronize from Mirkori Games
+  Platform. Tapping the profile name edits the shared display name and tapping
+  the avatar selects a built-in profile picture. The Russian `Онлайн‑матч`
+  label is kept on one line with a non-breaking hyphen.
+
 - The shared analysis table now treats authoritative and automatic facts as
   locked before manual colors, enforces one manual confirmation per digit in
   no-duplicates games, and passes the mode's duplicate rule into deduction for

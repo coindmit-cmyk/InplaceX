@@ -422,22 +422,24 @@ class MainActivity : ComponentActivity() {
                         }
                         when (val result = runtime.friends()) {
                             is MirkoriFriendsResult.Success -> {
-                                result.players.forEach { player ->
-                                    platformLocalRepository.upsertRelationship(
-                                        LocalSocialRelationship(
-                                            playerId = localPlayerProfile.playerId,
-                                            targetPlayerId = player.gamePlayerId,
-                                            targetDisplayName = player.displayName,
-                                            relationshipType = LocalRelationshipType.FRIEND,
-                                            status = LocalRelationshipStatus.ACTIVE,
-                                            source = "platform_friendship",
-                                            note = player.handle,
-                                        ),
+                                savedFriends = withContext(Dispatchers.IO) {
+                                    platformLocalRepository.upsertRelationships(
+                                        result.players.map { player ->
+                                            LocalSocialRelationship(
+                                                playerId = localPlayerProfile.playerId,
+                                                targetPlayerId = player.gamePlayerId,
+                                                targetDisplayName = player.displayName,
+                                                relationshipType = LocalRelationshipType.FRIEND,
+                                                status = LocalRelationshipStatus.ACTIVE,
+                                                source = "platform_friendship",
+                                                note = player.handle,
+                                            )
+                                        },
                                     )
+                                    platformLocalRepository
+                                        .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                                        .filter { it.relationshipType == LocalRelationshipType.FRIEND }
                                 }
-                                savedFriends = platformLocalRepository
-                                    .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                                    .filter { it.relationshipType == LocalRelationshipType.FRIEND }
                             }
                             MirkoriFriendsResult.Unavailable -> Unit
                         }
@@ -929,20 +931,22 @@ class MainActivity : ComponentActivity() {
                                         ?: MirkoriFriendOperationResult.Unavailable
                                     if (result is MirkoriFriendOperationResult.Success) {
                                         val player = result.request.player
-                                        platformLocalRepository.upsertRelationship(
-                                            LocalSocialRelationship(
-                                                playerId = localPlayerProfile.playerId,
-                                                targetPlayerId = player.gamePlayerId,
-                                                targetDisplayName = player.displayName,
-                                                relationshipType = LocalRelationshipType.FRIEND,
-                                                status = LocalRelationshipStatus.ACTIVE,
-                                                source = "platform_friendship",
-                                                note = player.handle,
-                                            ),
-                                        )
-                                        savedFriends = platformLocalRepository
-                                            .loadRelationships(LocalRelationshipStatus.ACTIVE)
-                                            .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                        savedFriends = withContext(Dispatchers.IO) {
+                                            platformLocalRepository.upsertRelationship(
+                                                LocalSocialRelationship(
+                                                    playerId = localPlayerProfile.playerId,
+                                                    targetPlayerId = player.gamePlayerId,
+                                                    targetDisplayName = player.displayName,
+                                                    relationshipType = LocalRelationshipType.FRIEND,
+                                                    status = LocalRelationshipStatus.ACTIVE,
+                                                    source = "platform_friendship",
+                                                    note = player.handle,
+                                                ),
+                                            )
+                                            platformLocalRepository
+                                                .loadRelationships(LocalRelationshipStatus.ACTIVE)
+                                                .filter { it.relationshipType == LocalRelationshipType.FRIEND }
+                                        }
                                         incomingFriendRequests = incomingFriendRequests.filterNot {
                                             it.requestId == request.requestId
                                         }

@@ -296,6 +296,28 @@ class PlatformLocalRepository(
         return normalized
     }
 
+    fun upsertRelationships(relationships: List<LocalSocialRelationship>): List<LocalSocialRelationship> {
+        if (relationships.isEmpty()) return emptyList()
+        val db = helper.writableDatabase
+        val nowMs = databaseConfig.nowMs()
+        val normalized = relationships.map { it.normalizeTimestamps(nowMs) }
+        db.beginTransaction()
+        try {
+            normalized.forEach { relationship ->
+                db.insertWithOnConflict(
+                    GameProgressDbHelper.TABLE_SOCIAL_RELATIONSHIPS,
+                    null,
+                    relationship.toContentValues(),
+                    SQLiteDatabase.CONFLICT_REPLACE,
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        return normalized
+    }
+
     fun loadRelationships(status: LocalRelationshipStatus? = null): List<LocalSocialRelationship> {
         val db = helper.readableDatabase
         val profile = loadPlayerProfile()
