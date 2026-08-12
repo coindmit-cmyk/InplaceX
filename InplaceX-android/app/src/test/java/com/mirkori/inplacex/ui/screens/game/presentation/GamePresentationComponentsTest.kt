@@ -9,6 +9,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
+import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -34,6 +35,32 @@ class GamePresentationComponentsTest {
         assertTrue(isInputEnabled(MatchPhase.ACTIVE))
         assertFalse(isInputEnabled(MatchPhase.WON))
         assertFalse(isInputEnabled(MatchPhase.LOST))
+    }
+
+    @Test
+    fun `compact attempt line keeps the whole guess and score`() {
+        assertEquals("1234" to 2, parseAttemptLine("1234 -> 2"))
+        assertEquals("1234567890" to 10, parseAttemptLine("1234567890 -> 10"))
+    }
+
+    @Test
+    fun `gameplay metrics preserve approved horizontal proportions through ten digits`() {
+        assertEquals(0.40f, finalGameFieldMetrics(4, compactHeight = false).attemptsWeight)
+        assertEquals(0.37f, finalGameFieldMetrics(6, compactHeight = false).attemptsWeight)
+        assertEquals(0.32f, finalGameFieldMetrics(8, compactHeight = false).attemptsWeight)
+        assertEquals(0.28f, finalGameFieldMetrics(10, compactHeight = false).attemptsWeight)
+        assertEquals(0.72f, finalGameFieldMetrics(10, compactHeight = false).matrixWeight)
+    }
+
+    @Test
+    fun `compact height reduces vertical metrics without changing board proportions`() {
+        val normal = finalGameFieldMetrics(8, compactHeight = false)
+        val compact = finalGameFieldMetrics(8, compactHeight = true)
+
+        assertEquals(normal.attemptsWeight, compact.attemptsWeight)
+        assertEquals(normal.matrixWeight, compact.matrixWeight)
+        assertTrue(compact.inputSlotHeight < normal.inputSlotHeight)
+        assertTrue(compact.topPanelMinHeight < normal.topPanelMinHeight)
     }
 
     @Test
