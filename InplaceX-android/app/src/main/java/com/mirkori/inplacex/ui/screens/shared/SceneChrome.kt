@@ -168,6 +168,8 @@ fun SceneActionTile(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     singleLineTitle: Boolean = false,
+    compact: Boolean = false,
+    subtitleMaxLines: Int = Int.MAX_VALUE,
     stateDescription: String? = null,
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
@@ -176,21 +178,31 @@ fun SceneActionTile(
     ),
     onClick: () -> Unit,
 ) {
+    val tileShape = RoundedCornerShape(if (compact) 22.dp else 26.dp)
+    val tileMinHeight = if (compact) 84.dp else 96.dp
+    val tileHorizontalPadding = if (compact) 14.dp else 16.dp
+    val tileVerticalPadding = if (compact) 12.dp else 16.dp
+    val tileSpacing = if (compact) 12.dp else 14.dp
+    val leadingSize = if (compact) 52.dp else 58.dp
+    val leadingShape = RoundedCornerShape(if (compact) 16.dp else 18.dp)
+    val leadingIconSize = if (compact) 30.dp else 36.dp
+    val trailingSize = if (compact) 44.dp else 48.dp
+    val trailingIconSize = if (compact) 26.dp else 30.dp
     val semanticsModifier = Modifier.semantics {
         role = Role.Button
         stateDescription?.let { this.stateDescription = it }
     }
     Surface(
         modifier = modifier
-            .shadow(10.dp, RoundedCornerShape(26.dp))
-            .heightIn(min = 96.dp)
+            .shadow(10.dp, tileShape)
+            .heightIn(min = tileMinHeight)
             .then(semanticsModifier)
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
             ),
-        shape = RoundedCornerShape(26.dp),
+        shape = tileShape,
         color = Color.Transparent,
         tonalElevation = 0.dp,
         shadowElevation = 2.dp,
@@ -200,14 +212,14 @@ fun SceneActionTile(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(accentBrush)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = tileHorizontalPadding, vertical = tileVerticalPadding),
+            horizontalArrangement = Arrangement.spacedBy(tileSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             leadingIcon?.let { icon ->
                 Surface(
-                    modifier = Modifier.size(58.dp),
-                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.size(leadingSize),
+                    shape = leadingShape,
                     color = Color.White.copy(alpha = 0.17f),
                     contentColor = Color.White,
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)),
@@ -216,7 +228,7 @@ fun SceneActionTile(
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(leadingIconSize),
                         )
                     }
                 }
@@ -227,7 +239,7 @@ fun SceneActionTile(
             ) {
                 Text(
                     text = title,
-                    style = if (singleLineTitle) {
+                    style = if (singleLineTitle || compact) {
                         MaterialTheme.typography.titleMedium
                     } else {
                         MaterialTheme.typography.titleLarge
@@ -240,14 +252,20 @@ fun SceneActionTile(
                 )
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = if (compact) {
+                        MaterialTheme.typography.bodySmall
+                    } else {
+                        MaterialTheme.typography.bodyMedium
+                    },
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = if (enabled) 0.92f else 0.70f)
+                    color = Color.White.copy(alpha = if (enabled) 0.92f else 0.70f),
+                    maxLines = subtitleMaxLines,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             trailingIcon?.let { icon ->
                 Surface(
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(trailingSize),
                     shape = CircleShape,
                     color = Color.White.copy(alpha = 0.16f),
                     contentColor = Color.White,
@@ -257,7 +275,7 @@ fun SceneActionTile(
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            modifier = Modifier.size(30.dp),
+                            modifier = Modifier.size(trailingIconSize),
                         )
                     }
                 }

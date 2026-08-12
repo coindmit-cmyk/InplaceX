@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Home mode cards now follow the compact warm-room reference without changing
+  navigation: Race, Duel, and Company keep one-line titles and short two-line
+  descriptions. Race and Duel share a cream opponent-choice card with a clear
+  secret-length block and mode-colored primary action. Active game panels now
+  use the same cream/caramel hierarchy, shorten the empty-attempt prompt, and
+  keep all four analysis-tool labels readable on narrow phones.
+
 - Settings now include contact, terms of use, privacy policy, about, and
   open-source license links. These fixed Mirkori Games routes open in an Android
   Custom Tab so Back returns to the still-open settings screen; arbitrary URLs
