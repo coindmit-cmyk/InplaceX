@@ -52,6 +52,7 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeScreenState
+import com.mirkori.inplacex.ui.screens.home.PvpModesScreen
 import com.mirkori.inplacex.ui.screens.home.RaceResultDialog
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
@@ -448,6 +449,33 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Компания").performClick()
         composeRule.runOnIdle { assertTrue(opened) }
+    }
+
+    @Test
+    fun compactOpponentChoiceKeepsBackActionAccessible() {
+        var wentBack = false
+        setContent {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+            ) {
+                PvpModesScreen(
+                    codeLength = 6,
+                    onCodeLengthChange = {},
+                    onPlayWithBot = {},
+                    onPlayOnline = {},
+                    onlineAvailable = true,
+                    onBack = { wentBack = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Назад")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.runOnIdle { assertTrue(wentBack) }
     }
 
     @Test
