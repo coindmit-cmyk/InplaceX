@@ -4,11 +4,10 @@
 Он не собирает приложения, не загружает APK через Telegram и не принимает
 произвольные пути или URL от пользователя.
 
-> Этот каталог относится только к старому standalone Telegram-боту. Он не
-> является production-каталогом Mirkori Games Platform. Для нового релиза
-> InplaceX используйте `ops/release/README.md`, Platform catalog publisher и
-> динамический `/.well-known/assetlinks.json`. Не запускайте
-> `publish_release.py` вместо Platform-публикации.
+Production-бот читает тот же активный каталог Mirkori Games Platform, что сайт
+и Android update API. Для каждой игры он предпочитает последний `stable`
+Android-релиз, а при его отсутствии показывает последний `beta`. Поэтому сайт
+и Telegram всегда ведут на один release ID, APK и SHA-256.
 
 ## Безопасность
 
@@ -17,8 +16,8 @@
 - публичный режим включается только явным
   `MIRKORI_GAMES_PUBLIC_DOWNLOADS=true`;
 - перед выдачей ссылки бот повторно вычисляет SHA-256 APK и сравнивает его с
-  `games.json`;
-- путь APK обязан находиться внутри каталога `downloads`;
+  активным Platform `catalog.json`;
+- путь APK обязан находиться внутри Platform `artifacts`;
 - URL обязан вести на разрешённый HTTPS-домен и путь `/downloads/*.apk`;
 - каталог не содержит токенов, chat ID или иных персональных данных.
 
@@ -30,7 +29,7 @@ MIRKORI_GAMES_ALLOWED_CHAT_IDS=<comma separated ids>
 MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 ```
 
-## Публикация сборки в legacy standalone-бот
+## Публикация сборки
 
 `internalDistribution` является намеренно unsigned-проверкой и не публикуется:
 
@@ -49,32 +48,22 @@ MIRKORI_GAMES_PUBLIC_DOWNLOADS=false
 Перед публикацией проверьте точный каталог
 `build/release-candidates/<releaseId>`: в нём должны быть ровно APK, identity
 manifest, SHA-256, отчёт `apksigner` и APK metadata. Отпечаток сертификата в
-manifest должен совпадать с owner policy. Затем на VPS передайте APK именно из
-этого immutable-каталога:
+manifest должен совпадать с owner policy. После активации Platform catalog
+отдельная публикация для Telegram не нужна. Проверьте тот же активный каталог:
 
 ```bash
-python3 current/publish_release.py \
-  --apk /path/to/release-candidates/<releaseId>/InplaceX-<version>-<versionCode>.apk \
-  --artifact-root /srv/agent-projects/mirkori-games-bot/downloads \
-  --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
-  --game-id inplacex \
-  --title InplaceX \
-  --version <version> \
-  --notes "Ограниченный owner-signed rollout" \
-  --download-url https://inplacex.dmit.life/downloads/InplaceX.apk
-
 python3 current/bot.py \
-  --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json \
-  --artifact-root /srv/agent-projects/mirkori-games-bot/downloads \
+  --platform-catalog /srv/mirkori-games-platform/catalog/current/catalog.json \
+  --artifact-root /srv/mirkori-games-platform/catalog/current/artifacts \
   --validate-catalog
 ```
 
 Только после успешной проверки каталога разрешается перезапускать сервис.
 
-Nginx публикует только один стабильный путь
-`https://inplacex.dmit.life/downloads/InplaceX.apk`. Конфигурация находится в
-`inplacex-downloads.nginx.conf`; directory listing и произвольные пути не
-включаются.
+Кнопка использует immutable HTTPS URL, сформированный из Platform release ID и
+точного имени APK. Legacy `publish_release.py`, `games.example.json` и старый
+путь `inplacex.dmit.life/downloads/InplaceX.apk` сохраняются только для
+локальной совместимости и не являются production-источником.
 
 ## Команды пользователя
 

@@ -7,16 +7,17 @@ Wants=network-online.target
 Type=simple
 User=mirkori-games
 Group=mirkori-games
+SupplementaryGroups=mirkori-platform
 WorkingDirectory=/srv/agent-projects/mirkori-games-bot/current
 EnvironmentFile=/etc/mirkori-games-bot.env
-ExecStart=/usr/bin/python3 /srv/agent-projects/mirkori-games-bot/current/bot.py --catalog /srv/agent-projects/mirkori-games-bot/catalog/games.json --artifact-root /srv/agent-projects/mirkori-games-bot/downloads --offset-file /srv/agent-projects/mirkori-games-bot/state/update-offset
+ExecStart=/usr/bin/python3 /srv/agent-projects/mirkori-games-bot/current/bot.py --platform-catalog /srv/mirkori-games-platform/catalog/current/catalog.json --artifact-root /srv/mirkori-games-platform/catalog/current/artifacts --offset-file /srv/agent-projects/mirkori-games-bot/state/update-offset
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadOnlyPaths=/srv/agent-projects/mirkori-games-bot/current /srv/agent-projects/mirkori-games-bot/catalog /srv/agent-projects/mirkori-games-bot/downloads
+ReadOnlyPaths=/srv/agent-projects/mirkori-games-bot/current /srv/mirkori-games-platform/catalog
 ReadWritePaths=/srv/agent-projects/mirkori-games-bot/state
 
 [Install]

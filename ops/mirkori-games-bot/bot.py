@@ -21,6 +21,7 @@ from typing import Any
 MAX_CATALOG_BYTES = 256 * 1024
 MAX_APK_BYTES = 2 * 1024 * 1024 * 1024
 MAX_UPDATE_OFFSET_FILE_BYTES = 64
+PLATFORM_RELEASE_CHANNELS = ("stable", "beta")
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,109 @@ def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, 
             ),
         )
     return tuple(releases)
+
+
+def load_platform_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, ...]:
+    """Loads the same validated release catalog consumed by Mirkori Platform."""
+    if catalog_path.stat().st_size > MAX_CATALOG_BYTES:
+        raise ValueError("catalog is too large")
+    source = json.loads(catalog_path.read_text(encoding="utf-8"))
+    if set(source) != {"schemaVersion", "games"} or source["schemaVersion"] != 1:
+        raise ValueError("unsupported platform catalog schema")
+    games = source["games"]
+    if not isinstance(games, list) or not games:
+        raise ValueError("platform catalog must contain at least one game")
+
+    root = artifact_root.resolve(strict=True)
+    releases: list[GameRelease] = []
+    seen_ids: set[str] = set()
+    for game in games:
+        if not isinstance(game, dict) or not {"id", "displayName", "releases"}.issubset(game):
+            raise ValueError("platform catalog game is incomplete")
+        game_id = _safe_text(game["id"], 32, "id")
+        if not game_id.replace("-", "").isalnum() or game_id in seen_ids:
+            raise ValueError("game id is invalid or duplicated")
+        seen_ids.add(game_id)
+        title = _safe_text(game["displayName"], 80, "displayName")
+        candidates = game["releases"]
+        if not isinstance(candidates, list):
+            raise ValueError("platform releases must be a list")
+        release = _select_platform_android_release(candidates)
+        if release is not None:
+            releases.append(_platform_release(game_id, title, release, root))
+    if not releases:
+        raise ValueError("platform catalog has no Android stable or beta release")
+    return tuple(releases)
+
+
+def _select_platform_android_release(candidates: list[Any]) -> dict[str, Any] | None:
+    android = [
+        item for item in candidates
+        if isinstance(item, dict)
+        and item.get("platform") == "android"
+        and item.get("channel") in PLATFORM_RELEASE_CHANNELS
+        and isinstance(item.get("versionCode"), int)
+        and not isinstance(item.get("versionCode"), bool)
+        and item["versionCode"] > 0
+    ]
+    for channel in PLATFORM_RELEASE_CHANNELS:
+        matching = [item for item in android if item["channel"] == channel]
+        if matching:
+            return max(matching, key=lambda item: (item["versionCode"], str(item.get("id", ""))))
+    return None
+
+
+def _platform_release(
+    game_id: str,
+    title: str,
+    item: dict[str, Any],
+    artifact_root: Path,
+) -> GameRelease:
+    required = {
+        "id", "versionName", "fileName", "relativePath", "sizeBytes",
+        "sha256", "changelog",
+    }
+    if not required.issubset(item):
+        raise ValueError("platform release is incomplete")
+    release_id = _safe_text(item["id"], 96, "release id")
+    version = _safe_text(item["versionName"], 40, "versionName")
+    notes = _safe_text(item["changelog"], 800, "changelog", allow_empty=True)
+    file_name = _safe_text(item["fileName"], 160, "fileName")
+    if not file_name.lower().endswith(".apk"):
+        raise ValueError("platform Android artifact must be an APK")
+    expected_hash = str(item["sha256"]).lower()
+    if len(expected_hash) != 64 or any(char not in "0123456789abcdef" for char in expected_hash):
+        raise ValueError("sha256 has an invalid format")
+    relative_apk = Path(str(item["relativePath"]))
+    if relative_apk.is_absolute() or relative_apk.name != file_name:
+        raise ValueError("platform artifact path is invalid")
+    apk_path = (artifact_root / relative_apk).resolve(strict=True)
+    if artifact_root not in apk_path.parents or not apk_path.is_file():
+        raise ValueError("platform artifact path escapes artifact root")
+    declared_size = item["sizeBytes"]
+    if (
+        not isinstance(declared_size, int)
+        or isinstance(declared_size, bool)
+        or declared_size < 1
+        or declared_size > MAX_APK_BYTES
+        or apk_path.stat().st_size != declared_size
+    ):
+        raise ValueError("platform APK size does not match catalog")
+    actual_hash = sha256_file(apk_path)
+    if not secrets.compare_digest(actual_hash, expected_hash):
+        raise ValueError("platform APK sha256 does not match catalog")
+    return GameRelease(
+        game_id=game_id,
+        title=title,
+        version=version,
+        apk_path=apk_path,
+        sha256=actual_hash,
+        notes=notes,
+        download_url=_safe_download_url(
+            f"https://games.dmit.life/downloads/{urllib.parse.quote(release_id, safe='')}/"
+            f"{urllib.parse.quote(file_name, safe='')}",
+        ),
+    )
 
 
 def sha256_file(path: Path) -> str:
@@ -290,7 +394,9 @@ def _safe_text(value: Any, maximum: int, name: str, allow_empty: bool = False) -
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--catalog", type=Path, required=True)
+    catalog = parser.add_mutually_exclusive_group(required=True)
+    catalog.add_argument("--catalog", type=Path)
+    catalog.add_argument("--platform-catalog", type=Path)
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--offset-file", type=Path, default=Path("state/update-offset"))
     parser.add_argument("--validate-catalog", action="store_true")
@@ -299,7 +405,11 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    releases = load_catalog(args.catalog, args.artifact_root)
+    releases = (
+        load_platform_catalog(args.platform_catalog, args.artifact_root)
+        if args.platform_catalog is not None
+        else load_catalog(args.catalog, args.artifact_root)
+    )
     if args.validate_catalog:
         print(f"catalog=valid games={len(releases)}")
         return 0
