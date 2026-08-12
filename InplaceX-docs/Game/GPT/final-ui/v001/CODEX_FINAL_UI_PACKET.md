@@ -1,6 +1,6 @@
 # CODEX FINAL UI PACKET
 
-Package: `INPLACEX-FINAL-UI-20260812-v001`  
+Package: `INPLACEX-FINAL-UI-20260812-v001`
 Base: `develop@5f37f4e138f96cdf70c489237b28137a351b3892`
 
 ---
@@ -1019,4 +1019,3 @@ For every task return:
 - `integration_requested` only when the task output contract is fully satisfied.
 
 If a required check or capture cannot run, return `needs_worker_fix` or `visual_qa_blocked`, not success.
-
