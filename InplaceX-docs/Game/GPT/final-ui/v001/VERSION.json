@@ -1,0 +1,18 @@
+{
+  "package_id": "INPLACEX-FINAL-UI-20260812-v001",
+  "version": "1.0.0",
+  "created_at": "2026-08-12",
+  "repository": "coindmit-cmyk/InplaceX",
+  "base_branch": "develop",
+  "base_commit": "5f37f4e138f96cdf70c489237b28137a351b3892",
+  "status": "ready_for_codex_implementation",
+  "visual_direction": "warm_room_polished_casual",
+  "owner_approval_gate_after_task": "INPX-UX-201",
+  "inspected_files": {
+    "MainActivity.kt": "e42f46088411996b6125c916c513d4bde151b3f2",
+    "GamePresentationComponents.kt": "df293689a9d256a609dd309620dcdc3b77c38a36",
+    "GameFieldUiState.kt": "64afd14573394919c2aaa376cc9716d77875c9a0",
+    "OnlineDuelGameField.kt": "0e7e8183d2d13ab19eff00dd97a495e0d1ca8dbc",
+    "CompanyHeaderComponents.kt": "d69bb8c3277bbcfcfe11e43097db532215675f2d"
+  }
+}

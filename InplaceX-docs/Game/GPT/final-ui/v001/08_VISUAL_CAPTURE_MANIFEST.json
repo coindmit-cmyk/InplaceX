@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "package_id": "INPLACEX-FINAL-UI-20260812-v001",
+  "logical_viewports": [
+    {
+      "id": "compact",
+      "width_dp": 360,
+      "height_dp": 740,
+      "font_scale": [
+        1.0,
+        1.15
+      ]
+    },
+    {
+      "id": "baseline",
+      "width_dp": 360,
+      "height_dp": 800,
+      "font_scale": [
+        1.0,
+        1.15
+      ]
+    },
+    {
+      "id": "owner_like",
+      "width_dp": 393,
+      "height_dp": 873,
+      "font_scale": [
+        1.0
+      ]
+    },
+    {
+      "id": "wide",
+      "width_dp": 412,
+      "height_dp": 915,
+      "font_scale": [
+        1.0
+      ]
+    }
+  ],
+  "captures": [
+    {
+      "id": "home_ru",
+      "screen": "home",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "home_en",
+      "screen": "home",
+      "locale": "en",
+      "viewport": "compact",
+      "required": true
+    },
+    {
+      "id": "game_4_empty_ad",
+      "screen": "game",
+      "code_length": 4,
+      "state": "empty",
+      "ad": "loaded",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "game_4_filled",
+      "screen": "game",
+      "code_length": 4,
+      "state": "filled_manual_locked",
+      "ad": "none",
+      "locale": "ru",
+      "viewport": "compact",
+      "required": true
+    },
+    {
+      "id": "game_6_filled",
+      "screen": "game",
+      "code_length": 6,
+      "state": "filled",
+      "ad": "loaded",
+      "locale": "ru",
+      "viewport": "owner_like",
+      "required": true
+    },
+    {
+      "id": "game_8_empty",
+      "screen": "game",
+      "code_length": 8,
+      "state": "empty",
+      "ad": "loaded",
+      "locale": "ru",
+      "viewport": "compact",
+      "required": true
+    },
+    {
+      "id": "game_8_filled",
+      "screen": "game",
+      "code_length": 8,
+      "state": "filled_manual_locked",
+      "ad": "none",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "game_10_filled_en",
+      "screen": "game",
+      "code_length": 10,
+      "state": "filled",
+      "ad": "none",
+      "locale": "en",
+      "viewport": "wide",
+      "required": true
+    },
+    {
+      "id": "game_wait_opponent",
+      "screen": "game",
+      "code_length": 8,
+      "state": "input_disabled_waiting",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "game_helpers_boosts",
+      "screen": "game",
+      "code_length": 6,
+      "state": "hints_boosts_selected",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "company_main",
+      "screen": "company",
+      "state": "selected_locked_completed",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "social_root",
+      "screen": "social",
+      "state": "online_available",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "invites_ready",
+      "screen": "invites",
+      "state": "ready",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "invites_waiting",
+      "screen": "invites",
+      "state": "waiting_friend",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "invites_error",
+      "screen": "invites",
+      "state": "offline_error",
+      "locale": "en",
+      "viewport": "compact",
+      "required": true
+    },
+    {
+      "id": "shop",
+      "screen": "shop",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "profile_guest",
+      "screen": "profile",
+      "state": "guest",
+      "locale": "ru",
+      "viewport": "baseline",
+      "required": true
+    },
+    {
+      "id": "settings",
+      "screen": "settings",
+      "locale": "en",
+      "viewport": "compact",
+      "required": true
+    }
+  ]
+}

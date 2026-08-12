@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "package_id": "INPLACEX-FINAL-UI-20260812-v001",
+  "base_branch": "develop",
+  "base_commit": "5f37f4e138f96cdf70c489237b28137a351b3892",
+  "tasks": [
+    {
+      "id": "INPX-UX-201",
+      "title": "Final UI tokens, primitives and gameplay vertical slice",
+      "priority": "P0",
+      "complexity": "L",
+      "depends_on": [],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/GameScreen.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/game/presentation/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/game/**",
+        "docs/reports/workers/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/game/state/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/viewmodel/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**"
+      ],
+      "acceptance_criteria": [
+        "Attempts remain left and matrix right.",
+        "Attempt rows render guess → score without per-digit cards.",
+        "4, 6, 8 and 10 digit layouts have no clipping or horizontal scroll.",
+        "Existing state, callbacks, semantics and test tags are preserved.",
+        "Owner receives required gameplay screenshots before next task."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebug",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "git diff --check"
+      ],
+      "stop_gate": "owner_gameplay_visual_approval"
+    },
+    {
+      "id": "INPX-UX-202",
+      "title": "Shell and Home polished-casual pass",
+      "priority": "P0",
+      "complexity": "M",
+      "depends_on": [
+        "INPX-UX-201",
+        "owner_gameplay_visual_approval"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/layout/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/home/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/**",
+        "docs/reports/workers/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/**"
+      ],
+      "acceptance_criteria": [
+        "toy_room_bg_v6 remains visible and unchanged.",
+        "Top HUD and five-item bottom menu preserve behavior.",
+        "Home contains exactly the existing three primary choices.",
+        "Production ad content is not wrapped in a conflicting purple frame.",
+        "No double-shadow regression."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebug",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "git diff --check"
+      ]
+    },
+    {
+      "id": "INPX-UX-203",
+      "title": "Company and Social presentation convergence",
+      "priority": "P1",
+      "complexity": "L",
+      "depends_on": [
+        "INPX-UX-202"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/company/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/social/**",
+        "docs/reports/workers/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**",
+        "InplaceX-backend/**"
+      ],
+      "acceptance_criteria": [
+        "Company progression and actions are behavior-identical.",
+        "Social polling, invite, session and network logic are unchanged.",
+        "All forms use final warm components and clear primary actions.",
+        "Active online match uses the shared final GameScreen."
+      ],
+      "checks": [
+        "bash gradlew :app:testDebugUnitTest",
+        "bash gradlew :app:assembleDebug",
+        "bash gradlew :app:assembleDebugAndroidTest",
+        "git diff --check"
+      ]
+    },
+    {
+      "id": "INPX-UX-204",
+      "title": "Remaining screens, visual QA and release gate",
+      "priority": "P1",
+      "complexity": "L",
+      "depends_on": [
+        "INPX-UX-203"
+      ],
+      "allowed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/settings/**",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/**",
+        "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/**",
+        "docs/reports/workers/**",
+        "docs/reports/integration/**"
+      ],
+      "forbidden_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/core/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/data/**",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/**",
+        "InplaceX-backend/**"
+      ],
+      "acceptance_criteria": [
+        "Shop/profile/settings use the final system without flow changes.",
+        "All required captures in the manifest exist and pass hard-fail review.",
+        "RU/EN, compact/baseline and font-scale checks pass.",
+        "Unit, lint, connected UI and release gates pass."
+      ],
+      "checks": [
+        "bash gradlew verifyProject",
+        "bash gradlew lint",
+        "bash gradlew :app:connectedDebugAndroidTest",
+        "bash gradlew assembleRelease",
+        "git diff --check"
+      ]
+    }
+  ]
+}
