@@ -114,8 +114,6 @@ fun HomeRootScreen(
     var playerSecretForDuel by rememberSaveable { mutableStateOf("") }
     var botSecretForDuel by rememberSaveable { mutableStateOf("") }
     var duelTurnOwner by rememberSaveable { mutableStateOf(DuelTurnOwner.PLAYER) }
-    var botLastScore by rememberSaveable { mutableIntStateOf(-1) }
-    var botConfirmedPositions by rememberSaveable { mutableIntStateOf(0) }
     var duelTurnError by rememberSaveable { mutableStateOf<String?>(null) }
     var duelSessionSeed by rememberSaveable { mutableIntStateOf(1) }
     var selectedRaceCodeLength by rememberSaveable {
@@ -162,8 +160,6 @@ fun HomeRootScreen(
                         ),
                     )
                     duelTurnOwner = DuelTurnOwner.PLAYER
-                    botLastScore = -1
-                    botConfirmedPositions = 0
                     duelTurnError = null
                     duelSessionSeed += 1
                     preMatchPhase = PreMatchPhase.READY_TO_START
@@ -338,8 +334,6 @@ fun HomeRootScreen(
                 when (botTurn) {
                     is DuelBotTurnResult.Completed -> {
                         duelTurnError = null
-                        botLastScore = botTurn.score
-                        botConfirmedPositions = botTurn.confirmedPositions
 
                         if (botTurn.score == configuredPvpMode.config.codeLength) {
                             onRecordPvpResult(false)
@@ -377,18 +371,7 @@ fun HomeRootScreen(
                 } else {
                     strings.text("home.duel.turn.opponent")
                 },
-                secondaryStatusText = duelTurnError ?: if (botLastScore >= 0) {
-                    strings.homeDuelStatus(
-                        botLastScore,
-                        botConfirmedPositions,
-                        configuredPvpMode.config.codeLength,
-                    )
-                } else {
-                    strings.homeDuelWaiting(
-                        botConfirmedPositions,
-                        configuredPvpMode.config.codeLength,
-                    )
-                },
+                secondaryStatusText = duelTurnError,
                 params = configuredPvpMode.toFieldParams(TypeGame.DuelMatch),
                 onBack = { showExitDialog = true },
                 onDebugSecretChange = onDebugSecretChange,

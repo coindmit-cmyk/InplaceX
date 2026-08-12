@@ -4,7 +4,6 @@ internal object GameCatalog {
     val ru = localizationCatalog(
         name = "game.ru",
         entries = listOf(
-            localizationEntry("game.status.default", "Введите комбинацию или отметьте таблицу"),
             localizationEntry("game.status.time_over", "Время вышло"),
             localizationEntry("game.status.no_hints", "Подсказки этого типа закончились"),
             localizationEntry("game.status.watch_ad_for_hint", "Можно посмотреть рекламу и получить бонусную подсказку"),
@@ -115,7 +114,6 @@ internal object GameCatalog {
     val en = localizationCatalog(
         name = "game.en",
         entries = listOf(
-            localizationEntry("game.status.default", "Enter a combination or mark the table"),
             localizationEntry("game.status.time_over", "Time is over"),
             localizationEntry("game.status.no_hints", "No hints of this type left"),
             localizationEntry("game.status.watch_ad_for_hint", "Watch an ad to get a bonus hint"),
