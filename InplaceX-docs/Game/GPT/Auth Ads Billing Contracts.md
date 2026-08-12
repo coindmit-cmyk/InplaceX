@@ -205,9 +205,10 @@ This is intentionally separate from permanent hint inventory.
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
 - release composes `MirkoriBillingService`; absent/invalid Platform commerce
   configuration fails closed through `UnavailableBillingService`
-- Yandex Mobile Ads SDK 8 is the active owner adapter for banner and rewarded
-  placements in Russia; post-match interstitial is enabled only when its
-  optional placement id is present
+- Yandex Mobile Ads SDK 8 is the temporary active owner adapter for banner and
+  rewarded placements in every market until another provider is connected;
+  post-match interstitial is enabled only when its optional placement id is
+  present
 - Yandex automatic initialization is disabled; Android passes the persisted
   consent choice and initializes the SDK manually before preload
 - rewarded completion is accepted only from `onRewarded`; dismissal without
