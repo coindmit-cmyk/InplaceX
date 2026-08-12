@@ -1,7 +1,10 @@
+FROM eclipse-temurin:11-jdk-jammy@sha256:5870b4031653a918c3644901443f8c4cf6108340ec17ca39d48f58e31c30c095 AS jdk11
+
 FROM gradle:9.3.1-jdk21@sha256:f3784cc59d7fbab1e0ddb09c4cd082f13e16d3fb8c50b7922b7aeae8e9507da5 AS build
 
 WORKDIR /workspace
 
+COPY --from=jdk11 /opt/java/openjdk /opt/java/openjdk-11
 COPY gradle gradle
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY InplaceX-bot-core InplaceX-bot-core
@@ -15,7 +18,8 @@ COPY InplaceX-identity InplaceX-identity
 COPY InplaceX-android/version.properties InplaceX-android/version.properties
 COPY InplaceX-android/app InplaceX-android/app
 
-RUN gradle --no-daemon :InplaceX-backend:installDist
+RUN gradle -Dorg.gradle.java.installations.paths=/opt/java/openjdk-11 \
+    --no-daemon :InplaceX-backend:installDist
 
 FROM eclipse-temurin:11-jre-jammy@sha256:e8acde9cc75b96765f005857cfeb7f826409177482c3f70400d5a94328689d56
 
