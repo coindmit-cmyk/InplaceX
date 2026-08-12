@@ -39,6 +39,46 @@ class GamePresentationComponentsTest {
     }
 
     @Test
+    fun `routine idle and accepted attempt statuses stay out of the hud`() {
+        assertFalse(
+            shouldShowGameStatus(
+                status = com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus.Idle,
+                phase = MatchPhase.ACTIVE,
+                inputEnabled = true,
+            ),
+        )
+        assertFalse(
+            shouldShowGameStatus(
+                status = com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus.AttemptAccepted(
+                    com.mirkori.inplacex.core.match.MatchAttempt(
+                        guess = "1234",
+                        score = 1,
+                        number = 1,
+                        isWin = false,
+                    ),
+                ),
+                phase = MatchPhase.ACTIVE,
+                inputEnabled = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `waiting terminal and contextual statuses remain visible`() {
+        val idle = com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus.Idle
+        assertTrue(shouldShowGameStatus(idle, MatchPhase.ACTIVE, inputEnabled = false))
+        assertTrue(shouldShowGameStatus(idle, MatchPhase.WON, inputEnabled = true))
+        assertTrue(
+            shouldShowGameStatus(
+                status = idle,
+                phase = MatchPhase.ACTIVE,
+                inputEnabled = true,
+                contextualActionSelected = true,
+            ),
+        )
+    }
+
+    @Test
     fun `compact attempt line keeps the whole guess and score`() {
         assertEquals("1234" to 2, parseAttemptLine("1234 -> 2"))
         assertEquals("1234567890" to 10, parseAttemptLine("1234567890 -> 10"))

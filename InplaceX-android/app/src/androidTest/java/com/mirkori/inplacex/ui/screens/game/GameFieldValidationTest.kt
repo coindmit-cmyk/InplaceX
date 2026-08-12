@@ -12,11 +12,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -30,6 +33,30 @@ class GameFieldValidationTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun idleGameDoesNotShowRoutineInstruction() {
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalAppStrings provides StaticLocalizationProvider.forLanguage(AppLanguage.RU)
+            ) {
+                InplaceXTheme {
+                    GameFieldScreen(
+                        params = GameFieldParams(
+                            typeGame = TypeGame.RaceMatch,
+                            useHints = false,
+                            lenSecret = 4,
+                        ),
+                        title = "",
+                        onBack = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onAllNodesWithTag("game-status").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Введите комбинацию или отметьте таблицу").assertCountEquals(0)
+    }
 
     @Test
     fun allSameGuessShowsLocalizedValidationReason() {

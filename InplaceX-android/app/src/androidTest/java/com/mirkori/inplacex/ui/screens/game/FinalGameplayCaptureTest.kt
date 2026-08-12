@@ -104,7 +104,9 @@ class FinalGameplayCaptureTest {
         }
 
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("game-status").assertIsDisplayed()
+        if (stateName == "input_disabled_waiting") {
+            composeRule.onNodeWithTag("game-status").assertIsDisplayed()
+        }
         composeRule.onNodeWithTag("game-analysis-9-$codeLength").assertIsDisplayed()
         composeRule.onNodeWithTag("game-guess-slot-$codeLength").assertIsDisplayed()
         val output = File(

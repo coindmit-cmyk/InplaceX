@@ -122,13 +122,24 @@ fun GamePresentationLayout(
             codeLength = uiState.parameters.codeLength,
             compactHeight = maxHeight < 760.dp,
         )
+        val hasTopMessage = shouldShowGameStatus(
+            status = uiState.status,
+            phase = uiState.match.phase,
+            inputEnabled = uiState.route.inputEnabled,
+            contextualActionSelected = uiState.tools.selectedHint != null,
+        ) || !uiState.route.secondaryStatusText.isNullOrBlank()
+        val topPanelMinHeight = if (hasTopMessage) {
+            metrics.topPanelMinHeight
+        } else {
+            (metrics.topPanelMinHeight - 18.dp).coerceAtLeast(40.dp)
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(FinalUiDimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
-            PresentationCard(modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight)) {
+            PresentationCard(modifier = Modifier.defaultMinSize(minHeight = topPanelMinHeight)) {
                 GameTopPanel(uiState = uiState)
             }
 
@@ -255,6 +266,8 @@ fun GameTopPanel(
         GameFieldMode.DUEL -> strings.text("mode.pvp.title")
     }
     val mode = uiState.route.modeLabel?.takeIf(String::isNotBlank) ?: defaultMode
+    val message = statusText(uiState)
+        ?: uiState.route.secondaryStatusText?.takeIf(String::isNotBlank)
 
     Column(
         modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -323,23 +336,22 @@ fun GameTopPanel(
                 modifier = Modifier.weight(0.82f),
             )
         }
-        uiState.route.secondaryStatusText?.takeIf(String::isNotBlank)?.let {
-            Text(it, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        message?.let { statusMessage ->
+            Text(
+                text = statusMessage,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("game-status"),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isErrorStatus(uiState.status)) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontWeight = if (isErrorStatus(uiState.status)) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+            )
         }
-        Text(
-            text = statusText(uiState),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("game-status"),
-            style = MaterialTheme.typography.bodySmall,
-            color = if (isErrorStatus(uiState.status)) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            fontWeight = if (isErrorStatus(uiState.status)) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 1,
-        )
     }
 }
 
@@ -998,9 +1010,33 @@ private val GameFieldTool.color: Color
         GameFieldTool.YES -> InplaceXColors.Mint
     }
 
+internal fun shouldShowGameStatus(
+    status: GameFieldStatus,
+    phase: MatchPhase,
+    inputEnabled: Boolean,
+    contextualActionSelected: Boolean = false,
+): Boolean = when {
+    !inputEnabled -> true
+    phase != MatchPhase.ACTIVE -> true
+    contextualActionSelected -> true
+    status == GameFieldStatus.Idle -> false
+    status is GameFieldStatus.AttemptAccepted -> false
+    status is GameFieldStatus.EngineFeedback && status.feedback == null -> false
+    else -> true
+}
+
 @Composable
-private fun statusText(uiState: GameFieldUiState): String {
+private fun statusText(uiState: GameFieldUiState): String? {
     val strings = LocalAppStrings.current
+    if (!shouldShowGameStatus(
+            status = uiState.status,
+            phase = uiState.match.phase,
+            inputEnabled = uiState.route.inputEnabled,
+            contextualActionSelected = uiState.tools.selectedHint != null,
+        )
+    ) {
+        return null
+    }
     if (!uiState.route.inputEnabled && uiState.match.phase == MatchPhase.ACTIVE) {
         return strings.text("game.status.wait_opponent")
     }
@@ -1038,7 +1074,7 @@ private fun statusText(uiState: GameFieldUiState): String {
             null -> when (uiState.match.phase) {
                 MatchPhase.WON -> strings.text("game.status.solved_new_secret")
                 MatchPhase.LOST -> strings.text("game.status.no_attempts_left")
-                else -> strings.text("game.status.default")
+                else -> null
             }
         }
     }
