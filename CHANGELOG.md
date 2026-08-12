@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Debug Android builds now reuse missing release provider identifiers for
+  native Google testing and safe Yandex demo placements. Yandex is temporarily
+  eligible in every resolved market until a separate international provider is
+  connected; privacy consent and entitlements still gate every request.
+
 - Home mode cards now follow the compact warm-room reference without changing
   navigation: Race, Duel, and Company keep one-line titles and short two-line
   descriptions. Race and Duel share a cream opponent-choice card with a clear

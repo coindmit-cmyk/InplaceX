@@ -93,9 +93,9 @@ recovery in the production runbook.
   initialization occurs only after a persisted `ACCEPTED` or `DECLINED`
   privacy choice
 - release `AndroidAdRuntime` resolves `/api/v1/runtime/ad-market` through the
-  configured online HTTPS base URL and routes Yandex only for `RUSSIA`;
-  `GLOBAL` and `UNKNOWN` fail closed until another provider is explicitly
-  implemented
+  configured online HTTPS base URL; until another provider is explicitly
+  implemented, Yandex is the temporary route for `RUSSIA`, `GLOBAL`, and
+  `UNKNOWN`
 - debug/sandbox deliberately bypasses backend market detection and routes as
   `RUSSIA`, so the official Yandex demo placements can be exercised from any
   developer network; debug/live retains the backend market resolver

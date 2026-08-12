@@ -172,10 +172,9 @@ This is intentionally separate from permanent hint inventory.
   `RUSSIA`, `GLOBAL`, or `UNKNOWN`; Android must not derive ad routing from the
   store account, device locale, or a raw IP stored on the client
 - raw IP must not be returned to Android, persisted for ad routing, or logged
-- `UNKNOWN` fails closed without an ad request
-- Yandex owner inventory is eligible only in `RUSSIA`
-- `GLOBAL` and `UNKNOWN` return an empty route until a non-Russian provider is
-  implemented and approved
+- Yandex owner inventory is temporarily eligible in `RUSSIA`, `GLOBAL`, and
+  `UNKNOWN` until a non-Russian provider is implemented and approved
+- privacy consent and configured placements remain mandatory in every market
 - provider availability is a separate Android/runtime capability filter so a
   build or device can exclude an SDK without changing beneficiary ownership
 - providers may preload concurrently only after the player has made an

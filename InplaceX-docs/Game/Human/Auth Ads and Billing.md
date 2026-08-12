@@ -59,9 +59,10 @@ must go through the future authenticated cloud-save contract, not an implicit de
 
 - the current network location is resolved to a coarse `Russia`, `Global`, or
   `Unknown` market; the store used to install the app does not define location
-- the owner's Yandex inventory is used only in Russia
-- Global and Unknown markets show no ad until a separate non-Russian provider
-  is implemented and approved
+- the owner's Yandex inventory is temporarily used in every market until a
+  separate international provider is connected
+- until a separate non-Russian provider is implemented and approved, the
+  owner's Yandex inventory is the temporary route in every market
 - an unknown market is not cached; an active game retries an unavailable
   banner with a bounded delay so routing can recover after connectivity returns
 - the first configured launch asks whether personalized advertising is
@@ -135,8 +136,9 @@ and separate from these permanent products.
   backend JWT issuing remain debug/test compatibility rather than deployment
   requirements
 - Yandex Mobile Ads SDK is connected as the owner's live adapter for banner,
-  rewarded, and optional post-match formats; it becomes active only when the
-  player has made a privacy choice and the backend returns `Russia`
+  rewarded, and optional post-match formats; until another provider is added,
+  it becomes active in every market only after the player has made a privacy
+  choice
 - the backend market endpoint resolves the current numeric IP through a local
   country database and returns only a coarse market; nginx overwrites the
   client-IP header and the backend trusts it only from the configured proxy

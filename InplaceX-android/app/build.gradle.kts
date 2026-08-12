@@ -118,6 +118,17 @@ val expectedReleaseCertificateSha256 = releaseSigningValues
 fun localProp(key: String, default: String): String =
     (localProps.getProperty(key) ?: default).replace("\"", "\\\"")
 
+fun localPropWithFallback(
+    key: String,
+    fallbackKey: String,
+    default: String = "",
+): String =
+    (
+        localProps.getProperty(key)?.takeIf(String::isNotBlank)
+            ?: localProps.getProperty(fallbackKey)?.takeIf(String::isNotBlank)
+            ?: default
+        ).replace("\"", "\\\"")
+
 fun localIntProp(
     key: String,
     default: Int,
@@ -252,12 +263,12 @@ android {
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")
             buildConfigField("boolean", "MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
-            buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.webClientId", "")}\"")
-            buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.debug.googlePlay.gamesProjectId", "")}\"")
-            buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localProp("provider.debug.googlePlay.serverClientId", "")}\"")
-            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.banner.game", "")}\"")
-            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.rewarded.general", "")}\"")
-            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localProp("provider.debug.ads.yandex.owner.interstitial.postMatch", "")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localPropWithFallback("provider.debug.googlePlay.webClientId", "provider.release.googlePlay.webClientId")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localPropWithFallback("provider.debug.googlePlay.gamesProjectId", "provider.release.googlePlay.gamesProjectId")}\"")
+            buildConfigField("String", "GOOGLE_PLAY_SERVER_CLIENT_ID", "\"${localPropWithFallback("provider.debug.googlePlay.serverClientId", "provider.release.googlePlay.serverClientId")}\"")
+            buildConfigField("String", "YANDEX_OWNER_GAME_BANNER_AD_UNIT_ID", "\"${localPropWithFallback("provider.debug.ads.yandex.owner.banner.game", "provider.release.ads.yandex.owner.banner.game")}\"")
+            buildConfigField("String", "YANDEX_OWNER_REWARDED_AD_UNIT_ID", "\"${localPropWithFallback("provider.debug.ads.yandex.owner.rewarded.general", "provider.release.ads.yandex.owner.rewarded.general")}\"")
+            buildConfigField("String", "YANDEX_OWNER_POST_MATCH_INTERSTITIAL_AD_UNIT_ID", "\"${localPropWithFallback("provider.debug.ads.yandex.owner.interstitial.postMatch", "provider.release.ads.yandex.owner.interstitial.postMatch")}\"")
             buildConfigField("int", "ADS_INTERSTITIAL_MINIMUM_COMPLETED_MATCHES", localIntProp("provider.debug.ads.interstitial.minimumCompletedMatches", 20, 0..10_000).toString())
             buildConfigField("long", "ADS_INTERSTITIAL_MINIMUM_FOREGROUND_SECONDS", "${localLongProp("provider.debug.ads.interstitial.minimumForegroundSeconds", 0, 0L..2_592_000L)}L")
             buildConfigField("int", "ADS_INTERSTITIAL_GAMES_BETWEEN_IMPRESSIONS", localIntProp("provider.debug.ads.interstitial.gamesBetweenImpressions", 4, 1..10_000).toString())

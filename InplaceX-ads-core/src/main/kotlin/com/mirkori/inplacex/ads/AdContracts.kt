@@ -125,10 +125,6 @@ object OwnerFirstAdRoutingPolicy : AdRoutingPolicy {
         context: AdRuntimeContext,
         request: AdRequest,
     ): AdRoutePlan {
-        if (context.market == AdMarket.UNKNOWN) {
-            return AdRoutePlan(emptyList())
-        }
-
         val providers = context.availableProviders
             .withIndex()
             .filter { (_, providerId) -> providerId.supports(context.market) }
@@ -144,7 +140,12 @@ object OwnerFirstAdRoutingPolicy : AdRoutingPolicy {
     }
 
     private fun AdProviderId.supports(market: AdMarket): Boolean = when (this) {
-        AdProviderId.OWNER_YANDEX -> market == AdMarket.RUSSIA
+        AdProviderId.OWNER_YANDEX -> when (market) {
+            AdMarket.RUSSIA,
+            AdMarket.GLOBAL,
+            AdMarket.UNKNOWN,
+            -> true
+        }
         AdProviderId.COMPANY_ADMOB,
         AdProviderId.COMPANY_HUAWEI,
         -> false
