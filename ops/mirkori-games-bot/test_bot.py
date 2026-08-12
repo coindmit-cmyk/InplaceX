@@ -52,7 +52,7 @@ class CatalogTest(unittest.TestCase):
                             },
                         ],
                     },
-                ),
+                ) + (" " * (300 * 1024)),
                 encoding="utf-8",
             )
 
@@ -78,19 +78,19 @@ class CatalogTest(unittest.TestCase):
                         "games": [
                             {
                                 "id": "inplacex",
-                                "displayName": "InplaceX",
+                                "displayName": "И" * 120,
                                 "releases": [
                                     {
-                                        "id": "inplacex-beta-1",
+                                        "id": "i" * 64,
                                         "platform": "android",
                                         "channel": "beta",
-                                        "versionName": "1.0",
+                                        "versionName": "v" * 64,
                                         "versionCode": 1,
                                         "fileName": apk.name,
                                         "relativePath": apk.relative_to(root).as_posix(),
                                         "sizeBytes": apk.stat().st_size,
                                         "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
-                                        "changelog": "Beta",
+                                        "changelog": "Б" * 4000,
                                     },
                                 ],
                             },
@@ -102,7 +102,8 @@ class CatalogTest(unittest.TestCase):
 
             release = load_platform_catalog(catalog, root)[0]
 
-            self.assertEqual("1.0", release.version)
+            self.assertEqual("v" * 64, release.version)
+            self.assertEqual("Б" * 4000, release.notes)
             self.assertEqual(apk, release.apk_path)
 
     def test_platform_catalog_rejects_artifact_outside_root(self) -> None:

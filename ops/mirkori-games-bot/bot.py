@@ -19,7 +19,8 @@ from typing import Any
 
 
 MAX_CATALOG_BYTES = 256 * 1024
-MAX_APK_BYTES = 2 * 1024 * 1024 * 1024
+MAX_PLATFORM_CATALOG_BYTES = 1024 * 1024
+MAX_APK_BYTES = 4 * 1024 * 1024 * 1024
 MAX_UPDATE_OFFSET_FILE_BYTES = 64
 PLATFORM_RELEASE_CHANNELS = ("stable", "beta")
 
@@ -100,7 +101,7 @@ def load_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, 
 
 def load_platform_catalog(catalog_path: Path, artifact_root: Path) -> tuple[GameRelease, ...]:
     """Loads the same validated release catalog consumed by Mirkori Platform."""
-    if catalog_path.stat().st_size > MAX_CATALOG_BYTES:
+    if catalog_path.stat().st_size > MAX_PLATFORM_CATALOG_BYTES:
         raise ValueError("catalog is too large")
     source = json.loads(catalog_path.read_text(encoding="utf-8"))
     if set(source) != {"schemaVersion", "games"} or source["schemaVersion"] != 1:
@@ -115,11 +116,11 @@ def load_platform_catalog(catalog_path: Path, artifact_root: Path) -> tuple[Game
     for game in games:
         if not isinstance(game, dict) or not {"id", "displayName", "releases"}.issubset(game):
             raise ValueError("platform catalog game is incomplete")
-        game_id = _safe_text(game["id"], 32, "id")
+        game_id = _safe_text(game["id"], 64, "id")
         if not game_id.replace("-", "").isalnum() or game_id in seen_ids:
             raise ValueError("game id is invalid or duplicated")
         seen_ids.add(game_id)
-        title = _safe_text(game["displayName"], 80, "displayName")
+        title = _safe_text(game["displayName"], 120, "displayName")
         candidates = game["releases"]
         if not isinstance(candidates, list):
             raise ValueError("platform releases must be a list")
@@ -160,10 +161,10 @@ def _platform_release(
     }
     if not required.issubset(item):
         raise ValueError("platform release is incomplete")
-    release_id = _safe_text(item["id"], 96, "release id")
-    version = _safe_text(item["versionName"], 40, "versionName")
-    notes = _safe_text(item["changelog"], 800, "changelog", allow_empty=True)
-    file_name = _safe_text(item["fileName"], 160, "fileName")
+    release_id = _safe_text(item["id"], 64, "release id")
+    version = _safe_text(item["versionName"], 64, "versionName")
+    notes = _safe_text(item["changelog"], 4000, "changelog")
+    file_name = _safe_text(item["fileName"], 128, "fileName")
     if not file_name.lower().endswith(".apk"):
         raise ValueError("platform Android artifact must be an APK")
     expected_hash = str(item["sha256"]).lower()
