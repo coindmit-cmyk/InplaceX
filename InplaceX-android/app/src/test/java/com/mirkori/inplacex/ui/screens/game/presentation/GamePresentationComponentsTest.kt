@@ -10,6 +10,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
+import com.mirkori.inplacex.ui.common.AnalysisCellVisualState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -48,8 +49,24 @@ class GamePresentationComponentsTest {
         assertEquals(0.40f, finalGameFieldMetrics(4, compactHeight = false).attemptsWeight)
         assertEquals(0.37f, finalGameFieldMetrics(6, compactHeight = false).attemptsWeight)
         assertEquals(0.32f, finalGameFieldMetrics(8, compactHeight = false).attemptsWeight)
-        assertEquals(0.28f, finalGameFieldMetrics(10, compactHeight = false).attemptsWeight)
-        assertEquals(0.72f, finalGameFieldMetrics(10, compactHeight = false).matrixWeight)
+        assertEquals(0.36f, finalGameFieldMetrics(10, compactHeight = false).attemptsWeight)
+        assertEquals(0.64f, finalGameFieldMetrics(10, compactHeight = false).matrixWeight)
+    }
+
+    @Test
+    fun `analysis accessibility states use localized catalog keys`() {
+        assertEquals(
+            "game.race.matrix.state.locked_no",
+            analysisCellStateText(AnalysisCellVisualState.LOCKED_NO) { it },
+        )
+        assertEquals(
+            "game.race.matrix.state.locked_yes",
+            analysisCellStateText(AnalysisCellVisualState.LOCKED_EXACT) { it },
+        )
+        assertEquals(
+            "game.race.matrix.state.disabled",
+            analysisCellStateText(AnalysisCellVisualState.DISABLED) { it },
+        )
     }
 
     @Test

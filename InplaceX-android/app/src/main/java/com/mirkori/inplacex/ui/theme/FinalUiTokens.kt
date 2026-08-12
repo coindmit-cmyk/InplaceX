@@ -143,12 +143,12 @@ fun finalGameFieldMetrics(
         )
 
         else -> GameFieldLayoutMetrics(
-            attemptsWeight = 0.28f,
-            matrixWeight = 0.72f,
+            attemptsWeight = 0.36f,
+            matrixWeight = 0.64f,
             matrixGap = 1.dp,
             matrixRadius = 5.dp,
             matrixDigitSize = 9.5.sp,
-            attemptTextSize = 11.5.sp,
+            attemptTextSize = 10.sp,
             attemptRowHeight = 26.dp,
             inputSlotHeight = 32.dp,
             inputSlotGap = 2.dp,

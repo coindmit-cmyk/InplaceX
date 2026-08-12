@@ -135,6 +135,7 @@ enum class AnalysisCellVisualState {
 fun WarmAnalysisCell(
     digit: Char,
     state: AnalysisCellVisualState,
+    stateDescription: String,
     enabled: Boolean,
     contentDescription: String,
     digitSize: TextUnit,
@@ -152,7 +153,7 @@ fun WarmAnalysisCell(
             .border(visual.borderWidth, visual.border, shape)
             .semantics {
                 role = Role.Button
-                stateDescription = state.name
+                this.stateDescription = stateDescription
                 this.contentDescription = contentDescription
             }
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),

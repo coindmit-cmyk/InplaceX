@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -442,6 +443,7 @@ fun GameAnalysisPanel(
     onCellClick: (digit: Char, position: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalAppStrings.current
     BoxWithConstraints(modifier = modifier.padding(6.dp)) {
         val columns = uiState.parameters.codeLength
         val verticalGap = metrics.matrixGap
@@ -460,11 +462,17 @@ fun GameAnalysisPanel(
                     repeat(columns) { position ->
                         val symbol = digit.digitToChar()
                         val editable = enabled && analysisCellEditable(uiState, symbol, position)
+                        val cellState = analysisCellStateFor(uiState, symbol, position, enabled)
+                        val stateDescription = analysisCellStateText(cellState, strings::text)
                         WarmAnalysisCell(
                             digit = symbol,
-                            state = analysisCellStateFor(uiState, symbol, position, enabled),
+                            state = cellState,
+                            stateDescription = stateDescription,
                             enabled = editable,
-                            contentDescription = "$symbol ${position + 1}",
+                            contentDescription = strings.text("game.race.matrix.cell")
+                                .replace("{digit}", symbol.toString())
+                                .replace("{position}", (position + 1).toString())
+                                .replace("{state}", stateDescription),
                             digitSize = metrics.matrixDigitSize,
                             radius = metrics.matrixRadius,
                             onClick = { onCellClick(symbol, position) },
@@ -640,7 +648,7 @@ private fun CompactHelperButton(
                 },
                 shape = shape,
             )
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -885,6 +893,19 @@ internal fun parseAttemptLine(line: String): Pair<String, Int> {
     val guess = line.substring(0, separator).trim()
     val score = line.substring(separator + 2).trim().toIntOrNull() ?: 0
     return guess to score
+}
+
+internal fun analysisCellStateText(
+    state: AnalysisCellVisualState,
+    text: (String) -> String,
+): String = when (state) {
+    AnalysisCellVisualState.EMPTY -> text("game.race.matrix.state.empty")
+    AnalysisCellVisualState.NO -> text("game.race.matrix.state.no")
+    AnalysisCellVisualState.MAYBE -> text("game.race.matrix.state.maybe")
+    AnalysisCellVisualState.EXACT -> text("game.race.matrix.state.yes")
+    AnalysisCellVisualState.LOCKED_NO -> text("game.race.matrix.state.locked_no")
+    AnalysisCellVisualState.LOCKED_EXACT -> text("game.race.matrix.state.locked_yes")
+    AnalysisCellVisualState.DISABLED -> text("game.race.matrix.state.disabled")
 }
 
 internal fun isInputEnabled(phase: MatchPhase): Boolean = phase == MatchPhase.ACTIVE
