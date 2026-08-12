@@ -1,0 +1,50 @@
+{
+  "precedence": [
+    "00_OWNER_DECISIONS.md",
+    "01_UX_CONTRACT.md",
+    "02_VISUAL_SYSTEM.md and code tokens",
+    "current code and tests",
+    "technical layout diagrams",
+    "approved mood only image"
+  ],
+  "references": [
+    {
+      "file": "current_home_layout.jpg",
+      "role": "current layout and behavior truth"
+    },
+    {
+      "file": "current_gameplay_layout.jpg",
+      "role": "current gameplay composition truth"
+    },
+    {
+      "file": "current_company_layout.jpg",
+      "role": "current company composition truth"
+    },
+    {
+      "file": "current_invites_layout.jpg",
+      "role": "current invites flow/layout truth"
+    },
+    {
+      "file": "approved_mood_only.png",
+      "role": "approved mood and material direction only; not dimensions"
+    },
+    {
+      "file": "gameplay_4_digits.png",
+      "role": "target technical geometry for 4 digits"
+    },
+    {
+      "file": "gameplay_8_digits.png",
+      "role": "target technical geometry for 8 digits"
+    },
+    {
+      "file": "component_states.png",
+      "role": "target component states and palette"
+    }
+  ],
+  "rejected": [
+    "previous generated brown/beige specification poster",
+    "full blue/dark gameplay background",
+    "vertical attempts/matrix layout",
+    "per-digit attempt cards"
+  ]
+}
