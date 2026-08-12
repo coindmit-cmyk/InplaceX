@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The standalone Telegram catalog can now consume the active validated Mirkori
+  Platform catalog directly, selecting the latest stable Android release and
+  falling back to beta. Website, update API, asset links, and Telegram now use
+  one release identity, APK, and SHA-256 instead of separate publications.
+
 - Debug Android builds now reuse missing release provider identifiers for
   native Google testing and safe Yandex demo placements. Yandex is temporarily
   eligible in every resolved market until a separate international provider is

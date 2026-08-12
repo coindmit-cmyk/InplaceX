@@ -4,10 +4,148 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bot import TelegramApi, is_chat_allowed, load_catalog, verify_release_file
+from bot import (
+    TelegramApi,
+    is_chat_allowed,
+    load_catalog,
+    load_platform_catalog,
+    verify_release_file,
+)
 
 
 class CatalogTest(unittest.TestCase):
+    def test_platform_catalog_prefers_latest_stable_then_beta_release(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            releases = []
+            for channel, version_code in (("beta", 9), ("stable", 3), ("stable", 5)):
+                relative = Path("inplacex") / channel / str(version_code) / f"InplaceX-{version_code}.apk"
+                apk = root / relative
+                apk.parent.mkdir(parents=True, exist_ok=True)
+                apk.write_bytes(f"verified-{channel}-{version_code}".encode())
+                releases.append(
+                    {
+                        "id": f"inplacex-{channel}-{version_code}",
+                        "platform": "android",
+                        "channel": channel,
+                        "versionName": f"1.0.{version_code}",
+                        "versionCode": version_code,
+                        "fileName": apk.name,
+                        "relativePath": relative.as_posix(),
+                        "sizeBytes": apk.stat().st_size,
+                        "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+                        "changelog": f"Release {version_code}",
+                    },
+                )
+            catalog = root / "catalog.json"
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "games": [
+                            {
+                                "id": "inplacex",
+                                "slug": "inplacex",
+                                "displayName": "InplaceX",
+                                "description": "Logic game",
+                                "releases": releases,
+                            },
+                        ],
+                    },
+                ) + (" " * (300 * 1024)),
+                encoding="utf-8",
+            )
+
+            release = load_platform_catalog(catalog, root)[0]
+
+            self.assertEqual("1.0.5", release.version)
+            self.assertEqual(
+                "https://games.dmit.life/downloads/inplacex-stable-5/InplaceX-5.apk",
+                release.download_url,
+            )
+
+    def test_platform_catalog_uses_beta_when_stable_is_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            apk = root / "inplacex" / "beta" / "InplaceX.apk"
+            apk.parent.mkdir(parents=True)
+            apk.write_bytes(b"verified-beta")
+            catalog = root / "catalog.json"
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "games": [
+                            {
+                                "id": "inplacex",
+                                "displayName": "И" * 120,
+                                "releases": [
+                                    {
+                                        "id": "i" * 64,
+                                        "platform": "android",
+                                        "channel": "beta",
+                                        "versionName": "v" * 64,
+                                        "versionCode": 1,
+                                        "fileName": apk.name,
+                                        "relativePath": apk.relative_to(root).as_posix(),
+                                        "sizeBytes": apk.stat().st_size,
+                                        "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+                                        "changelog": "Б" * 4000,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ),
+                encoding="utf-8",
+            )
+
+            release = load_platform_catalog(catalog, root)[0]
+
+            self.assertEqual("v" * 64, release.version)
+            self.assertEqual("Б" * 4000, release.notes)
+            self.assertEqual(apk, release.apk_path)
+
+    def test_platform_catalog_rejects_artifact_outside_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = root / "artifacts"
+            artifacts.mkdir()
+            escaped_apk = root / "escaped.apk"
+            escaped_apk.write_bytes(b"must-not-be-readable")
+            catalog = root / "catalog.json"
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "games": [
+                            {
+                                "id": "inplacex",
+                                "displayName": "InplaceX",
+                                "releases": [
+                                    {
+                                        "id": "inplacex-beta-escape",
+                                        "platform": "android",
+                                        "channel": "beta",
+                                        "versionName": "1.0",
+                                        "versionCode": 1,
+                                        "fileName": escaped_apk.name,
+                                        "relativePath": "../escaped.apk",
+                                        "sizeBytes": escaped_apk.stat().st_size,
+                                        "sha256": hashlib.sha256(escaped_apk.read_bytes()).hexdigest(),
+                                        "changelog": "Beta",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "escapes artifact root"):
+                load_platform_catalog(catalog, artifacts)
+
     def test_valid_catalog_requires_matching_apk_hash(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
