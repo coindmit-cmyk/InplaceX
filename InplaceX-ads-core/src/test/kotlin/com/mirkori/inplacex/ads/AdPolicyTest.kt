@@ -120,7 +120,7 @@ class AdPolicyTest {
     }
 
     @Test
-    fun `routing enables Yandex only in Russia and fails closed elsewhere`() {
+    fun `routing uses Yandex in every market until another provider is available`() {
         val providers = listOf(
             AdProviderId.COMPANY_ADMOB,
             AdProviderId.OWNER_YANDEX,
@@ -129,7 +129,7 @@ class AdPolicyTest {
         val request = AdRequest(AdPlacement.GAME_BANNER, AdFormat.BANNER)
 
         assertEquals(
-            emptyList<AdProviderId>(),
+            listOf(AdProviderId.OWNER_YANDEX),
             OwnerFirstAdRoutingPolicy.plan(
                 AdRuntimeContext(AdMarket.GLOBAL, providers),
                 request,
@@ -144,11 +144,12 @@ class AdPolicyTest {
                 request,
             ).providers,
         )
-        assertTrue(
+        assertEquals(
+            listOf(AdProviderId.OWNER_YANDEX),
             OwnerFirstAdRoutingPolicy.plan(
                 AdRuntimeContext(AdMarket.UNKNOWN, providers),
                 request,
-            ).providers.isEmpty(),
+            ).providers,
         )
     }
 

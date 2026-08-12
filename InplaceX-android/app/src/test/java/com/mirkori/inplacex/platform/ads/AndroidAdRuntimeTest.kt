@@ -56,7 +56,7 @@ class AndroidAdRuntimeTest {
     }
 
     @Test
-    fun `global market fails closed until a non-Russian provider is configured`() = runBlocking {
+    fun `global market temporarily uses Yandex until another provider is configured`() = runBlocking {
         val owner = FakeProvider(AdProviderId.OWNER_YANDEX, AdPresentationResult.Completed)
         val runtime = AndroidAdRuntime(
             router = AdRouter(listOf(owner)),
@@ -65,14 +65,14 @@ class AndroidAdRuntimeTest {
         )
         val request = AdRequest(AdPlacement.GAME_BANNER, AdFormat.BANNER)
 
-        assertEquals(emptyList<Any>(), runtime.preload(request))
-        assertEquals(AdPresentationResult.ProviderUnavailable, runtime.show(request).result)
-        assertEquals(0, owner.preloadCalls)
-        assertEquals(0, owner.showCalls)
+        assertEquals(listOf(AdProviderId.OWNER_YANDEX), runtime.preload(request).map { it.providerId })
+        assertEquals(AdPresentationResult.Completed, runtime.show(request).result)
+        assertEquals(1, owner.preloadCalls)
+        assertEquals(1, owner.showCalls)
     }
 
     @Test
-    fun `unknown market fails closed without provider calls`() = runBlocking {
+    fun `unknown market temporarily uses Yandex while market detection recovers`() = runBlocking {
         val owner = FakeProvider(AdProviderId.OWNER_YANDEX, AdPresentationResult.Completed)
         val runtime = AndroidAdRuntime(
             router = AdRouter(listOf(owner)),
@@ -84,10 +84,10 @@ class AndroidAdRuntimeTest {
             format = AdFormat.BANNER,
         )
 
-        assertEquals(emptyList<Any>(), runtime.preload(request))
-        assertEquals(AdPresentationResult.ProviderUnavailable, runtime.show(request).result)
-        assertEquals(0, owner.preloadCalls)
-        assertEquals(0, owner.showCalls)
+        assertEquals(listOf(AdProviderId.OWNER_YANDEX), runtime.preload(request).map { it.providerId })
+        assertEquals(AdPresentationResult.Completed, runtime.show(request).result)
+        assertEquals(1, owner.preloadCalls)
+        assertEquals(1, owner.showCalls)
     }
 
     @Test

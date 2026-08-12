@@ -172,10 +172,9 @@ This is intentionally separate from permanent hint inventory.
   `RUSSIA`, `GLOBAL`, or `UNKNOWN`; Android must not derive ad routing from the
   store account, device locale, or a raw IP stored on the client
 - raw IP must not be returned to Android, persisted for ad routing, or logged
-- `UNKNOWN` fails closed without an ad request
-- Yandex owner inventory is eligible only in `RUSSIA`
-- `GLOBAL` and `UNKNOWN` return an empty route until a non-Russian provider is
-  implemented and approved
+- Yandex owner inventory is temporarily eligible in `RUSSIA`, `GLOBAL`, and
+  `UNKNOWN` until a non-Russian provider is implemented and approved
+- privacy consent and configured placements remain mandatory in every market
 - provider availability is a separate Android/runtime capability filter so a
   build or device can exclude an SDK without changing beneficiary ownership
 - providers may preload concurrently only after the player has made an
@@ -206,9 +205,10 @@ This is intentionally separate from permanent hint inventory.
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
 - release composes `MirkoriBillingService`; absent/invalid Platform commerce
   configuration fails closed through `UnavailableBillingService`
-- Yandex Mobile Ads SDK 8 is the active owner adapter for banner and rewarded
-  placements in Russia; post-match interstitial is enabled only when its
-  optional placement id is present
+- Yandex Mobile Ads SDK 8 is the temporary active owner adapter for banner and
+  rewarded placements in every market until another provider is connected;
+  post-match interstitial is enabled only when its optional placement id is
+  present
 - Yandex automatic initialization is disabled; Android passes the persisted
   consent choice and initializes the SDK manually before preload
 - rewarded completion is accepted only from `onRewarded`; dismissal without
