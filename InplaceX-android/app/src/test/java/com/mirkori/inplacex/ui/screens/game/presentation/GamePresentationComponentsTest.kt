@@ -101,7 +101,7 @@ class GamePresentationComponentsTest {
 
     @Test
     fun `stacked attempts panel stays within compact height range`() {
-        assertEquals(120.dp, stackedAttemptsPanelHeight(400.dp))
+        assertEquals(136.dp, stackedAttemptsPanelHeight(400.dp))
         assertEquals(144.dp, stackedAttemptsPanelHeight(600.dp))
         assertEquals(150.dp, stackedAttemptsPanelHeight(800.dp))
     }

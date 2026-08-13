@@ -303,7 +303,7 @@ private fun GameWorkBoard(
 internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
 
 internal fun stackedAttemptsPanelHeight(availableHeight: androidx.compose.ui.unit.Dp) =
-    (availableHeight * 0.24f).coerceIn(120.dp, 150.dp)
+    (availableHeight * 0.24f).coerceIn(136.dp, 150.dp)
 
 @Composable
 private fun PresentationCard(
