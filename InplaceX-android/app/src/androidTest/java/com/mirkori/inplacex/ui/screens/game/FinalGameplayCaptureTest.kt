@@ -46,6 +46,7 @@ import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assume.assumeTrue
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
@@ -109,6 +110,19 @@ class FinalGameplayCaptureTest {
         }
         composeRule.onNodeWithTag("game-analysis-9-$codeLength").assertIsDisplayed()
         composeRule.onNodeWithTag("game-guess-slot-$codeLength").assertIsDisplayed()
+        val attemptsBounds = composeRule.onNodeWithTag("game-attempts-panel")
+            .fetchSemanticsNode().boundsInRoot
+        val matrixBounds = composeRule.onNodeWithTag("game-analysis-panel")
+            .fetchSemanticsNode().boundsInRoot
+        if (codeLength > 6) {
+            assertTrue("Attempts must be above the matrix", attemptsBounds.bottom <= matrixBounds.top)
+            assertTrue(
+                "Stacked panels must use the same available width",
+                kotlin.math.abs(attemptsBounds.width - matrixBounds.width) <= 2f,
+            )
+        } else {
+            assertTrue("Attempts must stay left of the matrix", attemptsBounds.right <= matrixBounds.left)
+        }
         val output = File(
             requireNotNull(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null)),
             "captures/$captureId.png",

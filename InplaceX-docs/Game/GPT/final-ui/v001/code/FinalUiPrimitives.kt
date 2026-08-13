@@ -231,14 +231,15 @@ fun WarmAnalysisCell(
     contentDescription: String,
     digitSize: TextUnit,
     radius: Dp,
+    preserveSquare: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val visual = analysisCellVisual(state)
     val shape = RoundedCornerShape(radius)
+    val sizedModifier = if (preserveSquare) modifier.aspectRatio(1f) else modifier
     Box(
-        modifier = modifier
-            .aspectRatio(1f)
+        modifier = sizedModifier
             .clip(shape)
             .background(visual.fill)
             .border(visual.borderWidth, visual.border, shape)

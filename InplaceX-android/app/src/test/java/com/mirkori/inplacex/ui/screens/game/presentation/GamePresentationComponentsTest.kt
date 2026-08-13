@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.game.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.engine.GuessValidationReason
 import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
@@ -85,12 +86,32 @@ class GamePresentationComponentsTest {
     }
 
     @Test
-    fun `gameplay metrics preserve approved horizontal proportions through ten digits`() {
+    fun `gameplay metrics preserve approved horizontal proportions through six digits`() {
         assertEquals(0.40f, finalGameFieldMetrics(4, compactHeight = false).attemptsWeight)
         assertEquals(0.37f, finalGameFieldMetrics(6, compactHeight = false).attemptsWeight)
-        assertEquals(0.32f, finalGameFieldMetrics(8, compactHeight = false).attemptsWeight)
-        assertEquals(0.36f, finalGameFieldMetrics(10, compactHeight = false).attemptsWeight)
-        assertEquals(0.64f, finalGameFieldMetrics(10, compactHeight = false).matrixWeight)
+    }
+
+    @Test
+    fun `work board stacks attempts above matrix after six digits`() {
+        assertFalse(shouldUseStackedGameBoard(4))
+        assertFalse(shouldUseStackedGameBoard(6))
+        assertTrue(shouldUseStackedGameBoard(7))
+        assertTrue(shouldUseStackedGameBoard(10))
+    }
+
+    @Test
+    fun `stacked attempts panel stays within compact height range`() {
+        assertEquals(120.dp, stackedAttemptsPanelHeight(400.dp))
+        assertEquals(144.dp, stackedAttemptsPanelHeight(600.dp))
+        assertEquals(150.dp, stackedAttemptsPanelHeight(800.dp))
+    }
+
+    @Test
+    fun `stacked attempts keep the latest three complete rows visible`() {
+        assertEquals(0, latestAttemptWindowStart(1))
+        assertEquals(0, latestAttemptWindowStart(3))
+        assertEquals(1, latestAttemptWindowStart(4))
+        assertEquals(7, latestAttemptWindowStart(10))
     }
 
     @Test

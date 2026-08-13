@@ -143,36 +143,17 @@ fun GamePresentationLayout(
                 GameTopPanel(uiState = uiState)
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
-            ) {
-                PresentationCard(
-                    modifier = Modifier
-                        .weight(metrics.attemptsWeight)
-                        .fillMaxHeight(),
-                ) {
-                    GameAttemptsPanel(uiState = uiState, metrics = metrics)
-                }
-                PresentationCard(
-                    modifier = Modifier
-                        .weight(metrics.matrixWeight)
-                        .fillMaxHeight(),
-                ) {
-                    GameAnalysisPanel(
-                        uiState = uiState,
-                        metrics = metrics,
-                        enabled = active,
-                        onCellClick = { digit, position ->
-                            feedback.playSound(AppSoundCue.TAP)
-                            feedback.performHaptic(AppHapticCue.SELECTION)
-                            callbacks.onAnalysisCellPressed(digit, position)
-                        },
-                    )
-                }
-            }
+            GameWorkBoard(
+                uiState = uiState,
+                metrics = metrics,
+                enabled = active,
+                onCellClick = { digit, position ->
+                    feedback.playSound(AppSoundCue.TAP)
+                    feedback.performHaptic(AppHapticCue.SELECTION)
+                    callbacks.onAnalysisCellPressed(digit, position)
+                },
+                modifier = Modifier.weight(1f),
+            )
 
             if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
                 PresentationCard(modifier = Modifier.height(metrics.helpersHeight)) {
@@ -243,6 +224,86 @@ fun GamePresentationLayout(
 
     GameDialogs(uiState = uiState, callbacks = callbacks)
 }
+
+@Composable
+private fun GameWorkBoard(
+    uiState: GameFieldUiState,
+    metrics: GameFieldLayoutMetrics,
+    enabled: Boolean,
+    onCellClick: (digit: Char, position: Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
+
+    if (useStackedBoard) {
+        BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+            val attemptsHeight = stackedAttemptsPanelHeight(maxHeight)
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
+            ) {
+                PresentationCard(
+                    modifier = Modifier
+                        .height(attemptsHeight)
+                        .testTag("game-attempts-panel"),
+                ) {
+                    GameAttemptsPanel(
+                        uiState = uiState,
+                        metrics = metrics,
+                        compactEmptyState = true,
+                    )
+                }
+                PresentationCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("game-analysis-panel"),
+                ) {
+                    GameAnalysisPanel(
+                        uiState = uiState,
+                        metrics = metrics,
+                        enabled = enabled,
+                        stretchCellsToPanel = true,
+                        onCellClick = onCellClick,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
+        ) {
+            PresentationCard(
+                modifier = Modifier
+                    .weight(metrics.attemptsWeight)
+                    .fillMaxHeight()
+                    .testTag("game-attempts-panel"),
+            ) {
+                GameAttemptsPanel(uiState = uiState, metrics = metrics)
+            }
+            PresentationCard(
+                modifier = Modifier
+                    .weight(metrics.matrixWeight)
+                    .fillMaxHeight()
+                    .testTag("game-analysis-panel"),
+            ) {
+                GameAnalysisPanel(
+                    uiState = uiState,
+                    metrics = metrics,
+                    enabled = enabled,
+                    onCellClick = onCellClick,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
+
+internal fun stackedAttemptsPanelHeight(availableHeight: androidx.compose.ui.unit.Dp) =
+    (availableHeight * 0.24f).coerceIn(120.dp, 150.dp)
 
 @Composable
 private fun PresentationCard(
@@ -381,12 +442,14 @@ private fun GameInfoMetric(label: String, value: String, modifier: Modifier) {
 fun GameAttemptsPanel(
     uiState: GameFieldUiState,
     metrics: GameFieldLayoutMetrics,
+    compactEmptyState: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     GameAttemptList(
         attempts = uiState.match.attempts.map { "${it.guess} -> ${it.score}" },
         textSize = metrics.attemptTextSize,
         rowHeight = metrics.attemptRowHeight,
+        compactEmptyState = compactEmptyState,
         modifier = modifier,
     )
 }
@@ -396,14 +459,20 @@ internal fun GameAttemptList(
     attempts: List<String>,
     textSize: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.bodySmall.fontSize,
     rowHeight: androidx.compose.ui.unit.Dp = 30.dp,
+    compactEmptyState: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
     val listState = rememberLazyListState()
 
-    LaunchedEffect(attempts.size) {
+    LaunchedEffect(attempts.size, compactEmptyState) {
         if (attempts.isNotEmpty()) {
-            listState.animateScrollToItem(attempts.lastIndex)
+            val targetIndex = if (compactEmptyState) {
+                latestAttemptWindowStart(attempts.size)
+            } else {
+                attempts.lastIndex
+            }
+            listState.animateScrollToItem(targetIndex)
         }
     }
 
@@ -413,7 +482,16 @@ internal fun GameAttemptList(
         HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.46f))
         Spacer(Modifier.height(3.dp))
         if (attempts.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = if (compactEmptyState) {
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                } else {
+                    Modifier.fillMaxSize()
+                },
+                contentAlignment = if (compactEmptyState) Alignment.TopStart else Alignment.Center,
+            ) {
                 Text(
                     text = strings.text("game.attempts.empty"),
                     style = MaterialTheme.typography.bodySmall,
@@ -426,6 +504,9 @@ internal fun GameAttemptList(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
+                contentPadding = PaddingValues(
+                    bottom = if (compactEmptyState) rowHeight else 0.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 itemsIndexed(attempts) { index, line ->
@@ -447,12 +528,16 @@ internal fun GameAttemptList(
     }
 }
 
+internal fun latestAttemptWindowStart(attemptCount: Int, visibleRows: Int = 3): Int =
+    (attemptCount - visibleRows).coerceAtLeast(0)
+
 @Composable
 fun GameAnalysisPanel(
     uiState: GameFieldUiState,
     metrics: GameFieldLayoutMetrics,
     enabled: Boolean,
     onCellClick: (digit: Char, position: Int) -> Unit,
+    stretchCellsToPanel: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
@@ -460,13 +545,15 @@ fun GameAnalysisPanel(
         val columns = uiState.parameters.codeLength
         val verticalGap = metrics.matrixGap
         val horizontalGap = metrics.matrixGap
+        val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
+        val cellHeight = (maxHeight - verticalGap * 9) / 10
         val cellSize = minOf(
-            (maxWidth - horizontalGap * (columns - 1)) / columns,
-            (maxHeight - verticalGap * 9) / 10,
+            cellWidth,
+            cellHeight,
         )
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = Arrangement.spacedBy(verticalGap),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             repeat(10) { digit ->
@@ -487,9 +574,15 @@ fun GameAnalysisPanel(
                                 .replace("{state}", stateDescription),
                             digitSize = metrics.matrixDigitSize,
                             radius = metrics.matrixRadius,
+                            preserveSquare = !stretchCellsToPanel,
                             onClick = { onCellClick(symbol, position) },
-                            modifier = Modifier
-                                .size(cellSize)
+                            modifier = (if (stretchCellsToPanel) {
+                                Modifier
+                                    .width(cellWidth)
+                                    .height(cellHeight)
+                            } else {
+                                Modifier.size(cellSize)
+                            })
                                 .testTag("game-analysis-$digit-${position + 1}"),
                         )
                     }

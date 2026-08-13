@@ -6,7 +6,7 @@
 
 - фон комнаты заменён или закрыт общей непрозрачной поверхностью;
 - попытки и матрица не видны одновременно;
-- рабочая зона стала vertical stack/tabbed;
+- рабочая зона 4–6 цифр стала vertical stack/tabbed или 7–10 цифр осталась в тесном left/right режиме;
 - строка попытки разбита на отдельные digit cards;
 - на 8 цифрах есть horizontal scroll, clipping или наложение;
 - production online length 9–10 перестал работать;
@@ -45,6 +45,9 @@
 Дополнительно:
 
 - latest attempt visible;
+- 6 digits: attempts слева, matrix справа;
+- 7 digits: attempts сверху, matrix снизу;
+- 10 digits: matrix использует всю ширину без horizontal scroll;
 - NO/MAYBE/YES selected;
 - manual marks + locked proven facts;
 - hints enabled/disabled;
