@@ -25,12 +25,12 @@ InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/FinalUiPrimiti
 
 Изменения по функциям:
 
-- `GamePresentationLayout`: использовать adaptive metrics и единый 4dp spacing.
+- `GamePresentationLayout`: использовать breakpoint `codeLength > 6` и единый 4dp spacing; 4–6 остаются side-by-side, 7–10 становятся stacked.
 - `PresentationCard`: заменить реализацией `WarmPanel` или удалить wrapper, где он создаёт лишнюю вложенность.
 - `GameTopPanel`: заменить nested `GameInfoChip` surfaces на info strip + dividers.
 - `GameAttemptsPanel`: передавать structured attempts; формат `guess → score`.
 - `GameAttemptList`: использовать `CompactAttemptRow`, сохранить auto-scroll и tags.
-- `GameAnalysisPanel`: использовать adaptive weights/gaps/cell styles; digit остаётся в cell.
+- `GameAnalysisPanel`: для stacked-режима считать ширину и высоту cell независимо; digit остаётся в cell.
 - `GameHelpersPanel`: compact counters.
 - `GameToolsPanel`: segmented control.
 - `GameInputPanel`: adaptive slot/keypad metrics и final buttons.

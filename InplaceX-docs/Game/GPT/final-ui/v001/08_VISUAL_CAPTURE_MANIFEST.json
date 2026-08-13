@@ -83,6 +83,16 @@
       "required": true
     },
     {
+      "id": "game_7_breakpoint_filled",
+      "screen": "game",
+      "code_length": 7,
+      "state": "filled",
+      "ad": "none",
+      "locale": "ru",
+      "viewport": "owner_like",
+      "required": true
+    },
+    {
       "id": "game_8_empty",
       "screen": "game",
       "code_length": 8,

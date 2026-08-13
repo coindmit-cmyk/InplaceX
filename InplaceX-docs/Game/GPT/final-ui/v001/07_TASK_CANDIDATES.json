@@ -28,9 +28,9 @@
         "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/**"
       ],
       "acceptance_criteria": [
-        "Attempts remain left and matrix right.",
+        "Attempts remain left and matrix right for 4-6 digits; for 7-10 digits attempts are above the full-width matrix.",
         "Attempt rows render guess → score without per-digit cards.",
-        "4, 6, 8 and 10 digit layouts have no clipping or horizontal scroll.",
+        "4, 6, 7, 8 and 10 digit layouts have no clipping or horizontal scroll.",
         "Existing state, callbacks, semantics and test tags are preserved.",
         "Owner receives required gameplay screenshots before next task."
       ],

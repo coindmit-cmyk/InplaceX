@@ -56,6 +56,7 @@ WarmAnalysisCell(
     state: AnalysisCellVisualState,
     enabled: Boolean,
     contentDescription: String,
+    preserveSquare: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 )
@@ -71,7 +72,7 @@ States:
 - LOCKED_EXACT
 - DISABLED
 
-Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight.
+Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight. `preserveSquare=false` разрешён только для stacked-матрицы 7–10 цифр, где ширина и высота задаются независимо.
 
 ## 5. `GameInfoStrip`
 

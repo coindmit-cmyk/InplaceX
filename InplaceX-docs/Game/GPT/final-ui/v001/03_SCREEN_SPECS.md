@@ -54,8 +54,9 @@
 ### Work board
 
 - Outer gap 4dp.
-- Left/right weights из UX contract.
-- Каждая side panel использует `WarmPanel`, radius 16–18dp.
+- Для 4–6 цифр используются left/right weights из UX contract.
+- Для 7–10 цифр попытки располагаются сверху (120–150dp), матрица снизу и занимает остальную высоту.
+- Каждая panel использует `WarmPanel`, radius 16–18dp.
 - Titles 15sp Semibold.
 
 ### Attempts
@@ -65,10 +66,12 @@
 - Horizontal padding 6dp; vertical 3dp.
 - Latest row: `Primary` 10% fill + 1dp primary border.
 - Остальные: transparent; optional 1dp divider.
+- В stacked-режиме список показывает последние 3–4 строки, остаётся прокручиваемым и автоматически доводит новую попытку в видимую область.
 
 ### Matrix
 
-- Заполняет доступную side panel по min(width constraint, height constraint).
+- Для 4–6 цифр сохраняет квадратные ячейки по min(width constraint, height constraint).
+- Для 7–10 цифр ширина и высота ячейки рассчитываются независимо; матрица заполняет практически всю оставшуюся панель.
 - Gap: 3dp (4), 2.5dp (5–6), 2dp (7–8), 1dp (9–10).
 - Cell radius: 6dp до 6 колонок, 5dp от 7.
 - Строки 0–9, колонки positions.

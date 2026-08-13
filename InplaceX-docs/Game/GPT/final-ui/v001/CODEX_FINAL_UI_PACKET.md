@@ -59,7 +59,7 @@ Base: `develop@5f37f4e138f96cdf70c489237b28137a351b3892`
 
 1. Верхний shell HUD.
 2. Компактная статусная панель матча.
-3. Главная рабочая зона: попытки слева, матрица справа.
+3. Главная рабочая зона: попытки и матрица располагаются адаптивно по длине кода.
 4. Панель подсказок/бустов, если разрешены режимом.
 5. Сегмент инструментов `Нет / Возм / Точн / PRO`.
 6. Панель комбинации, цифровая клавиатура, сброс и подтверждение.
@@ -67,14 +67,13 @@ Base: `develop@5f37f4e138f96cdf70c489237b28137a351b3892`
 
 ### 4.2 Адаптивные пропорции рабочей зоны
 
-| Длина кода | Попытки | Матрица | Режим |
-|---:|---:|---:|---|
-| 4 | 40% | 60% | normal |
-| 5–6 | 37% | 63% | dense |
-| 7–8 | 32% | 68% | compact |
-| 9–10 | 28% | 72% | ultra-compact |
+| Длина кода | Компоновка | Попытки | Матрица |
+|---:|---|---:|---:|
+| 4 | слева / справа | 40% ширины | 60% ширины |
+| 5–6 | слева / справа | 37% ширины | 63% ширины |
+| 7–10 | сверху / снизу | 120–150dp, около 24% высоты | вся оставшаяся высота |
 
-Разделение остаётся горизонтальным при любой длине.
+Breakpoint обязателен: `codeLength > 6`. Для 7–10 цифр попытки находятся сверху, матрица снизу и получает всю ширину рабочей зоны.
 
 ### 4.3 История попыток
 
@@ -83,12 +82,14 @@ Base: `develop@5f37f4e138f96cdf70c489237b28137a351b3892`
 - Номер попытки не показывается, если без него понятен порядок списка.
 - Последняя попытка имеет мягкую подсветку и автоматически прокручивается в видимую область.
 - Пустое состояние компактное; оно не должно визуально доминировать над матрицей.
+- В вертикальном режиме видны последние 3–4 строки, список прокручивается, а пустое состояние выравнивается сверху.
 - Score не раскладывается по позициям и не превращается в цветные маркеры.
 
 ### 4.4 Матрица
 
 - 10 строк: цифры 0–9.
 - Количество колонок равно `codeLength`.
+- В вертикальном режиме ширина и высота ячейки считаются независимо, чтобы матрица заполняла оставшуюся панель.
 - Каждая ячейка содержит свою цифру.
 - Позиция определяется колонкой; отдельный высокий header не нужен.
 - Состояние кодируется фоном, цветом рамки и насыщенностью/весом цифры, а не только цветом.
@@ -390,8 +391,9 @@ UI-pass не меняет:
 ### Work board
 
 - Outer gap 4dp.
-- Left/right weights из UX contract.
-- Каждая side panel использует `WarmPanel`, radius 16–18dp.
+- Для 4–6 цифр используются left/right weights из UX contract.
+- Для 7–10 цифр попытки располагаются сверху (120–150dp), матрица снизу и занимает остальную высоту.
+- Каждая panel использует `WarmPanel`, radius 16–18dp.
 - Titles 15sp Semibold.
 
 ### Attempts
@@ -401,10 +403,12 @@ UI-pass не меняет:
 - Horizontal padding 6dp; vertical 3dp.
 - Latest row: `Primary` 10% fill + 1dp primary border.
 - Остальные: transparent; optional 1dp divider.
+- В stacked-режиме список показывает последние 3–4 строки, остаётся прокручиваемым и автоматически доводит новую попытку в видимую область.
 
 ### Matrix
 
-- Заполняет доступную side panel по min(width constraint, height constraint).
+- Для 4–6 цифр сохраняет квадратные ячейки по min(width constraint, height constraint).
+- Для 7–10 цифр ширина и высота ячейки рассчитываются независимо; матрица заполняет практически всю оставшуюся панель.
 - Gap: 3dp (4), 2.5dp (5–6), 2dp (7–8), 1dp (9–10).
 - Cell radius: 6dp до 6 колонок, 5dp от 7.
 - Строки 0–9, колонки positions.
@@ -566,6 +570,7 @@ WarmAnalysisCell(
     state: AnalysisCellVisualState,
     enabled: Boolean,
     contentDescription: String,
+    preserveSquare: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 )
@@ -581,7 +586,7 @@ States:
 - LOCKED_EXACT
 - DISABLED
 
-Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight.
+Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight. `preserveSquare=false` разрешён только для stacked-матрицы 7–10 цифр, где ширина и высота задаются независимо.
 
 ## 5. `GameInfoStrip`
 
@@ -687,12 +692,12 @@ InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/FinalUiPrimiti
 
 Изменения по функциям:
 
-- `GamePresentationLayout`: использовать adaptive metrics и единый 4dp spacing.
+- `GamePresentationLayout`: использовать breakpoint `codeLength > 6` и единый 4dp spacing; 4–6 остаются side-by-side, 7–10 становятся stacked.
 - `PresentationCard`: заменить реализацией `WarmPanel` или удалить wrapper, где он создаёт лишнюю вложенность.
 - `GameTopPanel`: заменить nested `GameInfoChip` surfaces на info strip + dividers.
 - `GameAttemptsPanel`: передавать structured attempts; формат `guess → score`.
 - `GameAttemptList`: использовать `CompactAttemptRow`, сохранить auto-scroll и tags.
-- `GameAnalysisPanel`: использовать adaptive weights/gaps/cell styles; digit остаётся в cell.
+- `GameAnalysisPanel`: для stacked-режима считать ширину и высоту cell независимо; digit остаётся в cell.
 - `GameHelpersPanel`: compact counters.
 - `GameToolsPanel`: segmented control.
 - `GameInputPanel`: adaptive slot/keypad metrics и final buttons.
@@ -818,7 +823,7 @@ src/test/.../ui/screens/social/**
 
 - фон комнаты заменён или закрыт общей непрозрачной поверхностью;
 - попытки и матрица не видны одновременно;
-- рабочая зона стала vertical stack/tabbed;
+- рабочая зона 4–6 цифр стала vertical stack/tabbed или 7–10 цифр осталась в тесном left/right режиме;
 - строка попытки разбита на отдельные digit cards;
 - на 8 цифрах есть horizontal scroll, clipping или наложение;
 - production online length 9–10 перестал работать;
@@ -857,6 +862,9 @@ src/test/.../ui/screens/social/**
 Дополнительно:
 
 - latest attempt visible;
+- 6 digits: attempts слева, matrix справа;
+- 7 digits: attempts сверху, matrix снизу;
+- 10 digits: matrix использует всю ширину без horizontal scroll;
 - NO/MAYBE/YES selected;
 - manual marks + locked proven facts;
 - hints enabled/disabled;
