@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -129,7 +130,7 @@ fun GamePresentationLayout(
                 .padding(FinalUiDimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
-            PresentationCard(modifier = Modifier.height(metrics.topPanelMinHeight)) {
+            PresentationCard(modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight)) {
                 GameTopPanel(uiState = uiState)
             }
 
@@ -935,9 +936,10 @@ fun GameInputPanel(
                 GameKeypadButton(
                     onClick = { onDigitClick(digit) },
                     enabled = enabled,
+                    visualHeight = metrics.keypadHeight,
                     modifier = Modifier
                         .weight(1f)
-                        .height(metrics.keypadHeight)
+                        .height(FinalUiDimens.MinimumTouchTarget)
                         .testTag("game-digit-$digit"),
                 ) {
                     Text(
@@ -951,7 +953,10 @@ fun GameInputPanel(
             GameKeypadButton(
                 onClick = { onEvent(GameFieldEvent.BackspacePressed) },
                 enabled = enabled,
-                modifier = Modifier.weight(1f).height(metrics.keypadHeight),
+                visualHeight = metrics.keypadHeight,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(FinalUiDimens.MinimumTouchTarget),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Backspace,
@@ -986,25 +991,33 @@ fun GameInputPanel(
 private fun GameKeypadButton(
     enabled: Boolean,
     onClick: () -> Unit,
+    visualHeight: Dp,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(7.dp)
     Box(
         modifier = modifier
-            .clip(shape)
-            .background(
-                FinalUiColors.WarmPanelTop.copy(alpha = if (enabled) 0.78f else 0.46f),
-            )
-            .border(
-                width = 1.dp,
-                color = FinalUiColors.WarmBorder.copy(alpha = if (enabled) 0.72f else 0.38f),
-                shape = shape,
-            )
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        content()
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(visualHeight)
+                .clip(shape)
+                .background(
+                    FinalUiColors.WarmPanelTop.copy(alpha = if (enabled) 0.78f else 0.46f),
+                )
+                .border(
+                    width = 1.dp,
+                    color = FinalUiColors.WarmBorder.copy(alpha = if (enabled) 0.72f else 0.38f),
+                    shape = shape,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
     }
 }
 

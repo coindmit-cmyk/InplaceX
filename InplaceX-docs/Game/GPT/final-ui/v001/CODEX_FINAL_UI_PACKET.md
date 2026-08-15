@@ -390,7 +390,7 @@ UI-pass не меняет:
 
 ### Status panel
 
-- Высота 52–56dp.
+- Минимальная высота 52–56dp; контейнер растёт при увеличенном системном font scale и не обрезает supporting/error text.
 - Одна строка: слева mode и короткий supporting/status text, справа moves + total + turn.
 - Внутренние metrics разделяются тонкими vertical dividers, а не четырьмя вложенными карточками.
 - Routine status не создаёт отдельную полноширинную строку или карточку; текст остаётся одной строкой, 11–12sp.
@@ -438,7 +438,7 @@ UI-pass не меняет:
 
 - Panel padding 6dp.
 - Slots: 34/32/30/28dp по length groups.
-- Keypad: 32/31/30/28dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
+- Keypad: визуальная поверхность 32/31/30/28dp внутри сенсорной высоты 44dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
 - Action row: 44dp.
 - Confirm weight 1.35, reset weight 1.0.
 
@@ -629,7 +629,7 @@ States:
 
 ## 9. `WarmPrimaryButton`
 
-Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive height. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
+Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive visual height внутри сенсорной высоты не менее 44dp. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
 
 - min height 44dp;
 - blue gradient;
@@ -880,6 +880,9 @@ src/test/.../ui/screens/social/**
 - 6 digits: attempts слева, matrix справа;
 - 7 digits: attempts сверху, matrix снизу;
 - 10 digits: matrix использует всю ширину без horizontal scroll;
+- 4/6/7/8/10 digits: видны matrix header, tools, combination, keypad и обе action buttons;
+- высота matrix row не превышает 27dp и не меняется от свободной высоты viewport;
+- визуально компактные клавиши keypad сохраняют сенсорную высоту не менее 44dp;
 - NO/MAYBE/YES selected;
 - manual marks + locked proven facts;
 - hints enabled/disabled;

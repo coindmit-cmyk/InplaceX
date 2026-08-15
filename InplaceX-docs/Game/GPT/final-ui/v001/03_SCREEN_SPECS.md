@@ -46,7 +46,7 @@
 
 ### Status panel
 
-- Высота 52–56dp.
+- Минимальная высота 52–56dp; контейнер растёт при увеличенном системном font scale и не обрезает supporting/error text.
 - Одна строка: слева mode и короткий supporting/status text, справа moves + total + turn.
 - Внутренние metrics разделяются тонкими vertical dividers, а не четырьмя вложенными карточками.
 - Routine status не создаёт отдельную полноширинную строку или карточку; текст остаётся одной строкой, 11–12sp.
@@ -94,7 +94,7 @@
 
 - Panel padding 6dp.
 - Slots: 34/32/30/28dp по length groups.
-- Keypad: 32/31/30/28dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
+- Keypad: визуальная поверхность 32/31/30/28dp внутри сенсорной высоты 44dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
 - Action row: 44dp.
 - Confirm weight 1.35, reset weight 1.0.
 

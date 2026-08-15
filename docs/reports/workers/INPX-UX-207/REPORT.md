@@ -18,6 +18,8 @@ contracts, ads, or purchases.
 - Rebuilt Home mode cards with quieter three-stop orange, purple, and green gradients.
 - Condensed the gameplay status strip into one visual row.
 - Replaced Material tonal keypad pills with compact warm-surface controls.
+- Preserved a 44dp keypad hit height while keeping the visible keys compact.
+- Kept the status strip height adaptive for increased system font scale.
 - Kept the approved gameplay breakpoint: 4–6 side-by-side, 7–10 stacked.
 - Restyled the shared Race/Duel opponent chooser with compact warm and primary actions.
 - Updated the canonical UI contract, token copy, consolidated packet, and checksums.
@@ -39,9 +41,9 @@ Local owner-review captures:
 
 - `D:\tmp\Dmit\inplacex-visual-polish-v1-final\oneplus-live.png`
 - `D:\tmp\Dmit\inplacex-visual-polish-v1-final\samsung-live.png`
-- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-4.png`
-- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-8.png`
-- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-10.png`
+- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-a11y-4.png`
+- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-a11y-8.png`
+- `D:\tmp\Dmit\inplacex-visual-polish-v1-final\visual-final-a11y-10.png`
 
 ## Integration request
 

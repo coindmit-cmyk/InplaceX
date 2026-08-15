@@ -126,6 +126,8 @@ class FinalGameplayCaptureTest {
         val rootBounds = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
         val firstCellBounds = composeRule.onNodeWithTag("game-analysis-0-1")
             .fetchSemanticsNode().boundsInRoot
+        val firstKeyBounds = composeRule.onNodeWithTag("game-digit-1")
+            .fetchSemanticsNode().boundsInRoot
         val density = InstrumentationRegistry.getInstrumentation()
             .targetContext.resources.displayMetrics.density
         assertTrue("Matrix must end before tools", matrixBounds.bottom <= toolsBounds.top)
@@ -133,6 +135,10 @@ class FinalGameplayCaptureTest {
         assertTrue(
             "Matrix rows must remain compact instead of stretching with the viewport",
             firstCellBounds.height <= 27.dp.value * density,
+        )
+        assertTrue(
+            "Compact keypad visuals must retain a 44dp vertical hit target",
+            firstKeyBounds.height >= 44.dp.value * density,
         )
         if (codeLength > 6) {
             assertTrue("Attempts must be above the matrix", attemptsBounds.bottom <= matrixBounds.top)

@@ -52,6 +52,7 @@
 - 10 digits: matrix использует всю ширину без horizontal scroll;
 - 4/6/7/8/10 digits: видны matrix header, tools, combination, keypad и обе action buttons;
 - высота matrix row не превышает 27dp и не меняется от свободной высоты viewport;
+- визуально компактные клавиши keypad сохраняют сенсорную высоту не менее 44dp;
 - NO/MAYBE/YES selected;
 - manual marks + locked proven facts;
 - hints enabled/disabled;

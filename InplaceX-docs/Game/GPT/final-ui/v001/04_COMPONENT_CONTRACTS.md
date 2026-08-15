@@ -106,7 +106,7 @@ States:
 
 ## 9. `WarmPrimaryButton`
 
-Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive height. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
+Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive visual height внутри сенсорной высоты не менее 44dp. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
 
 - min height 44dp;
 - blue gradient;
