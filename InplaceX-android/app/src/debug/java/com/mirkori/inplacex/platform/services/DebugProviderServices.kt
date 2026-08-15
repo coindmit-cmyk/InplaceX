@@ -11,6 +11,7 @@ import com.mirkori.inplacex.platform.ads.createAdRuntime
 import com.mirkori.inplacex.platform.ads.SharedPreferencesAdConsentController
 import com.mirkori.inplacex.platform.ads.createBackendAdMarketResolverOrUnknown
 import com.mirkori.inplacex.platform.config.AdSdkConfig
+import com.mirkori.inplacex.platform.config.AdsProviderConfig
 import com.mirkori.inplacex.platform.config.PlatformConfig
 import com.mirkori.inplacex.platform.config.ProviderEnvironment
 
@@ -92,10 +93,11 @@ object ProviderServicesFactory {
                 )
             },
         )
-        val effectiveYandexConfig = selectDebugYandexConfig(
+        val effectiveAdsConfig = selectDebugAdsConfig(
             environment = platformConfig.providers.environment,
-            configured = platformConfig.providers.ads.ownerYandex,
+            configured = platformConfig.providers.ads,
         )
+        val effectiveYandexConfig = effectiveAdsConfig.ownerYandex
         val yandex = YandexAdProvider(
             appContext = context,
             config = effectiveYandexConfig,
@@ -107,13 +109,16 @@ object ProviderServicesFactory {
             profileService = auth,
             adService = StubAdService(),
             adRuntime = createAdRuntime(
-                config = platformConfig.providers.ads,
+                config = effectiveAdsConfig,
                 providers = listOf(yandex),
                 marketResolver = marketResolver,
                 consentProvider = adConsent,
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
+            adsConfigured = effectiveAdsConfig.isConfigured,
+            postMatchInterstitialConfigured =
+                effectiveYandexConfig.postMatchInterstitialAdUnitId.isNotBlank(),
             gameBannerAdUnitId = effectiveYandexConfig.gameBannerAdUnitId,
             billingService = billingService ?: StubBillingService(),
         )
@@ -133,18 +138,19 @@ internal fun selectDebugYandexConfig(
     configured: AdSdkConfig,
 ): AdSdkConfig = when (environment) {
     ProviderEnvironment.SANDBOX -> AdSdkConfig(
-        gameBannerAdUnitId = configured.gameBannerAdUnitId
-            .takeIf(String::isNotBlank)
-            ?.let { "demo-banner-yandex" }
-            .orEmpty(),
-        rewardedAdUnitId = configured.rewardedAdUnitId
-            .takeIf(String::isNotBlank)
-            ?.let { "demo-rewarded-yandex" }
-            .orEmpty(),
-        postMatchInterstitialAdUnitId = configured.postMatchInterstitialAdUnitId
-            .takeIf(String::isNotBlank)
-            ?.let { "demo-interstitial-yandex" }
-            .orEmpty(),
+        gameBannerAdUnitId = "demo-banner-yandex",
+        rewardedAdUnitId = "demo-rewarded-yandex",
+        postMatchInterstitialAdUnitId = "demo-interstitial-yandex",
     )
     ProviderEnvironment.LIVE -> configured
 }
+
+internal fun selectDebugAdsConfig(
+    environment: ProviderEnvironment,
+    configured: AdsProviderConfig,
+): AdsProviderConfig = configured.copy(
+    ownerYandex = selectDebugYandexConfig(
+        environment = environment,
+        configured = configured.ownerYandex,
+    ),
+)

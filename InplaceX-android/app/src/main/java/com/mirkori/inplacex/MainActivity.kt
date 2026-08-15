@@ -171,12 +171,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 val billingService = providerServices.billingService
-                val adConsentRequired = remember {
-                    AppConfigCatalog.platformConfig
-                        .providers
-                        .ads
-                        .isConfigured
-                }
+                val adConsentRequired = providerServices.adsConfigured
                 val googleCredentialSignIn = remember {
                     GoogleCredentialSignIn(
                         context = applicationContext,
@@ -308,17 +303,12 @@ class MainActivity : ComponentActivity() {
                                 format = AdFormat.REWARDED,
                             ),
                         )
-                        if (
-                            AppConfigCatalog.platformConfig.providers.ads.ownerYandex
-                                .postMatchInterstitialAdUnitId.isNotBlank()
-                        ) {
-                            providerServices.adRuntime.preload(
-                                AdRequest(
-                                    placement = AdPlacement.POST_MATCH_INTERSTITIAL,
-                                    format = AdFormat.INTERSTITIAL,
-                                ),
-                            )
-                        }
+                        providerServices.adRuntime.preload(
+                            AdRequest(
+                                placement = AdPlacement.POST_MATCH_INTERSTITIAL,
+                                format = AdFormat.INTERSTITIAL,
+                            ),
+                        )
                     }
                 }
 
@@ -699,10 +689,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val isPremium = entitlements.adsDisabled
                 val showPostMatchInterstitial: () -> Unit = {
-                    if (
-                        AppConfigCatalog.platformConfig.providers.ads.ownerYandex
-                            .postMatchInterstitialAdUnitId.isNotBlank()
-                    ) {
+                    if (providerServices.postMatchInterstitialConfigured) {
                         val usage = adUsageTracker.snapshot()
                         val request = AdRequest(
                             placement = AdPlacement.POST_MATCH_INTERSTITIAL,

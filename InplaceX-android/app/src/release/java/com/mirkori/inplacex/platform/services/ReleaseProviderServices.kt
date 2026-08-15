@@ -43,6 +43,9 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
+            adsConfigured = providers.ads.isConfigured,
+            postMatchInterstitialConfigured =
+                providers.ads.ownerYandex.postMatchInterstitialAdUnitId.isNotBlank(),
             gameBannerAdUnitId = providers.ads.ownerYandex.gameBannerAdUnitId,
             billingService = billingService ?: UnavailableBillingService(
                 notice = if (providers.billing.isConfigured) {
