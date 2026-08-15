@@ -10,6 +10,9 @@
   corresponding official `demo-*-yandex` placements. A clean worktree and CI
   build therefore exercise test advertising without `local.properties`;
   configured release placement values are never used by this environment
+- consent and placement UI gates consume the factory's effective provider
+  availability rather than the raw variant input, so a clean debug install
+  requests privacy choice and exposes the same demo inventory as its runtime
 - release reads `provider.release.*` provider keys; the release environment is
   always `live`, while commerce product identity is compiled from canonical
   constants rather than mutable local configuration

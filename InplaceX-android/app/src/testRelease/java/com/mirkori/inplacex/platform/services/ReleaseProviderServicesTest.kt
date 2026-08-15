@@ -51,6 +51,8 @@ class ReleaseProviderServicesTest {
         assertFalse(services.adService.showBanner("game"))
         assertFalse(services.adService.showRewardedAd(RewardedPlacement.SHOP_COINS_REWARD))
         assertFalse(services.adService.showInterstitial(InterstitialPlacement.POST_MATCH))
+        assertTrue(services.adsConfigured)
+        assertTrue(services.postMatchInterstitialConfigured)
         assertTrue(services.billingService is UnavailableBillingService)
         assertEquals(BillingNotice.PROVIDER_UNAVAILABLE, services.billingService.cachedState().notice)
         assertNull(

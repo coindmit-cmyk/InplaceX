@@ -61,6 +61,8 @@ class DebugProviderServicesTest {
                 )
 
                 assertEquals(listOf(AdProviderId.OWNER_YANDEX), plan.providers)
+                assertTrue(services.adsConfigured)
+                assertTrue(services.postMatchInterstitialConfigured)
                 assertEquals("demo-banner-yandex", services.gameBannerAdUnitId)
             } finally {
                 services.adRuntime.close()
@@ -136,6 +138,8 @@ class DebugProviderServicesTest {
         )
 
         try {
+            assertTrue(services.adsConfigured)
+            assertTrue(services.postMatchInterstitialConfigured)
             assertEquals("demo-banner-yandex", services.gameBannerAdUnitId)
         } finally {
             services.adRuntime.close()

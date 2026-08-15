@@ -116,6 +116,9 @@ object ProviderServicesFactory {
             ),
             adConsent = adConsent,
             adActivityHost = adActivityHost,
+            adsConfigured = effectiveAdsConfig.isConfigured,
+            postMatchInterstitialConfigured =
+                effectiveYandexConfig.postMatchInterstitialAdUnitId.isNotBlank(),
             gameBannerAdUnitId = effectiveYandexConfig.gameBannerAdUnitId,
             billingService = billingService ?: StubBillingService(),
         )

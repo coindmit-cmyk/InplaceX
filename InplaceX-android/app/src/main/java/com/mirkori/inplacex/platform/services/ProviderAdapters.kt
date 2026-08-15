@@ -13,6 +13,8 @@ data class ProviderServices(
     val adRuntime: AndroidAdRuntime,
     val adConsent: AdConsentController,
     val adActivityHost: AdActivityHost,
+    val adsConfigured: Boolean,
+    val postMatchInterstitialConfigured: Boolean,
     val gameBannerAdUnitId: String,
     val billingService: BillingService,
 )
