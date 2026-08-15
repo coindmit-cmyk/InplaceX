@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The shared Android visual layer now follows the approved warm-room reference:
+  navy HUD/navigation chrome, quieter three-stop mode cards, compact cream
+  panels, one border and one shadow per component, a condensed gameplay status
+  strip, and custom warm keypad controls replace the oversized neon Material
+  surfaces without changing game state or navigation.
+
 - Gameplay work-board geometry now follows the approved compact reference: the
   board is measured from ten bounded matrix rows instead of consuming the
   remaining viewport. Four through six digits stay side-by-side, seven through

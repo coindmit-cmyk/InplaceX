@@ -132,7 +132,7 @@ class FinalGameplayCaptureTest {
         assertTrue("Input actions must remain inside the viewport", inputBounds.bottom <= rootBounds.bottom)
         assertTrue(
             "Matrix rows must remain compact instead of stretching with the viewport",
-            firstCellBounds.height <= 31.dp.value * density,
+            firstCellBounds.height <= 27.dp.value * density,
         )
         if (codeLength > 6) {
             assertTrue("Attempts must be above the matrix", attemptsBounds.bottom <= matrixBounds.top)

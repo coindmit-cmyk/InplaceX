@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,9 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -49,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.R
 import com.mirkori.inplacex.core.analysis.ProvenFact
 import com.mirkori.inplacex.core.engine.GuessValidationReason
@@ -124,17 +122,6 @@ fun GamePresentationLayout(
             codeLength = uiState.parameters.codeLength,
             compactHeight = maxHeight < 760.dp,
         )
-        val hasTopMessage = shouldShowGameStatus(
-            status = uiState.status,
-            phase = uiState.match.phase,
-            inputEnabled = uiState.route.inputEnabled,
-            contextualActionSelected = uiState.tools.selectedHint != null,
-        ) || !uiState.route.secondaryStatusText.isNullOrBlank()
-        val topPanelMinHeight = if (hasTopMessage) {
-            metrics.topPanelMinHeight
-        } else {
-            (metrics.topPanelMinHeight - 18.dp).coerceAtLeast(40.dp)
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -142,7 +129,7 @@ fun GamePresentationLayout(
                 .padding(FinalUiDimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
-            PresentationCard(modifier = Modifier.defaultMinSize(minHeight = topPanelMinHeight)) {
+            PresentationCard(modifier = Modifier.height(metrics.topPanelMinHeight)) {
                 GameTopPanel(uiState = uiState)
             }
 
@@ -315,8 +302,8 @@ private fun GameWorkBoard(
 
 internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
 
-private val GamePanelHorizontalPadding = 6.dp
-private val GamePanelHeaderHeight = 27.dp
+private val GamePanelHorizontalPadding = 5.dp
+private val GamePanelHeaderHeight = 23.dp
 private const val MatrixRows = 10
 private const val StackedVisibleAttempts = 3
 
@@ -366,90 +353,85 @@ fun GameTopPanel(
     val mode = uiState.route.modeLabel?.takeIf(String::isNotBlank) ?: defaultMode
     val message = statusText(uiState)
         ?: uiState.route.secondaryStatusText?.takeIf(String::isNotBlank)
+    val supportingText = message ?: uiState.route.turnLabel?.takeIf(String::isNotBlank)
 
-    Column(
-        modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    Row(
+        modifier = modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        uiState.route.turnLabel?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        Column(
+            modifier = Modifier.weight(1.15f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             Text(
                 text = mode,
-                modifier = Modifier.weight(1.15f),
-                style = MaterialTheme.typography.titleSmall,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = FinalUiColors.WarmText,
                 maxLines = 1,
             )
-            VerticalDivider(
-                modifier = Modifier.height(30.dp),
-                color = FinalUiColors.WarmDivider.copy(alpha = 0.46f),
-            )
-            GameInfoMetric(
-                label = strings.text("game.top.moves"),
-                value = moveValue(
-                    movesDone = uiState.match.attempts.size,
-                    configuredLimit = if (uiState.route.movesUnlimited) {
-                        null
+            supportingText?.let { text ->
+                Text(
+                    text = text,
+                    modifier = Modifier.testTag("game-status"),
+                    fontSize = 10.sp,
+                    color = if (message != null && isErrorStatus(uiState.status)) {
+                        MaterialTheme.colorScheme.error
                     } else {
-                        uiState.route.configuredMoveLimit ?: parameters.attemptLimit
+                        FinalUiColors.WarmTextMuted
                     },
-                    bonusMoves = uiState.counters.bonusMoves,
-                ),
-                modifier = Modifier.weight(0.82f),
-            )
-            VerticalDivider(
-                modifier = Modifier.height(30.dp),
-                color = FinalUiColors.WarmDivider.copy(alpha = 0.46f),
-            )
-            GameInfoMetric(
-                label = strings.text("game.top.total"),
-                value = timerValue(
-                    uiState.timers.elapsedSeconds,
-                    if (parameters.totalTimeLimitSeconds > 0) {
-                        parameters.totalTimeLimitSeconds + uiState.timers.bonusTimeSeconds
+                    fontWeight = if (message != null && isErrorStatus(uiState.status)) {
+                        FontWeight.SemiBold
                     } else {
-                        0
+                        FontWeight.Normal
                     },
-                ),
-                modifier = Modifier.weight(0.82f),
-            )
-            VerticalDivider(
-                modifier = Modifier.height(30.dp),
-                color = FinalUiColors.WarmDivider.copy(alpha = 0.46f),
-            )
-            GameInfoMetric(
-                label = strings.text("game.top.turn"),
-                value = timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
-                modifier = Modifier.weight(0.82f),
-            )
+                    maxLines = 1,
+                )
+            }
         }
-        message?.let { statusMessage ->
-            Text(
-                text = statusMessage,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("game-status"),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isErrorStatus(uiState.status)) {
-                    MaterialTheme.colorScheme.error
+        VerticalDivider(
+            modifier = Modifier.height(30.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("game.top.moves"),
+            value = moveValue(
+                movesDone = uiState.match.attempts.size,
+                configuredLimit = if (uiState.route.movesUnlimited) {
+                    null
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    uiState.route.configuredMoveLimit ?: parameters.attemptLimit
                 },
-                fontWeight = if (isErrorStatus(uiState.status)) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-            )
-        }
+                bonusMoves = uiState.counters.bonusMoves,
+            ),
+            modifier = Modifier.weight(0.82f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(30.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("game.top.total"),
+            value = timerValue(
+                uiState.timers.elapsedSeconds,
+                if (parameters.totalTimeLimitSeconds > 0) {
+                    parameters.totalTimeLimitSeconds + uiState.timers.bonusTimeSeconds
+                } else {
+                    0
+                },
+            ),
+            modifier = Modifier.weight(0.82f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(30.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("game.top.turn"),
+            value = timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
+            modifier = Modifier.weight(0.82f),
+        )
     }
 }
 
@@ -461,13 +443,13 @@ private fun GameInfoMetric(label: String, value: String, modifier: Modifier) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
+            fontSize = 10.sp,
             color = FinalUiColors.WarmTextMuted,
             maxLines = 1,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall,
+            fontSize = 12.sp,
             color = FinalUiColors.WarmText,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -632,12 +614,14 @@ private fun GamePanelHeader(
     Column(modifier = modifier.fillMaxWidth().height(GamePanelHeaderHeight)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = FinalUiColors.WarmText,
             maxLines = 1,
         )
-        Spacer(Modifier.height(3.dp))
-        HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.46f))
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(2.dp))
+        HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.34f))
+        Spacer(Modifier.height(2.dp))
     }
 }
 
@@ -651,7 +635,7 @@ fun GameHelpersPanel(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(4.dp),
+        modifier = modifier.padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -782,7 +766,7 @@ private fun CompactHelperButton(
     onClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(8.dp)
     Row(
         modifier = modifier
             .background(
@@ -794,7 +778,7 @@ private fun CompactHelperButton(
                 shape = shape,
             )
             .border(
-                width = if (selected) 2.dp else 1.dp,
+                width = if (selected) 1.5.dp else 1.dp,
                 color = if (selected) {
                     FinalUiColors.Primary
                 } else {
@@ -803,7 +787,7 @@ private fun CompactHelperButton(
                 shape = shape,
             )
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 3.dp, vertical = 1.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -820,8 +804,8 @@ fun GameToolsPanel(
 ) {
     val strings = LocalAppStrings.current
     Row(
-        modifier = modifier.padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         GameToolButton(
             strings.text("game.tool.no"),
@@ -896,21 +880,29 @@ fun GameInputPanel(
         modifier = modifier.padding(FinalUiDimens.CompactPanelPadding),
         verticalArrangement = Arrangement.spacedBy(FinalUiDimens.InnerGap),
     ) {
-        Text(strings.text("game.combination"), style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = strings.text("game.combination"),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = FinalUiColors.WarmText,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(metrics.inputSlotGap)) {
             shownSlots.forEachIndexed { index, value ->
+                val slotShape = RoundedCornerShape(8.dp)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(metrics.inputSlotHeight)
+                        .clip(slotShape)
+                        .background(FinalUiColors.WarmPanelTop.copy(alpha = 0.62f))
                         .border(
                             width = if (openPositionSelected) 2.dp else 1.dp,
                             color = if (openPositionSelected) {
-                                InplaceXColors.Cobalt
+                                FinalUiColors.Primary
                             } else {
-                                MaterialTheme.colorScheme.outline
+                                FinalUiColors.WarmBorder.copy(alpha = 0.78f)
                             },
-                            shape = RoundedCornerShape(FinalUiDimens.ButtonRadius),
+                            shape = slotShape,
                         )
                         .testTag("game-guess-slot-${index + 1}")
                         .clickable(enabled = enabled && openPositionSelected) {
@@ -921,7 +913,9 @@ fun GameInputPanel(
                     Text(
                         text = value?.toString() ?: " ",
                         modifier = Modifier.testTag("game-guess-value-${index + 1}"),
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = FinalUiColors.WarmText,
                     )
                 }
             }
@@ -932,37 +926,42 @@ fun GameInputPanel(
                 .border(
                     width = if (checkDigitSelected) 2.dp else 0.dp,
                     color = if (checkDigitSelected) InplaceXColors.Cobalt else Color.Transparent,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(10.dp),
                 )
-                .padding(2.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(1.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             "1234567890".forEach { digit ->
-                FilledTonalButton(
+                GameKeypadButton(
                     onClick = { onDigitClick(digit) },
                     enabled = enabled,
                     modifier = Modifier
                         .weight(1f)
                         .height(metrics.keypadHeight)
                         .testTag("game-digit-$digit"),
-                    contentPadding = PaddingValues(0.dp),
                 ) {
-                    Text(digit.toString(), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = digit.toString(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = FinalUiColors.WarmText,
+                    )
                 }
             }
-            FilledTonalButton(
+            GameKeypadButton(
                 onClick = { onEvent(GameFieldEvent.BackspacePressed) },
                 enabled = enabled,
                 modifier = Modifier.weight(1f).height(metrics.keypadHeight),
-                contentPadding = PaddingValues(0.dp),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Backspace,
                     contentDescription = strings.text("game.action.delete"),
+                    modifier = Modifier.size(18.dp),
+                    tint = FinalUiColors.WarmText,
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             WarmSecondaryButton(
                 label = strings.text("game.action.reset"),
                 onClick = { onEvent(GameFieldEvent.MatchRestarted) },
@@ -980,6 +979,32 @@ fun GameInputPanel(
                     .testTag("game-confirm"),
             )
         }
+    }
+}
+
+@Composable
+private fun GameKeypadButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val shape = RoundedCornerShape(7.dp)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                FinalUiColors.WarmPanelTop.copy(alpha = if (enabled) 0.78f else 0.46f),
+            )
+            .border(
+                width = 1.dp,
+                color = FinalUiColors.WarmBorder.copy(alpha = if (enabled) 0.72f else 0.38f),
+                shape = shape,
+            )
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 

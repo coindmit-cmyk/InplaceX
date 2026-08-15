@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -117,14 +117,13 @@ private fun TopCircleAction(
 ) {
     Surface(
         modifier = Modifier
-            .size(48.dp)
-            .shadow(7.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = InplaceXColors.ToyBlue,
+            .size(44.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = FinalUiColors.Chrome,
         contentColor = Color.White,
         tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCyan.copy(alpha = 0.72f)),
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.62f)),
     ) {
         IconButton(onClick = onClick, modifier = Modifier.background(topBlueBrush())) {
             Icon(
@@ -146,18 +145,17 @@ private fun TopStatPill(
     contentDescription: String,
 ) {
     Surface(
-        modifier = Modifier.shadow(7.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
         contentColor = Color.White,
         tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCyan.copy(alpha = 0.68f)),
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.58f)),
     ) {
         Row(
             modifier = Modifier
                 .background(topBlueBrush())
-                .padding(horizontal = if (compact) 5.dp else 8.dp, vertical = 8.dp),
+                .padding(horizontal = if (compact) 5.dp else 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -165,17 +163,17 @@ private fun TopStatPill(
                 imageVector = icon,
                 contentDescription = contentDescription,
                 tint = iconTint,
-                modifier = Modifier.size(if (compact) 20.dp else 24.dp),
+                modifier = Modifier.size(if (compact) 18.dp else 20.dp),
             )
             Text(
                 text = value,
-                style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
+                style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
             if (showAdd) {
                 Surface(
-                    modifier = Modifier.size(if (compact) 20.dp else 24.dp),
+                    modifier = Modifier.size(if (compact) 18.dp else 20.dp),
                     shape = CircleShape,
                     color = InplaceXColors.ToyGreen,
                     contentColor = Color.White,
@@ -186,7 +184,7 @@ private fun TopStatPill(
                         Icon(
                             imageVector = Icons.Outlined.Add,
                             contentDescription = null,
-                            modifier = Modifier.size(if (compact) 15.dp else 18.dp),
+                            modifier = Modifier.size(if (compact) 13.dp else 15.dp),
                         )
                     }
                 }
@@ -203,24 +201,24 @@ private fun TopShopAction(
 ) {
     Surface(
         modifier = Modifier
-            .shadow(7.dp, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
         contentColor = Color.White,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCyan.copy(alpha = 0.68f)),
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.58f)),
     ) {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier
                 .background(topBlueBrush())
-                .padding(horizontal = if (compact) 10.dp else 9.dp, vertical = 9.dp),
+                .padding(horizontal = if (compact) 9.dp else 8.dp, vertical = 7.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Outlined.ShoppingCart,
                 contentDescription = label,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(20.dp),
             )
             if (!compact) {
                 Text(
@@ -236,9 +234,9 @@ private fun TopShopAction(
 
 private fun topBlueBrush(): Brush = Brush.verticalGradient(
     listOf(
-        InplaceXColors.ToyBlueTop,
-        InplaceXColors.ToyBlue,
-        InplaceXColors.ToyBlueDeep,
+        FinalUiColors.ChromeTop,
+        FinalUiColors.Chrome,
+        FinalUiColors.ChromeDeep,
     ),
 )
 

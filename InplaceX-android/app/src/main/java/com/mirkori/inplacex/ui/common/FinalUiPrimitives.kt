@@ -189,14 +189,14 @@ fun WarmSegmentButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(8.dp)
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = 36.dp)
+            .defaultMinSize(minHeight = 30.dp)
             .clip(shape)
             .background(
-                if (selected) accent.copy(alpha = 0.64f)
-                else FinalUiColors.WarmPanelSolid.copy(alpha = 0.72f),
+                if (selected) accent.copy(alpha = 0.42f)
+                else FinalUiColors.WarmPanelSolid.copy(alpha = 0.56f),
             )
             .border(
                 if (selected) FinalUiDimens.SelectedBorder else FinalUiDimens.PanelBorder,
@@ -299,35 +299,35 @@ private fun analysisCellVisual(state: AnalysisCellVisualState): AnalysisCellVisu
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.NO -> AnalysisCellVisual(
-        fill = FinalUiColors.StateNo.copy(alpha = 0.18f),
+        fill = FinalUiColors.StateNo.copy(alpha = 0.12f),
         border = FinalUiColors.StateNo,
         borderWidth = 1.dp,
         text = FinalUiColors.WarmTextMuted,
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.MAYBE -> AnalysisCellVisual(
-        fill = FinalUiColors.StateMaybe.copy(alpha = 0.26f),
+        fill = FinalUiColors.StateMaybe.copy(alpha = 0.20f),
         border = FinalUiColors.StateMaybe,
         borderWidth = 1.dp,
         text = FinalUiColors.WarmText,
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.EXACT -> AnalysisCellVisual(
-        fill = FinalUiColors.StateExact.copy(alpha = 0.30f),
+        fill = FinalUiColors.StateExact.copy(alpha = 0.24f),
         border = FinalUiColors.StateExact,
         borderWidth = 2.dp,
         text = FinalUiColors.WarmText,
         weight = FontWeight.Bold,
     )
     AnalysisCellVisualState.LOCKED_NO -> AnalysisCellVisual(
-        fill = FinalUiColors.LockedNo.copy(alpha = 0.28f),
+        fill = FinalUiColors.LockedNo.copy(alpha = 0.16f),
         border = FinalUiColors.LockedNo,
         borderWidth = 2.dp,
         text = FinalUiColors.LockedNo,
         weight = FontWeight.Bold,
     )
     AnalysisCellVisualState.LOCKED_EXACT -> AnalysisCellVisual(
-        fill = FinalUiColors.LockedExact.copy(alpha = 0.70f),
+        fill = FinalUiColors.LockedExact.copy(alpha = 0.62f),
         border = FinalUiColors.LockedExact,
         borderWidth = 2.dp,
         text = Color.White,

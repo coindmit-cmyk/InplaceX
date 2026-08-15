@@ -89,7 +89,7 @@ Breakpoint обязателен: `codeLength > 6`. Для 7–10 цифр поп
 
 - 10 строк: цифры 0–9.
 - Количество колонок равно `codeLength`.
-- Ширина и высота ячейки считаются независимо во всех режимах: ширина использует панель, высота ограничена токеном 30dp (4), 28dp (5–6), 25dp (7–8), 22dp (9–10).
+- Ширина и высота ячейки считаются независимо во всех режимах: ширина использует панель, высота ограничена токеном 26dp (4), 24dp (5–6), 21dp (7–8), 19dp (9–10). На низком viewport compact-height fallback уменьшает высоту ещё на 2dp, но не ниже 16dp.
 - Матрица заполняет остаток только внутри рассчитанной рабочей зоны и не может вытеснять tools/input/ad-slot за нижнюю границу viewport.
 - Нижняя граница layout учитывает системную navigation bar: загруженный ad-slot полностью остаётся выше неё.
 - Каждая ячейка содержит свою цифру.
@@ -104,12 +104,13 @@ Breakpoint обязателен: `codeLength > 6`. Для 7–10 цифр поп
 - `Возм`: янтарный акцент.
 - `Точн`: зелёный акцент.
 - `PRO`: нейтрально-голубой; сохраняет текущую логику auto/manual.
-- Активный сегмент имеет более насыщенную заливку и 2dp контур; неактивный остаётся читаемым.
+- Активный сегмент имеет спокойную акцентную заливку и 2dp контур; неактивный остаётся читаемым и не выглядит отдельной Material-карточкой.
 
 ### 4.6 Ввод
 
 - Слоты растягиваются равномерно и адаптируются к 4–10 позициям.
 - Цифровая клавиатура остаётся одной строкой `1…0 + backspace`.
+- Клавиши используют собственную компактную warm-surface геометрию; Material tonal pills в gameplay запрещены.
 - `Подтвердить` — единственная визуально главная кнопка gameplay.
 - `Сброс` — вторичная.
 - Disabled-состояние различимо, но текст не исчезает.
@@ -201,13 +202,13 @@ UI-pass не меняет:
 
 | Token | HEX | Назначение |
 |---|---|---|
-| `WarmPanelTop` | `#FFF9EC` | верх кремовой панели |
-| `WarmPanelBottom` | `#F6E5C7` | низ кремовой панели |
-| `WarmPanelSolid` | `#FFF4DE` | fallback/простые поверхности |
-| `WarmBorder` | `#D8B879` | основной тёплый контур |
-| `WarmDivider` | `#B9955F` @ 42% | разделители |
-| `WarmText` | `#3B2918` | основной текст |
-| `WarmTextMuted` | `#725A3C` | вторичный текст |
+| `WarmPanelTop` | `#FFFAF0` | верх кремовой панели |
+| `WarmPanelBottom` | `#F7E8CD` | низ кремовой панели |
+| `WarmPanelSolid` | `#FFF6E4` | fallback/простые поверхности |
+| `WarmBorder` | `#CFA45F` | основной тёплый контур |
+| `WarmDivider` | `#B78B50` @ 42% | разделители |
+| `WarmText` | `#342417` | основной текст |
+| `WarmTextMuted` | `#6D563B` | вторичный текст |
 | `ChromeTop` | `#365678` | верх chrome gradient |
 | `Chrome` | `#223C5A` | HUD/nav surface |
 | `ChromeDeep` | `#11263F` | низ chrome gradient |
@@ -217,13 +218,16 @@ UI-pass не меняет:
 | `PrimaryDeep` | `#0D4E91` | primary button bottom |
 | `ModeOrangeTop` | `#F8CA6A` | Гонка |
 | `ModeOrange` | `#EBA62E` | Гонка |
+| `ModeOrangeDeep` | `#D98A18` | низ карточки Гонки |
 | `ModePurpleTop` | `#9B73DC` | Дуэль |
 | `ModePurple` | `#704BB8` | Дуэль |
+| `ModePurpleDeep` | `#56349B` | низ карточки Дуэли |
 | `ModeGreenTop` | `#97C751` | Компания |
 | `ModeGreen` | `#62962E` | Компания |
-| `StateNo` | `#E97872` | Нет |
-| `StateMaybe` | `#E6B83E` | Возможно |
-| `StateExact` | `#79B95D` | Точно |
+| `ModeGreenDeep` | `#477A20` | низ карточки Компании |
+| `StateNo` | `#D96B66` | Нет |
+| `StateMaybe` | `#E2B444` | Возможно |
+| `StateExact` | `#6EAD57` | Точно |
 | `StatePro` | `#AEBEC9` | PRO/auto |
 | `LockedNo` | `#C95D5D` | доказано невозможно |
 | `LockedExact` | `#4C9A45` | доказано точно |
@@ -235,7 +239,7 @@ UI-pass не меняет:
 - Warm panel: `WarmPanelTop → WarmPanelBottom`, вертикально, разница мягкая.
 - Chrome: `ChromeTop → Chrome → ChromeDeep`.
 - Primary: `PrimaryTop → Primary → PrimaryDeep`.
-- Mode tiles: соответствующая пара `Top → base`.
+- Mode tiles: соответствующая тройка `Top → base → deep`, без неонового свечения.
 - Не использовать более трёх stop и не добавлять glow к каждой поверхности.
 
 ## 4. Радиусы
@@ -243,12 +247,12 @@ UI-pass не меняет:
 | Элемент | Radius |
 |---|---:|
 | shell chrome outer | 20dp |
-| общая panel | 18dp |
+| общая panel | 14dp |
 | mode tile | 20dp |
-| inner group/input panel | 14dp |
-| button | 12dp |
-| attempt row | 8dp |
-| matrix cell | 5–6dp |
+| inner group/input panel | 12dp |
+| button | 10dp |
+| attempt row | 7dp |
+| matrix cell | 5dp |
 | selected bottom nav item | 14dp |
 
 Не использовать 22–28dp повсеместно. Большой radius только у крупных mode tiles.
@@ -267,7 +271,7 @@ UI-pass не меняет:
 
 | Уровень | Elevation |
 |---|---:|
-| panel | 3dp |
+| panel | 2dp |
 | mode tile | 4dp |
 | chrome | 4dp |
 | selected/floating | 5dp max |
@@ -321,11 +325,11 @@ UI-pass не меняет:
 | State | Fill | Border | Digit |
 |---|---|---|---|
 | empty | transparent/cream 40% | warm 55% 1dp | warm text |
-| no | StateNo 18% | StateNo 1dp | muted + medium |
-| maybe | StateMaybe 26% | StateMaybe 1dp | warm text |
-| exact | StateExact 30% | StateExact 2dp | bold |
-| locked no | LockedNo 28% | LockedNo 2dp | LockedNo/bold |
-| locked exact | LockedExact 55% | LockedExact 2dp | white/bold |
+| no | StateNo 12% | StateNo 1dp | muted + medium |
+| maybe | StateMaybe 20% | StateMaybe 1dp | warm text |
+| exact | StateExact 24% | StateExact 2dp | bold |
+| locked no | LockedNo 16% | LockedNo 2dp | LockedNo/bold |
+| locked exact | LockedExact 62% | LockedExact 2dp | white/bold |
 | disabled | neutral 22% | neutral 1dp | 55% alpha |
 
 ### Buttons
@@ -334,6 +338,7 @@ UI-pass не меняет:
 - Secondary: warm panel, primary text, warm border.
 - Destructive/reset не делается красным: сброс — neutral secondary.
 - Disabled: сохранён label, fill desaturated, alpha компонента не ниже 0.55.
+- Цифровая клавиатура gameplay: compact warm surface + 1dp warm border; стандартные Material tonal pills не используются.
 
 ---
 
@@ -385,10 +390,10 @@ UI-pass не меняет:
 
 ### Status panel
 
-- Высота 56–68dp в зависимости от status lines.
-- Первая строка: mode + moves + total + turn.
+- Высота 52–56dp.
+- Одна строка: слева mode и короткий supporting/status text, справа moves + total + turn.
 - Внутренние metrics разделяются тонкими vertical dividers, а не четырьмя вложенными карточками.
-- Status text — одна строка, 12sp.
+- Routine status не создаёт отдельную полноширинную строку или карточку; текст остаётся одной строкой, 11–12sp.
 
 ### Work board
 
@@ -396,12 +401,12 @@ UI-pass не меняет:
 - Для 4–6 цифр используются left/right weights из UX contract.
 - Для 7–10 цифр попытки располагаются сверху (120–150dp), матрица снизу и занимает остаток рассчитанной, а не экранной, высоты work board.
 - Work board измеряется по десяти строкам матрицы; запрещён `weight(fill = true)`, растягивающий его на весь свободный viewport.
-- Каждая panel использует `WarmPanel`, radius 16–18dp.
-- Titles 15sp Semibold.
+- Каждая panel использует `WarmPanel`, radius 14dp.
+- Titles 14sp Semibold.
 
 ### Attempts
 
-- Row height: 30dp (4), 29dp (5–6), 28dp (7–8), 26dp (9–10).
+- Row height: 28dp (4), 27dp (5–6), 26dp (7–8), 24dp (9–10).
 - Формат: `1234 → 2`.
 - Horizontal padding 6dp; vertical 3dp.
 - Latest row: `Primary` 10% fill + 1dp primary border.
@@ -410,7 +415,7 @@ UI-pass не меняет:
 
 ### Matrix
 
-- Для 4–10 цифр ширина ячейки рассчитывается из ширины панели, высота — независимо и ограничивается токеном 30/28/25/22dp.
+- Для 4–10 цифр ширина ячейки рассчитывается из ширины панели, высота — независимо и ограничивается токеном 26/24/21/19dp; compact-height fallback уменьшает её ещё на 2dp до минимума 16dp.
 - Header `Кодовая матрица` виден над строкой `0` и совпадает по высоте с header `Попытки`.
 - Gap: 3dp (4), 2.5dp (5–6), 2dp (7–8), 1dp (9–10).
 - Cell radius: 6dp до 6 колонок, 5dp от 7.
@@ -419,21 +424,21 @@ UI-pass не меняет:
 
 ### Helpers
 
-- 40–44dp height.
+- 36–40dp height.
 - Icon 18dp; count/label одна строка.
 - Selected hint имеет primary outline, но не меняет высоту.
 
 ### Tools
 
-- 38–40dp height.
+- 34–36dp height.
 - Один общий segmented container, а не четыре независимые Material cards.
 - Labels: текущая локализация; RU compact допускает `Нет / Возм / Точн / PRO`.
 
 ### Input
 
-- Panel padding 8dp.
-- Slots: 42/40/36/32dp по length groups.
-- Keypad: 36–38dp; одна строка.
+- Panel padding 6dp.
+- Slots: 34/32/30/28dp по length groups.
+- Keypad: 32/31/30/28dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
 - Action row: 44dp.
 - Confirm weight 1.35, reset weight 1.0.
 
@@ -483,6 +488,7 @@ UI-pass не меняет:
 - Secret length — stepper row в одной warm panel.
 - Create/find match — primary full width.
 - Friend code input + join — отдельная логическая группа.
+- Экран выбора соперника использует компактные warm/primary actions, а не набор крупных Material pill-кнопок.
 
 ### States
 
@@ -522,9 +528,9 @@ UI-pass не меняет:
 Назначение: базовая кремовая поверхность для gameplay и form groups.
 
 - gradient top/bottom;
-- radius 18dp default;
+- radius 14dp default;
 - border 1dp warm;
-- elevation 3dp;
+- elevation 2dp;
 - content padding передаётся явно;
 - не добавляет ещё одну вложенную `Surface` без необходимости.
 
@@ -623,6 +629,8 @@ States:
 
 ## 9. `WarmPrimaryButton`
 
+Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive height. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
+
 - min height 44dp;
 - blue gradient;
 - white semibold text;
@@ -644,6 +652,8 @@ States:
 - one 1dp blue border;
 - no duplicate shadow;
 - icon tint white, resource accents сохраняются.
+
+Общие `SceneCard` и `SceneActionTile` следуют тем же правилам: одна тень, один контур, radius 16/20dp и без вложенных конкурирующих surfaces.
 
 ## 12. `AdSlotFrame`
 
@@ -832,7 +842,7 @@ src/test/.../ui/screens/social/**
 - production online length 9–10 перестал работать;
 - реклама перекрывает input/tools;
 - загруженный ad-slot попадает под системную navigation bar;
-- work board растянут свободной высотой viewport, matrix row выше 30dp или confirm уходит за нижнюю границу;
+- work board растянут свободной высотой viewport, matrix row выше 27dp или confirm уходит за нижнюю границу;
 - изменены game rules, state, scoring, online/API, purchases или ad policy;
 - существующие test tags/semantics исчезли;
 - RU/EN текст обрезан или переносится посимвольно;

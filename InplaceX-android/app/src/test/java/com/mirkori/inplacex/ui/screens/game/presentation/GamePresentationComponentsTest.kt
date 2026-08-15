@@ -105,15 +105,15 @@ class GamePresentationComponentsTest {
         val eightDigits = finalGameFieldMetrics(8, compactHeight = false)
         val tenDigits = finalGameFieldMetrics(10, compactHeight = false)
 
-        assertEquals(366.dp, analysisPanelHeight(fourDigits))
-        assertEquals(440.dp, gameWorkBoardHeight(eightDigits, stacked = true))
-        assertEquals(395.dp, gameWorkBoardHeight(tenDigits, stacked = true))
+        assertEquals(311.dp, analysisPanelHeight(fourDigits))
+        assertEquals(380.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
+        assertEquals(356.dp, gameWorkBoardHeight(tenDigits, stacked = true))
     }
 
     @Test
     fun `stacked attempts panel reserves exactly three complete rows`() {
-        assertEquals(129.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
-        assertEquals(123.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(10, compactHeight = false)))
+        assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
+        assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(10, compactHeight = false)))
     }
 
     @Test
