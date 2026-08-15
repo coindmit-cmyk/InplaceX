@@ -22,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -37,6 +36,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.navigation.AppSectionCatalog
 import com.mirkori.inplacex.ui.navigation.AppSectionIconCatalog
+import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -48,13 +48,12 @@ fun AppBottomMenu(
 ) {
     Surface(
         modifier = modifier
-            .fillMaxSize()
-            .shadow(10.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            .fillMaxSize(),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         color = Color.Transparent,
         tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCyan.copy(alpha = 0.62f))
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.58f))
     ) {
         Row(
             modifier = Modifier
@@ -62,14 +61,14 @@ fun AppBottomMenu(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            InplaceXColors.ToyBlue,
-                            InplaceXColors.ToyBlueDeep,
-                            Color(0xFF062661),
+                            FinalUiColors.ChromeTop,
+                            FinalUiColors.Chrome,
+                            FinalUiColors.ChromeDeep,
                         )
                     )
                 )
-                .padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 5.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppSection.entries.forEach { section ->
@@ -100,13 +99,6 @@ private fun BottomMenuItem(
 
     Surface(
         modifier = modifier
-            .then(
-                if (selected) {
-                    Modifier.shadow(8.dp, RoundedCornerShape(18.dp))
-                } else {
-                    Modifier
-                }
-            )
             .semantics {
                 role = Role.Tab
                 this.selected = selected
@@ -115,11 +107,11 @@ private fun BottomMenuItem(
                 role = Role.Tab,
                 onClick = onClick,
             ),
-        shape = RoundedCornerShape(18.dp),
-        color = if (selected) InplaceXColors.ToyBlueTop else Color.Transparent,
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) FinalUiColors.Primary.copy(alpha = 0.86f) else Color.Transparent,
         tonalElevation = 0.dp,
         border = if (selected) {
-            BorderStroke(2.dp, InplaceXColors.ToyCyan)
+            BorderStroke(1.dp, FinalUiColors.ChromeBorder)
         } else {
             null
         }
@@ -131,7 +123,7 @@ private fun BottomMenuItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp),
+                    .size(30.dp),
                 contentAlignment = Alignment.Center
             ) {
                 BadgedBox(
@@ -156,7 +148,7 @@ private fun BottomMenuItem(
                     lineHeight = 11.sp
                 ),
                 color = if (selected) Color.White else InplaceXColors.ToyCream,
-                fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1
             )
         }

@@ -9,13 +9,13 @@ import androidx.compose.ui.unit.sp
 
 /** Final owner-approved warm-room/polished-casual UI tokens. */
 object FinalUiColors {
-    val WarmPanelTop = Color(0xFFFFF9EC)
-    val WarmPanelBottom = Color(0xFFF6E5C7)
-    val WarmPanelSolid = Color(0xFFFFF4DE)
-    val WarmBorder = Color(0xFFD8B879)
-    val WarmDivider = Color(0xFFB9955F)
-    val WarmText = Color(0xFF3B2918)
-    val WarmTextMuted = Color(0xFF725A3C)
+    val WarmPanelTop = Color(0xFFFFFAF0)
+    val WarmPanelBottom = Color(0xFFF7E8CD)
+    val WarmPanelSolid = Color(0xFFFFF6E4)
+    val WarmBorder = Color(0xFFCFA45F)
+    val WarmDivider = Color(0xFFB78B50)
+    val WarmText = Color(0xFF342417)
+    val WarmTextMuted = Color(0xFF6D563B)
 
     val ChromeTop = Color(0xFF365678)
     val Chrome = Color(0xFF223C5A)
@@ -29,14 +29,17 @@ object FinalUiColors {
 
     val ModeOrangeTop = Color(0xFFF8CA6A)
     val ModeOrange = Color(0xFFEBA62E)
+    val ModeOrangeDeep = Color(0xFFD98A18)
     val ModePurpleTop = Color(0xFF9B73DC)
     val ModePurple = Color(0xFF704BB8)
+    val ModePurpleDeep = Color(0xFF56349B)
     val ModeGreenTop = Color(0xFF97C751)
     val ModeGreen = Color(0xFF62962E)
+    val ModeGreenDeep = Color(0xFF477A20)
 
-    val StateNo = Color(0xFFE97872)
-    val StateMaybe = Color(0xFFE6B83E)
-    val StateExact = Color(0xFF79B95D)
+    val StateNo = Color(0xFFD96B66)
+    val StateMaybe = Color(0xFFE2B444)
+    val StateExact = Color(0xFF6EAD57)
     val StatePro = Color(0xFFAEBEC9)
     val LockedNo = Color(0xFFC95D5D)
     val LockedExact = Color(0xFF4C9A45)
@@ -46,22 +49,22 @@ object FinalUiColors {
 object FinalUiDimens {
     val ScreenPadding = 4.dp
     val SectionGap = 4.dp
-    val PanelPadding = 8.dp
-    val CompactPanelPadding = 6.dp
+    val PanelPadding = 7.dp
+    val CompactPanelPadding = 5.dp
     val InnerGap = 4.dp
     val MajorGap = 8.dp
 
-    val ChromeRadius = 20.dp
-    val PanelRadius = 18.dp
+    val ChromeRadius = 16.dp
+    val PanelRadius = 14.dp
     val TileRadius = 20.dp
-    val GroupRadius = 14.dp
-    val ButtonRadius = 12.dp
-    val AttemptRadius = 8.dp
-    val MatrixRadius = 6.dp
+    val GroupRadius = 12.dp
+    val ButtonRadius = 10.dp
+    val AttemptRadius = 7.dp
+    val MatrixRadius = 5.dp
 
     val PanelBorder = 1.dp
     val SelectedBorder = 2.dp
-    val PanelElevation = 3.dp
+    val PanelElevation = 2.dp
     val TileElevation = 4.dp
     val ChromeElevation = 4.dp
     val MinimumTouchTarget = 44.dp
@@ -98,81 +101,82 @@ fun finalGameFieldMetrics(
         4 -> GameFieldLayoutMetrics(
             attemptsWeight = 0.40f,
             matrixWeight = 0.60f,
-            matrixGap = 3.dp,
-            matrixRadius = 6.dp,
-            matrixDigitSize = 12.sp,
-            matrixCellHeight = 30.dp,
-            attemptTextSize = 14.sp,
-            attemptRowHeight = 30.dp,
-            inputSlotHeight = 42.dp,
-            inputSlotGap = 6.dp,
-            keypadHeight = 38.dp,
-            topPanelMinHeight = 62.dp,
-            helpersHeight = 44.dp,
-            toolsHeight = 40.dp,
+            matrixGap = 2.dp,
+            matrixRadius = 5.dp,
+            matrixDigitSize = 11.sp,
+            matrixCellHeight = 26.dp,
+            attemptTextSize = 13.sp,
+            attemptRowHeight = 28.dp,
+            inputSlotHeight = 34.dp,
+            inputSlotGap = 5.dp,
+            keypadHeight = 32.dp,
+            topPanelMinHeight = 56.dp,
+            helpersHeight = 40.dp,
+            toolsHeight = 36.dp,
         )
 
         in 5..6 -> GameFieldLayoutMetrics(
             attemptsWeight = 0.37f,
             matrixWeight = 0.63f,
-            matrixGap = 2.5.dp,
-            matrixRadius = 6.dp,
-            matrixDigitSize = 11.5.sp,
-            matrixCellHeight = 28.dp,
-            attemptTextSize = 13.5.sp,
-            attemptRowHeight = 29.dp,
-            inputSlotHeight = 40.dp,
+            matrixGap = 2.dp,
+            matrixRadius = 5.dp,
+            matrixDigitSize = 10.5.sp,
+            matrixCellHeight = 24.dp,
+            attemptTextSize = 12.5.sp,
+            attemptRowHeight = 27.dp,
+            inputSlotHeight = 32.dp,
             inputSlotGap = 4.dp,
-            keypadHeight = 38.dp,
-            topPanelMinHeight = 62.dp,
-            helpersHeight = 44.dp,
-            toolsHeight = 40.dp,
+            keypadHeight = 31.dp,
+            topPanelMinHeight = 56.dp,
+            helpersHeight = 40.dp,
+            toolsHeight = 36.dp,
         )
 
         in 7..8 -> GameFieldLayoutMetrics(
             attemptsWeight = 0.32f,
             matrixWeight = 0.68f,
-            matrixGap = 2.dp,
-            matrixRadius = 5.dp,
-            matrixDigitSize = 11.sp,
-            matrixCellHeight = 25.dp,
-            attemptTextSize = 12.5.sp,
-            attemptRowHeight = 28.dp,
-            inputSlotHeight = 36.dp,
+            matrixGap = 1.5.dp,
+            matrixRadius = 4.dp,
+            matrixDigitSize = 10.sp,
+            matrixCellHeight = 21.dp,
+            attemptTextSize = 11.5.sp,
+            attemptRowHeight = 26.dp,
+            inputSlotHeight = 30.dp,
             inputSlotGap = 3.dp,
-            keypadHeight = 36.dp,
-            topPanelMinHeight = 60.dp,
-            helpersHeight = 42.dp,
-            toolsHeight = 38.dp,
+            keypadHeight = 30.dp,
+            topPanelMinHeight = 54.dp,
+            helpersHeight = 38.dp,
+            toolsHeight = 35.dp,
         )
 
         else -> GameFieldLayoutMetrics(
             attemptsWeight = 0.36f,
             matrixWeight = 0.64f,
             matrixGap = 1.dp,
-            matrixRadius = 5.dp,
-            matrixDigitSize = 9.5.sp,
-            matrixCellHeight = 22.dp,
-            attemptTextSize = 10.sp,
-            attemptRowHeight = 26.dp,
-            inputSlotHeight = 32.dp,
+            matrixRadius = 4.dp,
+            matrixDigitSize = 9.sp,
+            matrixCellHeight = 19.dp,
+            attemptTextSize = 9.5.sp,
+            attemptRowHeight = 24.dp,
+            inputSlotHeight = 28.dp,
             inputSlotGap = 2.dp,
-            keypadHeight = 34.dp,
-            topPanelMinHeight = 58.dp,
-            helpersHeight = 40.dp,
-            toolsHeight = 36.dp,
+            keypadHeight = 28.dp,
+            topPanelMinHeight = 52.dp,
+            helpersHeight = 36.dp,
+            toolsHeight = 34.dp,
         )
     }
     return if (!compactHeight) {
         base
     } else {
         base.copy(
-            attemptRowHeight = (base.attemptRowHeight - 2.dp).coerceAtLeast(24.dp),
-            inputSlotHeight = (base.inputSlotHeight - 2.dp).coerceAtLeast(30.dp),
-            keypadHeight = (base.keypadHeight - 2.dp).coerceAtLeast(32.dp),
-            topPanelMinHeight = (base.topPanelMinHeight - 4.dp).coerceAtLeast(54.dp),
-            helpersHeight = (base.helpersHeight - 2.dp).coerceAtLeast(38.dp),
-            toolsHeight = (base.toolsHeight - 2.dp).coerceAtLeast(34.dp),
+            matrixCellHeight = (base.matrixCellHeight - 2.dp).coerceAtLeast(16.dp),
+            attemptRowHeight = (base.attemptRowHeight - 2.dp).coerceAtLeast(22.dp),
+            inputSlotHeight = (base.inputSlotHeight - 2.dp).coerceAtLeast(26.dp),
+            keypadHeight = (base.keypadHeight - 2.dp).coerceAtLeast(26.dp),
+            topPanelMinHeight = (base.topPanelMinHeight - 4.dp).coerceAtLeast(48.dp),
+            helpersHeight = (base.helpersHeight - 2.dp).coerceAtLeast(34.dp),
+            toolsHeight = (base.toolsHeight - 2.dp).coerceAtLeast(32.dp),
         )
     }
 }

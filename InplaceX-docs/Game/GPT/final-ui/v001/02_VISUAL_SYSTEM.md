@@ -10,13 +10,13 @@
 
 | Token | HEX | Назначение |
 |---|---|---|
-| `WarmPanelTop` | `#FFF9EC` | верх кремовой панели |
-| `WarmPanelBottom` | `#F6E5C7` | низ кремовой панели |
-| `WarmPanelSolid` | `#FFF4DE` | fallback/простые поверхности |
-| `WarmBorder` | `#D8B879` | основной тёплый контур |
-| `WarmDivider` | `#B9955F` @ 42% | разделители |
-| `WarmText` | `#3B2918` | основной текст |
-| `WarmTextMuted` | `#725A3C` | вторичный текст |
+| `WarmPanelTop` | `#FFFAF0` | верх кремовой панели |
+| `WarmPanelBottom` | `#F7E8CD` | низ кремовой панели |
+| `WarmPanelSolid` | `#FFF6E4` | fallback/простые поверхности |
+| `WarmBorder` | `#CFA45F` | основной тёплый контур |
+| `WarmDivider` | `#B78B50` @ 42% | разделители |
+| `WarmText` | `#342417` | основной текст |
+| `WarmTextMuted` | `#6D563B` | вторичный текст |
 | `ChromeTop` | `#365678` | верх chrome gradient |
 | `Chrome` | `#223C5A` | HUD/nav surface |
 | `ChromeDeep` | `#11263F` | низ chrome gradient |
@@ -26,13 +26,16 @@
 | `PrimaryDeep` | `#0D4E91` | primary button bottom |
 | `ModeOrangeTop` | `#F8CA6A` | Гонка |
 | `ModeOrange` | `#EBA62E` | Гонка |
+| `ModeOrangeDeep` | `#D98A18` | низ карточки Гонки |
 | `ModePurpleTop` | `#9B73DC` | Дуэль |
 | `ModePurple` | `#704BB8` | Дуэль |
+| `ModePurpleDeep` | `#56349B` | низ карточки Дуэли |
 | `ModeGreenTop` | `#97C751` | Компания |
 | `ModeGreen` | `#62962E` | Компания |
-| `StateNo` | `#E97872` | Нет |
-| `StateMaybe` | `#E6B83E` | Возможно |
-| `StateExact` | `#79B95D` | Точно |
+| `ModeGreenDeep` | `#477A20` | низ карточки Компании |
+| `StateNo` | `#D96B66` | Нет |
+| `StateMaybe` | `#E2B444` | Возможно |
+| `StateExact` | `#6EAD57` | Точно |
 | `StatePro` | `#AEBEC9` | PRO/auto |
 | `LockedNo` | `#C95D5D` | доказано невозможно |
 | `LockedExact` | `#4C9A45` | доказано точно |
@@ -44,7 +47,7 @@
 - Warm panel: `WarmPanelTop → WarmPanelBottom`, вертикально, разница мягкая.
 - Chrome: `ChromeTop → Chrome → ChromeDeep`.
 - Primary: `PrimaryTop → Primary → PrimaryDeep`.
-- Mode tiles: соответствующая пара `Top → base`.
+- Mode tiles: соответствующая тройка `Top → base → deep`, без неонового свечения.
 - Не использовать более трёх stop и не добавлять glow к каждой поверхности.
 
 ## 4. Радиусы
@@ -52,12 +55,12 @@
 | Элемент | Radius |
 |---|---:|
 | shell chrome outer | 20dp |
-| общая panel | 18dp |
+| общая panel | 14dp |
 | mode tile | 20dp |
-| inner group/input panel | 14dp |
-| button | 12dp |
-| attempt row | 8dp |
-| matrix cell | 5–6dp |
+| inner group/input panel | 12dp |
+| button | 10dp |
+| attempt row | 7dp |
+| matrix cell | 5dp |
 | selected bottom nav item | 14dp |
 
 Не использовать 22–28dp повсеместно. Большой radius только у крупных mode tiles.
@@ -76,7 +79,7 @@
 
 | Уровень | Elevation |
 |---|---:|
-| panel | 3dp |
+| panel | 2dp |
 | mode tile | 4dp |
 | chrome | 4dp |
 | selected/floating | 5dp max |
@@ -130,11 +133,11 @@
 | State | Fill | Border | Digit |
 |---|---|---|---|
 | empty | transparent/cream 40% | warm 55% 1dp | warm text |
-| no | StateNo 18% | StateNo 1dp | muted + medium |
-| maybe | StateMaybe 26% | StateMaybe 1dp | warm text |
-| exact | StateExact 30% | StateExact 2dp | bold |
-| locked no | LockedNo 28% | LockedNo 2dp | LockedNo/bold |
-| locked exact | LockedExact 55% | LockedExact 2dp | white/bold |
+| no | StateNo 12% | StateNo 1dp | muted + medium |
+| maybe | StateMaybe 20% | StateMaybe 1dp | warm text |
+| exact | StateExact 24% | StateExact 2dp | bold |
+| locked no | LockedNo 16% | LockedNo 2dp | LockedNo/bold |
+| locked exact | LockedExact 62% | LockedExact 2dp | white/bold |
 | disabled | neutral 22% | neutral 1dp | 55% alpha |
 
 ### Buttons
@@ -143,3 +146,4 @@
 - Secondary: warm panel, primary text, warm border.
 - Destructive/reset не делается красным: сброс — neutral secondary.
 - Disabled: сохранён label, fill desaturated, alpha компонента не ниже 0.55.
+- Цифровая клавиатура gameplay: compact warm surface + 1dp warm border; стандартные Material tonal pills не используются.

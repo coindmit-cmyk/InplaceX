@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -38,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -108,19 +109,19 @@ fun SceneCard(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = modifier.shadow(8.dp, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
         color = accentColor,
         contentColor = contentColor,
         tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
+        shadowElevation = 3.dp,
+        border = BorderStroke(1.dp, InplaceXColors.ToyCreamShadow),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             content()
         }
@@ -135,15 +136,15 @@ fun SceneBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(12.dp),
         color = InplaceXColors.ToyCream,
         contentColor = InplaceXColors.ToyBrown,
         tonalElevation = 0.dp,
-        shadowElevation = 4.dp,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, InplaceXColors.ToyCreamShadow),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -173,28 +174,28 @@ fun SceneActionTile(
     stateDescription: String? = null,
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
+    contentColor: Color = Color.White,
     accentBrush: Brush = Brush.verticalGradient(
-        listOf(InplaceXColors.ToyBlueTop, InplaceXColors.ToyBlueDeep)
+        listOf(FinalUiColors.PrimaryTop, FinalUiColors.PrimaryDeep)
     ),
     onClick: () -> Unit,
 ) {
-    val tileShape = RoundedCornerShape(if (compact) 22.dp else 26.dp)
-    val tileMinHeight = if (compact) 84.dp else 96.dp
-    val tileHorizontalPadding = if (compact) 14.dp else 16.dp
-    val tileVerticalPadding = if (compact) 12.dp else 16.dp
-    val tileSpacing = if (compact) 12.dp else 14.dp
-    val leadingSize = if (compact) 52.dp else 58.dp
-    val leadingShape = RoundedCornerShape(if (compact) 16.dp else 18.dp)
-    val leadingIconSize = if (compact) 30.dp else 36.dp
-    val trailingSize = if (compact) 44.dp else 48.dp
-    val trailingIconSize = if (compact) 26.dp else 30.dp
+    val tileShape = RoundedCornerShape(20.dp)
+    val tileMinHeight = if (compact) 94.dp else 104.dp
+    val tileHorizontalPadding = if (compact) 13.dp else 16.dp
+    val tileVerticalPadding = if (compact) 11.dp else 14.dp
+    val tileSpacing = if (compact) 10.dp else 12.dp
+    val leadingSize = if (compact) 50.dp else 54.dp
+    val leadingShape = RoundedCornerShape(14.dp)
+    val leadingIconSize = if (compact) 27.dp else 30.dp
+    val trailingSize = if (compact) 40.dp else 44.dp
+    val trailingIconSize = if (compact) 23.dp else 26.dp
     val semanticsModifier = Modifier.semantics {
         role = Role.Button
         stateDescription?.let { this.stateDescription = it }
     }
     Surface(
         modifier = modifier
-            .shadow(10.dp, tileShape)
             .heightIn(min = tileMinHeight)
             .then(semanticsModifier)
             .clickable(
@@ -205,8 +206,8 @@ fun SceneActionTile(
         shape = tileShape,
         color = Color.Transparent,
         tonalElevation = 0.dp,
-        shadowElevation = 2.dp,
-        border = BorderStroke(3.dp, Color.White.copy(alpha = 0.34f)),
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.42f)),
     ) {
         Row(
             modifier = Modifier
@@ -221,8 +222,8 @@ fun SceneActionTile(
                     modifier = Modifier.size(leadingSize),
                     shape = leadingShape,
                     color = Color.White.copy(alpha = 0.17f),
-                    contentColor = Color.White,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)),
+                    contentColor = contentColor,
+                    border = BorderStroke(1.dp, contentColor.copy(alpha = 0.24f)),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -239,26 +240,20 @@ fun SceneActionTile(
             ) {
                 Text(
                     text = title,
-                    style = if (singleLineTitle || compact) {
-                        MaterialTheme.typography.titleMedium
-                    } else {
-                        MaterialTheme.typography.titleLarge
-                    },
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
+                    fontSize = if (compact) 18.sp else 20.sp,
+                    lineHeight = if (compact) 21.sp else 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
                     maxLines = if (singleLineTitle) 1 else 2,
                     softWrap = !singleLineTitle,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = subtitle,
-                    style = if (compact) {
-                        MaterialTheme.typography.bodySmall
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = if (enabled) 0.92f else 0.70f),
+                    fontSize = if (compact) 12.5.sp else 14.sp,
+                    lineHeight = if (compact) 16.sp else 19.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = contentColor.copy(alpha = if (enabled) 0.90f else 0.62f),
                     maxLines = subtitleMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -268,8 +263,8 @@ fun SceneActionTile(
                     modifier = Modifier.size(trailingSize),
                     shape = CircleShape,
                     color = Color.White.copy(alpha = 0.16f),
-                    contentColor = Color.White,
-                    border = BorderStroke(2.dp, Color.White.copy(alpha = 0.36f)),
+                    contentColor = contentColor,
+                    border = BorderStroke(1.dp, contentColor.copy(alpha = 0.34f)),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(

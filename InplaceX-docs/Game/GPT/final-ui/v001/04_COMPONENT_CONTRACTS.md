@@ -5,9 +5,9 @@
 Назначение: базовая кремовая поверхность для gameplay и form groups.
 
 - gradient top/bottom;
-- radius 18dp default;
+- radius 14dp default;
 - border 1dp warm;
-- elevation 3dp;
+- elevation 2dp;
 - content padding передаётся явно;
 - не добавляет ещё одну вложенную `Surface` без необходимости.
 
@@ -106,6 +106,8 @@ States:
 
 ## 9. `WarmPrimaryButton`
 
+Перед action buttons gameplay используется `GameKeypadButton`: compact warm fill, 1dp warm border, одинаковая геометрия цифр/backspace и adaptive visual height внутри сенсорной высоты не менее 44dp. Он не использует `FilledTonalButton` и сохраняет текущие callbacks/test tags.
+
 - min height 44dp;
 - blue gradient;
 - white semibold text;
@@ -127,6 +129,8 @@ States:
 - one 1dp blue border;
 - no duplicate shadow;
 - icon tint white, resource accents сохраняются.
+
+Общие `SceneCard` и `SceneActionTile` следуют тем же правилам: одна тень, один контур, radius 16/20dp и без вложенных конкурирующих surfaces.
 
 ## 12. `AdSlotFrame`
 

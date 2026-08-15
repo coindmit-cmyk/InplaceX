@@ -5,16 +5,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.ui.common.WarmPrimaryButton
+import com.mirkori.inplacex.ui.common.WarmSecondaryButton
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
@@ -43,7 +42,7 @@ fun PvpModesScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -51,13 +50,13 @@ fun PvpModesScreen(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = strings.text("home.pvp.screen.title"),
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                 )
 
@@ -70,11 +69,11 @@ fun PvpModesScreen(
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = modeAccentColor.copy(alpha = 0.12f),
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
@@ -87,58 +86,53 @@ fun PvpModesScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            OutlinedButton(
+                            WarmSecondaryButton(
+                                label = "−",
                                 enabled = codeLength > MinimumHomeCodeLength,
                                 onClick = { onCodeLengthChange(selectHomeCodeLength(codeLength - 1)) },
-                            ) {
-                                Text("−")
-                            }
+                                modifier = Modifier.width(44.dp).height(40.dp),
+                            )
                             Text(
                                 text = strings.homeCodeLength(codeLength),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
-                            OutlinedButton(
+                            WarmSecondaryButton(
+                                label = "+",
                                 enabled = codeLength < MaximumHomeCodeLength,
                                 onClick = { onCodeLengthChange(selectHomeCodeLength(codeLength + 1)) },
-                            ) {
-                                Text("+")
-                            }
+                                modifier = Modifier.width(44.dp).height(40.dp),
+                            )
                         }
                     }
                 }
 
-                Button(
+                WarmPrimaryButton(
+                    label = strings.text("home.pvp.bot"),
                     onClick = onPlayWithBot,
+                    enabled = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = modeAccentColor),
-                ) {
-                    Text(strings.text("home.pvp.bot"), fontWeight = FontWeight.Bold)
-                }
+                        .height(48.dp),
+                )
 
-                FilledTonalButton(
+                WarmSecondaryButton(
+                    label = strings.text("home.pvp.online"),
                     onClick = onPlayOnline,
                     enabled = onlineAvailable,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 52.dp),
-                ) {
-                    Text(
-                        text = strings.text("home.pvp.online"),
-                        maxLines = 1,
-                        softWrap = false,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                        .height(48.dp),
+                )
 
-                OutlinedButton(
+                WarmSecondaryButton(
+                    label = strings.text("top.back"),
                     onClick = onBack,
-                    modifier = Modifier.fillMaxWidth(fraction = 0.58f),
-                ) {
-                    Text(strings.text("top.back"))
-                }
+                    enabled = true,
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = 0.50f)
+                        .height(44.dp),
+                )
             }
         }
     }

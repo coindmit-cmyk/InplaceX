@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.engine.ScoreCalculator
@@ -57,6 +58,7 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
+import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -667,9 +669,10 @@ private fun HomeSelectionScreen(
             Text(
                 text = strings.text("home.subtitle"),
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium,
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
                 color = InplaceXColors.ToyCream,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )
 
@@ -681,8 +684,13 @@ private fun HomeSelectionScreen(
                     leadingIcon = Icons.Outlined.Timer,
                     trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
+                        listOf(
+                            FinalUiColors.ModeOrangeTop,
+                            FinalUiColors.ModeOrange,
+                            FinalUiColors.ModeOrangeDeep,
+                        )
                     ),
+                    contentColor = FinalUiColors.WarmText,
                     singleLineTitle = true,
                     compact = true,
                     subtitleMaxLines = 2,
@@ -695,7 +703,11 @@ private fun HomeSelectionScreen(
                     leadingIcon = Icons.Outlined.Groups,
                     trailingIcon = Icons.Outlined.ChevronRight,
                     accentBrush = Brush.verticalGradient(
-                        listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
+                        listOf(
+                            FinalUiColors.ModePurpleTop,
+                            FinalUiColors.ModePurple,
+                            FinalUiColors.ModePurpleDeep,
+                        )
                     ),
                     singleLineTitle = true,
                     compact = true,
@@ -714,8 +726,13 @@ private fun HomeSelectionScreen(
                         leadingIcon = Icons.Outlined.Timer,
                         trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange)
+                            listOf(
+                                FinalUiColors.ModeOrangeTop,
+                                FinalUiColors.ModeOrange,
+                                FinalUiColors.ModeOrangeDeep,
+                            )
                         ),
+                        contentColor = FinalUiColors.WarmText,
                         singleLineTitle = true,
                         compact = true,
                         subtitleMaxLines = 2,
@@ -728,7 +745,11 @@ private fun HomeSelectionScreen(
                         leadingIcon = Icons.Outlined.Groups,
                         trailingIcon = Icons.Outlined.ChevronRight,
                         accentBrush = Brush.verticalGradient(
-                            listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple)
+                            listOf(
+                                FinalUiColors.ModePurpleTop,
+                                FinalUiColors.ModePurple,
+                                FinalUiColors.ModePurpleDeep,
+                            )
                         ),
                         singleLineTitle = true,
                         compact = true,
@@ -745,7 +766,11 @@ private fun HomeSelectionScreen(
                 leadingIcon = Icons.Outlined.Map,
                 trailingIcon = Icons.Outlined.ChevronRight,
                 accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen)
+                    listOf(
+                        FinalUiColors.ModeGreenTop,
+                        FinalUiColors.ModeGreen,
+                        FinalUiColors.ModeGreenDeep,
+                    )
                 ),
                 singleLineTitle = true,
                 compact = true,

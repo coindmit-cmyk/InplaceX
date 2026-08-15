@@ -46,10 +46,10 @@
 
 ### Status panel
 
-- Высота 56–68dp в зависимости от status lines.
-- Первая строка: mode + moves + total + turn.
+- Минимальная высота 52–56dp; контейнер растёт при увеличенном системном font scale и не обрезает supporting/error text.
+- Одна строка: слева mode и короткий supporting/status text, справа moves + total + turn.
 - Внутренние metrics разделяются тонкими vertical dividers, а не четырьмя вложенными карточками.
-- Status text — одна строка, 12sp.
+- Routine status не создаёт отдельную полноширинную строку или карточку; текст остаётся одной строкой, 11–12sp.
 
 ### Work board
 
@@ -57,12 +57,12 @@
 - Для 4–6 цифр используются left/right weights из UX contract.
 - Для 7–10 цифр попытки располагаются сверху (120–150dp), матрица снизу и занимает остаток рассчитанной, а не экранной, высоты work board.
 - Work board измеряется по десяти строкам матрицы; запрещён `weight(fill = true)`, растягивающий его на весь свободный viewport.
-- Каждая panel использует `WarmPanel`, radius 16–18dp.
-- Titles 15sp Semibold.
+- Каждая panel использует `WarmPanel`, radius 14dp.
+- Titles 14sp Semibold.
 
 ### Attempts
 
-- Row height: 30dp (4), 29dp (5–6), 28dp (7–8), 26dp (9–10).
+- Row height: 28dp (4), 27dp (5–6), 26dp (7–8), 24dp (9–10).
 - Формат: `1234 → 2`.
 - Horizontal padding 6dp; vertical 3dp.
 - Latest row: `Primary` 10% fill + 1dp primary border.
@@ -71,7 +71,7 @@
 
 ### Matrix
 
-- Для 4–10 цифр ширина ячейки рассчитывается из ширины панели, высота — независимо и ограничивается токеном 30/28/25/22dp.
+- Для 4–10 цифр ширина ячейки рассчитывается из ширины панели, высота — независимо и ограничивается токеном 26/24/21/19dp; compact-height fallback уменьшает её ещё на 2dp до минимума 16dp.
 - Header `Кодовая матрица` виден над строкой `0` и совпадает по высоте с header `Попытки`.
 - Gap: 3dp (4), 2.5dp (5–6), 2dp (7–8), 1dp (9–10).
 - Cell radius: 6dp до 6 колонок, 5dp от 7.
@@ -80,21 +80,21 @@
 
 ### Helpers
 
-- 40–44dp height.
+- 36–40dp height.
 - Icon 18dp; count/label одна строка.
 - Selected hint имеет primary outline, но не меняет высоту.
 
 ### Tools
 
-- 38–40dp height.
+- 34–36dp height.
 - Один общий segmented container, а не четыре независимые Material cards.
 - Labels: текущая локализация; RU compact допускает `Нет / Возм / Точн / PRO`.
 
 ### Input
 
-- Panel padding 8dp.
-- Slots: 42/40/36/32dp по length groups.
-- Keypad: 36–38dp; одна строка.
+- Panel padding 6dp.
+- Slots: 34/32/30/28dp по length groups.
+- Keypad: визуальная поверхность 32/31/30/28dp внутри сенсорной высоты 44dp; одна строка, собственные warm-surface клавиши без Material tonal pills.
 - Action row: 44dp.
 - Confirm weight 1.35, reset weight 1.0.
 
@@ -144,6 +144,7 @@
 - Secret length — stepper row в одной warm panel.
 - Create/find match — primary full width.
 - Friend code input + join — отдельная логическая группа.
+- Экран выбора соперника использует компактные warm/primary actions, а не набор крупных Material pill-кнопок.
 
 ### States
 

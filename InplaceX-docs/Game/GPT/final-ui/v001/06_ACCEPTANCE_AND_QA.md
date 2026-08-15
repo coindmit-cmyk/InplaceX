@@ -12,7 +12,7 @@
 - production online length 9–10 перестал работать;
 - реклама перекрывает input/tools;
 - загруженный ad-slot попадает под системную navigation bar;
-- work board растянут свободной высотой viewport, matrix row выше 30dp или confirm уходит за нижнюю границу;
+- work board растянут свободной высотой viewport, matrix row выше 27dp или confirm уходит за нижнюю границу;
 - изменены game rules, state, scoring, online/API, purchases или ad policy;
 - существующие test tags/semantics исчезли;
 - RU/EN текст обрезан или переносится посимвольно;
@@ -51,7 +51,8 @@
 - 7 digits: attempts сверху, matrix снизу;
 - 10 digits: matrix использует всю ширину без horizontal scroll;
 - 4/6/7/8/10 digits: видны matrix header, tools, combination, keypad и обе action buttons;
-- высота matrix row не превышает 30dp и не меняется от свободной высоты viewport;
+- высота matrix row не превышает 27dp и не меняется от свободной высоты viewport;
+- визуально компактные клавиши keypad сохраняют сенсорную высоту не менее 44dp;
 - NO/MAYBE/YES selected;
 - manual marks + locked proven facts;
 - hints enabled/disabled;
