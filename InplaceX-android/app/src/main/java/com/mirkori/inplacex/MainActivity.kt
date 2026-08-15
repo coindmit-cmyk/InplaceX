@@ -308,17 +308,12 @@ class MainActivity : ComponentActivity() {
                                 format = AdFormat.REWARDED,
                             ),
                         )
-                        if (
-                            AppConfigCatalog.platformConfig.providers.ads.ownerYandex
-                                .postMatchInterstitialAdUnitId.isNotBlank()
-                        ) {
-                            providerServices.adRuntime.preload(
-                                AdRequest(
-                                    placement = AdPlacement.POST_MATCH_INTERSTITIAL,
-                                    format = AdFormat.INTERSTITIAL,
-                                ),
-                            )
-                        }
+                        providerServices.adRuntime.preload(
+                            AdRequest(
+                                placement = AdPlacement.POST_MATCH_INTERSTITIAL,
+                                format = AdFormat.INTERSTITIAL,
+                            ),
+                        )
                     }
                 }
 

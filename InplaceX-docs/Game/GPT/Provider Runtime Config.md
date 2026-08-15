@@ -6,9 +6,10 @@
 - an isolated worktree or CI runner may point to the same private-format file
   with `-PinplacexProviderConfigFile=<absolute-path>`; the file remains outside Git
 - debug reads `provider.debug.*` keys and supplies sandbox product defaults when those keys are absent
-- debug/sandbox treats non-empty Yandex placement values as enablement flags:
-  rewarded, banner, and interstitial calls use the corresponding official
-  `demo-*-yandex` placement instead of the configured value
+- debug/sandbox always enables banner, rewarded, and interstitial through the
+  corresponding official `demo-*-yandex` placements. A clean worktree and CI
+  build therefore exercise test advertising without `local.properties`;
+  configured release placement values are never used by this environment
 - release reads `provider.release.*` provider keys; the release environment is
   always `live`, while commerce product identity is compiled from canonical
   constants rather than mutable local configuration
@@ -86,9 +87,9 @@ recovery in the production runbook.
   the Mirkori Games browser/PKCE flow. The Platform returns a refreshed
   game-scoped identity with the same stable `gamePlayerId`; InplaceX never
   exchanges a provider token for a second online identity
-- debug and release create the same real Yandex owner adapter when at least one
-  variant-specific Yandex placement is present; release separately requires
-  banner and rewarded ids
+- debug and release create the same real Yandex owner adapter. Debug/sandbox
+  registers it with official demo placements even when local provider keys are
+  absent; release requires live banner and rewarded ids
 - Yandex Mobile Ads SDK automatic initialization is disabled in the manifest;
   initialization occurs only after a persisted `ACCEPTED` or `DECLINED`
   privacy choice

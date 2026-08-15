@@ -46,11 +46,7 @@ class DebugProviderServicesTest {
                     navigationItems = emptyList(),
                     providers = ProviderConfig(
                         environment = ProviderEnvironment.SANDBOX,
-                        ads = AdsProviderConfig(
-                            ownerYandex = AdSdkConfig(
-                                rewardedAdUnitId = "demo-rewarded-yandex",
-                            ),
-                        ),
+                        ads = AdsProviderConfig(),
                     ),
                 ),
                 adConsentController = TestAdConsentController,
@@ -65,7 +61,7 @@ class DebugProviderServicesTest {
                 )
 
                 assertEquals(listOf(AdProviderId.OWNER_YANDEX), plan.providers)
-                assertEquals("", services.gameBannerAdUnitId)
+                assertEquals("demo-banner-yandex", services.gameBannerAdUnitId)
             } finally {
                 services.adRuntime.close()
             }
@@ -94,6 +90,38 @@ class DebugProviderServicesTest {
     }
 
     @Test
+    fun `sandbox debug ads are configured without local provider keys`() {
+        val effective = selectDebugAdsConfig(
+            environment = ProviderEnvironment.SANDBOX,
+            configured = AdsProviderConfig(),
+        )
+
+        assertEquals(
+            listOf(AdProviderId.OWNER_YANDEX),
+            effective.configuredProviderIds(),
+        )
+        assertEquals("demo-banner-yandex", effective.ownerYandex.gameBannerAdUnitId)
+        assertEquals("demo-rewarded-yandex", effective.ownerYandex.rewardedAdUnitId)
+        assertEquals(
+            "demo-interstitial-yandex",
+            effective.ownerYandex.postMatchInterstitialAdUnitId,
+        )
+    }
+
+    @Test
+    fun `live debug ads keep configured provider state`() {
+        val configured = AdsProviderConfig()
+
+        assertEquals(
+            configured,
+            selectDebugAdsConfig(ProviderEnvironment.LIVE, configured),
+        )
+        assertFalse(
+            selectDebugAdsConfig(ProviderEnvironment.LIVE, configured).isConfigured,
+        )
+    }
+
+    @Test
     fun `sandbox debug factory exposes demo banner id to banner UI`() {
         val services = ProviderServicesFactory.create(
             context = ContextWrapper(null),
@@ -101,11 +129,7 @@ class DebugProviderServicesTest {
                 navigationItems = emptyList(),
                 providers = ProviderConfig(
                     environment = ProviderEnvironment.SANDBOX,
-                    ads = AdsProviderConfig(
-                        ownerYandex = AdSdkConfig(
-                            gameBannerAdUnitId = "R-M-owner-banner",
-                        ),
-                    ),
+                    ads = AdsProviderConfig(),
                 ),
             ),
             adConsentController = TestAdConsentController,
