@@ -30,7 +30,7 @@ InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/common/FinalUiPrimiti
 - `GameTopPanel`: заменить nested `GameInfoChip` surfaces на info strip + dividers.
 - `GameAttemptsPanel`: передавать structured attempts; формат `guess → score`.
 - `GameAttemptList`: использовать `CompactAttemptRow`, сохранить auto-scroll и tags.
-- `GameAnalysisPanel`: для stacked-режима считать ширину и высоту cell независимо; digit остаётся в cell.
+- `GameAnalysisPanel`: во всех режимах считать ширину и высоту cell независимо, ограничивать высоту токеном по длине кода; digit остаётся в cell.
 - `GameHelpersPanel`: compact counters.
 - `GameToolsPanel`: segmented control.
 - `GameInputPanel`: adaptive slot/keypad metrics и final buttons.

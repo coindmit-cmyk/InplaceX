@@ -100,10 +100,20 @@ class GamePresentationComponentsTest {
     }
 
     @Test
-    fun `stacked attempts panel stays within compact height range`() {
-        assertEquals(136.dp, stackedAttemptsPanelHeight(400.dp))
-        assertEquals(144.dp, stackedAttemptsPanelHeight(600.dp))
-        assertEquals(150.dp, stackedAttemptsPanelHeight(800.dp))
+    fun `work board height follows cell geometry instead of viewport remainder`() {
+        val fourDigits = finalGameFieldMetrics(4, compactHeight = false)
+        val eightDigits = finalGameFieldMetrics(8, compactHeight = false)
+        val tenDigits = finalGameFieldMetrics(10, compactHeight = false)
+
+        assertEquals(366.dp, analysisPanelHeight(fourDigits))
+        assertEquals(440.dp, gameWorkBoardHeight(eightDigits, stacked = true))
+        assertEquals(395.dp, gameWorkBoardHeight(tenDigits, stacked = true))
+    }
+
+    @Test
+    fun `stacked attempts panel reserves exactly three complete rows`() {
+        assertEquals(129.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
+        assertEquals(123.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(10, compactHeight = false)))
     }
 
     @Test

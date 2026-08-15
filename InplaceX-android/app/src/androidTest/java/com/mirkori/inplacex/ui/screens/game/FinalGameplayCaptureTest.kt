@@ -110,10 +110,30 @@ class FinalGameplayCaptureTest {
         }
         composeRule.onNodeWithTag("game-analysis-9-$codeLength").assertIsDisplayed()
         composeRule.onNodeWithTag("game-guess-slot-$codeLength").assertIsDisplayed()
+        composeRule.onNodeWithTag("game-matrix-title").assertIsDisplayed()
+        composeRule.onNodeWithTag("game-confirm").assertIsDisplayed()
+        if (adLoaded) {
+            composeRule.onNodeWithTag("game-banner-panel").assertIsDisplayed()
+        }
         val attemptsBounds = composeRule.onNodeWithTag("game-attempts-panel")
             .fetchSemanticsNode().boundsInRoot
         val matrixBounds = composeRule.onNodeWithTag("game-analysis-panel")
             .fetchSemanticsNode().boundsInRoot
+        val toolsBounds = composeRule.onNodeWithTag("game-tools-panel")
+            .fetchSemanticsNode().boundsInRoot
+        val inputBounds = composeRule.onNodeWithTag("game-input-panel")
+            .fetchSemanticsNode().boundsInRoot
+        val rootBounds = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val firstCellBounds = composeRule.onNodeWithTag("game-analysis-0-1")
+            .fetchSemanticsNode().boundsInRoot
+        val density = InstrumentationRegistry.getInstrumentation()
+            .targetContext.resources.displayMetrics.density
+        assertTrue("Matrix must end before tools", matrixBounds.bottom <= toolsBounds.top)
+        assertTrue("Input actions must remain inside the viewport", inputBounds.bottom <= rootBounds.bottom)
+        assertTrue(
+            "Matrix rows must remain compact instead of stretching with the viewport",
+            firstCellBounds.height <= 31.dp.value * density,
+        )
         if (codeLength > 6) {
             assertTrue("Attempts must be above the matrix", attemptsBounds.bottom <= matrixBounds.top)
             assertTrue(
