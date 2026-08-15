@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.R
 import com.mirkori.inplacex.core.analysis.ProvenFact
@@ -136,6 +138,7 @@ fun GamePresentationLayout(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .padding(FinalUiDimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
@@ -152,7 +155,7 @@ fun GamePresentationLayout(
                     feedback.performHaptic(AppHapticCue.SELECTION)
                     callbacks.onAnalysisCellPressed(digit, position)
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = false),
             )
 
             if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
@@ -171,7 +174,11 @@ fun GamePresentationLayout(
                 }
             }
 
-            PresentationCard(modifier = Modifier.height(metrics.toolsHeight)) {
+            PresentationCard(
+                modifier = Modifier
+                    .height(metrics.toolsHeight)
+                    .testTag("game-tools-panel"),
+            ) {
                 GameToolsPanel(
                     uiState = uiState,
                     onToolSelected = {
@@ -187,7 +194,7 @@ fun GamePresentationLayout(
                 )
             }
 
-            PresentationCard {
+            PresentationCard(modifier = Modifier.testTag("game-input-panel")) {
                 GameInputPanel(
                     uiState = uiState,
                     metrics = metrics,
@@ -215,7 +222,11 @@ fun GamePresentationLayout(
             }
 
             debugSlot?.let { slot ->
-                PresentationCard(modifier = Modifier.fillMaxWidth()) {
+                PresentationCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("game-banner-panel"),
+                ) {
                     slot()
                 }
             }
@@ -234,44 +245,46 @@ private fun GameWorkBoard(
     modifier: Modifier = Modifier,
 ) {
     val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
+    val boardHeight = gameWorkBoardHeight(metrics, useStackedBoard)
 
     if (useStackedBoard) {
-        BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-            val attemptsHeight = stackedAttemptsPanelHeight(maxHeight)
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(boardHeight),
+            verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
+        ) {
+            val attemptsHeight = stackedAttemptsPanelHeight(metrics)
+            PresentationCard(
+                modifier = Modifier
+                    .height(attemptsHeight)
+                    .testTag("game-attempts-panel"),
             ) {
-                PresentationCard(
-                    modifier = Modifier
-                        .height(attemptsHeight)
-                        .testTag("game-attempts-panel"),
-                ) {
-                    GameAttemptsPanel(
-                        uiState = uiState,
-                        metrics = metrics,
-                        compactEmptyState = true,
-                    )
-                }
-                PresentationCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("game-analysis-panel"),
-                ) {
-                    GameAnalysisPanel(
-                        uiState = uiState,
-                        metrics = metrics,
-                        enabled = enabled,
-                        stretchCellsToPanel = true,
-                        onCellClick = onCellClick,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                GameAttemptsPanel(
+                    uiState = uiState,
+                    metrics = metrics,
+                    compactEmptyState = true,
+                )
+            }
+            PresentationCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("game-analysis-panel"),
+            ) {
+                GameAnalysisPanel(
+                    uiState = uiState,
+                    metrics = metrics,
+                    enabled = enabled,
+                    onCellClick = onCellClick,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     } else {
         Row(
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(boardHeight),
             horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
             PresentationCard(
@@ -302,8 +315,32 @@ private fun GameWorkBoard(
 
 internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
 
-internal fun stackedAttemptsPanelHeight(availableHeight: androidx.compose.ui.unit.Dp) =
-    (availableHeight * 0.24f).coerceIn(136.dp, 150.dp)
+private val GamePanelHorizontalPadding = 6.dp
+private val GamePanelHeaderHeight = 27.dp
+private const val MatrixRows = 10
+private const val StackedVisibleAttempts = 3
+
+internal fun analysisPanelHeight(metrics: GameFieldLayoutMetrics): Dp =
+    GamePanelHorizontalPadding * 2 +
+        GamePanelHeaderHeight +
+        metrics.matrixCellHeight * MatrixRows +
+        metrics.matrixGap * (MatrixRows - 1)
+
+internal fun stackedAttemptsPanelHeight(metrics: GameFieldLayoutMetrics): Dp =
+    (GamePanelHorizontalPadding * 2 +
+        GamePanelHeaderHeight +
+        metrics.attemptRowHeight * StackedVisibleAttempts +
+        3.dp * (StackedVisibleAttempts - 1))
+        .coerceIn(120.dp, 150.dp)
+
+internal fun gameWorkBoardHeight(
+    metrics: GameFieldLayoutMetrics,
+    stacked: Boolean,
+): Dp = analysisPanelHeight(metrics) + if (stacked) {
+    FinalUiDimens.SectionGap + stackedAttemptsPanelHeight(metrics)
+} else {
+    0.dp
+}
 
 @Composable
 private fun PresentationCard(
@@ -477,10 +514,7 @@ internal fun GameAttemptList(
     }
 
     Column(modifier = modifier.fillMaxSize().padding(FinalUiDimens.CompactPanelPadding)) {
-        Text(strings.text("game.attempts.title"), style = MaterialTheme.typography.titleSmall)
-        Spacer(Modifier.height(3.dp))
-        HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.46f))
-        Spacer(Modifier.height(3.dp))
+        GamePanelHeader(strings.text("game.attempts.title"))
         if (attempts.isEmpty()) {
             Box(
                 modifier = if (compactEmptyState) {
@@ -537,58 +571,73 @@ fun GameAnalysisPanel(
     metrics: GameFieldLayoutMetrics,
     enabled: Boolean,
     onCellClick: (digit: Char, position: Int) -> Unit,
-    stretchCellsToPanel: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
-    BoxWithConstraints(modifier = modifier.padding(6.dp)) {
-        val columns = uiState.parameters.codeLength
-        val verticalGap = metrics.matrixGap
-        val horizontalGap = metrics.matrixGap
-        val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
-        val cellHeight = (maxHeight - verticalGap * 9) / 10
-        val cellSize = minOf(
-            cellWidth,
-            cellHeight,
+    Column(modifier = modifier.padding(GamePanelHorizontalPadding)) {
+        GamePanelHeader(
+            title = strings.text("game.race.matrix"),
+            modifier = Modifier.testTag("game-matrix-title"),
         )
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(verticalGap),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            repeat(10) { digit ->
-                Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
-                    repeat(columns) { position ->
-                        val symbol = digit.digitToChar()
-                        val editable = enabled && analysisCellEditable(uiState, symbol, position)
-                        val cellState = analysisCellStateFor(uiState, symbol, position, enabled)
-                        val stateDescription = analysisCellStateText(cellState, strings::text)
-                        WarmAnalysisCell(
-                            digit = symbol,
-                            state = cellState,
-                            stateDescription = stateDescription,
-                            enabled = editable,
-                            contentDescription = strings.text("game.race.matrix.cell")
-                                .replace("{digit}", symbol.toString())
-                                .replace("{position}", (position + 1).toString())
-                                .replace("{state}", stateDescription),
-                            digitSize = metrics.matrixDigitSize,
-                            radius = metrics.matrixRadius,
-                            preserveSquare = !stretchCellsToPanel,
-                            onClick = { onCellClick(symbol, position) },
-                            modifier = (if (stretchCellsToPanel) {
-                                Modifier
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val columns = uiState.parameters.codeLength
+            val verticalGap = metrics.matrixGap
+            val horizontalGap = metrics.matrixGap
+            val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
+            val availableCellHeight = (maxHeight - verticalGap * (MatrixRows - 1)) / MatrixRows
+            val cellHeight = minOf(metrics.matrixCellHeight, availableCellHeight)
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(verticalGap),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                repeat(MatrixRows) { digit ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
+                        repeat(columns) { position ->
+                            val symbol = digit.digitToChar()
+                            val editable = enabled && analysisCellEditable(uiState, symbol, position)
+                            val cellState = analysisCellStateFor(uiState, symbol, position, enabled)
+                            val stateDescription = analysisCellStateText(cellState, strings::text)
+                            WarmAnalysisCell(
+                                digit = symbol,
+                                state = cellState,
+                                stateDescription = stateDescription,
+                                enabled = editable,
+                                contentDescription = strings.text("game.race.matrix.cell")
+                                    .replace("{digit}", symbol.toString())
+                                    .replace("{position}", (position + 1).toString())
+                                    .replace("{state}", stateDescription),
+                                digitSize = metrics.matrixDigitSize,
+                                radius = metrics.matrixRadius,
+                                preserveSquare = false,
+                                onClick = { onCellClick(symbol, position) },
+                                modifier = Modifier
                                     .width(cellWidth)
                                     .height(cellHeight)
-                            } else {
-                                Modifier.size(cellSize)
-                            })
-                                .testTag("game-analysis-$digit-${position + 1}"),
-                        )
+                                    .testTag("game-analysis-$digit-${position + 1}"),
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GamePanelHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth().height(GamePanelHeaderHeight)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+        )
+        Spacer(Modifier.height(3.dp))
+        HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.46f))
+        Spacer(Modifier.height(3.dp))
     }
 }
 
@@ -918,13 +967,17 @@ fun GameInputPanel(
                 label = strings.text("game.action.reset"),
                 onClick = { onEvent(GameFieldEvent.MatchRestarted) },
                 enabled = uiState.route.inputEnabled,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("game-reset"),
             )
             WarmPrimaryButton(
                 label = strings.text("game.action.confirm"),
                 onClick = { onEvent(GameFieldEvent.GuessSubmitted) },
                 enabled = enabled && shownSlots.all { it != null },
-                modifier = Modifier.weight(1.3f),
+                modifier = Modifier
+                    .weight(1.3f)
+                    .testTag("game-confirm"),
             )
         }
     }

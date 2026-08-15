@@ -72,7 +72,7 @@ States:
 - LOCKED_EXACT
 - DISABLED
 
-Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight. `preserveSquare=false` разрешён только для stacked-матрицы 7–10 цифр, где ширина и высота задаются независимо.
+Контракт: digit всегда виден; layout size не меняется между states; selected/locked различаются border weight и font weight. В gameplay matrix используется `preserveSquare=false`: ширина заполняет доступную колонку, а фиксированная по длине кода высота не позволяет рабочему полю растягиваться по viewport.
 
 ## 5. `GameInfoStrip`
 

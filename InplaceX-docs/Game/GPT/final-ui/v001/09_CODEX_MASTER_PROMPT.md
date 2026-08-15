@@ -22,7 +22,7 @@ Apply the final warm-room/polished-casual UI system to the existing Android app 
 ## Non-negotiable owner decisions
 
 - Keep `toy_room_bg_v6` bright and visible.
-- Keep attempts left and code matrix right.
+- Keep attempts left and code matrix right for 4–6 digits; stack attempts above the matrix for 7–10 digits.
 - Attempt rows are `1234 → 2`, not per-digit cards.
 - Digits stay inside matrix cells.
 - Attempts and matrix remain simultaneously visible.

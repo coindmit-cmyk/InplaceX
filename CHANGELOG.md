@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Gameplay work-board geometry now follows the approved compact reference: the
+  board is measured from ten bounded matrix rows instead of consuming the
+  remaining viewport. Four through six digits stay side-by-side, seven through
+  ten stay stacked, the `Code matrix` header is restored, and tools, input,
+  actions, and ads remain below the board instead of being pushed off-screen.
+
 - The standalone Telegram catalog can now consume the active validated Mirkori
   Platform catalog directly, selecting the latest stable Android release and
   falling back to beta. Website, update API, asset links, and Telegram now use
