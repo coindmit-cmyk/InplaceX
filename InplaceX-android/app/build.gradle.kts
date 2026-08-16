@@ -258,7 +258,7 @@ android {
 
     buildTypes {
         getByName("debug") {
-            versionNameSuffix = "-debug.2"
+            versionNameSuffix = "-debug.3"
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")

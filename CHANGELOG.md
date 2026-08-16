@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The owner test build is now identified as `0.9.0-debug.3` and is assembled
+  with the external provider configuration so native Google account linking is
+  available without placing OAuth identifiers in Git. A Google account that is
+  already linked to another InplaceX profile now shows the explicit profile
+  conflict message instead of incorrectly blaming Google verification.
+
 - Public handle conflicts are now shown inside the public ID editor: an occupied
   or invalid ID gets a short explanation above the field plus red field text
   and outline. Editing the value clears the stale error before the next save.

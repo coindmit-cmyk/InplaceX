@@ -1469,7 +1469,8 @@ class MainActivity : ComponentActivity() {
                                                                             "profile.auth.rejected"
                                                                         }
                                                                     }
-                                                                    MirkoriLoginResult.ProfileConflict,
+                                                                    MirkoriLoginResult.ProfileConflict ->
+                                                                        "profile.mirkori.conflict"
                                                                     MirkoriLoginResult.Rejected,
                                                                     is MirkoriLoginResult.BrowserReady,
                                                                     is MirkoriLoginResult.GoogleCredentialRequired,
@@ -1503,7 +1504,8 @@ class MainActivity : ComponentActivity() {
                                                             "profile.auth.rejected"
                                                         }
                                                     }
-                                                    MirkoriLoginResult.ProfileConflict,
+                                                    MirkoriLoginResult.ProfileConflict ->
+                                                        "profile.mirkori.conflict"
                                                     MirkoriLoginResult.Rejected,
                                                     is MirkoriLoginResult.BrowserReady,
                                                     -> "profile.auth.rejected"
