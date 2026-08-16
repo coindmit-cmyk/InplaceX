@@ -393,6 +393,32 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun occupiedPublicHandleStaysInEditorAndClearsWhenValueChanges() {
+        setContent {
+            var resultKey by remember { mutableStateOf<String?>(null) }
+            ProfileRootScreen(
+                progressState = progress(),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000806",
+                ),
+                publicProfileResultKey = resultKey,
+                onPublicProfileResultDismissed = { resultKey = null },
+                onPublicHandleChange = { resultKey = "profile.mirkori.handle.taken" },
+            )
+        }
+
+        composeRule.onNodeWithText("Изменить публичный ID").performScrollTo().performClick()
+        composeRule.onNodeWithTag("profile-handle-input").performTextInput("occupied_id")
+        composeRule.onNodeWithText("Сохранить").performClick()
+        composeRule.onNodeWithTag("profile-handle-error").assertIsDisplayed()
+        composeRule.onNodeWithText("Этот публичный ID уже занят.").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("profile-handle-input").performTextInput("2")
+        composeRule.onAllNodesWithTag("profile-handle-error").assertCountEquals(0)
+    }
+
+    @Test
     fun initializingMirkoriAccountDoesNotExposeLegacyGoogleSignOut() {
         setContent {
             ProfileRootScreen(

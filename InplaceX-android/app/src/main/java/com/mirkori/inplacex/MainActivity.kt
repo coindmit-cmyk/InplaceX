@@ -1314,6 +1314,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onPublicProfileResultDismissed = {
+                                    publicProfileResultKey = null
+                                },
                                 onPublicHandleChange = { handle ->
                                     publicProfileOperation.start()?.let { operationId ->
                                         publicProfileResultKey = null

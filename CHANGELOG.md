@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Public handle conflicts are now shown inside the public ID editor: an occupied
+  or invalid ID gets a short explanation above the field plus red field text
+  and outline. Editing the value clears the stale error before the next save.
+
 - Active online Race and Duel matches now show a compact opponent-progress
   panel with the opponent's attempt count, latest exact-match score, and best
   score. The panel uses only viewer-redacted server data and never exposes the
