@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -41,22 +42,32 @@ fun WarmPanel(
     modifier: Modifier = Modifier,
     shapeRadius: Dp = FinalUiDimens.PanelRadius,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    accent: Color? = null,
+    accentStrength: Float = 0.08f,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(shapeRadius)
+    val panelTop = accent?.tintOver(FinalUiColors.WarmPanelTop, accentStrength)
+        ?: FinalUiColors.WarmPanelTop
+    val panelMiddle = accent?.tintOver(FinalUiColors.WarmPanelSolid, accentStrength * 0.58f)
+        ?: FinalUiColors.WarmPanelSolid
+    val panelBottom = accent?.tintOver(FinalUiColors.WarmPanelBottom, accentStrength * 0.72f)
+        ?: FinalUiColors.WarmPanelBottom
+    val panelBorder = accent?.tintOver(FinalUiColors.WarmBorder, 0.38f)
+        ?: FinalUiColors.WarmBorder
     Surface(
         modifier = modifier,
         shape = shape,
         color = Color.Transparent,
         contentColor = FinalUiColors.WarmText,
-        border = BorderStroke(FinalUiDimens.PanelBorder, FinalUiColors.WarmBorder),
+        border = BorderStroke(FinalUiDimens.PanelBorder, panelBorder),
         shadowElevation = FinalUiDimens.PanelElevation,
     ) {
         Box(
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(FinalUiColors.WarmPanelTop, FinalUiColors.WarmPanelBottom),
+                        listOf(panelTop, panelMiddle, panelBottom),
                     ),
                 )
                 .padding(contentPadding),
@@ -81,14 +92,20 @@ fun CompactAttemptRow(
             .fillMaxWidth()
             .clip(shape)
             .background(
-                if (latest) FinalUiColors.Primary.copy(alpha = 0.10f) else Color.Transparent,
+                Brush.verticalGradient(
+                    if (latest) {
+                        listOf(FinalUiColors.AttemptTop, FinalUiColors.AttemptBottom)
+                    } else {
+                        listOf(FinalUiColors.AttemptIdleTop, FinalUiColors.AttemptIdleBottom)
+                    },
+                ),
             )
             .border(
                 width = 1.dp,
                 color = if (latest) {
-                    FinalUiColors.Primary.copy(alpha = 0.70f)
+                    FinalUiColors.Primary
                 } else {
-                    FinalUiColors.WarmDivider.copy(alpha = 0.24f)
+                    FinalUiColors.WarmDivider.copy(alpha = 0.48f)
                 },
                 shape = shape,
             )
@@ -195,12 +212,23 @@ fun WarmSegmentButton(
             .defaultMinSize(minHeight = 30.dp)
             .clip(shape)
             .background(
-                if (selected) accent.copy(alpha = 0.42f)
-                else FinalUiColors.WarmPanelSolid.copy(alpha = 0.56f),
+                Brush.verticalGradient(
+                    if (selected) {
+                        listOf(
+                            accent.tintOver(FinalUiColors.WarmPanelTop, 0.34f),
+                            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.58f),
+                        )
+                    } else {
+                        listOf(
+                            accent.tintOver(FinalUiColors.WarmPanelTop, 0.08f),
+                            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.14f),
+                        )
+                    },
+                ),
             )
             .border(
                 if (selected) FinalUiDimens.SelectedBorder else FinalUiDimens.PanelBorder,
-                if (selected) accent else FinalUiColors.WarmBorder.copy(alpha = 0.72f),
+                if (selected) accent else accent.tintOver(FinalUiColors.WarmBorder, 0.20f),
                 shape,
             )
             .semantics { this.selected = selected }
@@ -267,7 +295,14 @@ fun WarmSecondaryButton(
         modifier = modifier
             .defaultMinSize(minHeight = FinalUiDimens.MinimumTouchTarget)
             .clip(shape)
-            .background(FinalUiColors.WarmPanelSolid.copy(alpha = if (enabled) 1f else 0.62f))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        FinalUiColors.KeyTop.copy(alpha = if (enabled) 1f else 0.68f),
+                        FinalUiColors.KeyBottom.copy(alpha = if (enabled) 1f else 0.62f),
+                    ),
+                ),
+            )
             .border(1.dp, FinalUiColors.WarmBorder, shape)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -292,42 +327,42 @@ private data class AnalysisCellVisual(
 
 private fun analysisCellVisual(state: AnalysisCellVisualState): AnalysisCellVisual = when (state) {
     AnalysisCellVisualState.EMPTY -> AnalysisCellVisual(
-        fill = FinalUiColors.WarmPanelTop.copy(alpha = 0.42f),
-        border = FinalUiColors.WarmBorder.copy(alpha = 0.58f),
+        fill = FinalUiColors.InputTop,
+        border = FinalUiColors.WarmBorder.copy(alpha = 0.74f),
         borderWidth = 1.dp,
         text = FinalUiColors.WarmText,
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.NO -> AnalysisCellVisual(
-        fill = FinalUiColors.StateNo.copy(alpha = 0.12f),
+        fill = FinalUiColors.StateNo.copy(alpha = 0.24f),
         border = FinalUiColors.StateNo,
         borderWidth = 1.dp,
         text = FinalUiColors.WarmTextMuted,
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.MAYBE -> AnalysisCellVisual(
-        fill = FinalUiColors.StateMaybe.copy(alpha = 0.20f),
+        fill = FinalUiColors.StateMaybe.copy(alpha = 0.34f),
         border = FinalUiColors.StateMaybe,
         borderWidth = 1.dp,
         text = FinalUiColors.WarmText,
         weight = FontWeight.Medium,
     )
     AnalysisCellVisualState.EXACT -> AnalysisCellVisual(
-        fill = FinalUiColors.StateExact.copy(alpha = 0.24f),
+        fill = FinalUiColors.StateExact.copy(alpha = 0.42f),
         border = FinalUiColors.StateExact,
         borderWidth = 2.dp,
         text = FinalUiColors.WarmText,
         weight = FontWeight.Bold,
     )
     AnalysisCellVisualState.LOCKED_NO -> AnalysisCellVisual(
-        fill = FinalUiColors.LockedNo.copy(alpha = 0.16f),
+        fill = FinalUiColors.LockedNo.copy(alpha = 0.30f),
         border = FinalUiColors.LockedNo,
         borderWidth = 2.dp,
         text = FinalUiColors.LockedNo,
         weight = FontWeight.Bold,
     )
     AnalysisCellVisualState.LOCKED_EXACT -> AnalysisCellVisual(
-        fill = FinalUiColors.LockedExact.copy(alpha = 0.62f),
+        fill = FinalUiColors.LockedExact.copy(alpha = 0.82f),
         border = FinalUiColors.LockedExact,
         borderWidth = 2.dp,
         text = Color.White,
@@ -341,3 +376,6 @@ private fun analysisCellVisual(state: AnalysisCellVisualState): AnalysisCellVisu
         weight = FontWeight.Medium,
     )
 }
+
+private fun Color.tintOver(base: Color, alpha: Float): Color =
+    copy(alpha = alpha.coerceIn(0f, 1f)).compositeOver(base)

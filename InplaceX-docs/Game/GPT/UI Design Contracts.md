@@ -73,6 +73,23 @@ layouts. The shared opponent-choice surface groups code length and opponent
 actions inside one cream card and uses the current mode color only for the
 primary action.
 
+## Gameplay Color Pass Contract
+
+- Scope is visual only: keep every screen, block, breakpoint, weight, height,
+  spacing value, navigation callback, game-state transition, and ad slot
+  unchanged.
+- Gameplay surfaces consume `FinalUiColors`; new gameplay hex values do not
+  live in presentation components.
+- Status uses the current mode accent. Attempts use structural blue, analysis
+  uses violet, helpers use semantic multi-color accents, tools use
+  red/yellow/green, and input uses blue with warm cream/gold keys.
+- Empty, selected, manual, locked, disabled, and focus states remain distinct
+  by border weight, fill, text, and existing non-color signals.
+- Color treatment must remain readable at 4, 8, and 10 digits and must not
+  change the 4–6 side-by-side / 7–10 stacked gameplay geometry.
+- The banner/rewarded ad implementation and banner allocation remain outside
+  this pass; visual work must not wrap, replace, cover, or resize the ad slot.
+
 ## Online Entry And Invitation Contract
 
 - Both Race and Duel open an opponent choice before gameplay: bot or online.

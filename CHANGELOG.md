@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Gameplay keeps the accepted 4–6 side-by-side and 7–10 stacked geometry while
+  restoring the earlier colorful toy-room character: mode-colored status,
+  blue attempt history, violet analysis framing, green/gold helpers, stronger
+  red/yellow/green marks, and sunlit input keys now share one tokenized cream,
+  caramel, and blue material system. Navigation, game state, ads, and panel
+  measurements are unchanged.
+
 - The shared Android visual layer now follows the approved warm-room reference:
   navy HUD/navigation chrome, quieter three-stop mode cards, compact cream
   panels, one border and one shadow per component, a condensed gameplay status

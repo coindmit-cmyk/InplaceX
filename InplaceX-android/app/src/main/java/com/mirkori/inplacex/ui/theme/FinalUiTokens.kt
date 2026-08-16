@@ -27,6 +27,15 @@ object FinalUiColors {
     val Primary = Color(0xFF1769B5)
     val PrimaryDeep = Color(0xFF0D4E91)
 
+    val AttemptTop = Color(0xFFE7F4FF)
+    val AttemptBottom = Color(0xFFC9E4F8)
+    val AttemptIdleTop = Color(0xFFFFF7E6)
+    val AttemptIdleBottom = Color(0xFFF6E2BC)
+    val InputTop = Color(0xFFFFEDBF)
+    val InputBottom = Color(0xFFF3D18C)
+    val KeyTop = Color(0xFFFFF8E8)
+    val KeyBottom = Color(0xFFF4DBAC)
+
     val ModeOrangeTop = Color(0xFFF8CA6A)
     val ModeOrange = Color(0xFFEBA62E)
     val ModeOrangeDeep = Color(0xFFD98A18)
@@ -37,9 +46,9 @@ object FinalUiColors {
     val ModeGreen = Color(0xFF62962E)
     val ModeGreenDeep = Color(0xFF477A20)
 
-    val StateNo = Color(0xFFD96B66)
-    val StateMaybe = Color(0xFFE2B444)
-    val StateExact = Color(0xFF6EAD57)
+    val StateNo = Color(0xFFE45F5A)
+    val StateMaybe = Color(0xFFF0B62F)
+    val StateExact = Color(0xFF63AD43)
     val StatePro = Color(0xFFAEBEC9)
     val LockedNo = Color(0xFFC95D5D)
     val LockedExact = Color(0xFF4C9A45)
