@@ -115,6 +115,14 @@ matches. It does not rewrite local campaign progress. The retired standalone
 guest/Google credential path remains source-level debug/test compatibility and
 is not composed into the release runtime as an identity authority.
 
+If the selected Google account already owns another InplaceX game profile, the
+native flow remains fail-closed and presents an explicit choice. Keeping the
+current profile cancels the pending PKCE session. Confirming the existing
+Google profile repeats the same verified native exchange with
+`use_existing_profile`; the Platform session changes to that existing `pid`
+without merging or deleting either server profile. The Google credential stays
+memory-only during the dialog, and the local campaign database is not replaced.
+
 For a bounded upgrade window, an unfinished match created before the Platform
 cutover may use its encrypted legacy refresh token once as ownership proof. The
 client attempts this only after a Platform-authorized session read returns a
