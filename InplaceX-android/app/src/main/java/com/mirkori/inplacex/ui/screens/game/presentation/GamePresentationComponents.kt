@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -130,7 +131,11 @@ fun GamePresentationLayout(
                 .padding(FinalUiDimens.ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
-            PresentationCard(modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight)) {
+            PresentationCard(
+                modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight),
+                accent = uiState.parameters.mode.accent,
+                accentStrength = 0.16f,
+            ) {
                 GameTopPanel(uiState = uiState)
             }
 
@@ -147,7 +152,10 @@ fun GamePresentationLayout(
             )
 
             if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
-                PresentationCard(modifier = Modifier.height(metrics.helpersHeight)) {
+                PresentationCard(
+                    modifier = Modifier.height(metrics.helpersHeight),
+                    accent = FinalUiColors.ModeGreen,
+                ) {
                     GameHelpersPanel(
                         uiState = uiState,
                         enabled = active,
@@ -166,6 +174,7 @@ fun GamePresentationLayout(
                 modifier = Modifier
                     .height(metrics.toolsHeight)
                     .testTag("game-tools-panel"),
+                accent = FinalUiColors.ModeOrange,
             ) {
                 GameToolsPanel(
                     uiState = uiState,
@@ -182,7 +191,11 @@ fun GamePresentationLayout(
                 )
             }
 
-            PresentationCard(modifier = Modifier.testTag("game-input-panel")) {
+            PresentationCard(
+                modifier = Modifier.testTag("game-input-panel"),
+                accent = FinalUiColors.Primary,
+                accentStrength = 0.11f,
+            ) {
                 GameInputPanel(
                     uiState = uiState,
                     metrics = metrics,
@@ -247,6 +260,7 @@ private fun GameWorkBoard(
                 modifier = Modifier
                     .height(attemptsHeight)
                     .testTag("game-attempts-panel"),
+                accent = FinalUiColors.Primary,
             ) {
                 GameAttemptsPanel(
                     uiState = uiState,
@@ -258,6 +272,7 @@ private fun GameWorkBoard(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("game-analysis-panel"),
+                accent = FinalUiColors.ModePurple,
             ) {
                 GameAnalysisPanel(
                     uiState = uiState,
@@ -280,6 +295,7 @@ private fun GameWorkBoard(
                     .weight(metrics.attemptsWeight)
                     .fillMaxHeight()
                     .testTag("game-attempts-panel"),
+                accent = FinalUiColors.Primary,
             ) {
                 GameAttemptsPanel(uiState = uiState, metrics = metrics)
             }
@@ -288,6 +304,7 @@ private fun GameWorkBoard(
                     .weight(metrics.matrixWeight)
                     .fillMaxHeight()
                     .testTag("game-analysis-panel"),
+                accent = FinalUiColors.ModePurple,
             ) {
                 GameAnalysisPanel(
                     uiState = uiState,
@@ -333,9 +350,15 @@ internal fun gameWorkBoardHeight(
 @Composable
 private fun PresentationCard(
     modifier: Modifier = Modifier,
+    accent: Color? = null,
+    accentStrength: Float = 0.08f,
     content: @Composable () -> Unit,
 ) {
-    WarmPanel(modifier = modifier.fillMaxWidth()) {
+    WarmPanel(
+        modifier = modifier.fillMaxWidth(),
+        accent = accent,
+        accentStrength = accentStrength,
+    ) {
         content()
     }
 }
@@ -368,8 +391,8 @@ fun GameTopPanel(
             Text(
                 text = mode,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = FinalUiColors.WarmText,
+                fontWeight = FontWeight.Bold,
+                color = parameters.mode.accentDeep,
                 maxLines = 1,
             )
             supportingText?.let { text ->
@@ -406,6 +429,7 @@ fun GameTopPanel(
                 },
                 bonusMoves = uiState.counters.bonusMoves,
             ),
+            valueColor = FinalUiColors.ModeOrangeText,
             modifier = Modifier.weight(0.82f),
         )
         VerticalDivider(
@@ -422,6 +446,7 @@ fun GameTopPanel(
                     0
                 },
             ),
+            valueColor = FinalUiColors.PrimaryDeep,
             modifier = Modifier.weight(0.82f),
         )
         VerticalDivider(
@@ -431,13 +456,19 @@ fun GameTopPanel(
         GameInfoMetric(
             label = strings.text("game.top.turn"),
             value = timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
+            valueColor = FinalUiColors.ModeGreenDeep,
             modifier = Modifier.weight(0.82f),
         )
     }
 }
 
 @Composable
-private fun GameInfoMetric(label: String, value: String, modifier: Modifier) {
+private fun GameInfoMetric(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier,
+) {
     Column(
         modifier = modifier.padding(horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -451,8 +482,8 @@ private fun GameInfoMetric(label: String, value: String, modifier: Modifier) {
         Text(
             text = value,
             fontSize = 12.sp,
-            color = FinalUiColors.WarmText,
-            fontWeight = FontWeight.SemiBold,
+            color = valueColor,
+            fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
     }
@@ -497,7 +528,10 @@ internal fun GameAttemptList(
     }
 
     Column(modifier = modifier.fillMaxSize().padding(FinalUiDimens.CompactPanelPadding)) {
-        GamePanelHeader(strings.text("game.attempts.title"))
+        GamePanelHeader(
+            title = strings.text("game.attempts.title"),
+            accent = FinalUiColors.Primary,
+        )
         if (attempts.isEmpty()) {
             Box(
                 modifier = if (compactEmptyState) {
@@ -560,6 +594,7 @@ fun GameAnalysisPanel(
     Column(modifier = modifier.padding(GamePanelHorizontalPadding)) {
         GamePanelHeader(
             title = strings.text("game.race.matrix"),
+            accent = FinalUiColors.ModePurple,
             modifier = Modifier.testTag("game-matrix-title"),
         )
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -610,6 +645,7 @@ fun GameAnalysisPanel(
 @Composable
 private fun GamePanelHeader(
     title: String,
+    accent: Color,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().height(GamePanelHeaderHeight)) {
@@ -617,11 +653,11 @@ private fun GamePanelHeader(
             text = title,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = FinalUiColors.WarmText,
+            color = accent,
             maxLines = 1,
         )
         Spacer(Modifier.height(2.dp))
-        HorizontalDivider(color = FinalUiColors.WarmDivider.copy(alpha = 0.34f))
+        HorizontalDivider(color = accent.copy(alpha = 0.48f))
         Spacer(Modifier.height(2.dp))
     }
 }
@@ -675,6 +711,7 @@ fun GameHelpersPanel(
                 contentDescription = LocalAppStrings.current.text("game.boost.add_moves"),
                 label = "+${uiState.route.extraMovesPerBoost}",
                 count = uiState.route.extraMovesBoosts,
+                accent = FinalUiColors.StateMaybe,
                 enabled = enabled,
                 modifier = Modifier.weight(1f),
                 onClick = onExtraMovesBoostRequested,
@@ -684,6 +721,7 @@ fun GameHelpersPanel(
                 contentDescription = LocalAppStrings.current.text("game.boost.add_time"),
                 label = "+${formatDuration(uiState.route.extraTimeSecondsPerBoost)}",
                 count = uiState.route.extraTimeBoosts,
+                accent = FinalUiColors.Primary,
                 enabled = enabled,
                 modifier = Modifier.weight(1f),
                 onClick = onExtraTimeBoostRequested,
@@ -713,9 +751,15 @@ private fun GameHintButton(
         GameFieldHintMode.CHECK_DIGIT -> R.drawable.ic_hint_check_digit
         GameFieldHintMode.CHECK_POSITION -> R.drawable.ic_hint_check_position
     }
+    val accent = when (mode) {
+        GameFieldHintMode.OPEN_POSITION -> FinalUiColors.ModePurple
+        GameFieldHintMode.CHECK_DIGIT -> FinalUiColors.ModeOrange
+        GameFieldHintMode.CHECK_POSITION -> FinalUiColors.ModeGreen
+    }
     CompactHelperButton(
         enabled = enabled,
         selected = selected,
+        accent = accent,
         modifier = modifier.fillMaxHeight(),
         onClick = { onClick(mode) },
     ) {
@@ -739,6 +783,7 @@ private fun GameBoostButton(
     contentDescription: String,
     label: String,
     count: Int,
+    accent: Color,
     enabled: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
@@ -746,6 +791,7 @@ private fun GameBoostButton(
     CompactHelperButton(
         enabled = enabled,
         selected = false,
+        accent = accent,
         modifier = modifier.fillMaxHeight(),
         onClick = onClick,
     ) {
@@ -763,6 +809,7 @@ private fun GameBoostButton(
 private fun CompactHelperButton(
     enabled: Boolean,
     selected: Boolean,
+    accent: Color,
     modifier: Modifier,
     onClick: () -> Unit,
     content: @Composable () -> Unit,
@@ -771,19 +818,21 @@ private fun CompactHelperButton(
     Row(
         modifier = modifier
             .background(
-                color = if (selected) {
-                    FinalUiColors.Primary.copy(alpha = 0.12f)
-                } else {
-                    Color.Transparent
-                },
+                brush = Brush.verticalGradient(
+                    if (selected) {
+                        listOf(accent.copy(alpha = 0.38f), accent.copy(alpha = 0.58f))
+                    } else {
+                        listOf(accent.copy(alpha = 0.10f), accent.copy(alpha = 0.18f))
+                    },
+                ),
                 shape = shape,
             )
             .border(
                 width = if (selected) 1.5.dp else 1.dp,
                 color = if (selected) {
-                    FinalUiColors.Primary
+                    accent
                 } else {
-                    FinalUiColors.WarmBorder.copy(alpha = 0.62f)
+                    accent.copy(alpha = 0.54f)
                 },
                 shape = shape,
             )
@@ -884,8 +933,8 @@ fun GameInputPanel(
         Text(
             text = strings.text("game.combination"),
             fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = FinalUiColors.WarmText,
+            fontWeight = FontWeight.Bold,
+            color = FinalUiColors.PrimaryDeep,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(metrics.inputSlotGap)) {
             shownSlots.forEachIndexed { index, value ->
@@ -895,7 +944,15 @@ fun GameInputPanel(
                         .weight(1f)
                         .height(metrics.inputSlotHeight)
                         .clip(slotShape)
-                        .background(FinalUiColors.WarmPanelTop.copy(alpha = 0.62f))
+                        .background(
+                            Brush.verticalGradient(
+                                if (value == null) {
+                                    listOf(FinalUiColors.KeyTop, FinalUiColors.KeyBottom)
+                                } else {
+                                    listOf(FinalUiColors.InputTop, FinalUiColors.InputBottom)
+                                },
+                            ),
+                        )
                         .border(
                             width = if (openPositionSelected) 2.dp else 1.dp,
                             color = if (openPositionSelected) {
@@ -1007,7 +1064,12 @@ private fun GameKeypadButton(
                 .height(visualHeight)
                 .clip(shape)
                 .background(
-                    FinalUiColors.WarmPanelTop.copy(alpha = if (enabled) 0.78f else 0.46f),
+                    Brush.verticalGradient(
+                        listOf(
+                            FinalUiColors.KeyTop.copy(alpha = if (enabled) 1f else 0.54f),
+                            FinalUiColors.KeyBottom.copy(alpha = if (enabled) 1f else 0.44f),
+                        ),
+                    ),
                 )
                 .border(
                     width = 1.dp,
@@ -1189,9 +1251,21 @@ private fun analysisCellEditable(
 
 private val GameFieldTool.color: Color
     get() = when (this) {
-        GameFieldTool.NO -> InplaceXColors.Coral
-        GameFieldTool.MAYBE -> InplaceXColors.Amber
-        GameFieldTool.YES -> InplaceXColors.Mint
+        GameFieldTool.NO -> FinalUiColors.StateNo
+        GameFieldTool.MAYBE -> FinalUiColors.StateMaybe
+        GameFieldTool.YES -> FinalUiColors.StateExact
+    }
+
+private val GameFieldMode.accent: Color
+    get() = when (this) {
+        GameFieldMode.RACE -> FinalUiColors.ModeOrange
+        GameFieldMode.DUEL -> FinalUiColors.ModePurple
+    }
+
+private val GameFieldMode.accentDeep: Color
+    get() = when (this) {
+        GameFieldMode.RACE -> FinalUiColors.ModeOrangeText
+        GameFieldMode.DUEL -> FinalUiColors.ModePurpleDeep
     }
 
 internal fun shouldShowGameStatus(
