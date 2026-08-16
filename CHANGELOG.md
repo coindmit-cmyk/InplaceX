@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- The owner test build is now identified as `0.9.0-debug.3` and is assembled
+- The owner test build is now identified as `0.9.0-debug.4`. When a Google
+  account already owns an InplaceX profile, the app now asks whether to enter
+  that existing profile or remain in the current guest profile. No switch,
+  merge, or deletion happens without the explicit confirmation, and local
+  campaign progress remains on the device.
+
+- The previous owner test build `0.9.0-debug.3` was assembled
   with the external provider configuration so native Google account linking is
   available without placing OAuth identifiers in Git. A Google account that is
   already linked to another InplaceX profile now shows the explicit profile

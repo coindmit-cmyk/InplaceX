@@ -140,6 +140,7 @@ class MirkoriGameSdk(
         profileAccessToken: String,
         idToken: String,
         pending: PendingGameLogin,
+        conflictResolution: PlatformProfileConflictResolution = PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
         idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
     ): GameIdentitySession {
         require(profileAccessToken.matches(CredentialPattern))
@@ -151,7 +152,12 @@ class MirkoriGameSdk(
             codec.exchangeResponse(
                 post(
                     path = "/api/v1/game-auth/google",
-                    body = codec.nativeGoogleGameAuthRequest(pending.session, pending.codeVerifier, idToken),
+                    body = codec.nativeGoogleGameAuthRequest(
+                        pending.session,
+                        pending.codeVerifier,
+                        idToken,
+                        conflictResolution,
+                    ),
                     idempotencyKey = idempotencyKey,
                     bearerToken = profileAccessToken,
                 ),

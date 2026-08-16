@@ -7,7 +7,8 @@
   - `beginLogin()`
   - `completeLogin(callbackUrl)`
   - `beginGoogleLogin()`
-  - `completeGoogleLogin(idToken)`
+  - `completeGoogleLogin(idToken, conflictResolution)`
+  - `cancelPendingLogin()`
 - production `AccessTokenProvider`
   - `currentAccessToken()`
   - `refreshAccessToken(rejectedToken)`
@@ -47,6 +48,12 @@ state; opening a browser is never proof of payment.
   exchange and never places it in a URL or log; the InplaceX online backend
   never receives provider credentials, and provider subjects plus verification
   rules remain inside Mirkori Games Platform
+- a Google account that already owns an InplaceX profile first returns the
+  fail-closed `profile_conflict`; Android keeps the Google credential only in
+  memory while showing the explicit choice. `USE_EXISTING_PROFILE` switches the active
+  Platform session only after confirmation, while cancel clears the pending
+  login. Neither path merges or deletes profiles, and local campaign data is
+  unchanged
 - every release online request uses the same refreshed game-scoped Platform
   bearer token; the backend verifies `RS256`, configured issuer/audience,
   canonical `sub/pid/jti`, and exact `gid=inplacex`

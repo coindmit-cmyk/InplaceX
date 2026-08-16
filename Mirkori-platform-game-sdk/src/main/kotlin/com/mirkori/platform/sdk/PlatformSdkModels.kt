@@ -219,4 +219,9 @@ class PlatformApiException(
 
 class PlatformCallbackRejectedException : IllegalArgumentException("Game login callback is not accepted")
 
+enum class PlatformProfileConflictResolution(val wireName: String) {
+    KEEP_CURRENT_PROFILE("keep_current_profile"),
+    USE_EXISTING_PROFILE("use_existing_profile"),
+}
+
 class PlatformProfileConflictException : IllegalStateException("The platform account already has a game profile")

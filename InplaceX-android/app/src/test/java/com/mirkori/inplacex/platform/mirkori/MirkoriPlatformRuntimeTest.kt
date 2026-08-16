@@ -12,6 +12,7 @@ import com.mirkori.platform.sdk.PlatformCredentials
 import com.mirkori.platform.sdk.PlatformHttpRequest
 import com.mirkori.platform.sdk.PlatformHttpResponse
 import com.mirkori.platform.sdk.PlatformIdempotencyKey
+import com.mirkori.platform.sdk.PlatformProfileConflictResolution
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.SecureEntropy
 import java.io.IOException
@@ -212,6 +213,65 @@ class MirkoriPlatformRuntimeTest {
         assertTrue(request.body.contains(pending.codeVerifier))
         assertFalse(request.url.contains(idToken))
         assertFalse(request.toString().contains(idToken))
+    }
+
+    @Test
+    fun nativeGoogleConflictKeepsPendingLoginUntilExplicitExistingProfileConfirmation() {
+        val sessionHandle = "R".repeat(64)
+        val idToken = "google-id-token-" + "z".repeat(120)
+        val transport = QueueTransport(
+            ok(bootstrapJson()),
+            ok(
+                """{"session":"$sessionHandle","connectUrl":"https://games.dmit.life/connect?session=$sessionHandle","expiresAtEpochMs":$ExpiresAtMs}""",
+            ),
+            PlatformHttpResponse(409, """{"error":"profile_conflict"}"""),
+            ok(
+                """{"accountId":"$OtherAccountId","gamePlayerId":"$OtherPlayerId","gameId":"inplacex","authMode":"google","credentials":${credentialsJson("google-existing")}}""",
+            ),
+        )
+        val store = installationStore()
+        val runtime = runtime(transport, store)
+        runSuspend { runtime.restoreOrBootstrap() }
+        runSuspend { runtime.beginGoogleLogin() }
+
+        val conflict = runSuspend { runtime.completeGoogleLogin(idToken) }
+
+        assertEquals(MirkoriLoginResult.ProfileConflict, conflict)
+        assertTrue(store.value?.pendingLogin != null)
+        assertFalse(transport.requests[2].body.contains("conflictResolution"))
+
+        val connected = runSuspend {
+            runtime.completeGoogleLogin(
+                idToken = idToken,
+                conflictResolution = PlatformProfileConflictResolution.USE_EXISTING_PROFILE,
+            )
+        } as MirkoriLoginResult.Connected
+
+        assertEquals(OtherPlayerId, connected.accountState.gamePlayerId)
+        assertEquals(PlatformAuthMode.GOOGLE, connected.accountState.authMode)
+        assertNull(store.value?.pendingLogin)
+        assertTrue(transport.requests[3].body.contains("\"conflictResolution\":\"use_existing_profile\""))
+    }
+
+    @Test
+    fun cancellingGoogleConflictClearsPendingLoginWithoutChangingGuestSession() {
+        val sessionHandle = "T".repeat(64)
+        val transport = QueueTransport(
+            ok(bootstrapJson()),
+            ok(
+                """{"session":"$sessionHandle","connectUrl":"https://games.dmit.life/connect?session=$sessionHandle","expiresAtEpochMs":$ExpiresAtMs}""",
+            ),
+        )
+        val store = installationStore()
+        val runtime = runtime(transport, store)
+        runSuspend { runtime.restoreOrBootstrap() }
+        runSuspend { runtime.beginGoogleLogin() }
+
+        runSuspend { runtime.cancelPendingLogin() }
+
+        assertNull(store.value?.pendingLogin)
+        assertEquals(PlatformAuthMode.GUEST, store.value?.session?.authMode)
+        assertEquals(PlayerId, store.value?.session?.gamePlayerId)
     }
 
     @Test
