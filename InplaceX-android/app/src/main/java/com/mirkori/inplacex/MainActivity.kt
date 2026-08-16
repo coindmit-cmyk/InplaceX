@@ -87,6 +87,7 @@ import com.mirkori.inplacex.platform.services.BillingPurchaseResult
 import com.mirkori.inplacex.platform.services.BillingState
 import com.mirkori.inplacex.platform.services.AdPlacementPolicy
 import com.mirkori.inplacex.platform.services.GoogleCredentialSignIn
+import com.mirkori.inplacex.platform.services.GoogleCredential
 import com.mirkori.inplacex.platform.services.GoogleCredentialResult
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
 import com.mirkori.inplacex.platform.services.ProviderServicesFactory
@@ -96,6 +97,7 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.screens.company.CompanyRootScreen
 import com.mirkori.inplacex.ui.screens.home.HomeRootScreen
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
+import com.mirkori.inplacex.ui.screens.profile.GoogleProfileConflictDialog
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
@@ -116,6 +118,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import com.mirkori.platform.sdk.PlatformAuthMode
+import com.mirkori.platform.sdk.PlatformProfileConflictResolution
 import java.net.URI
 
 class MainActivity : ComponentActivity() {
@@ -250,6 +253,9 @@ class MainActivity : ComponentActivity() {
                 }
                 var profileAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val profileAuthOperation = remember { TransientOperationGate() }
+                var pendingGoogleProfileConflict by remember {
+                    mutableStateOf<GoogleCredential?>(null)
+                }
                 var mirkoriAccountState by remember {
                     mutableStateOf(MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING))
                 }
@@ -1314,6 +1320,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onPublicProfileResultDismissed = {
+                                    publicProfileResultKey = null
+                                },
                                 onPublicHandleChange = { handle ->
                                     publicProfileOperation.start()?.let { operationId ->
                                         publicProfileResultKey = null
@@ -1466,7 +1475,11 @@ class MainActivity : ComponentActivity() {
                                                                             "profile.auth.rejected"
                                                                         }
                                                                     }
-                                                                    MirkoriLoginResult.ProfileConflict,
+                                                                    MirkoriLoginResult.ProfileConflict -> {
+                                                                        pendingGoogleProfileConflict =
+                                                                            credentialResult.credential
+                                                                        "profile.mirkori.conflict"
+                                                                    }
                                                                     MirkoriLoginResult.Rejected,
                                                                     is MirkoriLoginResult.BrowserReady,
                                                                     is MirkoriLoginResult.GoogleCredentialRequired,
@@ -1500,7 +1513,8 @@ class MainActivity : ComponentActivity() {
                                                             "profile.auth.rejected"
                                                         }
                                                     }
-                                                    MirkoriLoginResult.ProfileConflict,
+                                                    MirkoriLoginResult.ProfileConflict ->
+                                                        "profile.mirkori.conflict"
                                                     MirkoriLoginResult.Rejected,
                                                     is MirkoriLoginResult.BrowserReady,
                                                     -> "profile.auth.rejected"
@@ -1554,6 +1568,94 @@ class MainActivity : ComponentActivity() {
                             onProgressStateChange = { progressState = it },
                             onClose = { isVariantToolsOpen = false },
                         )
+
+                        pendingGoogleProfileConflict?.let { credential ->
+                            GoogleProfileConflictDialog(
+                                strings = strings,
+                                busy = profileAuthOperation.inProgress,
+                                onUseExistingProfile = {
+                                    profileAuthOperation.start()?.let { operationId ->
+                                        profileAuthResultKey = "profile.auth.in_progress"
+                                        coroutineScope.launch {
+                                            try {
+                                                val runtime = mirkoriPlatformRuntime
+                                                val completed = if (runtime == null) {
+                                                    MirkoriLoginResult.Unavailable
+                                                } else {
+                                                    withContext(Dispatchers.IO) {
+                                                        runtime.completeGoogleLogin(
+                                                            idToken = credential.idToken,
+                                                            conflictResolution =
+                                                                PlatformProfileConflictResolution.USE_EXISTING_PROFILE,
+                                                        )
+                                                    }
+                                                }
+                                                if (!profileAuthOperation.isCurrent(operationId)) return@launch
+                                                profileAuthResultKey = when (completed) {
+                                                    is MirkoriLoginResult.Connected -> {
+                                                        mirkoriAccountState = completed.accountState
+                                                        progressState = progressRepository.signInWithGooglePlay(
+                                                            credential.playerName
+                                                                ?: progressState.playerDisplayName,
+                                                        )
+                                                        "profile.auth.signed_in"
+                                                    }
+                                                    MirkoriLoginResult.AlreadyConnected ->
+                                                        "profile.auth.signed_in"
+                                                    MirkoriLoginResult.ProfileConflict ->
+                                                        "profile.mirkori.conflict"
+                                                    MirkoriLoginResult.Rejected,
+                                                    is MirkoriLoginResult.BrowserReady,
+                                                    is MirkoriLoginResult.GoogleCredentialRequired,
+                                                    -> "profile.auth.rejected"
+                                                    MirkoriLoginResult.Unavailable ->
+                                                        "profile.auth.unavailable"
+                                                }
+                                                if (completed !is MirkoriLoginResult.Connected) {
+                                                    withContext(Dispatchers.IO) {
+                                                        runtime?.cancelPendingLogin()
+                                                    }
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Confirmed Google profile sign-in failed",
+                                                    throwable = error,
+                                                )
+                                                profileAuthResultKey = "profile.auth.unavailable"
+                                                withContext(Dispatchers.IO) {
+                                                    mirkoriPlatformRuntime?.cancelPendingLogin()
+                                                }
+                                            } finally {
+                                                if (profileAuthOperation.finish(operationId)) {
+                                                    pendingGoogleProfileConflict = null
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                onKeepCurrentProfile = {
+                                    profileAuthOperation.start()?.let { operationId ->
+                                        coroutineScope.launch {
+                                            try {
+                                                withContext(Dispatchers.IO) {
+                                                    mirkoriPlatformRuntime?.cancelPendingLogin()
+                                                }
+                                                if (profileAuthOperation.isCurrent(operationId)) {
+                                                    profileAuthResultKey =
+                                                        "profile.google.conflict.kept"
+                                                }
+                                            } finally {
+                                                if (profileAuthOperation.finish(operationId)) {
+                                                    pendingGoogleProfileConflict = null
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                            )
+                        }
 
                         if (isSettingsOpen) {
                             SettingsRootScreen(

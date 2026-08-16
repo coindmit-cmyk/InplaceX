@@ -94,6 +94,7 @@ data class GameFieldLayoutMetrics(
     val inputSlotGap: Dp,
     val keypadHeight: Dp,
     val topPanelMinHeight: Dp,
+    val opponentProgressHeight: Dp,
     val helpersHeight: Dp,
     val toolsHeight: Dp,
 )
@@ -121,6 +122,7 @@ fun finalGameFieldMetrics(
             inputSlotGap = 5.dp,
             keypadHeight = 32.dp,
             topPanelMinHeight = 56.dp,
+            opponentProgressHeight = 42.dp,
             helpersHeight = 40.dp,
             toolsHeight = 36.dp,
         )
@@ -138,6 +140,7 @@ fun finalGameFieldMetrics(
             inputSlotGap = 4.dp,
             keypadHeight = 31.dp,
             topPanelMinHeight = 56.dp,
+            opponentProgressHeight = 42.dp,
             helpersHeight = 40.dp,
             toolsHeight = 36.dp,
         )
@@ -155,6 +158,7 @@ fun finalGameFieldMetrics(
             inputSlotGap = 3.dp,
             keypadHeight = 30.dp,
             topPanelMinHeight = 54.dp,
+            opponentProgressHeight = 40.dp,
             helpersHeight = 38.dp,
             toolsHeight = 35.dp,
         )
@@ -172,6 +176,7 @@ fun finalGameFieldMetrics(
             inputSlotGap = 2.dp,
             keypadHeight = 28.dp,
             topPanelMinHeight = 52.dp,
+            opponentProgressHeight = 38.dp,
             helpersHeight = 36.dp,
             toolsHeight = 34.dp,
         )
@@ -185,6 +190,7 @@ fun finalGameFieldMetrics(
             inputSlotHeight = (base.inputSlotHeight - 2.dp).coerceAtLeast(26.dp),
             keypadHeight = (base.keypadHeight - 2.dp).coerceAtLeast(26.dp),
             topPanelMinHeight = (base.topPanelMinHeight - 4.dp).coerceAtLeast(48.dp),
+            opponentProgressHeight = (base.opponentProgressHeight - 2.dp).coerceAtLeast(36.dp),
             helpersHeight = (base.helpersHeight - 2.dp).coerceAtLeast(34.dp),
             toolsHeight = (base.toolsHeight - 2.dp).coerceAtLeast(32.dp),
         )

@@ -258,6 +258,7 @@ android {
 
     buildTypes {
         getByName("debug") {
+            versionNameSuffix = "-debug.5"
             buildConfigField("String", "ONLINE_BASE_URL", "\"${localProp("online.debug.baseUrl", "")}\"")
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")
@@ -302,6 +303,7 @@ android {
         }
         create("internalDistribution") {
             initWith(getByName("release"))
+            versionNameSuffix = "-dev.1"
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
@@ -309,6 +311,7 @@ android {
         }
         create("signedReleaseCandidate") {
             initWith(getByName("release"))
+            versionNameSuffix = "-rc.1"
             isDebuggable = false
             releaseCandidateSigning?.let { signingConfig = it }
             matchingFallbacks += listOf("release")

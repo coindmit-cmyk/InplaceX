@@ -139,6 +139,21 @@ fun GamePresentationLayout(
                 GameTopPanel(uiState = uiState)
             }
 
+            uiState.route.opponentProgress?.let { progress ->
+                PresentationCard(
+                    modifier = Modifier
+                        .height(metrics.opponentProgressHeight)
+                        .testTag("game-opponent-progress-panel"),
+                    accent = uiState.parameters.mode.accent,
+                    accentStrength = 0.13f,
+                ) {
+                    GameOpponentProgressPanel(
+                        progress = progress,
+                        codeLength = uiState.parameters.codeLength,
+                    )
+                }
+            }
+
             GameWorkBoard(
                 uiState = uiState,
                 metrics = metrics,
@@ -148,7 +163,7 @@ fun GamePresentationLayout(
                     feedback.performHaptic(AppHapticCue.SELECTION)
                     callbacks.onAnalysisCellPressed(digit, position)
                 },
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier.weight(1f),
             )
 
             if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
@@ -238,6 +253,71 @@ fun GamePresentationLayout(
 }
 
 @Composable
+private fun GameOpponentProgressPanel(
+    progress: com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState,
+    codeLength: Int,
+    modifier: Modifier = Modifier,
+) {
+    val strings = LocalAppStrings.current
+    val emptyValue = strings.text("social.online.opponent_progress.empty")
+
+    Row(
+        modifier = modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Column(
+            modifier = Modifier.weight(1.18f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(
+                text = strings.text("social.online.opponent_progress.title"),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = FinalUiColors.ModePurpleDeep,
+                maxLines = 1,
+            )
+            Text(
+                text = progress.statusLabel,
+                fontSize = 9.sp,
+                color = FinalUiColors.WarmTextMuted,
+                maxLines = 1,
+            )
+        }
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.attempts"),
+            value = progress.attemptsUsed.toString(),
+            valueColor = FinalUiColors.PrimaryDeep,
+            modifier = Modifier.weight(0.72f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.latest"),
+            value = progress.latestExactMatches?.let { "$it/$codeLength" } ?: emptyValue,
+            valueColor = FinalUiColors.ModeOrangeText,
+            modifier = Modifier.weight(0.82f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.best"),
+            value = progress.bestExactMatches?.let { "$it/$codeLength" } ?: emptyValue,
+            valueColor = FinalUiColors.ModeGreenDeep,
+            modifier = Modifier.weight(0.82f),
+        )
+    }
+}
+
+@Composable
 private fun GameWorkBoard(
     uiState: GameFieldUiState,
     metrics: GameFieldLayoutMetrics,
@@ -246,13 +326,12 @@ private fun GameWorkBoard(
     modifier: Modifier = Modifier,
 ) {
     val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
-    val boardHeight = gameWorkBoardHeight(metrics, useStackedBoard)
 
     if (useStackedBoard) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .height(boardHeight),
+                .fillMaxHeight(),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
             val attemptsHeight = stackedAttemptsPanelHeight(metrics)
@@ -287,7 +366,7 @@ private fun GameWorkBoard(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .height(boardHeight),
+                .fillMaxHeight(),
             horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
             PresentationCard(
@@ -597,16 +676,20 @@ fun GameAnalysisPanel(
             accent = FinalUiColors.ModePurple,
             modifier = Modifier.testTag("game-matrix-title"),
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
             val columns = uiState.parameters.codeLength
             val verticalGap = metrics.matrixGap
             val horizontalGap = metrics.matrixGap
             val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
             val availableCellHeight = (maxHeight - verticalGap * (MatrixRows - 1)) / MatrixRows
-            val cellHeight = minOf(metrics.matrixCellHeight, availableCellHeight)
+            val cellHeight = adaptiveAnalysisCellHeight(metrics, availableCellHeight)
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(verticalGap),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 repeat(MatrixRows) { digit ->
@@ -641,6 +724,14 @@ fun GameAnalysisPanel(
         }
     }
 }
+
+internal fun adaptiveAnalysisCellHeight(
+    metrics: GameFieldLayoutMetrics,
+    availableCellHeight: Dp,
+): Dp = minOf(
+    metrics.matrixCellHeight + 6.dp,
+    availableCellHeight.coerceAtLeast(0.dp),
+)
 
 @Composable
 private fun GamePanelHeader(

@@ -111,6 +111,14 @@ class GamePresentationComponentsTest {
     }
 
     @Test
+    fun `matrix cells use freed premium height without becoming oversized`() {
+        val metrics = finalGameFieldMetrics(4, compactHeight = false)
+
+        assertEquals(22.dp, adaptiveAnalysisCellHeight(metrics, 22.dp))
+        assertEquals(32.dp, adaptiveAnalysisCellHeight(metrics, 48.dp))
+    }
+
+    @Test
     fun `stacked attempts panel reserves exactly three complete rows`() {
         assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
         assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(10, compactHeight = false)))
@@ -149,6 +157,8 @@ class GamePresentationComponentsTest {
         assertEquals(normal.matrixWeight, compact.matrixWeight)
         assertTrue(compact.inputSlotHeight < normal.inputSlotHeight)
         assertTrue(compact.topPanelMinHeight < normal.topPanelMinHeight)
+        assertEquals(38.dp, compact.opponentProgressHeight)
+        assertTrue(compact.opponentProgressHeight < normal.opponentProgressHeight)
     }
 
     @Test

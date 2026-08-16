@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -61,6 +62,7 @@ fun ProfileRootScreen(
     authInProgress: Boolean = false,
     showGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
+    onPublicProfileResultDismissed: () -> Unit = {},
     onPublicHandleChange: (String) -> Unit = {},
     onDisplayNameChange: (String) -> Unit = {},
     onAvatarChange: (String) -> Unit = {},
@@ -73,7 +75,7 @@ fun ProfileRootScreen(
     var handleInput by remember(publicPlayerProfile?.handle) {
         mutableStateOf(publicPlayerProfile?.handle.orEmpty())
     }
-    var localHandleError by remember { mutableStateOf(false) }
+    var localHandleErrorKey by remember { mutableStateOf<String?>(null) }
     var nameDialogOpen by remember { mutableStateOf(false) }
     var nameInput by remember(publicPlayerProfile?.displayName, progressState.playerDisplayName) {
         mutableStateOf(publicPlayerProfile?.displayName ?: progressState.playerDisplayName)
@@ -81,6 +83,10 @@ fun ProfileRootScreen(
     var localNameError by remember { mutableStateOf(false) }
     var avatarDialogOpen by remember { mutableStateOf(false) }
     val visibleDisplayName = publicPlayerProfile?.displayName ?: progressState.playerDisplayName
+    val handleErrorKey = publicHandleFieldErrorKey(
+        publicProfileResultKey = publicProfileResultKey,
+        localHandleErrorKey = localHandleErrorKey,
+    )
 
     LaunchedEffect(publicProfileResultKey) {
         if (publicProfileResultKey == "profile.mirkori.handle.saved") handleDialogOpen = false
@@ -169,26 +175,60 @@ fun ProfileRootScreen(
 
     if (handleDialogOpen) {
         AlertDialog(
-            onDismissRequest = { if (!publicProfileInProgress) handleDialogOpen = false },
+            onDismissRequest = {
+                if (!publicProfileInProgress) {
+                    handleDialogOpen = false
+                    localHandleErrorKey = null
+                    onPublicProfileResultDismissed()
+                }
+            },
             title = { Text(strings.text("profile.mirkori.handle.change")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(strings.text("profile.mirkori.handle.rules"))
+                    handleErrorKey?.let { errorKey ->
+                        Text(
+                            text = strings.text(errorKey),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("profile-handle-error"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     OutlinedTextField(
                         value = handleInput,
                         onValueChange = {
                             handleInput = it.lowercase().filter { character ->
                                 character in 'a'..'z' || character in '0'..'9' || character == '_'
                             }.take(24)
-                            localHandleError = false
+                            localHandleErrorKey = null
+                            onPublicProfileResultDismissed()
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("profile-handle-input"),
                         singleLine = true,
-                        prefix = { Text("@") },
+                        prefix = {
+                            Text(
+                                text = "@",
+                                color = if (handleErrorKey == null) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
+                            )
+                        },
                         label = { Text(strings.text("profile.mirkori.handle")) },
-                        isError = localHandleError,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = if (handleErrorKey == null) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        ),
+                        isError = handleErrorKey != null,
                     )
-                    if (localHandleError) Text(strings.text("profile.mirkori.handle.invalid"))
                 }
             },
             confirmButton = {
@@ -198,7 +238,7 @@ fun ProfileRootScreen(
                         if (normalized.matches(Regex("[a-z0-9_]{3,24}"))) {
                             onPublicHandleChange(normalized)
                         } else {
-                            localHandleError = true
+                            localHandleErrorKey = "profile.mirkori.handle.invalid"
                         }
                     },
                     enabled = !publicProfileInProgress,
@@ -208,7 +248,11 @@ fun ProfileRootScreen(
             },
             dismissButton = {
                 OutlinedButton(
-                    onClick = { handleDialogOpen = false },
+                    onClick = {
+                        handleDialogOpen = false
+                        localHandleErrorKey = null
+                        onPublicProfileResultDismissed()
+                    },
                     enabled = !publicProfileInProgress,
                 ) {
                     Text(strings.text("profile.mirkori.handle.cancel"))
@@ -289,7 +333,8 @@ fun ProfileRootScreen(
                 OutlinedButton(
                     onClick = {
                         handleInput = publicPlayerProfile?.handle.orEmpty()
-                        localHandleError = false
+                        localHandleErrorKey = null
+                        onPublicProfileResultDismissed()
                         handleDialogOpen = true
                     },
                     enabled = !publicProfileInProgress,
@@ -310,17 +355,19 @@ fun ProfileRootScreen(
                 }
             }
 
-            publicProfileResultKey?.let { key ->
-                Text(
-                    text = strings.text(key),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (key in PublicProfileSuccessKeys) {
-                        InplaceXColors.Mint
-                    } else {
-                        InplaceXColors.Coral
-                    },
-                )
-            }
+            publicProfileResultKey
+                ?.takeUnless(PublicHandleErrorKeys::contains)
+                ?.let { key ->
+                    Text(
+                        text = strings.text(key),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (key in PublicProfileSuccessKeys) {
+                            InplaceXColors.Mint
+                        } else {
+                            InplaceXColors.Coral
+                        },
+                    )
+                }
 
             if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
                 Button(
@@ -630,3 +677,14 @@ private val PublicProfileSuccessKeys = setOf(
     "profile.mirkori.name.saved",
     "profile.mirkori.avatar.saved",
 )
+
+private val PublicHandleErrorKeys = setOf(
+    "profile.mirkori.handle.taken",
+    "profile.mirkori.handle.invalid",
+)
+
+internal fun publicHandleFieldErrorKey(
+    publicProfileResultKey: String?,
+    localHandleErrorKey: String?,
+): String? = localHandleErrorKey
+    ?: publicProfileResultKey?.takeIf(PublicHandleErrorKeys::contains)

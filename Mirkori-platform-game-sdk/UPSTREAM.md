@@ -13,6 +13,11 @@ offline timed entitlements without trusting the device wall clock.
 The snapshot also exposes `pendingOrders()` at the reviewed Platform route
 `GET /api/v1/commerce/orders/pending`; Android commerce uses this explicit
 projection instead of inferring active work from bounded order history.
+The Google profile-conflict resolution contract is synchronized from Platform
+merge commit `dfc87e02f7c1201169e5e7da273dbf6942a42a1f` (PR #22): an initial
+conflict remains fail-closed, while an explicit confirmed retry may authorize
+the already existing Google-linked game profile without deleting or merging
+the current guest profile.
 
 It is vendored because the platform repository is private and an InplaceX
 GitHub Actions token cannot safely resolve a cross-repository source or Maven

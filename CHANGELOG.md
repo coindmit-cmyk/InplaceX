@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+- The owner test build is now identified as `0.9.0-debug.5`. Gameplay without
+  a loaded banner, including paid `Pro`, uses the released vertical space for
+  the Attempts/Matrix board instead of leaving an empty strip below the input
+  panel. Matrix rows remain bounded and redistribute the extra height without
+  changing the HUD, helpers, tools, or input order; a loaded banner still
+  reduces the board automatically.
+
+- The owner test build is now identified as `0.9.0-debug.4`. When a Google
+  account already owns an InplaceX profile, the app now asks whether to enter
+  that existing profile or remain in the current guest profile. No switch,
+  merge, or deletion happens without the explicit confirmation, and local
+  campaign progress remains on the device.
+
+- The previous owner test build `0.9.0-debug.3` was assembled
+  with the external provider configuration so native Google account linking is
+  available without placing OAuth identifiers in Git. A Google account that is
+  already linked to another InplaceX profile now shows the explicit profile
+  conflict message instead of incorrectly blaming Google verification.
+
+- Public handle conflicts are now shown inside the public ID editor: an occupied
+  or invalid ID gets a short explanation above the field plus red field text
+  and outline. Editing the value clears the stale error before the next save.
+
+- Active online Race and Duel matches now show a compact opponent-progress
+  panel with the opponent's attempt count, latest exact-match score, and best
+  score. The panel uses only viewer-redacted server data and never exposes the
+  opponent's secret or guesses. Android artifacts now use the `0.9.0` release
+  identity with explicit `debug`, `dev`, and `rc` channel suffixes.
+
 - Rewarded hint videos can now open from the in-game confirmation dialog. The
   live Activity remains an eligible full-screen ad host while that modal dialog
   owns window focus; background, finishing, and destroyed activities are still

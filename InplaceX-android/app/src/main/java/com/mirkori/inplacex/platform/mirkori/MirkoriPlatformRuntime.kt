@@ -19,6 +19,7 @@ import com.mirkori.platform.sdk.PlatformCallbackRejectedException
 import com.mirkori.platform.sdk.PlatformCredentials
 import com.mirkori.platform.sdk.PlatformFriendRequest
 import com.mirkori.platform.sdk.PlatformProfileConflictException
+import com.mirkori.platform.sdk.PlatformProfileConflictResolution
 import com.mirkori.platform.sdk.PlatformPublicPlayerProfile
 import io.ktor.client.HttpClient
 import java.io.IOException
@@ -172,7 +173,11 @@ class MirkoriPlatformRuntime internal constructor(
         }
     }
 
-    suspend fun completeGoogleLogin(idToken: String): MirkoriLoginResult = operationMutex.withLock {
+    suspend fun completeGoogleLogin(
+        idToken: String,
+        conflictResolution: PlatformProfileConflictResolution =
+            PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
+    ): MirkoriLoginResult = operationMutex.withLock {
         try {
             val current = ensureFreshSession()
             val state = requireNotNull(persistedState)
@@ -185,6 +190,7 @@ class MirkoriPlatformRuntime internal constructor(
                 profileAccessToken = current.credentials.accessToken,
                 idToken = idToken,
                 pending = pending,
+                conflictResolution = conflictResolution,
             )
             persist(state.withSession(linked).copy(pendingLogin = null))
             AppLog.info(
@@ -196,17 +202,30 @@ class MirkoriPlatformRuntime internal constructor(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: PlatformProfileConflictException) {
-            persistedState?.let { state -> persist(state.copy(pendingLogin = null)) }
             AppLog.warn(
                 tag = LogTag,
-                message = "Mirkori Games Google account connection rejected",
-                attributes = mapOf("outcome" to "profile_conflict"),
+                message = "Mirkori Games Google account connection needs confirmation",
+                attributes = mapOf(
+                    "outcome" to "profile_conflict",
+                    "resolution" to conflictResolution.wireName,
+                ),
             )
             MirkoriLoginResult.ProfileConflict
         } catch (error: Exception) {
             logFailure(error)
             error.toLoginFailure()
         }
+    }
+
+    suspend fun cancelPendingLogin() = operationMutex.withLock {
+        persistedState?.let { state ->
+            if (state.pendingLogin != null) persist(state.copy(pendingLogin = null))
+        }
+        AppLog.info(
+            tag = LogTag,
+            message = "Mirkori Games pending login cancelled",
+            attributes = mapOf("outcome" to "kept_current_profile"),
+        )
     }
 
     suspend fun loadPublicProfile(): MirkoriPublicProfileResult = operationMutex.withLock {
