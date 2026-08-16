@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -207,31 +208,40 @@ fun WarmSegmentButton(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(8.dp)
+    val background = when {
+        !enabled -> listOf(
+            FinalUiColors.Disabled.copy(alpha = 0.30f),
+            FinalUiColors.Disabled.copy(alpha = 0.18f),
+        )
+        selected -> listOf(
+            accent.tintOver(FinalUiColors.WarmPanelTop, 0.34f),
+            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.58f),
+        )
+        else -> listOf(
+            accent.tintOver(FinalUiColors.WarmPanelTop, 0.08f),
+            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.14f),
+        )
+    }
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 30.dp)
             .clip(shape)
             .background(
-                Brush.verticalGradient(
-                    if (selected) {
-                        listOf(
-                            accent.tintOver(FinalUiColors.WarmPanelTop, 0.34f),
-                            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.58f),
-                        )
-                    } else {
-                        listOf(
-                            accent.tintOver(FinalUiColors.WarmPanelTop, 0.08f),
-                            accent.tintOver(FinalUiColors.WarmPanelBottom, 0.14f),
-                        )
-                    },
-                ),
+                Brush.verticalGradient(background),
             )
             .border(
                 if (selected) FinalUiDimens.SelectedBorder else FinalUiDimens.PanelBorder,
-                if (selected) accent else accent.tintOver(FinalUiColors.WarmBorder, 0.20f),
+                when {
+                    !enabled -> FinalUiColors.Disabled.copy(alpha = 0.60f)
+                    selected -> accent
+                    else -> accent.tintOver(FinalUiColors.WarmBorder, 0.20f)
+                },
                 shape,
             )
-            .semantics { this.selected = selected }
+            .semantics {
+                this.selected = selected
+                if (!enabled) disabled()
+            }
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -239,7 +249,7 @@ fun WarmSegmentButton(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = FinalUiColors.WarmText,
+            color = FinalUiColors.WarmText.copy(alpha = if (enabled) 1f else 0.48f),
             maxLines = 1,
         )
     }
