@@ -49,6 +49,7 @@ class OnlineDuelGameFieldTest {
             inputEnabled = true,
             modeLabel = "Online duel",
             turnLabel = "Your turn",
+            opponentStatusLabel = "Waiting for your move",
         )
 
         assertEquals(1, uiState.match.attempts.size)
@@ -56,6 +57,45 @@ class OnlineDuelGameFieldTest {
         assertEquals(2, uiState.match.attempts.single().score)
         assertEquals(8, uiState.match.attemptsLeft)
         assertEquals(2, uiState.evidence.acceptedAttempts.single().score)
+        assertEquals(1, uiState.route.opponentProgress?.attemptsUsed)
+        assertEquals(1, uiState.route.opponentProgress?.latestExactMatches)
+        assertEquals(1, uiState.route.opponentProgress?.bestExactMatches)
+    }
+
+    @Test
+    fun opponentProgressUsesLatestAndBestRedactedScoresInBothOnlineStyles() {
+        val snapshot = OnlineDuelSnapshotState(
+            sessionId = "00000000-0000-0000-0000-000000000001",
+            revision = 7,
+            phase = "active",
+            currentTurn = null,
+            winner = null,
+            playStyle = RemoteFriendPlayStyle.RACE,
+            codeLength = 6,
+            attemptLimit = null,
+            allowDuplicates = true,
+            attempts = listOf(
+                OnlineDuelAttemptState("opponent", exactMatches = 3, number = 1),
+                OnlineDuelAttemptState("player", exactMatches = 2, number = 2, ownGuess = "123456"),
+                OnlineDuelAttemptState("opponent", exactMatches = 1, number = 3),
+            ),
+        )
+
+        val uiState = buildOnlineDuelGameFieldState(
+            snapshot = snapshot,
+            knownPlayerGuesses = snapshot.knownPlayerGuesses(),
+            editor = OnlineDuelEditorState.empty(6),
+            inputEnabled = true,
+            modeLabel = "Online race",
+            turnLabel = "Both play",
+            opponentStatusLabel = "Solving",
+        )
+
+        assertEquals(2, uiState.route.opponentProgress?.attemptsUsed)
+        assertEquals(1, uiState.route.opponentProgress?.latestExactMatches)
+        assertEquals(3, uiState.route.opponentProgress?.bestExactMatches)
+        assertEquals("Solving", uiState.route.opponentProgress?.statusLabel)
+        assertEquals(1, uiState.match.attempts.size)
     }
 
     @Test
@@ -103,6 +143,7 @@ class OnlineDuelGameFieldTest {
             turnLabel = "Both play",
             elapsedSeconds = 12,
             totalTimeLimitSeconds = 600,
+            opponentStatusLabel = "Solving",
         )
 
         assertEquals(GameFieldMode.RACE, uiState.parameters.mode)

@@ -149,6 +149,8 @@ class GamePresentationComponentsTest {
         assertEquals(normal.matrixWeight, compact.matrixWeight)
         assertTrue(compact.inputSlotHeight < normal.inputSlotHeight)
         assertTrue(compact.topPanelMinHeight < normal.topPanelMinHeight)
+        assertEquals(38.dp, compact.opponentProgressHeight)
+        assertTrue(compact.opponentProgressHeight < normal.opponentProgressHeight)
     }
 
     @Test

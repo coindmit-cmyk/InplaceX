@@ -139,6 +139,21 @@ fun GamePresentationLayout(
                 GameTopPanel(uiState = uiState)
             }
 
+            uiState.route.opponentProgress?.let { progress ->
+                PresentationCard(
+                    modifier = Modifier
+                        .height(metrics.opponentProgressHeight)
+                        .testTag("game-opponent-progress-panel"),
+                    accent = uiState.parameters.mode.accent,
+                    accentStrength = 0.13f,
+                ) {
+                    GameOpponentProgressPanel(
+                        progress = progress,
+                        codeLength = uiState.parameters.codeLength,
+                    )
+                }
+            }
+
             GameWorkBoard(
                 uiState = uiState,
                 metrics = metrics,
@@ -235,6 +250,71 @@ fun GamePresentationLayout(
     }
 
     GameDialogs(uiState = uiState, callbacks = callbacks)
+}
+
+@Composable
+private fun GameOpponentProgressPanel(
+    progress: com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState,
+    codeLength: Int,
+    modifier: Modifier = Modifier,
+) {
+    val strings = LocalAppStrings.current
+    val emptyValue = strings.text("social.online.opponent_progress.empty")
+
+    Row(
+        modifier = modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Column(
+            modifier = Modifier.weight(1.18f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(
+                text = strings.text("social.online.opponent_progress.title"),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = FinalUiColors.ModePurpleDeep,
+                maxLines = 1,
+            )
+            Text(
+                text = progress.statusLabel,
+                fontSize = 9.sp,
+                color = FinalUiColors.WarmTextMuted,
+                maxLines = 1,
+            )
+        }
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.attempts"),
+            value = progress.attemptsUsed.toString(),
+            valueColor = FinalUiColors.PrimaryDeep,
+            modifier = Modifier.weight(0.72f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.latest"),
+            value = progress.latestExactMatches?.let { "$it/$codeLength" } ?: emptyValue,
+            valueColor = FinalUiColors.ModeOrangeText,
+            modifier = Modifier.weight(0.82f),
+        )
+        VerticalDivider(
+            modifier = Modifier.height(26.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        GameInfoMetric(
+            label = strings.text("social.online.opponent_progress.best"),
+            value = progress.bestExactMatches?.let { "$it/$codeLength" } ?: emptyValue,
+            valueColor = FinalUiColors.ModeGreenDeep,
+            modifier = Modifier.weight(0.82f),
+        )
+    }
 }
 
 @Composable

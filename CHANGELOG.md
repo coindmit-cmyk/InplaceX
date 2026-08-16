@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Active online Race and Duel matches now show a compact opponent-progress
+  panel with the opponent's attempt count, latest exact-match score, and best
+  score. The panel uses only viewer-redacted server data and never exposes the
+  opponent's secret or guesses. Android artifacts now use the `0.9.0` release
+  identity with explicit `debug`, `dev`, and `rc` channel suffixes.
+
 - Rewarded hint videos can now open from the in-game confirmation dialog. The
   live Activity remains an eligible full-screen ad host while that modal dialog
   owns window focus; background, finishing, and destroyed activities are still

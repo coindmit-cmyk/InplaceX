@@ -40,6 +40,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMode
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldRouteUiState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldTimers
@@ -120,6 +121,13 @@ internal fun OnlineDuelGameField(
         },
         elapsedSeconds = elapsedSeconds,
         totalTimeLimitSeconds = totalTimeLimitSeconds,
+        opponentStatusLabel = when {
+            snapshot.playStyle == RemoteFriendPlayStyle.RACE ->
+                strings.text("social.online.opponent_progress.racing")
+            snapshot.currentTurn == OPPONENT_ACTOR ->
+                strings.text("social.online.opponent_progress.active_turn")
+            else -> strings.text("social.online.opponent_progress.waiting_turn")
+        },
     )
 
     fun submitCurrentGuess() {
@@ -301,6 +309,7 @@ internal fun buildOnlineDuelGameFieldState(
     turnLabel: String,
     elapsedSeconds: Int = 0,
     totalTimeLimitSeconds: Int = 0,
+    opponentStatusLabel: String,
 ): com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState {
     val playerAttempts = snapshot.attempts
         .filter { it.actor == PLAYER_ACTOR }
@@ -341,6 +350,7 @@ internal fun buildOnlineDuelGameFieldState(
             acceptedAttempts = acceptedEvidence,
         ),
     )
+    val opponentAttempts = snapshot.attempts.filter { it.actor == OPPONENT_ACTOR }
     return com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState(
         parameters = GameFieldMatchParameters(
             mode = if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
@@ -387,6 +397,12 @@ internal fun buildOnlineDuelGameFieldState(
             inputEnabled = inputEnabled,
             configuredMoveLimit = snapshot.attemptLimit,
             movesUnlimited = snapshot.attemptLimit == null,
+            opponentProgress = GameFieldOpponentProgressState(
+                attemptsUsed = opponentAttempts.size,
+                latestExactMatches = opponentAttempts.lastOrNull()?.exactMatches,
+                bestExactMatches = opponentAttempts.maxOfOrNull { it.exactMatches },
+                statusLabel = opponentStatusLabel,
+            ),
         ),
     )
 }
@@ -441,6 +457,7 @@ private fun GameFieldTool.toManualMarkType(): GameFieldManualMarkType = when (th
 }
 
 private const val PLAYER_ACTOR = "player"
+private const val OPPONENT_ACTOR = "opponent"
 private const val UNKNOWN_GUESS = "·"
 private const val EMPTY_SLOT = "_"
 private const val MARK_SEPARATOR = ";"

@@ -113,6 +113,16 @@ primary action.
 - Provider push after the application process has been removed remains a
   separate concern and must not be implied by the polling state.
 
+## Online Opponent Progress Contract
+
+- Active online Race and Duel matches show one compact opponent-progress panel
+  between the match status and the shared work board.
+- The panel shows only server-authoritative redacted information: opponent
+  activity, attempt count, latest exact-match score, and best exact-match score.
+- Opponent guesses and secrets never enter the presentation state.
+- Local, bot, and campaign routes keep the same geometry and do not render the
+  panel. The shared game-field renderer remains the only visual implementation.
+
 ## Verification
 
 For each redesigned screen:

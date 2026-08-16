@@ -144,7 +144,11 @@ conflicting optional legacy assertions without printing configured values. The p
 when absent.
 
 Android version identity is centralized in
-`InplaceX-android/version.properties`. Release signing is accepted only as a
+`InplaceX-android/version.properties`. The base identity is the public release
+version; build types add explicit channel suffixes: `-debug.N` for local debug,
+`-dev.N` for internal distribution, and `-rc.N` for a signed release candidate.
+The public release keeps the unsuffixed base version, and `versionCode` remains
+monotonic across channels. Release signing is accepted only as a
 complete external properties file (`-PinplacexReleaseSigningFile=...`) or the
 five `INPLACEX_RELEASE_*` environment variables, including the mandatory
 owner-approved `INPLACEX_RELEASE_EXPECTED_CERT_SHA256`. Partial signing fails
