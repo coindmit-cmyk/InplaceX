@@ -320,7 +320,7 @@ private fun GameWorkBoard(
 
 internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
 
-private val GamePanelHorizontalPadding = 5.dp
+private val GamePanelHorizontalPadding = FinalUiDimens.CompactPanelPadding
 private val GamePanelHeaderHeight = 23.dp
 private const val MatrixRows = 10
 private const val StackedVisibleAttempts = 3
@@ -380,7 +380,7 @@ fun GameTopPanel(
     val supportingText = message ?: uiState.route.turnLabel?.takeIf(String::isNotBlank)
 
     Row(
-        modifier = modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+        modifier = modifier.padding(horizontal = FinalUiDimens.PanelPadding, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
@@ -672,8 +672,11 @@ fun GameHelpersPanel(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        modifier = modifier.padding(
+            horizontal = FinalUiDimens.CompactPanelPadding,
+            vertical = 3.dp,
+        ),
+        horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.InnerGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (uiState.parameters.hintsEnabled) {
@@ -854,8 +857,11 @@ fun GameToolsPanel(
 ) {
     val strings = LocalAppStrings.current
     Row(
-        modifier = modifier.padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        modifier = modifier.padding(
+            horizontal = FinalUiDimens.CompactPanelPadding,
+            vertical = 3.dp,
+        ),
+        horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.InnerGap),
     ) {
         GameToolButton(
             strings.text("game.tool.no"),

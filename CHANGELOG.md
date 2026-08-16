@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The in-game PRO tool now has a distinct disabled state when automatic table
+  assistance is unavailable: muted fill, border, text, and accessibility state
+  make it clear that tapping it will not perform an action. Gameplay spacing
+  now uses a consistent 6/8 dp scale for screen edges and compact panels.
+
 - Rewarded hint videos can now open from the in-game confirmation dialog. The
   live Activity remains an eligible full-screen ad host while that modal dialog
   owns window focus; background, finishing, and destroyed activities are still

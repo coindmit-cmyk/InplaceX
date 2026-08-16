@@ -105,9 +105,9 @@ class GamePresentationComponentsTest {
         val eightDigits = finalGameFieldMetrics(8, compactHeight = false)
         val tenDigits = finalGameFieldMetrics(10, compactHeight = false)
 
-        assertEquals(311.dp, analysisPanelHeight(fourDigits))
-        assertEquals(380.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
-        assertEquals(356.dp, gameWorkBoardHeight(tenDigits, stacked = true))
+        assertEquals(313.dp, analysisPanelHeight(fourDigits))
+        assertEquals(384.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
+        assertEquals(360.dp, gameWorkBoardHeight(tenDigits, stacked = true))
     }
 
     @Test

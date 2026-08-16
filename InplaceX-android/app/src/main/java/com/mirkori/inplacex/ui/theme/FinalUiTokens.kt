@@ -57,11 +57,11 @@ object FinalUiColors {
 }
 
 object FinalUiDimens {
-    val ScreenPadding = 4.dp
-    val SectionGap = 4.dp
-    val PanelPadding = 7.dp
-    val CompactPanelPadding = 5.dp
-    val InnerGap = 4.dp
+    val ScreenPadding = 8.dp
+    val SectionGap = 6.dp
+    val PanelPadding = 8.dp
+    val CompactPanelPadding = 6.dp
+    val InnerGap = 5.dp
     val MajorGap = 8.dp
 
     val ChromeRadius = 16.dp
