@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The owner test build is now identified as `0.9.0-debug.5`. Gameplay without
+  a loaded banner, including paid `Pro`, uses the released vertical space for
+  the Attempts/Matrix board instead of leaving an empty strip below the input
+  panel. Matrix rows remain bounded and redistribute the extra height without
+  changing the HUD, helpers, tools, or input order; a loaded banner still
+  reduces the board automatically.
+
 - The owner test build is now identified as `0.9.0-debug.4`. When a Google
   account already owns an InplaceX profile, the app now asks whether to enter
   that existing profile or remain in the current guest profile. No switch,

@@ -163,7 +163,7 @@ fun GamePresentationLayout(
                     feedback.performHaptic(AppHapticCue.SELECTION)
                     callbacks.onAnalysisCellPressed(digit, position)
                 },
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier.weight(1f),
             )
 
             if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
@@ -326,13 +326,12 @@ private fun GameWorkBoard(
     modifier: Modifier = Modifier,
 ) {
     val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
-    val boardHeight = gameWorkBoardHeight(metrics, useStackedBoard)
 
     if (useStackedBoard) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .height(boardHeight),
+                .fillMaxHeight(),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
             val attemptsHeight = stackedAttemptsPanelHeight(metrics)
@@ -367,7 +366,7 @@ private fun GameWorkBoard(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .height(boardHeight),
+                .fillMaxHeight(),
             horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
             PresentationCard(
@@ -677,16 +676,20 @@ fun GameAnalysisPanel(
             accent = FinalUiColors.ModePurple,
             modifier = Modifier.testTag("game-matrix-title"),
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
             val columns = uiState.parameters.codeLength
             val verticalGap = metrics.matrixGap
             val horizontalGap = metrics.matrixGap
             val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
             val availableCellHeight = (maxHeight - verticalGap * (MatrixRows - 1)) / MatrixRows
-            val cellHeight = minOf(metrics.matrixCellHeight, availableCellHeight)
+            val cellHeight = adaptiveAnalysisCellHeight(metrics, availableCellHeight)
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(verticalGap),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 repeat(MatrixRows) { digit ->
@@ -721,6 +724,14 @@ fun GameAnalysisPanel(
         }
     }
 }
+
+internal fun adaptiveAnalysisCellHeight(
+    metrics: GameFieldLayoutMetrics,
+    availableCellHeight: Dp,
+): Dp = minOf(
+    metrics.matrixCellHeight + 6.dp,
+    availableCellHeight.coerceAtLeast(0.dp),
+)
 
 @Composable
 private fun GamePanelHeader(

@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.game
 
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -59,6 +60,11 @@ class FinalGameplayCaptureTest {
         val arguments = InstrumentationRegistry.getArguments()
         val captureIdArgument = arguments.getString("captureId")
         assumeTrue("Reference capture runs only with explicit instrumentation arguments", captureIdArgument != null)
+        assumeTrue(
+            "Final gameplay capture validates the production portrait layout",
+            InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.orientation ==
+                Configuration.ORIENTATION_PORTRAIT,
+        )
         val captureId = requireNotNull(captureIdArgument)
         val codeLength = requireNotNull(arguments.getString("codeLength")).toInt()
         val stateName = arguments.getString("state") ?: "filled"
@@ -133,8 +139,8 @@ class FinalGameplayCaptureTest {
         assertTrue("Matrix must end before tools", matrixBounds.bottom <= toolsBounds.top)
         assertTrue("Input actions must remain inside the viewport", inputBounds.bottom <= rootBounds.bottom)
         assertTrue(
-            "Matrix rows must remain compact instead of stretching with the viewport",
-            firstCellBounds.height <= 27.dp.value * density,
+            "Matrix rows must remain readable without becoming oversized",
+            firstCellBounds.height <= 33.dp.value * density,
         )
         assertTrue(
             "Compact keypad visuals must retain a 44dp vertical hit target",
@@ -148,6 +154,12 @@ class FinalGameplayCaptureTest {
             )
         } else {
             assertTrue("Attempts must stay left of the matrix", attemptsBounds.right <= matrixBounds.left)
+        }
+        if (!adLoaded) {
+            assertTrue(
+                "Premium gameplay must use the height freed by the absent banner",
+                rootBounds.bottom - inputBounds.bottom <= 80.dp.value * density,
+            )
         }
         val output = File(
             requireNotNull(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null)),
