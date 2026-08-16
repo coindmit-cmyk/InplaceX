@@ -429,7 +429,7 @@ fun GameTopPanel(
                 },
                 bonusMoves = uiState.counters.bonusMoves,
             ),
-            valueColor = FinalUiColors.ModeOrangeDeep,
+            valueColor = FinalUiColors.ModeOrangeText,
             modifier = Modifier.weight(0.82f),
         )
         VerticalDivider(
@@ -1264,7 +1264,7 @@ private val GameFieldMode.accent: Color
 
 private val GameFieldMode.accentDeep: Color
     get() = when (this) {
-        GameFieldMode.RACE -> FinalUiColors.ModeOrangeDeep
+        GameFieldMode.RACE -> FinalUiColors.ModeOrangeText
         GameFieldMode.DUEL -> FinalUiColors.ModePurpleDeep
     }
 

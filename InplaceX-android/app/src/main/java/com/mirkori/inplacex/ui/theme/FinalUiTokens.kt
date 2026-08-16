@@ -39,6 +39,7 @@ object FinalUiColors {
     val ModeOrangeTop = Color(0xFFF8CA6A)
     val ModeOrange = Color(0xFFEBA62E)
     val ModeOrangeDeep = Color(0xFFD98A18)
+    val ModeOrangeText = Color(0xFF714000)
     val ModePurpleTop = Color(0xFF9B73DC)
     val ModePurple = Color(0xFF704BB8)
     val ModePurpleDeep = Color(0xFF56349B)
