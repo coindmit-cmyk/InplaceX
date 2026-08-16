@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Rewarded hint videos can now open from the in-game confirmation dialog. The
+  live Activity remains an eligible full-screen ad host while that modal dialog
+  owns window focus; background, finishing, and destroyed activities are still
+  rejected through lifecycle state.
+
 - Gameplay keeps the accepted 4–6 side-by-side and 7–10 stacked geometry while
   restoring the earlier colorful toy-room character: mode-colored status,
   blue attempt history, violet analysis framing, green/gold helpers, stronger

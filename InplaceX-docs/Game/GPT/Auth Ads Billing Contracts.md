@@ -158,6 +158,9 @@ This is intentionally separate from permanent hint inventory.
 - `REMOVE_ADS`, `PRO`, and `PRO_PLUS` all suppress the banner before the
   provider is called; debug tooling must never override this entitlement
 - a rewarded item may be granted only after the provider reports `Completed`
+- a modal rewarded prompt may temporarily own window focus; Android host
+  eligibility therefore requires a resumed, non-finishing, non-destroyed
+  Activity but does not reject it solely because `hasWindowFocus()` is false
 - `InplaceX-ads-core` is the canonical placement/result policy; a provider SDK
   must not duplicate or bypass it
 
