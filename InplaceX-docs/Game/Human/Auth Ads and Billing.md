@@ -13,6 +13,10 @@
   Games Platform without changing the existing InplaceX player ID
 - linking Google, Telegram, or a website account keeps the same InplaceX game
   profile and does not replace local campaign progress
+- if the chosen Google account already has another InplaceX profile, the game
+  asks whether to enter that profile or remain in the current one. Nothing is
+  switched automatically, neither profile is deleted or merged, and the local
+  campaign remains on the phone
 - online matches use the refreshed Mirkori game token directly; the InplaceX
   backend verifies it and does not create a second player identity
 

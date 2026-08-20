@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- When a Google account already owns an InplaceX profile, the app now asks
+  whether to enter that existing profile or remain in the current profile. No
+  switch, merge, or deletion happens without explicit confirmation.
 - Rewarded hint videos can now open from the in-game confirmation dialog. The
   live Activity remains an eligible full-screen ad host while that modal dialog
   owns window focus; background, finishing, and destroyed activities are still
