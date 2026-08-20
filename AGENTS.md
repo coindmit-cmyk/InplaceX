@@ -51,9 +51,9 @@ Run root Gradle commands from the repository root unless a task explicitly requi
 ## Build And VPS Safety
 
 - Build Android, backend, container, and production release artifacts only on
-  the owner's workstation or an approved remote build PC with sufficient
-  resources. Never run Gradle, Docker/Buildx, or another resource-intensive
-  production build on the application VPS.
+  the owner's workstation, an approved remote build PC, or a trusted CI runner
+  with sufficient resources. Never run Gradle, Docker/Buildx, or another
+  resource-intensive production build on the application VPS.
 - The VPS may receive only an already-built, immutable, checksum-pinned
   artifact. Use it for preflight, deployment, health/smoke verification, and
   rollback—not compilation or image construction.
