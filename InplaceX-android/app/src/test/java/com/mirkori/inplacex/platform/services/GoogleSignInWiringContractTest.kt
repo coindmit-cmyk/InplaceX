@@ -24,6 +24,10 @@ class GoogleSignInWiringContractTest {
         assertTrue(action.contains("pendingGoogleProfileConflict"))
         assertTrue(source.contains("PlatformProfileConflictResolution.USE_EXISTING_PROFILE"))
         assertTrue(source.contains("runtime?.cancelPendingLogin()"))
+        assertTrue(source.contains("LocalRelationshipType.FRIEND"))
+        assertTrue(source.contains("LocalRelationshipType.INVITE_OUTGOING"))
+        assertTrue(source.contains("savedFriends = emptyList()"))
+        assertTrue(source.contains("pendingFriendRequests = emptyList()"))
         assertFalse(action.contains("Intent.ACTION_VIEW"))
     }
 }

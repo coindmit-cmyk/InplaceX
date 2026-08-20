@@ -140,8 +140,21 @@ class MirkoriGameSdk(
         profileAccessToken: String,
         idToken: String,
         pending: PendingGameLogin,
-        conflictResolution: PlatformProfileConflictResolution = PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
         idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): GameIdentitySession = completeGoogleAccountLogin(
+        profileAccessToken = profileAccessToken,
+        idToken = idToken,
+        pending = pending,
+        idempotencyKey = idempotencyKey,
+        conflictResolution = PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
+    )
+
+    suspend fun completeGoogleAccountLogin(
+        profileAccessToken: String,
+        idToken: String,
+        pending: PendingGameLogin,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+        conflictResolution: PlatformProfileConflictResolution,
     ): GameIdentitySession {
         require(profileAccessToken.matches(CredentialPattern))
         require(idToken.length in 100..8_192 && idToken.none(Char::isWhitespace))

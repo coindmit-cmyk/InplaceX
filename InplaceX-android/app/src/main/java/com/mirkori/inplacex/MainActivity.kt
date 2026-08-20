@@ -1589,6 +1589,28 @@ class MainActivity : ComponentActivity() {
                                                 if (!profileAuthOperation.isCurrent(operationId)) return@launch
                                                 profileAuthResultKey = when (completed) {
                                                     is MirkoriLoginResult.Connected -> {
+                                                        if (
+                                                            mirkoriAccountState.gamePlayerId != null &&
+                                                            mirkoriAccountState.gamePlayerId !=
+                                                            completed.accountState.gamePlayerId
+                                                        ) {
+                                                            withContext(Dispatchers.IO) {
+                                                                platformLocalRepository.replaceRelationships(
+                                                                    playerId = localPlayerProfile.playerId,
+                                                                    relationshipType =
+                                                                        LocalRelationshipType.FRIEND,
+                                                                    relationships = emptyList(),
+                                                                )
+                                                                platformLocalRepository.replaceRelationships(
+                                                                    playerId = localPlayerProfile.playerId,
+                                                                    relationshipType =
+                                                                        LocalRelationshipType.INVITE_OUTGOING,
+                                                                    relationships = emptyList(),
+                                                                )
+                                                            }
+                                                            savedFriends = emptyList()
+                                                            pendingFriendRequests = emptyList()
+                                                        }
                                                         mirkoriAccountState = completed.accountState
                                                         progressState = progressRepository.signInWithGooglePlay(
                                                             credential.playerName

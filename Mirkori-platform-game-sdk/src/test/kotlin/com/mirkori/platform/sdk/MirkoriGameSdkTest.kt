@@ -146,10 +146,10 @@ class MirkoriGameSdkTest {
 
         val linked = runSuspend {
             sdk.completeGoogleAccountLogin(
-                profileAccessToken = accessToken,
-                idToken = idToken,
-                pending = pending,
-                idempotencyKey = PlatformIdempotencyKey("native-google-complete"),
+                accessToken,
+                idToken,
+                pending,
+                PlatformIdempotencyKey("native-google-complete"),
             )
         }
 
