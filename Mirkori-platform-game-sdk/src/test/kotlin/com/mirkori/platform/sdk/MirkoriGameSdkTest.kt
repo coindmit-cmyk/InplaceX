@@ -146,10 +146,10 @@ class MirkoriGameSdkTest {
 
         val linked = runSuspend {
             sdk.completeGoogleAccountLogin(
-                profileAccessToken = accessToken,
-                idToken = idToken,
-                pending = pending,
-                idempotencyKey = PlatformIdempotencyKey("native-google-complete"),
+                accessToken,
+                idToken,
+                pending,
+                PlatformIdempotencyKey("native-google-complete"),
             )
         }
 
@@ -162,6 +162,53 @@ class MirkoriGameSdkTest {
         assertTrue(request.body.contains(idToken))
         assertTrue(request.body.contains(pending.codeVerifier))
         assertFalse(request.url.contains(idToken))
+        assertFalse(request.toString().contains(idToken))
+        assertFalse(request.body.contains("conflictResolution"))
+    }
+
+    @Test
+    fun confirmedGoogleProfileConflictUsesExplicitResolutionOnlyInRequestBody() {
+        val session = "R".repeat(64)
+        val idToken = "google-id-token-" + "y".repeat(120)
+        val transport = QueueTransport(
+            success(
+                """{"session":"$session","connectUrl":"https://games.dmit.life/connect?session=$session","expiresAtEpochMs":1786032600000}""",
+            ),
+            success(
+                """
+                {
+                  "accountId":"00000000-0000-4000-8000-000000000221",
+                  "gamePlayerId":"00000000-0000-4000-8000-000000000222",
+                  "gameId":"inplacex",
+                  "authMode":"google",
+                  "credentials":${credentialsJson("google-existing")}
+                }
+                """.trimIndent(),
+            ),
+        )
+        val sdk = sdk(transport, CountingEntropy())
+        val accessToken = "access." + "h".repeat(40)
+        val pending = runSuspend {
+            sdk.beginAccountLogin(
+                profileAccessToken = accessToken,
+                installationId = "00000000-0000-4000-8000-000000000223",
+                idempotencyKey = PlatformIdempotencyKey("confirmed-google-create"),
+            )
+        }
+
+        runSuspend {
+            sdk.completeGoogleAccountLogin(
+                profileAccessToken = accessToken,
+                idToken = idToken,
+                pending = pending,
+                conflictResolution = PlatformProfileConflictResolution.USE_EXISTING_PROFILE,
+                idempotencyKey = PlatformIdempotencyKey("confirmed-google-complete"),
+            )
+        }
+
+        val request = transport.requests.last()
+        assertTrue(request.body.contains("\"conflictResolution\":\"use_existing_profile\""))
+        assertFalse(request.url.contains("use_existing_profile"))
         assertFalse(request.toString().contains(idToken))
     }
 
