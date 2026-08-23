@@ -2,6 +2,7 @@ package com.mirkori.inplacex.ui.screens.game.state
 
 import androidx.lifecycle.SavedStateHandle
 import com.mirkori.inplacex.core.analysis.AcceptedAttemptEvidence
+import com.mirkori.inplacex.core.analysis.DeductionResult
 import com.mirkori.inplacex.core.analysis.EvidenceDeductionEngine
 import com.mirkori.inplacex.core.analysis.EvidenceInput
 import com.mirkori.inplacex.core.analysis.HypothesisKind
@@ -30,6 +31,7 @@ class GameFieldStateHolder(
     private val savedStateStore = GameFieldSavedStateStore(savedStateHandle)
     private var latestSnapshot: MatchSnapshot
     private var lastEvidenceInput: EvidenceInput? = null
+    private var lastDeduction: DeductionResult? = null
 
     private val _state: MutableStateFlow<GameFieldUiState>
     val state: StateFlow<GameFieldUiState>
@@ -424,14 +426,13 @@ class GameFieldStateHolder(
             }
         }
         val evidenceInput = EvidenceInput(hypotheses, acceptedAttempts, state.evidence.provenFacts.toList())
-        val deduction = if (evidenceInput == lastEvidenceInput) {
-            state.evidence.deduction
-        } else {
+        val deduction = lastDeduction?.takeIf { evidenceInput == lastEvidenceInput } ?: run {
             EvidenceDeductionEngine(
                 codeLength = parameters.codeLength,
                 allowDuplicates = parameters.allowDuplicates,
             ).infer(evidenceInput).also {
                 lastEvidenceInput = evidenceInput
+                lastDeduction = it
             }
         }
         return state.copy(

@@ -35,6 +35,18 @@ class GameFieldStateHolderTest {
     }
 
     @Test
+    fun `state recreation with unchanged evidence keeps the cached deduction`() {
+        val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
+        "5678".forEach { source.dispatch(GameFieldEvent.DigitEntered(it)) }
+        source.dispatch(GameFieldEvent.GuessSubmitted)
+        val deductionAfterAttempt = source.state.value.evidence.deduction
+
+        source.dispatch(GameFieldEvent.BoostConsumed(GameFieldBoostMode.EXTRA_MOVES, amount = 2))
+
+        assertSame(deductionAfterAttempt, source.state.value.evidence.deduction)
+    }
+
+    @Test
     fun `restores checkpoint and durable game field state`() {
         val savedState = SavedStateHandle()
         val source = GameFieldStateHolder(savedState, parameters, initialSecret = "1234")
