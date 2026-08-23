@@ -37,6 +37,8 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldHintMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldRouteUiState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldToolsState
@@ -107,6 +109,9 @@ class FinalGameplayCaptureTest {
         composeRule.waitForIdle()
         if (stateName == "input_disabled_waiting") {
             composeRule.onNodeWithTag("game-status").assertIsDisplayed()
+        }
+        if (stateName == "opponent_results") {
+            composeRule.onNodeWithTag("game-opponent-results-panel").assertIsDisplayed()
         }
         composeRule.onNodeWithTag("game-analysis-9-$codeLength").assertIsDisplayed()
         composeRule.onNodeWithTag("game-guess-slot-$codeLength").assertIsDisplayed()
@@ -194,6 +199,20 @@ class FinalGameplayCaptureTest {
         }
         if (stateName == "input_disabled_waiting") {
             state = state.copy(route = state.route.copy(inputEnabled = false, secondaryStatusText = "Player 2"))
+        }
+        if (stateName == "opponent_results") {
+            state = state.copy(
+                route = state.route.copy(
+                    opponentProgress = GameFieldOpponentProgressState(
+                        attempts = listOf(
+                            GameFieldOpponentAttempt(1, secret.reversed(), 0),
+                            GameFieldOpponentAttempt(2, secret.drop(1) + secret.first(), 1),
+                            GameFieldOpponentAttempt(3, secret, codeLength),
+                        ),
+                        completed = true,
+                    ),
+                ),
+            )
         }
         if (helpers) {
             state = state.copy(

@@ -28,6 +28,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -57,12 +58,17 @@ import com.mirkori.inplacex.ui.screens.game.GameFieldParams
 import com.mirkori.inplacex.ui.screens.game.GameFieldScreen
 import com.mirkori.inplacex.ui.screens.game.MatchSessionSummary
 import com.mirkori.inplacex.ui.screens.game.TypeGame
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 private enum class DuelTurnOwner {
@@ -281,9 +287,40 @@ fun HomeRootScreen(
 
         HomeScreenState.PVE_GAME -> {
             key(pveSessionSeed, selectedRaceCodeLength) {
+                val raceSecret = remember(configuredPveMode, pveSessionSeed) {
+                    SecretGenerator.generate(
+                        localBotRaceConfig(
+                            mode = configuredPveMode,
+                            seed = pveSessionSeed.toLong() * 41L,
+                        ),
+                    )
+                }
+                val raceBotSolver = remember(configuredPveMode, pveSessionSeed) {
+                    BotSolver(
+                        config = localBotRaceConfig(configuredPveMode),
+                        difficulty = configuredPveMode.botDifficulty
+                            ?: com.mirkori.inplacex.core.bot.BotDifficulty.MEDIUM,
+                        seed = pveSessionSeed.toLong() * 43L,
+                    )
+                }
+                val raceScope = rememberCoroutineScope()
+                val raceBotTurnMutex = remember { Mutex() }
+                var opponentAttempts by remember {
+                    mutableStateOf<List<GameFieldOpponentAttempt>>(emptyList())
+                }
+                var opponentThinking by remember { mutableStateOf(false) }
+                val opponentCompleted = opponentAttempts.lastOrNull()?.exactMatches ==
+                    configuredPveMode.config.codeLength
+
                 GameFieldScreen(
                     title = "",
                     params = configuredPveMode.toFieldParams(TypeGame.RaceMatch),
+                    fixedSecret = raceSecret,
+                    opponentProgress = GameFieldOpponentProgressState(
+                        attempts = opponentAttempts,
+                        isThinking = opponentThinking,
+                        completed = opponentCompleted,
+                    ),
                     onBack = { showExitDialog = true },
                     onDebugSecretChange = onDebugSecretChange,
                     openPositionHints = openPositionHints,
@@ -303,6 +340,55 @@ fun HomeRootScreen(
                         raceResultWon = summary.won
                         raceResultAttempts = summary.attemptsUsed
                         raceResultElapsedSeconds = summary.elapsedSeconds
+                    },
+                    onGuessResolved = { _, _, isWin ->
+                        if (isWin || opponentCompleted) {
+                            return@GameFieldScreen
+                        }
+                        raceScope.launch {
+                            raceBotTurnMutex.withLock {
+                                if (
+                                    opponentAttempts.lastOrNull()?.exactMatches ==
+                                    configuredPveMode.config.codeLength
+                                ) {
+                                    return@withLock
+                                }
+                                opponentThinking = true
+                                try {
+                                    delay(450)
+                                    when (
+                                        val botTurn = withContext(Dispatchers.Default) {
+                                            resolveDuelBotTurn(
+                                                playerSecret = raceSecret,
+                                                codeLength = configuredPveMode.config.codeLength,
+                                                nextGuess = { raceBotSolver.nextTurn().guess },
+                                                registerFeedback = raceBotSolver::registerFeedback,
+                                                confirmedPositions = raceBotSolver::confirmedPositionsCount,
+                                            )
+                                        }
+                                    ) {
+                                        is DuelBotTurnResult.Completed -> {
+                                            opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
+                                                number = opponentAttempts.size + 1,
+                                                guess = botTurn.guess,
+                                                exactMatches = botTurn.score,
+                                            )
+                                        }
+                                        is DuelBotTurnResult.Failed -> AppLog.error(
+                                            tag = "HomeRootScreen",
+                                            message = "race bot progress turn failed",
+                                            attributes = mapOf(
+                                                "codeLength" to configuredPveMode.config.codeLength.toString(),
+                                                "failureStage" to botTurn.stage.name,
+                                            ),
+                                            throwable = botTurn.cause,
+                                        )
+                                    }
+                                } finally {
+                                    opponentThinking = false
+                                }
+                            }
+                        }
                     },
                     autoRestartOnWin = false,
                 )
@@ -555,6 +641,7 @@ fun HomeRootScreen(
 
 internal sealed interface DuelBotTurnResult {
     data class Completed(
+        val guess: String,
         val score: Int,
         val confirmedPositions: Int,
     ) : DuelBotTurnResult
@@ -593,6 +680,7 @@ internal fun resolveDuelBotTurn(
         registerFeedback(guess, score)
         stage = DuelBotTurnStage.READ_PROGRESS
         DuelBotTurnResult.Completed(
+            guess = guess,
             score = score,
             confirmedPositions = confirmedPositions(),
         )
@@ -604,6 +692,14 @@ internal fun resolveDuelBotTurn(
 }
 
 internal fun localBotDuelConfig(
+    mode: GameModeDefinition,
+    seed: Long? = null,
+): GameConfig = mode.config.copy(
+    attemptLimit = LOCAL_DUEL_ATTEMPT_CAPACITY,
+    seed = seed,
+)
+
+internal fun localBotRaceConfig(
     mode: GameModeDefinition,
     seed: Long? = null,
 ): GameConfig = mode.config.copy(

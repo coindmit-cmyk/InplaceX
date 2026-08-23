@@ -9,6 +9,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldEvent
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 import com.mirkori.inplacex.ui.common.AnalysisCellVisualState
@@ -108,6 +109,19 @@ class GamePresentationComponentsTest {
         assertEquals(315.dp, analysisPanelHeight(fourDigits))
         assertEquals(384.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
         assertEquals(360.dp, gameWorkBoardHeight(tenDigits, stacked = true))
+    }
+
+    @Test
+    fun `opponent panel keeps the latest three complete results`() {
+        val attempts = (1..5).map { number ->
+            GameFieldOpponentAttempt(
+                number = number,
+                guess = "1234",
+                exactMatches = number.coerceAtMost(4),
+            )
+        }
+
+        assertEquals(listOf(3, 4, 5), latestOpponentAttempts(attempts).map { it.number })
     }
 
     @Test

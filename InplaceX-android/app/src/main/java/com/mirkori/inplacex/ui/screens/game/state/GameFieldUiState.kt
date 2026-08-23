@@ -122,6 +122,24 @@ data class GameFieldCounters(
     val bonusMoves: Int = 0,
 )
 
+data class GameFieldOpponentAttempt(
+    val number: Int,
+    val guess: String,
+    val exactMatches: Int,
+) {
+    init {
+        require(number > 0)
+        require(guess.isNotBlank())
+        require(exactMatches >= 0)
+    }
+}
+
+data class GameFieldOpponentProgressState(
+    val attempts: List<GameFieldOpponentAttempt> = emptyList(),
+    val isThinking: Boolean = false,
+    val completed: Boolean = false,
+)
+
 data class GameFieldRouteUiState(
     val modeLabel: String? = null,
     val turnLabel: String? = null,
@@ -139,6 +157,7 @@ data class GameFieldRouteUiState(
     val extraTimeSecondsPerBoost: Int = 0,
     val pendingRewardedHint: GameFieldHintMode? = null,
     val rewardedHintInFlight: Boolean = false,
+    val opponentProgress: GameFieldOpponentProgressState? = null,
 )
 
 data class GameFieldMatchState(
