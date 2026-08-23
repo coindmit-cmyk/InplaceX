@@ -322,12 +322,14 @@ internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 
 
 private val GamePanelHorizontalPadding = 5.dp
 private val GamePanelHeaderHeight = 23.dp
+private val MatrixHeaderContentGap = 4.dp
 private const val MatrixRows = 10
 private const val StackedVisibleAttempts = 3
 
 internal fun analysisPanelHeight(metrics: GameFieldLayoutMetrics): Dp =
     GamePanelHorizontalPadding * 2 +
         GamePanelHeaderHeight +
+        MatrixHeaderContentGap +
         metrics.matrixCellHeight * MatrixRows +
         metrics.matrixGap * (MatrixRows - 1)
 
@@ -597,6 +599,7 @@ fun GameAnalysisPanel(
             accent = FinalUiColors.ModePurple,
             modifier = Modifier.testTag("game-matrix-title"),
         )
+        Spacer(Modifier.height(MatrixHeaderContentGap))
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val columns = uiState.parameters.codeLength
             val verticalGap = metrics.matrixGap
