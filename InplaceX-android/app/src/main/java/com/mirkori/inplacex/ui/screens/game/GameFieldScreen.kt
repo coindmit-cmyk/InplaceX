@@ -21,6 +21,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldHintMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldNotice
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldRouteUiState
 import com.mirkori.inplacex.ui.screens.game.state.toGameConfig
 import com.mirkori.inplacex.ui.viewmodel.GameFieldHintInventory
@@ -41,6 +42,7 @@ fun GameFieldScreen(
     modeLabel: String = title,
     turnLabel: String? = null,
     secondaryStatusText: String? = null,
+    opponentProgress: GameFieldOpponentProgressState? = null,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit = {},
     onDebugSecretChange: (String?) -> Unit = {},
@@ -168,6 +170,7 @@ fun GameFieldScreen(
             extraTimeSecondsPerBoost = extraTimeSecondsPerBoost,
             pendingRewardedHint = overlay.pendingRewardedHint,
             rewardedHintInFlight = rewardedHintOperation.inProgress,
+            opponentProgress = opponentProgress,
         ),
     )
 

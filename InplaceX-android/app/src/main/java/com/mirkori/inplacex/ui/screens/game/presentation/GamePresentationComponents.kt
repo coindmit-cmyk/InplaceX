@@ -64,6 +64,8 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMode
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldNotice
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStatus
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldTool
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState
@@ -79,6 +81,8 @@ import com.mirkori.inplacex.ui.theme.FinalUiDimens
 import com.mirkori.inplacex.ui.theme.GameFieldLayoutMetrics
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
+
+private val OpponentProgressPanelHeight = 54.dp
 
 /** Callbacks supplied by the route that owns external inventory, navigation and lifecycle effects. */
 data class GamePresentationCallbacks(
@@ -137,6 +141,21 @@ fun GamePresentationLayout(
                 accentStrength = 0.16f,
             ) {
                 GameTopPanel(uiState = uiState)
+            }
+
+            uiState.route.opponentProgress?.let { progress ->
+                PresentationCard(
+                    modifier = Modifier
+                        .height(OpponentProgressPanelHeight)
+                        .testTag("game-opponent-results-panel"),
+                    accent = uiState.parameters.mode.accent,
+                    accentStrength = 0.13f,
+                ) {
+                    GameOpponentResultsPanel(
+                        progress = progress,
+                        codeLength = uiState.parameters.codeLength,
+                    )
+                }
             }
 
             GameWorkBoard(
@@ -236,6 +255,89 @@ fun GamePresentationLayout(
 
     GameDialogs(uiState = uiState, callbacks = callbacks)
 }
+
+@Composable
+private fun GameOpponentResultsPanel(
+    progress: GameFieldOpponentProgressState,
+    codeLength: Int,
+    modifier: Modifier = Modifier,
+) {
+    val strings = LocalAppStrings.current
+    val statusKey = when {
+        progress.completed -> "home.race.opponent.finished"
+        progress.isThinking -> "home.race.opponent.thinking"
+        progress.attempts.isEmpty() -> "home.race.opponent.waiting"
+        else -> "home.race.opponent.racing"
+    }
+    val visibleAttempts = latestOpponentAttempts(progress.attempts)
+
+    Row(
+        modifier = modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Column(modifier = Modifier.weight(1.1f)) {
+            Text(
+                text = strings.text("home.race.opponent.title"),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = FinalUiColors.ModeOrangeText,
+                maxLines = 1,
+            )
+            Text(
+                text = strings.text(statusKey),
+                fontSize = 8.5.sp,
+                color = FinalUiColors.WarmTextMuted,
+                maxLines = 1,
+            )
+        }
+        VerticalDivider(
+            modifier = Modifier.height(30.dp),
+            color = FinalUiColors.WarmDivider.copy(alpha = 0.38f),
+        )
+        if (visibleAttempts.isEmpty()) {
+            Text(
+                text = strings.text("home.race.opponent.empty"),
+                modifier = Modifier.weight(1.7f),
+                fontSize = 9.sp,
+                color = FinalUiColors.WarmTextMuted,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        } else {
+            Row(
+                modifier = Modifier.weight(1.7f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                visibleAttempts.forEach { attempt ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "#${attempt.number} ${attempt.guess}",
+                            fontSize = 7.5.sp,
+                            color = FinalUiColors.WarmTextMuted,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = "${attempt.exactMatches}/$codeLength",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FinalUiColors.PrimaryDeep,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal fun latestOpponentAttempts(
+    attempts: List<GameFieldOpponentAttempt>,
+    limit: Int = 3,
+): List<GameFieldOpponentAttempt> = attempts.takeLast(limit.coerceAtLeast(0))
 
 @Composable
 private fun GameWorkBoard(

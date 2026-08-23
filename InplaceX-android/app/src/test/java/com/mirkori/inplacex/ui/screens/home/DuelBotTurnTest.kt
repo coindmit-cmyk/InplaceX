@@ -78,11 +78,23 @@ class DuelBotTurnTest {
         )
 
         assertEquals(
-            DuelBotTurnResult.Completed(score = 5, confirmedPositions = 3),
+            DuelBotTurnResult.Completed(guess = "092345", score = 5, confirmedPositions = 3),
             result,
         )
         assertEquals("092345", registeredGuess)
         assertEquals(5, registeredScore)
+    }
+
+    @Test
+    fun raceBotUsesThePlayersRaceRulesWithAnIndependentAttemptBudget() {
+        val mode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
+        val config = localBotRaceConfig(mode, seed = 73L)
+
+        assertEquals(mode.config.codeLength, config.codeLength)
+        assertEquals(mode.config.allowDuplicates, config.allowDuplicates)
+        assertEquals(mode.config.forbidAllSameDigitsGuess, config.forbidAllSameDigitsGuess)
+        assertEquals(73L, config.seed)
+        assertEquals(999, config.attemptLimit)
     }
 
     @Test

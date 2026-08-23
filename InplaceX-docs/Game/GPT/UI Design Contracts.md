@@ -89,6 +89,10 @@ primary action.
   change the 4–6 side-by-side / 7–10 stacked gameplay geometry.
 - The banner/rewarded ad implementation and banner allocation remain outside
   this pass; visual work must not wrap, replace, cover, or resize the ad slot.
+- A local bot Race shows a compact opponent-results card above the work board.
+  The card reveals the bot's latest three combinations and exact-match scores,
+  and reports whether the bot is preparing, calculating, racing, or finished.
+  It is informational and does not change the established Race scoring rules.
 
 ## Online Entry And Invitation Contract
 

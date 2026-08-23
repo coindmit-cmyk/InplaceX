@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a compact live opponent-results card to the local bot Race. Each accepted
+  player attempt now advances the bot off the UI thread and shows its latest
+  three combinations and exact-match scores without changing Race scoring.
+
 - The code matrix now keeps a clear gap between its header divider and the
   zero row. Gameplay evidence deduction reuses unchanged results and bounds
   exhaustive search more tightly, preventing the visible mid-match freezes
