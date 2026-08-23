@@ -47,3 +47,15 @@ Run root Gradle commands from the repository root unless a task explicitly requi
 - Add logging and tests alongside code when behavior crosses module, integration, runtime, or user-visible boundaries.
 - Update practical documentation when behavior, architecture, setup, public contracts, or workflows change.
 - Add or update tests for new behavior and bug fixes when practical.
+
+## Build And VPS Safety
+
+- Build Android, backend, container, and production release artifacts only on
+  the owner's workstation, an approved remote build PC, or a trusted CI runner
+  with sufficient resources. Never run Gradle, Docker/Buildx, or another
+  resource-intensive production build on the application VPS.
+- The VPS may receive only an already-built, immutable, checksum-pinned
+  artifact. Use it for preflight, deployment, health/smoke verification, and
+  rollback—not compilation or image construction.
+- Before deployment, verify the target artifact identity and retain the current
+  working release as a recoverable rollback candidate.
