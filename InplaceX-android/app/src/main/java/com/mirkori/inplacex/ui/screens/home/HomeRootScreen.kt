@@ -67,6 +67,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 private enum class DuelTurnOwner {
@@ -302,6 +304,7 @@ fun HomeRootScreen(
                     )
                 }
                 val raceScope = rememberCoroutineScope()
+                val raceBotTurnMutex = remember { Mutex() }
                 var opponentAttempts by remember {
                     mutableStateOf<List<GameFieldOpponentAttempt>>(emptyList())
                 }
@@ -339,43 +342,51 @@ fun HomeRootScreen(
                         raceResultElapsedSeconds = summary.elapsedSeconds
                     },
                     onGuessResolved = { _, _, isWin ->
-                        if (isWin || opponentThinking || opponentCompleted) {
+                        if (isWin || opponentCompleted) {
                             return@GameFieldScreen
                         }
-                        opponentThinking = true
                         raceScope.launch {
-                            try {
-                                delay(450)
-                                when (
-                                    val botTurn = withContext(Dispatchers.Default) {
-                                        resolveDuelBotTurn(
-                                            playerSecret = raceSecret,
-                                            codeLength = configuredPveMode.config.codeLength,
-                                            nextGuess = { raceBotSolver.nextTurn().guess },
-                                            registerFeedback = raceBotSolver::registerFeedback,
-                                            confirmedPositions = raceBotSolver::confirmedPositionsCount,
-                                        )
-                                    }
+                            raceBotTurnMutex.withLock {
+                                if (
+                                    opponentAttempts.lastOrNull()?.exactMatches ==
+                                    configuredPveMode.config.codeLength
                                 ) {
-                                    is DuelBotTurnResult.Completed -> {
-                                        opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
-                                            number = opponentAttempts.size + 1,
-                                            guess = botTurn.guess,
-                                            exactMatches = botTurn.score,
+                                    return@withLock
+                                }
+                                opponentThinking = true
+                                try {
+                                    delay(450)
+                                    when (
+                                        val botTurn = withContext(Dispatchers.Default) {
+                                            resolveDuelBotTurn(
+                                                playerSecret = raceSecret,
+                                                codeLength = configuredPveMode.config.codeLength,
+                                                nextGuess = { raceBotSolver.nextTurn().guess },
+                                                registerFeedback = raceBotSolver::registerFeedback,
+                                                confirmedPositions = raceBotSolver::confirmedPositionsCount,
+                                            )
+                                        }
+                                    ) {
+                                        is DuelBotTurnResult.Completed -> {
+                                            opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
+                                                number = opponentAttempts.size + 1,
+                                                guess = botTurn.guess,
+                                                exactMatches = botTurn.score,
+                                            )
+                                        }
+                                        is DuelBotTurnResult.Failed -> AppLog.error(
+                                            tag = "HomeRootScreen",
+                                            message = "race bot progress turn failed",
+                                            attributes = mapOf(
+                                                "codeLength" to configuredPveMode.config.codeLength.toString(),
+                                                "failureStage" to botTurn.stage.name,
+                                            ),
+                                            throwable = botTurn.cause,
                                         )
                                     }
-                                    is DuelBotTurnResult.Failed -> AppLog.error(
-                                        tag = "HomeRootScreen",
-                                        message = "race bot progress turn failed",
-                                        attributes = mapOf(
-                                            "codeLength" to configuredPveMode.config.codeLength.toString(),
-                                            "failureStage" to botTurn.stage.name,
-                                        ),
-                                        throwable = botTurn.cause,
-                                    )
+                                } finally {
+                                    opponentThinking = false
                                 }
-                            } finally {
-                                opponentThinking = false
                             }
                         }
                     },
