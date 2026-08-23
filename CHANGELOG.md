@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The code matrix now keeps a clear gap between its header divider and the
+  zero row. Gameplay evidence deduction reuses unchanged results and bounds
+  exhaustive search more tightly, preventing the visible mid-match freezes
+  that appeared after several turns without changing scoring or bot rules.
 - When a Google account already owns an InplaceX profile, the app now asks
   whether to enter that existing profile or remain in the current profile. No
   switch, merge, or deletion happens without explicit confirmation.

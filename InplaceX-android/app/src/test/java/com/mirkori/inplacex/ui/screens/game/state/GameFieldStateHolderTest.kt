@@ -6,6 +6,8 @@ import com.mirkori.inplacex.core.analysis.EvidenceDeductionEngine
 import com.mirkori.inplacex.core.analysis.ProvenFact
 import com.mirkori.inplacex.core.match.MatchPhase
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,6 +18,21 @@ class GameFieldStateHolderTest {
         totalTimeLimitSeconds = 60,
         turnTimeLimitSeconds = 30,
     )
+
+    @Test
+    fun `non evidence events reuse deduction while evidence changes rebuild it`() {
+        val source = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = "1234")
+        val initialDeduction = source.state.value.evidence.deduction
+
+        source.dispatch(GameFieldEvent.TimerTicked(seconds = 1))
+        assertSame(initialDeduction, source.state.value.evidence.deduction)
+
+        source.dispatch(GameFieldEvent.DigitEntered('1'))
+        assertSame(initialDeduction, source.state.value.evidence.deduction)
+
+        source.dispatch(GameFieldEvent.ManualMarkChanged(0, '9', GameFieldManualMarkType.NO))
+        assertNotSame(initialDeduction, source.state.value.evidence.deduction)
+    }
 
     @Test
     fun `restores checkpoint and durable game field state`() {

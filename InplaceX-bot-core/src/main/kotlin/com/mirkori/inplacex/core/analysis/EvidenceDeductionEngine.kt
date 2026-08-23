@@ -1,6 +1,6 @@
 package com.mirkori.inplacex.core.analysis
 
-private const val MAX_ENUMERATED_ASSIGNMENTS = 200_000L
+private const val MAX_ENUMERATED_ASSIGNMENTS = 20_000L
 
 /**
  * Pure exact-position evidence solver.

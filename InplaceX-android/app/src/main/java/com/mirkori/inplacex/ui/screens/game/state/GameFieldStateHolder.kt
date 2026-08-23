@@ -29,6 +29,7 @@ class GameFieldStateHolder(
     private val engine = engineFactory(parameters.toGameConfig())
     private val savedStateStore = GameFieldSavedStateStore(savedStateHandle)
     private var latestSnapshot: MatchSnapshot
+    private var lastEvidenceInput: EvidenceInput? = null
 
     private val _state: MutableStateFlow<GameFieldUiState>
     val state: StateFlow<GameFieldUiState>
@@ -422,12 +423,17 @@ class GameFieldStateHolder(
                 GameFieldManualMarkType.MAYBE -> null
             }
         }
-        val deduction = EvidenceDeductionEngine(
-            codeLength = parameters.codeLength,
-            allowDuplicates = parameters.allowDuplicates,
-        ).infer(
-            EvidenceInput(hypotheses, acceptedAttempts, state.evidence.provenFacts.toList()),
-        )
+        val evidenceInput = EvidenceInput(hypotheses, acceptedAttempts, state.evidence.provenFacts.toList())
+        val deduction = if (evidenceInput == lastEvidenceInput) {
+            state.evidence.deduction
+        } else {
+            EvidenceDeductionEngine(
+                codeLength = parameters.codeLength,
+                allowDuplicates = parameters.allowDuplicates,
+            ).infer(evidenceInput).also {
+                lastEvidenceInput = evidenceInput
+            }
+        }
         return state.copy(
             evidence = GameFieldEvidenceState(
                 acceptedAttempts = acceptedAttempts,
