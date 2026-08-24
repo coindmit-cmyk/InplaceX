@@ -99,10 +99,22 @@ class DuelBotTurnTest {
 
     @Test
     fun raceBotPaceComesFromDifficultyAndIsIndependentFromPlayerAttempts() {
-        assertEquals(1_600L, raceBotReactionDelayMillis(BotDifficulty.EASY))
-        assertEquals(1_200L, raceBotReactionDelayMillis(BotDifficulty.MEDIUM))
-        assertEquals(900L, raceBotReactionDelayMillis(BotDifficulty.HARD))
-        assertEquals(700L, raceBotReactionDelayMillis(BotDifficulty.EXPERT))
+        assertEquals(4_800L, raceBotReactionDelayMillis(BotDifficulty.EASY))
+        assertEquals(3_600L, raceBotReactionDelayMillis(BotDifficulty.MEDIUM))
+        assertEquals(2_700L, raceBotReactionDelayMillis(BotDifficulty.HARD))
+        assertEquals(2_100L, raceBotReactionDelayMillis(BotDifficulty.EXPERT))
+    }
+
+    @Test
+    fun raceBotWinsOnlyAfterSolvingTheSharedSecret() {
+        assertFalse(isRaceBotVictory(score = 5, codeLength = 6))
+        assertTrue(isRaceBotVictory(score = 6, codeLength = 6))
+    }
+
+    @Test
+    fun raceElapsedTimeUsesTheSharedMatchClock() {
+        assertEquals(9, raceElapsedSeconds(startedAtMillis = 1_000L, finishedAtMillis = 10_999L))
+        assertEquals(0, raceElapsedSeconds(startedAtMillis = null, finishedAtMillis = 10_999L))
     }
 
     @Test

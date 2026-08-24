@@ -310,7 +310,7 @@ private fun GameOpponentResultsPanel(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "#${attempt.number} ${attempt.guess}",
+                            text = opponentAttemptLabel(attempt),
                             fontSize = 7.5.sp,
                             color = FinalUiColors.WarmTextMuted,
                             maxLines = 1,
@@ -333,6 +333,8 @@ internal fun latestOpponentAttempts(
     attempts: List<GameFieldOpponentAttempt>,
     limit: Int = 3,
 ): List<GameFieldOpponentAttempt> = attempts.takeLast(limit.coerceAtLeast(0))
+
+internal fun opponentAttemptLabel(attempt: GameFieldOpponentAttempt): String = "#${attempt.number}"
 
 internal fun opponentProgressStatusKey(progress: GameFieldOpponentProgressState): String = when {
     progress.failed -> "home.race.opponent.failed"

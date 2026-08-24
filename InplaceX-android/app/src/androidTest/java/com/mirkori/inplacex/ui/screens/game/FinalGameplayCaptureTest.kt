@@ -205,9 +205,9 @@ class FinalGameplayCaptureTest {
                 route = state.route.copy(
                     opponentProgress = GameFieldOpponentProgressState(
                         attempts = listOf(
-                            GameFieldOpponentAttempt(1, secret.reversed(), 0),
-                            GameFieldOpponentAttempt(2, secret.drop(1) + secret.first(), 1),
-                            GameFieldOpponentAttempt(3, secret, codeLength),
+                            GameFieldOpponentAttempt(1, 0),
+                            GameFieldOpponentAttempt(2, 1),
+                            GameFieldOpponentAttempt(3, codeLength),
                         ),
                         completed = true,
                     ),

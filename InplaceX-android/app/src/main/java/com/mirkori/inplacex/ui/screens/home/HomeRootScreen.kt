@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.home
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -307,6 +308,8 @@ fun HomeRootScreen(
                 var opponentThinking by remember { mutableStateOf(false) }
                 var opponentFailed by remember { mutableStateOf(false) }
                 var raceStarted by remember { mutableStateOf(false) }
+                var raceStartedAtMillis by remember { mutableStateOf<Long?>(null) }
+                var playerAttemptCount by remember { mutableIntStateOf(0) }
                 val opponentCompleted = opponentAttempts.lastOrNull()?.exactMatches ==
                     configuredPveMode.config.codeLength
 
@@ -341,14 +344,28 @@ fun HomeRootScreen(
                             } finally {
                                 opponentThinking = false
                             }
+                            if (raceResultWon != null) break
                             when (botTurn) {
                                 is DuelBotTurnResult.Completed -> {
                                     consecutiveFailures = 0
                                     opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
                                         number = opponentAttempts.size + 1,
-                                        guess = botTurn.guess,
                                         exactMatches = botTurn.score,
                                     )
+                                    if (
+                                        isRaceBotVictory(
+                                            score = botTurn.score,
+                                            codeLength = configuredPveMode.config.codeLength,
+                                        )
+                                    ) {
+                                        onRecordPveResult(false)
+                                        raceResultWon = false
+                                        raceResultAttempts = playerAttemptCount
+                                        raceResultElapsedSeconds = raceElapsedSeconds(
+                                            startedAtMillis = raceStartedAtMillis,
+                                            finishedAtMillis = SystemClock.elapsedRealtime(),
+                                        )
+                                    }
                                 }
                                 is DuelBotTurnResult.Failed -> {
                                     consecutiveFailures += 1
@@ -396,14 +413,22 @@ fun HomeRootScreen(
                     onMatchStarted = {
                         if (raceResultWon == null) {
                             raceStarted = true
+                            if (raceStartedAtMillis == null) {
+                                raceStartedAtMillis = SystemClock.elapsedRealtime()
+                            }
                             onMatchStarted()
                         }
                     },
+                    onGuessResolved = { _, _, _ ->
+                        playerAttemptCount += 1
+                    },
                     onMatchFinished = { summary ->
-                        onRecordPveResult(summary.won)
-                        raceResultWon = summary.won
-                        raceResultAttempts = summary.attemptsUsed
-                        raceResultElapsedSeconds = summary.elapsedSeconds
+                        if (raceResultWon == null) {
+                            onRecordPveResult(summary.won)
+                            raceResultWon = summary.won
+                            raceResultAttempts = summary.attemptsUsed
+                            raceResultElapsedSeconds = summary.elapsedSeconds
+                        }
                     },
                     autoRestartOnWin = false,
                 )
@@ -723,7 +748,15 @@ internal fun localBotRaceConfig(
 )
 
 internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long =
-    BotProfiles.forDifficulty(difficulty).reactionDelayMillis
+    BotProfiles.forDifficulty(difficulty).reactionDelayMillis * RACE_BOT_PACE_MULTIPLIER
+
+internal fun isRaceBotVictory(score: Int, codeLength: Int): Boolean =
+    codeLength > 0 && score == codeLength
+
+internal fun raceElapsedSeconds(startedAtMillis: Long?, finishedAtMillis: Long): Int =
+    startedAtMillis
+        ?.let { start -> ((finishedAtMillis - start).coerceAtLeast(0L) / 1_000L).toInt() }
+        ?: 0
 
 internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
     config = config.copy(codeLength = selectHomeCodeLength(codeLength)),
@@ -731,6 +764,7 @@ internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinit
 
 private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
 private const val MAX_RACE_BOT_CONSECUTIVE_FAILURES = 3
+private const val RACE_BOT_PACE_MULTIPLIER = 3L
 
 @Composable
 private fun HomeSelectionScreen(
