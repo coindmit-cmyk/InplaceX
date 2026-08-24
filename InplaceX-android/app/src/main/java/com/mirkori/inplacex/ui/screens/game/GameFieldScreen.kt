@@ -67,6 +67,7 @@ fun GameFieldScreen(
     onMatchWon: () -> Unit = {},
     onMatchFinished: (MatchSessionSummary) -> Unit = {},
     onGuessResolved: (guess: String, score: Int, isWin: Boolean) -> Unit = { _, _, _ -> },
+    onMatchProgress: (attemptsUsed: Int, elapsedSeconds: Int) -> Unit = { _, _ -> },
     autoRestartOnWin: Boolean = false,
     extraMovesPerBoost: Int = 0,
     extraTimeSecondsPerBoost: Int = 0,
@@ -104,6 +105,7 @@ fun GameFieldScreen(
         autoRestartOnWin = autoRestartOnWin,
     )
     val currentLifecycleCallbacks by rememberUpdatedState(lifecycleCallbacks)
+    val currentOnMatchProgress by rememberUpdatedState(onMatchProgress)
 
     DisposableEffect(routeController, rewardedHintOperation) {
         onDispose(rewardedHintOperation::cancel)
@@ -133,6 +135,12 @@ fun GameFieldScreen(
     }
     LaunchedEffect(holderState.match.debugSecret) {
         onDebugSecretChange(holderState.match.debugSecret)
+    }
+    LaunchedEffect(holderState.match.attempts.size, holderState.timers.elapsedSeconds) {
+        currentOnMatchProgress(
+            holderState.match.attempts.size,
+            holderState.timers.elapsedSeconds,
+        )
     }
     LaunchedEffect(routeController, overlay.pendingRewardedHint) {
         while (true) {

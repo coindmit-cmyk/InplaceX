@@ -1,6 +1,5 @@
 package com.mirkori.inplacex.ui.screens.home
 
-import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -308,8 +307,8 @@ fun HomeRootScreen(
                 var opponentThinking by remember { mutableStateOf(false) }
                 var opponentFailed by remember { mutableStateOf(false) }
                 var raceStarted by remember { mutableStateOf(false) }
-                var raceStartedAtMillis by remember { mutableStateOf<Long?>(null) }
                 var playerAttemptCount by remember { mutableIntStateOf(0) }
+                var playerElapsedSeconds by remember { mutableIntStateOf(0) }
                 val opponentCompleted = opponentAttempts.lastOrNull()?.exactMatches ==
                     configuredPveMode.config.codeLength
 
@@ -361,10 +360,7 @@ fun HomeRootScreen(
                                         onRecordPveResult(false)
                                         raceResultWon = false
                                         raceResultAttempts = playerAttemptCount
-                                        raceResultElapsedSeconds = raceElapsedSeconds(
-                                            startedAtMillis = raceStartedAtMillis,
-                                            finishedAtMillis = SystemClock.elapsedRealtime(),
-                                        )
+                                        raceResultElapsedSeconds = playerElapsedSeconds
                                     }
                                 }
                                 is DuelBotTurnResult.Failed -> {
@@ -413,14 +409,12 @@ fun HomeRootScreen(
                     onMatchStarted = {
                         if (raceResultWon == null) {
                             raceStarted = true
-                            if (raceStartedAtMillis == null) {
-                                raceStartedAtMillis = SystemClock.elapsedRealtime()
-                            }
                             onMatchStarted()
                         }
                     },
-                    onGuessResolved = { _, _, _ ->
-                        playerAttemptCount += 1
+                    onMatchProgress = { attemptsUsed, elapsedSeconds ->
+                        playerAttemptCount = attemptsUsed
+                        playerElapsedSeconds = elapsedSeconds
                     },
                     onMatchFinished = { summary ->
                         if (raceResultWon == null) {
@@ -752,11 +746,6 @@ internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long =
 
 internal fun isRaceBotVictory(score: Int, codeLength: Int): Boolean =
     codeLength > 0 && score == codeLength
-
-internal fun raceElapsedSeconds(startedAtMillis: Long?, finishedAtMillis: Long): Int =
-    startedAtMillis
-        ?.let { start -> ((finishedAtMillis - start).coerceAtLeast(0L) / 1_000L).toInt() }
-        ?: 0
 
 internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
     config = config.copy(codeLength = selectHomeCodeLength(codeLength)),

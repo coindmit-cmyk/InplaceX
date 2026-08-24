@@ -112,12 +112,6 @@ class DuelBotTurnTest {
     }
 
     @Test
-    fun raceElapsedTimeUsesTheSharedMatchClock() {
-        assertEquals(9, raceElapsedSeconds(startedAtMillis = 1_000L, finishedAtMillis = 10_999L))
-        assertEquals(0, raceElapsedSeconds(startedAtMillis = null, finishedAtMillis = 10_999L))
-    }
-
-    @Test
     fun invalidRestoredSecretBecomesARecoverableFailure() {
         var botWasCalled = false
 
