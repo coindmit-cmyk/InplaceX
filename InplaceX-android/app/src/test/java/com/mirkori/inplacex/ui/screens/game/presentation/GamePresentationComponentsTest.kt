@@ -10,9 +10,15 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 import com.mirkori.inplacex.ui.common.AnalysisCellVisualState
+import com.mirkori.inplacex.ui.common.matrixDigitTextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,6 +26,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GamePresentationComponentsTest {
+    @Test
+    fun `matrix digit removes platform font padding and uses a tight line box`() {
+        val style = matrixDigitTextStyle(
+            digitSize = 10.sp,
+            weight = FontWeight.Medium,
+            color = Color.Black,
+        )
+
+        assertEquals(10.sp, style.fontSize)
+        assertEquals(10.sp, style.lineHeight)
+        assertEquals(PlatformTextStyle(includeFontPadding = false), style.platformStyle)
+    }
+
     @Test
     fun `analysis uses the latest mark for a matching cell only`() {
         val marks = listOf(
@@ -122,6 +141,34 @@ class GamePresentationComponentsTest {
         }
 
         assertEquals(listOf(3, 4, 5), latestOpponentAttempts(attempts).map { it.number })
+    }
+
+    @Test
+    fun `opponent status distinguishes racing calculation completion and failure`() {
+        assertEquals(
+            "home.race.opponent.waiting",
+            opponentProgressStatusKey(GameFieldOpponentProgressState()),
+        )
+        assertEquals(
+            "home.race.opponent.thinking",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(isThinking = true)),
+        )
+        assertEquals(
+            "home.race.opponent.racing",
+            opponentProgressStatusKey(
+                GameFieldOpponentProgressState(
+                    attempts = listOf(GameFieldOpponentAttempt(1, "1234", 1)),
+                ),
+            ),
+        )
+        assertEquals(
+            "home.race.opponent.finished",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(completed = true)),
+        )
+        assertEquals(
+            "home.race.opponent.failed",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(completed = true, failed = true)),
+        )
     }
 
     @Test

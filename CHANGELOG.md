@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-- Added a compact live opponent-results card to the local bot Race. Each accepted
-  player attempt now advances the bot off the UI thread and shows its latest
-  three combinations and exact-match scores without changing Race scoring.
+- Code-matrix digits now disable Android font padding and use a tight line box,
+  keeping the visible glyph centered vertically inside every analysis cell.
+- Added a compact live opponent-results card to the local bot Race. The bot now
+  advances on its own difficulty-based timer off the UI thread and shows its
+  latest three combinations and exact-match scores without changing Race scoring.
 
 - The code matrix now keeps a clear gap between its header divider and the
   zero row. Gameplay evidence deduction reuses unchanged results and bounds
