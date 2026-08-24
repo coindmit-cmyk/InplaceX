@@ -66,6 +66,7 @@ class GameFieldStateHolder(
             GameFieldEvent.BackspacePressed -> backspace(current)
             GameFieldEvent.GuessSubmitted -> submitGuess(current)
             GameFieldEvent.MatchRestarted -> restart()
+            GameFieldEvent.RaceOpponentWon -> loseToRaceOpponent(current)
             is GameFieldEvent.ToolSelected -> update(
                 current.copy(tools = current.tools.copy(selectedTool = event.tool), status = GameFieldStatus.Idle),
             )
@@ -110,6 +111,23 @@ class GameFieldStateHolder(
 
     fun submitRawGuess(guess: String) {
         submitGuess(_state.value, guess)
+    }
+
+    private fun loseToRaceOpponent(current: GameFieldUiState) {
+        if (latestSnapshot.phase != MatchPhase.ACTIVE) return
+        latestSnapshot = engine.fail("Opponent solved the shared secret")
+        update(
+            createState(
+                snapshot = latestSnapshot,
+                input = current.input,
+                manualMarks = current.manualMarks,
+                provenFacts = current.evidence.provenFacts,
+                timers = current.timers,
+                tools = current.tools,
+                counters = current.counters,
+                status = GameFieldStatus.EngineFeedback(latestSnapshot.feedback),
+            ),
+        )
     }
 
     private fun enterDigit(current: GameFieldUiState, digit: Char) {

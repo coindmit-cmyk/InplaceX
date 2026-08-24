@@ -307,8 +307,6 @@ fun HomeRootScreen(
                 var opponentThinking by remember { mutableStateOf(false) }
                 var opponentFailed by remember { mutableStateOf(false) }
                 var raceStarted by remember { mutableStateOf(false) }
-                var playerAttemptCount by remember { mutableIntStateOf(0) }
-                var playerElapsedSeconds by remember { mutableIntStateOf(0) }
                 val opponentCompleted = opponentAttempts.lastOrNull()?.exactMatches ==
                     configuredPveMode.config.codeLength
 
@@ -351,17 +349,6 @@ fun HomeRootScreen(
                                         number = opponentAttempts.size + 1,
                                         exactMatches = botTurn.score,
                                     )
-                                    if (
-                                        isRaceBotVictory(
-                                            score = botTurn.score,
-                                            codeLength = configuredPveMode.config.codeLength,
-                                        )
-                                    ) {
-                                        onRecordPveResult(false)
-                                        raceResultWon = false
-                                        raceResultAttempts = playerAttemptCount
-                                        raceResultElapsedSeconds = playerElapsedSeconds
-                                    }
                                 }
                                 is DuelBotTurnResult.Failed -> {
                                     consecutiveFailures += 1
@@ -411,10 +398,6 @@ fun HomeRootScreen(
                             raceStarted = true
                             onMatchStarted()
                         }
-                    },
-                    onMatchProgress = { attemptsUsed, elapsedSeconds ->
-                        playerAttemptCount = attemptsUsed
-                        playerElapsedSeconds = elapsedSeconds
                     },
                     onMatchFinished = { summary ->
                         if (raceResultWon == null) {
@@ -743,9 +726,6 @@ internal fun localBotRaceConfig(
 
 internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long =
     BotProfiles.forDifficulty(difficulty).reactionDelayMillis * RACE_BOT_PACE_MULTIPLIER
-
-internal fun isRaceBotVictory(score: Int, codeLength: Int): Boolean =
-    codeLength > 0 && score == codeLength
 
 internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
     config = config.copy(codeLength = selectHomeCodeLength(codeLength)),

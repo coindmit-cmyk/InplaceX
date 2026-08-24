@@ -257,6 +257,8 @@ sealed interface GameFieldEvent {
 
     object MatchRestarted : GameFieldEvent
 
+    object RaceOpponentWon : GameFieldEvent
+
     data class ToolSelected(val tool: GameFieldTool) : GameFieldEvent
 
     data class HintSelected(val hint: GameFieldHintMode?) : GameFieldEvent

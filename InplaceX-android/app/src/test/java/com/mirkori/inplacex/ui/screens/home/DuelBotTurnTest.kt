@@ -106,12 +106,6 @@ class DuelBotTurnTest {
     }
 
     @Test
-    fun raceBotWinsOnlyAfterSolvingTheSharedSecret() {
-        assertFalse(isRaceBotVictory(score = 5, codeLength = 6))
-        assertTrue(isRaceBotVictory(score = 6, codeLength = 6))
-    }
-
-    @Test
     fun invalidRestoredSecretBecomesARecoverableFailure() {
         var botWasCalled = false
 
