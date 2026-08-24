@@ -138,6 +138,7 @@ data class GameFieldOpponentProgressState(
     val attempts: List<GameFieldOpponentAttempt> = emptyList(),
     val isThinking: Boolean = false,
     val completed: Boolean = false,
+    val failed: Boolean = false,
 )
 
 data class GameFieldRouteUiState(

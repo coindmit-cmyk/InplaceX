@@ -305,18 +305,21 @@ fun HomeRootScreen(
                     mutableStateOf<List<GameFieldOpponentAttempt>>(emptyList())
                 }
                 var opponentThinking by remember { mutableStateOf(false) }
+                var opponentFailed by remember { mutableStateOf(false) }
                 var raceStarted by remember { mutableStateOf(false) }
                 val opponentCompleted = opponentAttempts.lastOrNull()?.exactMatches ==
                     configuredPveMode.config.codeLength
 
                 LaunchedEffect(raceStarted, raceBotSolver, raceSecret) {
                     if (!raceStarted) return@LaunchedEffect
+                    var consecutiveFailures = 0
                     try {
                         while (
                             raceResultWon == null &&
-                            opponentAttempts.lastOrNull()?.exactMatches != configuredPveMode.config.codeLength
+                            opponentAttempts.lastOrNull()?.exactMatches != configuredPveMode.config.codeLength &&
+                            !opponentFailed
                         ) {
-                            opponentThinking = true
+                            opponentThinking = false
                             delay(
                                 raceBotReactionDelayMillis(
                                     configuredPveMode.botDifficulty ?: BotDifficulty.MEDIUM,
@@ -324,8 +327,9 @@ fun HomeRootScreen(
                             )
                             if (raceResultWon != null) break
 
-                            when (
-                                val botTurn = withContext(Dispatchers.Default) {
+                            val botTurn = try {
+                                opponentThinking = true
+                                withContext(Dispatchers.Default) {
                                     resolveDuelBotTurn(
                                         playerSecret = raceSecret,
                                         codeLength = configuredPveMode.config.codeLength,
@@ -334,8 +338,12 @@ fun HomeRootScreen(
                                         confirmedPositions = raceBotSolver::confirmedPositionsCount,
                                     )
                                 }
-                            ) {
+                            } finally {
+                                opponentThinking = false
+                            }
+                            when (botTurn) {
                                 is DuelBotTurnResult.Completed -> {
+                                    consecutiveFailures = 0
                                     opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
                                         number = opponentAttempts.size + 1,
                                         guess = botTurn.guess,
@@ -343,6 +351,7 @@ fun HomeRootScreen(
                                     )
                                 }
                                 is DuelBotTurnResult.Failed -> {
+                                    consecutiveFailures += 1
                                     AppLog.error(
                                         tag = "HomeRootScreen",
                                         message = "race bot progress turn failed",
@@ -352,7 +361,9 @@ fun HomeRootScreen(
                                         ),
                                         throwable = botTurn.cause,
                                     )
-                                    break
+                                    if (consecutiveFailures >= MAX_RACE_BOT_CONSECUTIVE_FAILURES) {
+                                        opponentFailed = true
+                                    }
                                 }
                             }
                         }
@@ -369,6 +380,7 @@ fun HomeRootScreen(
                         attempts = opponentAttempts,
                         isThinking = opponentThinking,
                         completed = opponentCompleted,
+                        failed = opponentFailed,
                     ),
                     onBack = { showExitDialog = true },
                     onDebugSecretChange = onDebugSecretChange,
@@ -718,6 +730,7 @@ internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinit
 )
 
 private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
+private const val MAX_RACE_BOT_CONSECUTIVE_FAILURES = 3
 
 @Composable
 private fun HomeSelectionScreen(

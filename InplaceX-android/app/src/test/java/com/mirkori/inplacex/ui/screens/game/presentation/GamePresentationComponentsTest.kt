@@ -10,6 +10,7 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMark
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldManualMarkType
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldMatchParameters
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
+import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldStateHolder
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 import com.mirkori.inplacex.ui.common.AnalysisCellVisualState
@@ -140,6 +141,34 @@ class GamePresentationComponentsTest {
         }
 
         assertEquals(listOf(3, 4, 5), latestOpponentAttempts(attempts).map { it.number })
+    }
+
+    @Test
+    fun `opponent status distinguishes racing calculation completion and failure`() {
+        assertEquals(
+            "home.race.opponent.waiting",
+            opponentProgressStatusKey(GameFieldOpponentProgressState()),
+        )
+        assertEquals(
+            "home.race.opponent.thinking",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(isThinking = true)),
+        )
+        assertEquals(
+            "home.race.opponent.racing",
+            opponentProgressStatusKey(
+                GameFieldOpponentProgressState(
+                    attempts = listOf(GameFieldOpponentAttempt(1, "1234", 1)),
+                ),
+            ),
+        )
+        assertEquals(
+            "home.race.opponent.finished",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(completed = true)),
+        )
+        assertEquals(
+            "home.race.opponent.failed",
+            opponentProgressStatusKey(GameFieldOpponentProgressState(completed = true, failed = true)),
+        )
     }
 
     @Test

@@ -45,6 +45,7 @@ internal object HomeCatalog {
             localizationEntry("home.race.opponent.thinking", "Подбирает комбинацию…"),
             localizationEntry("home.race.opponent.racing", "Продолжает гонку"),
             localizationEntry("home.race.opponent.finished", "Код раскрыт"),
+            localizationEntry("home.race.opponent.failed", "Расчёт остановлен"),
             localizationEntry("home.race.opponent.empty", "Ходов пока нет"),
             localizationEntry("home.pvp.screen.title", "Выберите соперника"),
             localizationEntry(
@@ -142,6 +143,7 @@ internal object HomeCatalog {
             localizationEntry("home.race.opponent.thinking", "Choosing a combination…"),
             localizationEntry("home.race.opponent.racing", "Still racing"),
             localizationEntry("home.race.opponent.finished", "Code cracked"),
+            localizationEntry("home.race.opponent.failed", "Calculation stopped"),
             localizationEntry("home.race.opponent.empty", "No moves yet"),
             localizationEntry("home.pvp.screen.title", "Choose an opponent"),
             localizationEntry(

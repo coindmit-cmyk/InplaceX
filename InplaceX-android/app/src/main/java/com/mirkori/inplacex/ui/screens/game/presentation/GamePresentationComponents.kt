@@ -263,12 +263,7 @@ private fun GameOpponentResultsPanel(
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
-    val statusKey = when {
-        progress.completed -> "home.race.opponent.finished"
-        progress.isThinking -> "home.race.opponent.thinking"
-        progress.attempts.isEmpty() -> "home.race.opponent.waiting"
-        else -> "home.race.opponent.racing"
-    }
+    val statusKey = opponentProgressStatusKey(progress)
     val visibleAttempts = latestOpponentAttempts(progress.attempts)
 
     Row(
@@ -287,7 +282,7 @@ private fun GameOpponentResultsPanel(
             Text(
                 text = strings.text(statusKey),
                 fontSize = 8.5.sp,
-                color = FinalUiColors.WarmTextMuted,
+                color = if (progress.failed) FinalUiColors.StateNo else FinalUiColors.WarmTextMuted,
                 maxLines = 1,
             )
         }
@@ -338,6 +333,14 @@ internal fun latestOpponentAttempts(
     attempts: List<GameFieldOpponentAttempt>,
     limit: Int = 3,
 ): List<GameFieldOpponentAttempt> = attempts.takeLast(limit.coerceAtLeast(0))
+
+internal fun opponentProgressStatusKey(progress: GameFieldOpponentProgressState): String = when {
+    progress.failed -> "home.race.opponent.failed"
+    progress.completed -> "home.race.opponent.finished"
+    progress.isThinking -> "home.race.opponent.thinking"
+    progress.attempts.isEmpty() -> "home.race.opponent.waiting"
+    else -> "home.race.opponent.racing"
+}
 
 @Composable
 private fun GameWorkBoard(
