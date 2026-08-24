@@ -109,6 +109,7 @@ fun HomeRootScreen(
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
     var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var raceResultLostToOpponent by rememberSaveable { mutableStateOf(false) }
     var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
     var raceResultElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
     var pveSessionSeed by rememberSaveable { mutableIntStateOf(1) }
@@ -194,6 +195,7 @@ fun HomeRootScreen(
 
     fun closeRaceResultToHome() {
         raceResultWon = null
+        raceResultLostToOpponent = false
         onScreenStateChange(HomeScreenState.ROOT)
         onDebugSecretChange(null)
     }
@@ -402,6 +404,7 @@ fun HomeRootScreen(
                     onMatchFinished = { summary ->
                         if (raceResultWon == null) {
                             onRecordPveResult(summary.won)
+                            raceResultLostToOpponent = !summary.won && opponentCompleted
                             raceResultWon = summary.won
                             raceResultAttempts = summary.attemptsUsed
                             raceResultElapsedSeconds = summary.elapsedSeconds
@@ -549,11 +552,13 @@ fun HomeRootScreen(
     raceResultWon?.let { won ->
         RaceResultDialog(
             won = won,
+            lostToOpponent = raceResultLostToOpponent,
             attemptsUsed = raceResultAttempts,
             attemptLimit = configuredPveMode.moveLimit,
             elapsedSeconds = raceResultElapsedSeconds,
             onRetry = {
                 raceResultWon = null
+                raceResultLostToOpponent = false
                 pveSessionSeed += 1
             },
             onHome = ::closeRaceResultToHome,
