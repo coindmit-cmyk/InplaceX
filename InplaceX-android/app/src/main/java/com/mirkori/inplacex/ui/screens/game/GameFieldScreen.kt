@@ -134,6 +134,11 @@ fun GameFieldScreen(
     LaunchedEffect(holderState.match.debugSecret) {
         onDebugSecretChange(holderState.match.debugSecret)
     }
+    LaunchedEffect(opponentProgress?.completed) {
+        if (opponentProgress?.completed == true) {
+            routeController.dispatch(GameFieldEvent.RaceOpponentWon, currentLifecycleCallbacks)
+        }
+    }
     LaunchedEffect(routeController, overlay.pendingRewardedHint) {
         while (true) {
             delay(1_000)

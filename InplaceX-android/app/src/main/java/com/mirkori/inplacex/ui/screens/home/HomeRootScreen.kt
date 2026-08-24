@@ -109,6 +109,7 @@ fun HomeRootScreen(
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
     var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var raceResultLostToOpponent by rememberSaveable { mutableStateOf(false) }
     var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
     var raceResultElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
     var pveSessionSeed by rememberSaveable { mutableIntStateOf(1) }
@@ -194,6 +195,7 @@ fun HomeRootScreen(
 
     fun closeRaceResultToHome() {
         raceResultWon = null
+        raceResultLostToOpponent = false
         onScreenStateChange(HomeScreenState.ROOT)
         onDebugSecretChange(null)
     }
@@ -341,12 +343,12 @@ fun HomeRootScreen(
                             } finally {
                                 opponentThinking = false
                             }
+                            if (raceResultWon != null) break
                             when (botTurn) {
                                 is DuelBotTurnResult.Completed -> {
                                     consecutiveFailures = 0
                                     opponentAttempts = opponentAttempts + GameFieldOpponentAttempt(
                                         number = opponentAttempts.size + 1,
-                                        guess = botTurn.guess,
                                         exactMatches = botTurn.score,
                                     )
                                 }
@@ -400,10 +402,13 @@ fun HomeRootScreen(
                         }
                     },
                     onMatchFinished = { summary ->
-                        onRecordPveResult(summary.won)
-                        raceResultWon = summary.won
-                        raceResultAttempts = summary.attemptsUsed
-                        raceResultElapsedSeconds = summary.elapsedSeconds
+                        if (raceResultWon == null) {
+                            onRecordPveResult(summary.won)
+                            raceResultLostToOpponent = !summary.won && opponentCompleted
+                            raceResultWon = summary.won
+                            raceResultAttempts = summary.attemptsUsed
+                            raceResultElapsedSeconds = summary.elapsedSeconds
+                        }
                     },
                     autoRestartOnWin = false,
                 )
@@ -547,11 +552,13 @@ fun HomeRootScreen(
     raceResultWon?.let { won ->
         RaceResultDialog(
             won = won,
+            lostToOpponent = raceResultLostToOpponent,
             attemptsUsed = raceResultAttempts,
             attemptLimit = configuredPveMode.moveLimit,
             elapsedSeconds = raceResultElapsedSeconds,
             onRetry = {
                 raceResultWon = null
+                raceResultLostToOpponent = false
                 pveSessionSeed += 1
             },
             onHome = ::closeRaceResultToHome,
@@ -723,7 +730,7 @@ internal fun localBotRaceConfig(
 )
 
 internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long =
-    BotProfiles.forDifficulty(difficulty).reactionDelayMillis
+    BotProfiles.forDifficulty(difficulty).reactionDelayMillis * RACE_BOT_PACE_MULTIPLIER
 
 internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
     config = config.copy(codeLength = selectHomeCodeLength(codeLength)),
@@ -731,6 +738,7 @@ internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinit
 
 private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
 private const val MAX_RACE_BOT_CONSECUTIVE_FAILURES = 3
+private const val RACE_BOT_PACE_MULTIPLIER = 3L
 
 @Composable
 private fun HomeSelectionScreen(

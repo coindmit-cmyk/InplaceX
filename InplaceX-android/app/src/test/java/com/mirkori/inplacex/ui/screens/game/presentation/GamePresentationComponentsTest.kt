@@ -135,12 +135,12 @@ class GamePresentationComponentsTest {
         val attempts = (1..5).map { number ->
             GameFieldOpponentAttempt(
                 number = number,
-                guess = "1234",
                 exactMatches = number.coerceAtMost(4),
             )
         }
 
         assertEquals(listOf(3, 4, 5), latestOpponentAttempts(attempts).map { it.number })
+        assertEquals("#5", opponentAttemptLabel(attempts.last()))
     }
 
     @Test
@@ -157,7 +157,7 @@ class GamePresentationComponentsTest {
             "home.race.opponent.racing",
             opponentProgressStatusKey(
                 GameFieldOpponentProgressState(
-                    attempts = listOf(GameFieldOpponentAttempt(1, "1234", 1)),
+                    attempts = listOf(GameFieldOpponentAttempt(1, 1)),
                 ),
             ),
         )

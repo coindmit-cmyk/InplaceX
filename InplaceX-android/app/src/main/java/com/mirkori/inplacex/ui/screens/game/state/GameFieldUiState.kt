@@ -124,12 +124,10 @@ data class GameFieldCounters(
 
 data class GameFieldOpponentAttempt(
     val number: Int,
-    val guess: String,
     val exactMatches: Int,
 ) {
     init {
         require(number > 0)
-        require(guess.isNotBlank())
         require(exactMatches >= 0)
     }
 }
@@ -258,6 +256,8 @@ sealed interface GameFieldEvent {
     object GuessSubmitted : GameFieldEvent
 
     object MatchRestarted : GameFieldEvent
+
+    object RaceOpponentWon : GameFieldEvent
 
     data class ToolSelected(val tool: GameFieldTool) : GameFieldEvent
 

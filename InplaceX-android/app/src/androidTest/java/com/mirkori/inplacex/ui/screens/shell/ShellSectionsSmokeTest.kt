@@ -1,7 +1,6 @@
 package com.mirkori.inplacex.ui.screens.shell
 
 import androidx.activity.ComponentActivity
-import androidx.test.espresso.Espresso.pressBack
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -153,7 +152,9 @@ class ShellSectionsSmokeTest {
         composeRule.onNodeWithText("Добавить друга").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(nested) }
 
-        pressBack()
+        composeRule.runOnIdle {
+            composeRule.activity.onBackPressedDispatcher.onBackPressed()
+        }
 
         composeRule.onNodeWithText("Друзья / Онлайн").assertIsDisplayed()
         composeRule.runOnIdle { assertFalse(nested) }

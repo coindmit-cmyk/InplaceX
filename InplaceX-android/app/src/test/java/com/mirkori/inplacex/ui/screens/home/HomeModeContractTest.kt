@@ -50,4 +50,11 @@ class HomeModeContractTest {
         assertEquals(6, selectHomeCodeLength(6))
         assertEquals(10, selectHomeCodeLength(11))
     }
+
+    @Test
+    fun raceResultExplainsWhenTheOpponentSolvedTheSharedSecret() {
+        assertEquals("home.race.result.opponent_title", raceResultTitleKey(false, true))
+        assertEquals("home.race.result.opponent_message", raceResultMessageKey(false, true))
+        assertEquals("home.race.result.loss_title", raceResultTitleKey(false, false))
+    }
 }

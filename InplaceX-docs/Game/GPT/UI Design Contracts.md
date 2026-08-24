@@ -90,7 +90,8 @@ primary action.
 - The banner/rewarded ad implementation and banner allocation remain outside
   this pass; visual work must not wrap, replace, cover, or resize the ad slot.
 - A local bot Race shows a compact opponent-results card above the work board.
-  The card reveals the bot's latest three combinations and exact-match scores,
+  The card reveals the bot's latest three attempt numbers and exact-match scores,
+  but never the opponent's raw guesses or the shared secret,
   and reports whether the bot is preparing, calculating, racing, or finished.
   The bot advances on its own difficulty-based timer and is never synchronized
   to player submissions. The card is informational and does not change the

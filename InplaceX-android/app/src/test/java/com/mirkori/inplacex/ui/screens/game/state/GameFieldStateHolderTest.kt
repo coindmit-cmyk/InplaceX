@@ -12,6 +12,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameFieldStateHolderTest {
+
+    @Test
+    fun `race opponent victory terminates the shared match and freezes its clock`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters,
+            initialSecret = "1234",
+        )
+        source.dispatch(GameFieldEvent.TimerTicked(seconds = 7))
+
+        source.dispatch(GameFieldEvent.RaceOpponentWon)
+        source.dispatch(GameFieldEvent.TimerTicked(seconds = 5))
+
+        assertEquals(MatchPhase.LOST, source.state.value.match.phase)
+        assertEquals(7, source.state.value.timers.elapsedSeconds)
+    }
+
     private val parameters = GameFieldMatchParameters(
         codeLength = 4,
         attemptLimit = 3,

@@ -15,6 +15,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 @Composable
 internal fun RaceResultDialog(
     won: Boolean,
+    lostToOpponent: Boolean = false,
     attemptsUsed: Int,
     attemptLimit: Int?,
     elapsedSeconds: Int,
@@ -30,22 +31,14 @@ internal fun RaceResultDialog(
         textContentColor = InplaceXColors.ToyBrown,
         title = {
             Text(
-                text = if (won) {
-                    strings.text("home.race.result.win_title")
-                } else {
-                    strings.text("home.race.result.loss_title")
-                },
+                text = strings.text(raceResultTitleKey(won, lostToOpponent)),
                 fontWeight = FontWeight.Black,
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = if (won) {
-                        strings.text("home.race.result.win_message")
-                    } else {
-                        strings.text("home.race.result.loss_message")
-                    },
+                    text = strings.text(raceResultMessageKey(won, lostToOpponent)),
                 )
                 Text(
                     text = strings.homeRaceAttempts(attemptsUsed, attemptLimit),
@@ -75,4 +68,16 @@ internal fun RaceResultDialog(
             }
         },
     )
+}
+
+internal fun raceResultTitleKey(won: Boolean, lostToOpponent: Boolean): String = when {
+    won -> "home.race.result.win_title"
+    lostToOpponent -> "home.race.result.opponent_title"
+    else -> "home.race.result.loss_title"
+}
+
+internal fun raceResultMessageKey(won: Boolean, lostToOpponent: Boolean): String = when {
+    won -> "home.race.result.win_message"
+    lostToOpponent -> "home.race.result.opponent_message"
+    else -> "home.race.result.loss_message"
 }
