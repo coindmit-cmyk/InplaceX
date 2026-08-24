@@ -98,6 +98,14 @@ class DuelBotTurnTest {
     }
 
     @Test
+    fun raceBotPaceComesFromDifficultyAndIsIndependentFromPlayerAttempts() {
+        assertEquals(1_600L, raceBotReactionDelayMillis(BotDifficulty.EASY))
+        assertEquals(1_200L, raceBotReactionDelayMillis(BotDifficulty.MEDIUM))
+        assertEquals(900L, raceBotReactionDelayMillis(BotDifficulty.HARD))
+        assertEquals(700L, raceBotReactionDelayMillis(BotDifficulty.EXPERT))
+    }
+
+    @Test
     fun invalidRestoredSecretBecomesARecoverableFailure() {
         var botWasCalled = false
 

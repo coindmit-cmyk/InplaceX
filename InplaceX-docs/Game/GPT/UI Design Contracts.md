@@ -92,7 +92,9 @@ primary action.
 - A local bot Race shows a compact opponent-results card above the work board.
   The card reveals the bot's latest three combinations and exact-match scores,
   and reports whether the bot is preparing, calculating, racing, or finished.
-  It is informational and does not change the established Race scoring rules.
+  The bot advances on its own difficulty-based timer and is never synchronized
+  to player submissions. The card is informational and does not change the
+  established Race scoring rules.
 
 ## Online Entry And Invitation Contract
 

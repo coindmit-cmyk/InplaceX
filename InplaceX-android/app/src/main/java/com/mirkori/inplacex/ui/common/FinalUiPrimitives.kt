@@ -31,6 +31,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -189,13 +191,27 @@ fun WarmAnalysisCell(
         }
         Text(
             text = digit.toString(),
-            fontSize = digitSize,
-            fontWeight = visual.weight,
-            color = visual.text,
+            style = matrixDigitTextStyle(
+                digitSize = digitSize,
+                weight = visual.weight,
+                color = visual.text,
+            ),
             maxLines = 1,
         )
     }
 }
+
+internal fun matrixDigitTextStyle(
+    digitSize: TextUnit,
+    weight: FontWeight,
+    color: Color,
+): TextStyle = TextStyle(
+    color = color,
+    fontSize = digitSize,
+    fontWeight = weight,
+    lineHeight = digitSize,
+    platformStyle = PlatformTextStyle(includeFontPadding = false),
+)
 
 @Composable
 fun WarmSegmentButton(
