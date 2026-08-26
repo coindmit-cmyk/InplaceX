@@ -22,13 +22,13 @@ import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material.icons.outlined.Wifi
-import androidx.compose.material3.Button
+import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton as Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedButton
+import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton as OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +61,11 @@ import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
+import com.mirkori.inplacex.ui.screens.shared.PageHeroCard
+import com.mirkori.inplacex.ui.screens.shared.PageStatusPill
+import com.mirkori.inplacex.ui.screens.shared.PrimaryActionTile
 import kotlinx.coroutines.launch
 
 @Composable
@@ -207,28 +212,18 @@ fun SocialRootScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyBlue.copy(alpha = 0.96f),
-            contentColor = Color.White,
+        PageHeroCard(
+            title = strings.text("social.title"),
+            subtitle = strings.text("social.hero.subtitle"),
+            accent = PageColors.Friends,
+            icon = Icons.Outlined.Group,
         ) {
-            Text(
-                text = strings.text("social.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-            Text(
-                text = strings.text("social.hero.subtitle"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.88f),
-            )
             SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (incomingInvites.isNotEmpty()) {
-                SceneCard(accentColor = InplaceXColors.ToyOrangeTop) {
+                SceneCard {
                     Text(
                         text = strings.text("social.invites.incoming.notice")
                             .replace("{count}", incomingInvites.size.toString()),
@@ -240,24 +235,18 @@ fun SocialRootScreen(
                 }
             }
             FriendRequestInbox(incomingFriendRequests, onAcceptFriendRequest)
-            SceneActionTile(
+            PrimaryActionTile(
                 title = strings.text("social.friends"),
                 subtitle = strings.text("social.friends.subtitle"),
-                leadingIcon = Icons.Outlined.Group,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
-                ),
+                icon = Icons.Outlined.Group,
+                accent = PageColors.Friends,
                 onClick = { activeDestination = SocialDestination.FRIENDS },
             )
-            SceneActionTile(
+            PrimaryActionTile(
                 title = strings.text("social.invites"),
                 subtitle = strings.text("social.invites.guide"),
-                leadingIcon = Icons.Outlined.MailOutline,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-                ),
+                icon = Icons.Outlined.MailOutline,
+                accent = PageColors.Friends,
                 enabled = onlineRuntime != null,
                 onClick = {
                     selectedFriend = null
@@ -265,16 +254,12 @@ fun SocialRootScreen(
                     activeDestination = SocialDestination.INVITES
                 },
             )
-            SceneActionTile(
+            PrimaryActionTile(
                 title = strings.text("social.online.title"),
                 subtitle = strings.text("social.online.description"),
-                singleLineTitle = true,
-                leadingIcon = Icons.Outlined.EmojiEvents,
-                trailingIcon = Icons.Outlined.ChevronRight,
+                icon = Icons.Outlined.EmojiEvents,
                 enabled = onlineRuntime != null,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                ),
+                accent = PageColors.Friends,
                 onClick = {
                     quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
                     activeDestination = SocialDestination.ONLINE_MATCH
@@ -319,6 +304,10 @@ private fun SocialFriendsScreen(
     if (addFriendDialogOpen) {
         AlertDialog(
             onDismissRequest = { if (!searchInProgress) addFriendDialogOpen = false },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             title = { Text(strings.text("social.friend.add.title")) },
             text = {
                 Column(
@@ -417,18 +406,12 @@ private fun SocialFriendsScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyPurple,
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = strings.text("social.friends"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(strings.text("social.friends.subtitle"))
-        }
+        PageHeroCard(
+            title = strings.text("social.friends"),
+            subtitle = strings.text("social.friends.subtitle"),
+            accent = PageColors.Friends,
+            icon = Icons.Outlined.Group,
+        )
 
         Button(
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
@@ -580,7 +563,7 @@ private fun FriendCard(
     actionLabelKey: String = "social.test_friend.play",
 ) {
     val strings = LocalAppStrings.current
-    SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.96f)) {
+    SceneCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -601,7 +584,7 @@ private fun FriendCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(title, style = PageType.CardTitle)
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
@@ -622,45 +605,10 @@ private fun SocialAvailabilityBanner(
     onlineConfigured: Boolean,
 ) {
     val strings = LocalAppStrings.current
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = InplaceXColors.SurfaceMuted,
-        border = BorderStroke(1.dp, InplaceXColors.Cyan.copy(alpha = 0.42f)),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Icon(
-                imageVector = if (onlineConfigured) Icons.Outlined.Wifi else Icons.Outlined.WifiOff,
-                contentDescription = null,
-                tint = InplaceXColors.Cobalt,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = if (onlineConfigured) {
-                        strings.text("social.status.available")
-                    } else {
-                        strings.text("social.status.preparing")
-                    },
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = if (onlineConfigured) {
-                        strings.text("social.status.available.description")
-                    } else {
-                        strings.text("social.status.preparing.description")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
+    PageStatusPill(
+        label = strings.text(if (onlineConfigured) "social.status.available" else "social.status.preparing"),
+        accent = if (onlineConfigured) PageColors.Success else PageColors.TextSecondary,
+    )
 }
 
 @Composable

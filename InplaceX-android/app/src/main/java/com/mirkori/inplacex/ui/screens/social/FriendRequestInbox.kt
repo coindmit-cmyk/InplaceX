@@ -16,13 +16,13 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
+import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton as Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +43,8 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.mirkori.MirkoriFriendOperationResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriFriendRequest
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -66,29 +68,30 @@ internal fun FriendRequestInbox(
         Surface(
             onClick = { open = true },
             modifier = Modifier.fillMaxWidth().testTag("friend-requests-open"),
-            shape = RoundedCornerShape(16.dp),
-            color = InplaceXColors.ToyCream,
-            contentColor = InplaceXColors.ToyBrown,
-            border = BorderStroke(1.dp, InplaceXColors.ToyCreamShadow),
+            shape = RoundedCornerShape(20.dp),
+            color = PageColors.Cream,
+            contentColor = PageColors.Text,
+            border = BorderStroke(1.dp, PageColors.Border),
+            shadowElevation = 4.dp,
         ) {
             Row(
                 modifier = Modifier.heightIn(min = 64.dp).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Icon(Icons.Outlined.PersonAdd, contentDescription = null, tint = InplaceXColors.ToyPurple)
+                Icon(Icons.Outlined.PersonAdd, contentDescription = null, tint = PageColors.Friends)
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(title, style = PageType.Body, fontWeight = FontWeight.Bold)
                     Text(
                         text = visibleRequests.singleOrNull()?.player?.displayName
                             ?: strings.text("social.friend.requests.open_list"),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = PageType.Secondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
                 if (visibleRequests.size > 1) {
-                    Badge(containerColor = InplaceXColors.ToyPurple, contentColor = InplaceXColors.White) {
+                    Badge(containerColor = PageColors.Friends, contentColor = InplaceXColors.White) {
                         Text(visibleRequests.size.toString())
                     }
                 }
@@ -100,13 +103,14 @@ internal fun FriendRequestInbox(
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
-            containerColor = InplaceXColors.ToyCream,
-            titleContentColor = InplaceXColors.ToyBrown,
-            textContentColor = InplaceXColors.ToyBrown,
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             title = {
                 Text(
                     if (visibleRequests.size > 1) "$title · ${visibleRequests.size}" else title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = PageType.Section,
                 )
             },
             text = {
@@ -123,9 +127,10 @@ internal fun FriendRequestInbox(
                     ) {
                         items(visibleRequests, key = { it.requestId }) { request ->
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = InplaceXColors.White,
-                                contentColor = InplaceXColors.ToyBrown,
+                                shape = RoundedCornerShape(20.dp),
+                                color = PageColors.CreamSecondary,
+                                contentColor = PageColors.Text,
+                                border = BorderStroke(1.dp, PageColors.Border),
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -133,11 +138,11 @@ internal fun FriendRequestInbox(
                                 ) {
                                     Text(
                                         request.player.displayName,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = PageType.CardTitle,
                                         fontWeight = FontWeight.Bold,
                                     )
                                     request.player.handle?.takeIf { it.isNotBlank() }?.let {
-                                        Text("@$it", style = MaterialTheme.typography.bodySmall)
+                                        Text("@$it", style = PageType.Secondary)
                                     }
                                     if (failure?.first == request.requestId) {
                                         Text(
