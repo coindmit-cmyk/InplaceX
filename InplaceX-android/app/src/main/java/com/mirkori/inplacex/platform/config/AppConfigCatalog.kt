@@ -120,6 +120,7 @@ object AppConfigCatalog {
             opponentKind = OpponentKind.BOT,
             hintsEnabled = true,
             moveLimit = null,
+            botDifficulty = BotDifficulty.EASY,
         ),
         GameModeDefinition(
             id = "pvp_bot_duel",

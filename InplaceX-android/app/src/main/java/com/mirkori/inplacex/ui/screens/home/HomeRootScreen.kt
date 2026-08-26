@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.core.bot.BotSolver
 import com.mirkori.inplacex.core.bot.BotDifficulty
-import com.mirkori.inplacex.core.bot.BotProfiles
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.engine.ScoreCalculator
 import com.mirkori.inplacex.core.engine.SecretGenerator
@@ -129,7 +128,12 @@ fun HomeRootScreen(
     var selectedDuelCodeLength by rememberSaveable {
         mutableIntStateOf(selectHomeCodeLength(pvpMode.config.codeLength))
     }
-    val configuredPveMode = pveMode.withCodeLength(selectedRaceCodeLength)
+    var selectedRaceDifficulty by rememberSaveable {
+        mutableStateOf(pveMode.botDifficulty ?: BotDifficulty.EASY)
+    }
+    val configuredPveMode = pveMode.withCodeLength(selectedRaceCodeLength).copy(
+        botDifficulty = selectedRaceDifficulty,
+    )
     val configuredPvpMode = pvpMode.withCodeLength(selectedDuelCodeLength)
 
     LaunchedEffect(screenState) {
@@ -282,11 +286,13 @@ fun HomeRootScreen(
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
                 modeAccentColor = InplaceXColors.ToyOrange,
+                raceDifficulty = selectedRaceDifficulty,
+                onRaceDifficultyChange = { selectedRaceDifficulty = it },
             )
         }
 
         HomeScreenState.PVE_GAME -> {
-            key(pveSessionSeed, selectedRaceCodeLength) {
+            key(pveSessionSeed, selectedRaceCodeLength, selectedRaceDifficulty) {
                 val raceSecret = remember(configuredPveMode, pveSessionSeed) {
                     SecretGenerator.generate(
                         localBotRaceConfig(
@@ -298,8 +304,7 @@ fun HomeRootScreen(
                 val raceBotSolver = remember(configuredPveMode, pveSessionSeed) {
                     BotSolver(
                         config = localBotRaceConfig(configuredPveMode),
-                        difficulty = configuredPveMode.botDifficulty
-                            ?: com.mirkori.inplacex.core.bot.BotDifficulty.MEDIUM,
+                        difficulty = selectedRaceDifficulty,
                         seed = pveSessionSeed.toLong() * 43L,
                     )
                 }
@@ -314,6 +319,15 @@ fun HomeRootScreen(
 
                 LaunchedEffect(raceStarted, raceBotSolver, raceSecret) {
                     if (!raceStarted) return@LaunchedEffect
+                    AppLog.info(
+                        tag = "HomeRootScreen",
+                        message = "local race bot started",
+                        attributes = mapOf(
+                            "difficulty" to selectedRaceDifficulty.name,
+                            "codeLength" to selectedRaceCodeLength.toString(),
+                            "delayMillis" to raceBotReactionDelayMillis(selectedRaceDifficulty).toString(),
+                        ),
+                    )
                     var consecutiveFailures = 0
                     try {
                         while (
@@ -324,7 +338,7 @@ fun HomeRootScreen(
                             opponentThinking = false
                             delay(
                                 raceBotReactionDelayMillis(
-                                    configuredPveMode.botDifficulty ?: BotDifficulty.MEDIUM,
+                                    selectedRaceDifficulty,
                                 ),
                             )
                             if (raceResultWon != null) break
@@ -729,8 +743,14 @@ internal fun localBotRaceConfig(
     seed = seed,
 )
 
-internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long =
-    BotProfiles.forDifficulty(difficulty).reactionDelayMillis * RACE_BOT_PACE_MULTIPLIER
+// Manual-table calibration: the genuine easy strategy needs more guesses too.
+// No dependence on player moves, auto-table state, or knowledge of the secret.
+internal fun raceBotReactionDelayMillis(difficulty: BotDifficulty): Long = when (difficulty) {
+    BotDifficulty.EASY -> 13_500L
+    BotDifficulty.MEDIUM -> 13_000L
+    BotDifficulty.HARD -> 12_000L
+    BotDifficulty.EXPERT -> 9_000L
+}
 
 internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinition = copy(
     config = config.copy(codeLength = selectHomeCodeLength(codeLength)),
@@ -738,7 +758,6 @@ internal fun GameModeDefinition.withCodeLength(codeLength: Int): GameModeDefinit
 
 private const val LOCAL_DUEL_ATTEMPT_CAPACITY = 999
 private const val MAX_RACE_BOT_CONSECUTIVE_FAILURES = 3
-private const val RACE_BOT_PACE_MULTIPLIER = 3L
 
 @Composable
 private fun HomeSelectionScreen(
