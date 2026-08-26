@@ -203,97 +203,23 @@ fun SocialRootScreen(
         return
     }
 
-    ScenePageColumn(
-        modifier = Modifier.fillMaxSize(),
-        scrollable = true,
-    ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyBlue.copy(alpha = 0.96f),
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = strings.text("social.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-            Text(
-                text = strings.text("social.hero.subtitle"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.88f),
-            )
-            SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (incomingInvites.isNotEmpty()) {
-                SceneCard(accentColor = InplaceXColors.ToyOrangeTop) {
-                    Text(
-                        text = strings.text("social.invites.incoming.notice")
-                            .replace("{count}", incomingInvites.size.toString()),
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
-                        Text(strings.text("social.invites.open"))
-                    }
-                }
-            }
-            incomingFriendRequests.firstOrNull()?.let { request ->
-                SceneCard(accentColor = InplaceXColors.ToyPurpleTop) {
-                    Text(
-                        text = strings.text("social.friend.request.root_notice")
-                            .replace("{name}", request.player.displayName),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
-                        Text(strings.text("social.friend.request.open"))
-                    }
-                }
-            }
-            SceneActionTile(
-                title = strings.text("social.friends"),
-                subtitle = strings.text("social.friends.subtitle"),
-                leadingIcon = Icons.Outlined.Group,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
-                ),
-                onClick = { activeDestination = SocialDestination.FRIENDS },
-            )
-            SceneActionTile(
-                title = strings.text("social.invites"),
-                subtitle = strings.text("social.invites.guide"),
-                leadingIcon = Icons.Outlined.MailOutline,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-                ),
-                enabled = onlineRuntime != null,
-                onClick = {
-                    selectedFriend = null
-                    autoAcceptInviteCode = null
-                    activeDestination = SocialDestination.INVITES
-                },
-            )
-            SceneActionTile(
-                title = strings.text("social.online.title"),
-                subtitle = strings.text("social.online.description"),
-                singleLineTitle = true,
-                leadingIcon = Icons.Outlined.EmojiEvents,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                enabled = onlineRuntime != null,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                ),
-                onClick = {
-                    quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
-                    activeDestination = SocialDestination.ONLINE_MATCH
-                },
-            )
-        }
-    }
+    FriendsReferenceScreen(
+        friends = friends,
+        incomingFriendRequests = incomingFriendRequests,
+        onlineConfigured = onlineRuntime != null,
+        incomingInviteCount = incomingInvites.size,
+        onOpenFriends = { activeDestination = SocialDestination.FRIENDS },
+        onInvite = {
+            selectedFriend = null
+            autoAcceptInviteCode = null
+            activeDestination = SocialDestination.INVITES
+        },
+        onFindMatch = {
+            quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
+            activeDestination = SocialDestination.ONLINE_MATCH
+        },
+        onAcceptFriendRequest = onAcceptFriendRequest,
+    )
 }
 
 private enum class SocialDestination {

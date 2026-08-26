@@ -1,9 +1,11 @@
 package com.mirkori.inplacex.ui.screens.shell
 
+import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -14,6 +16,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -22,9 +25,19 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.CampaignLevelProgress
 import com.mirkori.inplacex.data.local.LocalRelationshipStatus
@@ -40,6 +53,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.inplacex.platform.mirkori.MirkoriFriendOperationResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriFriendRequest
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
@@ -56,14 +70,18 @@ import com.mirkori.inplacex.ui.screens.home.RaceResultDialog
 import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
+import com.mirkori.inplacex.ui.screens.social.FriendsReferenceScreen
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
 import com.mirkori.inplacex.ui.shell.AppBottomAd
+import com.mirkori.inplacex.ui.shell.AppTopBar
 import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.platform.sdk.PlatformAuthMode
+import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -135,7 +153,7 @@ class ShellSectionsSmokeTest {
         setContent { SocialRootScreen(showTestFriendBot = true) }
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
-        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
         composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
         composeRule.onNodeWithText("Тестовый друг · онлайн сейчас недоступен").assertIsDisplayed()
         composeRule.onNodeWithText("Играть").assertIsNotEnabled()
@@ -148,7 +166,7 @@ class ShellSectionsSmokeTest {
             SocialRootScreen(onNestedScreenChange = { nested = it })
         }
 
-        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
         composeRule.onNodeWithText("Добавить друга").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(nested) }
 
@@ -156,7 +174,8 @@ class ShellSectionsSmokeTest {
             composeRule.activity.onBackPressedDispatcher.onBackPressed()
         }
 
-        composeRule.onNodeWithText("Друзья / Онлайн").assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-reference-screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Друзья").assertIsDisplayed()
         composeRule.runOnIdle { assertFalse(nested) }
     }
 
@@ -173,8 +192,8 @@ class ShellSectionsSmokeTest {
         )
         setContent { SocialRootScreen(incomingFriendRequests = listOf(request)) }
 
-        composeRule.onNodeWithText("Friendly Player предлагает дружить.").assertIsDisplayed()
-        composeRule.onNodeWithText("Открыть запрос").performClick()
+        composeRule.onNodeWithText("Friendly Player").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-requests-open").performScrollTo().performClick()
         composeRule.onNodeWithText("Friendly Player").assertIsDisplayed()
         composeRule.onNodeWithText("Хочет добавить вас в друзья").assertIsDisplayed()
         composeRule.onNodeWithText("Принять").assertIsDisplayed()
@@ -192,7 +211,7 @@ class ShellSectionsSmokeTest {
         )
         setContent { SocialRootScreen(pendingFriendRequests = listOf(pendingRequest)) }
 
-        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
         composeRule.onNodeWithText("Pending Player").assertIsDisplayed()
         composeRule.onNodeWithText("Заявка в друзья отправлена.").assertIsDisplayed()
         composeRule.onAllNodesWithText("Играть").assertCountEquals(0)
@@ -219,7 +238,7 @@ class ShellSectionsSmokeTest {
             )
         }
 
-        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
         composeRule.onNodeWithText("Добавить друга").performClick()
         composeRule.onNodeWithText("Имя или публичный ID").performTextInput("self_player")
         composeRule.onNodeWithText("Найти").performClick()
@@ -247,7 +266,7 @@ class ShellSectionsSmokeTest {
             }
 
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
-            composeRule.onNodeWithText("Друзья").performClick()
+            composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
             composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
             composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
             composeRule.onNodeWithText("Играть").performClick()
@@ -283,12 +302,238 @@ class ShellSectionsSmokeTest {
         try {
             setContent { SocialRootScreen(onlineRuntime = runtime) }
 
-            composeRule.onNodeWithText("Приглашения").performClick()
+            composeRule.onNodeWithTag("friends-invite").performScrollTo().performClick()
             composeRule.onNodeWithText("Создать код").performScrollTo().assertIsDisplayed()
             composeRule.onNodeWithText("Войти по коду").performScrollTo().assertIsDisplayed()
             composeRule.onAllNodesWithText("Найти матч").assertCountEquals(0)
         } finally {
             runtime.close()
+        }
+    }
+
+    @Test
+    fun friendsReferenceEmptyOfflineStateDoesNotInventSocialDataOrAllowNetworkActions() {
+        val actions = mutableListOf<String>()
+        showFriendsReference(
+            onOpenFriends = { actions += "friends" },
+            onInvite = { actions += "invite" },
+            onFindMatch = { actions += "match" },
+        )
+
+        composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-request").assertDoesNotExist()
+        composeRule.onAllNodesWithText("Онлайн:", substring = true).assertCountEquals(0)
+        listOf("Mirki", "Lina", "Alexey", "Kate", "Player 8b73615b").forEach { name ->
+            composeRule.onAllNodesWithText(name).assertCountEquals(0)
+        }
+        listOf("friends-invite", "friends-find-match", "friends-online-matches").forEach { tag ->
+            composeRule.onNodeWithTag(tag).performScrollTo().assertIsNotEnabled().performClick()
+        }
+        composeRule.runOnIdle { assertTrue(actions.isEmpty()) }
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
+        composeRule.runOnIdle { assertEquals(listOf("friends"), actions) }
+    }
+
+    @Test
+    fun friendsReferenceDoesNotTreatConfiguredTransportAsFriendPresence() {
+        showFriendsReference(
+            friends = listOf(referenceFriend("0", "Actual Friend")),
+            onlineConfigured = true,
+        )
+
+        composeRule.onNodeWithText("Actual Friend").assertIsDisplayed()
+        composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Онлайн:", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Онлайн друзья").assertCountEquals(0)
+    }
+
+    @Test
+    fun friendsReferenceRequestWaitsRetriesAndDoesNotResurrectAnAcceptedRequest() {
+        val request = referenceFriendRequest()
+        val firstResult = CompletableDeferred<MirkoriFriendOperationResult>()
+        var calls = 0
+        setContent {
+            SocialRootScreen(
+                incomingFriendRequests = listOf(request),
+                onAcceptFriendRequest = {
+                    assertEquals(request.requestId, it.requestId)
+                    calls++
+                    if (calls == 1) firstResult.await() else MirkoriFriendOperationResult.Success(it)
+                },
+            )
+        }
+
+        composeRule.onNodeWithTag("friends-accept-request").performScrollTo().performClick()
+        composeRule.onNodeWithTag("friends-accept-request").assertIsNotEnabled().performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, calls)
+            firstResult.complete(MirkoriFriendOperationResult.Unavailable)
+        }
+        composeRule.onNodeWithText("Сервис друзей сейчас недоступен.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-accept-request").performScrollTo().performClick()
+        composeRule.onNodeWithTag("friends-request").assertDoesNotExist()
+        composeRule.onNodeWithTag("friends-accept-request").assertDoesNotExist()
+        composeRule.onNodeWithTag("friends-invite").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(2, calls) }
+    }
+
+    @Test
+    fun friendsReferenceLargeEnglishTextKeepsRequestsAndActionsReachable() {
+        val actions = mutableListOf<String>()
+        val request = referenceFriendRequest().let {
+            it.copy(player = it.player.copy(displayName = "A friend with a very long display name to wrap"))
+        }
+        var acceptanceCalls = 0
+        setContent(language = AppLanguage.EN) {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 1.5f)) {
+                Box(Modifier.width(320.dp).height(600.dp)) {
+                    FriendsReferenceScreen(
+                        friends = listOf(referenceFriend("0", "A very long friend display name")),
+                        incomingFriendRequests = listOf(request),
+                        onlineConfigured = true,
+                        onOpenFriends = { actions += "friends" },
+                        onInvite = { actions += "invite" },
+                        onFindMatch = { actions += "match" },
+                        onAcceptFriendRequest = {
+                            acceptanceCalls++
+                            if (acceptanceCalls == 1) MirkoriFriendOperationResult.Rejected
+                            else MirkoriFriendOperationResult.Success(it)
+                        },
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Online is available").assertIsDisplayed()
+        assertNoUntranslatedSocialKeys()
+        composeRule.onNodeWithTag("friends-open-all").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("friends-accept-request").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("The friend request could not be completed.")
+            .performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-accept-request").performScrollTo().performClick()
+        composeRule.onNodeWithTag("friends-request").assertDoesNotExist()
+        listOf("friends-invite", "friends-find-match", "friends-online-matches").forEach { tag ->
+            composeRule.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().performClick()
+        }
+        assertNoUntranslatedSocialKeys()
+        composeRule.runOnIdle {
+            assertEquals(2, acceptanceCalls)
+            assertEquals(listOf("friends", "invite", "match", "match"), actions)
+        }
+    }
+
+    @Test
+    fun friendsReferenceLargeHudShowsFullCountersAndKeepsActionsReachable() {
+        val actions = mutableListOf<String>()
+        setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 1.5f)) {
+                Box(Modifier.width(320.dp).height(600.dp)) {
+                    AppShell(
+                        currentSection = AppSection.SOCIAL,
+                        onSectionChange = {},
+                        bottomMode = BottomLayerMode.MENU,
+                        topMode = TopLayerMode.OVERLAY,
+                        centerMode = CenterLayerMode.TRANSPARENT,
+                        friendsReference = true,
+                        topContent = {
+                            AppTopBar(
+                                energy = 5,
+                                energyMax = 5,
+                                coins = Int.MAX_VALUE,
+                                showBack = false,
+                                showShop = true,
+                                onBackClick = {},
+                                onShopClick = { actions += "shop" },
+                                onSettingsClick = { actions += "settings" },
+                                friendsReference = true,
+                            )
+                        },
+                    ) {
+                        Text("body")
+                    }
+                }
+            }
+        }
+
+        val bodyTop = composeRule.onNodeWithText("body").assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot.top
+        listOf("5/5", Int.MAX_VALUE.toString()).forEach { value ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            val counter = composeRule.onNodeWithText(value, useUnmergedTree = true).assertIsDisplayed()
+            counter.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { getLayouts ->
+                assertTrue("The counter must expose its rendered text layout", getLayouts(layouts))
+            }
+            assertFalse("The complete counter $value must fit without clipping or ellipsis", layouts.single().hasVisualOverflow)
+            assertTrue("The HUD counter must not overlap the page content", counter.fetchSemanticsNode().boundsInRoot.bottom <= bodyTop)
+        }
+        composeRule.onNodeWithContentDescription("Магазин").assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Настройки").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertEquals(listOf("shop", "settings"), actions) }
+    }
+
+    @Test
+    fun friendsReferenceCaptureAndActionsUseApprovedFixture() {
+        val friends = listOf("Mirki", "Lina", "Alexey", "Kate", "Friend 5", "Friend 6", "Friend 7", "Friend 8")
+            .mapIndexed { index, name -> referenceFriend(index.toString(), name) }
+        val request = referenceFriendRequest()
+        val actions = mutableListOf<String>()
+        setContent {
+            AppShell(
+                currentSection = AppSection.SOCIAL,
+                onSectionChange = {},
+                socialNotificationCount = 1,
+                bottomMode = BottomLayerMode.MENU,
+                topMode = TopLayerMode.OVERLAY,
+                centerMode = CenterLayerMode.TRANSPARENT,
+                friendsReference = true,
+                topContent = {
+                    AppTopBar(
+                        energy = 5,
+                        energyMax = 5,
+                        coins = 10146,
+                        showBack = false,
+                        showShop = true,
+                        onBackClick = {},
+                        onShopClick = {},
+                        onSettingsClick = {},
+                        friendsReference = true,
+                    )
+                },
+            ) {
+                FriendsReferenceScreen(
+                    friends = friends,
+                    incomingFriendRequests = listOf(request),
+                    onlineConfigured = true,
+                    onlineFriendIds = friends.map { it.targetPlayerId }.toSet(),
+                    onOpenFriends = { actions += "friends" },
+                    onInvite = { actions += "invite" },
+                    onFindMatch = { actions += "match" },
+                    onAcceptFriendRequest = { MirkoriFriendOperationResult.Success(it) },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("friends-reference-shell").assertIsDisplayed()
+        listOf("Mirki", "Lina", "Alexey", "Kate", "Player 8b73615b").forEach { name ->
+            composeRule.onNodeWithText(name).assertIsDisplayed()
+        }
+        composeRule.waitForIdle()
+        val output = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "visual-qa/friends-reference.png",
+        )
+        output.parentFile?.mkdirs()
+        output.outputStream().use { stream ->
+            check(composeRule.onNodeWithTag("friends-reference-shell")
+                .captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, stream))
+        }
+
+        listOf("friends-open-all", "friends-requests-open", "friends-invite", "friends-find-match", "friends-online-matches")
+            .forEach { tag -> composeRule.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().performClick() }
+        composeRule.runOnIdle {
+            assertEquals(listOf("friends", "friends", "invite", "match", "match"), actions)
         }
     }
 
@@ -874,10 +1119,64 @@ class ShellSectionsSmokeTest {
         composeRule.onAllNodesWithTag("company-room-background").assertCountEquals(0)
     }
 
-    private fun setContent(content: @androidx.compose.runtime.Composable () -> Unit) {
+    private fun showFriendsReference(
+        friends: List<LocalSocialRelationship> = emptyList(),
+        onlineConfigured: Boolean = false,
+        onOpenFriends: () -> Unit = {},
+        onInvite: () -> Unit = {},
+        onFindMatch: () -> Unit = {},
+    ) {
+        setContent {
+            FriendsReferenceScreen(
+                friends = friends,
+                incomingFriendRequests = emptyList(),
+                onlineConfigured = onlineConfigured,
+                onOpenFriends = onOpenFriends,
+                onInvite = onInvite,
+                onFindMatch = onFindMatch,
+                onAcceptFriendRequest = { MirkoriFriendOperationResult.Unavailable },
+            )
+        }
+    }
+
+    private fun assertNoUntranslatedSocialKeys() {
+        composeRule.onAllNodes(
+            SemanticsMatcher("Untranslated social localization key") { node ->
+                node.config.getOrNull(SemanticsProperties.Text).orEmpty().any {
+                    it.text.startsWith("social.")
+                }
+            },
+            useUnmergedTree = true,
+        ).assertCountEquals(0)
+    }
+
+    private fun referenceFriend(id: String, name: String) = LocalSocialRelationship(
+        id = "reference-relationship-$id",
+        playerId = "reference-owner",
+        targetPlayerId = id,
+        targetDisplayName = name,
+        relationshipType = LocalRelationshipType.FRIEND,
+        status = LocalRelationshipStatus.ACTIVE,
+        source = "instrumented-reference-fixture",
+    )
+
+    private fun referenceFriendRequest() = MirkoriFriendRequest(
+        requestId = "reference-request",
+        player = MirkoriPublicPlayerProfile(
+            gamePlayerId = "reference-request-player",
+            handle = "reference_player",
+            displayName = "Player 8b73615b",
+            avatarUrl = null,
+        ),
+    )
+
+    private fun setContent(
+        language: AppLanguage = AppLanguage.RU,
+        content: @androidx.compose.runtime.Composable () -> Unit,
+    ) {
         composeRule.setContent {
             CompositionLocalProvider(
-                LocalAppStrings provides StaticLocalizationProvider.forLanguage(AppLanguage.RU),
+                LocalAppStrings provides StaticLocalizationProvider.forLanguage(language),
             ) {
                 InplaceXTheme(content = content)
             }

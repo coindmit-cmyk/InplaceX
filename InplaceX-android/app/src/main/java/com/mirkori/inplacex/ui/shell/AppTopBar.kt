@@ -37,6 +37,7 @@ import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.screens.social.FriendsReferenceTopBar
 
 @Composable
 fun AppTopBar(
@@ -49,7 +50,12 @@ fun AppTopBar(
     onShopClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    friendsReference: Boolean = false,
 ) {
+    if (friendsReference) {
+        FriendsReferenceTopBar(energy, energyMax, coins, onShopClick, onSettingsClick, modifier)
+        return
+    }
     val strings = LocalAppStrings.current
     val appearance = AppConfigCatalog.platformConfig.shellAppearance.topBar
 

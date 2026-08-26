@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The Friends root now has an illustrated reference-based pilot: compact navy
+  chrome, cream friend/request cards, purple and blue actions, and a green online
+  entry. All controls remain native, offline/presence states stay truthful, and
+  request acceptance handles busy/retry without duplicate submissions. Other tabs
+  and nested routes keep their existing appearance. The reproducible method is
+  documented in `InplaceX-docs/Game/Human/Friends Reference Pilot.md`.
+
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.
