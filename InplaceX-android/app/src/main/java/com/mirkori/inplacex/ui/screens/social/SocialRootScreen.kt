@@ -239,19 +239,7 @@ fun SocialRootScreen(
                     }
                 }
             }
-            incomingFriendRequests.firstOrNull()?.let { request ->
-                SceneCard(accentColor = InplaceXColors.ToyPurpleTop) {
-                    Text(
-                        text = strings.text("social.friend.request.root_notice")
-                            .replace("{name}", request.player.displayName),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
-                        Text(strings.text("social.friend.request.open"))
-                    }
-                }
-            }
+            FriendRequestInbox(incomingFriendRequests, onAcceptFriendRequest)
             SceneActionTile(
                 title = strings.text("social.friends"),
                 subtitle = strings.text("social.friends.subtitle"),
@@ -456,26 +444,7 @@ private fun SocialFriendsScreen(
             Text(strings.text("social.friend.add.title"), modifier = Modifier.padding(start = 8.dp))
         }
 
-        incomingFriendRequests.forEach { request ->
-            FriendCard(
-                title = request.player.displayName,
-                subtitle = strings.text("social.friend.request.incoming"),
-                actionLabelKey = "social.friend.request.accept",
-                showPlay = true,
-                playEnabled = !friendOperationInProgress,
-                onPlay = {
-                    friendOperationInProgress = true
-                    coroutineScope.launch {
-                        addFriendResultKey = when (onAcceptFriendRequest(request)) {
-                            is MirkoriFriendOperationResult.Success -> "social.friend.request.accepted"
-                            MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
-                            MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
-                        }
-                        friendOperationInProgress = false
-                    }
-                },
-            )
-        }
+        FriendRequestInbox(incomingFriendRequests, onAcceptFriendRequest)
 
         pendingFriendRequests.forEach { request ->
             FriendCard(

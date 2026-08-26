@@ -173,11 +173,13 @@ class ShellSectionsSmokeTest {
         )
         setContent { SocialRootScreen(incomingFriendRequests = listOf(request)) }
 
-        composeRule.onNodeWithText("Friendly Player предлагает дружить.").assertIsDisplayed()
-        composeRule.onNodeWithText("Открыть запрос").performClick()
-        composeRule.onNodeWithText("Friendly Player").assertIsDisplayed()
-        composeRule.onNodeWithText("Хочет добавить вас в друзья").assertIsDisplayed()
+        composeRule.onNodeWithText("Заявка в друзья").assertIsDisplayed()
+        composeRule.onNodeWithTag("friend-requests-open").performClick()
         composeRule.onNodeWithText("Принять").assertIsDisplayed()
+        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friend-requests-open").performClick()
+        composeRule.onNodeWithText("@friendly_player").assertIsDisplayed()
     }
 
     @Test

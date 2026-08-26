@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Заявки в друзья теперь собраны в компактную кнопку со счётчиком и отдельный
+  прокручиваемый список. Одиночная заявка показывает имя отправителя;
+  принятие защищено от повторного нажатия и позволяет повторить запрос при
+  ошибке сервера. Светлое оформление заменяет крупную яркую карточку.
+
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.
