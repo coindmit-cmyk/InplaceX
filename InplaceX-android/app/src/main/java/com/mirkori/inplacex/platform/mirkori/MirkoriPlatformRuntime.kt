@@ -120,7 +120,6 @@ class MirkoriPlatformRuntime internal constructor(
         try {
             val current = ensureFreshSession()
             if (current.authMode == PlatformAuthMode.GOOGLE) return@withLock MirkoriLoginResult.AlreadyConnected
-            if (current.authMode != PlatformAuthMode.GUEST) return@withLock MirkoriLoginResult.Rejected
             val state = requireNotNull(persistedState)
             val pending = sdk.beginAccountLogin(
                 profileAccessToken = current.credentials.accessToken,

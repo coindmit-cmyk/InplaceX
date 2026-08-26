@@ -216,6 +216,63 @@ class MirkoriPlatformRuntimeTest {
     }
 
     @Test
+    fun linkedMirkoriAccountCanVerifyGoogleWithoutReplacingItsProfile() {
+        val handle = "G".repeat(64)
+        val store = installationStore().apply {
+            value = requireNotNull(value).copy(
+                session = GameIdentitySession(
+                    AccountId, PlayerId, "inplacex", InstallationId, PlatformAuthMode.LOCAL,
+                    credentials("linked"),
+                ),
+            )
+        }
+        val transport = QueueTransport(
+            ok("""{"session":"$handle","connectUrl":"https://games.dmit.life/connect?session=$handle","expiresAtEpochMs":$ExpiresAtMs}"""),
+            ok("""{"accountId":"$AccountId","gamePlayerId":"$PlayerId","gameId":"inplacex","authMode":"google","credentials":${credentialsJson("google-linked")}}"""),
+        )
+        val runtime = runtime(transport, store)
+
+        assertTrue(runSuspend { runtime.beginGoogleLogin() } is MirkoriLoginResult.GoogleCredentialRequired)
+        val connected = runSuspend { runtime.completeGoogleLogin("google-token-" + "x".repeat(120)) }
+            as MirkoriLoginResult.Connected
+
+        assertEquals(MirkoriAccountStateKind.LINKED, connected.accountState.kind)
+        assertEquals(AccountId, store.value?.session?.accountId)
+        assertEquals(PlayerId, connected.accountState.gamePlayerId)
+        assertEquals(PlatformAuthMode.GOOGLE, connected.accountState.authMode)
+        assertEquals(MirkoriLoginResult.AlreadyConnected, runSuspend { runtime.beginLogin() })
+        assertTrue(transport.requests.all { it.headers["Authorization"].orEmpty().startsWith("Bearer linked.") })
+    }
+
+    @Test
+    fun linkedMirkoriProfileIsKeptWhenGoogleReportsConflictAndPlayerCancels() {
+        val handle = "C".repeat(64)
+        val store = installationStore().apply {
+            value = requireNotNull(value).copy(
+                session = GameIdentitySession(
+                    AccountId, PlayerId, "inplacex", InstallationId, PlatformAuthMode.LOCAL,
+                    credentials("linked"),
+                ),
+            )
+        }
+        val previous = store.value?.session
+        val transport = QueueTransport(
+            ok("""{"session":"$handle","connectUrl":"https://games.dmit.life/connect?session=$handle","expiresAtEpochMs":$ExpiresAtMs}"""),
+            PlatformHttpResponse(409, """{"error":"profile_conflict"}"""),
+        )
+        val runtime = runtime(transport, store)
+        runSuspend { runtime.beginGoogleLogin() }
+        assertEquals(
+            MirkoriLoginResult.ProfileConflict,
+            runSuspend { runtime.completeGoogleLogin("google-token-" + "x".repeat(120)) },
+        )
+        assertEquals(previous, store.value?.session)
+        runSuspend { runtime.cancelPendingLogin() }
+        assertEquals(previous, store.value?.session)
+        assertNull(store.value?.pendingLogin)
+    }
+
+    @Test
     fun nativeGoogleConflictKeepsPendingLoginUntilExplicitExistingProfileConfirmation() {
         val sessionHandle = "R".repeat(64)
         val idToken = "google-id-token-" + "z".repeat(120)

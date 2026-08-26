@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.platform.online
 
 import android.content.Context
+import com.mirkori.inplacex.platform.logging.AppLog
 import java.util.UUID
 
 class ActiveOnlineSessionStore(
@@ -32,11 +33,36 @@ class ActiveOnlineSessionStore(
         preferences.edit().remove(SessionIdKey).commit()
     }
 
+    fun readPendingInvite(playerId: String): String? {
+        require(playerId.isCanonicalUuid())
+        val code = preferences.getString("invite_$playerId", null) ?: return null
+        if (!code.matches(InviteCodePattern)) {
+            clearPendingInvite(playerId)
+            return null
+        }
+        return code
+    }
+
+    fun writePendingInvite(playerId: String, code: String) {
+        require(playerId.isCanonicalUuid())
+        require(code.matches(InviteCodePattern))
+        check(preferences.edit().putString("invite_$playerId", code).commit()) {
+            "Unable to persist pending online invitation"
+        }
+        AppLog.info(tag = "OnlineRecovery", message = "Pending invitation saved")
+    }
+
+    fun clearPendingInvite(playerId: String) {
+        require(playerId.isCanonicalUuid())
+        preferences.edit().remove("invite_$playerId").commit()
+    }
+
     private fun String.isCanonicalUuid(): Boolean =
         runCatching { UUID.fromString(this).toString() == this }.getOrDefault(false)
 
     private companion object {
         const val DefaultPreferencesName = "inplacex_active_online_session"
         const val SessionIdKey = "session_id"
+        val InviteCodePattern = Regex("[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}")
     }
 }

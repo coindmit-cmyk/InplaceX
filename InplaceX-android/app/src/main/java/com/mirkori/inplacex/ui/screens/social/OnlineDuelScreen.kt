@@ -55,6 +55,8 @@ internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
     initialSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
+    initialPendingInviteCode: String? = null,
+    onPendingInviteChange: (String?) -> Unit = {},
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
     initialPlayStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.RACE,
     initialCodeLength: Int = 4,
@@ -67,7 +69,7 @@ internal fun OnlineDuelScreen(
     val scope = rememberCoroutineScope()
     var state by remember {
         mutableStateOf<OnlineDuelUiState>(
-            if (initialSessionId == null) {
+            if (initialSessionId == null && initialPendingInviteCode == null) {
                 if (autoAcceptInviteCode == null) OnlineDuelUiState.Ready
                 else OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
             } else {
@@ -108,9 +110,10 @@ internal fun OnlineDuelScreen(
         result: OnlineClientResult<OnlineDuelSnapshotState>,
     ): OnlineDuelUiState {
         when (result) {
-            is OnlineClientResult.Success -> onActiveSessionChange(
-                result.value.sessionId.takeUnless { result.value.phase == "finished" },
-            )
+            is OnlineClientResult.Success -> {
+                onActiveSessionChange(result.value.sessionId.takeUnless { result.value.phase == "finished" })
+                onPendingInviteChange(null)
+            }
             OnlineClientResult.AuthenticationRequired,
             OnlineClientResult.MembershipRejected,
             OnlineClientResult.InvalidResponse,
@@ -142,7 +145,27 @@ internal fun OnlineDuelScreen(
             OnlineDuelUiState.Error(strings.text("social.online.error.room_missing"))
         } else {
             onActiveSessionChange(sessionId)
+            onPendingInviteChange(null)
             applySnapshotResult(runtime.readSession(sessionId))
+        }
+    }
+
+    suspend fun restoreInvite(code: String) {
+        when (val result = runtime.readFriendInvite(code)) {
+            is OnlineClientResult.Success -> when (result.value.status) {
+                OnlineFriendInviteStatus.WAITING -> state = OnlineDuelUiState.WaitingForFriend(result.value)
+                OnlineFriendInviteStatus.MATCHED -> openInviteSession(result.value)
+                OnlineFriendInviteStatus.EXPIRED -> {
+                    onPendingInviteChange(null)
+                    state = OnlineDuelUiState.Error(strings.text("social.online.error.invite_expired"))
+                }
+            }
+            else -> {
+                if (result == OnlineClientResult.MembershipRejected || result == OnlineClientResult.InvalidResponse) {
+                    onPendingInviteChange(null)
+                }
+                state = inviteError(result)
+            }
         }
     }
 
@@ -176,8 +199,11 @@ internal fun OnlineDuelScreen(
     }
 
     LaunchedEffect(Unit) {
-        initialSessionId?.let { sessionId ->
-            state = applySnapshotResult(runtime.readSession(sessionId))
+        if (autoAcceptInviteCode == null) {
+            when {
+                initialSessionId != null -> state = applySnapshotResult(runtime.readSession(initialSessionId))
+                initialPendingInviteCode != null -> restoreInvite(initialPendingInviteCode)
+            }
         }
     }
 
@@ -190,10 +216,12 @@ internal fun OnlineDuelScreen(
                         is OnlineClientResult.Success -> when (result.value.status) {
                             OnlineFriendInviteStatus.WAITING -> Unit
                             OnlineFriendInviteStatus.MATCHED -> openInviteSession(result.value)
-                            OnlineFriendInviteStatus.EXPIRED ->
+                            OnlineFriendInviteStatus.EXPIRED -> {
+                                onPendingInviteChange(null)
                                 state = OnlineDuelUiState.Error(
                                     strings.text("social.online.error.invite_expired"),
                                 )
+                            }
                         }
                         OnlineClientResult.Offline,
                         OnlineClientResult.TemporarilyUnavailable,
@@ -396,8 +424,10 @@ internal fun OnlineDuelScreen(
                                         targetPlayerId = targetPlayerId,
                                     )
                                 ) {
-                                    is OnlineClientResult.Success ->
+                                    is OnlineClientResult.Success -> {
+                                        onPendingInviteChange(result.value.inviteCode)
                                         OnlineDuelUiState.WaitingForFriend(result.value)
+                                    }
                                     else -> inviteError(result)
                                 }
                             }
@@ -535,7 +565,10 @@ internal fun OnlineDuelScreen(
                 CircularProgressIndicator()
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { state = OnlineDuelUiState.Ready },
+                    onClick = {
+                        onPendingInviteChange(null)
+                        state = OnlineDuelUiState.Ready
+                    },
                 ) {
                     Text(strings.text("social.online.cancel"))
                 }
@@ -547,7 +580,11 @@ internal fun OnlineDuelScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         val sessionId = initialSessionId
-                        if (sessionId == null) {
+                        val pendingCode = initialPendingInviteCode
+                        if (sessionId == null && pendingCode != null) {
+                            state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+                            scope.launch { restoreInvite(pendingCode) }
+                        } else if (sessionId == null) {
                             state = OnlineDuelUiState.Ready
                         } else {
                             state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))

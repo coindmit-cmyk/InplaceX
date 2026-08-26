@@ -123,6 +123,12 @@ Google profile repeats the same verified native exchange with
 without merging or deleting either server profile. The Google credential stays
 memory-only during the dialog, and the local campaign database is not replaced.
 
+The same verified native flow can start from a linked LOCAL/TELEGRAM session.
+A compatible Google identity resolves to the same Platform account/profile;
+the Mirkori connection remains linked. This does not automatically attach an
+unrelated Google identity to a non-guest account or infer ownership from email.
+Platform account linking and conflict checks remain authoritative.
+
 For a bounded upgrade window, an unfinished match created before the Platform
 cutover may use its encrypted legacy refresh token once as ownership proof. The
 client attempts this only after a Platform-authorized session read returns a

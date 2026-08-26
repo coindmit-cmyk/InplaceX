@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Online input now shares free-position editing with local play: automatically
+  confirmed digits no longer consume keypad presses, and disabling auto mode
+  also disables hidden inferred substitutions on submission.
+- Pending private invitations survive screen/process recreation, scoped to
+  the game profile. Social notifications open Social, and accepting a new
+  invite no longer races restoration of the previously selected session.
+- A linked Mirkori profile can start the server-verified native Google flow;
+  compatible accounts preserve the game profile, while conflicting profiles
+  still require explicit confirmation without merging progress.
+
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.
