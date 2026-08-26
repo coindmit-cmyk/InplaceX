@@ -5,7 +5,7 @@
 - Android still owns state-holder orchestration, route adaptation, and timer
   lifecycle around the shared pure engine
 - the bounded evidence solver intentionally stops exhaustive enumeration above
-  its search budget and then exposes only sound local deductions
+  its search budget and then exposes only sound local and bounded subset-group deductions
 - active online duel sessions, waiting matchmaking tickets and retained private
   invitations are PostgreSQL-recoverable when the database and managed AES
   state key are configured; public matchmaking and bot fallback now use

@@ -149,6 +149,25 @@ Then:
 3. subtract already resolved positions from the returned score
 4. continue until single positions are resolved
 
+## Local race pacing (manual-table calibration)
+
+The race setup offers Easy (default), Medium, Hard and Expert. The selected
+level selects the real `BotAgent` strategy described above, not just a label.
+Race-only delays per guess are 13.5 / 13 / 12 / 9 seconds respectively.
+They do not alter turn-based duels or the server's online matchmaking policy.
+There is no dependence on player submissions or whether the table is automatic.
+Both racers still solve the same secret; only opponent scores are displayed.
+An exact full score terminates the race immediately.
+
+Calibration baseline agreed with the owner: a skilled manual-table player needs
+about 3–4 minutes for six digits. In the reproducible 96-secret sample (seeds
+1..96, secret seed ×41 and solver seed ×43), median guesses were 31 / 20 / 18 / 15.
+With the delays above, median bot finishes are about 7:00 / 4:20 / 3:36 / 2:15.
+Easy uses sequential checks, so it takes more guesses as well as more time.
+These are sample results, not a guaranteed finish window: lucky secrets can
+finish sooner, longer codes take longer, and no synthetic moves or forced wins
+are inserted. Validate with `RaceDifficultyCalibrationTest` and `DuelBotTurnTest`.
+
 ## Compatibility Layer
 
 `BotSolver` is a compatibility facade over `BotAgent`.

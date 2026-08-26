@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.home
 
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
+import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.ui.screens.game.TypeGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +18,7 @@ class HomeModeContractTest {
         assertNull(mode.moveLimit)
         assertEquals(12, mode.config.attemptLimit)
         assertEquals(0, params.limitMoves)
+        assertEquals(BotDifficulty.EASY, mode.botDifficulty)
     }
 
     @Test

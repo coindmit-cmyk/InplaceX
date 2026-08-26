@@ -37,6 +37,17 @@ authoritative terminal condition.
 
 There are still legacy model shapes in the repo (`MatchState`, `GuessResult`, `GameStatus`) used by older UI flows. They are transitional and should converge toward the canonical match contracts over time.
 
+## Automatic table: grouped evidence
+
+Accepted exact-match scores also form exact sums over position/symbol groups.
+Subtracting a contained group can prove the remainder impossible or exact even
+when the Cartesian search space is above the enumeration budget. For example,
+`000111=1`, `111323=0`, `000323=1` excludes `1` in every position but does not
+identify which of the first three zeros matches. Manual hypotheses constrain
+candidates but never become authoritative facts. Group comparisons and derived
+groups have explicit conservative budgets; exhausting one means fewer deductions,
+not guessed facts or unbounded search.
+
 ## Terminal Presentation Contract
 
 - `WON` and `LOST` are stable terminal phases.
