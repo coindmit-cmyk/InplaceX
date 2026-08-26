@@ -2,6 +2,9 @@
 
 ## Canonical Sources
 
+- Five first-level pages: [Page Design v6](Page%20Design%20v6.md). The owner's v6 contract
+  supersedes older page palette, typography, radius and layout values below, not game-field geometry.
+- Shared page tokens/components: `PageDesignTokens.kt`, `PageComponents.kt`.
 - Product intent: `../Human/Design System v2.md`
 - Runtime color tokens: `InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Color.kt`
 - Runtime theme: `InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/theme/Theme.kt`

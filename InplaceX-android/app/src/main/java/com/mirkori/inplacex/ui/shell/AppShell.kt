@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -79,9 +80,12 @@ private fun ShellBackground(
     content: @Composable () -> Unit
 ) {
     val navBar = WindowInsets.navigationBars.asPaddingValues()
+    // Menu chrome observes cutouts/system bars; dense in-game layout keeps its own contract.
+    val menuTopInset = if (bottomMode == BottomLayerMode.MENU)
+        WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
     val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
     val bottomSlotBottomPadding = when (bottomMode) {
-        BottomLayerMode.MENU -> 0.dp
+        BottomLayerMode.MENU -> navBar.calculateBottomPadding()
         BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
         BottomLayerMode.AD_LOADING -> 0.dp
         BottomLayerMode.NONE -> 0.dp
@@ -104,7 +108,8 @@ private fun ShellBackground(
             val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
                 0.dp
             } else {
-                maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
+                if (bottomMode == BottomLayerMode.MENU) 56.dp
+                else maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
             }
             val bottomSlotHeight = when (bottomMode) {
                 BottomLayerMode.NONE -> 0.dp
@@ -122,7 +127,7 @@ private fun ShellBackground(
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding)
-                        .padding(top = layoutConfig.shellTopPadding)
+                        .padding(top = layoutConfig.shellTopPadding + menuTopInset)
                         .height(topSlotHeight)
                 ) {
                     when (topMode) {
@@ -150,9 +155,10 @@ private fun ShellBackground(
             val centerLayerModifier = Modifier
                 .align(Alignment.TopStart)
                 .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
-                .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
-                .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
+                // Страницы сами задают 16dp; размеры игрового поля не меняем.
+                .padding(horizontal = if (bottomMode == BottomLayerMode.MENU && centerMode == CenterLayerMode.TRANSPARENT) 0.dp else horizontalPadding)
+                .padding(top = menuTopInset + layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
+                .padding(bottom = bottomSlotHeight + (if (bottomMode == BottomLayerMode.MENU) bottomSlotBottomPadding else 0.dp) + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
             when (centerMode) {
                 CenterLayerMode.SURFACE -> {

@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+- Reference-guided Android menus now use glossy colored headers, warm beveled
+  cards, paired social actions, an illustrated interactive campaign route,
+  two-column supply cards, and a compact blue account card. Menu chrome avoids
+  system bars; large-font layouts stack actions and products. Real account,
+  stock, pricing and unlock rules are preserved; no reference-only XP or fake
+  friend presence is introduced. New artwork provenance is documented.
+
+- Пять основных страниц используют общие кремовые карточки, типографику,
+  кнопки и отступы. Друзья и заявки получили единый фиолетовый акцент;
+  Магазин — карточки товаров и общие вкладки; Профиль — шапку и равную сетку
+  статистики. Компания объединяет заголовок, награды и историю, прокручивает
+  маршрут по возрастанию уровней и сохраняет кнопку игры в нижней панели.
+  Правила матчей, провайдеры входа, цены и обработчики покупок не изменены.
+
+- Заявки в друзья теперь собраны в компактную кнопку со счётчиком и отдельный
+  прокручиваемый список. Одиночная заявка показывает имя отправителя;
+  принятие защищено от повторного нажатия и позволяет повторить запрос при
+  ошибке сервера. Светлое оформление заменяет крупную яркую карточку.
+- Online input now shares free-position editing with local play: automatically
+  confirmed digits no longer consume keypad presses, and disabling auto mode
+  also disables hidden inferred substitutions on submission.
+- Pending private invitations survive screen/process recreation, scoped to
+  the game profile. Social notifications open Social, and accepting a new
+  invite no longer races restoration of the previously selected session.
+- A linked Mirkori profile can start the server-verified native Google flow;
+  compatible accounts preserve the game profile, while conflicting profiles
+  still require explicit confirmation without merging progress.
+
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.

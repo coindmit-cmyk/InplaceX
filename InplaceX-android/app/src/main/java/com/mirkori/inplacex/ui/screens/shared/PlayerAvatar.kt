@@ -1,6 +1,12 @@
 package com.mirkori.inplacex.ui.screens.shared
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.mirkori.inplacex.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -40,9 +46,13 @@ fun PlayerAvatar(
         shape = CircleShape,
         color = avatarColor(preset?.key),
         contentColor = Color.White,
+        border = BorderStroke(2.dp, Color(0xFFFFCA57)),
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
+            if (avatarUrl.isNullOrBlank()) {
+                Image(painterResource(R.drawable.avatar_explorer_v7), contentDescription = displayName,
+                    modifier = Modifier.fillMaxSize())
+            } else Text(
                 text = preset?.symbol ?: playerInitials(displayName),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,

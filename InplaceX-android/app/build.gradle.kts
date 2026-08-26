@@ -326,6 +326,37 @@ android {
     }
 }
 
+val validateDeviceTestConfig = tasks.register<ValidateReleaseConfigTask>("validateDeviceTestConfig") {
+    group = "verification"
+    description = "Rejects owner-test APKs with missing online or Google login configuration (values are never printed)."
+    validationErrors.set(buildList {
+        listOf("online.debug.baseUrl", "platform.debug.baseUrl").forEach { key ->
+            val value = localProps.getProperty(key).orEmpty()
+            if (!isHttpsOrigin(value)) add("$key must be an explicit HTTPS origin for device testing")
+        }
+        val googleClientId = localPropWithFallback(
+            "provider.debug.googlePlay.webClientId",
+            "provider.release.googlePlay.webClientId",
+        )
+        if (!googleClientId.matches(Regex("[0-9]+-[A-Za-z0-9_-]+\\.apps\\.googleusercontent\\.com"))) {
+            add("A valid Google web client id is required for device testing")
+        }
+    })
+}
+
+tasks.register("deviceTestApk") {
+    group = "distribution"
+    description = "Builds a configured debug APK for owner testing; use an external inplacexProviderConfigFile."
+    dependsOn(validateDeviceTestConfig, "assembleDebug")
+}
+
+tasks.matching { it.name == "preDebugBuild" }.configureEach {
+    mustRunAfter(validateDeviceTestConfig)
+}
+tasks.matching { it.name == "installDebug" }.configureEach {
+    dependsOn(validateDeviceTestConfig)
+}
+
 val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
     "validateProductionReleaseConfig",
 ) {

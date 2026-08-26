@@ -22,6 +22,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -173,11 +175,13 @@ class ShellSectionsSmokeTest {
         )
         setContent { SocialRootScreen(incomingFriendRequests = listOf(request)) }
 
-        composeRule.onNodeWithText("Friendly Player предлагает дружить.").assertIsDisplayed()
-        composeRule.onNodeWithText("Открыть запрос").performClick()
-        composeRule.onNodeWithText("Friendly Player").assertIsDisplayed()
-        composeRule.onNodeWithText("Хочет добавить вас в друзья").assertIsDisplayed()
+        composeRule.onNodeWithText("Заявка в друзья").assertIsDisplayed()
+        composeRule.onNodeWithTag("friend-requests-open").performClick()
         composeRule.onNodeWithText("Принять").assertIsDisplayed()
+        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Друзья").performClick()
+        composeRule.onNodeWithTag("friend-requests-open").performClick()
+        composeRule.onNodeWithText("@friendly_player").assertIsDisplayed()
     }
 
     @Test
@@ -383,6 +387,7 @@ class ShellSectionsSmokeTest {
         setContent {
             ProfileRootScreen(
                 progressState = progress().copy(googlePlaySignedIn = true),
+                showGooglePlayCard = true,
                 mirkoriAccountState = MirkoriAccountState(
                     kind = MirkoriAccountStateKind.LINKED,
                     gamePlayerId = "00000000-0000-4000-8000-000000000803",
@@ -391,6 +396,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onAllNodesWithText("Выйти из Google Play").assertCountEquals(0)
+        composeRule.onNodeWithText("Войти через Google Play").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -406,19 +412,23 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
-    fun linkedTelegramAccountDoesNotOfferUnsupportedGoogleLinking() {
+    fun linkedTelegramAccountCanStartServerVerifiedGoogleLogin() {
+        var requested = false
         setContent {
             ProfileRootScreen(
                 progressState = progress().copy(googlePlaySignedIn = false),
+                showGooglePlayCard = true,
                 mirkoriAccountState = MirkoriAccountState(
                     kind = MirkoriAccountStateKind.LINKED,
                     gamePlayerId = "00000000-0000-4000-8000-000000000804",
                     authMode = PlatformAuthMode.TELEGRAM,
                 ),
+                onGooglePlaySignIn = { requested = true },
             )
         }
 
-        composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
+        composeRule.onNodeWithText("Войти через Google Play").performScrollTo().performClick()
+        composeRule.runOnIdle { assertTrue(requested) }
     }
 
     @Test
@@ -693,12 +703,14 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Компания").assertIsDisplayed()
+        composeRule.onNodeWithText("0 из 20 звёзд").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-mission-list").performScrollToNode(hasTestTag("company-level-4"))
         composeRule.onNodeWithTag("company-level-4").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-mission-list").performScrollToNode(hasTestTag("company-level-3"))
         composeRule.onNodeWithTag("company-level-3")
             .assertIsDisplayed()
             .assertIsSelected()
         composeRule.onNodeWithTag("company-play").assertIsDisplayed()
-        composeRule.onNodeWithText("0 из 20 звёзд").assertIsDisplayed()
         composeRule.onNodeWithText("Следующая глава уже открыта.").assertDoesNotExist()
     }
 
@@ -817,7 +829,10 @@ class ShellSectionsSmokeTest {
             }
         }
 
+        composeRule.onNodeWithTag("company-mission-list")
+            .performScrollToNode(hasTestTag("company-chapter-reward"))
         composeRule.onNodeWithTag("company-chapter-reward")
+            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         composeRule.onNodeWithText(

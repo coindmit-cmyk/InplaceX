@@ -40,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.ui.theme.FinalUiColors
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageDimens
+import com.mirkori.inplacex.ui.theme.PageType
 
 @Composable
 fun SceneBackdrop(
@@ -82,7 +85,7 @@ fun SceneBackdrop(
 fun ScenePageColumn(
     modifier: Modifier = Modifier,
     scrollable: Boolean = false,
-    verticalSpacing: Dp = 14.dp,
+    verticalSpacing: Dp = PageDimens.Gap,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scrollModifier = if (scrollable) {
@@ -95,7 +98,7 @@ fun ScenePageColumn(
         modifier = modifier
             .fillMaxSize()
             .then(scrollModifier)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = PageDimens.Margin, vertical = PageDimens.Gap),
         verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         content = content
     )
@@ -104,28 +107,11 @@ fun ScenePageColumn(
 @Composable
 fun SceneCard(
     modifier: Modifier = Modifier,
-    accentColor: Color = InplaceXColors.ToyCream.copy(alpha = 0.97f),
-    contentColor: Color = InplaceXColors.ToyBrown,
+    accentColor: Color = PageColors.Cream,
+    contentColor: Color = PageColors.Text,
     content: @Composable () -> Unit,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = accentColor,
-        contentColor = contentColor,
-        tonalElevation = 0.dp,
-        shadowElevation = 3.dp,
-        border = BorderStroke(1.dp, InplaceXColors.ToyCreamShadow),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            content()
-        }
-    }
+    ContentCard(modifier = modifier, color = accentColor, contentColor = contentColor) { content() }
 }
 
 @Composable
@@ -180,15 +166,15 @@ fun SceneActionTile(
     ),
     onClick: () -> Unit,
 ) {
-    val tileShape = RoundedCornerShape(20.dp)
-    val tileMinHeight = if (compact) 94.dp else 104.dp
+    val tileShape = RoundedCornerShape(PageDimens.HeroRadius)
+    val tileMinHeight = 104.dp
     val tileHorizontalPadding = if (compact) 13.dp else 16.dp
     val tileVerticalPadding = if (compact) 11.dp else 14.dp
     val tileSpacing = if (compact) 10.dp else 12.dp
     val leadingSize = if (compact) 50.dp else 54.dp
-    val leadingShape = RoundedCornerShape(14.dp)
+    val leadingShape = RoundedCornerShape(PageDimens.InnerRadius)
     val leadingIconSize = if (compact) 27.dp else 30.dp
-    val trailingSize = if (compact) 40.dp else 44.dp
+    val trailingSize = 44.dp
     val trailingIconSize = if (compact) 23.dp else 26.dp
     val semanticsModifier = Modifier.semantics {
         role = Role.Button
@@ -240,8 +226,7 @@ fun SceneActionTile(
             ) {
                 Text(
                     text = title,
-                    fontSize = if (compact) 18.sp else 20.sp,
-                    lineHeight = if (compact) 21.sp else 24.sp,
+                    style = PageType.CardTitle,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,
                     maxLines = if (singleLineTitle) 1 else 2,
@@ -250,8 +235,7 @@ fun SceneActionTile(
                 )
                 Text(
                     text = subtitle,
-                    fontSize = if (compact) 12.5.sp else 14.sp,
-                    lineHeight = if (compact) 16.sp else 19.sp,
+                    style = PageType.Body,
                     fontWeight = FontWeight.Medium,
                     color = contentColor.copy(alpha = if (enabled) 0.90f else 0.62f),
                     maxLines = subtitleMaxLines,

@@ -124,6 +124,7 @@ import java.net.URI
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
     private var resumeGeneration by mutableLongStateOf(0L)
+    private var socialNotificationRequest by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
     private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
     private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
@@ -199,6 +200,9 @@ class MainActivity : ComponentActivity() {
 
                 var currentSection by rememberSaveable {
                     mutableStateOf(initialSectionForActiveOnlineSession(restoredActiveOnlineSessionId))
+                }
+                LaunchedEffect(socialNotificationRequest) {
+                    if (socialNotificationRequest > 0L) currentSection = AppSection.SOCIAL
                 }
                 var activeOnlineSessionId by remember {
                     mutableStateOf(restoredActiveOnlineSessionId)
@@ -378,6 +382,10 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                val onlinePlayerId = mirkoriAccountState.gamePlayerId
+                var pendingOnlineInviteCode by remember(onlinePlayerId) {
+                    mutableStateOf(onlinePlayerId?.let(activeOnlineSessionStore::readPendingInvite))
+                }
                 var incomingFriendInvites by remember {
                     mutableStateOf(emptyList<OnlineFriendInvite>())
                 }
@@ -401,9 +409,9 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(onlineRuntime) {
                     onDispose { onlineRuntime?.close() }
                 }
-                LaunchedEffect(onlineRuntime) {
-                    if (onlineRuntime == null) {
-                        incomingFriendInvites = emptyList()
+                LaunchedEffect(onlineRuntime, onlinePlayerId) {
+                    incomingFriendInvites = emptyList()
+                    if (onlineRuntime == null || onlinePlayerId == null) {
                         return@LaunchedEffect
                     }
                     while (true) {
@@ -928,6 +936,14 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
                                 initialActiveSessionId = activeOnlineSessionId,
+                                initialPendingInviteCode = pendingOnlineInviteCode,
+                                onPendingInviteChange = { code ->
+                                    onlinePlayerId?.let { playerId ->
+                                        if (code == null) activeOnlineSessionStore.clearPendingInvite(playerId)
+                                        else activeOnlineSessionStore.writePendingInvite(playerId, code)
+                                        pendingOnlineInviteCode = code
+                                    }
+                                },
                                 onActiveSessionChange = { sessionId ->
                                     if (activeOnlineSessionId != sessionId) {
                                         if (sessionId == null) {
@@ -1610,6 +1626,9 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                             savedFriends = emptyList()
                                                             pendingFriendRequests = emptyList()
+                                                            incomingFriendInvites = emptyList()
+                                                            activeOnlineSessionStore.clear()
+                                                            activeOnlineSessionId = null
                                                         }
                                                         mirkoriAccountState = completed.accountState
                                                         progressState = progressRepository.signInWithGooglePlay(
@@ -1814,6 +1833,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun captureMirkoriCallback(intent: Intent?) {
+        if (intent?.action == IncomingFriendInviteNotifier.OpenSocialAction) {
+            socialNotificationRequest += 1L
+            intent.action = null
+        }
         val data = intent?.data ?: return
         if (
             data.scheme.equals("https", ignoreCase = true) &&

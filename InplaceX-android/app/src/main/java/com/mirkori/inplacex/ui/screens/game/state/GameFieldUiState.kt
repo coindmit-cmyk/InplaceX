@@ -85,6 +85,21 @@ data class GameFieldInputState(
     val isComplete: Boolean
         get() = slots.all { it != null }
 
+    fun enterDigit(digit: Char, fixedPositions: Set<Int>): GameFieldInputState {
+        if (digit !in '0'..'9') return this
+        val position = slots.indices.firstOrNull {
+            it !in fixedPositions && slots[it] == null
+        } ?: return this
+        return copy(slots = slots.toMutableList().apply { this[position] = digit })
+    }
+
+    fun backspace(fixedPositions: Set<Int>): GameFieldInputState {
+        val position = slots.indices.reversed().firstOrNull {
+            it !in fixedPositions && slots[it] != null
+        } ?: return this
+        return copy(slots = slots.toMutableList().apply { this[position] = null })
+    }
+
     fun guessOrNull(provenFacts: Collection<ProvenFact>): String? {
         val exactMatches = provenFacts
             .asSequence()

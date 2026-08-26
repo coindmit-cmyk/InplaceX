@@ -99,10 +99,30 @@ class DuelBotTurnTest {
 
     @Test
     fun raceBotPaceComesFromDifficultyAndIsIndependentFromPlayerAttempts() {
-        assertEquals(4_800L, raceBotReactionDelayMillis(BotDifficulty.EASY))
-        assertEquals(3_600L, raceBotReactionDelayMillis(BotDifficulty.MEDIUM))
-        assertEquals(2_700L, raceBotReactionDelayMillis(BotDifficulty.HARD))
-        assertEquals(2_100L, raceBotReactionDelayMillis(BotDifficulty.EXPERT))
+        assertEquals(13_500L, raceBotReactionDelayMillis(BotDifficulty.EASY))
+        assertEquals(13_000L, raceBotReactionDelayMillis(BotDifficulty.MEDIUM))
+        assertEquals(12_000L, raceBotReactionDelayMillis(BotDifficulty.HARD))
+        assertEquals(9_000L, raceBotReactionDelayMillis(BotDifficulty.EXPERT))
+    }
+
+    @Test
+    fun sixDigitRaceCalibrationLeavesTimeForTheManualTable() {
+        val mode = AppConfigCatalog.gameModes.first { it.id == "pve_race" }
+        val medians = BotDifficulty.entries.associateWith { difficulty ->
+            (1L..96L).map { seed ->
+                val config = localBotRaceConfig(mode, seed = seed * 41L)
+                val run = BotSolver.solveSecret(
+                    SecretGenerator.generate(config), config, difficulty, seed = seed * 43L, maxMoves = 999,
+                )
+                assertTrue("$difficulty seed=$seed must solve", run.won)
+                run.moves * raceBotReactionDelayMillis(difficulty)
+            }.sorted()[48]
+        }
+        assertTrue(medians.getValue(BotDifficulty.EASY) in 360_000L..480_000L)
+        assertTrue(medians.getValue(BotDifficulty.MEDIUM) in 240_000L..300_000L)
+        assertTrue(medians.getValue(BotDifficulty.HARD) in 180_000L..240_000L)
+        assertTrue(medians.getValue(BotDifficulty.EXPERT) in 120_000L..180_000L)
+        assertTrue(medians.values.zipWithNext().all { (slower, faster) -> slower > faster })
     }
 
     @Test

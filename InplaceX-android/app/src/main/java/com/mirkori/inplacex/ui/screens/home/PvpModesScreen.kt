@@ -6,22 +6,28 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.core.bot.BotDifficulty
 import com.mirkori.inplacex.ui.common.WarmPrimaryButton
 import com.mirkori.inplacex.ui.common.WarmSecondaryButton
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
@@ -36,6 +42,8 @@ fun PvpModesScreen(
     onlineAvailable: Boolean,
     onBack: () -> Unit,
     modeAccentColor: Color = InplaceXColors.ToyPurple,
+    raceDifficulty: BotDifficulty? = null,
+    onRaceDifficultyChange: (BotDifficulty) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     Column(
@@ -107,6 +115,10 @@ fun PvpModesScreen(
                     }
                 }
 
+                if (raceDifficulty != null) {
+                    RaceDifficultySelector(raceDifficulty, onRaceDifficultyChange)
+                }
+
                 WarmPrimaryButton(
                     label = strings.text("home.pvp.bot"),
                     onClick = onPlayWithBot,
@@ -136,6 +148,66 @@ fun PvpModesScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RaceDifficultySelector(
+    selected: BotDifficulty,
+    onSelected: (BotDifficulty) -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    Column(
+        modifier = Modifier.fillMaxWidth().selectableGroup(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = strings.text("home.race.difficulty.title"),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        BotDifficulty.entries.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pair.forEach { difficulty ->
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (difficulty == selected) MaterialTheme.colorScheme.secondaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .selectable(
+                                    selected = difficulty == selected,
+                                    onClick = { onSelected(difficulty) },
+                                    role = Role.RadioButton,
+                                )
+                                .heightIn(min = 48.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            RadioButton(selected = difficulty == selected, onClick = null)
+                            Text(
+                                text = strings.text(raceDifficultyLabelKey(difficulty)),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Text(
+            text = strings.text(raceDifficultyLabelKey(selected) + ".description"),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+internal fun raceDifficultyLabelKey(difficulty: BotDifficulty): String = when (difficulty) {
+    BotDifficulty.EASY -> "home.race.difficulty.easy"
+    BotDifficulty.MEDIUM -> "home.race.difficulty.medium"
+    BotDifficulty.HARD -> "home.race.difficulty.hard"
+    BotDifficulty.EXPERT -> "home.race.difficulty.expert"
 }
 
 internal fun selectHomeCodeLength(value: Int): Int =

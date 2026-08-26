@@ -1,5 +1,23 @@
 # Provider Runtime Config
 
+## Owner device testing
+
+Build owner-test APKs with `:app:deviceTestApk` and an external
+`-PinplacexProviderConfigFile=<absolute-path>` properties file. This gate requires
+explicit HTTPS `online.debug.baseUrl`, `platform.debug.baseUrl`, and a Google web
+client id (`provider.debug.googlePlay.webClientId`, or the release fallback).
+It reports missing key names, never values. `installDebug` also runs the gate.
+Ordinary `assembleDebug` remains available for isolated CI and offline development;
+its output must not be handed off as a configured owner-test build.
+
+Configuration presence is not proof of successful sign-in: verify the configured
+Google project's Android package/certificate, backend audience, and a real login.
+For debug APKs, check Android's supported-link selection for `games.dmit.life`.
+The production asset-links certificate must not be replaced with a debug signer.
+Use explicit per-user supported-link selection on an authorized test device, and
+check the site's explicit "Open InplaceX" fallback. Update with `adb install -r`;
+never clear app data or run instrumentation that uninstalls the owner's app.
+
 ## Source of Provider IDs
 
 - provider ids are resolved from `local.properties` during Android build and are scoped to a build variant

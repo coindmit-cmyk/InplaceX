@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -37,6 +39,8 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.navigation.AppSectionCatalog
 import com.mirkori.inplacex.ui.navigation.AppSectionIconCatalog
 import com.mirkori.inplacex.ui.theme.FinalUiColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -61,9 +65,9 @@ fun AppBottomMenu(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            FinalUiColors.ChromeTop,
-                            FinalUiColors.Chrome,
-                            FinalUiColors.ChromeDeep,
+                            PageColors.Chrome,
+                            PageColors.Chrome,
+                            PageColors.ChromeDark,
                         )
                     )
                 )
@@ -108,7 +112,7 @@ private fun BottomMenuItem(
                 onClick = onClick,
             ),
         shape = RoundedCornerShape(14.dp),
-        color = if (selected) FinalUiColors.Primary.copy(alpha = 0.86f) else Color.Transparent,
+        color = if (selected) PageColors.Primary else Color.Transparent,
         tonalElevation = 0.dp,
         border = if (selected) {
             BorderStroke(1.dp, FinalUiColors.ChromeBorder)
@@ -116,6 +120,9 @@ private fun BottomMenuItem(
             null
         }
     ) {
+      BoxWithConstraints(Modifier.fillMaxSize()) {
+        val navigationStyle = if (maxWidth < 72.dp && LocalDensity.current.fontScale > 1.2f)
+            PageType.Navigation.copy(fontSize = 9.sp) else PageType.Navigation
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -143,14 +150,12 @@ private fun BottomMenuItem(
             Text(
                 text = title,
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.sp,
-                    lineHeight = 11.sp
-                ),
+                style = navigationStyle,
                 color = if (selected) Color.White else InplaceXColors.ToyCream,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1
             )
         }
+      }
     }
 }

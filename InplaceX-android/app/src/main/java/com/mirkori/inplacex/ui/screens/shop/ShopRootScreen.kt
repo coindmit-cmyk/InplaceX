@@ -1,6 +1,15 @@
 package com.mirkori.inplacex.ui.screens.shop
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import com.mirkori.inplacex.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -10,12 +19,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton as OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +52,25 @@ import com.mirkori.inplacex.ui.screens.shared.SceneCard
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
+import com.mirkori.inplacex.ui.screens.shared.PageHeroCard
+import com.mirkori.inplacex.ui.screens.shared.PageStatusPill
+import com.mirkori.inplacex.ui.screens.shared.PageSectionHeader
+import com.mirkori.inplacex.ui.screens.shared.SegmentedControl
+import com.mirkori.inplacex.ui.screens.shared.StatusCard
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Pin
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 
 private enum class ShopCategory {
     BOOSTS,
@@ -86,77 +114,23 @@ fun ShopRootScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
-            Text(
-                text = strings.text("shop.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = strings.text("shop.hero.subtitle"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SceneSplitStatRow(
-                leftLabel = strings.text("top.coins"),
-                leftValue = progressState.coins.toString(),
-                rightLabel = strings.text("top.energy"),
-                rightValue = "${progressState.campaignEnergy}/${progressState.campaignEnergyMax}",
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(
-                selected = category == ShopCategory.BOOSTS,
-                onClick = {
-                    categoryName = ShopCategory.BOOSTS.name
-                    resultKey = null
-                },
-                label = { Text(strings.text("shop.tab.boosts")) },
-                colors = shellFilterChipColors(),
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
-            )
-            FilterChip(
-                selected = category == ShopCategory.PREMIUM,
-                onClick = {
-                    categoryName = ShopCategory.PREMIUM.name
-                    resultKey = null
-                },
-                label = { Text(strings.text("shop.tab.premium")) },
-                colors = shellFilterChipColors(),
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
-            )
-        }
-
+        PageHeroCard(
+            title = strings.text("shop.title"),
+            subtitle = strings.text("shop.hero.subtitle"),
+            accent = PageColors.Friends,
+            icon = Icons.Outlined.ShoppingBag,
+        )
+        SegmentedControl(
+            options = listOf(strings.text("shop.tab.boosts"), strings.text("shop.tab.premium")),
+            selectedIndex = category.ordinal,
+            onSelect = { categoryName = ShopCategory.entries[it].name; resultKey = null },
+            accent = PageColors.Shop,
+        )
         resultKey?.let { key ->
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = if (key == "shop.result.success") {
-                    InplaceXColors.Mint.copy(alpha = 0.16f)
-                } else {
-                    InplaceXColors.Coral.copy(alpha = 0.14f)
-                },
-                border = BorderStroke(
-                    1.dp,
-                    if (key == "shop.result.success") InplaceXColors.Mint else InplaceXColors.Coral,
-                ),
-            ) {
-                Text(
-                    text = strings.text(key),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+            StatusCard(
+                title = strings.text(key),
+                accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
+            )
         }
 
         when (category) {
@@ -203,17 +177,16 @@ private fun BoostsCatalog(
     onBuyEnergy: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
-    SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
-        Text(
-            text = strings.text("shop.rewarded.title"),
-            modifier = Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = strings.text("shop.rewarded.coins"),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    PageHeroCard(
+        title = strings.text("shop.rewarded.title"),
+        subtitle = strings.text("shop.rewarded.coins"),
+        accent = PageColors.Friends,
+        icon = Icons.Outlined.PlayCircle,
+        leading = {
+            Image(painterResource(R.drawable.reward_coins_v7), null,
+                Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)))
+        },
+    ) {
         Button(
             onClick = { onWatchRewardedCoins(onReport) },
             modifier = Modifier
@@ -224,12 +197,7 @@ private fun BoostsCatalog(
         }
     }
 
-    Text(
-        text = strings.text("shop.hints"),
-        modifier = Modifier.semantics { heading() },
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-    )
+    PageSectionHeader(strings.text("shop.hints"))
     ShopItemGrid(
         items = listOf(
             ShopItem(
@@ -237,36 +205,48 @@ private fun BoostsCatalog(
                 progressState.openPositionHints,
                 20,
                 onBuyOpenPositionHint,
+                strings.text("shop.item.open_position.desc"),
+                Icons.Outlined.Lightbulb, R.drawable.ic_hint_open_position,
             ),
             ShopItem(
                 strings.text("shop.item.check_digit"),
                 progressState.checkDigitHints,
                 15,
                 onBuyCheckDigitHint,
+                strings.text("shop.item.check_digit.desc"),
+                Icons.Outlined.Search, R.drawable.ic_hint_check_digit,
             ),
             ShopItem(
                 strings.text("shop.item.check_position"),
                 progressState.checkPositionHints,
                 25,
                 onBuyCheckPositionHint,
+                strings.text("shop.item.check_position.desc"),
+                Icons.Outlined.Pin, R.drawable.ic_hint_check_position,
             ),
             ShopItem(
                 strings.text("shop.item.extra_moves"),
                 progressState.extraMovesBoosts,
                 30,
                 onBuyExtraMovesBoost,
+                strings.text("shop.item.extra_moves.desc"),
+                Icons.Outlined.AddCircleOutline, R.drawable.ic_boost_extra_moves,
             ),
             ShopItem(
                 strings.text("shop.item.extra_time"),
                 progressState.extraTimeBoosts,
                 30,
                 onBuyExtraTimeBoost,
+                strings.text("shop.item.extra_time.desc"),
+                Icons.Outlined.Timer, R.drawable.ic_boost_extra_time,
             ),
             ShopItem(
                 strings.text("shop.item.energy"),
                 progressState.campaignEnergy,
                 25,
                 onBuyEnergy,
+                strings.text("shop.item.energy.desc"),
+                Icons.Outlined.Bolt,
             ),
         ),
         coins = progressState.coins,
@@ -279,6 +259,9 @@ private data class ShopItem(
     val stock: Int,
     val price: Int,
     val onBuy: () -> Boolean,
+    val description: String,
+    val icon: ImageVector,
+    val artwork: Int? = null,
 )
 
 @Composable
@@ -287,35 +270,15 @@ private fun ShopItemGrid(
     coins: Int,
     onReport: (Boolean) -> Unit,
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        if (maxWidth < 560.dp) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items.forEach { item ->
-                    ShopItemCard(item, coins, onReport)
-                }
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items.chunked(2).forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        rowItems.forEach { item ->
-                            ShopItemCard(
-                                item = item,
-                                coins = coins,
-                                onReport = onReport,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        if (rowItems.size == 1) {
-                            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-                        }
-                    }
-                }
+    BoxWithConstraints {
+      val columns = if (maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f) 2 else 1
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.chunked(columns).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { item -> ShopItemCard(item, coins, onReport, Modifier.weight(1f).fillMaxHeight()) }
             }
         }
+      }
     }
 }
 
@@ -330,27 +293,25 @@ private fun ShopItemCard(
     val affordable = coins >= item.price
     SceneCard(
         modifier = modifier,
-        accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f),
+        accentColor = PageColors.Cream,
     ) {
-        Text(item.title, fontWeight = FontWeight.SemiBold)
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = strings.text("shop.stock").replace("{count}", item.stock.toString()),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = strings.text("shop.price").replace("{price}", item.price.toString()),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
+            if (item.artwork != null) Image(painterResource(item.artwork), null, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+            else Icon(item.icon, contentDescription = null, tint = PageColors.Shop, modifier = Modifier.size(40.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(item.title, style = PageType.Secondary, fontWeight = FontWeight.Bold)
+            }
         }
-        OutlinedButton(
+        Text(item.description, style = PageType.Secondary, color = PageColors.TextSecondary)
+        Text(strings.text("shop.stock").replace("{count}", item.stock.toString()), style = PageType.Secondary)
+        if (!affordable) Text(strings.text("shop.not_enough_coins"), style = PageType.Secondary, color = PageColors.Error)
+        Button(
             onClick = { onReport(item.onBuy()) },
             enabled = affordable,
+            accent = Color(0xFF186276),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
@@ -360,29 +321,13 @@ private fun ShopItemCard(
                         stateDescription = strings.text("shop.not_enough_coins")
                     }
                 },
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = InplaceXColors.Cobalt,
-                disabledContentColor = InplaceXColors.InkMuted,
-            ),
-            border = BorderStroke(
-                1.dp,
-                if (affordable) InplaceXColors.Cobalt else InplaceXColors.Outline,
-            ),
         ) {
             Text(
-                if (affordable) strings.text("shop.buy") else strings.text("shop.not_enough_coins"),
+                strings.text("shop.price").replace("{price}", item.price.toString()),
             )
         }
     }
 }
-
-@Composable
-private fun shellFilterChipColors() = FilterChipDefaults.filterChipColors(
-    containerColor = InplaceXColors.ToyCream.copy(alpha = 0.94f),
-    labelColor = InplaceXColors.ToyBrown,
-    selectedContainerColor = InplaceXColors.ToyOrange,
-    selectedLabelColor = InplaceXColors.White,
-)
 
 @Composable
 private fun PremiumCatalog(
@@ -400,12 +345,7 @@ private fun PremiumCatalog(
     onBuyTemporaryPro: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
-    Text(
-        text = strings.text("shop.premium"),
-        modifier = Modifier.semantics { heading() },
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-    )
+    PageSectionHeader(strings.text("shop.premium"))
     BillingStatusCard(
         state = billingState,
         inProgress = billingInProgress,
@@ -464,10 +404,10 @@ private fun BillingStatusCard(
         state.notice == BillingNotice.PRODUCT_ALREADY_ACTIVE
     SceneCard(
         accentColor = when {
-            positive -> InplaceXColors.Mint.copy(alpha = 0.12f)
+            positive -> PageColors.Success.copy(alpha = 0.12f)
             state.notice == BillingNotice.NONE && state.availability == BillingAvailability.READY ->
-                InplaceXColors.ToyCream.copy(alpha = 0.95f)
-            else -> InplaceXColors.Coral.copy(alpha = 0.10f)
+                PageColors.Cream
+            else -> PageColors.Error.copy(alpha = 0.10f)
         },
     ) {
         Text(
@@ -477,7 +417,7 @@ private fun BillingStatusCard(
                 state.availability == BillingAvailability.READY -> strings.text("shop.billing.ready")
                 else -> strings.text("shop.billing.unavailable")
             },
-            style = MaterialTheme.typography.bodyMedium,
+            style = PageType.Body,
             fontWeight = FontWeight.SemiBold,
         )
         when {
@@ -599,9 +539,9 @@ private fun TemporaryProCard(
 
     SceneCard(
         accentColor = if (active || includedInPermanent) {
-            InplaceXColors.Mint.copy(alpha = 0.12f)
+            PageColors.Success.copy(alpha = 0.12f)
         } else {
-            InplaceXColors.ToyCream.copy(alpha = 0.95f)
+            PageColors.Cream
         },
     ) {
         Row(
@@ -611,25 +551,26 @@ private fun TemporaryProCard(
         ) {
             Text(
                 text = strings.text("shop.product.temporary_pro"),
-                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+                style = PageType.CardTitle,
                 fontWeight = FontWeight.Bold,
             )
             Text(
                 text = strings.text("shop.price").replace("{price}", price),
                 style = MaterialTheme.typography.labelLarge,
-                color = InplaceXColors.ToyOrange,
+                color = PageColors.Text,
                 fontWeight = FontWeight.Bold,
             )
         }
         Text(
             text = strings.text("shop.product.temporary_pro.desc"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = PageType.Body,
+            color = PageColors.TextSecondary,
         )
         Text(
             text = status,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (active || includedInPermanent) InplaceXColors.Mint else InplaceXColors.InkMuted,
+            style = PageType.Body,
+            color = if (active || includedInPermanent) PageColors.Success else PageColors.TextSecondary,
             fontWeight = FontWeight.SemiBold,
         )
         Button(
@@ -663,9 +604,9 @@ private fun PremiumCard(
     val strings = LocalAppStrings.current
     SceneCard(
         accentColor = if (active) {
-            InplaceXColors.Mint.copy(alpha = 0.12f)
+            PageColors.Success.copy(alpha = 0.12f)
         } else {
-            InplaceXColors.ToyCream.copy(alpha = 0.95f)
+            PageColors.Cream
         },
     ) {
         Row(
@@ -675,7 +616,8 @@ private fun PremiumCard(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+                style = PageType.CardTitle,
                 fontWeight = FontWeight.Bold,
             )
             Text(
@@ -685,14 +627,14 @@ private fun PremiumCard(
                     priceLabel ?: strings.text("shop.premium.access")
                 },
                 style = MaterialTheme.typography.labelMedium,
-                color = if (active) InplaceXColors.Mint else InplaceXColors.InkMuted,
+                color = if (active) PageColors.Success else PageColors.TextSecondary,
                 fontWeight = FontWeight.SemiBold,
             )
         }
         Text(
             text = description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = PageType.Body,
+            color = PageColors.TextSecondary,
         )
         Button(
             onClick = onAction,

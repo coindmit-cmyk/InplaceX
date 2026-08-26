@@ -1,12 +1,14 @@
 package com.mirkori.inplacex.core.analysis
 
 private const val MAX_ENUMERATED_ASSIGNMENTS = 20_000L
+private const val MAX_GROUP_COMPARISONS = 16_384
+private const val MAX_DERIVED_GROUPS = 128
 
 /**
  * Pure exact-position evidence solver.
  *
  * The engine never mutates its inputs or keeps match state between calls. It
- * first applies local score bounds until no domain changes remain, then uses
+ * first applies local and subset-group score bounds until no domain changes remain, then uses
  * exhaustive enumeration only when the remaining Cartesian product is small
  * enough. Both stages are deterministic and therefore produce the same
  * result for the same evidence, regardless of collection implementation.
@@ -168,6 +170,10 @@ class EvidenceDeductionEngine(
             }
 
             if (contradictions.isEmpty()) {
+                changed = propagateGroupedScores(domains, attempts, contradictions) || changed
+            }
+
+            if (contradictions.isEmpty()) {
                 val enumeration = enumerateSolutions(domains, attempts)
                 if (enumeration != null) {
                     if (enumeration.isEmpty()) {
@@ -280,6 +286,82 @@ class EvidenceDeductionEngine(
             return false
         }
         return true
+    }
+
+    private data class MatchLiteral(val position: Int, val symbol: Char)
+
+    private data class ScoreGroup(val terms: Set<MatchLiteral>, val score: Int)
+
+    /**
+     * Each attempt is an exact sum of position/symbol match indicators. Subtract
+     * a contained sum from a larger one: A+B=1 and A=1 proves B=0 without
+     * selecting an arbitrary member of A. This works even when Cartesian search
+     * is too large. Budgets limit deductions, never relax evidence or invent facts.
+     */
+    private fun propagateGroupedScores(
+        domains: List<MutableSet<Char>>,
+        attempts: List<AcceptedAttemptEvidence>,
+        contradictions: MutableSet<AnalysisContradiction>,
+    ): Boolean {
+        val groups = mutableListOf<ScoreGroup>()
+        val known = linkedMapOf<Set<MatchLiteral>, Int>()
+        var changed = false
+
+        fun addGroup(terms: Set<MatchLiteral>, score: Int) {
+            val previous = known.putIfAbsent(terms, score)
+            if (score !in 0..terms.size || (previous != null && previous != score)) {
+                contradictions += AnalysisContradiction(
+                    type = ContradictionType.UNSATISFIABLE_EVIDENCE,
+                    message = "Conflicting exact scores for a position group",
+                )
+                return
+            }
+            if (previous != null || terms.isEmpty()) return
+            groups += ScoreGroup(terms, score)
+            when (score) {
+                0 -> terms.forEach { term ->
+                    changed = domains[term.position].remove(term.symbol) || changed
+                }
+                terms.size -> terms.forEach { term ->
+                    changed = domains[term.position].retainAll(setOf(term.symbol)) || changed
+                }
+            }
+        }
+
+        // Snapshot residual sums before propagation changes any domain.
+        val initialGroups = attempts.distinct().sortedWith(
+            compareBy<AcceptedAttemptEvidence> { it.guess }.thenBy { it.score },
+        ).map { attempt ->
+            var residual = attempt.score
+            val terms = linkedSetOf<MatchLiteral>()
+            attempt.guess.forEachIndexed { position, symbol ->
+                val domain = domains[position]
+                if (symbol in domain) {
+                    if (domain.size == 1) residual -= 1
+                    else terms += MatchLiteral(position, symbol)
+                }
+            }
+            ScoreGroup(terms, residual)
+        }
+        initialGroups.forEach { addGroup(it.terms, it.score) }
+        val maxGroups = groups.size + MAX_DERIVED_GROUPS
+        var comparisons = 0
+        var index = 0
+        while (index < groups.size && groups.size < maxGroups && contradictions.isEmpty()) {
+            val current = groups[index]
+            for (otherIndex in 0 until index) {
+                if (++comparisons > MAX_GROUP_COMPARISONS || groups.size >= maxGroups) return changed
+                val other = groups[otherIndex]
+                when {
+                    current.terms.containsAll(other.terms) ->
+                        addGroup(current.terms - other.terms, current.score - other.score)
+                    other.terms.containsAll(current.terms) ->
+                        addGroup(other.terms - current.terms, other.score - current.score)
+                }
+            }
+            index += 1
+        }
+        return changed
     }
 
     /** Returns null when enumeration would exceed the bounded pure-search budget. */

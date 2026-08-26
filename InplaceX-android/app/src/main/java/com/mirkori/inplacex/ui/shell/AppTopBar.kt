@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.ui.theme.FinalUiColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -119,10 +121,10 @@ private fun TopCircleAction(
         modifier = Modifier
             .size(44.dp),
         shape = RoundedCornerShape(14.dp),
-        color = FinalUiColors.Chrome,
+        color = PageColors.Chrome,
         contentColor = Color.White,
         tonalElevation = 0.dp,
-        shadowElevation = 3.dp,
+        shadowElevation = 4.dp,
         border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.62f)),
     ) {
         IconButton(onClick = onClick, modifier = Modifier.background(topBlueBrush())) {
@@ -149,7 +151,7 @@ private fun TopStatPill(
         color = Color.Transparent,
         contentColor = Color.White,
         tonalElevation = 0.dp,
-        shadowElevation = 3.dp,
+        shadowElevation = 4.dp,
         border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.58f)),
     ) {
         Row(
@@ -178,7 +180,7 @@ private fun TopStatPill(
                     color = InplaceXColors.ToyGreen,
                     contentColor = Color.White,
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.54f)),
-                    shadowElevation = 2.dp,
+                    shadowElevation = 0.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -205,7 +207,7 @@ private fun TopShopAction(
         shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
         contentColor = Color.White,
-        shadowElevation = 3.dp,
+        shadowElevation = 4.dp,
         border = BorderStroke(1.dp, FinalUiColors.ChromeBorder.copy(alpha = 0.58f)),
     ) {
         androidx.compose.foundation.layout.Row(
@@ -234,9 +236,9 @@ private fun TopShopAction(
 
 private fun topBlueBrush(): Brush = Brush.verticalGradient(
     listOf(
-        FinalUiColors.ChromeTop,
-        FinalUiColors.Chrome,
-        FinalUiColors.ChromeDeep,
+        PageColors.Chrome,
+        PageColors.Chrome,
+        PageColors.ChromeDark,
     ),
 )
 

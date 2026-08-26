@@ -48,6 +48,12 @@ state; opening a browser is never proof of payment.
   exchange and never places it in a URL or log; the InplaceX online backend
   never receives provider credentials, and provider subjects plus verification
   rules remain inside Mirkori Games Platform
+- native Google verification is also available from an already linked
+  LOCAL/TELEGRAM Platform session. The client does not treat these login methods
+  as mutually exclusive. Compatibility is determined by the Platform's verified
+  account/profile identity, never by matching email or local progress flags.
+  `authMode` identifies the current session method, not a complete inventory of
+  linked providers. No provider identity is linked or moved locally
 - a Google account that already owns an InplaceX profile first returns the
   fail-closed `profile_conflict`; Android keeps the Google credential only in
   memory while showing the explicit choice. `USE_EXISTING_PROFILE` switches the active
