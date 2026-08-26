@@ -136,13 +136,13 @@ internal fun CompanySceneScreen(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val compact = maxHeight < 650.dp || maxWidth < 360.dp
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth().testTag("company-mission-list"),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 4.dp),
             ) {
                 item(key = "page-hero") {
@@ -180,18 +180,13 @@ internal fun CompanySceneScreen(
                         onRewardClick = openChapterReward, compact = compact,
                     )
                 }
-                itemsIndexed(
-                    items = displayItems,
-                    key = { _, item -> item.definition.levelNumber },
-                ) { index, item ->
-                    CompanyMissionCard(
-                        strings = strings, item = item,
+                item(key = "forest-map") {
+                    CompanyMapRoute(
+                        strings = strings, items = displayItems,
                         selectedLevel = selectedLevel,
                         accessibleMaxLevel = accessibleMaxLevel,
                         highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                        requiredStars = requiredStars,
-                        first = index == 0, last = index == displayItems.lastIndex,
-                        compact = compact, onSelect = { selectedLevel = it },
+                        onSelect = { selectedLevel = it },
                     )
                 }
             }
@@ -202,6 +197,7 @@ internal fun CompanySceneScreen(
                 lockRequiresStars = selectedLevel > accessibleMaxLevel,
                 onBuyEnergy = onBuyEnergy, onPlay = { onPlay(selectedLevel) },
                 onRules = { showRules = true }, compact = compact,
+                definition = selectedItem.definition,
             )
         }
     }

@@ -2,6 +2,14 @@ package com.mirkori.inplacex.ui.screens.social
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalDensity
+import com.mirkori.inplacex.ui.screens.shared.ReferenceActionCard
+import com.mirkori.inplacex.ui.screens.shared.ContentCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -221,13 +229,35 @@ fun SocialRootScreen(
         modifier = Modifier.fillMaxSize(),
         scrollable = true,
     ) {
-        PageHeroCard(
-            title = strings.text("social.title"),
-            subtitle = strings.text("social.hero.subtitle"),
-            accent = PageColors.Friends,
-            icon = Icons.Outlined.Group,
-        ) {
+        Column(Modifier.fillMaxWidth().background(
+            Brush.horizontalGradient(listOf(Color.Black.copy(alpha = .48f), Color.Black.copy(alpha = .12f))),
+            RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(strings.text("social.title"), style = PageType.Title, color = Color.White,
+                modifier = Modifier.semantics { heading() })
+            Text(strings.text("social.hero.subtitle"), style = PageType.Secondary, color = Color.White)
             SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
+        }
+
+        ContentCard(Modifier.clickable { activeDestination = SocialDestination.FRIENDS }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(strings.text("social.friends"), style = PageType.CardTitle, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = { activeDestination = SocialDestination.FRIENDS }) {
+                Icon(Icons.Outlined.PersonAdd, contentDescription = strings.text("social.friends"))
+                }
+            }
+            if (friends.isEmpty()) {
+                Text(strings.text("social.friends.empty"), style = PageType.Secondary)
+            } else {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    friends.forEach { friend ->
+                        Column(Modifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            PlayerAvatar(friend.targetDisplayName, null, Modifier.size(52.dp),
+                                onClick = { activeDestination = SocialDestination.FRIENDS })
+                            Text(friend.targetDisplayName, style = PageType.Secondary, maxLines = 1)
+                        }
+                    }
+                }
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -244,36 +274,39 @@ fun SocialRootScreen(
                 }
             }
             FriendRequestInbox(incomingFriendRequests, onAcceptFriendRequest)
-            PrimaryActionTile(
-                title = strings.text("social.friends"),
-                subtitle = strings.text("social.friends.subtitle"),
-                icon = Icons.Outlined.Group,
-                accent = PageColors.Friends,
-                onClick = { activeDestination = SocialDestination.FRIENDS },
-            )
-            PrimaryActionTile(
+            BoxWithConstraints {
+              val stacked = maxWidth < 320.dp || LocalDensity.current.fontScale > 1.2f
+              val invite: @Composable (Modifier) -> Unit = { tileModifier -> ReferenceActionCard(
                 title = strings.text("social.invites"),
                 subtitle = strings.text("social.invites.guide"),
                 icon = Icons.Outlined.MailOutline,
                 accent = PageColors.Friends,
+                modifier = tileModifier,
                 enabled = onlineRuntime != null,
                 onClick = {
                     selectedFriend = null
                     autoAcceptInviteCode = null
                     activeDestination = SocialDestination.INVITES
                 },
-            )
-            PrimaryActionTile(
+              ) }
+              val match: @Composable (Modifier) -> Unit = { tileModifier -> ReferenceActionCard(
                 title = strings.text("social.online.title"),
                 subtitle = strings.text("social.online.description"),
                 icon = Icons.Outlined.EmojiEvents,
+                modifier = tileModifier,
                 enabled = onlineRuntime != null,
-                accent = PageColors.Friends,
+                accent = PageColors.Primary,
                 onClick = {
                     quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
                     activeDestination = SocialDestination.ONLINE_MATCH
                 },
-            )
+              ) }
+              if (stacked) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                  invite(Modifier.fillMaxWidth()); match(Modifier.fillMaxWidth())
+              } else Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                  invite(Modifier.weight(1f)); match(Modifier.weight(1f))
+              }
+            }
         }
     }
 }

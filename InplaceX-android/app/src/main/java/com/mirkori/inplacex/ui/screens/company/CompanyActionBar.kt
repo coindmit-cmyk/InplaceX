@@ -59,8 +59,17 @@ internal fun CompanyActionBar(
     onPlay: () -> Unit,
     onRules: () -> Unit,
     compact: Boolean,
+    definition: CampaignLevelDefinition? = null,
 ) {
     StickyActionBar {
+        // Small windows prioritize the route; the same objective remains in the rules dialog.
+        definition?.takeUnless { compact }?.let {
+            Text(strings.text(missionTitleKey(it)), style = PageType.CardTitle)
+            Text(strings.text("company.mission.objective")
+                .replace("{digits}", it.config.codeLength.toString())
+                .replace("{moves}", it.config.attemptLimit.toString()),
+                style = PageType.Secondary, color = PageColors.TextSecondary)
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

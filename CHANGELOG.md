@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Reference-guided Android menus now use glossy colored headers, warm beveled
+  cards, paired social actions, an illustrated interactive campaign route,
+  two-column supply cards, and a compact blue account card. Menu chrome avoids
+  system bars; large-font layouts stack actions and products. Real account,
+  stock, pricing and unlock rules are preserved; no reference-only XP or fake
+  friend presence is introduced. New artwork provenance is documented.
+
 - Пять основных страниц используют общие кремовые карточки, типографику,
   кнопки и отступы. Друзья и заявки получили единый фиолетовый акцент;
   Магазин — карточки товаров и общие вкладки; Профиль — шапку и равную сетку

@@ -27,6 +27,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -258,21 +263,21 @@ fun ProfileRootScreen(
                 PlayerAvatar(
                     displayName = visibleDisplayName,
                     avatarUrl = publicPlayerProfile?.avatarUrl,
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(78.dp),
                     onClick = if (mirkoriAccountState.gamePlayerId == null) null else {
                         { avatarDialogOpen = true }
                     },
                 )
             },
         ) {
-            PageStatusPill(
-                label = when (mirkoriAccountState.kind) {
+            Text(
+                text = when (mirkoriAccountState.kind) {
                     MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected.short")
                     MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest.short")
                     MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
                     MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable.short")
                 },
-                accent = PageColors.Profile,
+                style = PageType.Secondary, color = Color.White,
             )
 
             if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) Text(
@@ -283,7 +288,7 @@ fun ProfileRootScreen(
                     MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
                 },
                 style = PageType.Secondary,
-                color = PageColors.TextSecondary,
+                color = Color.White.copy(alpha = .92f),
             )
 
             mirkoriAccountState.gamePlayerId?.let { playerId ->
@@ -298,16 +303,16 @@ fun ProfileRootScreen(
                 ) {
                     Text(strings.text("profile.mirkori.handle.change"))
                 }
-                Text(
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(
                     text = strings.text("profile.mirkori.player_id").replace("{id}", playerId.takeLast(8)),
-                    style = PageType.Secondary,
-                    color = PageColors.TextSecondary,
-                )
-                OutlinedButton(
+                    style = PageType.Secondary, color = Color.White.copy(alpha = .92f), modifier = Modifier.weight(1f),
+                  )
+                  IconButton(
                     onClick = { clipboardManager.setText(AnnotatedString(playerId)) },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.mirkori.copy_player_id"))
+                  ) {
+                    Icon(Icons.Outlined.ContentCopy, contentDescription = strings.text("profile.mirkori.copy_player_id"), tint = Color.White)
+                  }
                 }
             }
 
@@ -370,6 +375,8 @@ fun ProfileRootScreen(
                 title = strings.text("profile.google_play.title"),
                 message = strings.text(if (googleConnected) {
                     "profile.google_play.connected"
+                } else if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
+                    "profile.google_play.mirkori_connected"
                 } else {
                     "profile.google_play.disconnected"
                 }),

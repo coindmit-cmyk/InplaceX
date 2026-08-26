@@ -66,32 +66,21 @@ internal fun CompanyScreenHeader(
     onHistory: () -> Unit,
     onBuyEnergy: () -> Unit,
 ) {
-    PageHeroCard(
-        title = strings.text("company.title"),
-        subtitle = strings.text("company.scene.subtitle"),
-        accent = PageColors.Company,
-        icon = Icons.Outlined.EmojiEvents,
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PageSecondaryButton(
+    Surface(shape = RoundedCornerShape(18.dp), color = Color.Transparent, contentColor = Color.White,
+        border = BorderStroke(1.dp, Color(0xFF75B8C9)), shadowElevation = 3.dp) {
+        Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF12677B), PageColors.ChromeDark)))
+            .padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.EmojiEvents, null, tint = Color(0xFFFFD36B), modifier = Modifier.size(32.dp))
+            Text(strings.text("company.title"), style = PageType.Title, modifier = Modifier.weight(1f).padding(start = 10.dp))
+            IconButton(
                 onClick = onRetentionRewards,
-                modifier = Modifier.weight(1f).testTag("company-retention-rewards"),
+                modifier = Modifier.testTag("company-retention-rewards"),
             ) {
-                Icon(Icons.Outlined.CardGiftcard, contentDescription = null,
-                    tint = if (retentionRewardAvailable) PageColors.Text else PageColors.Primary,
-                    modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(strings.text("company.retention.action"))
+                Icon(Icons.Outlined.CardGiftcard, contentDescription = strings.text("company.retention.action"),
+                    tint = if (retentionRewardAvailable) Color(0xFFFFD36B) else Color.White)
             }
-            PageSecondaryButton(onClick = onHistory, modifier = Modifier.weight(1f).testTag("company-history")) {
-                Icon(Icons.Outlined.History, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(strings.text("company.scene.history"))
-            }
-        }
-        if (chapterRewardLabel != null && onChapterReward != null) {
-            PageSecondaryButton(onClick = onChapterReward, modifier = Modifier.fillMaxWidth().testTag("company-chapter-reward")) {
-                Text(chapterRewardLabel)
+            IconButton(onClick = onHistory, modifier = Modifier.testTag("company-history")) {
+                Icon(Icons.Outlined.History, contentDescription = strings.text("company.scene.history"))
             }
         }
     }
@@ -106,7 +95,8 @@ internal fun CompanyChapterNavigator(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
-    ContentCard {
+    Surface(shape = RoundedCornerShape(16.dp), color = PageColors.Cream, contentColor = PageColors.Text,
+        border = BorderStroke(1.dp, PageColors.Border)) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,37 +154,31 @@ internal fun CompanyChapterHero(
     val progress = (totalStars.toFloat() / target.toFloat()).coerceIn(0f, 1f)
 
     ContentCard {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Outlined.Star, contentDescription = null, tint = PageColors.Text)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+          Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 strings.text("company.chapter.progress")
                     .replace("{current}", totalStars.toString())
                     .replace("{required}", requiredStars.toString()),
-                style = PageType.CardTitle,
-                modifier = Modifier.weight(1f),
+                style = PageType.Secondary,
             )
-        }
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp),
-            color = PageColors.Company,
+            color = PageColors.Success,
             trackColor = PageColors.CreamSecondary,
         )
-        Text(
-            strings.text(if (nextBlockLocked) "company.scene.locked" else "company.scene.unlocked"),
-            style = PageType.Secondary, color = PageColors.TextSecondary,
-        )
+          }
         PageSecondaryButton(
             onClick = onRewardClick,
-            modifier = Modifier.fillMaxWidth().testTag("company-chapter-reward"),
+            modifier = Modifier.testTag("company-chapter-reward"),
         ) {
-            Icon(Icons.Outlined.CardGiftcard, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(strings.text(when {
+            Icon(Icons.Outlined.CardGiftcard, contentDescription = strings.text(when {
                 rewardClaimed -> "company.chapter.reward.claimed"
                 rewardAvailable -> "company.chapter.reward.available"
                 else -> "company.chapter.reward"
-            }))
+            }), modifier = Modifier.size(32.dp), tint = PageColors.Shop)
+        }
         }
     }
 }

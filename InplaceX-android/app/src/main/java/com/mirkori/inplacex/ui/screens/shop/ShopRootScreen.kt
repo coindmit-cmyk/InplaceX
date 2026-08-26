@@ -1,6 +1,15 @@
 package com.mirkori.inplacex.ui.screens.shop
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import com.mirkori.inplacex.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -108,14 +117,9 @@ fun ShopRootScreen(
         PageHeroCard(
             title = strings.text("shop.title"),
             subtitle = strings.text("shop.hero.subtitle"),
-            accent = PageColors.Shop,
+            accent = PageColors.Friends,
             icon = Icons.Outlined.ShoppingBag,
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PageStatusPill("${strings.text("top.coins")} · ${progressState.coins}", PageColors.Shop, Modifier.weight(1f))
-                PageStatusPill("${strings.text("top.energy")} · ${progressState.campaignEnergy}/${progressState.campaignEnergyMax}", PageColors.Shop, Modifier.weight(1f))
-            }
-        }
+        )
         SegmentedControl(
             options = listOf(strings.text("shop.tab.boosts"), strings.text("shop.tab.premium")),
             selectedIndex = category.ordinal,
@@ -173,11 +177,15 @@ private fun BoostsCatalog(
     onBuyEnergy: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
-    StatusCard(
+    PageHeroCard(
         title = strings.text("shop.rewarded.title"),
-        message = strings.text("shop.rewarded.coins"),
-        accent = PageColors.Shop,
+        subtitle = strings.text("shop.rewarded.coins"),
+        accent = PageColors.Friends,
         icon = Icons.Outlined.PlayCircle,
+        leading = {
+            Image(painterResource(R.drawable.reward_coins_v7), null,
+                Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)))
+        },
     ) {
         Button(
             onClick = { onWatchRewardedCoins(onReport) },
@@ -198,7 +206,7 @@ private fun BoostsCatalog(
                 20,
                 onBuyOpenPositionHint,
                 strings.text("shop.item.open_position.desc"),
-                Icons.Outlined.Lightbulb,
+                Icons.Outlined.Lightbulb, R.drawable.ic_hint_open_position,
             ),
             ShopItem(
                 strings.text("shop.item.check_digit"),
@@ -206,7 +214,7 @@ private fun BoostsCatalog(
                 15,
                 onBuyCheckDigitHint,
                 strings.text("shop.item.check_digit.desc"),
-                Icons.Outlined.Search,
+                Icons.Outlined.Search, R.drawable.ic_hint_check_digit,
             ),
             ShopItem(
                 strings.text("shop.item.check_position"),
@@ -214,7 +222,7 @@ private fun BoostsCatalog(
                 25,
                 onBuyCheckPositionHint,
                 strings.text("shop.item.check_position.desc"),
-                Icons.Outlined.Pin,
+                Icons.Outlined.Pin, R.drawable.ic_hint_check_position,
             ),
             ShopItem(
                 strings.text("shop.item.extra_moves"),
@@ -222,7 +230,7 @@ private fun BoostsCatalog(
                 30,
                 onBuyExtraMovesBoost,
                 strings.text("shop.item.extra_moves.desc"),
-                Icons.Outlined.AddCircleOutline,
+                Icons.Outlined.AddCircleOutline, R.drawable.ic_boost_extra_moves,
             ),
             ShopItem(
                 strings.text("shop.item.extra_time"),
@@ -230,7 +238,7 @@ private fun BoostsCatalog(
                 30,
                 onBuyExtraTimeBoost,
                 strings.text("shop.item.extra_time.desc"),
-                Icons.Outlined.Timer,
+                Icons.Outlined.Timer, R.drawable.ic_boost_extra_time,
             ),
             ShopItem(
                 strings.text("shop.item.energy"),
@@ -253,6 +261,7 @@ private data class ShopItem(
     val onBuy: () -> Boolean,
     val description: String,
     val icon: ImageVector,
+    val artwork: Int? = null,
 )
 
 @Composable
@@ -261,8 +270,15 @@ private fun ShopItemGrid(
     coins: Int,
     onReport: (Boolean) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.forEach { item -> ShopItemCard(item, coins, onReport) }
+    BoxWithConstraints {
+      val columns = if (maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f) 2 else 1
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.chunked(columns).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { item -> ShopItemCard(item, coins, onReport, Modifier.weight(1f).fillMaxHeight()) }
+            }
+        }
+      }
     }
 }
 
@@ -283,20 +299,19 @@ private fun ShopItemCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Surface(shape = RoundedCornerShape(16.dp), color = PageColors.CreamSecondary) {
-                Icon(item.icon, contentDescription = null, tint = PageColors.Text,
-                    modifier = Modifier.padding(12.dp).size(28.dp))
-            }
+            if (item.artwork != null) Image(painterResource(item.artwork), null, Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+            else Icon(item.icon, contentDescription = null, tint = PageColors.Shop, modifier = Modifier.size(40.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(item.title, style = PageType.CardTitle)
-                Text(strings.text("shop.price").replace("{price}", item.price.toString()), style = PageType.Secondary)
+                Text(item.title, style = PageType.Secondary, fontWeight = FontWeight.Bold)
             }
         }
-        Text(item.description, style = PageType.Body, color = PageColors.TextSecondary)
+        Text(item.description, style = PageType.Secondary, color = PageColors.TextSecondary)
         Text(strings.text("shop.stock").replace("{count}", item.stock.toString()), style = PageType.Secondary)
+        if (!affordable) Text(strings.text("shop.not_enough_coins"), style = PageType.Secondary, color = PageColors.Error)
         Button(
             onClick = { onReport(item.onBuy()) },
             enabled = affordable,
+            accent = Color(0xFF186276),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
@@ -308,7 +323,7 @@ private fun ShopItemCard(
                 },
         ) {
             Text(
-                if (affordable) strings.text("shop.buy") else strings.text("shop.not_enough_coins"),
+                strings.text("shop.price").replace("{price}", item.price.toString()),
             )
         }
     }

@@ -30,6 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -63,7 +67,11 @@ fun ContentCard(
             Column(
                 modifier = Modifier.background(
                     Brush.verticalGradient(listOf(opaqueColor, PageColors.CreamSecondary.copy(alpha = .28f).compositeOver(opaqueColor))),
-                ).padding(PageDimens.Margin),
+                ).drawWithContent {
+                    drawContent()
+                    drawLine(Color.White.copy(alpha = .65f), Offset(16.dp.toPx(), 2.dp.toPx()),
+                        Offset(size.width - 16.dp.toPx(), 2.dp.toPx()), 1.dp.toPx())
+                }.padding(PageDimens.Margin),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content,
             )
@@ -82,27 +90,35 @@ fun PageHeroCard(
     leading: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit = {},
 ) {
-    ContentCard(modifier.heightIn(min = 120.dp), radius = PageDimens.HeroRadius) {
+    Surface(
+        modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(PageDimens.HeroRadius),
+        color = Color.Transparent, contentColor = Color.White,
+        border = BorderStroke(1.dp, Color(0xFF69B7E2)), shadowElevation = 4.dp,
+    ) {
+      Column(Modifier.background(Brush.linearGradient(listOf(accent, PageColors.ChromeDark)))
+          .padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (leading != null) leading() else if (icon != null) {
-                Surface(shape = RoundedCornerShape(PageDimens.InnerRadius), color = accent, contentColor = Color.White) {
-                    Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = null, modifier = Modifier.size(30.dp))
+                Surface(shape = RoundedCornerShape(PageDimens.InnerRadius), color = Color.White.copy(alpha = .12f), contentColor = Color(0xFFFFD16D)) {
+                    Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                        Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
                     }
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, modifier = titleModifier.semantics { heading() }, style = PageType.Title)
-                if (subtitle.isNotBlank()) Text(subtitle, style = PageType.Subtitle, color = PageColors.TextSecondary)
+                if (subtitle.isNotBlank()) Text(subtitle, style = PageType.Secondary, color = Color.White.copy(alpha = .94f))
             }
         }
         content()
+      }
     }
 }
 
 @Composable
 fun PageSectionHeader(title: String, modifier: Modifier = Modifier) {
-    ContentCard(modifier) { Text(title, style = PageType.Section, modifier = Modifier.semantics { heading() }) }
+    Text(title, color = Color.White, style = PageType.CardTitle,
+        modifier = modifier.padding(vertical = 2.dp).semantics { heading() })
 }
 
 @Composable
@@ -117,7 +133,9 @@ fun PrimaryActionTile(
 ) = SceneActionTile(
     title = title, subtitle = subtitle, leadingIcon = icon,
     trailingIcon = Icons.Outlined.ChevronRight, modifier = modifier,
-    enabled = enabled, accentBrush = Brush.verticalGradient(listOf(accent, accent.copy(alpha = .94f), accent)),
+    enabled = enabled, accentBrush = Brush.verticalGradient(listOf(
+        Color.White.copy(alpha = .13f).compositeOver(accent), accent,
+        Color.Black.copy(alpha = .38f).compositeOver(accent))),
     onClick = onClick,
 )
 
@@ -153,10 +171,10 @@ fun PageStatusPill(label: String, accent: Color = PageColors.Profile, modifier: 
 
 @Composable
 fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
-    ContentCard(modifier.heightIn(min = 108.dp)) {
-        Text(label, style = PageType.Secondary, color = PageColors.TextSecondary, minLines = 2)
+    ContentCard(modifier.heightIn(min = 84.dp)) {
+        Text(label, style = PageType.Secondary, color = PageColors.TextSecondary)
         Spacer(Modifier.weight(1f))
-        Text(value, style = PageType.Title)
+        Text(value, style = PageType.Title.copy(fontSize = 24.sp))
     }
 }
 
@@ -203,15 +221,21 @@ fun PagePrimaryButton(
     accent: Color = PageColors.Primary,
     content: @Composable RowScope.() -> Unit,
 ) {
-    Button(
-        onClick = onClick, enabled = enabled,
+    Surface(onClick = onClick, enabled = enabled,
         modifier = modifier.heightIn(min = PageDimens.TouchTarget),
-        shape = RoundedCornerShape(PageDimens.ButtonRadius),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = accent, contentColor = Color.White,
-            disabledContainerColor = PageColors.CreamSecondary, disabledContentColor = PageColors.TextSecondary,
-        ),
-    ) { ProvideTextStyle(PageType.Button) { content() } }
+        shape = RoundedCornerShape(PageDimens.ButtonRadius), color = Color.Transparent,
+        contentColor = if (enabled) Color.White else PageColors.TextSecondary,
+        border = BorderStroke(1.dp, if (enabled) Color.White.copy(alpha = .55f) else PageColors.Border),
+        shadowElevation = if (enabled) 2.dp else 0.dp,
+    ) {
+        Row(Modifier.background(Brush.verticalGradient(if (enabled) listOf(
+            Color.White.copy(alpha = .18f).compositeOver(accent), accent,
+            Color.Black.copy(alpha = .25f).compositeOver(accent))
+            else listOf(PageColors.Cream, PageColors.CreamSecondary)))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+        ) { ProvideTextStyle(PageType.Button) { content() } }
+    }
 }
 
 @Composable

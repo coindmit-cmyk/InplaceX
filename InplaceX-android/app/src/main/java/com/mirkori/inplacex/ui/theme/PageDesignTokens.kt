@@ -26,12 +26,12 @@ object PageColors {
 }
 
 object PageDimens {
-    val Margin = 16.dp
-    val Gap = 12.dp
-    val HeroRadius = 24.dp
-    val CardRadius = 20.dp
-    val InnerRadius = 16.dp
-    val ButtonRadius = 16.dp
+    val Margin = 12.dp
+    val Gap = 10.dp
+    val HeroRadius = 18.dp
+    val CardRadius = 16.dp
+    val InnerRadius = 12.dp
+    val ButtonRadius = 12.dp
     val PillRadius = 14.dp
     val Elevation = 4.dp
     val TouchTarget = 48.dp

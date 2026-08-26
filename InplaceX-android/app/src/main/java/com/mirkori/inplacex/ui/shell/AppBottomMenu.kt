@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -118,6 +120,9 @@ private fun BottomMenuItem(
             null
         }
     ) {
+      BoxWithConstraints(Modifier.fillMaxSize()) {
+        val navigationStyle = if (maxWidth < 72.dp && LocalDensity.current.fontScale > 1.2f)
+            PageType.Navigation.copy(fontSize = 9.sp) else PageType.Navigation
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -145,11 +150,12 @@ private fun BottomMenuItem(
             Text(
                 text = title,
                 textAlign = TextAlign.Center,
-                style = PageType.Navigation,
+                style = navigationStyle,
                 color = if (selected) Color.White else InplaceXColors.ToyCream,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1
             )
         }
+      }
     }
 }

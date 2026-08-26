@@ -12,6 +12,9 @@ import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.ModeStats
+import com.mirkori.inplacex.data.local.LocalSocialRelationship
+import com.mirkori.inplacex.data.local.LocalRelationshipType
+import com.mirkori.inplacex.data.local.LocalRelationshipStatus
 import com.mirkori.inplacex.platform.localization.*
 import com.mirkori.inplacex.platform.mirkori.*
 import com.mirkori.inplacex.ui.navigation.AppSection
@@ -23,6 +26,11 @@ import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.*
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
+import com.mirkori.inplacex.R
+import com.mirkori.inplacex.ui.background.ScreenBackgroundStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -50,6 +58,11 @@ class UnifiedPagesVisualTest {
                         currentSection = section.value,
                         onSectionChange = { section.value = it },
                         centerMode = CenterLayerMode.TRANSPARENT,
+                        backgroundStyle = ScreenBackgroundStyle.DrawableResource(R.drawable.toy_room_bg_v6, Color(0xFF9C632C)),
+                        topMode = TopLayerMode.OVERLAY,
+                        topContent = {
+                            AppTopBar(5, 5, 10146, false, true, {}, {}, {})
+                        },
                     ) {
                         when (section.value) {
                             AppSection.HOME -> HomeRootScreen(
@@ -57,6 +70,11 @@ class UnifiedPagesVisualTest {
                                 onScreenStateChange = {},
                             )
                             AppSection.SOCIAL -> SocialRootScreen(
+                                friends = listOf("Mirik", "Lina", "Alexey", "Kate").mapIndexed { i, name ->
+                                    LocalSocialRelationship(playerId = "visual-player", targetPlayerId = "fixture-$i",
+                                        targetDisplayName = name, relationshipType = LocalRelationshipType.FRIEND,
+                                        status = LocalRelationshipStatus.ACTIVE)
+                                },
                                 incomingFriendRequests = listOf(MirkoriFriendRequest(
                                     "visual-request",
                                     MirkoriPublicPlayerProfile("visual-player", "friend", "Friendly Player", null),
@@ -87,14 +105,14 @@ class UnifiedPagesVisualTest {
         }
         for (page in AppSection.entries) {
             composeRule.runOnIdle { section.value = page }
-            capture("v6-${language.name.lowercase()}-$fontScale-${page.name.lowercase()}")
+            capture("v7-${language.name.lowercase()}-$fontScale-${page.name.lowercase()}")
             when (page) {
                 AppSection.HOME -> composeRule.onNode(hasText(strings.text("home.company.continue")) and hasText(strings.text("home.company.teaser")))
                     .performScrollTo().assertIsDisplayed()
                 AppSection.SOCIAL -> {
                     composeRule.onNodeWithTag("friend-requests-open").performScrollTo().performClick()
                     composeRule.onNodeWithTag("friend-request-accept-visual-request").assertIsDisplayed()
-                    capture("v6-${language.name.lowercase()}-$fontScale-request")
+                    capture("v7-${language.name.lowercase()}-$fontScale-request")
                     composeRule.onNodeWithText(strings.text("social.friend.search.close")).performClick()
                     composeRule.onNodeWithText(strings.text("social.online.title")).performScrollTo().assertIsDisplayed()
                 }
@@ -108,14 +126,14 @@ class UnifiedPagesVisualTest {
                     composeRule.onNodeWithText(strings.text("shop.item.energy")).performScrollTo().assertIsDisplayed()
                     composeRule.onNodeWithText(strings.text("shop.tab.premium")).performScrollTo().performClick()
                     composeRule.onNodeWithText(strings.text("shop.product.temporary_pro")).performScrollTo().assertIsDisplayed()
-                    capture("v6-${language.name.lowercase()}-$fontScale-premium")
+                    capture("v7-${language.name.lowercase()}-$fontScale-premium")
                 }
                 AppSection.PROFILE -> {
-                    composeRule.onNodeWithText("10146").performScrollTo().assertIsDisplayed()
+                    composeRule.onNodeWithText(strings.text("profile.overview")).performScrollTo().assertIsDisplayed()
                     val left = composeRule.onNodeWithText("2").fetchSemanticsNode().boundsInRoot
                     val right = composeRule.onNodeWithText("6").fetchSemanticsNode().boundsInRoot
                     assertEquals("Stat values must share a baseline", left.top, right.top, 1f)
-                    capture("v6-${language.name.lowercase()}-$fontScale-stats")
+                    capture("v7-${language.name.lowercase()}-$fontScale-stats")
                     composeRule.onNodeWithText(strings.text("profile.membership")).performScrollTo().assertIsDisplayed()
                 }
             }

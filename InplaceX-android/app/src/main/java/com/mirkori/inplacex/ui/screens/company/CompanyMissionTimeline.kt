@@ -413,7 +413,7 @@ private fun MissionDetails(
     }
 }
 
-private fun missionTitleKey(level: CampaignLevelDefinition): String {
+internal fun missionTitleKey(level: CampaignLevelDefinition): String {
     return when (level.blockRole) {
         CampaignBlockRole.STANDARD -> "company.mission.title.standard"
         CampaignBlockRole.SPIKE -> "company.mission.title.spike"

@@ -21,11 +21,11 @@ class PageDesignTokensTest {
     }
 
     @Test fun pageSizingMatchesOwnerContractWithoutChangingGameplay() {
-        assertEquals(16.dp, PageDimens.Margin)
-        assertEquals(12.dp, PageDimens.Gap)
+        assertEquals(12.dp, PageDimens.Margin)
+        assertEquals(10.dp, PageDimens.Gap)
         assertEquals(48.dp, PageDimens.TouchTarget)
-        assertEquals(24.dp, PageDimens.HeroRadius)
-        assertEquals(20.dp, PageDimens.CardRadius)
+        assertEquals(18.dp, PageDimens.HeroRadius)
+        assertEquals(16.dp, PageDimens.CardRadius)
         assertEquals(14.dp, FinalUiDimens.PanelRadius)
         assertEquals(10.dp, FinalUiDimens.ButtonRadius)
     }
