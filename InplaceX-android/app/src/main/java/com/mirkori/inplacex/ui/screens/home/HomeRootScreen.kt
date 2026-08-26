@@ -62,6 +62,12 @@ import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentAttempt
 import com.mirkori.inplacex.ui.screens.game.state.GameFieldOpponentProgressState
 import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.theme.FinalUiColors
+import com.mirkori.inplacex.ui.theme.PageType
+import com.mirkori.inplacex.ui.theme.PageColors
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Alignment
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -772,23 +778,24 @@ private fun HomeSelectionScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+
     ) {
         val compact = maxWidth < 560.dp || maxHeight < 620.dp
-        val heroSpacing = if (compact) 10.dp else maxHeight * 0.022f
-        val scrollModifier = if (compact) {
-            Modifier.verticalScroll(rememberScrollState())
-        } else {
-            Modifier
-        }
+        val heroSpacing = 12.dp
+        val scrollModifier = Modifier.verticalScroll(rememberScrollState())
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .then(scrollModifier)
-                .padding(horizontal = 10.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(heroSpacing),
         ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
             Text(
                 text = buildAnnotatedString {
                     append("Inplace")
@@ -799,11 +806,9 @@ private fun HomeSelectionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics { heading() },
-                style = if (compact) {
-                    MaterialTheme.typography.displaySmall
-                } else {
-                    MaterialTheme.typography.displayMedium
-                },
+                style = MaterialTheme.typography.displaySmall.copy(
+                    shadow = Shadow(PageColors.ChromeDark, Offset(0f, 3f), 8f),
+                ),
                 color = Color.White,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
@@ -811,14 +816,14 @@ private fun HomeSelectionScreen(
             Text(
                 text = strings.text("home.subtitle"),
                 modifier = Modifier.fillMaxWidth(),
-                fontSize = 14.sp,
-                lineHeight = 18.sp,
+                style = PageType.Subtitle.copy(shadow = Shadow(PageColors.ChromeDark, Offset(0f, 2f), 5f)),
                 color = InplaceXColors.ToyCream,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )
 
-            if (compact) {
+            }
+
                 SceneActionTile(
                     title = strings.text(pveMode.titleKey),
                     subtitle = strings.text(pveMode.subtitleKey),
@@ -856,50 +861,6 @@ private fun HomeSelectionScreen(
                     subtitleMaxLines = 2,
                     onClick = onOpenPvp
                 )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    SceneActionTile(
-                        title = strings.text(pveMode.titleKey),
-                        subtitle = strings.text(pveMode.subtitleKey),
-                        modifier = Modifier.weight(1f),
-                        leadingIcon = Icons.Outlined.Timer,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(
-                                FinalUiColors.ModeOrangeTop,
-                                FinalUiColors.ModeOrange,
-                                FinalUiColors.ModeOrangeDeep,
-                            )
-                        ),
-                        contentColor = FinalUiColors.WarmText,
-                        singleLineTitle = true,
-                        compact = true,
-                        subtitleMaxLines = 2,
-                        onClick = onOpenPve,
-                    )
-                    SceneActionTile(
-                        title = strings.text(pvpMode.titleKey),
-                        subtitle = strings.text(pvpMode.subtitleKey),
-                        modifier = Modifier.weight(1f),
-                        leadingIcon = Icons.Outlined.Groups,
-                        trailingIcon = Icons.Outlined.ChevronRight,
-                        accentBrush = Brush.verticalGradient(
-                            listOf(
-                                FinalUiColors.ModePurpleTop,
-                                FinalUiColors.ModePurple,
-                                FinalUiColors.ModePurpleDeep,
-                            )
-                        ),
-                        singleLineTitle = true,
-                        compact = true,
-                        subtitleMaxLines = 2,
-                        onClick = onOpenPvp,
-                    )
-                }
-            }
 
             SceneActionTile(
                 title = strings.text("home.company.continue"),
@@ -920,9 +881,6 @@ private fun HomeSelectionScreen(
                 onClick = onOpenCompany,
             )
 
-            if (!compact) {
-                Spacer(modifier = Modifier.weight(1f))
-            }
         }
     }
 }

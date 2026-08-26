@@ -45,6 +45,8 @@ import com.mirkori.inplacex.core.campaign.CampaignDifficultyTier
 import com.mirkori.inplacex.core.campaign.CampaignLevelDefinition
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 
 @Composable
 internal fun CompanyMissionTimelineItem(
@@ -92,10 +94,7 @@ internal fun CompanyMissionTimelineItem(
             modifier = Modifier
                 .weight(1f)
                 .padding(bottom = 8.dp)
-                .shadow(
-                    elevation = if (selected) 12.dp else 6.dp,
-                    shape = RoundedCornerShape(if (selected) 22.dp else 19.dp),
-                )
+
                 .semantics {
                     this.selected = selected
                     stateDescription = stateText
@@ -103,13 +102,13 @@ internal fun CompanyMissionTimelineItem(
                 }
                 .testTag("company-level-${definition.levelNumber}")
                 .clickable(role = Role.Button, onClick = onSelect),
-            shape = RoundedCornerShape(if (selected) 22.dp else 19.dp),
-            color = InplaceXColors.ToyCream,
+            shape = RoundedCornerShape(20.dp),
+            color = PageColors.Cream,
             border = BorderStroke(
-                width = if (selected) 3.dp else 2.dp,
-                color = if (selected) InplaceXColors.ToyOrangeTop else InplaceXColors.ToyCreamShadow,
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) InplaceXColors.ToyOrangeTop else PageColors.Border,
             ),
-            shadowElevation = 3.dp,
+            shadowElevation = 4.dp,
         ) {
             Column(
                 modifier = Modifier
@@ -118,11 +117,11 @@ internal fun CompanyMissionTimelineItem(
                             colors = if (selected) {
                                 listOf(Color(0xFFFFF8E8), Color(0xFFFFEAC0))
                             } else {
-                                listOf(InplaceXColors.ToyCream, Color(0xFFFFE9C3))
+                                listOf(PageColors.Cream, Color(0xFFFFE9C3))
                             },
                         ),
                     )
-                    .padding(horizontal = if (compact) 11.dp else 14.dp, vertical = 10.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 Row(
@@ -133,11 +132,10 @@ internal fun CompanyMissionTimelineItem(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = strings.text(missionTitleKey(definition)),
-                            color = InplaceXColors.ToyBrown,
-                            style = MaterialTheme.typography.titleMedium,
+                            color = PageColors.Text,
+                            style = PageType.CardTitle,
                             fontWeight = FontWeight.Black,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 2,
                         )
                         Text(
                             text = strings.text(difficultyKey(definition.difficultyTier)),
@@ -227,16 +225,16 @@ private fun TimelineLevelBadge(
     compact: Boolean,
 ) {
     val badgeTop = when {
-        selected -> InplaceXColors.ToyGreenTop
-        completed -> InplaceXColors.ToyBlueTop
+        selected -> PageColors.Company
+        completed -> PageColors.CreamSecondary
         locked -> Color(0xFFB2A58D)
-        else -> InplaceXColors.ToyBlueTop
+        else -> PageColors.CreamSecondary
     }
     val badgeBottom = when {
-        selected -> InplaceXColors.ToyGreen
-        completed -> InplaceXColors.ToyBlueDeep
+        selected -> PageColors.Company
+        completed -> PageColors.CreamSecondary
         locked -> Color(0xFF776F64)
-        else -> InplaceXColors.ToyBlueDeep
+        else -> PageColors.CreamSecondary
     }
 
     Column(
@@ -254,14 +252,14 @@ private fun TimelineLevelBadge(
         Surface(
             modifier = Modifier
                 .size(if (selected) 54.dp else 48.dp)
-                .shadow(6.dp, RoundedCornerShape(17.dp)),
-            shape = RoundedCornerShape(17.dp),
+,
+            shape = RoundedCornerShape(16.dp),
             color = Color.Transparent,
             border = BorderStroke(
                 if (selected) 3.dp else 2.dp,
                 if (selected) Color(0xFFFFD34E) else Color.White.copy(alpha = 0.72f),
             ),
-            shadowElevation = 3.dp,
+            shadowElevation = 4.dp,
         ) {
             Box(
                 modifier = Modifier.background(
@@ -271,7 +269,7 @@ private fun TimelineLevelBadge(
             ) {
                 Text(
                     text = levelNumber.toString(),
-                    color = Color.White,
+                    color = if (locked) Color.White else PageColors.Text,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                 )
@@ -371,13 +369,13 @@ private fun MissionDetails(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(InplaceXColors.ToyCreamShadow),
+                .background(PageColors.Border),
         )
         Text(
             text = strings.text("company.mission.objective")
                 .replace("{digits}", definition.config.codeLength.toString())
                 .replace("{moves}", definition.config.attemptLimit.toString()),
-            color = InplaceXColors.ToyBrown,
+            color = PageColors.Text,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
         )

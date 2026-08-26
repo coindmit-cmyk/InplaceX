@@ -37,6 +37,8 @@ import com.mirkori.inplacex.ui.navigation.AppSection
 import com.mirkori.inplacex.ui.navigation.AppSectionCatalog
 import com.mirkori.inplacex.ui.navigation.AppSectionIconCatalog
 import com.mirkori.inplacex.ui.theme.FinalUiColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 
 @Composable
@@ -61,9 +63,9 @@ fun AppBottomMenu(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            FinalUiColors.ChromeTop,
-                            FinalUiColors.Chrome,
-                            FinalUiColors.ChromeDeep,
+                            PageColors.Chrome,
+                            PageColors.Chrome,
+                            PageColors.ChromeDark,
                         )
                     )
                 )
@@ -108,7 +110,7 @@ private fun BottomMenuItem(
                 onClick = onClick,
             ),
         shape = RoundedCornerShape(14.dp),
-        color = if (selected) FinalUiColors.Primary.copy(alpha = 0.86f) else Color.Transparent,
+        color = if (selected) PageColors.Primary else Color.Transparent,
         tonalElevation = 0.dp,
         border = if (selected) {
             BorderStroke(1.dp, FinalUiColors.ChromeBorder)
@@ -143,10 +145,7 @@ private fun BottomMenuItem(
             Text(
                 text = title,
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.sp,
-                    lineHeight = 11.sp
-                ),
+                style = PageType.Navigation,
                 color = if (selected) Color.White else InplaceXColors.ToyCream,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1

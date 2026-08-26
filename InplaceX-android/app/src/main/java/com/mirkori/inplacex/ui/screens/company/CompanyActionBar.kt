@@ -41,6 +41,11 @@ import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.core.campaign.CampaignLevelDefinition
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
+import com.mirkori.inplacex.ui.screens.shared.StickyActionBar
+import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton
+import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton
 
 @Composable
 internal fun CompanyActionBar(
@@ -55,17 +60,9 @@ internal fun CompanyActionBar(
     onRules: () -> Unit,
     compact: Boolean,
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(22.dp)),
-        shape = RoundedCornerShape(22.dp),
-        color = InplaceXColors.ToyCream,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
-        shadowElevation = 3.dp,
-    ) {
+    StickyActionBar {
         Row(
-            modifier = Modifier.padding(if (compact) 6.dp else 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -83,7 +80,7 @@ internal fun CompanyActionBar(
             CompanyRulesAction(
                 strings = strings,
                 minimumHeight = 56,
-                showLabel = compact,
+                showLabel = false,
                 onRules = onRules,
             )
         }
@@ -97,14 +94,14 @@ private fun CompanyRulesAction(
     showLabel: Boolean,
     onRules: () -> Unit,
 ) {
-    TextButton(
+    PageSecondaryButton(
         onClick = onRules,
         modifier = Modifier.heightIn(min = minimumHeight.dp),
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.MenuBook,
-            contentDescription = null,
-            tint = InplaceXColors.ToyBlue,
+            contentDescription = if (showLabel) null else strings.text("company.action.rules"),
+            tint = PageColors.Primary,
             modifier = Modifier.size(if (showLabel) 20.dp else 26.dp),
         )
         if (showLabel) {
@@ -140,59 +137,18 @@ private fun CompanyPrimaryAction(
             .replace("{value}", levelNumber.toString())
     }
     val action = if (!hasEnergy && playable) onBuyEnergy else onPlay
-    val actionBrush = if (playable) {
-        Brush.verticalGradient(
-            listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-        )
-    } else {
-        Brush.verticalGradient(
-            listOf(Color(0xFFC9C0AF), Color(0xFF8F877B)),
-        )
-    }
-
-    Surface(
-        modifier = modifier
-            .heightIn(min = 56.dp)
-            .shadow(7.dp, RoundedCornerShape(18.dp))
-            .semantics {
-                role = Role.Button
-                stateDescription = actionText
-                if (!playable) disabled()
-            }
-            .clickable(
-                enabled = playable,
-                role = Role.Button,
-                onClick = action,
-            )
+    PagePrimaryButton(
+        onClick = action,
+        enabled = playable,
+        accent = PageColors.Success,
+        modifier = modifier.heightIn(min = 56.dp)
+            .semantics { stateDescription = actionText }
             .testTag("company-play"),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.Transparent,
-        border = BorderStroke(2.dp, if (playable) Color(0xFFB8F25D) else Color(0xFFD5CBB8)),
-        shadowElevation = 3.dp,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(actionBrush)
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (playable) Icons.Outlined.Bolt else Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = actionText,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                )
-            }
-        }
+        Icon(if (playable) Icons.Outlined.Bolt else Icons.Outlined.Lock,
+            contentDescription = null, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(actionText, style = PageType.Button)
     }
 }
 
@@ -203,6 +159,10 @@ internal fun CompanyRulesDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        shape = RoundedCornerShape(24.dp),
+        containerColor = PageColors.Cream,
+        titleContentColor = PageColors.Text,
+        textContentColor = PageColors.Text,
         onDismissRequest = onDismiss,
         title = {
             Text(

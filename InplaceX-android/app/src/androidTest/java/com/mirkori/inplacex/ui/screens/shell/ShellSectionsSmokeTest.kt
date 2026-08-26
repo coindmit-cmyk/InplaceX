@@ -22,6 +22,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -695,12 +697,14 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Компания").assertIsDisplayed()
+        composeRule.onNodeWithText("0 из 20 звёзд").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-mission-list").performScrollToNode(hasTestTag("company-level-4"))
         composeRule.onNodeWithTag("company-level-4").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-mission-list").performScrollToNode(hasTestTag("company-level-3"))
         composeRule.onNodeWithTag("company-level-3")
             .assertIsDisplayed()
             .assertIsSelected()
         composeRule.onNodeWithTag("company-play").assertIsDisplayed()
-        composeRule.onNodeWithText("0 из 20 звёзд").assertIsDisplayed()
         composeRule.onNodeWithText("Следующая глава уже открыта.").assertDoesNotExist()
     }
 
@@ -819,7 +823,10 @@ class ShellSectionsSmokeTest {
             }
         }
 
+        composeRule.onNodeWithTag("company-mission-list")
+            .performScrollToNode(hasTestTag("company-chapter-reward"))
         composeRule.onNodeWithTag("company-chapter-reward")
+            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         composeRule.onNodeWithText(

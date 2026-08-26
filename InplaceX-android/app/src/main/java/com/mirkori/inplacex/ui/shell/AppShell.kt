@@ -150,7 +150,8 @@ private fun ShellBackground(
             val centerLayerModifier = Modifier
                 .align(Alignment.TopStart)
                 .fillMaxWidth()
-                .padding(horizontal = horizontalPadding)
+                // Страницы сами задают 16dp; размеры игрового поля не меняем.
+                .padding(horizontal = if (bottomMode == BottomLayerMode.MENU && centerMode == CenterLayerMode.TRANSPARENT) 0.dp else horizontalPadding)
                 .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
                 .padding(bottom = bottomSlotHeight + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
