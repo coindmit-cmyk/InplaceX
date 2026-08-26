@@ -39,6 +39,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
@@ -360,19 +361,22 @@ fun ProfileRootScreen(
         }
 
         if (showGooglePlayCard) {
+            val googleConnected = if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
+                mirkoriAccountState.authMode == PlatformAuthMode.GOOGLE
+            } else {
+                progressState.googlePlaySignedIn
+            }
             StatusCard(
                 title = strings.text("profile.google_play.title"),
-                message = strings.text(if (progressState.googlePlaySignedIn) {
+                message = strings.text(if (googleConnected) {
                     "profile.google_play.connected"
-                } else if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
-                    "profile.google_play.mirkori_connected"
                 } else {
                     "profile.google_play.disconnected"
                 }),
                 accent = PageColors.Profile,
             ) {
             val legacyGoogleActionsAllowed = mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
-            if (progressState.googlePlaySignedIn) {
+            if (googleConnected) {
                 if (legacyGoogleActionsAllowed) {
                     OutlinedButton(
                         onClick = onGooglePlaySignOut,
@@ -382,7 +386,10 @@ fun ProfileRootScreen(
                         Text(strings.text("profile.google_play.sign_out"))
                     }
                 }
-            } else if (legacyGoogleActionsAllowed) {
+            } else if (
+                mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST ||
+                mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED
+            ) {
                 Button(
                     onClick = onGooglePlaySignIn,
                     enabled = !authInProgress,

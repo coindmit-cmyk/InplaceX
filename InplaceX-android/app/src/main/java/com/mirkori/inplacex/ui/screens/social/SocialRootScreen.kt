@@ -73,6 +73,8 @@ fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
     initialActiveSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
+    initialPendingInviteCode: String? = null,
+    onPendingInviteChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     pendingFriendRequests: List<LocalSocialRelationship> = emptyList(),
     currentPlayerId: String? = null,
@@ -99,7 +101,11 @@ fun SocialRootScreen(
     val strings = LocalAppStrings.current
     var activeDestination by remember {
         mutableStateOf<SocialDestination?>(
-            if (initialActiveSessionId == null) null else SocialDestination.ONLINE_MATCH,
+            when {
+                initialActiveSessionId != null -> SocialDestination.ONLINE_MATCH
+                initialPendingInviteCode != null -> SocialDestination.INVITES
+                else -> null
+            },
         )
     }
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
@@ -117,6 +123,7 @@ fun SocialRootScreen(
     LaunchedEffect(onlineRuntime, initialActiveSessionId) {
         if (initialActiveSessionId != null && onlineRuntime == null) {
             onActiveSessionChange(null)
+            onPendingInviteChange(null)
             activeDestination = null
         }
     }
@@ -191,6 +198,8 @@ fun SocialRootScreen(
             runtime = onlineRuntime,
             initialSessionId = initialActiveSessionId,
             onActiveSessionChange = onActiveSessionChange,
+            initialPendingInviteCode = initialPendingInviteCode,
+            onPendingInviteChange = onPendingInviteChange,
             entryPoint = when (activeDestination) {
                 SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
                 SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND

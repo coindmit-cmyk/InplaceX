@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.social
 
+import com.mirkori.inplacex.core.analysis.ProvenFact
 import com.mirkori.inplacex.platform.online.OnlineDuelAttemptState
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
@@ -11,6 +12,74 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class OnlineDuelGameFieldTest {
+
+    @Test
+    fun fiveEnteredDigitsSkipTwoAutomaticallyConfirmedMiddlePositions() {
+        val facts = setOf(ProvenFact.exactMatch(3, '5'), ProvenFact.exactMatch(4, '5'))
+        var editor = OnlineDuelEditorState.empty(7)
+
+        "11111".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+
+        assertEquals("1115511", editor.input.guessOrNull(facts))
+        assertNull(editor.input.slots[3])
+        assertNull(editor.input.slots[4])
+        assertEquals(editor, editor.reduce(GameFieldEvent.DigitEntered('9'), facts))
+    }
+
+    @Test
+    fun inferredOnlineFactsAreUsedAgainAfterAnAcceptedAttempt() {
+        val snapshot = OnlineDuelSnapshotState(
+            sessionId = "00000000-0000-4000-8000-000000000001",
+            revision = 4,
+            phase = "active",
+            currentTurn = "player",
+            winner = null,
+            codeLength = 7,
+            attemptLimit = null,
+            allowDuplicates = true,
+            attempts = listOf(
+                OnlineDuelAttemptState("player", 2, 1, "0125501"),
+                OnlineDuelAttemptState("player", 0, 2, "0123401"),
+            ),
+        )
+        var editor = OnlineDuelEditorState.empty(7).afterAcceptedAttempt(2)
+        val facts = buildOnlineDuelGameFieldState(
+            snapshot, snapshot.knownPlayerGuesses(), editor, true, "Online", "Your turn",
+        ).evidence.deduction.provenFacts
+        assertEquals(setOf(3, 4), facts.filter { it.isExactMatch }.map { it.position }.toSet())
+
+        repeat(2) {
+            "11111".forEach { digit -> editor = editor.reduce(GameFieldEvent.DigitEntered(digit), facts) }
+            assertEquals("1115511", editor.input.guessOrNull(facts))
+            editor = editor.afterAcceptedAttempt(editor.acceptedAttemptCount + 1)
+        }
+    }
+
+    @Test
+    fun backspaceSkipsBothInferredAndManuallyConfirmedPositions() {
+        val facts = setOf(ProvenFact.exactMatch(0, '5'), ProvenFact.exactMatch(6, '5'))
+        var editor = OnlineDuelEditorState.empty(7)
+            .reduce(GameFieldEvent.ToolSelected(GameFieldTool.YES))
+            .changeManualMark('5', 3)
+        "1234".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        assertEquals("5125345", editor.input.guessOrNull(facts))
+
+        repeat(4) { editor = editor.reduce(GameFieldEvent.BackspacePressed, facts) }
+        assertEquals(listOf(null, null, null, '5', null, null, null), editor.input.slots)
+        val cleared = editor
+        assertEquals(cleared, editor.reduce(GameFieldEvent.BackspacePressed, facts))
+        "4321".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        assertEquals("5435215", editor.input.guessOrNull(facts))
+    }
+
+    @Test
+    fun disabledAutoTableDoesNotReserveInferredPositions() {
+        val facts = setOf(ProvenFact.exactMatch(3, '5'), ProvenFact.exactMatch(4, '5'))
+        var editor = OnlineDuelEditorState.empty(7)
+            .reduce(GameFieldEvent.AutoExcludeChanged(false))
+        "1234567".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        assertEquals("1234567", editor.input.guessOrNull(emptySet()))
+    }
 
     @Test
     fun manualYesPrefillsEveryFollowingOnlineAttempt() {

@@ -137,11 +137,8 @@ class GameFieldStateHolder(
             .filter(ProvenFact::isExactMatch)
             .map(ProvenFact::position)
             .toSet()
-        val position = current.input.slots.indices.firstOrNull { index ->
-            index !in confirmedPositions && current.input.slots[index] == null
-        } ?: return
-        val slots = current.input.slots.toMutableList().apply { this[position] = digit }
-        update(current.copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle))
+        val input = current.input.enterDigit(digit, confirmedPositions)
+        if (input != current.input) update(current.copy(input = input, status = GameFieldStatus.Idle))
     }
 
     private fun backspace(current: GameFieldUiState) {
@@ -150,11 +147,8 @@ class GameFieldStateHolder(
             .filter(ProvenFact::isExactMatch)
             .map(ProvenFact::position)
             .toSet()
-        val position = current.input.slots.indices.reversed().firstOrNull { index ->
-            index !in confirmedPositions && current.input.slots[index] != null
-        } ?: return
-        val slots = current.input.slots.toMutableList().apply { this[position] = null }
-        update(current.copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle))
+        val input = current.input.backspace(confirmedPositions)
+        if (input != current.input) update(current.copy(input = input, status = GameFieldStatus.Idle))
     }
 
     private fun submitGuess(current: GameFieldUiState, rawGuess: String? = null) {
