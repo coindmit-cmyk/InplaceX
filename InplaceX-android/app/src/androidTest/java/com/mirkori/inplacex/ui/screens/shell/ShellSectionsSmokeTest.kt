@@ -3,11 +3,13 @@ package com.mirkori.inplacex.ui.screens.shell
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -436,7 +438,7 @@ class ShellSectionsSmokeTest {
                         bottomMode = BottomLayerMode.MENU,
                         topMode = TopLayerMode.OVERLAY,
                         centerMode = CenterLayerMode.TRANSPARENT,
-                        friendsReference = true,
+                        illustratedReference = true,
                         topContent = {
                             AppTopBar(
                                 energy = 5,
@@ -447,7 +449,7 @@ class ShellSectionsSmokeTest {
                                 onBackClick = {},
                                 onShopClick = { actions += "shop" },
                                 onSettingsClick = { actions += "settings" },
-                                friendsReference = true,
+                                illustratedReference = true,
                             )
                         },
                     ) {
@@ -487,7 +489,7 @@ class ShellSectionsSmokeTest {
                 bottomMode = BottomLayerMode.MENU,
                 topMode = TopLayerMode.OVERLAY,
                 centerMode = CenterLayerMode.TRANSPARENT,
-                friendsReference = true,
+                illustratedReference = true,
                 topContent = {
                     AppTopBar(
                         energy = 5,
@@ -498,7 +500,7 @@ class ShellSectionsSmokeTest {
                         onBackClick = {},
                         onShopClick = {},
                         onSettingsClick = {},
-                        friendsReference = true,
+                        illustratedReference = true,
                     )
                 },
             ) {
@@ -538,6 +540,65 @@ class ShellSectionsSmokeTest {
             .forEach { tag -> composeRule.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().performClick() }
         composeRule.runOnIdle {
             assertEquals(listOf("friends", "friends", "invite", "match", "match"), actions)
+        }
+    }
+
+    @Test
+    fun illustratedReferencePagesCaptureReferenceLayoutAt320Dp() {
+        val (section) = setReferencePagesContent(fontScale = 1f)
+
+        composeRule.onNodeWithTag("friends-reference-shell").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-company-320dp.png")
+
+        composeRule.runOnIdle { section.value = AppSection.SHOP }
+        composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-shop-320dp.png")
+
+        composeRule.runOnIdle { section.value = AppSection.PROFILE }
+        composeRule.onNodeWithTag("profile-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-profile-320dp.png")
+    }
+
+    @Test
+    fun illustratedReferencePagesCaptureFullDeviceShell() {
+        val (section) = setReferencePagesContent(fontScale = 1f, constrainedTo320Dp = false)
+
+        composeRule.onNodeWithTag("company-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-company-device.png")
+        composeRule.runOnIdle { section.value = AppSection.SHOP }
+        composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-shop-device.png")
+        composeRule.runOnIdle { section.value = AppSection.PROFILE }
+        composeRule.onNodeWithTag("profile-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v9-profile-device.png")
+    }
+
+    @Test
+    fun illustratedReferencePagesKeepPrimaryActionsReachableAt320DpLargeText() {
+        val (section, actions) = setReferencePagesContent(fontScale = 1.5f)
+        val strings = StaticLocalizationProvider.forLanguage(AppLanguage.RU)
+
+        composeRule.onNodeWithTag("friends-reference-shell").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-reference-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("company-play").assertIsDisplayed().performClick()
+
+        composeRule.runOnIdle { section.value = AppSection.SHOP }
+        composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
+        composeRule.onNodeWithText(strings.text("shop.rewarded.watch"))
+            .performScrollTo().assertIsDisplayed().performClick()
+
+        composeRule.runOnIdle { section.value = AppSection.PROFILE }
+        composeRule.onNodeWithTag("profile-reference-screen").assertIsDisplayed()
+        composeRule.onNodeWithText(strings.text("profile.mirkori.handle.change"))
+            .performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onAllNodesWithText(strings.text("profile.mirkori.handle.change"))
+            .assertCountEquals(2)
+        composeRule.onNodeWithText(strings.text("profile.mirkori.handle.cancel")).performClick()
+
+        composeRule.runOnIdle {
+            assertTrue(actions.any { it.startsWith("company:") })
+            assertTrue("rewarded" in actions)
         }
     }
 
@@ -1184,6 +1245,106 @@ class ShellSectionsSmokeTest {
             ) {
                 InplaceXTheme(content = content)
             }
+        }
+    }
+
+    private fun setReferencePagesContent(
+        fontScale: Float,
+        constrainedTo320Dp: Boolean = true,
+    ): Pair<MutableState<AppSection>, MutableList<String>> {
+        val section = mutableStateOf(AppSection.COMPANY)
+        val actions = mutableListOf<String>()
+        setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
+                val containerModifier = if (constrainedTo320Dp) {
+                    Modifier.width(320.dp).height(600.dp)
+                } else {
+                    Modifier.fillMaxSize()
+                }
+                Box(containerModifier) {
+                    AppShell(
+                        currentSection = section.value,
+                        onSectionChange = { section.value = it },
+                        bottomMode = BottomLayerMode.MENU,
+                        topMode = TopLayerMode.OVERLAY,
+                        centerMode = CenterLayerMode.TRANSPARENT,
+                        illustratedReference = true,
+                        topContent = {
+                            AppTopBar(
+                                energy = 5,
+                                energyMax = 5,
+                                coins = 10146,
+                                showBack = false,
+                                showShop = true,
+                                onBackClick = {},
+                                onShopClick = { section.value = AppSection.SHOP },
+                                onSettingsClick = {},
+                                illustratedReference = true,
+                            )
+                        },
+                    ) {
+                        when (section.value) {
+                            AppSection.COMPANY -> CompanyRootScreen(
+                                progressState = progress().copy(campaignTutorialCompleted = true),
+                                campaignProgress = emptyList(),
+                                activeLevelNumber = null,
+                                onActiveLevelNumberChange = { actions += "company:$it" },
+                            )
+                            AppSection.SHOP -> ShopRootScreen(
+                                progressState = progress(coins = 10146),
+                                onWatchRewardedCoins = { completed ->
+                                    actions += "rewarded"
+                                    completed(true)
+                                },
+                                onBuyOpenPositionHint = { true },
+                                onBuyCheckDigitHint = { true },
+                                onBuyCheckPositionHint = { true },
+                                onBuyExtraMovesBoost = { true },
+                                onBuyExtraTimeBoost = { true },
+                                onBuyEnergy = { true },
+                                onBuyRemoveAds = {},
+                                onBuyPro = {},
+                                onBuyProPlus = {},
+                            )
+                            AppSection.PROFILE -> ProfileRootScreen(
+                                progressState = progress(coins = 10146),
+                                mirkoriAccountState = MirkoriAccountState(
+                                    kind = MirkoriAccountStateKind.LINKED,
+                                    gamePlayerId = "00000000-0000-4000-8000-000000007065",
+                                    authMode = PlatformAuthMode.GOOGLE,
+                                ),
+                                publicPlayerProfile = MirkoriPublicPlayerProfile(
+                                    gamePlayerId = "00000000-0000-4000-8000-000000007065",
+                                    handle = "test3",
+                                    displayName = "Player_7065",
+                                    avatarUrl = null,
+                                ),
+                                showGooglePlayCard = true,
+                            )
+                            else -> Text("unused")
+                        }
+                    }
+                }
+            }
+        }
+        return section to actions
+    }
+
+    private fun captureReferenceShell(fileName: String) {
+        composeRule.waitForIdle()
+        val output = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
+            "visual-qa/$fileName",
+        )
+        output.parentFile?.mkdirs()
+        output.outputStream().use { stream ->
+            check(
+                composeRule.onNodeWithTag("friends-reference-shell")
+                    .captureToImage()
+                    .asAndroidBitmap()
+                    .compress(Bitmap.CompressFormat.PNG, 100, stream),
+            )
         }
     }
 

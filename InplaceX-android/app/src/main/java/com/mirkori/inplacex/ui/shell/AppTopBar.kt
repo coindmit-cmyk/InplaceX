@@ -50,9 +50,9 @@ fun AppTopBar(
     onShopClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
-    friendsReference: Boolean = false,
+    illustratedReference: Boolean = false,
 ) {
-    if (friendsReference) {
+    if (illustratedReference) {
         FriendsReferenceTopBar(energy, energyMax, coins, onShopClick, onSettingsClick, modifier)
         return
     }

@@ -33,6 +33,10 @@ import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.data.local.RetentionRewardStatus
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
+import com.mirkori.inplacex.ui.theme.PageColors
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 
 @Composable
 internal fun CompanySceneScreen(
@@ -64,7 +68,7 @@ internal fun CompanySceneScreen(
     val maxVisibleChapter = unlockedBlock + 1
     val selectedChapter = selectedChapterState.coerceIn(1, maxVisibleChapter)
     val chapterItems = campaignLevelItemsForChapter(levelItems, selectedChapter)
-    val displayItems = chapterItems.asReversed()
+    val displayItems = chapterItems
     val selectedItem = chapterItems.firstOrNull { it.definition.levelNumber == selectedLevel }
         ?: chapterItems.first()
     val selectedCompleted = selectedItem.progress.bestBackendRating > 0
@@ -130,148 +134,78 @@ internal fun CompanySceneScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val compact = maxHeight < 650.dp || maxWidth < 360.dp
-            val landscape = maxWidth > maxHeight
-            val horizontalPadding = if (compact) 7.dp else 11.dp
-            val landscapeCardWidth = (maxWidth - 22.dp) / 2f
-            val selectedIndex = displayItems
-                .indexOfFirst { it.definition.levelNumber == selectedLevel }
-                .coerceAtLeast(focusIndex)
-
-            LaunchedEffect(selectedLevel, displayItems.size, landscape) {
-                val targetIndex = if (landscape) {
-                    (selectedIndex - 1).coerceAtLeast(0)
-                } else {
-                    (selectedIndex - 1).coerceAtLeast(0)
-                }
-                listState.animateScrollToItem(targetIndex)
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = horizontalPadding, vertical = 4.dp),
+        val compact = maxHeight < 650.dp || maxWidth < 360.dp
+        val veryShort = maxHeight < 320.dp
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("company-reference-screen")
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f).fillMaxWidth().testTag("company-mission-list"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 4.dp),
             ) {
-                CompanyScreenHeader(
-                    strings = strings,
-                    energy = progressState.campaignEnergy,
-                    energyMax = progressState.campaignEnergyMax,
-                    compact = compact,
-                    chapterRewardLabel = chapterRewardLabel.takeIf { landscape },
-                    onChapterReward = openChapterReward.takeIf { landscape },
-                    retentionRewardAvailable = retentionRewardStatus.anyAvailable,
-                    onRetentionRewards = {
-                        onRefreshRetentionRewards()
-                        showRetentionRewards = true
-                    },
-                    onHistory = onHistory,
-                    onBuyEnergy = onBuyEnergy,
-                )
-                Spacer(modifier = Modifier.height(if (compact) 4.dp else 7.dp))
-
-                CompanyChapterNavigator(
-                    strings = strings,
-                    chapter = selectedChapter,
-                    canGoPrevious = selectedChapter > 1,
-                    canGoNext = selectedChapter < maxVisibleChapter,
-                    onPrevious = { selectChapter(selectedChapter - 1) },
-                    onNext = { selectChapter(selectedChapter + 1) },
-                )
-                Spacer(modifier = Modifier.height(if (compact) 4.dp else 6.dp))
-
-                if (!landscape) {
+                item(key = "page-hero") {
+                    CompanyScreenHeader(
+                        strings = strings,
+                        energy = progressState.campaignEnergy,
+                        energyMax = progressState.campaignEnergyMax,
+                        compact = compact,
+                        chapterRewardLabel = chapterRewardLabel.takeIf { veryShort },
+                        onChapterReward = openChapterReward.takeIf { veryShort },
+                        retentionRewardAvailable = retentionRewardStatus.anyAvailable,
+                        onRetentionRewards = {
+                            onRefreshRetentionRewards()
+                            showRetentionRewards = true
+                        },
+                        onHistory = onHistory,
+                        onBuyEnergy = onBuyEnergy,
+                    )
+                }
+                item(key = "chapter-control") {
+                    CompanyChapterNavigator(
+                        strings = strings, chapter = selectedChapter,
+                        canGoPrevious = selectedChapter > 1,
+                        canGoNext = selectedChapter < maxVisibleChapter,
+                        onPrevious = { selectChapter(selectedChapter - 1) },
+                        onNext = { selectChapter(selectedChapter + 1) },
+                    )
+                }
+                item(key = "chapter-progress") {
                     CompanyChapterHero(
                         strings = strings,
                         chapter = selectedItem.definition.blockNumber,
-                        totalStars = totalStars,
-                        requiredStars = requiredStars,
+                        totalStars = totalStars, requiredStars = requiredStars,
                         nextBlockLocked = nextBlockLocked,
                         rewardAvailable = selectedChapterCompleted,
                         rewardClaimed = selectedChapterRewardClaimed,
-                        onRewardClick = openChapterReward,
-                        compact = compact,
+                        onRewardClick = openChapterReward, compact = compact,
                     )
-                    Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
                 }
-
-                if (landscape) {
-                    LazyRow(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .testTag("company-mission-list"),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            top = 5.dp,
-                            bottom = 3.dp,
-                        ),
-                    ) {
-                        itemsIndexed(
-                            items = displayItems,
-                            key = { _, item -> item.definition.levelNumber },
-                        ) { index, item ->
-                            Box(modifier = Modifier.width(landscapeCardWidth)) {
-                                CompanyMissionCard(
-                                    strings = strings,
-                                    item = item,
-                                    selectedLevel = selectedLevel,
-                                    accessibleMaxLevel = accessibleMaxLevel,
-                                    highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                                    requiredStars = requiredStars,
-                                    first = index == 0,
-                                    last = index == displayItems.lastIndex,
-                                    compact = true,
-                                    onSelect = { selectedLevel = it },
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .testTag("company-mission-list"),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            top = 7.dp,
-                            bottom = 7.dp,
-                        ),
-                    ) {
-                        itemsIndexed(
-                            items = displayItems,
-                            key = { _, item -> item.definition.levelNumber },
-                        ) { index, item ->
-                            CompanyMissionCard(
-                                strings = strings,
-                                item = item,
-                                selectedLevel = selectedLevel,
-                                accessibleMaxLevel = accessibleMaxLevel,
-                                highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
-                                requiredStars = requiredStars,
-                                first = index == 0,
-                                last = index == displayItems.lastIndex,
-                                compact = compact,
-                                onSelect = { selectedLevel = it },
-                            )
-                        }
-                    }
+                item(key = "forest-map") {
+                    CompanyMapRoute(
+                        strings = strings, items = displayItems,
+                        selectedLevel = selectedLevel,
+                        accessibleMaxLevel = accessibleMaxLevel,
+                        highestUnlockedLevel = progressState.highestUnlockedCampaignLevel,
+                        onSelect = { selectedLevel = it },
+                    )
                 }
-
-                CompanyActionBar(
-                    strings = strings,
-                    levelNumber = selectedLevel,
-                    playable = selectedPlayable,
-                    hasEnergy = hasEnergy,
-                    requiredStars = requiredStars,
-                    lockRequiresStars = selectedLevel > accessibleMaxLevel,
-                    onBuyEnergy = onBuyEnergy,
-                    onPlay = { onPlay(selectedLevel) },
-                    onRules = { showRules = true },
-                    compact = compact,
-                )
             }
+            CompanyActionBar(
+                strings = strings, levelNumber = selectedLevel,
+                playable = selectedPlayable, hasEnergy = hasEnergy,
+                requiredStars = requiredStars,
+                lockRequiresStars = selectedLevel > accessibleMaxLevel,
+                onBuyEnergy = onBuyEnergy, onPlay = { onPlay(selectedLevel) },
+                onRules = { showRules = true }, compact = compact,
+                definition = selectedItem.definition,
+            )
+        }
     }
 
     if (showRules) {
@@ -284,6 +218,10 @@ internal fun CompanySceneScreen(
 
     if (showRetentionRewards) {
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             onDismissRequest = { showRetentionRewards = false },
             modifier = Modifier.testTag("company-retention-rewards-dialog"),
             title = { Text(strings.text("company.retention.title")) },
@@ -336,6 +274,10 @@ internal fun CompanySceneScreen(
     rewardDialogState?.let { dialogState ->
         val reward = CampaignChapterRewardPolicy.rewardFor(selectedChapter)
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             onDismissRequest = { rewardDialogState = null },
             title = { Text(strings.text("company.reward.dialog.title")) },
             text = {

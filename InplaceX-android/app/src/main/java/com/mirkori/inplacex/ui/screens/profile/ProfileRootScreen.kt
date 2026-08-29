@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton as Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,7 +27,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -39,6 +45,7 @@ import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountState
 import com.mirkori.inplacex.platform.mirkori.MirkoriAccountStateKind
+import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.ui.screens.shared.SceneBadge
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
@@ -46,6 +53,16 @@ import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatarPresets
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
+import com.mirkori.inplacex.ui.screens.shared.PageHeroCard
+import com.mirkori.inplacex.ui.screens.shared.PageStatusPill
+import com.mirkori.inplacex.ui.screens.shared.PageSectionHeader
+import com.mirkori.inplacex.ui.screens.shared.StatTile
+import com.mirkori.inplacex.ui.screens.shared.StatusCard
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 
 @Composable
 fun ProfileRootScreen(
@@ -90,6 +107,10 @@ fun ProfileRootScreen(
 
     if (nameDialogOpen) {
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             onDismissRequest = { if (!publicProfileInProgress) nameDialogOpen = false },
             title = { Text(strings.text("profile.mirkori.name.change")) },
             text = {
@@ -134,6 +155,10 @@ fun ProfileRootScreen(
 
     if (avatarDialogOpen) {
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             onDismissRequest = { if (!publicProfileInProgress) avatarDialogOpen = false },
             title = { Text(strings.text("profile.mirkori.avatar.change")) },
             text = {
@@ -169,6 +194,10 @@ fun ProfileRootScreen(
 
     if (handleDialogOpen) {
         AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
             onDismissRequest = { if (!publicProfileInProgress) handleDialogOpen = false },
             title = { Text(strings.text("profile.mirkori.handle.change")) },
             text = {
@@ -218,74 +247,55 @@ fun ProfileRootScreen(
     }
 
     ScenePageColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("profile-reference-screen"),
         scrollable = true,
+        verticalSpacing = 10.dp,
+        horizontalPadding = 12.dp,
+        verticalPadding = 8.dp,
     ) {
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.97f)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        PageHeroCard(
+            title = visibleDisplayName,
+            subtitle = publicPlayerProfile?.handle?.let { "@$it" }
+                ?: strings.text("profile.mirkori.handle.not_set"),
+            accent = PageColors.Profile,
+            titleModifier = if (mirkoriAccountState.gamePlayerId == null) Modifier else Modifier.clickable {
+                nameInput = visibleDisplayName
+                localNameError = false
+                nameDialogOpen = true
+            },
+            leading = {
                 PlayerAvatar(
                     displayName = visibleDisplayName,
                     avatarUrl = publicPlayerProfile?.avatarUrl,
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(78.dp),
                     onClick = if (mirkoriAccountState.gamePlayerId == null) null else {
                         { avatarDialogOpen = true }
                     },
                 )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    Text(
-                        text = visibleDisplayName,
-                        modifier = Modifier
-                            .semantics { heading() }
-                            .then(
-                                if (mirkoriAccountState.gamePlayerId == null) Modifier else {
-                                    Modifier.clickable {
-                                        nameInput = visibleDisplayName
-                                        localNameError = false
-                                        nameDialogOpen = true
-                                    }
-                                },
-                            ),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = when (mirkoriAccountState.kind) {
-                            MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected.short")
-                            MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest.short")
-                            MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
-                            MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable.short")
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
+            },
+        ) {
             Text(
+                text = when (mirkoriAccountState.kind) {
+                    MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected.short")
+                    MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest.short")
+                    MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
+                    MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable.short")
+                },
+                style = PageType.Secondary, color = Color.White,
+            )
+
+            if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) Text(
                 text = when (mirkoriAccountState.kind) {
                     MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected")
                     MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest")
                     MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
                     MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
                 },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = PageType.Secondary,
+                color = Color.White.copy(alpha = .92f),
             )
 
             mirkoriAccountState.gamePlayerId?.let { playerId ->
-                Text(
-                    text = publicPlayerProfile?.handle?.let { "@$it" }
-                        ?: strings.text("profile.mirkori.handle.not_set"),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
                 OutlinedButton(
                     onClick = {
                         handleInput = publicPlayerProfile?.handle.orEmpty()
@@ -297,27 +307,27 @@ fun ProfileRootScreen(
                 ) {
                     Text(strings.text("profile.mirkori.handle.change"))
                 }
-                Text(
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(
                     text = strings.text("profile.mirkori.player_id").replace("{id}", playerId.takeLast(8)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedButton(
+                    style = PageType.Secondary, color = Color.White.copy(alpha = .92f), modifier = Modifier.weight(1f),
+                  )
+                  IconButton(
                     onClick = { clipboardManager.setText(AnnotatedString(playerId)) },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.mirkori.copy_player_id"))
+                  ) {
+                    Icon(Icons.Outlined.ContentCopy, contentDescription = strings.text("profile.mirkori.copy_player_id"), tint = Color.White)
+                  }
                 }
             }
 
             publicProfileResultKey?.let { key ->
                 Text(
                     text = strings.text(key),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = PageType.Secondary,
                     color = if (key in PublicProfileSuccessKeys) {
-                        InplaceXColors.Mint
+                        PageColors.Success
                     } else {
-                        InplaceXColors.Coral
+                        PageColors.Error
                     },
                 )
             }
@@ -341,43 +351,43 @@ fun ProfileRootScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     color = if (key in MirkoriAuthErrorKeys) {
-                        InplaceXColors.Coral.copy(alpha = 0.12f)
+                        PageColors.Error.copy(alpha = 0.12f)
                     } else {
-                        InplaceXColors.Mint.copy(alpha = 0.14f)
+                        PageColors.Success.copy(alpha = 0.14f)
                     },
                     border = BorderStroke(
                         1.dp,
-                        if (key in MirkoriAuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
+                        if (key in MirkoriAuthErrorKeys) PageColors.Error else PageColors.Success,
                     ),
                 ) {
                     Text(
                         text = strings.text(key),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = PageType.Secondary,
                     )
                 }
             }
         }
 
         if (showGooglePlayCard) {
-            SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
-            Text(
-                text = strings.text("profile.google_play.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = if (progressState.googlePlaySignedIn) {
-                    strings.text("profile.google_play.connected")
+            val googleConnected = if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
+                mirkoriAccountState.authMode == PlatformAuthMode.GOOGLE
+            } else {
+                progressState.googlePlaySignedIn
+            }
+            StatusCard(
+                title = strings.text("profile.google_play.title"),
+                message = strings.text(if (googleConnected) {
+                    "profile.google_play.connected"
+                } else if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
+                    "profile.google_play.mirkori_connected"
                 } else {
-                    strings.text("profile.google_play.disconnected")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                    "profile.google_play.disconnected"
+                }),
+                accent = PageColors.Profile,
+            ) {
             val legacyGoogleActionsAllowed = mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
-            if (progressState.googlePlaySignedIn) {
+            if (googleConnected) {
                 if (legacyGoogleActionsAllowed) {
                     OutlinedButton(
                         onClick = onGooglePlaySignOut,
@@ -387,7 +397,10 @@ fun ProfileRootScreen(
                         Text(strings.text("profile.google_play.sign_out"))
                     }
                 }
-            } else if (legacyGoogleActionsAllowed) {
+            } else if (
+                mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST ||
+                mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED
+            ) {
                 Button(
                     onClick = onGooglePlaySignIn,
                     enabled = !authInProgress,
@@ -402,38 +415,33 @@ fun ProfileRootScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     color = if (key in AuthErrorKeys) {
-                        InplaceXColors.Coral.copy(alpha = 0.12f)
+                        PageColors.Error.copy(alpha = 0.12f)
                     } else {
-                        InplaceXColors.Mint.copy(alpha = 0.14f)
+                        PageColors.Success.copy(alpha = 0.14f)
                     },
                     border = BorderStroke(
                         1.dp,
-                        if (key in AuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
+                        if (key in AuthErrorKeys) PageColors.Error else PageColors.Success,
                     ),
                 ) {
                     Text(
                         text = strings.text(key),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = PageType.Secondary,
                     )
                 }
             }
             }
         }
 
-        Text(
-            text = strings.text("profile.overview"),
-            modifier = Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
+        PageSectionHeader(strings.text("profile.overview"))
         ProfileOverview(progressState)
 
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+        SceneCard(accentColor = PageColors.Cream) {
             Text(
                 text = strings.text("profile.membership"),
                 modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
+                style = PageType.CardTitle,
                 fontWeight = FontWeight.SemiBold,
             )
             MembershipLine(strings.text("profile.membership.ads"), progressState.adFreePurchased, strings)
@@ -456,11 +464,11 @@ fun ProfileRootScreen(
             )
         }
 
-        SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+        SceneCard(accentColor = PageColors.Cream) {
             Text(
                 text = strings.text("profile.match_stats"),
                 modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
+                style = PageType.CardTitle,
                 fontWeight = FontWeight.SemiBold,
             )
             MatchStatsRow(
@@ -500,57 +508,21 @@ private val MirkoriAuthErrorKeys = setOf(
 @Composable
 private fun ProfileOverview(progressState: GameProgressState) {
     val strings = LocalAppStrings.current
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val compact = maxWidth < 560.dp
-        if (compact) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SceneBadge(
-                        label = strings.text("profile.campaign_level"),
-                        value = progressState.highestUnlockedCampaignLevel.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    SceneBadge(
-                        label = strings.text("profile.campaign_rating"),
-                        value = progressState.totalCampaignRating.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
+    val stats = listOf(
+        strings.text("profile.campaign_level") to progressState.highestUnlockedCampaignLevel.toString(),
+        strings.text("profile.campaign_rating") to progressState.totalCampaignRating.toString(),
+        strings.text("top.coins") to progressState.coins.toString(),
+        strings.text("profile.matches") to progressState.matchesPlayed.toString(),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        stats.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                row.forEach { (label, value) ->
+                    StatTile(label, value, Modifier.weight(1f).fillMaxHeight())
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SceneBadge(
-                        label = strings.text("top.coins"),
-                        value = progressState.coins.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    SceneBadge(
-                        label = strings.text("profile.matches"),
-                        value = progressState.matchesPlayed.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SceneBadge(
-                    label = strings.text("profile.campaign_level"),
-                    value = progressState.highestUnlockedCampaignLevel.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                SceneBadge(
-                    label = strings.text("profile.campaign_rating"),
-                    value = progressState.totalCampaignRating.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                SceneBadge(
-                    label = strings.text("top.coins"),
-                    value = progressState.coins.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                SceneBadge(
-                    label = strings.text("profile.matches"),
-                    value = progressState.matchesPlayed.toString(),
-                    modifier = Modifier.weight(1f),
-                )
             }
         }
     }
@@ -567,24 +539,25 @@ private fun MembershipLine(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         color = if (active) {
-            InplaceXColors.Mint.copy(alpha = 0.12f)
+            PageColors.Success.copy(alpha = 0.12f)
         } else {
-            InplaceXColors.ToyCreamShadow.copy(alpha = 0.48f)
+            PageColors.CreamSecondary
         },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
             Text(
+                modifier = Modifier.weight(1f).padding(start = 8.dp),
                 text = if (active) {
                     activeText ?: strings.text("profile.membership.active")
                 } else {
                     strings.text("profile.membership.locked")
                 },
                 fontWeight = FontWeight.SemiBold,
-                color = if (active) InplaceXColors.Mint else InplaceXColors.InkMuted,
+                color = if (active) PageColors.Success else PageColors.TextSecondary,
             )
         }
     }

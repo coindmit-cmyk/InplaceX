@@ -44,7 +44,7 @@ fun AppShell(
     layoutConfig: UiLayoutConfig = UiLayoutConfigs.Default,
     topContent: (@Composable () -> Unit)? = null,
     bottomAdContent: (@Composable () -> Unit)? = null,
-    friendsReference: Boolean = false,
+    illustratedReference: Boolean = false,
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -63,7 +63,7 @@ fun AppShell(
             layoutConfig = layoutConfig,
             topContent = topContent,
             bottomAdContent = bottomAdContent,
-            friendsReference = friendsReference,
+            illustratedReference = illustratedReference,
             content = content
         )
     }
@@ -82,12 +82,12 @@ private fun ShellBackground(
     layoutConfig: UiLayoutConfig,
     topContent: (@Composable () -> Unit)?,
     bottomAdContent: (@Composable () -> Unit)?,
-    friendsReference: Boolean,
+    illustratedReference: Boolean,
     content: @Composable () -> Unit
 ) {
     val navBar = WindowInsets.navigationBars.asPaddingValues()
     val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
-    val bottomSlotBottomPadding = if (friendsReference) maxOf(navBar.calculateBottomPadding(), 14.dp) else when (bottomMode) {
+    val bottomSlotBottomPadding = if (illustratedReference) maxOf(navBar.calculateBottomPadding(), 14.dp) else when (bottomMode) {
         BottomLayerMode.MENU -> 0.dp
         BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
         BottomLayerMode.AD_LOADING -> 0.dp
@@ -95,10 +95,10 @@ private fun ShellBackground(
     }
 
     ScreenBackground(
-        style = if (friendsReference) ScreenBackgroundStyle.DrawableResource(R.drawable.friends_room_v8, InplaceXColors.ToyWood) else backgroundStyle,
+        style = if (illustratedReference) ScreenBackgroundStyle.DrawableResource(R.drawable.friends_room_v8, InplaceXColors.ToyWood) else backgroundStyle,
         modifier = Modifier
             .fillMaxSize()
-            .then(if (friendsReference) Modifier.testTag("friends-reference-shell") else Modifier)
+            .then(if (illustratedReference) Modifier.testTag("friends-reference-shell") else Modifier)
             .padding(paddingValues)
     ) {
         BoxWithConstraints(
@@ -108,17 +108,17 @@ private fun ShellBackground(
             val screenHeight = maxHeight
 
             val referenceScale = (screenWidth.value / 374f).coerceIn(.85f, 1.15f)
-            val horizontalPadding = if (friendsReference) 0.dp else screenWidth * layoutConfig.shellHorizontalPaddingPercent
-            val innerHorizontalPadding = if (friendsReference) 0.dp else screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
+            val horizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellHorizontalPaddingPercent
+            val innerHorizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
             val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
                 0.dp
             } else {
-                if (friendsReference) friendsReferenceHudHeight(screenWidth, LocalDensity.current.fontScale)
+                if (illustratedReference) friendsReferenceHudHeight(screenWidth, LocalDensity.current.fontScale)
                 else maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
             }
             val bottomSlotHeight = when (bottomMode) {
                 BottomLayerMode.NONE -> 0.dp
-                BottomLayerMode.MENU -> if (friendsReference) 76.dp * referenceScale else maxOf(
+                BottomLayerMode.MENU -> if (illustratedReference) 76.dp * referenceScale else maxOf(
                     screenHeight * layoutConfig.bottomSlotHeightPercent,
                     72.dp,
                 )
@@ -162,7 +162,7 @@ private fun ShellBackground(
                 .fillMaxWidth()
                 .padding(horizontal = horizontalPadding)
                 .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
-                .padding(bottom = bottomSlotHeight + (if (friendsReference) bottomSlotBottomPadding else 0.dp) + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
+                .padding(bottom = bottomSlotHeight + (if (illustratedReference) bottomSlotBottomPadding else 0.dp) + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
             when (centerMode) {
                 CenterLayerMode.SURFACE -> {
@@ -177,7 +177,7 @@ private fun ShellBackground(
                     ) {
                         ShellCenterContent(
                             innerHorizontalPadding = innerHorizontalPadding,
-                            verticalPadding = if (friendsReference) 0.dp else 4.dp,
+                            verticalPadding = if (illustratedReference) 0.dp else 4.dp,
                             content = content,
                         )
                     }
@@ -189,7 +189,7 @@ private fun ShellBackground(
                     ) {
                         ShellCenterContent(
                             innerHorizontalPadding = innerHorizontalPadding,
-                            verticalPadding = if (friendsReference) 0.dp else 4.dp,
+                            verticalPadding = if (illustratedReference) 0.dp else 4.dp,
                             content = content,
                         )
                     }
@@ -201,11 +201,11 @@ private fun ShellBackground(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .padding(horizontal = if (friendsReference) 7.dp else horizontalPadding)
+                        .padding(horizontal = if (illustratedReference) 7.dp else horizontalPadding)
                         .padding(bottom = bottomSlotBottomPadding)
                         .height(bottomSlotHeight)
                 ) {
-                    if (friendsReference && bottomMode == BottomLayerMode.MENU) {
+                    if (illustratedReference && bottomMode == BottomLayerMode.MENU) {
                         FriendsReferenceBottomBar(currentSection, onSectionChange, socialNotificationCount, Modifier.fillMaxSize())
                     } else AppBottomSlot(
                         currentSection = currentSection,

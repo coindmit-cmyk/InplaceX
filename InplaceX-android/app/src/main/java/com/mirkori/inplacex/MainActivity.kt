@@ -775,8 +775,13 @@ class MainActivity : ComponentActivity() {
                     resourceId = R.drawable.toy_room_bg_v6,
                     fallbackColor = InplaceXColors.ToyWood,
                 )
-                val friendsReference = currentSection == AppSection.SOCIAL &&
-                    !isNestedSocialScreen && !isInGame && !isSettingsOpen && !isVariantToolsOpen
+                val illustratedReferenceSection = currentSection == AppSection.SOCIAL ||
+                    currentSection == AppSection.COMPANY ||
+                    currentSection == AppSection.SHOP ||
+                    currentSection == AppSection.PROFILE
+                val illustratedReference = illustratedReferenceSection &&
+                    (currentSection != AppSection.SOCIAL || !isNestedSocialScreen) &&
+                    !isInGame && !isSettingsOpen && !isVariantToolsOpen
                 val bottomMode = when {
                     isInGame && isPremium -> BottomLayerMode.NONE
                     isInGame && selectedBannerProviderName != null && bannerLoaded ->
@@ -804,13 +809,13 @@ class MainActivity : ComponentActivity() {
                         topMode = TopLayerMode.OVERLAY,
                         centerMode = CenterLayerMode.TRANSPARENT,
                         backgroundStyle = appBackgroundStyle,
-                        friendsReference = friendsReference,
+                        illustratedReference = illustratedReference,
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
                                 energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
-                                friendsReference = friendsReference,
+                                illustratedReference = illustratedReference,
                                 showBack = isNestedSocialScreen || isInGame || isVariantToolsOpen,
                                 showShop = !isInGame,
                                 onBackClick = {
