@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -240,8 +241,9 @@ internal fun FriendsReferenceScreen(
                 match(Modifier.fillMaxWidth())
             } else {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp * scale)) {
-                    invite(Modifier.weight(1f))
-                    match(Modifier.weight(1f))
+                    val actionHeight = 190.dp * scale
+                    invite(Modifier.weight(1f).height(actionHeight))
+                    match(Modifier.weight(1f).height(actionHeight))
                 }
             }
 
@@ -301,12 +303,14 @@ private fun ReferenceActionTile(
     IllustratedSurface(if (enabled) colors else colors.map { lerp(it, Color.DarkGray, .6f) },
         modifier.heightIn(min = 190.dp * scale).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         rim = Color(0xFFADCAE8)) {
-        Column(Modifier.fillMaxWidth().padding(14.dp * scale), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            FriendsIllustration(art, Modifier.size(57.dp * scale))
-            Text(title, style = FriendsReferenceStyle.CardTitle.copy(color = Color.White, fontSize = 21.sp, lineHeight = 25.sp,
-                shadow = FriendsReferenceStyle.WhiteShadow))
-            Text(subtitle, style = FriendsReferenceStyle.Body.copy(color = Color.White))
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { ReferenceArrow(colors.first()) }
+        Box(Modifier.fillMaxSize().padding(14.dp * scale)) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                FriendsIllustration(art, Modifier.size(57.dp * scale))
+                Text(title, style = FriendsReferenceStyle.CardTitle.copy(color = Color.White, fontSize = 21.sp, lineHeight = 25.sp,
+                    shadow = FriendsReferenceStyle.WhiteShadow))
+                Text(subtitle, style = FriendsReferenceStyle.Body.copy(color = Color.White))
+            }
+            Box(Modifier.align(Alignment.BottomEnd)) { ReferenceArrow(colors.first()) }
         }
     }
 }

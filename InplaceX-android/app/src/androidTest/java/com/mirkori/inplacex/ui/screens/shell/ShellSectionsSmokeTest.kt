@@ -520,6 +520,10 @@ class ShellSectionsSmokeTest {
             composeRule.onNodeWithText(name).assertIsDisplayed()
         }
         composeRule.waitForIdle()
+        val inviteBounds = composeRule.onNodeWithTag("friends-invite").fetchSemanticsNode().boundsInRoot
+        val matchBounds = composeRule.onNodeWithTag("friends-find-match").fetchSemanticsNode().boundsInRoot
+        assertEquals(inviteBounds.width, matchBounds.width, 1.5f)
+        assertEquals(inviteBounds.height, matchBounds.height, 0.5f)
         val output = File(
             InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
             "visual-qa/friends-reference.png",
