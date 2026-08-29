@@ -1562,6 +1562,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onOpenShop = { currentSection = AppSection.SHOP },
                             )
                         }
 

@@ -2,10 +2,20 @@ package com.mirkori.inplacex.ui.screens.shop
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -18,7 +28,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton as Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,12 +49,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.data.local.GameProgressState
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
@@ -50,7 +68,6 @@ import com.mirkori.inplacex.platform.services.BillingNotice
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingState
 import com.mirkori.inplacex.ui.screens.shared.SceneCard
-import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.SceneSplitStatRow
 import com.mirkori.inplacex.ui.theme.InplaceXColors
 import com.mirkori.inplacex.ui.theme.PageColors
@@ -58,12 +75,9 @@ import com.mirkori.inplacex.ui.theme.PageType
 import com.mirkori.inplacex.ui.screens.shared.PageHeroCard
 import com.mirkori.inplacex.ui.screens.shared.PageStatusPill
 import com.mirkori.inplacex.ui.screens.shared.PageSectionHeader
-import com.mirkori.inplacex.ui.screens.shared.SegmentedControl
 import com.mirkori.inplacex.ui.screens.shared.StatusCard
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Pin
@@ -111,60 +125,402 @@ fun ShopRootScreen(
         resultKey = if (result) "shop.result.success" else "shop.result.unavailable"
     }
 
-    ScenePageColumn(
-        modifier = Modifier.fillMaxSize().testTag("shop-reference-screen"),
-        scrollable = true,
-        verticalSpacing = 10.dp,
-        horizontalPadding = 12.dp,
-        verticalPadding = 8.dp,
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("shop-reference-screen"),
     ) {
+        val compactReference = maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f
+        val compactViewport = compactReference && maxHeight < 650.dp
+        val heroHeight = if (compactViewport) 80.dp else 82.dp
+        val rewardedHeight = if (compactViewport) 136.dp else 141.dp
+        val itemHeight = if (compactViewport) 144.dp else 152.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 15.dp),
+        ) {
+            PageHeroCard(
+                title = strings.text("shop.title"),
+                subtitle = strings.text("shop.hero.subtitle"),
+                accent = PageColors.Friends,
+                leading = {
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.art_shop_bag_v10),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .requiredSize(76.dp)
+                                .offset(x = (-2).dp, y = (-4).dp),
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .heightIn(min = heroHeight)
+                    .testTag("shop-hero"),
+            )
+            RewardedAdCard(
+                compact = compactReference,
+                height = rewardedHeight,
+                onWatch = { onWatchRewardedCoins(::report) },
+                modifier = Modifier.testTag("shop-reward"),
+            )
+            Spacer(Modifier.height(if (compactViewport) 6.dp else 8.dp))
+            ShopCategoryControl(
+                selected = category,
+                onSelect = {
+                    categoryName = it.name
+                    resultKey = null
+                },
+            )
+            Spacer(Modifier.height(if (compactViewport) 4.dp else 6.dp))
+            resultKey?.let { key ->
+                StatusCard(
+                    title = strings.text(key),
+                    accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+
+            when (category) {
+                ShopCategory.BOOSTS -> BoostsCatalog(
+                    progressState = progressState,
+                    onReport = ::report,
+                    compactReference = compactReference,
+                    itemHeight = itemHeight,
+                    sectionToGridGap = if (compactViewport) 6.dp else 8.dp,
+                    onBuyOpenPositionHint = onBuyOpenPositionHint,
+                    onBuyCheckDigitHint = onBuyCheckDigitHint,
+                    onBuyCheckPositionHint = onBuyCheckPositionHint,
+                    onBuyExtraMovesBoost = onBuyExtraMovesBoost,
+                    onBuyExtraTimeBoost = onBuyExtraTimeBoost,
+                    onBuyEnergy = onBuyEnergy,
+                )
+
+                ShopCategory.PREMIUM -> PremiumCatalog(
+                    progressState = progressState,
+                    nowMs = nowMs,
+                    billingState = billingState,
+                    billingInProgress = billingInProgress,
+                    onReport = ::report,
+                    onRefreshBilling = onRefreshBilling,
+                    onOpenProfile = onOpenProfile,
+                    onBuyRemoveAds = onBuyRemoveAds,
+                    onBuyPro = onBuyPro,
+                    onBuyProPlus = onBuyProPlus,
+                    onRetryBillingPurchase = onRetryBillingPurchase,
+                    onBuyTemporaryPro = onBuyTemporaryPro,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+        }
+    }
+}
+
+@Composable
+private fun RewardedAdCard(
+    compact: Boolean,
+    height: Dp,
+    onWatch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val strings = LocalAppStrings.current
+    if (!compact) {
         PageHeroCard(
-            title = strings.text("shop.title"),
-            subtitle = strings.text("shop.hero.subtitle"),
+            title = strings.text("shop.rewarded.title"),
+            subtitle = strings.text("shop.rewarded.coins"),
             accent = PageColors.Friends,
-            icon = Icons.Outlined.ShoppingBag,
-        )
-        SegmentedControl(
-            options = listOf(strings.text("shop.tab.boosts"), strings.text("shop.tab.premium")),
-            selectedIndex = category.ordinal,
-            onSelect = { categoryName = ShopCategory.entries[it].name; resultKey = null },
-            accent = PageColors.Shop,
-        )
-        resultKey?.let { key ->
-            StatusCard(
-                title = strings.text(key),
-                accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
-            )
+            modifier = modifier,
+            leading = {
+                Image(
+                    painter = painterResource(R.drawable.art_reward_coins_gems_v10),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                )
+            },
+        ) {
+            Button(
+                onClick = onWatch,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp),
+            ) {
+                Text(strings.text("shop.rewarded.watch"))
+            }
         }
+        return
+    }
 
-        when (category) {
-            ShopCategory.BOOSTS -> BoostsCatalog(
-                progressState = progressState,
-                onReport = ::report,
-                onWatchRewardedCoins = onWatchRewardedCoins,
-                onBuyOpenPositionHint = onBuyOpenPositionHint,
-                onBuyCheckDigitHint = onBuyCheckDigitHint,
-                onBuyCheckPositionHint = onBuyCheckPositionHint,
-                onBuyExtraMovesBoost = onBuyExtraMovesBoost,
-                onBuyExtraTimeBoost = onBuyExtraTimeBoost,
-                onBuyEnergy = onBuyEnergy,
-            )
-
-            ShopCategory.PREMIUM -> PremiumCatalog(
-                progressState = progressState,
-                nowMs = nowMs,
-                billingState = billingState,
-                billingInProgress = billingInProgress,
-                onReport = ::report,
-                onRefreshBilling = onRefreshBilling,
-                onOpenProfile = onOpenProfile,
-                onBuyRemoveAds = onBuyRemoveAds,
-                onBuyPro = onBuyPro,
-                onBuyProPlus = onBuyProPlus,
-                onRetryBillingPurchase = onRetryBillingPurchase,
-                onBuyTemporaryPro = onBuyTemporaryPro,
-            )
+    val rewardAmount = "+" + strings.text("shop.price").replace("{price}", "20")
+    val shape = RoundedCornerShape(16.dp)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height),
+        shape = shape,
+        color = Color.Transparent,
+        contentColor = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFD79872)),
+        shadowElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            Color(0xFF6743B4),
+                            Color(0xFF342D72),
+                            Color(0xFF171D4D),
+                        ),
+                    ),
+                )
+                .padding(start = 8.dp, top = 7.dp, end = 14.dp, bottom = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val rewardArtworkSlot = if (height < 140.dp) 104.dp else 112.dp
+            Box(
+                modifier = Modifier.size(rewardArtworkSlot),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.art_reward_coins_gems_v10),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .requiredSize(rewardArtworkSlot + 28.dp)
+                        .offset(x = 4.dp, y = (-14).dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = strings.text("shop.rewarded.title"),
+                        modifier = Modifier.weight(1f),
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.art_reward_video_v10),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .offset(y = 8.dp),
+                    )
+                }
+                Text(
+                    text = rewardAmount,
+                    color = Color(0xFFFFE447),
+                    fontSize = 14.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = strings.text("shop.rewarded.coins"),
+                    color = Color.White.copy(alpha = .96f),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.weight(1f))
+                RewardedWatchButton(
+                    label = strings.text("shop.rewarded.watch"),
+                    onClick = onWatch,
+                    modifier = Modifier.align(Alignment.End),
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun RewardedWatchButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .width(110.dp)
+            .height(48.dp)
+            .semantics {
+                role = Role.Button
+                contentDescription = label
+            }
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(32.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Transparent,
+            contentColor = Color.White,
+            border = BorderStroke(1.dp, Color(0xFFC99CFF)),
+            shadowElevation = 2.dp,
+        ) {
+            Box(
+                modifier = Modifier.background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF9F65D7), Color(0xFF7138A9)),
+                    ),
+                ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopCategoryControl(
+    selected: ShopCategory,
+    onSelect: (ShopCategory) -> Unit,
+) {
+    val strings = LocalAppStrings.current
+    val options = listOf(
+        ShopCategory.BOOSTS to strings.text("shop.tab.boosts"),
+        ShopCategory.PREMIUM to strings.text("shop.tab.premium"),
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .testTag("shop-tabs"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
+            shape = RoundedCornerShape(15.dp),
+            color = PageColors.Cream,
+            border = BorderStroke(1.dp, PageColors.Border),
+            shadowElevation = 2.dp,
+        ) {}
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .selectableGroup(),
+        ) {
+            options.forEach { (category, label) ->
+                val isSelected = selected == category
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.Tab,
+                            onClick = { onSelect(category) },
+                        )
+                        .semantics {
+                            this.selected = isSelected
+                            contentDescription = label
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isSelected) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp),
+                            shape = RoundedCornerShape(15.dp),
+                            color = Color.Transparent,
+                            shadowElevation = 1.dp,
+                        ) {
+                            Box(
+                                modifier = Modifier.background(
+                                    Brush.verticalGradient(
+                                        listOf(Color(0xFFFFB300), Color(0xFFF18700)),
+                                    ),
+                                ),
+                            )
+                        }
+                    }
+                    Text(
+                        text = label,
+                        color = if (isSelected) Color.White else PageColors.Text,
+                        fontSize = 14.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopSectionHeader(title: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 32.dp)
+            .padding(start = 4.dp)
+            .testTag("shop-section")
+            .semantics { heading() },
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            modifier = Modifier.size(28.dp),
+            shape = CircleShape,
+            color = Color(0xFFFFE5A7),
+            contentColor = Color(0xFF6B4C1E),
+            border = BorderStroke(1.dp, Color(0xFFD99C26)),
+            shadowElevation = 1.dp,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Outlined.Lightbulb,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 18.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -172,7 +528,9 @@ fun ShopRootScreen(
 private fun BoostsCatalog(
     progressState: GameProgressState,
     onReport: (Boolean) -> Unit,
-    onWatchRewardedCoins: ((Boolean) -> Unit) -> Unit,
+    compactReference: Boolean,
+    itemHeight: Dp,
+    sectionToGridGap: Dp,
     onBuyOpenPositionHint: () -> Boolean,
     onBuyCheckDigitHint: () -> Boolean,
     onBuyCheckPositionHint: () -> Boolean,
@@ -181,27 +539,8 @@ private fun BoostsCatalog(
     onBuyEnergy: () -> Boolean,
 ) {
     val strings = LocalAppStrings.current
-    PageHeroCard(
-        title = strings.text("shop.rewarded.title"),
-        subtitle = strings.text("shop.rewarded.coins"),
-        accent = PageColors.Friends,
-        icon = Icons.Outlined.PlayCircle,
-        leading = {
-            Image(painterResource(R.drawable.reward_coins_v7), null,
-                Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)))
-        },
-    ) {
-        Button(
-            onClick = { onWatchRewardedCoins(onReport) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
-        ) {
-            Text(strings.text("shop.rewarded.watch"))
-        }
-    }
-
-    PageSectionHeader(strings.text("shop.hints"))
+    ShopSectionHeader(strings.text("shop.hints"))
+    Spacer(Modifier.height(sectionToGridGap))
     ShopItemGrid(
         items = listOf(
             ShopItem(
@@ -210,7 +549,7 @@ private fun BoostsCatalog(
                 20,
                 onBuyOpenPositionHint,
                 strings.text("shop.item.open_position.desc"),
-                Icons.Outlined.Lightbulb, R.drawable.ic_hint_open_position,
+                Icons.Outlined.Lightbulb, R.drawable.art_hint_open_position_v10,
             ),
             ShopItem(
                 strings.text("shop.item.check_digit"),
@@ -218,31 +557,7 @@ private fun BoostsCatalog(
                 15,
                 onBuyCheckDigitHint,
                 strings.text("shop.item.check_digit.desc"),
-                Icons.Outlined.Search, R.drawable.ic_hint_check_digit,
-            ),
-            ShopItem(
-                strings.text("shop.item.check_position"),
-                progressState.checkPositionHints,
-                25,
-                onBuyCheckPositionHint,
-                strings.text("shop.item.check_position.desc"),
-                Icons.Outlined.Pin, R.drawable.ic_hint_check_position,
-            ),
-            ShopItem(
-                strings.text("shop.item.extra_moves"),
-                progressState.extraMovesBoosts,
-                30,
-                onBuyExtraMovesBoost,
-                strings.text("shop.item.extra_moves.desc"),
-                Icons.Outlined.AddCircleOutline, R.drawable.ic_boost_extra_moves,
-            ),
-            ShopItem(
-                strings.text("shop.item.extra_time"),
-                progressState.extraTimeBoosts,
-                30,
-                onBuyExtraTimeBoost,
-                strings.text("shop.item.extra_time.desc"),
-                Icons.Outlined.Timer, R.drawable.ic_boost_extra_time,
+                Icons.Outlined.Search, R.drawable.art_hint_check_digit_v10,
             ),
             ShopItem(
                 strings.text("shop.item.energy"),
@@ -250,11 +565,37 @@ private fun BoostsCatalog(
                 25,
                 onBuyEnergy,
                 strings.text("shop.item.energy.desc"),
-                Icons.Outlined.Bolt,
+                Icons.Outlined.Bolt, R.drawable.art_energy_v10,
+            ),
+            ShopItem(
+                strings.text("shop.item.check_position"),
+                progressState.checkPositionHints,
+                25,
+                onBuyCheckPositionHint,
+                strings.text("shop.item.check_position.desc"),
+                Icons.Outlined.Pin, R.drawable.art_hint_check_position_v10,
+            ),
+            ShopItem(
+                strings.text("shop.item.extra_moves"),
+                progressState.extraMovesBoosts,
+                30,
+                onBuyExtraMovesBoost,
+                strings.text("shop.item.extra_moves.desc"),
+                Icons.Outlined.AddCircleOutline, R.drawable.art_boost_extra_moves_v10,
+            ),
+            ShopItem(
+                strings.text("shop.item.extra_time"),
+                progressState.extraTimeBoosts,
+                30,
+                onBuyExtraTimeBoost,
+                strings.text("shop.item.extra_time.desc"),
+                Icons.Outlined.Timer, R.drawable.art_boost_extra_time_v10,
             ),
         ),
         coins = progressState.coins,
         onReport = onReport,
+        compactReference = compactReference,
+        itemHeight = itemHeight,
     )
 }
 
@@ -273,16 +614,51 @@ private fun ShopItemGrid(
     items: List<ShopItem>,
     coins: Int,
     onReport: (Boolean) -> Unit,
+    compactReference: Boolean,
+    itemHeight: Dp,
 ) {
     BoxWithConstraints {
-      val columns = if (maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f) 2 else 1
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items.chunked(columns).forEach { row ->
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { item -> ShopItemCard(item, coins, onReport, Modifier.weight(1f).fillMaxHeight()) }
+        val columns = if (compactReference && maxWidth >= 320.dp) 2 else 1
+        val rows = items.withIndex().toList().chunked(columns)
+        Column {
+            rows.forEachIndexed { rowIndex, row ->
+                if (rowIndex > 0) {
+                    Spacer(
+                        Modifier.height(
+                            if (columns == 2 && rowIndex == 2) 64.dp else 8.dp,
+                        ),
+                    )
+                }
+                Row(
+                    modifier = if (columns == 2) {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(itemHeight)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    },
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    row.forEach { indexedItem ->
+                        ShopItemCard(
+                            item = indexedItem.value,
+                            coins = coins,
+                            onReport = onReport,
+                            compact = columns == 2,
+                            rowHeight = if (itemHeight >= 150.dp) 92.dp else 84.dp,
+                            artworkSize = if (itemHeight >= 150.dp) 88.dp else 82.dp,
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("shop-item-${indexedItem.index}")
+                                .then(if (columns == 2) Modifier.fillMaxHeight() else Modifier),
+                        )
+                    }
+                    repeat(columns - row.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
             }
         }
-      }
     }
 }
 
@@ -291,12 +667,247 @@ private fun ShopItemCard(
     item: ShopItem,
     coins: Int,
     onReport: (Boolean) -> Unit,
+    compact: Boolean,
+    rowHeight: Dp,
+    artworkSize: Dp,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
     val affordable = coins >= item.price
+    val stockLabel = strings.text("shop.stock").replace("{count}", item.stock.toString())
+    val priceLabel = strings.text("shop.price").replace("{price}", item.price.toString())
+    val errorLabel = strings.text("shop.not_enough_coins")
+
+    if (!compact) {
+        ExpandedShopItemCard(
+            item = item,
+            affordable = affordable,
+            stockLabel = stockLabel,
+            priceLabel = priceLabel,
+            errorLabel = errorLabel,
+            onReport = onReport,
+            modifier = modifier,
+        )
+        return
+    }
+
+    val titleParts = compactShopTitle(item.title)
+    Surface(
+        modifier = modifier.semantics {
+            contentDescription = "${item.title}. ${item.description}. $stockLabel. $priceLabel"
+        },
+        shape = RoundedCornerShape(16.dp),
+        color = PageColors.Cream,
+        contentColor = PageColors.Text,
+        border = BorderStroke(1.dp, PageColors.Border),
+        shadowElevation = 3.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(PageColors.Cream, Color(0xFFFFEAC5)),
+                    ),
+                )
+                .padding(horizontal = 7.dp, vertical = 6.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(rowHeight),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (item.artwork != null) {
+                    Box(
+                        modifier = Modifier.size(60.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            painter = painterResource(item.artwork),
+                            contentDescription = null,
+                            modifier = Modifier.requiredSize(
+                                if (item.artwork == R.drawable.art_hint_open_position_v10) {
+                                    artworkSize + 12.dp
+                                } else {
+                                    artworkSize
+                                },
+                            ),
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.size(60.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = null,
+                            tint = PageColors.Shop,
+                            modifier = Modifier.size(50.dp),
+                        )
+                    }
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    Text(
+                        text = titleParts.first,
+                        color = PageColors.Text,
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = if (titleParts.second.isBlank()) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (titleParts.second.isNotBlank()) {
+                        Text(
+                            text = titleParts.second,
+                            color = PageColors.Text,
+                            fontSize = 10.sp,
+                            lineHeight = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = stockLabel,
+                        color = PageColors.Text,
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (!affordable) {
+                        Text(
+                            text = errorLabel,
+                            color = PageColors.Error,
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            ShopPriceButton(
+                price = item.price,
+                priceLabel = priceLabel,
+                errorLabel = errorLabel,
+                enabled = affordable,
+                onClick = { onReport(item.onBuy()) },
+            )
+        }
+    }
+}
+
+private fun compactShopTitle(title: String): Pair<String, String> {
+    val separator = title.indexOf(':')
+    if (separator in 1 until title.lastIndex) {
+        return title.substring(0, separator + 1).trim() to title.substring(separator + 1).trim()
+    }
+    val increment = title.indexOf("+1")
+    return if (increment > 0) {
+        title.substring(0, increment).trim() to title.substring(increment).trim()
+    } else title to ""
+}
+
+@Composable
+private fun ShopPriceButton(
+    price: Int,
+    priceLabel: String,
+    errorLabel: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .semantics {
+                role = Role.Button
+                contentDescription = priceLabel
+                if (!enabled) stateDescription = errorLabel
+            }
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.Transparent,
+            contentColor = Color.White,
+            border = BorderStroke(1.dp, Color(0xFF79B6C2)),
+            shadowElevation = if (enabled) 2.dp else 0.dp,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            if (enabled) {
+                                listOf(Color(0xFF2D7E91), Color(0xFF105466))
+                            } else {
+                                listOf(Color(0xFFCABEA9), Color(0xFFAA9C88))
+                            },
+                        ),
+                    ),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = price.toString(),
+                    fontSize = 17.sp,
+                    lineHeight = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                Spacer(Modifier.width(7.dp))
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFFFD83F), Color(0xFFF48A00)),
+                            ),
+                            CircleShape,
+                        )
+                        .border(1.dp, Color(0xFFFFEAA0), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "S",
+                        color = Color(0xFFA55B00),
+                        fontSize = 11.sp,
+                        lineHeight = 12.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpandedShopItemCard(
+    item: ShopItem,
+    affordable: Boolean,
+    stockLabel: String,
+    priceLabel: String,
+    errorLabel: String,
+    onReport: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     SceneCard(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = "${item.title}. ${item.description}. $stockLabel. $priceLabel"
+        },
         accentColor = PageColors.Cream,
     ) {
         Row(
@@ -310,8 +921,8 @@ private fun ShopItemCard(
             }
         }
         Text(item.description, style = PageType.Secondary, color = PageColors.TextSecondary)
-        Text(strings.text("shop.stock").replace("{count}", item.stock.toString()), style = PageType.Secondary)
-        if (!affordable) Text(strings.text("shop.not_enough_coins"), style = PageType.Secondary, color = PageColors.Error)
+        Text(stockLabel, style = PageType.Secondary)
+        if (!affordable) Text(errorLabel, style = PageType.Secondary, color = PageColors.Error)
         Button(
             onClick = { onReport(item.onBuy()) },
             enabled = affordable,
@@ -322,13 +933,11 @@ private fun ShopItemCard(
                 .semantics {
                     role = Role.Button
                     if (!affordable) {
-                        stateDescription = strings.text("shop.not_enough_coins")
+                        stateDescription = errorLabel
                     }
                 },
         ) {
-            Text(
-                strings.text("shop.price").replace("{price}", item.price.toString()),
-            )
+            Text(priceLabel)
         }
     }
 }

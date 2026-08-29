@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
@@ -292,6 +295,73 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun illustratedShellKeepsQuickMatchOpenAndSystemBackReturnsToFriendsRoot() {
+        val runtime = requireNotNull(
+            OnlineRuntime.createOrNull(
+                context = composeRule.activity,
+                accessTokenProvider = InstrumentedAccessTokenProvider,
+                baseUrl = "http://127.0.0.1:65535",
+                allowCleartextLoopback = true,
+            ),
+        )
+        val strings = StaticLocalizationProvider.forLanguage(AppLanguage.RU)
+        val nestedScreen = mutableStateOf(false)
+        val activeSessionChanges = mutableListOf<String?>()
+        try {
+            setContent {
+                AppShell(
+                    currentSection = AppSection.SOCIAL,
+                    onSectionChange = {},
+                    bottomMode = BottomLayerMode.MENU,
+                    topMode = TopLayerMode.OVERLAY,
+                    centerMode = CenterLayerMode.TRANSPARENT,
+                    illustratedReference = !nestedScreen.value,
+                    topContent = {
+                        AppTopBar(
+                            energy = 5,
+                            energyMax = 5,
+                            coins = 10146,
+                            showBack = nestedScreen.value,
+                            showShop = true,
+                            onBackClick = {},
+                            onShopClick = {},
+                            onSettingsClick = {},
+                            illustratedReference = !nestedScreen.value,
+                        )
+                    },
+                ) {
+                    SocialRootScreen(
+                        onlineRuntime = runtime,
+                        onActiveSessionChange = { activeSessionChanges += it },
+                        onNestedScreenChange = { nestedScreen.value = it },
+                    )
+                }
+            }
+
+            composeRule.onNodeWithTag("friends-find-match").assertIsDisplayed().performClick()
+            composeRule.onNodeWithText(strings.text("social.match.title")).assertIsDisplayed()
+            composeRule.onNodeWithText(strings.text("social.online.find_opponent"))
+                .performScrollTo()
+                .assertIsDisplayed()
+            composeRule.runOnIdle { assertTrue(nestedScreen.value) }
+
+            composeRule.runOnIdle {
+                composeRule.activity.onBackPressedDispatcher.onBackPressed()
+            }
+            composeRule.onNodeWithTag("friends-reference-screen").assertIsDisplayed()
+            composeRule.onNodeWithTag("friends-find-match").assertIsDisplayed()
+            composeRule.runOnIdle {
+                assertFalse(nestedScreen.value)
+                assertFalse(composeRule.activity.isFinishing)
+                assertEquals(1, activeSessionChanges.size)
+                assertEquals(null, activeSessionChanges.single())
+            }
+        } finally {
+            runtime.close()
+        }
+    }
+
+    @Test
     fun invitationsContainPrivateCodeActionsWithoutRandomMatchmaking() {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
@@ -528,7 +598,7 @@ class ShellSectionsSmokeTest {
         assertEquals(inviteBounds.height, matchBounds.height, 0.5f)
         val output = File(
             InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
-            "visual-qa/friends-reference.png",
+            "visual-qa/friends-reference-v10.png",
         )
         output.parentFile?.mkdirs()
         output.outputStream().use { stream ->
@@ -545,38 +615,250 @@ class ShellSectionsSmokeTest {
 
     @Test
     fun illustratedReferencePagesCaptureReferenceLayoutAt320Dp() {
-        val (section) = setReferencePagesContent(fontScale = 1f)
+        val (section) = setReferencePagesContent(
+            fontScale = 1f,
+            initialSection = AppSection.SOCIAL,
+        )
 
         composeRule.onNodeWithTag("friends-reference-shell").assertIsDisplayed()
+        composeRule.onNodeWithTag("friends-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v10-friends-320dp.png")
+
+        composeRule.runOnIdle { section.value = AppSection.COMPANY }
         composeRule.onNodeWithTag("company-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-company-320dp.png")
+        captureReferenceShell("reference-v10-company-320dp.png")
 
         composeRule.runOnIdle { section.value = AppSection.SHOP }
         composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-shop-320dp.png")
+        captureReferenceShell("reference-v10-shop-320dp.png")
 
         composeRule.runOnIdle { section.value = AppSection.PROFILE }
         composeRule.onNodeWithTag("profile-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-profile-320dp.png")
+        captureReferenceShell("reference-v10-profile-320dp.png")
     }
 
     @Test
     fun illustratedReferencePagesCaptureFullDeviceShell() {
-        val (section) = setReferencePagesContent(fontScale = 1f, constrainedTo320Dp = false)
+        val (section) = setReferencePagesContent(
+            fontScale = 1f,
+            constrainedTo320Dp = false,
+            initialSection = AppSection.SOCIAL,
+        )
 
+        composeRule.onNodeWithTag("friends-reference-screen").assertIsDisplayed()
+        captureReferenceShell("reference-v10-friends-device.png")
+        composeRule.runOnIdle { section.value = AppSection.COMPANY }
         composeRule.onNodeWithTag("company-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-company-device.png")
+        captureReferenceShell("reference-v10-company-device.png")
         composeRule.runOnIdle { section.value = AppSection.SHOP }
         composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-shop-device.png")
+        captureReferenceShell("reference-v10-shop-device.png")
         composeRule.runOnIdle { section.value = AppSection.PROFILE }
         composeRule.onNodeWithTag("profile-reference-screen").assertIsDisplayed()
-        captureReferenceShell("reference-v9-profile-device.png")
+        captureReferenceShell("reference-v10-profile-device.png")
+    }
+
+    @Test
+    fun illustratedReferenceExactCanvasKeepsTaggedPageRootsAndCompanyOrder() {
+        val (section) = setReferencePagesContent(
+            fontScale = 1f,
+            canvasWidthDp = 374,
+            canvasHeightDp = 877,
+            requireCanvasSize = true,
+            initialSection = AppSection.SOCIAL,
+        )
+
+        composeRule.waitForIdle()
+        val shellBounds = composeRule.onNodeWithTag("friends-reference-shell")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val deviceDensity = composeRule.activity.resources.displayMetrics.density
+        assertEquals(374f, shellBounds.width / deviceDensity, 0.5f)
+        assertEquals(877f, shellBounds.height / deviceDensity, 0.5f)
+        assertEquals(
+            "The exact reference canvas must keep the 374x877 aspect ratio",
+            374f / 877f,
+            shellBounds.width / shellBounds.height,
+            0.002f,
+        )
+        val topSlotBounds = composeRule.onNodeWithTag("reference-top-slot")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val bottomBarBounds = composeRule.onNodeWithTag("reference-bottom-bar")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(shellBounds.top, topSlotBounds.top, 0.5f)
+        assertEquals(shellBounds.width, topSlotBounds.width, 0.5f)
+        assertEquals(78f / 877f, topSlotBounds.height / shellBounds.height, 0.002f)
+        assertEquals(
+            787f / 877f,
+            (bottomBarBounds.top - shellBounds.top) / shellBounds.height,
+            0.002f,
+        )
+        assertEquals(360f / 374f, bottomBarBounds.width / shellBounds.width, 0.002f)
+        assertEquals(76f / 877f, bottomBarBounds.height / shellBounds.height, 0.002f)
+
+        val friendsBounds = composeRule.onNodeWithTag("friends-reference-screen")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(
+            4f / 877f,
+            (friendsBounds.top - topSlotBounds.bottom) / shellBounds.height,
+            0.002f,
+        )
+        assertEquals(
+            4f / 877f,
+            (bottomBarBounds.top - friendsBounds.bottom) / shellBounds.height,
+            0.002f,
+        )
+        val inviteBounds = composeRule.onNodeWithTag("friends-invite")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .fetchSemanticsNode().boundsInRoot
+        val matchBounds = composeRule.onNodeWithTag("friends-find-match")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(inviteBounds.width, matchBounds.width, 1.5f)
+        assertEquals(inviteBounds.height, matchBounds.height, 0.5f)
+
+        composeRule.runOnIdle { section.value = AppSection.COMPANY }
+        composeRule.waitForIdle()
+
+        val companyBounds = composeRule.onNodeWithTag("company-reference-screen")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyRewardBounds = composeRule.onNodeWithTag("company-retention-rewards")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyHeroBounds = composeRule.onNodeWithTag("company-hero")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyChapterBounds = composeRule.onNodeWithTag("company-chapter-card")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyChapterRewardBounds = composeRule.onNodeWithTag("company-chapter-reward")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyMapBounds = composeRule.onNodeWithTag("company-forest-map")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyLevelBounds = composeRule.onNodeWithTag("company-level-card")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val companyPlayBounds = composeRule.onNodeWithTag("company-play")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "Company rewards must stay above the campaign map",
+            companyRewardBounds.bottom <= companyMapBounds.top,
+        )
+        assertTrue(
+            "The campaign map must stay above the primary play action",
+            companyMapBounds.bottom <= companyPlayBounds.top,
+        )
+        assertTrue(
+            "Company hero must stay above the chapter card",
+            companyHeroBounds.bottom <= companyChapterBounds.top,
+        )
+        assertTrue(
+            "The chapter card must stay above the campaign map",
+            companyChapterBounds.bottom <= companyMapBounds.top,
+        )
+        assertTrue(
+            "The chapter reward must visibly protrude below the chapter card",
+            companyChapterRewardBounds.bottom > companyChapterBounds.bottom,
+        )
+        assertTrue(
+            "The level card must retain the reference overlap with the campaign map",
+            companyLevelBounds.top < companyMapBounds.bottom,
+        )
+        composeRule.onNodeWithTag("company-level-label-2", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("company-level-label-3", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("company-level-label-4", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("company-level-lock-5", useUnmergedTree = true).assertIsDisplayed()
+
+        composeRule.runOnIdle { section.value = AppSection.SHOP }
+        composeRule.waitForIdle()
+        val shopBounds = composeRule.onNodeWithTag("shop-reference-screen")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(companyBounds.left, shopBounds.left, 0.5f)
+        assertEquals(companyBounds.top, shopBounds.top, 0.5f)
+        assertEquals(companyBounds.width, shopBounds.width, 0.5f)
+        assertEquals(companyBounds.height, shopBounds.height, 0.5f)
+        val shopHeroBounds = composeRule.onNodeWithTag("shop-hero")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val shopRewardBounds = composeRule.onNodeWithTag("shop-reward")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val shopTabsBounds = composeRule.onNodeWithTag("shop-tabs")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val shopSectionBounds = composeRule.onNodeWithTag("shop-section")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val shopItemBounds = (0..3).map { index ->
+            composeRule.onNodeWithTag("shop-item-$index")
+                .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        }
+        assertTrue(shopHeroBounds.bottom <= shopRewardBounds.top)
+        assertTrue(shopRewardBounds.bottom <= shopTabsBounds.top)
+        assertTrue(shopTabsBounds.bottom <= shopSectionBounds.top)
+        assertTrue(shopSectionBounds.bottom <= shopItemBounds[0].top)
+        assertEquals(shopItemBounds[0].top, shopItemBounds[1].top, 0.5f)
+        assertEquals(shopItemBounds[0].width, shopItemBounds[1].width, 1.1f)
+        assertEquals(shopItemBounds[0].height, shopItemBounds[1].height, 0.5f)
+        assertEquals(shopItemBounds[2].top, shopItemBounds[3].top, 0.5f)
+        assertEquals(shopItemBounds[2].width, shopItemBounds[3].width, 1.1f)
+        assertEquals(shopItemBounds[2].height, shopItemBounds[3].height, 0.5f)
+        assertTrue(shopItemBounds[0].bottom < shopItemBounds[2].top)
+        composeRule.onNodeWithTag("shop-item-4").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("shop-item-5").performScrollTo().assertIsDisplayed()
+
+        composeRule.runOnIdle { section.value = AppSection.PROFILE }
+        composeRule.waitForIdle()
+        val profileBounds = composeRule.onNodeWithTag("profile-reference-screen")
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(companyBounds.left, profileBounds.left, 0.5f)
+        assertEquals(companyBounds.top, profileBounds.top, 0.5f)
+        assertEquals(companyBounds.width, profileBounds.width, 0.5f)
+        assertEquals(companyBounds.height, profileBounds.height, 0.5f)
+        val profileHeroBounds = composeRule.onNodeWithTag("profile-hero")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val profileConnectionsBounds = composeRule.onNodeWithTag("profile-connections")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val profileOverviewBounds = composeRule.onNodeWithTag("profile-overview")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val profileStatBounds = (0..3).map { index ->
+            composeRule.onNodeWithTag("profile-stat-$index")
+                .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        }
+        val profilePurchasesBounds = composeRule.onNodeWithTag("profile-purchases")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val profilePremiumBounds = composeRule.onNodeWithTag("profile-premium")
+            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        assertTrue(profileHeroBounds.bottom <= profileConnectionsBounds.top)
+        assertTrue(profileConnectionsBounds.bottom <= profileOverviewBounds.top)
+        assertTrue(profileOverviewBounds.bottom <= profileStatBounds[0].top)
+        assertEquals(profileStatBounds[0].top, profileStatBounds[1].top, 0.5f)
+        assertEquals(profileStatBounds[0].width, profileStatBounds[1].width, 1.1f)
+        assertEquals(profileStatBounds[0].height, profileStatBounds[1].height, 0.5f)
+        assertEquals(profileStatBounds[2].top, profileStatBounds[3].top, 0.5f)
+        assertEquals(profileStatBounds[2].width, profileStatBounds[3].width, 1.1f)
+        assertEquals(profileStatBounds[2].height, profileStatBounds[3].height, 0.5f)
+        assertTrue(profileStatBounds[2].bottom <= profilePurchasesBounds.top)
+        assertTrue(profilePurchasesBounds.bottom <= profilePremiumBounds.top)
+        composeRule.onNodeWithTag("profile-premium")
+            .assertHasClickAction()
+            .performClick()
+        composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()
     }
 
     @Test
     fun illustratedReferencePagesKeepPrimaryActionsReachableAt320DpLargeText() {
-        val (section, actions) = setReferencePagesContent(fontScale = 1.5f)
+        val (section, actions) = setReferencePagesContent(
+            fontScale = 1.5f,
+            canvasHeightDp = 568,
+        )
         val strings = StaticLocalizationProvider.forLanguage(AppLanguage.RU)
 
         composeRule.onNodeWithTag("friends-reference-shell").assertIsDisplayed()
@@ -729,6 +1011,43 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
+    }
+
+    @Test
+    fun googlePlaySignInActionIsRestrictedToGuestAccounts() {
+        val accountState = mutableStateOf(
+            MirkoriAccountState(
+                kind = MirkoriAccountStateKind.GUEST,
+                gamePlayerId = "00000000-0000-4000-8000-000000000806",
+                authMode = PlatformAuthMode.GUEST,
+            ),
+        )
+        var signInRequests = 0
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = false),
+                mirkoriAccountState = accountState.value,
+                showGooglePlayCard = true,
+                onGooglePlaySignIn = { signInRequests += 1 },
+            )
+        }
+
+        composeRule.onNodeWithText("Войти через Google Play")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, signInRequests)
+            accountState.value = MirkoriAccountState(
+                kind = MirkoriAccountStateKind.LINKED,
+                gamePlayerId = "00000000-0000-4000-8000-000000000807",
+                authMode = PlatformAuthMode.TELEGRAM,
+            )
+        }
+
+        composeRule.onNodeWithText("Google Play").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Войти через Google Play").assertCountEquals(0)
+        composeRule.runOnIdle { assertEquals(1, signInRequests) }
     }
 
     @Test
@@ -1251,14 +1570,36 @@ class ShellSectionsSmokeTest {
     private fun setReferencePagesContent(
         fontScale: Float,
         constrainedTo320Dp: Boolean = true,
+        canvasWidthDp: Int = 320,
+        canvasHeightDp: Int = 600,
+        requireCanvasSize: Boolean = false,
+        initialSection: AppSection = AppSection.COMPANY,
     ): Pair<MutableState<AppSection>, MutableList<String>> {
-        val section = mutableStateOf(AppSection.COMPANY)
+        val section = mutableStateOf(initialSection)
         val actions = mutableListOf<String>()
+        val referenceFriends = listOf(
+            "Mirki", "Lina", "Alexey", "Kate",
+            "Friend 5", "Friend 6", "Friend 7", "Friend 8",
+        )
+            .mapIndexed { index, name -> referenceFriend(index.toString(), name) }
+        val referenceRequest = referenceFriendRequest()
+        val referenceProgress = progress(coins = 10146).copy(
+            openPositionHints = 1,
+            checkDigitHints = 2,
+            checkPositionHints = 1,
+            matchesPlayed = 9,
+            highestUnlockedCampaignLevel = 2,
+            totalCampaignRating = 6,
+        )
         setContent {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
                 val containerModifier = if (constrainedTo320Dp) {
-                    Modifier.width(320.dp).height(600.dp)
+                    if (requireCanvasSize) {
+                        Modifier.requiredWidth(canvasWidthDp.dp).requiredHeight(canvasHeightDp.dp)
+                    } else {
+                        Modifier.width(canvasWidthDp.dp).height(canvasHeightDp.dp)
+                    }
                 } else {
                     Modifier.fillMaxSize()
                 }
@@ -1266,6 +1607,7 @@ class ShellSectionsSmokeTest {
                     AppShell(
                         currentSection = section.value,
                         onSectionChange = { section.value = it },
+                        socialNotificationCount = 1,
                         bottomMode = BottomLayerMode.MENU,
                         topMode = TopLayerMode.OVERLAY,
                         centerMode = CenterLayerMode.TRANSPARENT,
@@ -1285,14 +1627,24 @@ class ShellSectionsSmokeTest {
                         },
                     ) {
                         when (section.value) {
+                            AppSection.SOCIAL -> FriendsReferenceScreen(
+                                friends = referenceFriends,
+                                incomingFriendRequests = listOf(referenceRequest),
+                                onlineConfigured = true,
+                                onlineFriendIds = referenceFriends.map { it.targetPlayerId }.toSet(),
+                                onOpenFriends = { actions += "friends" },
+                                onInvite = { actions += "invite" },
+                                onFindMatch = { actions += "match" },
+                                onAcceptFriendRequest = { MirkoriFriendOperationResult.Success(it) },
+                            )
                             AppSection.COMPANY -> CompanyRootScreen(
-                                progressState = progress().copy(campaignTutorialCompleted = true),
-                                campaignProgress = emptyList(),
+                                progressState = referenceProgress.copy(campaignTutorialCompleted = true),
+                                campaignProgress = listOf(CampaignLevelProgress(1, 8)),
                                 activeLevelNumber = null,
                                 onActiveLevelNumberChange = { actions += "company:$it" },
                             )
                             AppSection.SHOP -> ShopRootScreen(
-                                progressState = progress(coins = 10146),
+                                progressState = referenceProgress,
                                 onWatchRewardedCoins = { completed ->
                                     actions += "rewarded"
                                     completed(true)
@@ -1308,7 +1660,7 @@ class ShellSectionsSmokeTest {
                                 onBuyProPlus = {},
                             )
                             AppSection.PROFILE -> ProfileRootScreen(
-                                progressState = progress(coins = 10146),
+                                progressState = referenceProgress,
                                 mirkoriAccountState = MirkoriAccountState(
                                     kind = MirkoriAccountStateKind.LINKED,
                                     gamePlayerId = "00000000-0000-4000-8000-000000007065",
@@ -1321,6 +1673,10 @@ class ShellSectionsSmokeTest {
                                     avatarUrl = null,
                                 ),
                                 showGooglePlayCard = true,
+                                onOpenShop = {
+                                    actions += "profile-premium"
+                                    section.value = AppSection.SHOP
+                                },
                             )
                             else -> Text("unused")
                         }

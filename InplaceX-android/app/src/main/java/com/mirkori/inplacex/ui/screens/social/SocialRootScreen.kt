@@ -138,7 +138,10 @@ fun SocialRootScreen(
             onInGameChange(false)
         }
     }
-    BackHandler(enabled = activeDestination == SocialDestination.FRIENDS) {
+    BackHandler(enabled = activeDestination != null) {
+        onActiveSessionChange(null)
+        selectedFriend = null
+        autoAcceptInviteCode = null
         activeDestination = null
     }
 

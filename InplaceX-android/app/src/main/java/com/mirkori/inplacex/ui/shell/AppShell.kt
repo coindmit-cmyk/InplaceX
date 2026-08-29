@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
@@ -85,14 +89,7 @@ private fun ShellBackground(
     illustratedReference: Boolean,
     content: @Composable () -> Unit
 ) {
-    val navBar = WindowInsets.navigationBars.asPaddingValues()
     val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
-    val bottomSlotBottomPadding = if (illustratedReference) maxOf(navBar.calculateBottomPadding(), 14.dp) else when (bottomMode) {
-        BottomLayerMode.MENU -> 0.dp
-        BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
-        BottomLayerMode.AD_LOADING -> 0.dp
-        BottomLayerMode.NONE -> 0.dp
-    }
 
     ScreenBackground(
         style = if (illustratedReference) ScreenBackgroundStyle.DrawableResource(R.drawable.friends_room_v8, InplaceXColors.ToyWood) else backgroundStyle,
@@ -104,29 +101,109 @@ private fun ShellBackground(
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize()
         ) {
-            val screenWidth = maxWidth
-            val screenHeight = maxHeight
-
-            val referenceScale = (screenWidth.value / 374f).coerceIn(.85f, 1.15f)
-            val horizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellHorizontalPaddingPercent
-            val innerHorizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
-            val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
-                0.dp
+            val physicalDensity = LocalDensity.current
+            val exactReferenceCanvas = illustratedReference && physicalDensity.fontScale <= 1.3f
+            val canvasScale = if (exactReferenceCanvas) {
+                minOf(maxWidth.value / 374f, maxHeight.value / 877f).coerceAtMost(1.15f)
             } else {
-                if (illustratedReference) friendsReferenceHudHeight(screenWidth, LocalDensity.current.fontScale)
-                else maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
+                1f
             }
-            val bottomSlotHeight = when (bottomMode) {
-                BottomLayerMode.NONE -> 0.dp
-                BottomLayerMode.MENU -> if (illustratedReference) 76.dp * referenceScale else maxOf(
-                    screenHeight * layoutConfig.bottomSlotHeightPercent,
-                    72.dp,
+            val layerDensity = if (exactReferenceCanvas) {
+                Density(
+                    density = physicalDensity.density * canvasScale,
+                    fontScale = physicalDensity.fontScale,
                 )
-                BottomLayerMode.AD -> screenHeight * layoutConfig.bottomSlotHeightPercent
-                BottomLayerMode.AD_LOADING -> 0.dp
+            } else {
+                physicalDensity
             }
+            Box(
+                modifier = if (exactReferenceCanvas) {
+                    Modifier
+                        .align(Alignment.Center)
+                        .size(374.dp * canvasScale, 877.dp * canvasScale)
+                } else {
+                    Modifier.fillMaxSize()
+                },
+            ) {
+                CompositionLocalProvider(LocalDensity provides layerDensity) {
+                    ShellLayers(
+                        modifier = if (exactReferenceCanvas) {
+                            Modifier.requiredSize(374.dp, 877.dp)
+                        } else {
+                            Modifier.fillMaxSize()
+                        },
+                        currentSection = currentSection,
+                        onSectionChange = onSectionChange,
+                        socialNotificationCount = socialNotificationCount,
+                        bottomMode = bottomMode,
+                        topMode = topMode,
+                        centerMode = centerMode,
+                        layoutConfig = layoutConfig,
+                        topContent = topContent,
+                        bottomAdContent = bottomAdContent,
+                        illustratedReference = illustratedReference,
+                        fixedReferenceCanvas = exactReferenceCanvas,
+                        centerSurfaceColor = centerSurfaceColor,
+                        content = content,
+                    )
+                }
+            }
+        }
+    }
+}
 
-            if (topMode != TopLayerMode.NONE && topContent != null) {
+@Composable
+private fun ShellLayers(
+    modifier: Modifier,
+    currentSection: AppSection,
+    onSectionChange: (AppSection) -> Unit,
+    socialNotificationCount: Int,
+    bottomMode: BottomLayerMode,
+    topMode: TopLayerMode,
+    centerMode: CenterLayerMode,
+    layoutConfig: UiLayoutConfig,
+    topContent: (@Composable () -> Unit)?,
+    bottomAdContent: (@Composable () -> Unit)?,
+    illustratedReference: Boolean,
+    fixedReferenceCanvas: Boolean,
+    centerSurfaceColor: Color,
+    content: @Composable () -> Unit,
+) {
+    val navBar = WindowInsets.navigationBars.asPaddingValues()
+    val bottomSlotBottomPadding = if (fixedReferenceCanvas) {
+        14.dp
+    } else if (illustratedReference) {
+        maxOf(navBar.calculateBottomPadding(), 14.dp)
+    } else when (bottomMode) {
+        BottomLayerMode.MENU -> 0.dp
+        BottomLayerMode.AD -> navBar.calculateBottomPadding() + layoutConfig.bottomSlotBottomPadding
+        BottomLayerMode.AD_LOADING -> 0.dp
+        BottomLayerMode.NONE -> 0.dp
+    }
+
+    BoxWithConstraints(modifier = modifier) {
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val referenceScale = (screenWidth.value / 374f).coerceIn(.85f, 1.15f)
+        val horizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellHorizontalPaddingPercent
+        val innerHorizontalPadding = if (illustratedReference) 0.dp else screenWidth * layoutConfig.shellInnerHorizontalPaddingPercent
+        val topSlotHeight = if (topMode == TopLayerMode.NONE || topContent == null) {
+            0.dp
+        } else {
+            if (illustratedReference) friendsReferenceHudHeight(screenWidth, LocalDensity.current.fontScale)
+            else maxOf(screenHeight * layoutConfig.topSlotHeightPercent, 56.dp)
+        }
+        val bottomSlotHeight = when (bottomMode) {
+            BottomLayerMode.NONE -> 0.dp
+            BottomLayerMode.MENU -> if (illustratedReference) 76.dp * referenceScale else maxOf(
+                screenHeight * layoutConfig.bottomSlotHeightPercent,
+                72.dp,
+            )
+            BottomLayerMode.AD -> screenHeight * layoutConfig.bottomSlotHeightPercent
+            BottomLayerMode.AD_LOADING -> 0.dp
+        }
+
+        if (topMode != TopLayerMode.NONE && topContent != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -134,6 +211,7 @@ private fun ShellBackground(
                         .padding(horizontal = horizontalPadding)
                         .padding(top = layoutConfig.shellTopPadding)
                         .height(topSlotHeight)
+                        .then(if (illustratedReference) Modifier.testTag("reference-top-slot") else Modifier)
                 ) {
                     when (topMode) {
                         TopLayerMode.SURFACE -> {
@@ -157,14 +235,14 @@ private fun ShellBackground(
                 }
             }
 
-            val centerLayerModifier = Modifier
+        val centerLayerModifier = Modifier
                 .align(Alignment.TopStart)
                 .fillMaxWidth()
                 .padding(horizontal = horizontalPadding)
                 .padding(top = layoutConfig.shellTopPadding + topSlotHeight + if (topSlotHeight > 0.dp) layoutConfig.topSlotBottomGap else 0.dp)
                 .padding(bottom = bottomSlotHeight + (if (illustratedReference) bottomSlotBottomPadding else 0.dp) + if (bottomSlotHeight > 0.dp) layoutConfig.shellBottomGap else 0.dp)
 
-            when (centerMode) {
+        when (centerMode) {
                 CenterLayerMode.SURFACE -> {
                     Surface(
                         modifier = centerLayerModifier.testTag("shell-center-surface"),
@@ -196,7 +274,7 @@ private fun ShellBackground(
                 }
             }
 
-            if (bottomMode != BottomLayerMode.NONE) {
+        if (bottomMode != BottomLayerMode.NONE) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -206,7 +284,12 @@ private fun ShellBackground(
                         .height(bottomSlotHeight)
                 ) {
                     if (illustratedReference && bottomMode == BottomLayerMode.MENU) {
-                        FriendsReferenceBottomBar(currentSection, onSectionChange, socialNotificationCount, Modifier.fillMaxSize())
+                        FriendsReferenceBottomBar(
+                            currentSection,
+                            onSectionChange,
+                            socialNotificationCount,
+                            Modifier.fillMaxSize().testTag("reference-bottom-bar"),
+                        )
                     } else AppBottomSlot(
                         currentSection = currentSection,
                         onSectionChange = onSectionChange,
@@ -216,7 +299,6 @@ private fun ShellBackground(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-            }
         }
     }
 }

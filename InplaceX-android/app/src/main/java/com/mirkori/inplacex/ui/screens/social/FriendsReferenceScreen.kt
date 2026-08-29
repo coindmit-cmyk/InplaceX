@@ -225,6 +225,49 @@ internal fun FriendsReferenceScreen(
                     }
                 }
             }
+            if (requests.isEmpty()) {
+                IllustratedSurface(
+                    FriendsReferenceStyle.Cream,
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 92.dp * scale)
+                        .testTag("friends-request-empty"),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp * scale),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    ) {
+                        FriendsIllustration(FriendsArt.ENVELOPE, Modifier.size(56.dp * scale))
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("friends-requests-open")
+                                .clickable(role = Role.Button, onClick = onOpenFriends),
+                        ) {
+                            Text(
+                                strings.text("social.reference.requests_title"),
+                                style = FriendsReferenceStyle.CardTitle.copy(fontSize = 16.sp),
+                                maxLines = 1,
+                            )
+                            Text(
+                                strings.text("social.reference.no_requests"),
+                                style = FriendsReferenceStyle.Small,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        ReferenceSmallButton(
+                            label = strings.text("social.reference.open"),
+                            busy = false,
+                            modifier = Modifier.width(87.dp),
+                            onClick = onOpenFriends,
+                        )
+                    }
+                }
+            }
 
             val invite: @Composable (Modifier) -> Unit = { tileModifier ->
                 ReferenceActionTile(strings.text("social.reference.invite"), strings.text("social.reference.invite_description"),
@@ -282,13 +325,28 @@ private fun RequestText(request: MirkoriFriendRequest, count: Int, onOpen: () ->
 @Composable
 private fun AcceptRequestButton(busy: Boolean, modifier: Modifier, onAccept: () -> Unit) {
     val strings = LocalAppStrings.current
-    Box(modifier.heightIn(min = 48.dp).testTag("friends-accept-request")
-        .clickable(enabled = !busy, role = Role.Button, onClick = onAccept), contentAlignment = Alignment.Center) {
+    ReferenceSmallButton(
+        label = strings.text("social.friend.request.accept"),
+        busy = busy,
+        modifier = modifier.testTag("friends-accept-request"),
+        onClick = onAccept,
+    )
+}
+
+@Composable
+private fun ReferenceSmallButton(
+    label: String,
+    busy: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    Box(modifier.heightIn(min = 48.dp)
+        .clickable(enabled = !busy, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         IllustratedSurface(listOf(Color(0xFF1AABF0), Color(0xFF0781CF), Color(0xFF075295)),
             Modifier.fillMaxWidth(), rim = Color(0xFF84DDFF), radius = 11.dp) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
                 if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text(strings.text("social.friend.request.accept"),
+                else Text(label,
                     style = FriendsReferenceStyle.Body.copy(color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold))
             }
         }

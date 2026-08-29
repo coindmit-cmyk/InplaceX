@@ -3,13 +3,16 @@
 ## Unreleased
 
 - The illustrated reference style now covers the Friends, Company, Shop, and
-  Profile roots. Company uses the real campaign route and rewards, Shop keeps the
-  real stock, prices, billing, and rewarded-ad callbacks, and Profile shows the
-  actual Mirkori Games, Google Play, and progress state. The shared navy HUD,
-  cream cards, warm-room background, and bottom navigation stay opt-in: Home,
-  nested Social routes, active games, Settings, and internal tools retain their
-  existing layout. The reproducible method is documented in
-  `InplaceX-docs/Game/Human/Friends Reference Pilot.md`.
+  Profile roots on one fitted 374×877 canvas. Their block geometry, card order,
+  artwork scale, warm-room shell, navy HUD, and bottom navigation now follow
+  the supplied four-screen reference and have deterministic side-by-side,
+  overlay, and diff evidence; owner visual acceptance remains a separate gate.
+  Company still uses the real campaign
+  route and rewards, Shop keeps real stock, prices, billing, and rewarded-ad
+  callbacks, and Profile shows actual Mirkori Games, Google Play, and progress
+  state. Home, nested Social routes, active games, Settings, and internal tools
+  retain their existing layout. The repeatable capture and artwork method is
+  documented in `InplaceX-docs/Game/Human/Friends Reference Pilot.md`.
 
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
