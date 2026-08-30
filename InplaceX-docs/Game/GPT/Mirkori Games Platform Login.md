@@ -138,10 +138,13 @@ stores. The raw proof is never logged.
 
 No Mirkori Games sign-out button is exposed in v1 because the platform does not
 yet have a provider-session revocation endpoint. When the Platform profile is
-linked, the legacy Google Play sign-out action is hidden as well: discarding
-only local credentials while leaving the server refresh family active would
-present a false logout. A future logout flow must revoke the Platform session
-server-side before clearing the encrypted local state.
+linked through Google, the Connections section may disconnect the local Google
+Credential Manager state and local Google Play progress flag. This is explicitly
+device-local: the Mirkori Games account, encrypted Platform credentials, refresh
+family, and active online session remain unchanged, and the player can request a
+fresh Google credential on the same linked profile. A future full Mirkori logout
+flow must revoke the Platform session server-side before clearing encrypted
+Platform state.
 
 ## Build and App Link
 

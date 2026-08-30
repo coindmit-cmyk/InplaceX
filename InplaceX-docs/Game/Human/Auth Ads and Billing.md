@@ -39,8 +39,12 @@ must go through the future authenticated cloud-save contract, not an implicit de
   shared direct-provider verification module remain debug/test or historical
   compatibility only; production Credential Manager exchange now terminates at
   Mirkori Games Platform instead
-- no logout action is shown for a linked Platform profile until Mirkori can
-  revoke the server session before encrypted local credentials are cleared
+- Profile groups Mirkori Games and Google actions under one Connections section
+- a Google-linked profile can disconnect Google Credential Manager on this
+  device and reconnect it later; this does not sign out of Mirkori Games or
+  clear the Platform session
+- full Mirkori Games logout remains unavailable until the Platform can revoke
+  the server refresh session before encrypted Platform credentials are cleared
 
 ## Rewarded Ads
 

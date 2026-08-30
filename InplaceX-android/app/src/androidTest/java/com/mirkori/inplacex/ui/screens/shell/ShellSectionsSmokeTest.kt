@@ -988,6 +988,27 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun linkedGoogleAccountExposesDeviceSignOutInsideConnections() {
+        var signOutRequested = false
+        setContent {
+            ProfileRootScreen(
+                progressState = progress().copy(googlePlaySignedIn = true),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000813",
+                    authMode = PlatformAuthMode.GOOGLE,
+                ),
+                showGooglePlayCard = true,
+                onGooglePlaySignOut = { signOutRequested = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Подключения").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Выйти из Google Play").performScrollTo().performClick()
+        composeRule.runOnIdle { assertTrue(signOutRequested) }
+    }
+
+    @Test
     fun initializingMirkoriAccountDoesNotExposeLegacyGoogleSignOut() {
         setContent {
             ProfileRootScreen(

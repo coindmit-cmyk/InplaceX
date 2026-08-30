@@ -298,82 +298,69 @@ fun ProfileRootScreen(
             },
         )
 
-        if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
-            ProfileAccountActionCard(
-                message = when (mirkoriAccountState.kind) {
-                    MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected")
-                    MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest")
-                    MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
-                    MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
-                },
-                actionLabel = strings.text("profile.mirkori.sign_in"),
-                actionEnabled = !mirkoriAuthInProgress &&
-                    mirkoriAccountState.kind != MirkoriAccountStateKind.INITIALIZING,
-                onAction = onMirkoriSignIn,
-            )
-        }
-
         publicProfileResultKey?.let { key ->
             ProfileResultCard(
                 text = strings.text(key),
                 success = key in PublicProfileSuccessKeys,
             )
         }
-        val mirkoriResultKey = if (mirkoriAuthInProgress) "profile.mirkori.in_progress" else mirkoriAuthResultKey
+        val mirkoriAction = mirkoriConnectionAction(mirkoriAccountState.kind)
+        val googleConnected = googleConnectionIsActive(
+            locallySignedIn = progressState.googlePlaySignedIn,
+            accountKind = mirkoriAccountState.kind,
+            authMode = mirkoriAccountState.authMode,
+        )
+        val googleAction = googleConnectionAction(
+            showGooglePlay = showGooglePlayCard,
+            connected = googleConnected,
+            accountKind = mirkoriAccountState.kind,
+            authMode = mirkoriAccountState.authMode,
+        )
+        ProfileConnectionsCard(
+            mirkoriStatus = when (mirkoriAccountState.kind) {
+                MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected")
+                MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest")
+                MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
+                MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
+            },
+            mirkoriConnected = mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED,
+            mirkoriAction = mirkoriAction,
+            mirkoriActionLabel = mirkoriAction?.let { strings.text("profile.mirkori.sign_in") },
+            mirkoriActionEnabled = !mirkoriAuthInProgress,
+            onMirkoriAction = onMirkoriSignIn,
+            showGooglePlay = showGooglePlayCard,
+            googleStatus = strings.text(
+                if (googleConnected) {
+                    "profile.google_play.connected"
+                } else {
+                    "profile.google_play.disconnected"
+                },
+            ),
+            googleConnected = googleConnected,
+            googleAction = googleAction,
+            googleActionLabel = when (googleAction) {
+                ProfileConnectionAction.SIGN_IN -> strings.text("profile.google_play.sign_in")
+                ProfileConnectionAction.SIGN_OUT -> strings.text("profile.google_play.sign_out")
+                null -> null
+            },
+            googleActionEnabled = !authInProgress,
+            onGoogleAction = when (googleAction) {
+                ProfileConnectionAction.SIGN_OUT -> onGooglePlaySignOut
+                else -> onGooglePlaySignIn
+            },
+        )
+
+        val mirkoriResultKey = if (mirkoriAuthInProgress) {
+            "profile.mirkori.in_progress"
+        } else {
+            mirkoriAuthResultKey
+        }
         mirkoriResultKey?.let { key ->
             ProfileResultCard(
                 text = strings.text(key),
                 success = key !in MirkoriAuthErrorKeys,
             )
         }
-
-        val googleConnected = if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
-            mirkoriAccountState.authMode == PlatformAuthMode.GOOGLE
-        } else {
-            progressState.googlePlaySignedIn
-        }
-        val googleActionAllowed = showGooglePlayCard &&
-            mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
-        ProfileConnectionsCard(
-            showGooglePlayBrand = showGooglePlayCard,
-            providerTitle = if (showGooglePlayCard) {
-                strings.text("profile.google_play.title")
-            } else {
-                strings.text("profile.mirkori.title")
-            },
-            providerStatus = if (showGooglePlayCard) {
-                strings.text(
-                    if (googleConnected) {
-                        "profile.google_play.connected.short"
-                    } else if (mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED) {
-                        "profile.google_play.disconnected.short"
-                    } else {
-                        "profile.google_play.disconnected"
-                    },
-                )
-            } else {
-                when (mirkoriAccountState.kind) {
-                    MirkoriAccountStateKind.LINKED -> strings.text("profile.connection.connected")
-                    MirkoriAccountStateKind.GUEST -> strings.text("profile.connection.guest")
-                    MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.connection.connecting")
-                    MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.connection.unavailable")
-                }
-            },
-            connected = if (showGooglePlayCard) googleConnected else
-                mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED,
-            actionLabel = when {
-                !googleActionAllowed -> null
-                googleConnected -> strings.text("profile.google_play.sign_out")
-                else -> strings.text("profile.google_play.sign_in")
-            },
-            actionEnabled = !authInProgress,
-            onAction = when {
-                !googleActionAllowed -> null
-                googleConnected -> onGooglePlaySignOut
-                else -> onGooglePlaySignIn
-            },
-        )
-
         val googleResultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
         if (showGooglePlayCard) googleResultKey?.let { key ->
             ProfileResultCard(
@@ -677,13 +664,19 @@ private fun ProfileResultCard(text: String, success: Boolean) {
 
 @Composable
 private fun ProfileConnectionsCard(
-    showGooglePlayBrand: Boolean,
-    providerTitle: String,
-    providerStatus: String,
-    connected: Boolean,
-    actionLabel: String?,
-    actionEnabled: Boolean,
-    onAction: (() -> Unit)?,
+    mirkoriStatus: String,
+    mirkoriConnected: Boolean,
+    mirkoriAction: ProfileConnectionAction?,
+    mirkoriActionLabel: String?,
+    mirkoriActionEnabled: Boolean,
+    onMirkoriAction: () -> Unit,
+    showGooglePlay: Boolean,
+    googleStatus: String,
+    googleConnected: Boolean,
+    googleAction: ProfileConnectionAction?,
+    googleActionLabel: String?,
+    googleActionEnabled: Boolean,
+    onGoogleAction: () -> Unit,
 ) {
     ProfileCreamCard(
         modifier = Modifier
@@ -698,64 +691,114 @@ private fun ProfileConnectionsCard(
             style = PageType.CardTitle.copy(fontSize = 17.sp, lineHeight = 20.sp),
             modifier = Modifier.padding(top = 4.dp).semantics { heading() },
         )
-        Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            shape = RoundedCornerShape(11.dp),
-            color = ProfileCreamHighlight,
-            border = BorderStroke(1.dp, ProfileGoldBorder.copy(alpha = .65f)),
+        ProfileConnectionRow(
+            showGooglePlayBrand = false,
+            title = LocalAppStrings.current.text("profile.mirkori.title"),
+            status = mirkoriStatus,
+            connected = mirkoriConnected,
+            action = mirkoriAction,
+            actionLabel = mirkoriActionLabel,
+            actionEnabled = mirkoriActionEnabled,
+            onAction = onMirkoriAction,
+            testTag = "profile-connection-mirkori",
+        )
+        if (showGooglePlay) {
+            ProfileConnectionRow(
+                showGooglePlayBrand = true,
+                title = LocalAppStrings.current.text("profile.google_play.title"),
+                status = googleStatus,
+                connected = googleConnected,
+                action = googleAction,
+                actionLabel = googleActionLabel,
+                actionEnabled = googleActionEnabled,
+                onAction = onGoogleAction,
+                testTag = "profile-connection-google",
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileConnectionRow(
+    showGooglePlayBrand: Boolean,
+    title: String,
+    status: String,
+    connected: Boolean,
+    action: ProfileConnectionAction?,
+    actionLabel: String?,
+    actionEnabled: Boolean,
+    onAction: () -> Unit,
+    testTag: String,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 60.dp)
+            .testTag(testTag),
+        shape = RoundedCornerShape(11.dp),
+        color = ProfileCreamHighlight,
+        border = BorderStroke(1.dp, ProfileGoldBorder.copy(alpha = .65f)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        color = if (showGooglePlayBrand) Color(0xFFFFF8E8) else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp),
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
+                if (showGooglePlayBrand) {
+                    GooglePlayMark(Modifier.size(27.dp))
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = null,
+                        tint = ProfileBlueAccent,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = PageType.Body.copy(fontWeight = FontWeight.SemiBold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = status,
+                    color = if (connected) ProfileSuccess else PageColors.TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (action != null && actionLabel != null) {
+                Surface(
+                    onClick = onAction,
+                    enabled = actionEnabled,
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            color = if (showGooglePlayBrand) Color(0xFFFFF8E8) else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp),
+                        .heightIn(min = 48.dp)
+                        .testTag(
+                            "$testTag-${if (action == ProfileConnectionAction.SIGN_OUT) "sign-out" else "sign-in"}",
                         ),
-                    contentAlignment = Alignment.Center,
+                    shape = RoundedCornerShape(10.dp),
+                    color = ProfileCream,
+                    border = BorderStroke(1.dp, ProfileGoldBorder),
                 ) {
-                    if (showGooglePlayBrand) {
-                        GooglePlayMark(Modifier.size(27.dp))
-                    } else {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = null,
-                            tint = ProfileBlueAccent,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = providerTitle,
-                        style = PageType.Body.copy(fontWeight = FontWeight.SemiBold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = providerStatus,
-                        color = if (connected) ProfileSuccess else PageColors.TextSecondary,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (actionLabel != null && onAction != null) {
-                    Surface(
-                        onClick = onAction,
-                        enabled = actionEnabled,
-                        shape = RoundedCornerShape(10.dp),
-                        color = ProfileCream,
-                        border = BorderStroke(1.dp, ProfileGoldBorder),
+                    Box(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = actionLabel,
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp),
                             color = ProfileBlueAccent,
                             fontSize = 11.sp,
                             lineHeight = 14.sp,
@@ -1029,6 +1072,44 @@ private val MirkoriAuthErrorKeys = setOf(
     "profile.mirkori.rejected",
     "profile.mirkori.conflict",
 )
+
+internal enum class ProfileConnectionAction {
+    SIGN_IN,
+    SIGN_OUT,
+}
+
+internal fun mirkoriConnectionAction(accountKind: MirkoriAccountStateKind): ProfileConnectionAction? =
+    when (accountKind) {
+        MirkoriAccountStateKind.GUEST,
+        MirkoriAccountStateKind.UNAVAILABLE,
+        -> ProfileConnectionAction.SIGN_IN
+        MirkoriAccountStateKind.INITIALIZING,
+        MirkoriAccountStateKind.LINKED,
+        -> null
+    }
+
+internal fun googleConnectionIsActive(
+    locallySignedIn: Boolean,
+    accountKind: MirkoriAccountStateKind,
+    authMode: PlatformAuthMode?,
+): Boolean = locallySignedIn && (
+    accountKind != MirkoriAccountStateKind.LINKED || authMode == PlatformAuthMode.GOOGLE
+)
+
+internal fun googleConnectionAction(
+    showGooglePlay: Boolean,
+    connected: Boolean,
+    accountKind: MirkoriAccountStateKind,
+    authMode: PlatformAuthMode?,
+): ProfileConnectionAction? = when {
+    !showGooglePlay || accountKind == MirkoriAccountStateKind.INITIALIZING -> null
+    connected -> ProfileConnectionAction.SIGN_OUT
+    accountKind == MirkoriAccountStateKind.GUEST -> ProfileConnectionAction.SIGN_IN
+    accountKind == MirkoriAccountStateKind.UNAVAILABLE -> ProfileConnectionAction.SIGN_IN
+    accountKind == MirkoriAccountStateKind.LINKED && authMode == PlatformAuthMode.GOOGLE ->
+        ProfileConnectionAction.SIGN_IN
+    else -> null
+}
 
 @Composable
 private fun ProfileOverview(progressState: GameProgressState) {

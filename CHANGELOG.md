@@ -2,18 +2,19 @@
 
 ## Unreleased
 
-- The illustrated reference style now covers the Friends, Company, Shop, and
-  Profile roots on one fitted 374×877 canvas. Their block geometry, card order,
-  artwork scale, warm-room shell, navy HUD, and bottom navigation now follow
-  the supplied four-screen reference and have deterministic side-by-side,
-  overlay, and diff evidence; owner visual acceptance remains a separate gate.
-  Company still uses the real campaign
-  route and rewards, Shop keeps real stock, prices, billing, and rewarded-ad
-  callbacks, and Profile shows actual Mirkori Games, Google Play, and progress
-  state. Home, nested Social routes, active games, Settings, and internal tools
-  retain their existing layout. The repeatable capture and artwork method is
-  documented in `InplaceX-docs/Game/Human/Friends Reference Pilot.md`.
-
+- Extended the illustrated reference style across Home, Race and Duel setup,
+  the real Friends list, private invitation creation and entry, the active game
+  board, and both Premium surfaces on the established 374×877 shell. The new
+  hierarchy keeps native controls and real online, inventory, billing, timer,
+  attempt, and navigation callbacks; sample friends, presence, ads, balances,
+  and purchase state from the supplied montage are not shipped as production
+  data. Exact crops, intentional target normalization, truthful deviations,
+  artwork provenance, and remaining device evidence gates are documented in
+  `InplaceX-docs/Game/Human/Reference v11 Redesign Pass.md`.
+- Profile now groups Mirkori Games and Google sign-in under one Connections
+  section. Google-linked players can disconnect and reconnect the device Google
+  credential without clearing their Mirkori Games account or active online
+  session, and a failed Credential Manager sign-out no longer reports success.
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.
