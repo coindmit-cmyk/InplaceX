@@ -57,7 +57,7 @@ class ProfilePresentationTest {
     }
 
     @Test
-    fun `linked non Google provider does not expose misleading Google action`() {
+    fun `linked non Google provider can start verified Google connection`() {
         assertFalse(
             googleConnectionIsActive(
                 locallySignedIn = true,
@@ -65,7 +65,8 @@ class ProfilePresentationTest {
                 authMode = PlatformAuthMode.TELEGRAM,
             ),
         )
-        assertNull(
+        assertEquals(
+            ProfileConnectionAction.SIGN_IN,
             googleConnectionAction(
                 showGooglePlay = true,
                 connected = false,

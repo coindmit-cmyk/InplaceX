@@ -15,6 +15,10 @@
   section. Google-linked players can disconnect and reconnect the device Google
   credential without clearing their Mirkori Games account or active online
   session, and a failed Credential Manager sign-out no longer reports success.
+  An existing Mirkori account linked through Telegram or another provider can
+  now start the same verified native Google flow instead of seeing a status-only
+  row. The avatar picker uses illustrated character portraits and can import,
+  crop, and store a custom photo locally for the current game profile.
 - Online input now shares free-position editing with local play: automatically
   confirmed digits no longer consume keypad presses, and disabling auto mode
   also disables hidden inferred substitutions on submission.

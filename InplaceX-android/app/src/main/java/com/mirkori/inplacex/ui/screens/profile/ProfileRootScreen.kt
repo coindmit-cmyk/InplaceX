@@ -74,6 +74,10 @@ import com.mirkori.inplacex.ui.theme.PageType
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.PhotoLibrary
 
 @Composable
 fun ProfileRootScreen(
@@ -92,6 +96,8 @@ fun ProfileRootScreen(
     onPublicHandleChange: (String) -> Unit = {},
     onDisplayNameChange: (String) -> Unit = {},
     onAvatarChange: (String) -> Unit = {},
+    localAvatarPath: String? = null,
+    onCustomAvatarSelected: (String) -> Unit = {},
     onGooglePlaySignIn: () -> Unit = {},
     onGooglePlaySignOut: () -> Unit = {},
     onOpenShop: () -> Unit = {},
@@ -110,11 +116,22 @@ fun ProfileRootScreen(
     var localNameError by remember { mutableStateOf(false) }
     var avatarDialogOpen by remember { mutableStateOf(false) }
     val visibleDisplayName = publicPlayerProfile?.displayName ?: progressState.playerDisplayName
+    val selectedPresetKey = if (localAvatarPath == null) {
+        PlayerAvatarPresets.firstOrNull { publicPlayerProfile?.avatarUrl?.endsWith("/${it.key}") == true }?.key
+    } else {
+        null
+    }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { onCustomAvatarSelected(it.toString()) }
+    }
 
     LaunchedEffect(publicProfileResultKey) {
         if (publicProfileResultKey == "profile.mirkori.handle.saved") handleDialogOpen = false
         if (publicProfileResultKey == "profile.mirkori.name.saved") nameDialogOpen = false
-        if (publicProfileResultKey == "profile.mirkori.avatar.saved") avatarDialogOpen = false
+        if (
+            publicProfileResultKey == "profile.mirkori.avatar.saved" ||
+            publicProfileResultKey == "profile.mirkori.avatar.local_saved"
+        ) avatarDialogOpen = false
     }
 
     if (nameDialogOpen) {
@@ -176,21 +193,72 @@ fun ProfileRootScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(strings.text("profile.mirkori.avatar.choose"))
-                    PlayerAvatarPresets.chunked(3).forEach { rowPresets ->
+                    PlayerAvatarPresets.chunked(2).forEach { rowPresets ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowPresets.forEach { preset ->
-                                PlayerAvatar(
-                                    displayName = visibleDisplayName,
-                                    avatarUrl = "/${preset.key}",
-                                    modifier = Modifier.size(64.dp),
-                                    onClick = { onAvatarChange(preset.key) },
-                                )
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable(enabled = !publicProfileInProgress) {
+                                            onAvatarChange(preset.key)
+                                        }
+                                        .testTag("profile-avatar-preset-${preset.key}"),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (selectedPresetKey == preset.key) {
+                                        ProfileBlueAccent.copy(alpha = .12f)
+                                    } else {
+                                        Color.White.copy(alpha = .42f)
+                                    },
+                                    border = BorderStroke(
+                                        if (selectedPresetKey == preset.key) 3.dp else 1.dp,
+                                        if (selectedPresetKey == preset.key) ProfileBlueAccent else ProfileGoldBorder,
+                                    ),
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                                    ) {
+                                        PlayerAvatar(
+                                            displayName = visibleDisplayName,
+                                            avatarUrl = "/${preset.key}",
+                                            modifier = Modifier.size(72.dp),
+                                        )
+                                        Text(
+                                            strings.text(preset.labelKey),
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
                             }
+                            if (rowPresets.size == 1) Spacer(Modifier.weight(1f))
                         }
                     }
+                    OutlinedButton(
+                        onClick = {
+                            photoPicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        enabled = !publicProfileInProgress,
+                        modifier = Modifier.fillMaxWidth().testTag("profile-avatar-upload"),
+                    ) {
+                        Icon(Icons.Outlined.PhotoLibrary, contentDescription = null)
+                        Text(
+                            strings.text("profile.mirkori.avatar.upload"),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    Text(
+                        strings.text("profile.mirkori.avatar.local_note"),
+                        style = PageType.Secondary,
+                        color = PageColors.TextSecondary,
+                    )
                 }
             },
             confirmButton = {
@@ -269,6 +337,7 @@ fun ProfileRootScreen(
             displayName = visibleDisplayName,
             handle = publicPlayerProfile?.handle,
             avatarUrl = publicPlayerProfile?.avatarUrl,
+            localAvatarPath = localAvatarPath,
             accountStatus = when (mirkoriAccountState.kind) {
                 MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected.short")
                 MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest.short")
@@ -454,6 +523,7 @@ private fun ProfileIdentityCard(
     displayName: String,
     handle: String?,
     avatarUrl: String?,
+    localAvatarPath: String?,
     accountStatus: String,
     unlockedCampaignLevel: Int,
     campaignRating: Int,
@@ -490,7 +560,8 @@ private fun ProfileIdentityCard(
                 PlayerAvatar(
                     displayName = displayName,
                     avatarUrl = avatarUrl,
-                    modifier = Modifier.size(104.dp),
+                    localAvatarPath = localAvatarPath,
+                    modifier = Modifier.size(104.dp).testTag("profile-avatar"),
                     onClick = onAvatarClick,
                 )
                 Column(
@@ -1093,7 +1164,7 @@ internal fun googleConnectionIsActive(
     accountKind: MirkoriAccountStateKind,
     authMode: PlatformAuthMode?,
 ): Boolean = locallySignedIn && (
-    accountKind != MirkoriAccountStateKind.LINKED || authMode == PlatformAuthMode.GOOGLE
+    accountKind == MirkoriAccountStateKind.LINKED && authMode == PlatformAuthMode.GOOGLE
 )
 
 internal fun googleConnectionAction(
@@ -1104,11 +1175,7 @@ internal fun googleConnectionAction(
 ): ProfileConnectionAction? = when {
     !showGooglePlay || accountKind == MirkoriAccountStateKind.INITIALIZING -> null
     connected -> ProfileConnectionAction.SIGN_OUT
-    accountKind == MirkoriAccountStateKind.GUEST -> ProfileConnectionAction.SIGN_IN
-    accountKind == MirkoriAccountStateKind.UNAVAILABLE -> ProfileConnectionAction.SIGN_IN
-    accountKind == MirkoriAccountStateKind.LINKED && authMode == PlatformAuthMode.GOOGLE ->
-        ProfileConnectionAction.SIGN_IN
-    else -> null
+    else -> ProfileConnectionAction.SIGN_IN
 }
 
 @Composable
@@ -1307,4 +1374,5 @@ private val PublicProfileSuccessKeys = setOf(
     "profile.mirkori.handle.saved",
     "profile.mirkori.name.saved",
     "profile.mirkori.avatar.saved",
+    "profile.mirkori.avatar.local_saved",
 )

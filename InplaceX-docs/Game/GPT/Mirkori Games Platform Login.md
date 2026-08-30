@@ -146,6 +146,19 @@ fresh Google credential on the same linked profile. A future full Mirkori logout
 flow must revoke the Platform session server-side before clearing encrypted
 Platform state.
 
+The native Google action is also available when the current linked Platform
+session was issued through Local, Telegram, or another non-Google provider. It
+creates the same installation-bound PKCE session and lets Platform reconcile the
+verified Google account. Profile conflicts remain fail-closed and still require
+the explicit existing-profile confirmation described above.
+
+The Android avatar picker maps the six supported public `avatarKey` values to
+illustrated local portraits. A player may also import a photo through Android's
+system photo picker; Android center-crops it to a bounded 512px JPEG and stores
+it in app-private storage keyed by `gamePlayerId`. This custom photo is explicitly
+device-local because Platform v1 has no authenticated custom-avatar upload or
+media-storage contract. Selecting a public preset removes the local override.
+
 ## Build and App Link
 
 - application ID: `com.mirkori.inplacex`

@@ -80,6 +80,7 @@ import com.mirkori.inplacex.platform.online.IncomingFriendInviteNotifier
 import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.profile.ProfileAvatarStore
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingAvailability
 import com.mirkori.inplacex.platform.services.BillingNotice
@@ -147,6 +148,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(feedbackSettingsStore.read())
                 }
                 val progressRepository = remember { GameProgressRepository(applicationContext) }
+                val profileAvatarStore = remember { ProfileAvatarStore(applicationContext) }
                 val mirkoriPlatformRuntime = remember {
                     runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
                         .onFailure { error ->
@@ -272,6 +274,7 @@ class MainActivity : ComponentActivity() {
                 var mirkoriAccountState by remember {
                     mutableStateOf(MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING))
                 }
+                var localAvatarPath by remember { mutableStateOf<String?>(null) }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
                 var publicPlayerProfile by remember {
@@ -363,6 +366,9 @@ class MainActivity : ComponentActivity() {
                             mirkoriAccountState = state
                         }
                     }
+                }
+                LaunchedEffect(mirkoriAccountState.gamePlayerId) {
+                    localAvatarPath = mirkoriAccountState.gamePlayerId?.let(profileAvatarStore::current)
                 }
                 LaunchedEffect(
                     mirkoriPlatformRuntime,
@@ -1344,6 +1350,7 @@ class MainActivity : ComponentActivity() {
                                 publicPlayerProfile = publicPlayerProfile,
                                 publicProfileResultKey = publicProfileResultKey,
                                 publicProfileInProgress = publicProfileOperation.inProgress,
+                                localAvatarPath = localAvatarPath,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
                                 showGooglePlayCard = googleProfileActionsEnabled(),
@@ -1480,6 +1487,8 @@ class MainActivity : ComponentActivity() {
                                                 publicProfileResultKey = when (result) {
                                                     is MirkoriPublicProfileResult.Success -> {
                                                         publicPlayerProfile = result.profile
+                                                        mirkoriAccountState.gamePlayerId?.let(profileAvatarStore::clear)
+                                                        localAvatarPath = null
                                                         "profile.mirkori.avatar.saved"
                                                     }
                                                     MirkoriPublicProfileResult.Rejected ->
@@ -1488,6 +1497,37 @@ class MainActivity : ComponentActivity() {
                                                     MirkoriPublicProfileResult.Unavailable ->
                                                         "profile.mirkori.avatar.unavailable"
                                                 }
+                                            } finally {
+                                                publicProfileOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onCustomAvatarSelected = { uriValue ->
+                                    publicProfileOperation.start()?.let { operationId ->
+                                        publicProfileResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val playerId = mirkoriAccountState.gamePlayerId
+                                                val imported = if (playerId == null) null else {
+                                                    withContext(Dispatchers.IO) {
+                                                        profileAvatarStore.import(playerId, Uri.parse(uriValue))
+                                                    }
+                                                }
+                                                if (imported == null) {
+                                                    publicProfileResultKey = "profile.mirkori.avatar.local_invalid"
+                                                } else {
+                                                    localAvatarPath = imported
+                                                    publicProfileResultKey = "profile.mirkori.avatar.local_saved"
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Local profile avatar import failed",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                                publicProfileResultKey = "profile.mirkori.avatar.local_invalid"
                                             } finally {
                                                 publicProfileOperation.finish(operationId)
                                             }
