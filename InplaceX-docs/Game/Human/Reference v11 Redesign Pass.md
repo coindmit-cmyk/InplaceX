@@ -2,21 +2,57 @@
 
 ## Статус документа
 
-Документ фиксирует проверенный target contract для текущего v11 reference pass
-по состоянию на 2026-08-30. Он не является отчётом о завершённой реализации.
+Документ фиксирует реализованный и локально проверенный v11 reference pass по
+состоянию на 2026-08-30. Это не означает визуальное утверждение владельцем,
+публикацию ветки, прохождение remote CI или merge.
 
-- Рабочая ветка: `feature/reference-pages-v9`, локальный `HEAD` `1a07a4b1`.
+- Рабочая ветка: `feature/reference-pages-v9`; проверенный code candidate —
+  `7122ab325d24add8817a478796e6220365e7b9ab`.
+- Реализация девяти surfaces и 16 artwork resources находится в `1901173d`,
+  auth/profile integration — в `173e323f`, финальная геометрия, callbacks и
+  truthful-state fixes — в `7122ab32`.
 - Общий reference PR: [coindmit-cmyk/InplaceX#99](https://github.com/coindmit-cmyk/InplaceX/pull/99),
   draft, `feature/reference-pages-v9` -> `feature/friends-reference-v8`.
-- Remote PR содержит v10-коммиты `d53d58ec` и `1a07a4b1`. Текущий v11 diff
-  остаётся локальным и не должен считаться содержимым PR, пока ветка не обновлена.
-- Target crops, metric sheet, control matrix и asset provenance подготовлены в
-  `build/visual-qa/reference-v11-targets/`.
-- Для v11 ещё не зафиксированы успешная сборка, полный тестовый прогон,
-  device captures, callback smoke, визуальное утверждение владельцем или merge.
+- Последний проверенный remote HEAD PR #99 — `1a07a4b1`. Code commits
+  `1901173d`, `173e323f`, `7122ab32` и текущая документация из-за отсутствия
+  интернета ещё не опубликованы и не считаются содержимым remote PR.
+- Target crops и provenance находятся в `build/visual-qa/reference-v11-targets/`;
+  реальные device captures, normalized target/current/overlay/diff и manifests —
+  в `build/visual-qa/reference-v11-device-captures/`.
+- Локальная сборка, полный instrumentation на двух телефонах и независимый
+  findings-first review завершены. Визуальное утверждение владельца и merge
+  остаются отдельными gates.
 
 Скриншоты используются как визуальное свидетельство. Их значения, пользователи,
 статусы, покупки и доступность функций не заменяют реальные контракты приложения.
+
+## Локальная проверка реализации
+
+На code candidate `7122ab32` выполнена одна команда:
+
+`gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest`
+
+Результат: `BUILD SUCCESSFUL`. App APK установлен через `adb install -r -t`
+без очистки данных приложения. На OnePlus зависший старый test-runner пришлось
+остановить и переустановить только пакет `com.mirkori.inplacex.test`; пакет и
+данные `com.mirkori.inplacex` не удалялись.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `app-debug.apk` | `06ac75f55828390bd7103e0bb19b84fc8d05690cb2055239c15ca1ce91e745cb` |
+| `app-debug-androidTest.apk` | `4d7034707eff974c6866023fc13c60c7ee129cf1195dc9b39a382529872d7bf1` |
+
+| Device | API | Screenshot | Verified app crop | Canvas | Instrumentation |
+| --- | ---: | --- | --- | --- | --- |
+| Galaxy S24+ | 35 | `1080x2340` | `[41,0,1039,2340]` | `374x877` | `OK (88 tests)` |
+| OnePlus 9 Pro | 33 | `1080x2412` | `[57,96,1023,2364]` | `374x877` | `OK (88 tests)` |
+
+Полный shell и реальные маршруты сняты с установленного APK. Для игрового
+экрана используются полные app bounds (`[0,0,1080,2340]` на S24+ и
+`[0,96,1080,2364]` на OnePlus), потому что active game не оборачивается в
+фиксированный reference shell. После финального review повторно сняты «Гонка» и
+«Приглашения»; системный performance overlay на OnePlus исключён повторным
+settled capture.
 
 ## Исходники и канонический canvas
 
@@ -85,10 +121,10 @@ Runtime Compose canvas при этом должен fit-иться равном�
 | Область референса | Реальный контракт InplaceX |
 | --- | --- |
 | HUD `5/5`, `10186` и кнопки пополнения | Показывать фактические energy/wallet values и только реальные store actions. |
-| Sample friends, `Онлайн`, `В игре`, `Оффлайн` | Список, relationship и presence берутся из текущего аккаунта и runtime. Fixture/debug bot не переносится в production как живой пользователь. |
+| Sample friends, `Онлайн`, `В игре`, `Оффлайн` | Список и relationship берутся из текущего аккаунта. Production call site не передаёт realtime presence, поэтому вымышленные статусы не показываются. Fixture/debug bot не переносится как живой пользователь. |
 | Гонка с `6 цифр` | Использовать выбранную длину секрета в разрешённом диапазоне `4..10`; расход энергии и доступность online берутся из runtime. |
-| `Тренировка` и `Рекорды` | Production route сейчас отсутствует. Если элементы сохраняются для композиции, они должны быть disabled/coming soon с причиной и без fake callback. |
-| Дуэль с ботом и online | Использовать существующие bot/online routes; online отключается с явной причиной, если transport недоступен. |
+| `Тренировка` и `Рекорды` | «Тренировка» запускает существующую локальную Race против `BotSolver`; «Рекорды» disabled и явно помечены как будущий раздел. |
+| Дуэль с ботом и online | Использовать существующие bot/online routes; online отключается, если transport недоступен. Отдельная причина сейчас не выводится на duel tile. |
 | Экран приглашения с `4 цифры` | Это длина игрового секрета, которую выбирают до активной сессии; она не определяет длину invite code. |
 | Ввод шестисимвольного кода | Реальный friend invite содержит ровно `8` нормализованных символов. Поле, ошибка и busy state должны следовать этому контракту. |
 | `0/20`, sample timer и пустая таблица игры | Attempts, timer, turn ownership, матрица и доступность submit берутся из `GameField` state. Число `20` из картинки не создаёт новый лимит ходов. |
@@ -96,6 +132,8 @@ Runtime Compose canvas при этом должен fit-иться равном�
 | Встроенный demo ad creative | В production допустимы только loading/error/реальный provider creative; картинка не является рекламным контрактом. |
 | Premium cards и `Недоступно` | Product list, provider availability, pending/owned state, цена и entitlement берутся из `BillingState`. |
 | `PRO на 1 час` за `60 монет` | Это существующий временный PRO contract: `60` монет за `1` час; remaining time остаётся реальным. |
+| Слишком компактные controls игрового экрана | Нажимаемые элементы сохраняют минимум `48dp`, даже если из-за этого несколько рядов выше, чем на montage. |
+| Только Google в Profile reference | Реализация сохраняет объединённый раздел «Подключения» с независимыми Mirkori Games и device-local Google actions. |
 
 ## Callback matrix
 
@@ -115,10 +153,11 @@ Runtime Compose canvas при этом должен fit-иться равном�
 | Home Company | `AppSection` | `HomeRootScreen` | `onOpenCompany` | enabled |
 | Code length `-`/`+` | selected code length | setup screen | `onCodeLengthChange` | `4..10` |
 | Race local | game mode config | `HomeRootScreen` | `PVE_GAME` | только valid config |
-| Race online | `OnlineRuntime` | `HomeRootScreen` | online `RACE` | disabled с причиной при unavailable runtime |
-| Training/Records | production route отсутствует | setup screen | none | disabled/coming soon, без fake callback |
+| Race online | `OnlineRuntime` | `HomeRootScreen` | online `RACE` | disabled при unavailable runtime |
+| Training | local Race state | `HomeRootScreen` | `PVE_GAME` с `BotSolver` | enabled при valid config |
+| Records | production route отсутствует | setup screen | none | disabled с явным `coming soon` |
 | Duel bot | pre-match state | `HomeRootScreen` | secret dialog -> `PVP_GAME` | только valid config |
-| Duel online | `OnlineRuntime` | `HomeRootScreen` | online `TURN_BASED` | disabled с причиной при unavailable runtime |
+| Duel online | `OnlineRuntime` | `HomeRootScreen` | online `TURN_BASED` | disabled при unavailable runtime |
 | Add friend | current player/search runtime | `SocialRootScreen` | real search/add dialog | disabled без identity; busy/error |
 | Friend play | relationship/runtime | `SocialRootScreen` | `FRIEND_MATCH` | disabled при unavailable runtime |
 | Create invite | `OnlineRuntime` | `OnlineDuelScreen` | `createFriendInvite` | busy/error блокирует duplicates |
@@ -129,7 +168,8 @@ Runtime Compose canvas при этом должен fit-иться равном�
 | Hints/boosts | inventory/entitlement | `GameField` | consume/watch-ad callbacks | stock/provider state |
 | Confidence | current guess state | `GameField` | существующий confidence callback | доступность по mode |
 | Ad banner | provider state | `GameField` | provider callback | никакого demo ad в production |
-| Shop tabs | selected category | `ShopRootScreen` | `STOCK`/`PREMIUM` | enabled |
+| Shop tabs | selected category | `ShopRootScreen` | `BOOSTS`/`PREMIUM` | enabled |
+| Premium nested Back | selected category и premium destination | `ShopRootScreen` | Products -> Overview -> Boosts | top/system Back используют одну state chain |
 | Rewarded bonus | ad provider | `ShopRootScreen` | watch rewarded ad | availability/busy/result |
 | Premium purchases | `BillingState` | `ShopRootScreen` | существующие buy callbacks | availability/pending/owned |
 | Temporary PRO | wallet/entitlement | `ShopRootScreen` | `buyTemporaryPro` | реальные `60` монет / `1` час |
@@ -177,70 +217,62 @@ V11 artwork получено из одного `4x4` atlas без текста �
 - `art_coin_gems_v11` существует и проходит hash check, но пока не имеет ссылок
   из `src/main/java`;
 - source atlas находится вне репозитория, provenance/preview лежат в
-  игнорируемом `build/`, а 16 output assets пока untracked.
+  игнорируемом `build/`; все 16 output assets отслеживаются Git с `1901173d`.
 
 ## Политика PR #99 и auth `e4f91b7f`
 
 Reference scope продолжает существующий PR #99. Новый отдельный reference PR для
 v11 не создаётся.
 
-Auth fix `e4f91b7f9593b4126dc4faab7ce0a9c5c96e91c6` находится в ветке
-`fix/profile-connections-auth-v1` и открытом PR #100 на `develop`. Он не является
-предком `feature/reference-pages-v9` и сейчас не входит в PR #99.
+Исходный auth fix `e4f91b7f9593b4126dc4faab7ce0a9c5c96e91c6` из PR #100 не является
+предком reference branch. Его поведение вручную интегрировано в combined state
+коммитом `173e323f` с разрешением пересечений в `MainActivity.kt`,
+`SecondaryCatalog.kt`, `ShellSectionsSmokeTest.kt` и `ProfileRootScreen.kt`.
+Это эквивалентная интеграция semantics, а не утверждение, что был cherry-pick
+исходного commit.
 
-Commit меняет auth/runtime contract и пересекается с reference work как минимум
-в `MainActivity.kt`, `SecondaryCatalog.kt` и `ShellSectionsSmokeTest.kt`; с уже
-опубликованным PR #99 также пересекается `ProfileRootScreen.kt`. Поэтому слепой
-cherry-pick или выбор одной версии Profile запрещён. Финальный combined candidate
-должен одновременно сохранять:
+Проверенный combined candidate сохраняет:
 
 - v11 hierarchy девяти новых surfaces и illustrated Profile composition,
-  уже находящуюся в PR #99, с truthful state presentation;
+  предназначенную для продолжения PR #99, с truthful state presentation;
 - отдельные Mirkori Games и device-local Google actions из auth fix;
 - отсутствие ложного server logout при локальном Google sign-out;
 - существующую session/refresh semantics и явные ошибки auth;
 - реальные callbacks, RU/EN copy и тестовые контракты обеих веток.
 
-Git и тексты открытых PR пока не фиксируют авторизованный порядок интеграции.
-Следующие правила определяют требуемый combined state, но не дают разрешения на
-merge или изменение base.
-
-Если PR #100 сначала попадёт в выбранную integration base, reference branch
-обновляется на base, уже содержащую эквивалент `e4f91b7f`; повторно применять
-commit нельзя. Если auth ещё не интегрирован, уполномоченный integrator переносит
-именно этот commit в combined PR #99 и вручную разрешает пересечения по
-поведению. После любого варианта все проверки и visual evidence запускаются
-заново на combined tree.
+При дальнейшем обновлении base повторно применять `e4f91b7f` нельзя: сначала
+нужно проверить, не содержит ли base уже `e4f91b7f` или эквивалент `173e323f`,
+затем разрешать конфликты по поведению и повторять проверки combined tree.
 
 Stacked dependency PR #99 от `feature/friends-reference-v8` также должна быть
 явно разрешена до merge. Merge, изменение base и release требуют существующей
 owner/integrator authority; этот документ её не предоставляет.
 
-## Pending validation
+## Оставшиеся gates
 
-На момент документации v11 нельзя называть собранным, прошедшим тесты,
-проверенным на телефонах или визуально принятым. Для закрытия pass нужны:
+Локальная реализация, сборка, device installation, полный instrumentation и
+normalized visual evidence завершены. Незакрыты внешние и owner gates, а также
+два явно перечисленных ниже локальных test gap:
 
-1. Интегрировать auth semantics `e4f91b7f` в combined candidate PR #99 по
-   политике выше и зафиксировать точный commit/ref.
-2. Выполнить `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug` и
-   `:app:assembleDebugAndroidTest`; записать фактические результаты и APK SHA-256.
-3. Запустить полный `ShellSectionsSmokeTest` на одобренных OnePlus 9 Pro API 33
-   и Galaxy S24+ API 35; записать реальное число тестов, не наследовать `48/48`
-   из v10.
-4. Проверить все callbacks из matrix, включая unavailable/busy/error,
-   nested/system Back, auth connection actions, purchase/ad states и отсутствие
-   fake production data.
-5. Проверить RU/EN, обычный canvas `374x877`, adaptive viewport
-   `320x568`/`fontScale=1.5`, полный HUD/bottom bar, scroll reachability,
-   semantics и touch targets.
-6. Снять все девять поверхностей из реального `MainActivity`; отдельно сохранить
-   deterministic fixture. Для каждого экрана создать target/current,
-   side-by-side, overlay, diff и manifest с device/API/resolution/density,
-   font scale, system bars, APK hash и точным app crop.
-7. Получить отдельное визуальное утверждение владельца. Интеграция и release
-   остаются последующими gates.
+1. После восстановления интернета проверить актуальное состояние PR #99/#100,
+   remote refs и уникальные online fixes из PR #96; не полагаться на сохранённый
+   snapshot как на текущую истину.
+2. Push commits `1901173d`, `173e323f`, `7122ab32` и этот документ в существующую
+   ветку PR #99; новый reference PR не создавать.
+3. Дождаться remote CI и устранить только воспроизводимые findings. Не обходить
+   owner/review, protected-path, secret или release gates.
+4. Получить визуальное утверждение владельца по девяти normalized comparisons.
+   Текущие captures доказывают выполненную проверку, но не заменяют acceptance.
+5. Перед интеграцией проверить stacked dependency PR #99 от
+   `feature/friends-reference-v8` и наличие auth semantics в выбранной base.
+   Merge, изменение base и release требуют явной owner/integrator authority.
 
-Сейчас в `build/visual-qa/reference-v11-targets/` есть только target-side
-evidence. Отсутствие current/device evidence нельзя заменять привлекательным
-montage, v10 captures или результатами auth PR.
+Известные честные отклонения от montage: invite code остаётся восьмисимвольным,
+покупки показывают реальную offline/provider error, Profile сохраняет оба вида
+подключений, а игровые controls не уменьшаются ниже `48dp`. Presence друзей не
+изображается realtime без соответствующего runtime contract.
+
+Остаточные test gaps: System Back не проверен отдельным сценарием внутри уже
+активного online-матча; для game layout нет отдельной матрицы `<340dp` плюс
+`fontScale > 1.3` на длинах кода `7..10`. Эти gaps не являются визуальным
+утверждением и должны учитываться перед release.
