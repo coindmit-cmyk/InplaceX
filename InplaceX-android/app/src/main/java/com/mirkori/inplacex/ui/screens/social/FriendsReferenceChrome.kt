@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -51,8 +52,15 @@ internal fun friendsReferenceHudHeight(width: Dp, fontScale: Float): Dp =
 
 @Composable
 internal fun FriendsReferenceTopBar(
-    energy: Int, energyMax: Int, coins: Int,
-    onShopClick: () -> Unit, onSettingsClick: () -> Unit, modifier: Modifier = Modifier,
+    energy: Int,
+    energyMax: Int,
+    coins: Int,
+    showBack: Boolean,
+    showShop: Boolean,
+    onBackClick: () -> Unit,
+    onShopClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
     val density = LocalDensity.current
@@ -73,8 +81,18 @@ internal fun FriendsReferenceTopBar(
                 Modifier.width(coinsPillWidth), plusFits, onShopClick)
         }
         val actions: @Composable () -> Unit = {
-            ReferenceChromeAction(Icons.Outlined.ShoppingCart, strings.text("section.shop.short"), onShopClick)
+            if (showShop) {
+                ReferenceChromeAction(Icons.Outlined.ShoppingCart, strings.text("section.shop.short"), onShopClick)
+            }
             ReferenceChromeAction(Icons.Outlined.Settings, strings.text("top.settings"), onSettingsClick)
+        }
+        if (showBack) {
+            ReferenceChromeAction(
+                icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                description = strings.text("top.back"),
+                onClick = onBackClick,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 6.dp, bottom = 9.dp),
+            )
         }
         Column(Modifier.align(Alignment.BottomEnd).padding(end = 6.dp, bottom = 9.dp),
             horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -114,8 +132,13 @@ private fun ReferenceResourcePill(value: String, label: String, coin: Boolean, m
 }
 
 @Composable
-private fun ReferenceChromeAction(icon: ImageVector, description: String, onClick: () -> Unit) {
-    Box(Modifier.size(44.dp).clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
+private fun ReferenceChromeAction(
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier.size(44.dp).clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         IllustratedSurface(FriendsReferenceStyle.Chrome, Modifier.size(38.dp), rim = Color(0xFF5AA8D5), radius = 12.dp) {
             Icon(icon, description, Modifier.align(Alignment.Center).size(24.dp), tint = FriendsReferenceStyle.LightRim)
         }

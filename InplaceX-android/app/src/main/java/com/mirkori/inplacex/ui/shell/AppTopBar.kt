@@ -53,7 +53,17 @@ fun AppTopBar(
     illustratedReference: Boolean = false,
 ) {
     if (illustratedReference) {
-        FriendsReferenceTopBar(energy, energyMax, coins, onShopClick, onSettingsClick, modifier)
+        FriendsReferenceTopBar(
+            energy = energy,
+            energyMax = energyMax,
+            coins = coins,
+            showBack = showBack,
+            showShop = showShop,
+            onBackClick = onBackClick,
+            onShopClick = onShopClick,
+            onSettingsClick = onSettingsClick,
+            modifier = modifier,
+        )
         return
     }
     val strings = LocalAppStrings.current

@@ -930,6 +930,8 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Премиум").performClick()
+        composeRule.onNodeWithTag("shop-premium-overview").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("shop-premium-products").assertIsDisplayed()
         composeRule.onNodeWithText("PRO на 1 час").assertIsDisplayed()
         composeRule.onNodeWithText("Доступ на 01:00:00").assertIsDisplayed()
         composeRule.onNodeWithText("Купить за 60 монет").performClick()
@@ -1271,7 +1273,7 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Гонка").performClick()
         composeRule.onNodeWithText("+").performClick()
-        composeRule.onNodeWithText("Онлайн‑матч").performClick()
+        composeRule.onNodeWithText("Быстрая гонка").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.RACE, openedOnline)

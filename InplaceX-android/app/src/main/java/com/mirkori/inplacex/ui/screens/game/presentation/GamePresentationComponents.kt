@@ -2,6 +2,7 @@ package com.mirkori.inplacex.ui.screens.game.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,9 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -83,6 +87,39 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 
 private val OpponentProgressPanelHeight = 54.dp
+
+/** Measured block geometry for game-target-374x877.png, relative to the shell center slot. */
+internal data class GameReferenceLayoutSpec(
+    val verticalOffset: Dp = (-4).dp,
+    val topPanelWidth: Dp = 298.dp,
+    val topPanelHeight: Dp = 79.dp,
+    val topToBoardGap: Dp = 9.dp,
+    val boardWidth: Dp = 320.dp,
+    val boardHeight: Dp = 315.dp,
+    val boardHorizontalOffset: Dp = (-2).dp,
+    val boardToHelpersGap: Dp = 5.dp,
+    val lowerPanelWidth: Dp = 326.dp,
+    val helpersHeight: Dp = 42.dp,
+    val helpersToToolsGap: Dp = 5.dp,
+    val toolsHeight: Dp = 35.dp,
+    val toolsToInputGap: Dp = 4.dp,
+    val inputHeight: Dp = 166.dp,
+    val inputToBannerGap: Dp = 11.dp,
+    val bannerWidth: Dp = 334.dp,
+    val bannerHeight: Dp = 99.dp,
+)
+
+internal fun gameReferenceLayoutSpec(): GameReferenceLayoutSpec = GameReferenceLayoutSpec()
+
+internal fun shouldUseReferenceGameGeometry(
+    width: Dp,
+    height: Dp,
+    fontScale: Float,
+    codeLength: Int,
+): Boolean = width >= 340.dp &&
+    height >= 660.dp &&
+    fontScale <= 1.3f &&
+    codeLength in 4..6
 
 /** Callbacks supplied by the route that owns external inventory, navigation and lifecycle effects. */
 data class GamePresentationCallbacks(
@@ -128,132 +165,287 @@ fun GamePresentationLayout(
             codeLength = uiState.parameters.codeLength,
             compactHeight = maxHeight < 760.dp,
         )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .padding(FinalUiDimens.ScreenPadding),
-            verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
-        ) {
-            PresentationCard(
-                modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight),
-                accent = uiState.parameters.mode.accent,
-                accentStrength = 0.16f,
-            ) {
-                GameTopPanel(uiState = uiState)
-            }
-
-            uiState.route.opponentProgress?.let { progress ->
-                PresentationCard(
-                    modifier = Modifier
-                        .height(OpponentProgressPanelHeight)
-                        .testTag("game-opponent-results-panel"),
-                    accent = uiState.parameters.mode.accent,
-                    accentStrength = 0.13f,
-                ) {
-                    GameOpponentResultsPanel(
-                        progress = progress,
-                        codeLength = uiState.parameters.codeLength,
-                    )
-                }
-            }
-
-            GameWorkBoard(
+        val referenceGeometry = shouldUseReferenceGameGeometry(
+            width = maxWidth,
+            height = maxHeight,
+            fontScale = LocalDensity.current.fontScale,
+            codeLength = uiState.parameters.codeLength,
+        )
+        if (referenceGeometry) {
+            ReferenceGamePresentation(
                 uiState = uiState,
                 metrics = metrics,
                 enabled = active,
-                onCellClick = { digit, position ->
-                    feedback.playSound(AppSoundCue.TAP)
-                    feedback.performHaptic(AppHapticCue.SELECTION)
-                    callbacks.onAnalysisCellPressed(digit, position)
-                },
-                modifier = Modifier.weight(1f, fill = false),
+                callbacks = callbacks,
+                debugSlot = debugSlot,
             )
-
-            if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
-                PresentationCard(
-                    modifier = Modifier.height(metrics.helpersHeight),
-                    accent = FinalUiColors.ModeGreen,
-                ) {
-                    GameHelpersPanel(
-                        uiState = uiState,
-                        enabled = active,
-                        onHintSelected = { hint ->
-                            feedback.playSound(AppSoundCue.TAP)
-                            feedback.performHaptic(AppHapticCue.SELECTION)
-                            callbacks.onHintRequested(hint)
-                        },
-                        onExtraMovesBoostRequested = callbacks.onExtraMovesBoostRequested,
-                        onExtraTimeBoostRequested = callbacks.onExtraTimeBoostRequested,
-                    )
-                }
-            }
-
-            PresentationCard(
+        } else {
+            Column(
                 modifier = Modifier
-                    .height(metrics.toolsHeight)
-                    .testTag("game-tools-panel"),
-                accent = FinalUiColors.ModeOrange,
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .padding(FinalUiDimens.ScreenPadding),
+                verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
             ) {
-                GameToolsPanel(
-                    uiState = uiState,
-                    onToolSelected = {
-                        feedback.playSound(AppSoundCue.TAP)
-                        feedback.performHaptic(AppHapticCue.SELECTION)
-                        callbacks.onEvent(GameFieldEvent.ToolSelected(it))
-                    },
-                    onAutoExcludeChanged = {
-                        feedback.playSound(AppSoundCue.CONFIRM)
-                        feedback.performHaptic(AppHapticCue.CONFIRM)
-                        callbacks.onEvent(GameFieldEvent.AutoExcludeChanged(it))
-                    },
-                )
-            }
+                PresentationCard(
+                    modifier = Modifier.defaultMinSize(minHeight = metrics.topPanelMinHeight),
+                    accent = uiState.parameters.mode.accent,
+                    accentStrength = 0.16f,
+                ) {
+                    GameTopPanel(uiState = uiState)
+                }
 
-            PresentationCard(
-                modifier = Modifier.testTag("game-input-panel"),
-                accent = FinalUiColors.Primary,
-                accentStrength = 0.11f,
-            ) {
-                GameInputPanel(
+                uiState.route.opponentProgress?.let { progress ->
+                    PresentationCard(
+                        modifier = Modifier
+                            .height(OpponentProgressPanelHeight)
+                            .testTag("game-opponent-results-panel"),
+                        accent = uiState.parameters.mode.accent,
+                        accentStrength = 0.13f,
+                    ) {
+                        GameOpponentResultsPanel(
+                            progress = progress,
+                            codeLength = uiState.parameters.codeLength,
+                        )
+                    }
+                }
+
+                GameWorkBoard(
                     uiState = uiState,
                     metrics = metrics,
                     enabled = active,
-                    onEvent = { event ->
-                        when (event) {
-                            GameFieldEvent.GuessSubmitted -> {
-                                feedback.playSound(AppSoundCue.CONFIRM)
-                                feedback.performHaptic(AppHapticCue.CONFIRM)
-                            }
-                            else -> {
-                                feedback.playSound(AppSoundCue.TAP)
-                                feedback.performHaptic(AppHapticCue.SELECTION)
-                            }
-                        }
-                        callbacks.onEvent(event)
-                    },
-                    onGuessSlotClick = callbacks.onGuessSlotPressed,
-                    onDigitClick = { digit ->
+                    onCellClick = { digit, position ->
                         feedback.playSound(AppSoundCue.TAP)
                         feedback.performHaptic(AppHapticCue.SELECTION)
-                        callbacks.onDigitPressed(digit)
+                        callbacks.onAnalysisCellPressed(digit, position)
                     },
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-            }
 
-            debugSlot?.let { slot ->
+                if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
+                    PresentationCard(
+                        modifier = Modifier.height(metrics.helpersHeight),
+                        accent = FinalUiColors.ModeGreen,
+                    ) {
+                        GameHelpersPanel(
+                            uiState = uiState,
+                            enabled = active,
+                            onHintSelected = { hint ->
+                                feedback.playSound(AppSoundCue.TAP)
+                                feedback.performHaptic(AppHapticCue.SELECTION)
+                                callbacks.onHintRequested(hint)
+                            },
+                            onExtraMovesBoostRequested = callbacks.onExtraMovesBoostRequested,
+                            onExtraTimeBoostRequested = callbacks.onExtraTimeBoostRequested,
+                        )
+                    }
+                }
+
                 PresentationCard(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("game-banner-panel"),
+                        .height(metrics.toolsHeight)
+                        .testTag("game-tools-panel"),
+                    accent = FinalUiColors.ModeOrange,
                 ) {
-                    slot()
+                    GameToolsPanel(
+                        uiState = uiState,
+                        onToolSelected = {
+                            feedback.playSound(AppSoundCue.TAP)
+                            feedback.performHaptic(AppHapticCue.SELECTION)
+                            callbacks.onEvent(GameFieldEvent.ToolSelected(it))
+                        },
+                        onAutoExcludeChanged = {
+                            feedback.playSound(AppSoundCue.CONFIRM)
+                            feedback.performHaptic(AppHapticCue.CONFIRM)
+                            callbacks.onEvent(GameFieldEvent.AutoExcludeChanged(it))
+                        },
+                    )
+                }
+
+                PresentationCard(
+                    modifier = Modifier.testTag("game-input-panel"),
+                    accent = FinalUiColors.Primary,
+                    accentStrength = 0.11f,
+                ) {
+                    GameInputPanel(
+                        uiState = uiState,
+                        metrics = metrics,
+                        enabled = active,
+                        onEvent = { event ->
+                            when (event) {
+                                GameFieldEvent.GuessSubmitted -> {
+                                    feedback.playSound(AppSoundCue.CONFIRM)
+                                    feedback.performHaptic(AppHapticCue.CONFIRM)
+                                }
+                                else -> {
+                                    feedback.playSound(AppSoundCue.TAP)
+                                    feedback.performHaptic(AppHapticCue.SELECTION)
+                                }
+                            }
+                            callbacks.onEvent(event)
+                        },
+                        onGuessSlotClick = callbacks.onGuessSlotPressed,
+                        onDigitClick = { digit ->
+                            feedback.playSound(AppSoundCue.TAP)
+                            feedback.performHaptic(AppHapticCue.SELECTION)
+                            callbacks.onDigitPressed(digit)
+                        },
+                    )
+                }
+
+                debugSlot?.let { slot ->
+                    PresentationCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("game-banner-panel"),
+                    ) {
+                        slot()
+                    }
                 }
             }
         }
     }
 
     GameDialogs(uiState = uiState, callbacks = callbacks)
+}
+
+@Composable
+private fun ReferenceGamePresentation(
+    uiState: GameFieldUiState,
+    metrics: GameFieldLayoutMetrics,
+    enabled: Boolean,
+    callbacks: GamePresentationCallbacks,
+    debugSlot: (@Composable () -> Unit)?,
+) {
+    val feedback = LocalAppFeedbackRuntime.current
+    val spec = gameReferenceLayoutSpec()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .offset(y = spec.verticalOffset)
+            .testTag("game-reference-layout"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        PresentationCard(
+            modifier = Modifier
+                .width(spec.topPanelWidth)
+                .height(spec.topPanelHeight)
+                .testTag("game-top-panel"),
+            accent = uiState.parameters.mode.accent,
+            accentStrength = 0.13f,
+        ) {
+            ReferenceGameTopPanel(uiState = uiState)
+        }
+        Spacer(Modifier.height(spec.topToBoardGap))
+        GameWorkBoard(
+            uiState = uiState,
+            metrics = metrics,
+            enabled = enabled,
+            onCellClick = { digit, position ->
+                feedback.playSound(AppSoundCue.TAP)
+                feedback.performHaptic(AppHapticCue.SELECTION)
+                callbacks.onAnalysisCellPressed(digit, position)
+            },
+            referenceGeometry = true,
+            forcedHeight = spec.boardHeight,
+            modifier = Modifier
+                .width(spec.boardWidth)
+                .offset(x = spec.boardHorizontalOffset),
+        )
+        if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
+            Spacer(Modifier.height(spec.boardToHelpersGap))
+            PresentationCard(
+                modifier = Modifier
+                    .width(spec.lowerPanelWidth)
+                    .height(spec.helpersHeight)
+                    .testTag("game-helpers-panel"),
+                accent = FinalUiColors.ModeGreen,
+            ) {
+                GameHelpersPanel(
+                    uiState = uiState,
+                    enabled = enabled,
+                    onHintSelected = { hint ->
+                        feedback.playSound(AppSoundCue.TAP)
+                        feedback.performHaptic(AppHapticCue.SELECTION)
+                        callbacks.onHintRequested(hint)
+                    },
+                    onExtraMovesBoostRequested = callbacks.onExtraMovesBoostRequested,
+                    onExtraTimeBoostRequested = callbacks.onExtraTimeBoostRequested,
+                )
+            }
+        }
+        Spacer(Modifier.height(spec.helpersToToolsGap))
+        PresentationCard(
+            modifier = Modifier
+                .width(spec.lowerPanelWidth)
+                .height(spec.toolsHeight)
+                .testTag("game-tools-panel"),
+            accent = FinalUiColors.ModeOrange,
+        ) {
+            GameToolsPanel(
+                uiState = uiState,
+                onToolSelected = {
+                    feedback.playSound(AppSoundCue.TAP)
+                    feedback.performHaptic(AppHapticCue.SELECTION)
+                    callbacks.onEvent(GameFieldEvent.ToolSelected(it))
+                },
+                onAutoExcludeChanged = {
+                    feedback.playSound(AppSoundCue.CONFIRM)
+                    feedback.performHaptic(AppHapticCue.CONFIRM)
+                    callbacks.onEvent(GameFieldEvent.AutoExcludeChanged(it))
+                },
+            )
+        }
+        Spacer(Modifier.height(spec.toolsToInputGap))
+        PresentationCard(
+            modifier = Modifier
+                .width(spec.lowerPanelWidth)
+                .height(spec.inputHeight)
+                .testTag("game-input-panel"),
+            accent = FinalUiColors.Primary,
+            accentStrength = 0.11f,
+        ) {
+            GameInputPanel(
+                uiState = uiState,
+                metrics = metrics,
+                enabled = enabled,
+                onEvent = { event ->
+                    when (event) {
+                        GameFieldEvent.GuessSubmitted -> {
+                            feedback.playSound(AppSoundCue.CONFIRM)
+                            feedback.performHaptic(AppHapticCue.CONFIRM)
+                        }
+                        else -> {
+                            feedback.playSound(AppSoundCue.TAP)
+                            feedback.performHaptic(AppHapticCue.SELECTION)
+                        }
+                    }
+                    callbacks.onEvent(event)
+                },
+                onGuessSlotClick = callbacks.onGuessSlotPressed,
+                onDigitClick = { digit ->
+                    feedback.playSound(AppSoundCue.TAP)
+                    feedback.performHaptic(AppHapticCue.SELECTION)
+                    callbacks.onDigitPressed(digit)
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        debugSlot?.let { slot ->
+            Spacer(Modifier.height(spec.inputToBannerGap))
+            PresentationCard(
+                modifier = Modifier
+                    .width(spec.bannerWidth)
+                    .height(spec.bannerHeight)
+                    .testTag("game-banner-panel"),
+                accent = FinalUiColors.ModePurple,
+                accentStrength = 0.18f,
+            ) {
+                slot()
+            }
+        }
+    }
 }
 
 @Composable
@@ -350,10 +542,12 @@ private fun GameWorkBoard(
     metrics: GameFieldLayoutMetrics,
     enabled: Boolean,
     onCellClick: (digit: Char, position: Int) -> Unit,
+    referenceGeometry: Boolean = false,
+    forcedHeight: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
     val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
-    val boardHeight = gameWorkBoardHeight(metrics, useStackedBoard)
+    val boardHeight = forcedHeight ?: gameWorkBoardHeight(metrics, useStackedBoard)
 
     if (useStackedBoard) {
         Column(
@@ -373,6 +567,7 @@ private fun GameWorkBoard(
                     uiState = uiState,
                     metrics = metrics,
                     compactEmptyState = true,
+                    referenceEmptyState = referenceGeometry,
                 )
             }
             PresentationCard(
@@ -397,18 +592,24 @@ private fun GameWorkBoard(
                 .height(boardHeight),
             horizontalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
+            val attemptsWeight = if (referenceGeometry) 0.375f else metrics.attemptsWeight
+            val matrixWeight = if (referenceGeometry) 0.625f else metrics.matrixWeight
             PresentationCard(
                 modifier = Modifier
-                    .weight(metrics.attemptsWeight)
+                    .weight(attemptsWeight)
                     .fillMaxHeight()
                     .testTag("game-attempts-panel"),
                 accent = FinalUiColors.Primary,
             ) {
-                GameAttemptsPanel(uiState = uiState, metrics = metrics)
+                GameAttemptsPanel(
+                    uiState = uiState,
+                    metrics = metrics,
+                    referenceEmptyState = referenceGeometry,
+                )
             }
             PresentationCard(
                 modifier = Modifier
-                    .weight(metrics.matrixWeight)
+                    .weight(matrixWeight)
                     .fillMaxHeight()
                     .testTag("game-analysis-panel"),
                 accent = FinalUiColors.ModePurple,
@@ -572,6 +773,159 @@ fun GameTopPanel(
 }
 
 @Composable
+private fun ReferenceGameTopPanel(
+    uiState: GameFieldUiState,
+    modifier: Modifier = Modifier,
+) {
+    val strings = LocalAppStrings.current
+    val parameters = uiState.parameters
+    val mode = uiState.route.modeLabel?.takeIf(String::isNotBlank) ?: when (parameters.mode) {
+        GameFieldMode.RACE -> strings.text("mode.pve.title")
+        GameFieldMode.DUEL -> strings.text("mode.pvp.title")
+    }
+    val message = statusText(uiState)
+        ?: uiState.route.secondaryStatusText?.takeIf(String::isNotBlank)
+    val progressText = uiState.route.opponentProgress
+        ?.takeIf { progress ->
+            progress.attempts.isNotEmpty() || progress.isThinking || progress.completed || progress.failed
+        }
+        ?.let { progress ->
+            val latest = progress.attempts.lastOrNull()
+            buildString {
+                append(strings.text(opponentProgressStatusKey(progress)))
+                latest?.let {
+                    append(" · ")
+                    append(opponentAttemptLabel(it))
+                    append(' ')
+                    append(it.exactMatches)
+                    append('/')
+                    append(parameters.codeLength)
+                }
+            }
+        }
+    val supportingText = message
+        ?: progressText
+        ?: uiState.route.turnLabel?.takeIf(String::isNotBlank)
+    val totalValue = timerValue(
+        uiState.timers.elapsedSeconds,
+        if (parameters.totalTimeLimitSeconds > 0) {
+            parameters.totalTimeLimitSeconds + uiState.timers.bonusTimeSeconds
+        } else {
+            0
+        },
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Image(
+            painter = painterResource(
+                if (parameters.mode == GameFieldMode.RACE) {
+                    R.drawable.art_stopwatch_v11
+                } else {
+                    R.drawable.art_duel_crest_v11
+                },
+            ),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(43.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(27.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = mode,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = parameters.mode.accentDeep,
+                        maxLines = 1,
+                    )
+                    supportingText?.let { text ->
+                        Text(
+                            text = text,
+                            modifier = Modifier
+                                .then(if (message != null) Modifier.testTag("game-status") else Modifier)
+                                .then(if (progressText != null && message == null) {
+                                    Modifier.testTag("game-opponent-results-panel")
+                                } else {
+                                    Modifier
+                                }),
+                            fontSize = 7.5.sp,
+                            lineHeight = 8.sp,
+                            color = if (message != null && isErrorStatus(uiState.status)) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                FinalUiColors.WarmTextMuted
+                            },
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Text(
+                    text = totalValue,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = parameters.mode.accentDeep,
+                    maxLines = 1,
+                )
+            }
+            HorizontalDivider(color = parameters.mode.accent.copy(alpha = 0.36f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(31.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GameInfoMetric(
+                    label = strings.text("game.top.moves"),
+                    value = moveValue(
+                        movesDone = uiState.match.attempts.size,
+                        configuredLimit = if (uiState.route.movesUnlimited) {
+                            null
+                        } else {
+                            uiState.route.configuredMoveLimit ?: parameters.attemptLimit
+                        },
+                        bonusMoves = uiState.counters.bonusMoves,
+                    ),
+                    valueColor = FinalUiColors.ModeOrangeText,
+                    modifier = Modifier.weight(1f),
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(26.dp),
+                    color = FinalUiColors.WarmDivider.copy(alpha = 0.34f),
+                )
+                GameInfoMetric(
+                    label = strings.text("game.top.total"),
+                    value = totalValue,
+                    valueColor = FinalUiColors.PrimaryDeep,
+                    modifier = Modifier.weight(1f),
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(26.dp),
+                    color = FinalUiColors.WarmDivider.copy(alpha = 0.34f),
+                )
+                GameInfoMetric(
+                    label = strings.text("game.top.turn"),
+                    value = timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
+                    valueColor = FinalUiColors.ModeGreenDeep,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun GameInfoMetric(
     label: String,
     value: String,
@@ -603,6 +957,7 @@ fun GameAttemptsPanel(
     uiState: GameFieldUiState,
     metrics: GameFieldLayoutMetrics,
     compactEmptyState: Boolean = false,
+    referenceEmptyState: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     GameAttemptList(
@@ -610,6 +965,7 @@ fun GameAttemptsPanel(
         textSize = metrics.attemptTextSize,
         rowHeight = metrics.attemptRowHeight,
         compactEmptyState = compactEmptyState,
+        referenceEmptyState = referenceEmptyState,
         modifier = modifier,
     )
 }
@@ -620,6 +976,7 @@ internal fun GameAttemptList(
     textSize: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.bodySmall.fontSize,
     rowHeight: androidx.compose.ui.unit.Dp = 30.dp,
     compactEmptyState: Boolean = false,
+    referenceEmptyState: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
@@ -652,13 +1009,24 @@ internal fun GameAttemptList(
                 },
                 contentAlignment = if (compactEmptyState) Alignment.TopStart else Alignment.Center,
             ) {
-                Text(
-                    text = strings.text("game.attempts.empty"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InplaceXColors.ToyBrown.copy(alpha = 0.72f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 3,
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (referenceEmptyState && !compactEmptyState) {
+                        Text(
+                            text = "✦",
+                            fontSize = 24.sp,
+                            color = FinalUiColors.ModeOrange,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    Text(
+                        text = strings.text("game.attempts.empty"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = InplaceXColors.ToyBrown.copy(alpha = 0.72f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                    )
+                }
             }
         } else {
             LazyColumn(
@@ -818,6 +1186,7 @@ fun GameHelpersPanel(
         if (uiState.parameters.boostsEnabled) {
             GameBoostButton(
                 iconRes = R.drawable.ic_boost_extra_moves,
+                testTag = "game-boost-extra-moves",
                 contentDescription = LocalAppStrings.current.text("game.boost.add_moves"),
                 label = "+${uiState.route.extraMovesPerBoost}",
                 count = uiState.route.extraMovesBoosts,
@@ -828,6 +1197,7 @@ fun GameHelpersPanel(
             )
             GameBoostButton(
                 iconRes = R.drawable.ic_boost_extra_time,
+                testTag = "game-boost-extra-time",
                 contentDescription = LocalAppStrings.current.text("game.boost.add_time"),
                 label = "+${formatDuration(uiState.route.extraTimeSecondsPerBoost)}",
                 count = uiState.route.extraTimeBoosts,
@@ -870,7 +1240,15 @@ private fun GameHintButton(
         enabled = enabled,
         selected = selected,
         accent = accent,
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier
+            .fillMaxHeight()
+            .testTag(
+                when (mode) {
+                    GameFieldHintMode.OPEN_POSITION -> "game-hint-open-position"
+                    GameFieldHintMode.CHECK_DIGIT -> "game-hint-check-digit"
+                    GameFieldHintMode.CHECK_POSITION -> "game-hint-check-position"
+                },
+            ),
         onClick = { onClick(mode) },
     ) {
         Icon(
@@ -890,6 +1268,7 @@ private fun GameHintButton(
 @Composable
 private fun GameBoostButton(
     iconRes: Int,
+    testTag: String,
     contentDescription: String,
     label: String,
     count: Int,
@@ -902,7 +1281,9 @@ private fun GameBoostButton(
         enabled = enabled,
         selected = false,
         accent = accent,
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier
+            .fillMaxHeight()
+            .testTag(testTag),
         onClick = onClick,
     ) {
         Icon(
@@ -971,21 +1352,21 @@ fun GameToolsPanel(
             strings.text("game.tool.no"),
             GameFieldTool.NO,
             uiState.tools.selectedTool,
-            Modifier.weight(1f),
+            Modifier.weight(1f).testTag("game-tool-no"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.maybe"),
             GameFieldTool.MAYBE,
             uiState.tools.selectedTool,
-            Modifier.weight(1f),
+            Modifier.weight(1f).testTag("game-tool-maybe"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.yes"),
             GameFieldTool.YES,
             uiState.tools.selectedTool,
-            Modifier.weight(1f),
+            Modifier.weight(1f).testTag("game-tool-yes"),
             onToolSelected,
         )
         WarmSegmentButton(
@@ -998,7 +1379,7 @@ fun GameToolsPanel(
             accent = FinalUiColors.StatePro,
             enabled = uiState.parameters.autoModeAvailable,
             onClick = { onAutoExcludeChanged(!uiState.tools.autoExcludeEnabled) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("game-auto-mode"),
         )
     }
 }
@@ -1123,7 +1504,8 @@ fun GameInputPanel(
                 visualHeight = metrics.keypadHeight,
                 modifier = Modifier
                     .weight(1f)
-                    .height(FinalUiDimens.MinimumTouchTarget),
+                    .height(FinalUiDimens.MinimumTouchTarget)
+                    .testTag("game-backspace"),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Backspace,

@@ -61,6 +61,7 @@ import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -288,23 +289,30 @@ private fun SocialFriendsScreen(
                                 searchInProgress = true
                                 addFriendResultKey = null
                                 coroutineScope.launch {
-                                    when (val result = onSearchPlayers(query)) {
-                                        is MirkoriPlayerSearchResult.Success -> {
-                                            searchResults = result.players.filterNot { player ->
-                                                player.gamePlayerId == currentPlayerId
+                                    try {
+                                        when (val result = onSearchPlayers(query)) {
+                                            is MirkoriPlayerSearchResult.Success -> {
+                                                searchResults = result.players.filterNot { player ->
+                                                    player.gamePlayerId == currentPlayerId
+                                                }
+                                                addFriendResultKey = if (searchResults.isEmpty()) {
+                                                    "social.friend.search.empty"
+                                                } else {
+                                                    null
+                                                }
                                             }
-                                            addFriendResultKey = if (searchResults.isEmpty()) {
-                                                "social.friend.search.empty"
-                                            } else {
-                                                null
-                                            }
+                                            MirkoriPlayerSearchResult.Rejected ->
+                                                addFriendResultKey = "social.friend.search.invalid"
+                                            MirkoriPlayerSearchResult.Unavailable ->
+                                                addFriendResultKey = "social.friend.search.unavailable"
                                         }
-                                        MirkoriPlayerSearchResult.Rejected ->
-                                            addFriendResultKey = "social.friend.search.invalid"
-                                        MirkoriPlayerSearchResult.Unavailable ->
-                                            addFriendResultKey = "social.friend.search.unavailable"
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (_: Exception) {
+                                        addFriendResultKey = "social.friend.search.unavailable"
+                                    } finally {
+                                        searchInProgress = false
                                     }
-                                    searchInProgress = false
                                 }
                             }
                         },
@@ -332,12 +340,19 @@ private fun SocialFriendsScreen(
                             onAdd = {
                                 friendOperationInProgress = true
                                 coroutineScope.launch {
-                                    addFriendResultKey = when (onAddFriend(player)) {
-                                        is MirkoriFriendOperationResult.Success -> "social.friend.request.sent"
-                                        MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
-                                        MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                                    try {
+                                        addFriendResultKey = when (onAddFriend(player)) {
+                                            is MirkoriFriendOperationResult.Success -> "social.friend.request.sent"
+                                            MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
+                                            MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                                        }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (_: Exception) {
+                                        addFriendResultKey = "social.friend.request.unavailable"
+                                    } finally {
+                                        friendOperationInProgress = false
                                     }
-                                    friendOperationInProgress = false
                                 }
                             },
                         )
@@ -354,128 +369,47 @@ private fun SocialFriendsScreen(
             },
         )
     }
-    ScenePageColumn(
-        modifier = Modifier.fillMaxSize(),
-        scrollable = true,
-    ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyPurple,
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = strings.text("social.friends"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(strings.text("social.friends.subtitle"))
-        }
-
-        Button(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-            onClick = {
-                friendQuery = ""
-                searchResults = emptyList()
+    SocialFriendsReferenceContent(
+        friends = friends,
+        pendingFriendRequests = pendingFriendRequests,
+        incomingFriendRequests = incomingFriendRequests,
+        incomingInvites = incomingInvites,
+        showTestFriendBot = showTestFriendBot,
+        onlineConfigured = onlineConfigured,
+        operationBusy = friendOperationInProgress,
+        operationMessage = addFriendResultKey?.let(strings::text),
+        addFriendEnabled = currentPlayerId != null,
+        onOpenAddFriend = {
+            friendQuery = ""
+            searchResults = emptyList()
+            addFriendResultKey = null
+            addFriendDialogOpen = true
+        },
+        onAcceptFriendRequest = { request ->
+            if (!friendOperationInProgress) {
+                friendOperationInProgress = true
                 addFriendResultKey = null
-                addFriendDialogOpen = true
-            },
-            enabled = currentPlayerId != null,
-        ) {
-            Icon(Icons.Outlined.PersonAdd, contentDescription = null)
-            Text(strings.text("social.friend.add.title"), modifier = Modifier.padding(start = 8.dp))
-        }
-
-        incomingFriendRequests.forEach { request ->
-            FriendCard(
-                title = request.player.displayName,
-                subtitle = strings.text("social.friend.request.incoming"),
-                actionLabelKey = "social.friend.request.accept",
-                showPlay = true,
-                playEnabled = !friendOperationInProgress,
-                onPlay = {
-                    friendOperationInProgress = true
-                    coroutineScope.launch {
+                coroutineScope.launch {
+                    try {
                         addFriendResultKey = when (onAcceptFriendRequest(request)) {
                             is MirkoriFriendOperationResult.Success -> "social.friend.request.accepted"
                             MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
                             MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
                         }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        addFriendResultKey = "social.friend.request.unavailable"
+                    } finally {
                         friendOperationInProgress = false
                     }
-                },
-            )
-        }
-
-        pendingFriendRequests.forEach { request ->
-            FriendCard(
-                title = request.targetDisplayName,
-                subtitle = strings.text("social.friend.request.sent"),
-            )
-        }
-
-        incomingInvites.forEach { invite ->
-            FriendCard(
-                title = strings.text("social.invites.incoming.title"),
-                subtitle = strings.text(
-                    if (invite.playStyle == RemoteFriendPlayStyle.RACE) {
-                        "social.match.timed"
-                    } else {
-                        "social.match.turn_based"
-                    },
-                ),
-                actionLabelKey = "social.invites.accept",
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = { onAcceptInvite(invite) },
-            )
-        }
-
-        if (showTestFriendBot) {
-            FriendCard(
-                title = strings.text("social.test_friend.title"),
-                subtitle = strings.text(
-                    if (onlineConfigured) {
-                        "social.test_friend.subtitle"
-                    } else {
-                        "social.test_friend.offline"
-                    },
-                ),
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = onPlayTestFriend,
-            )
-        }
-
-        friends.forEach { friend ->
-            FriendCard(
-                title = friend.targetDisplayName,
-                subtitle = friend.note?.takeIf(String::isNotBlank)?.let { "@$it" }
-                    ?: strings.text("social.friend.id_fallback")
-                        .replace("{id}", friend.targetPlayerId.takeLast(8)),
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = { onPlayFriend(friend) },
-            )
-        }
-
-        if (
-            friends.isEmpty() &&
-            pendingFriendRequests.isEmpty() &&
-            incomingFriendRequests.isEmpty() &&
-            !showTestFriendBot
-        ) {
-            SocialEmptyCard(
-                title = strings.text("social.friends"),
-                message = strings.text("social.friends.empty"),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Group,
-                        contentDescription = null,
-                    )
-                },
-            )
-        }
-    }
+                }
+            }
+        },
+        onAcceptInvite = onAcceptInvite,
+        onPlayTestFriend = onPlayTestFriend,
+        onPlayFriend = onPlayFriend,
+    )
 }
 
 @Composable

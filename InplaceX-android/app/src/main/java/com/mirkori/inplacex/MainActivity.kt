@@ -100,6 +100,7 @@ import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.profile.GoogleProfileConflictDialog
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
+import com.mirkori.inplacex.ui.screens.shop.ShopPremiumDestination
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
@@ -204,7 +205,11 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(restoredActiveOnlineSessionId)
                 }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
+                var isNestedHomeScreen by rememberSaveable { mutableStateOf(false) }
                 var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
+                var shopPremiumDestinationName by rememberSaveable {
+                    mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
+                }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by remember {
@@ -775,13 +780,24 @@ class MainActivity : ComponentActivity() {
                     resourceId = R.drawable.toy_room_bg_v6,
                     fallbackColor = InplaceXColors.ToyWood,
                 )
-                val illustratedReferenceSection = currentSection == AppSection.SOCIAL ||
+                val shopPremiumDestination = ShopPremiumDestination.valueOf(shopPremiumDestinationName)
+                val isHomeSubpage = currentSection == AppSection.HOME && isNestedHomeScreen
+                val isShopSubpage = currentSection == AppSection.SHOP &&
+                    shopPremiumDestination == ShopPremiumDestination.PRODUCTS
+                val illustratedReferenceSection = currentSection == AppSection.HOME ||
+                    currentSection == AppSection.SOCIAL ||
                     currentSection == AppSection.COMPANY ||
                     currentSection == AppSection.SHOP ||
                     currentSection == AppSection.PROFILE
                 val illustratedReference = illustratedReferenceSection &&
-                    (currentSection != AppSection.SOCIAL || !isNestedSocialScreen) &&
                     !isInGame && !isSettingsOpen && !isVariantToolsOpen
+                val illustratedBackgroundResourceId = if (
+                    currentSection == AppSection.HOME || currentSection == AppSection.SHOP
+                ) {
+                    R.drawable.toy_room_bg_v6
+                } else {
+                    R.drawable.friends_room_v8
+                }
                 val bottomMode = when {
                     isInGame && isPremium -> BottomLayerMode.NONE
                     isInGame && selectedBannerProviderName != null && bannerLoaded ->
@@ -801,6 +817,15 @@ class MainActivity : ComponentActivity() {
                         onSectionChange = { section ->
                             feedbackRuntime.playSound(AppSoundCue.TAP)
                             feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
+                            if (section == currentSection) {
+                                when {
+                                    section == AppSection.HOME && isNestedHomeScreen -> requestExitGame = true
+                                    section == AppSection.SOCIAL && isNestedSocialScreen -> requestExitGame = true
+                                    section == AppSection.SHOP && isShopSubpage -> {
+                                        shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                    }
+                                }
+                            }
                             currentSection = section
                             isSettingsOpen = false
                             isVariantToolsOpen = false
@@ -810,17 +835,21 @@ class MainActivity : ComponentActivity() {
                         centerMode = CenterLayerMode.TRANSPARENT,
                         backgroundStyle = appBackgroundStyle,
                         illustratedReference = illustratedReference,
+                        illustratedBackgroundResourceId = illustratedBackgroundResourceId,
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
                                 energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
                                 illustratedReference = illustratedReference,
-                                showBack = isNestedSocialScreen || isInGame || isVariantToolsOpen,
+                                showBack = isHomeSubpage || isShopSubpage || isInGame || isVariantToolsOpen,
                                 showShop = !isInGame,
                                 onBackClick = {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
+                                        isShopSubpage -> {
+                                            shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                        }
                                         else -> requestExitGame = true
                                     }
                                 },
@@ -865,6 +894,7 @@ class MainActivity : ComponentActivity() {
                                     requestExitGame = requestExitGame,
                                     onExitGameConsumed = { requestExitGame = false },
                                     onInGameChange = { inGame -> isInGame = inGame },
+                                    onNestedScreenChange = { nested -> isNestedHomeScreen = nested },
                                     onDebugSecretChange = { currentInspectionValue = it },
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
@@ -1243,6 +1273,10 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onRetryBillingPurchase = {
                                     billingState.pendingProduct?.let(purchaseBilling)
+                                },
+                                premiumDestination = shopPremiumDestination,
+                                onPremiumDestinationChange = { destination ->
+                                    shopPremiumDestinationName = destination.name
                                 },
                                 onBuyTemporaryPro = {
                                     val permanentPremiumActive =

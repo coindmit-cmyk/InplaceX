@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.ui.screens.shop
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -92,6 +93,11 @@ private enum class ShopCategory {
     PREMIUM,
 }
 
+enum class ShopPremiumDestination {
+    OVERVIEW,
+    PRODUCTS,
+}
+
 @Composable
 fun ShopRootScreen(
     progressState: GameProgressState,
@@ -115,14 +121,32 @@ fun ShopRootScreen(
     onBuyProPlus: () -> Unit,
     onRetryBillingPurchase: () -> Unit = {},
     onBuyTemporaryPro: () -> Boolean = { false },
+    premiumDestination: ShopPremiumDestination? = null,
+    onPremiumDestinationChange: (ShopPremiumDestination) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var categoryName by rememberSaveable { mutableStateOf(ShopCategory.BOOSTS.name) }
+    var savedPremiumDestinationName by rememberSaveable {
+        mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
+    }
     var resultKey by rememberSaveable { mutableStateOf<String?>(null) }
     val category = ShopCategory.valueOf(categoryName)
+    val activePremiumDestination = premiumDestination
+        ?: ShopPremiumDestination.valueOf(savedPremiumDestinationName)
+
+    fun navigatePremium(destination: ShopPremiumDestination) {
+        if (premiumDestination == null) {
+            savedPremiumDestinationName = destination.name
+        }
+        onPremiumDestinationChange(destination)
+    }
 
     fun report(result: Boolean) {
         resultKey = if (result) "shop.result.success" else "shop.result.unavailable"
+    }
+
+    BackHandler(enabled = activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
+        navigatePremium(ShopPremiumDestination.OVERVIEW)
     }
 
     BoxWithConstraints(
@@ -132,8 +156,18 @@ fun ShopRootScreen(
     ) {
         val compactReference = maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f
         val compactViewport = compactReference && maxHeight < 650.dp
-        val heroHeight = if (compactViewport) 80.dp else 82.dp
-        val rewardedHeight = if (compactViewport) 136.dp else 141.dp
+        val premiumOverview = category == ShopCategory.PREMIUM &&
+            activePremiumDestination == ShopPremiumDestination.OVERVIEW
+        val heroHeight = when {
+            premiumOverview && compactReference -> 95.dp
+            compactViewport -> 80.dp
+            else -> 82.dp
+        }
+        val rewardedHeight = when {
+            premiumOverview && compactReference -> 180.dp
+            compactViewport -> 136.dp
+            else -> 141.dp
+        }
         val itemHeight = if (compactViewport) 144.dp else 152.dp
 
         Column(
@@ -142,71 +176,13 @@ fun ShopRootScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 15.dp),
         ) {
-            PageHeroCard(
-                title = strings.text("shop.title"),
-                subtitle = strings.text("shop.hero.subtitle"),
-                accent = PageColors.Friends,
-                leading = {
-                    Box(
-                        modifier = Modifier.size(48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.art_shop_bag_v10),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .requiredSize(76.dp)
-                                .offset(x = (-2).dp, y = (-4).dp),
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .heightIn(min = heroHeight)
-                    .testTag("shop-hero"),
-            )
-            RewardedAdCard(
-                compact = compactReference,
-                height = rewardedHeight,
-                onWatch = { onWatchRewardedCoins(::report) },
-                modifier = Modifier.testTag("shop-reward"),
-            )
-            Spacer(Modifier.height(if (compactViewport) 6.dp else 8.dp))
-            ShopCategoryControl(
-                selected = category,
-                onSelect = {
-                    categoryName = it.name
-                    resultKey = null
-                },
-            )
-            Spacer(Modifier.height(if (compactViewport) 4.dp else 6.dp))
-            resultKey?.let { key ->
-                StatusCard(
-                    title = strings.text(key),
-                    accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
-                )
-                Spacer(Modifier.height(6.dp))
-            }
-
-            when (category) {
-                ShopCategory.BOOSTS -> BoostsCatalog(
-                    progressState = progressState,
-                    onReport = ::report,
-                    compactReference = compactReference,
-                    itemHeight = itemHeight,
-                    sectionToGridGap = if (compactViewport) 6.dp else 8.dp,
-                    onBuyOpenPositionHint = onBuyOpenPositionHint,
-                    onBuyCheckDigitHint = onBuyCheckDigitHint,
-                    onBuyCheckPositionHint = onBuyCheckPositionHint,
-                    onBuyExtraMovesBoost = onBuyExtraMovesBoost,
-                    onBuyExtraTimeBoost = onBuyExtraTimeBoost,
-                    onBuyEnergy = onBuyEnergy,
-                )
-
-                ShopCategory.PREMIUM -> PremiumCatalog(
+            if (activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
+                PremiumProductsReferenceContent(
                     progressState = progressState,
                     nowMs = nowMs,
                     billingState = billingState,
                     billingInProgress = billingInProgress,
+                    resultKey = resultKey,
                     onReport = ::report,
                     onRefreshBilling = onRefreshBilling,
                     onOpenProfile = onOpenProfile,
@@ -216,6 +192,81 @@ fun ShopRootScreen(
                     onRetryBillingPurchase = onRetryBillingPurchase,
                     onBuyTemporaryPro = onBuyTemporaryPro,
                 )
+            } else {
+                PageHeroCard(
+                    title = strings.text("shop.title"),
+                    subtitle = strings.text("shop.hero.subtitle"),
+                    accent = if (premiumOverview) Color(0xFF285A7E) else PageColors.Friends,
+                    leading = {
+                        Box(
+                            modifier = Modifier.size(48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.art_shop_bag_v10),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .requiredSize(76.dp)
+                                    .offset(x = (-2).dp, y = (-4).dp),
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .heightIn(min = heroHeight)
+                        .testTag("shop-hero"),
+                )
+                if (premiumOverview && compactReference) {
+                    Spacer(Modifier.height(10.dp))
+                }
+                RewardedAdCard(
+                    compact = compactReference,
+                    height = rewardedHeight,
+                    onWatch = { onWatchRewardedCoins(::report) },
+                    modifier = Modifier.testTag("shop-reward"),
+                )
+                Spacer(Modifier.height(if (premiumOverview) 8.dp else if (compactViewport) 6.dp else 8.dp))
+                ShopCategoryControl(
+                    selected = category,
+                    onSelect = {
+                        categoryName = it.name
+                        if (it != ShopCategory.PREMIUM) {
+                            navigatePremium(ShopPremiumDestination.OVERVIEW)
+                        }
+                        resultKey = null
+                    },
+                )
+                Spacer(Modifier.height(if (premiumOverview) 6.dp else if (compactViewport) 4.dp else 6.dp))
+                resultKey?.let { key ->
+                    StatusCard(
+                        title = strings.text(key),
+                        accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                }
+
+                when (category) {
+                    ShopCategory.BOOSTS -> BoostsCatalog(
+                        progressState = progressState,
+                        onReport = ::report,
+                        compactReference = compactReference,
+                        itemHeight = itemHeight,
+                        sectionToGridGap = if (compactViewport) 6.dp else 8.dp,
+                        onBuyOpenPositionHint = onBuyOpenPositionHint,
+                        onBuyCheckDigitHint = onBuyCheckDigitHint,
+                        onBuyCheckPositionHint = onBuyCheckPositionHint,
+                        onBuyExtraMovesBoost = onBuyExtraMovesBoost,
+                        onBuyExtraTimeBoost = onBuyExtraTimeBoost,
+                        onBuyEnergy = onBuyEnergy,
+                    )
+
+                    ShopCategory.PREMIUM -> PremiumOverviewReferenceContent(
+                        compactReference = compactReference,
+                        onOpenProducts = {
+                            resultKey = null
+                            navigatePremium(ShopPremiumDestination.PRODUCTS)
+                        },
+                    )
+                }
             }
             Spacer(Modifier.height(14.dp))
         }

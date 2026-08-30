@@ -3,6 +3,7 @@ package com.mirkori.inplacex.ui.screens.social
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -79,6 +80,7 @@ internal fun OnlineDuelScreen(
     var inviteCode by remember { mutableStateOf("") }
     val guessSubmission = remember { TransientOperationGate() }
     var inviteNotice by rememberSaveable { mutableStateOf<String?>(null) }
+    var joinCodeScreenOpen by rememberSaveable { mutableStateOf(false) }
     var selectedPlayStyleName by rememberSaveable {
         mutableStateOf(initialPlayStyle.name)
     }
@@ -175,6 +177,54 @@ internal fun OnlineDuelScreen(
         }
     }
 
+    fun createPrivateInvite() {
+        if (state != OnlineDuelUiState.Ready) return
+        state = OnlineDuelUiState.Loading(strings.text("social.online.creating_invite"))
+        scope.launch {
+            state = when (
+                val result = runtime.createFriendInvite(
+                    playStyle = selectedPlayStyle,
+                    codeLength = selectedCodeLength,
+                    targetPlayerId = targetPlayerId,
+                )
+            ) {
+                is OnlineClientResult.Success -> OnlineDuelUiState.WaitingForFriend(result.value)
+                else -> inviteError(result)
+            }
+        }
+    }
+
+    fun acceptPrivateInvite() {
+        if (state != OnlineDuelUiState.Ready || inviteCode.length != FriendInviteCodeLength) return
+        val submittedCode = inviteCode
+        state = OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
+        scope.launch {
+            when (val result = runtime.acceptFriendInvite(submittedCode)) {
+                is OnlineClientResult.Success -> openInviteSession(result.value)
+                else -> state = inviteError(result)
+            }
+        }
+    }
+
+    fun retryCurrentOperation() {
+        val sessionId = initialSessionId
+        if (sessionId == null) {
+            state = OnlineDuelUiState.Ready
+        } else {
+            state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+            scope.launch {
+                state = applySnapshotResult(runtime.readSession(sessionId))
+            }
+        }
+    }
+
+    BackHandler(
+        enabled = entryPoint == OnlineDuelEntryPoint.INVITES &&
+            joinCodeScreenOpen && state == OnlineDuelUiState.Ready,
+    ) {
+        joinCodeScreenOpen = false
+    }
+
     LaunchedEffect(Unit) {
         initialSessionId?.let { sessionId ->
             state = applySnapshotResult(runtime.readSession(sessionId))
@@ -263,6 +313,103 @@ internal fun OnlineDuelScreen(
             },
         )
         return
+    }
+
+    if (entryPoint != OnlineDuelEntryPoint.QUICK_MATCH) {
+        val screenTitle = if (entryPoint == OnlineDuelEntryPoint.FRIEND) {
+            targetDisplayName
+                ?.takeIf(String::isNotBlank)
+                ?.let { name -> strings.text("social.friend.match.title").replace("{name}", name) }
+                ?: strings.text("social.friend.match.title.generic")
+        } else {
+            strings.text("social.invites")
+        }
+        when (val current = state) {
+            OnlineDuelUiState.Ready -> {
+                if (entryPoint == OnlineDuelEntryPoint.INVITES && joinCodeScreenOpen) {
+                    SocialJoinCodeReferenceContent(
+                        inviteCode = inviteCode,
+                        busy = false,
+                        onInviteCodeChange = { inviteCode = normalizeFriendInviteCode(it) },
+                        onJoin = ::acceptPrivateInvite,
+                        onCreateOwnCode = {
+                            joinCodeScreenOpen = false
+                            createPrivateInvite()
+                        },
+                    )
+                } else {
+                    SocialInvitationsReferenceContent(
+                        selectedPlayStyle = selectedPlayStyle,
+                        selectedCodeLength = selectedCodeLength,
+                        targetDisplayName = targetDisplayName,
+                        friendEntryPoint = entryPoint == OnlineDuelEntryPoint.FRIEND,
+                        onPlayStyleChange = { selectedPlayStyleName = it.name },
+                        onCodeLengthChange = { selectedCodeLength = normalizeOnlineCodeLength(it) },
+                        onCreateCode = ::createPrivateInvite,
+                        onOpenJoinCode = { joinCodeScreenOpen = true },
+                    )
+                }
+                return
+            }
+
+            is OnlineDuelUiState.Loading -> {
+                SocialInviteOperationReferenceContent(
+                    title = screenTitle,
+                    message = current.message,
+                    error = false,
+                    onRetry = null,
+                )
+                return
+            }
+
+            is OnlineDuelUiState.WaitingForFriend -> {
+                SocialInviteWaitingReferenceContent(
+                    invite = current.invite,
+                    title = screenTitle,
+                    notice = inviteNotice,
+                    onCopy = {
+                        context.getSystemService(ClipboardManager::class.java)
+                            ?.setPrimaryClip(
+                                ClipData.newPlainText(
+                                    strings.text("social.invite.clipboard_label"),
+                                    current.invite.inviteCode,
+                                ),
+                            )
+                        inviteNotice = strings.text("social.invite.copied")
+                    },
+                    onShare = {
+                        val shareText = formatFriendInviteShareText(
+                            strings.text("social.invite.share_text"),
+                            current.invite.inviteCode,
+                        )
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, shareText)
+                        }
+                        context.startActivity(
+                            Intent.createChooser(sendIntent, strings.text("social.invite.share_title")),
+                        )
+                    },
+                    onCancel = {
+                        joinCodeScreenOpen = false
+                        state = OnlineDuelUiState.Ready
+                    },
+                )
+                return
+            }
+
+            is OnlineDuelUiState.Error -> {
+                SocialInviteOperationReferenceContent(
+                    title = screenTitle,
+                    message = current.message,
+                    error = true,
+                    onRetry = ::retryCurrentOperation,
+                )
+                return
+            }
+
+            is OnlineDuelUiState.Playing -> Unit
+        }
     }
 
     ScenePageColumn(
@@ -767,10 +914,10 @@ private fun String.maximumConsecutiveRun(): Int {
 }
 
 private const val SynchronizationPollMillis = 750L
-private const val FriendInviteCodeLength = 8
+internal const val FriendInviteCodeLength = 8
 private const val FriendInviteAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-private const val MinimumOnlineCodeLength = 4
-private const val MaximumOnlineCodeLength = 10
+internal const val MinimumOnlineCodeLength = 4
+internal const val MaximumOnlineCodeLength = 10
 
 internal fun normalizeOnlineCodeLength(value: Int): Int =
     value.coerceIn(MinimumOnlineCodeLength, MaximumOnlineCodeLength)

@@ -112,6 +112,39 @@ class GamePresentationComponentsTest {
     }
 
     @Test
+    fun `reference gameplay geometry matches the 374 by 877 target blocks`() {
+        val spec = gameReferenceLayoutSpec()
+
+        assertEquals((-4).dp, spec.verticalOffset)
+        assertEquals(298.dp, spec.topPanelWidth)
+        assertEquals(79.dp, spec.topPanelHeight)
+        assertEquals(9.dp, spec.topToBoardGap)
+        assertEquals(320.dp, spec.boardWidth)
+        assertEquals(315.dp, spec.boardHeight)
+        assertEquals((-2).dp, spec.boardHorizontalOffset)
+        assertEquals(5.dp, spec.boardToHelpersGap)
+        assertEquals(326.dp, spec.lowerPanelWidth)
+        assertEquals(42.dp, spec.helpersHeight)
+        assertEquals(5.dp, spec.helpersToToolsGap)
+        assertEquals(35.dp, spec.toolsHeight)
+        assertEquals(4.dp, spec.toolsToInputGap)
+        assertEquals(166.dp, spec.inputHeight)
+        assertEquals(11.dp, spec.inputToBannerGap)
+        assertEquals(334.dp, spec.bannerWidth)
+        assertEquals(99.dp, spec.bannerHeight)
+    }
+
+    @Test
+    fun `reference geometry keeps narrow large font and long code on adaptive path`() {
+        assertTrue(shouldUseReferenceGameGeometry(358.dp, 710.dp, 1f, 4))
+        assertTrue(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1.3f, 6))
+        assertFalse(shouldUseReferenceGameGeometry(320.dp, 877.dp, 1f, 4))
+        assertFalse(shouldUseReferenceGameGeometry(374.dp, 650.dp, 1f, 4))
+        assertFalse(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1.5f, 4))
+        assertFalse(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1f, 7))
+    }
+
+    @Test
     fun `work board stacks attempts above matrix after six digits`() {
         assertFalse(shouldUseStackedGameBoard(4))
         assertFalse(shouldUseStackedGameBoard(6))

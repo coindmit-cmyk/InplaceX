@@ -9,6 +9,7 @@ class OnlineDuelScreenLogicTest {
 
     @Test
     fun inviteCodeIsNormalizedToServerAlphabetAndLength() {
+        assertEquals(8, FriendInviteCodeLength)
         assertEquals(
             "ABCD2345",
             normalizeFriendInviteCode("a-b-c-d-2-3-4-5-6"),
@@ -17,6 +18,15 @@ class OnlineDuelScreenLogicTest {
             "23456789",
             normalizeFriendInviteCode("01io23456789"),
         )
+    }
+
+    @Test
+    fun invitationExpiryUsesExactServerTimestamp() {
+        val now = 1_000_000L
+
+        assertEquals("10:00", formatFriendInviteRemainingClock(now + 600_000L, now))
+        assertEquals("00:01", formatFriendInviteRemainingClock(now + 1L, now))
+        assertEquals("00:00", formatFriendInviteRemainingClock(now - 1L, now))
     }
 
     @Test

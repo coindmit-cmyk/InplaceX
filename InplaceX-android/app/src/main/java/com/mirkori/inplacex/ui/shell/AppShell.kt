@@ -49,6 +49,7 @@ fun AppShell(
     topContent: (@Composable () -> Unit)? = null,
     bottomAdContent: (@Composable () -> Unit)? = null,
     illustratedReference: Boolean = false,
+    illustratedBackgroundResourceId: Int = R.drawable.friends_room_v8,
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -68,6 +69,7 @@ fun AppShell(
             topContent = topContent,
             bottomAdContent = bottomAdContent,
             illustratedReference = illustratedReference,
+            illustratedBackgroundResourceId = illustratedBackgroundResourceId,
             content = content
         )
     }
@@ -87,12 +89,17 @@ private fun ShellBackground(
     topContent: (@Composable () -> Unit)?,
     bottomAdContent: (@Composable () -> Unit)?,
     illustratedReference: Boolean,
+    illustratedBackgroundResourceId: Int,
     content: @Composable () -> Unit
 ) {
     val centerSurfaceColor = AppConfigCatalog.platformConfig.shellAppearance.centerSurface.solidColor
 
     ScreenBackground(
-        style = if (illustratedReference) ScreenBackgroundStyle.DrawableResource(R.drawable.friends_room_v8, InplaceXColors.ToyWood) else backgroundStyle,
+        style = if (illustratedReference) {
+            ScreenBackgroundStyle.DrawableResource(illustratedBackgroundResourceId, InplaceXColors.ToyWood)
+        } else {
+            backgroundStyle
+        },
         modifier = Modifier
             .fillMaxSize()
             .then(if (illustratedReference) Modifier.testTag("friends-reference-shell") else Modifier)
