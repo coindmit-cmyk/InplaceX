@@ -119,8 +119,9 @@ class MirkoriPlatformRuntime internal constructor(
     suspend fun beginGoogleLogin(): MirkoriLoginResult = operationMutex.withLock {
         try {
             val current = ensureFreshSession()
-            if (current.authMode == PlatformAuthMode.GOOGLE) return@withLock MirkoriLoginResult.AlreadyConnected
-            if (current.authMode != PlatformAuthMode.GUEST) return@withLock MirkoriLoginResult.Rejected
+            if (current.authMode !in setOf(PlatformAuthMode.GUEST, PlatformAuthMode.GOOGLE)) {
+                return@withLock MirkoriLoginResult.Rejected
+            }
             val state = requireNotNull(persistedState)
             val pending = sdk.beginAccountLogin(
                 profileAccessToken = current.credentials.accessToken,

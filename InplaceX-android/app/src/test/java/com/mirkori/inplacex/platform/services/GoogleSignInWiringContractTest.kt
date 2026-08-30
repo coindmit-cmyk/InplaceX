@@ -15,6 +15,8 @@ class GoogleSignInWiringContractTest {
             ?: error("Cannot locate MainActivity.kt")
         val action = source.substringAfter("onGooglePlaySignIn = {")
             .substringBefore("onGooglePlaySignOut = {")
+        val signOutAction = source.substringAfter("onGooglePlaySignOut = {")
+            .substringBefore("VariantToolsSurface(")
 
         assertTrue(action.contains("runtime.beginGoogleLogin()"))
         assertTrue(action.contains("googleCredentialSignIn.signIn("))
@@ -28,6 +30,9 @@ class GoogleSignInWiringContractTest {
         assertTrue(source.contains("LocalRelationshipType.INVITE_OUTGOING"))
         assertTrue(source.contains("savedFriends = emptyList()"))
         assertTrue(source.contains("pendingFriendRequests = emptyList()"))
+        assertTrue(source.contains("if (googleCredentialSignIn.signOut())"))
+        assertTrue(source.contains("progressRepository.signOutFromGooglePlay()"))
+        assertFalse(signOutAction.contains("activeOnlineSessionStore.clear()"))
         assertFalse(action.contains("Intent.ACTION_VIEW"))
     }
 }

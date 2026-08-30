@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -46,6 +47,7 @@ import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatarPresets
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.platform.sdk.PlatformAuthMode
 
 @Composable
 fun ProfileRootScreen(
@@ -322,102 +324,86 @@ fun ProfileRootScreen(
                 )
             }
 
-            if (mirkoriAccountState.kind != MirkoriAccountStateKind.LINKED) {
-                Button(
-                    onClick = onMirkoriSignIn,
-                    enabled = !mirkoriAuthInProgress &&
-                        mirkoriAccountState.kind != MirkoriAccountStateKind.INITIALIZING,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.mirkori.sign_in"))
-                }
-            }
-
-            val resultKey = if (mirkoriAuthInProgress) "profile.mirkori.in_progress" else mirkoriAuthResultKey
-            resultKey?.let { key ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (key in MirkoriAuthErrorKeys) {
-                        InplaceXColors.Coral.copy(alpha = 0.12f)
-                    } else {
-                        InplaceXColors.Mint.copy(alpha = 0.14f)
-                    },
-                    border = BorderStroke(
-                        1.dp,
-                        if (key in MirkoriAuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
-                    ),
-                ) {
-                    Text(
-                        text = strings.text(key),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
         }
 
-        if (showGooglePlayCard) {
-            SceneCard(accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f)) {
+        SceneCard(
+            modifier = Modifier.testTag("profile-connections"),
+            accentColor = InplaceXColors.ToyCream.copy(alpha = 0.95f),
+        ) {
             Text(
-                text = strings.text("profile.google_play.title"),
+                text = strings.text("profile.connections"),
                 modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = if (progressState.googlePlaySignedIn) {
-                    strings.text("profile.google_play.connected")
-                } else {
-                    strings.text("profile.google_play.disconnected")
+
+            ProfileConnectionBlock(
+                title = strings.text("profile.mirkori.title"),
+                status = when (mirkoriAccountState.kind) {
+                    MirkoriAccountStateKind.LINKED -> strings.text("profile.mirkori.connected")
+                    MirkoriAccountStateKind.GUEST -> strings.text("profile.mirkori.guest")
+                    MirkoriAccountStateKind.INITIALIZING -> strings.text("profile.mirkori.initializing")
+                    MirkoriAccountStateKind.UNAVAILABLE -> strings.text("profile.mirkori.unavailable")
                 },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                action = mirkoriConnectionAction(mirkoriAccountState.kind),
+                actionLabel = strings.text("profile.mirkori.sign_in"),
+                actionEnabled = !mirkoriAuthInProgress,
+                onAction = onMirkoriSignIn,
+                testTag = "profile-connection-mirkori",
             )
-            val legacyGoogleActionsAllowed = mirkoriAccountState.kind == MirkoriAccountStateKind.GUEST
-            if (progressState.googlePlaySignedIn) {
-                if (legacyGoogleActionsAllowed) {
-                    OutlinedButton(
-                        onClick = onGooglePlaySignOut,
-                        enabled = !authInProgress,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                    ) {
-                        Text(strings.text("profile.google_play.sign_out"))
-                    }
-                }
-            } else if (legacyGoogleActionsAllowed) {
-                Button(
-                    onClick = onGooglePlaySignIn,
-                    enabled = !authInProgress,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    Text(strings.text("profile.google_play.sign_in"))
-                }
+
+            val mirkoriResultKey = if (mirkoriAuthInProgress) {
+                "profile.mirkori.in_progress"
+            } else {
+                mirkoriAuthResultKey
             }
-            val googleResultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
-            googleResultKey?.let { key ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (key in AuthErrorKeys) {
-                        InplaceXColors.Coral.copy(alpha = 0.12f)
+            mirkoriResultKey?.let { key ->
+                ProfileConnectionNotice(
+                    text = strings.text(key),
+                    error = key in MirkoriAuthErrorKeys,
+                )
+            }
+
+            if (showGooglePlayCard) {
+                val googleConnected = googleConnectionIsActive(
+                    locallySignedIn = progressState.googlePlaySignedIn,
+                    accountKind = mirkoriAccountState.kind,
+                    authMode = mirkoriAccountState.authMode,
+                )
+                val googleAction = googleConnectionAction(
+                    showGooglePlay = true,
+                    connected = googleConnected,
+                    accountKind = mirkoriAccountState.kind,
+                    authMode = mirkoriAccountState.authMode,
+                )
+                ProfileConnectionBlock(
+                    title = strings.text("profile.google_play.title"),
+                    status = if (googleConnected) {
+                        strings.text("profile.google_play.connected")
                     } else {
-                        InplaceXColors.Mint.copy(alpha = 0.14f)
+                        strings.text("profile.google_play.disconnected")
                     },
-                    border = BorderStroke(
-                        1.dp,
-                        if (key in AuthErrorKeys) InplaceXColors.Coral else InplaceXColors.Mint,
-                    ),
-                ) {
-                    Text(
+                    action = googleAction,
+                    actionLabel = when (googleAction) {
+                        ProfileConnectionAction.SIGN_IN -> strings.text("profile.google_play.sign_in")
+                        ProfileConnectionAction.SIGN_OUT -> strings.text("profile.google_play.sign_out")
+                        null -> null
+                    },
+                    actionEnabled = !authInProgress,
+                    onAction = when (googleAction) {
+                        ProfileConnectionAction.SIGN_OUT -> onGooglePlaySignOut
+                        else -> onGooglePlaySignIn
+                    },
+                    testTag = "profile-connection-google",
+                )
+
+                val googleResultKey = if (authInProgress) "profile.auth.in_progress" else authResultKey
+                googleResultKey?.let { key ->
+                    ProfileConnectionNotice(
                         text = strings.text(key),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.bodySmall,
+                        error = key in AuthErrorKeys,
                     )
                 }
-            }
             }
         }
 
@@ -496,6 +482,126 @@ private val MirkoriAuthErrorKeys = setOf(
     "profile.mirkori.rejected",
     "profile.mirkori.conflict",
 )
+
+internal enum class ProfileConnectionAction {
+    SIGN_IN,
+    SIGN_OUT,
+}
+
+internal fun mirkoriConnectionAction(accountKind: MirkoriAccountStateKind): ProfileConnectionAction? =
+    when (accountKind) {
+        MirkoriAccountStateKind.GUEST,
+        MirkoriAccountStateKind.UNAVAILABLE,
+        -> ProfileConnectionAction.SIGN_IN
+        MirkoriAccountStateKind.INITIALIZING,
+        MirkoriAccountStateKind.LINKED,
+        -> null
+    }
+
+internal fun googleConnectionIsActive(
+    locallySignedIn: Boolean,
+    accountKind: MirkoriAccountStateKind,
+    authMode: PlatformAuthMode?,
+): Boolean = locallySignedIn && (
+    accountKind != MirkoriAccountStateKind.LINKED || authMode == PlatformAuthMode.GOOGLE
+)
+
+internal fun googleConnectionAction(
+    showGooglePlay: Boolean,
+    connected: Boolean,
+    accountKind: MirkoriAccountStateKind,
+    authMode: PlatformAuthMode?,
+): ProfileConnectionAction? = when {
+    !showGooglePlay || accountKind == MirkoriAccountStateKind.INITIALIZING -> null
+    connected -> ProfileConnectionAction.SIGN_OUT
+    accountKind == MirkoriAccountStateKind.GUEST -> ProfileConnectionAction.SIGN_IN
+    accountKind == MirkoriAccountStateKind.UNAVAILABLE -> ProfileConnectionAction.SIGN_IN
+    accountKind == MirkoriAccountStateKind.LINKED && authMode == PlatformAuthMode.GOOGLE ->
+        ProfileConnectionAction.SIGN_IN
+    else -> null
+}
+
+@Composable
+private fun ProfileConnectionBlock(
+    title: String,
+    status: String,
+    action: ProfileConnectionAction?,
+    actionLabel: String?,
+    actionEnabled: Boolean,
+    onAction: () -> Unit,
+    testTag: String,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag),
+        shape = RoundedCornerShape(14.dp),
+        color = InplaceXColors.ToyCreamShadow.copy(alpha = 0.32f),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (action != null && actionLabel != null) {
+                when (action) {
+                    ProfileConnectionAction.SIGN_IN -> Button(
+                        onClick = onAction,
+                        enabled = actionEnabled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .testTag("$testTag-sign-in"),
+                    ) {
+                        Text(actionLabel)
+                    }
+                    ProfileConnectionAction.SIGN_OUT -> OutlinedButton(
+                        onClick = onAction,
+                        enabled = actionEnabled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .testTag("$testTag-sign-out"),
+                    ) {
+                        Text(actionLabel)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileConnectionNotice(text: String, error: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = if (error) {
+            InplaceXColors.Coral.copy(alpha = 0.12f)
+        } else {
+            InplaceXColors.Mint.copy(alpha = 0.14f)
+        },
+        border = BorderStroke(
+            1.dp,
+            if (error) InplaceXColors.Coral else InplaceXColors.Mint,
+        ),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
 
 @Composable
 private fun ProfileOverview(progressState: GameProgressState) {

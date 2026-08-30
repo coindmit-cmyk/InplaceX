@@ -1534,11 +1534,12 @@ class MainActivity : ComponentActivity() {
                                     profileAuthOperation.start()?.let { operationId ->
                                         coroutineScope.launch {
                                             try {
-                                                googleCredentialSignIn.signOut()
-                                                activeOnlineSessionStore.clear()
-                                                activeOnlineSessionId = null
-                                                progressState = progressRepository.signOutFromGooglePlay()
-                                                profileAuthResultKey = "profile.auth.signed_out"
+                                                profileAuthResultKey = if (googleCredentialSignIn.signOut()) {
+                                                    progressState = progressRepository.signOutFromGooglePlay()
+                                                    "profile.auth.signed_out"
+                                                } else {
+                                                    "profile.auth.unavailable"
+                                                }
                                             } catch (error: Exception) {
                                                 if (error is CancellationException) throw error
                                                 AppLog.warn(
