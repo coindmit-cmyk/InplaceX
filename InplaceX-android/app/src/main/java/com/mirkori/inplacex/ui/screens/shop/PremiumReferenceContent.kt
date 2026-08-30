@@ -51,7 +51,6 @@ import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingState
 import com.mirkori.inplacex.ui.screens.shared.PagePrimaryButton
 import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton
-import com.mirkori.inplacex.ui.screens.shared.StatusCard
 import com.mirkori.inplacex.ui.theme.PageColors
 
 private enum class PremiumArtwork {
@@ -95,7 +94,6 @@ internal fun shouldShowPremiumBillingNotice(
 @Composable
 internal fun PremiumOverviewReferenceContent(
     compactReference: Boolean,
-    onOpenProducts: () -> Unit,
 ) {
     val strings = LocalAppStrings.current
     val rows = listOf(
@@ -118,13 +116,11 @@ internal fun PremiumOverviewReferenceContent(
     val combinedDescription = rows.joinToString(". ") { "${it.title}: ${it.description}" }
 
     Surface(
-        onClick = onOpenProducts,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = if (compactReference) 325.dp else 300.dp)
             .testTag("shop-premium-overview")
             .semantics {
-                role = Role.Button
                 contentDescription = combinedDescription
             },
         shape = RoundedCornerShape(17.dp),
@@ -245,7 +241,6 @@ internal fun PremiumProductsReferenceContent(
     nowMs: Long,
     billingState: BillingState,
     billingInProgress: Boolean,
-    resultKey: String?,
     onReport: (Boolean) -> Unit,
     onRefreshBilling: () -> Unit,
     onOpenProfile: () -> Unit,
@@ -263,12 +258,6 @@ internal fun PremiumProductsReferenceContent(
             .testTag("shop-premium-products"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        resultKey?.let { key ->
-            StatusCard(
-                title = strings.text(key),
-                accent = if (key == "shop.result.success") PageColors.Success else PageColors.Error,
-            )
-        }
         if (shouldShowPremiumBillingNotice(billingState, billingInProgress)) {
             PremiumBillingNotice(
                 state = billingState,

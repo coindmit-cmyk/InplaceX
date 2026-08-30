@@ -101,7 +101,6 @@ import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.profile.GoogleProfileConflictDialog
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
-import com.mirkori.inplacex.ui.screens.shop.ShopPremiumDestination
 import com.mirkori.inplacex.ui.screens.shop.ShopCategory
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
@@ -214,9 +213,6 @@ class MainActivity : ComponentActivity() {
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var isNestedHomeScreen by rememberSaveable { mutableStateOf(false) }
                 var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
-                var shopPremiumDestinationName by rememberSaveable {
-                    mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
-                }
                 var shopCategoryName by rememberSaveable {
                     mutableStateOf(ShopCategory.BOOSTS.name)
                 }
@@ -798,12 +794,10 @@ class MainActivity : ComponentActivity() {
                     resourceId = R.drawable.toy_room_bg_v6,
                     fallbackColor = InplaceXColors.ToyWood,
                 )
-                val shopPremiumDestination = ShopPremiumDestination.valueOf(shopPremiumDestinationName)
                 val shopCategory = ShopCategory.valueOf(shopCategoryName)
                 val isHomeSubpage = currentSection == AppSection.HOME && isNestedHomeScreen
                 val isShopSubpage = currentSection == AppSection.SHOP &&
-                    (shopCategory == ShopCategory.PREMIUM ||
-                        shopPremiumDestination == ShopPremiumDestination.PRODUCTS)
+                    shopCategory == ShopCategory.PREMIUM
                 val illustratedReferenceSection = currentSection == AppSection.HOME ||
                     currentSection == AppSection.SOCIAL ||
                     currentSection == AppSection.COMPANY ||
@@ -842,11 +836,7 @@ class MainActivity : ComponentActivity() {
                                     section == AppSection.HOME && isNestedHomeScreen -> requestExitGame = true
                                     section == AppSection.SOCIAL && isNestedSocialScreen -> requestExitGame = true
                                     section == AppSection.SHOP && isShopSubpage -> {
-                                        if (shopPremiumDestination == ShopPremiumDestination.PRODUCTS) {
-                                            shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
-                                        } else {
-                                            shopCategoryName = ShopCategory.BOOSTS.name
-                                        }
+                                        shopCategoryName = ShopCategory.BOOSTS.name
                                     }
                                 }
                             }
@@ -871,13 +861,7 @@ class MainActivity : ComponentActivity() {
                                 onBackClick = {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
-                                        isShopSubpage -> {
-                                            if (shopPremiumDestination == ShopPremiumDestination.PRODUCTS) {
-                                                shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
-                                            } else {
-                                                shopCategoryName = ShopCategory.BOOSTS.name
-                                            }
-                                        }
+                                        isShopSubpage -> shopCategoryName = ShopCategory.BOOSTS.name
                                         else -> requestExitGame = true
                                     }
                                 },
@@ -1313,10 +1297,6 @@ class MainActivity : ComponentActivity() {
                                 category = shopCategory,
                                 onCategoryChange = { category ->
                                     shopCategoryName = category.name
-                                },
-                                premiumDestination = shopPremiumDestination,
-                                onPremiumDestinationChange = { destination ->
-                                    shopPremiumDestinationName = destination.name
                                 },
                                 onBuyTemporaryPro = {
                                     val permanentPremiumActive =

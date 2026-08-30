@@ -86,6 +86,11 @@ settled capture.
 | Premium | `b751...586a8.png` | `[523,27,985,984]` | `462x957` | `f0dd7a29c5d33d849f6e340cdf3d8ac3c0faf86b2e31f06f847881a50c4bb83f` | `aeef161377245eb270ca925f58f77fdbc7d3be646f0c3417856c677b9e49ec93` |
 | Premium-товары | `b751...586a8.png` | `[1003,25,1466,984]` | `463x959` | `5220b4d570614b76eba05940c5a7df6a394f15c711633bb9f8cd084046a70ec0` | `722cdcd932ecc7ebcaf601fdc20e0ab42db5a80cb934396c60567bbae97620d7` |
 
+Оба Premium-crop показывают разные вертикальные участки одной прокручиваемой
+вкладки. `Premium-товары` не является отдельным destination: после обзора в том
+же scroll-контейнере идут notice и реальные billing-карточки. Back из Premium
+возвращает на `Запасы`.
+
 Raw crops сохранены как `*-crop.png`, а канонические цели — как
 `*-target-374x877.png`. Полные машинные записи находятся в
 `targets-manifest.json`. Pixel-level read-only проверка подтвердила, что все
@@ -175,7 +180,7 @@ Runtime Compose canvas при этом должен fit-иться равном�
 | Confidence | current guess state | `GameField` | существующий confidence callback | доступность по mode |
 | Ad banner | provider state | `GameField` | provider callback | никакого demo ad в production |
 | Shop tabs | selected category | `ShopRootScreen` | `BOOSTS`/`PREMIUM` | enabled |
-| Premium nested Back | selected category и premium destination | `ShopRootScreen` | Products -> Overview -> Boosts | top/system Back используют одну state chain |
+| Premium Back | selected category | `ShopRootScreen` | Premium -> Supplies | обзор и товары остаются одним scroll-контейнером |
 | Rewarded bonus | ad provider | `ShopRootScreen` | watch rewarded ad | availability/busy/result |
 | Premium purchases | `BillingState` | `ShopRootScreen` | существующие buy callbacks | availability/pending/owned |
 | Temporary PRO | wallet/entitlement | `ShopRootScreen` | `buyTemporaryPro` | реальные `60` монет / `1` час |

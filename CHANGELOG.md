@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Premium overview and Premium products now form one continuous scrollable
+  Shop tab instead of a second destination. The overview is no longer a false
+  navigation control, Back returns to Supplies, and the Shop bag and rewarded
+  coin artwork use reference-measured bounds without clipping or drift.
 - Extended the illustrated reference style across Home, Race and Duel setup,
   the real Friends list, private invitation creation and entry, the active game
   board, and both Premium surfaces on the established 374×877 shell. The new

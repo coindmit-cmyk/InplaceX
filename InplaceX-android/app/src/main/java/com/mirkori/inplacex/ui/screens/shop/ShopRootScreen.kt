@@ -88,15 +88,11 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 
 enum class ShopCategory {
     BOOSTS,
     PREMIUM,
-}
-
-enum class ShopPremiumDestination {
-    OVERVIEW,
-    PRODUCTS,
 }
 
 @Composable
@@ -124,25 +120,11 @@ fun ShopRootScreen(
     onBuyTemporaryPro: () -> Boolean = { false },
     category: ShopCategory? = null,
     onCategoryChange: (ShopCategory) -> Unit = {},
-    premiumDestination: ShopPremiumDestination? = null,
-    onPremiumDestinationChange: (ShopPremiumDestination) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var savedCategoryName by rememberSaveable { mutableStateOf(ShopCategory.BOOSTS.name) }
-    var savedPremiumDestinationName by rememberSaveable {
-        mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
-    }
     var resultKey by rememberSaveable { mutableStateOf<String?>(null) }
     val activeCategory = category ?: ShopCategory.valueOf(savedCategoryName)
-    val activePremiumDestination = premiumDestination
-        ?: ShopPremiumDestination.valueOf(savedPremiumDestinationName)
-
-    fun navigatePremium(destination: ShopPremiumDestination) {
-        if (premiumDestination == null) {
-            savedPremiumDestinationName = destination.name
-        }
-        onPremiumDestinationChange(destination)
-    }
 
     fun navigateCategory(destination: ShopCategory) {
         if (category == null) {
@@ -159,15 +141,8 @@ fun ShopRootScreen(
         resultKey = if (result) "shop.result.success" else "shop.result.unavailable"
     }
 
-    BackHandler(
-        enabled = activePremiumDestination == ShopPremiumDestination.PRODUCTS ||
-            activeCategory == ShopCategory.PREMIUM,
-    ) {
-        if (activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
-            navigatePremium(ShopPremiumDestination.OVERVIEW)
-        } else {
-            navigateCategory(ShopCategory.BOOSTS)
-        }
+    BackHandler(enabled = activeCategory == ShopCategory.PREMIUM) {
+        navigateCategory(ShopCategory.BOOSTS)
     }
 
     BoxWithConstraints(
@@ -177,8 +152,7 @@ fun ShopRootScreen(
     ) {
         val compactReference = maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f
         val compactViewport = compactReference && maxHeight < 650.dp
-        val premiumOverview = activeCategory == ShopCategory.PREMIUM &&
-            activePremiumDestination == ShopPremiumDestination.OVERVIEW
+        val premiumOverview = activeCategory == ShopCategory.PREMIUM
         val heroHeight = when {
             premiumOverview && compactReference -> 92.dp
             compactViewport -> 80.dp
@@ -198,38 +172,22 @@ fun ShopRootScreen(
                 .padding(horizontal = if (activeCategory == ShopCategory.PREMIUM) 20.dp else 15.dp)
                 .padding(top = if (premiumOverview) 5.dp else 0.dp),
         ) {
-            if (activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
-                PremiumProductsReferenceContent(
-                    progressState = progressState,
-                    nowMs = nowMs,
-                    billingState = billingState,
-                    billingInProgress = billingInProgress,
-                    resultKey = resultKey,
-                    onReport = ::report,
-                    onRefreshBilling = onRefreshBilling,
-                    onOpenProfile = onOpenProfile,
-                    onBuyRemoveAds = onBuyRemoveAds,
-                    onBuyPro = onBuyPro,
-                    onBuyProPlus = onBuyProPlus,
-                    onRetryBillingPurchase = onRetryBillingPurchase,
-                    onBuyTemporaryPro = onBuyTemporaryPro,
-                )
-            } else {
-                PageHeroCard(
+            PageHeroCard(
                     title = strings.text("shop.title"),
                     subtitle = strings.text("shop.hero.subtitle"),
                     accent = if (premiumOverview) Color(0xFF285A7E) else PageColors.Friends,
                     leading = {
                         Box(
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(60.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.art_shop_bag_v10),
                                 contentDescription = null,
+                                contentScale = ContentScale.FillBounds,
                                 modifier = Modifier
-                                    .requiredSize(76.dp)
-                                    .offset(x = (-2).dp, y = (-4).dp),
+                                    .requiredSize(width = 72.dp, height = 90.dp)
+                                    .offset(x = 4.dp, y = (-2).dp),
                             )
                         }
                     },
@@ -251,9 +209,6 @@ fun ShopRootScreen(
                     selected = activeCategory,
                     onSelect = {
                         navigateCategory(it)
-                        if (it != ShopCategory.PREMIUM) {
-                            navigatePremium(ShopPremiumDestination.OVERVIEW)
-                        }
                         resultKey = null
                     },
                 )
@@ -281,15 +236,27 @@ fun ShopRootScreen(
                         onBuyEnergy = onBuyEnergy,
                     )
 
-                    ShopCategory.PREMIUM -> PremiumOverviewReferenceContent(
-                        compactReference = compactReference,
-                        onOpenProducts = {
-                            resultKey = null
-                            navigatePremium(ShopPremiumDestination.PRODUCTS)
-                        },
-                    )
+                    ShopCategory.PREMIUM -> {
+                        PremiumOverviewReferenceContent(
+                            compactReference = compactReference,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        PremiumProductsReferenceContent(
+                            progressState = progressState,
+                            nowMs = nowMs,
+                            billingState = billingState,
+                            billingInProgress = billingInProgress,
+                            onReport = ::report,
+                            onRefreshBilling = onRefreshBilling,
+                            onOpenProfile = onOpenProfile,
+                            onBuyRemoveAds = onBuyRemoveAds,
+                            onBuyPro = onBuyPro,
+                            onBuyProPlus = onBuyProPlus,
+                            onRetryBillingPurchase = onRetryBillingPurchase,
+                            onBuyTemporaryPro = onBuyTemporaryPro,
+                        )
+                    }
                 }
-            }
             Spacer(Modifier.height(14.dp))
         }
     }
@@ -367,10 +334,10 @@ private fun RewardedAdCard(
                 Image(
                     painter = painterResource(R.drawable.art_reward_coins_gems_v10),
                     contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
                     modifier = Modifier
-                        .requiredSize(rewardArtworkSlot + 42.dp)
-                        .offset(x = 4.dp, y = (-22).dp)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .requiredSize(width = 130.dp, height = 160.dp)
+                        .offset(x = 8.dp, y = (-28).dp),
                 )
             }
             Column(

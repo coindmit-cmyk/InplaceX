@@ -962,11 +962,12 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Премиум").performClick()
-        composeRule.onNodeWithTag("shop-premium-overview").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("shop-premium-overview").assertIsDisplayed()
         composeRule.onNodeWithTag("shop-premium-products").assertIsDisplayed()
-        composeRule.onNodeWithText("PRO на 1 час").assertIsDisplayed()
-        composeRule.onNodeWithText("Доступ на 01:00:00").assertIsDisplayed()
-        composeRule.onNodeWithText("Купить за 60 монет").performClick()
+        composeRule.onNodeWithText("PRO на 1 час").assertExists()
+        composeRule.onNodeWithText("Доступ на 01:00:00").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Купить за 60 монет")
+            .performScrollTo().assertIsDisplayed().performClick()
         composeRule.runOnIdle { assertTrue(purchased) }
     }
 
