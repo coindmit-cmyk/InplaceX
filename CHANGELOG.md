@@ -15,6 +15,12 @@
   section. Google-linked players can disconnect and reconnect the device Google
   credential without clearing their Mirkori Games account or active online
   session, and a failed Credential Manager sign-out no longer reports success.
+- Online input now shares free-position editing with local play: automatically
+  confirmed digits no longer consume keypad presses, and disabling auto mode
+  also disables hidden inferred substitutions on submission.
+- Pending private invitations survive screen/process recreation, scoped to
+  the game profile. Social notifications open Social, and accepting a new
+  invite no longer races restoration of the previously selected session.
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.

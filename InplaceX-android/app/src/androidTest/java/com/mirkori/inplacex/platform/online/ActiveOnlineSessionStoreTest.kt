@@ -16,6 +16,29 @@ class ActiveOnlineSessionStoreTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
+    fun pendingInviteSurvivesRecreationAndIsIsolatedByGameProfile() {
+        val preferencesName = "pending-invite-${UUID.randomUUID()}"
+        val player = UUID.randomUUID().toString()
+        val otherPlayer = UUID.randomUUID().toString()
+        try {
+            val store = ActiveOnlineSessionStore(context, preferencesName)
+            store.writePendingInvite(player, "ABCD2345")
+            val restored = ActiveOnlineSessionStore(context, preferencesName)
+            assertEquals("ABCD2345", restored.readPendingInvite(player))
+            assertNull(restored.readPendingInvite(otherPlayer))
+            restored.clearPendingInvite(otherPlayer)
+            assertEquals("ABCD2345", restored.readPendingInvite(player))
+            restored.clearPendingInvite(player)
+            assertNull(store.readPendingInvite(player))
+            assertThrows(IllegalArgumentException::class.java) {
+                store.writePendingInvite(player, "../../code")
+            }
+        } finally {
+            context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE).edit().clear().commit()
+        }
+    }
+
+    @Test
     fun activeSessionSurvivesStoreRecreationAndCanBeCleared() {
         val preferencesName = "active-session-${UUID.randomUUID()}"
         val sessionId = UUID.randomUUID().toString()

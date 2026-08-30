@@ -64,6 +64,8 @@ internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
     initialSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
+    initialPendingInviteCode: String? = null,
+    onPendingInviteChange: (String?) -> Unit = {},
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
     initialPlayStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.RACE,
     initialCodeLength: Int = 4,
@@ -77,9 +79,15 @@ internal fun OnlineDuelScreen(
     val context = LocalContext.current
     val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
+    val recoveryPendingInviteCode = initialPendingInviteCode.takeIf {
+        entryPoint == OnlineDuelEntryPoint.INVITES && autoAcceptInviteCode == null
+    }
     var state by remember {
         mutableStateOf<OnlineDuelUiState>(
-            if (initialSessionId == null) {
+            if (
+                (entryPoint != OnlineDuelEntryPoint.QUICK_MATCH || initialSessionId == null) &&
+                recoveryPendingInviteCode == null
+            ) {
                 if (autoAcceptInviteCode == null) OnlineDuelUiState.Ready
                 else OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
             } else {
@@ -98,6 +106,10 @@ internal fun OnlineDuelScreen(
     var selectedCodeLength by rememberSaveable {
         mutableStateOf(normalizeOnlineCodeLength(initialCodeLength))
     }
+    var restoredSessionId by remember { mutableStateOf<String?>(null) }
+    var restoredPendingInviteCode by remember { mutableStateOf<String?>(null) }
+    var attemptedAutoAcceptCode by remember { mutableStateOf<String?>(null) }
+    var completedAutoAcceptCode by remember { mutableStateOf<String?>(null) }
     val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
@@ -121,9 +133,10 @@ internal fun OnlineDuelScreen(
         result: OnlineClientResult<OnlineDuelSnapshotState>,
     ): OnlineDuelUiState {
         when (result) {
-            is OnlineClientResult.Success -> onActiveSessionChange(
-                result.value.sessionId.takeUnless { result.value.phase == "finished" },
-            )
+            is OnlineClientResult.Success -> {
+                onActiveSessionChange(result.value.sessionId.takeUnless { result.value.phase == "finished" })
+                onPendingInviteChange(null)
+            }
             OnlineClientResult.AuthenticationRequired,
             OnlineClientResult.MembershipRejected,
             OnlineClientResult.InvalidResponse,
@@ -154,17 +167,46 @@ internal fun OnlineDuelScreen(
         state = if (sessionId == null) {
             OnlineDuelUiState.Error(strings.text("social.online.error.room_missing"))
         } else {
+            restoredSessionId = sessionId
             onActiveSessionChange(sessionId)
+            onPendingInviteChange(null)
             applySnapshotResult(runtime.readSession(sessionId))
         }
     }
 
-    LaunchedEffect(autoAcceptInviteCode) {
-        val code = autoAcceptInviteCode ?: return@LaunchedEffect
+    suspend fun restoreInvite(code: String) {
+        restoredPendingInviteCode = code
+        when (val result = runtime.readFriendInvite(code)) {
+            is OnlineClientResult.Success -> when (result.value.status) {
+                OnlineFriendInviteStatus.WAITING -> state = OnlineDuelUiState.WaitingForFriend(result.value)
+                OnlineFriendInviteStatus.MATCHED -> openInviteSession(result.value)
+                OnlineFriendInviteStatus.EXPIRED -> {
+                    onPendingInviteChange(null)
+                    state = OnlineDuelUiState.Error(strings.text("social.online.error.invite_expired"))
+                }
+            }
+            else -> {
+                if (result == OnlineClientResult.MembershipRejected || result == OnlineClientResult.InvalidResponse) {
+                    onPendingInviteChange(null)
+                }
+                state = inviteError(result)
+            }
+        }
+    }
+
+    suspend fun acceptIncomingInvite(code: String) {
         when (val result = runtime.acceptFriendInvite(code)) {
-            is OnlineClientResult.Success -> openInviteSession(result.value)
+            is OnlineClientResult.Success -> {
+                if (result.value.sessionId != null) completedAutoAcceptCode = code
+                openInviteSession(result.value)
+            }
             else -> state = inviteError(result)
         }
+    }
+
+    suspend fun resumeSession(sessionId: String) {
+        restoredSessionId = sessionId
+        state = applySnapshotResult(runtime.readSession(sessionId))
     }
 
     suspend fun startQuickMatch() {
@@ -180,6 +222,7 @@ internal fun OnlineDuelScreen(
                 if (sessionId == null) {
                     OnlineDuelUiState.Error(strings.text("social.online.error.match_missing"))
                 } else {
+                    restoredSessionId = sessionId
                     onActiveSessionChange(sessionId)
                     applySnapshotResult(runtime.readSession(sessionId))
                 }
@@ -199,7 +242,11 @@ internal fun OnlineDuelScreen(
                     targetPlayerId = targetPlayerId,
                 )
             ) {
-                is OnlineClientResult.Success -> OnlineDuelUiState.WaitingForFriend(result.value)
+                is OnlineClientResult.Success -> {
+                    restoredPendingInviteCode = result.value.inviteCode
+                    onPendingInviteChange(result.value.inviteCode)
+                    OnlineDuelUiState.WaitingForFriend(result.value)
+                }
                 else -> inviteError(result)
             }
         }
@@ -218,14 +265,24 @@ internal fun OnlineDuelScreen(
     }
 
     fun retryCurrentOperation() {
+        val incomingCode = autoAcceptInviteCode
         val sessionId = initialSessionId
-        if (sessionId == null) {
-            state = OnlineDuelUiState.Ready
-        } else {
-            state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
-            scope.launch {
-                state = applySnapshotResult(runtime.readSession(sessionId))
+        val pendingCode = recoveryPendingInviteCode
+        when {
+            incomingCode != null && completedAutoAcceptCode != incomingCode -> {
+                attemptedAutoAcceptCode = incomingCode
+                state = OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
+                scope.launch { acceptIncomingInvite(incomingCode) }
             }
+            sessionId != null -> {
+                state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+                scope.launch { resumeSession(sessionId) }
+            }
+            pendingCode != null -> {
+                state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+                scope.launch { restoreInvite(pendingCode) }
+            }
+            else -> state = OnlineDuelUiState.Ready
         }
     }
 
@@ -252,9 +309,25 @@ internal fun OnlineDuelScreen(
         joinCodeScreenOpen = false
     }
 
-    LaunchedEffect(Unit) {
-        initialSessionId?.let { sessionId ->
-            state = applySnapshotResult(runtime.readSession(sessionId))
+    LaunchedEffect(initialSessionId, recoveryPendingInviteCode, autoAcceptInviteCode) {
+        val incomingCode = autoAcceptInviteCode
+        val sessionId = initialSessionId
+        when {
+            incomingCode != null && attemptedAutoAcceptCode != incomingCode -> {
+                attemptedAutoAcceptCode = incomingCode
+                state = OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
+                scope.launch { acceptIncomingInvite(incomingCode) }
+            }
+            entryPoint == OnlineDuelEntryPoint.QUICK_MATCH &&
+                sessionId != null && restoredSessionId != sessionId -> {
+                state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+                scope.launch { resumeSession(sessionId) }
+            }
+            recoveryPendingInviteCode != null &&
+                restoredPendingInviteCode != recoveryPendingInviteCode -> {
+                state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
+                scope.launch { restoreInvite(recoveryPendingInviteCode) }
+            }
         }
     }
 
@@ -267,10 +340,12 @@ internal fun OnlineDuelScreen(
                         is OnlineClientResult.Success -> when (result.value.status) {
                             OnlineFriendInviteStatus.WAITING -> Unit
                             OnlineFriendInviteStatus.MATCHED -> openInviteSession(result.value)
-                            OnlineFriendInviteStatus.EXPIRED ->
+                            OnlineFriendInviteStatus.EXPIRED -> {
+                                onPendingInviteChange(null)
                                 state = OnlineDuelUiState.Error(
                                     strings.text("social.online.error.invite_expired"),
                                 )
+                            }
                         }
                         OnlineClientResult.Offline,
                         OnlineClientResult.TemporarilyUnavailable,
@@ -414,6 +489,7 @@ internal fun OnlineDuelScreen(
                         )
                     },
                     onCancel = {
+                        onPendingInviteChange(null)
                         joinCodeScreenOpen = false
                         state = OnlineDuelUiState.Ready
                     },
@@ -566,8 +642,10 @@ internal fun OnlineDuelScreen(
                                         targetPlayerId = targetPlayerId,
                                     )
                                 ) {
-                                    is OnlineClientResult.Success ->
+                                    is OnlineClientResult.Success -> {
+                                        onPendingInviteChange(result.value.inviteCode)
                                         OnlineDuelUiState.WaitingForFriend(result.value)
+                                    }
                                     else -> inviteError(result)
                                 }
                             }
@@ -705,7 +783,10 @@ internal fun OnlineDuelScreen(
                 CircularProgressIndicator()
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { state = OnlineDuelUiState.Ready },
+                    onClick = {
+                        onPendingInviteChange(null)
+                        state = OnlineDuelUiState.Ready
+                    },
                 ) {
                     Text(strings.text("social.online.cancel"))
                 }
@@ -715,17 +796,7 @@ internal fun OnlineDuelScreen(
                 Text(current.message, color = MaterialTheme.colorScheme.error)
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        val sessionId = initialSessionId
-                        if (sessionId == null) {
-                            state = OnlineDuelUiState.Ready
-                        } else {
-                            state = OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
-                            scope.launch {
-                                state = applySnapshotResult(runtime.readSession(sessionId))
-                            }
-                        }
-                    },
+                    onClick = ::retryCurrentOperation,
                 ) {
                     Text(strings.text("social.online.retry"))
                 }

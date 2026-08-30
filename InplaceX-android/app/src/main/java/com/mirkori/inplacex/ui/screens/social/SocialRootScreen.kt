@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,6 +71,8 @@ fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
     initialActiveSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
+    initialPendingInviteCode: String? = null,
+    onPendingInviteChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     pendingFriendRequests: List<LocalSocialRelationship> = emptyList(),
     currentPlayerId: String? = null,
@@ -96,13 +99,23 @@ fun SocialRootScreen(
     val strings = LocalAppStrings.current
     var activeDestination by remember {
         mutableStateOf<SocialDestination?>(
-            if (initialActiveSessionId == null) null else SocialDestination.ONLINE_MATCH,
+            when {
+                requestedQuickMatchPlayStyle != null && onlineRuntime != null ->
+                    SocialDestination.ONLINE_MATCH
+                initialActiveSessionId != null -> SocialDestination.ONLINE_MATCH
+                initialPendingInviteCode != null -> SocialDestination.INVITES
+                else -> null
+            },
         )
     }
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
     var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
-    var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
-    var quickMatchCodeLength by remember { mutableStateOf(4) }
+    var quickMatchPlayStyle by remember {
+        mutableStateOf(requestedQuickMatchPlayStyle ?: RemoteFriendPlayStyle.RACE)
+    }
+    var quickMatchCodeLength by remember {
+        mutableStateOf(normalizeOnlineCodeLength(requestedQuickMatchCodeLength))
+    }
 
     LaunchedEffect(activeDestination) {
         onNestedScreenChange(activeDestination != null)
@@ -114,7 +127,18 @@ fun SocialRootScreen(
     LaunchedEffect(onlineRuntime, initialActiveSessionId) {
         if (initialActiveSessionId != null && onlineRuntime == null) {
             onActiveSessionChange(null)
+            onPendingInviteChange(null)
             activeDestination = null
+        }
+    }
+    LaunchedEffect(onlineRuntime, initialActiveSessionId, initialPendingInviteCode) {
+        if (
+            onlineRuntime != null &&
+            initialActiveSessionId == null &&
+            initialPendingInviteCode != null &&
+            activeDestination == null
+        ) {
+            activeDestination = SocialDestination.INVITES
         }
     }
     LaunchedEffect(requestedQuickMatchPlayStyle, requestedQuickMatchCodeLength, onlineRuntime) {
@@ -194,32 +218,38 @@ fun SocialRootScreen(
         ) &&
         onlineRuntime != null
     ) {
-        OnlineDuelScreen(
-            runtime = onlineRuntime,
-            initialSessionId = initialActiveSessionId,
-            onActiveSessionChange = onActiveSessionChange,
-            entryPoint = when (activeDestination) {
-                SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
-                SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND
-                else -> OnlineDuelEntryPoint.QUICK_MATCH
-            },
-            initialPlayStyle = quickMatchPlayStyle,
-            initialCodeLength = quickMatchCodeLength,
-            targetPlayerId = selectedFriend?.targetPlayerId
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-            targetDisplayName = selectedFriend?.targetDisplayName
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-            autoAcceptInviteCode = autoAcceptInviteCode
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-            requestBack = requestExitGame,
-            onBackRequestConsumed = onExitGameConsumed,
-            onExitDestination = {
-                onActiveSessionChange(null)
-                selectedFriend = null
-                autoAcceptInviteCode = null
-                activeDestination = null
-            },
-        )
+        key(activeDestination, selectedFriend?.targetPlayerId, autoAcceptInviteCode) {
+            OnlineDuelScreen(
+                runtime = onlineRuntime,
+                initialSessionId = initialActiveSessionId,
+                onActiveSessionChange = onActiveSessionChange,
+                initialPendingInviteCode = initialPendingInviteCode.takeIf {
+                    activeDestination == SocialDestination.INVITES && autoAcceptInviteCode == null
+                },
+                onPendingInviteChange = onPendingInviteChange,
+                entryPoint = when (activeDestination) {
+                    SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
+                    SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND
+                    else -> OnlineDuelEntryPoint.QUICK_MATCH
+                },
+                initialPlayStyle = quickMatchPlayStyle,
+                initialCodeLength = quickMatchCodeLength,
+                targetPlayerId = selectedFriend?.targetPlayerId
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                targetDisplayName = selectedFriend?.targetDisplayName
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                autoAcceptInviteCode = autoAcceptInviteCode
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                requestBack = requestExitGame,
+                onBackRequestConsumed = onExitGameConsumed,
+                onExitDestination = {
+                    onActiveSessionChange(null)
+                    selectedFriend = null
+                    autoAcceptInviteCode = null
+                    activeDestination = null
+                },
+            )
+        }
         return
     }
 

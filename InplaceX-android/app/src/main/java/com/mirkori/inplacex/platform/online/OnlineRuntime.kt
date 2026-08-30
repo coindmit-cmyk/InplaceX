@@ -5,7 +5,7 @@ import com.mirkori.inplacex.BuildConfig
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 
-class OnlineRuntime private constructor(
+class OnlineRuntime internal constructor(
     private val client: HttpClient,
     private val duel: OnlineDuelClient,
     private val legacySessionRecovery: LegacyOnlineSessionRecovery,
