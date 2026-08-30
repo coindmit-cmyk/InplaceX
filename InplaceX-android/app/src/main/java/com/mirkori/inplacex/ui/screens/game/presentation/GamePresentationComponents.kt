@@ -87,6 +87,7 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 import com.mirkori.inplacex.ui.theme.finalGameFieldMetrics
 
 private val OpponentProgressPanelHeight = 54.dp
+private val GameMinimumTouchTargetHeight = 48.dp
 
 /** Measured block geometry for game-target-374x877.png, relative to the shell center slot. */
 internal data class GameReferenceLayoutSpec(
@@ -99,12 +100,12 @@ internal data class GameReferenceLayoutSpec(
     val boardHorizontalOffset: Dp = (-2).dp,
     val boardToHelpersGap: Dp = 5.dp,
     val lowerPanelWidth: Dp = 326.dp,
-    val helpersHeight: Dp = 42.dp,
-    val helpersToToolsGap: Dp = 5.dp,
-    val toolsHeight: Dp = 35.dp,
-    val toolsToInputGap: Dp = 4.dp,
-    val inputHeight: Dp = 166.dp,
-    val inputToBannerGap: Dp = 11.dp,
+    val helpersHeight: Dp = 48.dp,
+    val helpersToToolsGap: Dp = 2.dp,
+    val toolsHeight: Dp = 48.dp,
+    val toolsToInputGap: Dp = 2.dp,
+    val inputHeight: Dp = 174.dp,
+    val inputToBannerGap: Dp = 0.dp,
     val bannerWidth: Dp = 334.dp,
     val bannerHeight: Dp = 99.dp,
 )
@@ -1150,7 +1151,7 @@ fun GameHelpersPanel(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.padding(3.dp),
+        modifier = modifier.padding(horizontal = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1345,28 +1346,28 @@ fun GameToolsPanel(
 ) {
     val strings = LocalAppStrings.current
     Row(
-        modifier = modifier.padding(3.dp),
+        modifier = modifier.padding(horizontal = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         GameToolButton(
             strings.text("game.tool.no"),
             GameFieldTool.NO,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).testTag("game-tool-no"),
+            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-no"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.maybe"),
             GameFieldTool.MAYBE,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).testTag("game-tool-maybe"),
+            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-maybe"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.yes"),
             GameFieldTool.YES,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).testTag("game-tool-yes"),
+            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-yes"),
             onToolSelected,
         )
         WarmSegmentButton(
@@ -1379,7 +1380,7 @@ fun GameToolsPanel(
             accent = FinalUiColors.StatePro,
             enabled = uiState.parameters.autoModeAvailable,
             onClick = { onAutoExcludeChanged(!uiState.tools.autoExcludeEnabled) },
-            modifier = Modifier.weight(1f).testTag("game-auto-mode"),
+            modifier = Modifier.weight(1f).fillMaxHeight().testTag("game-auto-mode"),
         )
     }
 }
@@ -1418,7 +1419,10 @@ fun GameInputPanel(
     val checkDigitSelected = uiState.tools.selectedHint == GameFieldHintMode.CHECK_DIGIT
 
     Column(
-        modifier = modifier.padding(FinalUiDimens.CompactPanelPadding),
+        modifier = modifier.padding(
+            horizontal = FinalUiDimens.CompactPanelPadding,
+            vertical = 3.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(FinalUiDimens.InnerGap),
     ) {
         Text(
@@ -1487,7 +1491,7 @@ fun GameInputPanel(
                     visualHeight = metrics.keypadHeight,
                     modifier = Modifier
                         .weight(1f)
-                        .height(FinalUiDimens.MinimumTouchTarget)
+                        .height(GameMinimumTouchTargetHeight)
                         .testTag("game-digit-$digit"),
                 ) {
                     Text(
@@ -1504,7 +1508,7 @@ fun GameInputPanel(
                 visualHeight = metrics.keypadHeight,
                 modifier = Modifier
                     .weight(1f)
-                    .height(FinalUiDimens.MinimumTouchTarget)
+                    .height(GameMinimumTouchTargetHeight)
                     .testTag("game-backspace"),
             ) {
                 Icon(
@@ -1522,6 +1526,7 @@ fun GameInputPanel(
                 enabled = uiState.route.inputEnabled,
                 modifier = Modifier
                     .weight(1f)
+                    .height(GameMinimumTouchTargetHeight)
                     .testTag("game-reset"),
             )
             WarmPrimaryButton(
@@ -1530,6 +1535,7 @@ fun GameInputPanel(
                 enabled = enabled && shownSlots.all { it != null },
                 modifier = Modifier
                     .weight(1.3f)
+                    .height(GameMinimumTouchTargetHeight)
                     .testTag("game-confirm"),
             )
         }

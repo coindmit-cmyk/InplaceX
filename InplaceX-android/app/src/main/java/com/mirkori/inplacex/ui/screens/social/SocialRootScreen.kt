@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -128,9 +129,16 @@ fun SocialRootScreen(
     }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
-            onActiveSessionChange(null)
-            activeDestination = null
-            onExitGameConsumed()
+            if (
+                activeDestination != SocialDestination.FRIEND_MATCH &&
+                activeDestination != SocialDestination.ONLINE_MATCH
+            ) {
+                onActiveSessionChange(null)
+                selectedFriend = null
+                autoAcceptInviteCode = null
+                activeDestination = null
+                onExitGameConsumed()
+            }
         }
     }
     DisposableEffect(Unit) {
@@ -203,6 +211,14 @@ fun SocialRootScreen(
                 .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
             autoAcceptInviteCode = autoAcceptInviteCode
                 .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+            requestBack = requestExitGame,
+            onBackRequestConsumed = onExitGameConsumed,
+            onExitDestination = {
+                onActiveSessionChange(null)
+                selectedFriend = null
+                autoAcceptInviteCode = null
+                activeDestination = null
+            },
         )
         return
     }
@@ -276,7 +292,9 @@ private fun SocialFriendsScreen(
                             friendQuery = it.take(64)
                             addFriendResultKey = null
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("social-friend-search-query"),
                         singleLine = true,
                         label = { Text(strings.text("social.friend.search.query")) },
                     )
@@ -317,7 +335,9 @@ private fun SocialFriendsScreen(
                             }
                         },
                         enabled = !searchInProgress && currentPlayerId != null,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("social-friend-search-submit"),
                     ) {
                         if (searchInProgress) {
                             CircularProgressIndicator(
@@ -377,7 +397,11 @@ private fun SocialFriendsScreen(
         showTestFriendBot = showTestFriendBot,
         onlineConfigured = onlineConfigured,
         operationBusy = friendOperationInProgress,
-        operationMessage = addFriendResultKey?.let(strings::text),
+        operationMessage = if (addFriendDialogOpen) {
+            null
+        } else {
+            addFriendResultKey?.let(strings::text)
+        },
         addFriendEnabled = currentPlayerId != null,
         onOpenAddFriend = {
             friendQuery = ""

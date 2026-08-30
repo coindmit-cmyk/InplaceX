@@ -43,6 +43,7 @@ import com.mirkori.inplacex.ui.screens.shared.PageSecondaryButton as OutlinedBut
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,7 +89,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 
-private enum class ShopCategory {
+enum class ShopCategory {
     BOOSTS,
     PREMIUM,
 }
@@ -121,16 +122,18 @@ fun ShopRootScreen(
     onBuyProPlus: () -> Unit,
     onRetryBillingPurchase: () -> Unit = {},
     onBuyTemporaryPro: () -> Boolean = { false },
+    category: ShopCategory? = null,
+    onCategoryChange: (ShopCategory) -> Unit = {},
     premiumDestination: ShopPremiumDestination? = null,
     onPremiumDestinationChange: (ShopPremiumDestination) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var categoryName by rememberSaveable { mutableStateOf(ShopCategory.BOOSTS.name) }
+    var savedCategoryName by rememberSaveable { mutableStateOf(ShopCategory.BOOSTS.name) }
     var savedPremiumDestinationName by rememberSaveable {
         mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
     }
     var resultKey by rememberSaveable { mutableStateOf<String?>(null) }
-    val category = ShopCategory.valueOf(categoryName)
+    val activeCategory = category ?: ShopCategory.valueOf(savedCategoryName)
     val activePremiumDestination = premiumDestination
         ?: ShopPremiumDestination.valueOf(savedPremiumDestinationName)
 
@@ -141,12 +144,30 @@ fun ShopRootScreen(
         onPremiumDestinationChange(destination)
     }
 
+    fun navigateCategory(destination: ShopCategory) {
+        if (category == null) {
+            savedCategoryName = destination.name
+        }
+        onCategoryChange(destination)
+    }
+
+    LaunchedEffect(activeCategory) {
+        onCategoryChange(activeCategory)
+    }
+
     fun report(result: Boolean) {
         resultKey = if (result) "shop.result.success" else "shop.result.unavailable"
     }
 
-    BackHandler(enabled = activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
-        navigatePremium(ShopPremiumDestination.OVERVIEW)
+    BackHandler(
+        enabled = activePremiumDestination == ShopPremiumDestination.PRODUCTS ||
+            activeCategory == ShopCategory.PREMIUM,
+    ) {
+        if (activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
+            navigatePremium(ShopPremiumDestination.OVERVIEW)
+        } else {
+            navigateCategory(ShopCategory.BOOSTS)
+        }
     }
 
     BoxWithConstraints(
@@ -156,15 +177,15 @@ fun ShopRootScreen(
     ) {
         val compactReference = maxWidth >= 320.dp && LocalDensity.current.fontScale <= 1.2f
         val compactViewport = compactReference && maxHeight < 650.dp
-        val premiumOverview = category == ShopCategory.PREMIUM &&
+        val premiumOverview = activeCategory == ShopCategory.PREMIUM &&
             activePremiumDestination == ShopPremiumDestination.OVERVIEW
         val heroHeight = when {
-            premiumOverview && compactReference -> 95.dp
+            premiumOverview && compactReference -> 92.dp
             compactViewport -> 80.dp
             else -> 82.dp
         }
         val rewardedHeight = when {
-            premiumOverview && compactReference -> 180.dp
+            premiumOverview && compactReference -> 178.dp
             compactViewport -> 136.dp
             else -> 141.dp
         }
@@ -174,7 +195,8 @@ fun ShopRootScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 15.dp),
+                .padding(horizontal = if (activeCategory == ShopCategory.PREMIUM) 20.dp else 15.dp)
+                .padding(top = if (premiumOverview) 5.dp else 0.dp),
         ) {
             if (activePremiumDestination == ShopPremiumDestination.PRODUCTS) {
                 PremiumProductsReferenceContent(
@@ -216,7 +238,7 @@ fun ShopRootScreen(
                         .testTag("shop-hero"),
                 )
                 if (premiumOverview && compactReference) {
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(15.dp))
                 }
                 RewardedAdCard(
                     compact = compactReference,
@@ -224,18 +246,18 @@ fun ShopRootScreen(
                     onWatch = { onWatchRewardedCoins(::report) },
                     modifier = Modifier.testTag("shop-reward"),
                 )
-                Spacer(Modifier.height(if (premiumOverview) 8.dp else if (compactViewport) 6.dp else 8.dp))
+                Spacer(Modifier.height(if (premiumOverview) 6.dp else if (compactViewport) 6.dp else 8.dp))
                 ShopCategoryControl(
-                    selected = category,
+                    selected = activeCategory,
                     onSelect = {
-                        categoryName = it.name
+                        navigateCategory(it)
                         if (it != ShopCategory.PREMIUM) {
                             navigatePremium(ShopPremiumDestination.OVERVIEW)
                         }
                         resultKey = null
                     },
                 )
-                Spacer(Modifier.height(if (premiumOverview) 6.dp else if (compactViewport) 4.dp else 6.dp))
+                Spacer(Modifier.height(if (premiumOverview) 7.dp else if (compactViewport) 4.dp else 6.dp))
                 resultKey?.let { key ->
                     StatusCard(
                         title = strings.text(key),
@@ -244,7 +266,7 @@ fun ShopRootScreen(
                     Spacer(Modifier.height(6.dp))
                 }
 
-                when (category) {
+                when (activeCategory) {
                     ShopCategory.BOOSTS -> BoostsCatalog(
                         progressState = progressState,
                         onReport = ::report,
@@ -337,7 +359,7 @@ private fun RewardedAdCard(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val rewardArtworkSlot = if (height < 140.dp) 104.dp else 112.dp
+            val rewardArtworkSlot = if (height < 140.dp) 111.dp else 114.dp
             Box(
                 modifier = Modifier.size(rewardArtworkSlot),
                 contentAlignment = Alignment.Center,
@@ -346,15 +368,16 @@ private fun RewardedAdCard(
                     painter = painterResource(R.drawable.art_reward_coins_gems_v10),
                     contentDescription = null,
                     modifier = Modifier
-                        .requiredSize(rewardArtworkSlot + 28.dp)
-                        .offset(x = 4.dp, y = (-14).dp)
+                        .requiredSize(rewardArtworkSlot + 42.dp)
+                        .offset(x = 4.dp, y = (-22).dp)
                         .clip(RoundedCornerShape(12.dp)),
                 )
             }
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .padding(top = 6.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -365,8 +388,8 @@ private fun RewardedAdCard(
                         text = strings.text("shop.rewarded.title"),
                         modifier = Modifier.weight(1f),
                         color = Color.White,
-                        fontSize = 18.sp,
-                        lineHeight = 20.sp,
+                        fontSize = 17.sp,
+                        lineHeight = 19.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -379,6 +402,7 @@ private fun RewardedAdCard(
                             .offset(y = 8.dp),
                     )
                 }
+                Spacer(Modifier.height(5.dp))
                 Text(
                     text = rewardAmount,
                     color = Color(0xFFFFE447),

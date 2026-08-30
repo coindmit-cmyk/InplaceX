@@ -13,14 +13,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -83,6 +86,8 @@ internal fun ReferenceHomeSelectionScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .graphicsLayer(scaleX = .94f, scaleY = 1.26f)
+                    .offset(y = 6.dp)
                     .semantics { heading() }
                     .testTag("reference-home-logo"),
                 color = Color.White,
@@ -91,20 +96,22 @@ internal fun ReferenceHomeSelectionScreen(
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(if (compact) 7.dp else 10.dp))
             Text(
                 text = strings.text("home.subtitle"),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().offset(y = 3.dp),
                 color = Color.White,
                 fontSize = 15.sp,
                 lineHeight = 19.sp,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(if (compact) 16.dp else 24.dp))
+            Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
             ReferenceHomeModeCard(
                 title = strings.text(pveMode.titleKey),
                 subtitle = strings.text(pveMode.subtitleKey),
                 art = R.drawable.art_stopwatch_v11,
+                artScale = 1.35f,
                 colors = listOf(Color(0xFFFFBE2B), Color(0xFFF19A06), Color(0xFFD77A02)),
                 contentColor = Color(0xFF4B2609),
                 height = if (compact) 116.dp else 126.dp,
@@ -116,9 +123,10 @@ internal fun ReferenceHomeSelectionScreen(
                 title = strings.text(pvpMode.titleKey),
                 subtitle = strings.text(pvpMode.subtitleKey),
                 art = R.drawable.art_duel_crest_v11,
+                artScale = 1.17f,
                 colors = listOf(Color(0xFF8C50C5), Color(0xFF6731A3), Color(0xFF432276)),
                 contentColor = Color.White,
-                height = if (compact) 116.dp else 122.dp,
+                height = if (compact) 116.dp else 127.dp,
                 testTag = "reference-home-duel",
                 onClick = onOpenPvp,
             )
@@ -127,9 +135,10 @@ internal fun ReferenceHomeSelectionScreen(
                 title = strings.text("home.company.continue"),
                 subtitle = strings.text("home.company.teaser"),
                 art = R.drawable.art_company_shield_v11,
+                artScale = 1.30f,
                 colors = listOf(Color(0xFF91BD35), Color(0xFF679A22), Color(0xFF3E7415)),
                 contentColor = Color.White,
-                height = if (compact) 116.dp else 122.dp,
+                height = if (compact) 116.dp else 126.dp,
                 testTag = "reference-home-company",
                 onClick = onOpenCompany,
             )
@@ -143,6 +152,7 @@ private fun ReferenceHomeModeCard(
     title: String,
     subtitle: String,
     @DrawableRes art: Int,
+    artScale: Float,
     colors: List<Color>,
     contentColor: Color,
     height: Dp,
@@ -169,7 +179,9 @@ private fun ReferenceHomeModeCard(
             Image(
                 painter = painterResource(art),
                 contentDescription = null,
-                modifier = Modifier.size(94.dp),
+                modifier = Modifier
+                    .size(82.dp)
+                    .graphicsLayer(scaleX = artScale, scaleY = artScale),
                 contentScale = ContentScale.Fit,
             )
             Column(
@@ -228,15 +240,22 @@ internal fun ReferenceModeSetupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 14.dp)
+                .padding(top = if (race) 11.dp else 13.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(if (race) 5.dp else 6.dp),
         ) {
             ReferenceSetupHero(kind = kind, compact = compact)
             IllustratedSurface(
                 colors = FriendsReferenceStyle.Cream,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (compact) Modifier.heightIn(min = 446.dp) else Modifier.height(446.dp))
+                    .then(
+                        if (compact) {
+                            Modifier.heightIn(min = if (race) 457.dp else 451.dp)
+                        } else {
+                            Modifier.height(if (race) 457.dp else 451.dp)
+                        },
+                    )
                     .testTag(if (race) "reference-race-setup" else "reference-duel-setup"),
                 rim = Color(0xFFD49842),
                 radius = 20.dp,
@@ -244,11 +263,12 @@ internal fun ReferenceModeSetupScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 17.dp, bottom = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = strings.text("social.online.secret_length"),
+                        text = strings.text("game.race_setup.code_length"),
                         color = FriendsReferenceStyle.Ink,
                         fontSize = 18.sp,
                         lineHeight = 22.sp,
@@ -264,7 +284,7 @@ internal fun ReferenceModeSetupScreen(
                         )
                         Text(
                             text = strings.homeCodeLength(codeLength),
-                            modifier = Modifier.width(132.dp),
+                            modifier = Modifier.width(122.dp),
                             color = FriendsReferenceStyle.Ink,
                             fontSize = 22.sp,
                             lineHeight = 26.sp,
@@ -286,14 +306,17 @@ internal fun ReferenceModeSetupScreen(
                         lineHeight = 15.sp,
                         textAlign = TextAlign.Center,
                     )
-                    Spacer(Modifier.height(if (race) 14.dp else 22.dp))
                     if (race) {
+                        Spacer(Modifier.height(12.dp))
+                        ReferenceRaceOnlineNotice()
+                        Spacer(Modifier.height(10.dp))
                         ReferenceSetupAction(
                             title = strings.text("reference.race.quick"),
                             subtitle = strings.text("reference.race.quick.subtitle"),
                             art = R.drawable.art_race_flag_v11,
                             primary = true,
                             enabled = onlineAvailable,
+                            height = 80.dp,
                             testTag = "reference-race-online",
                             onClick = onPlayOnline,
                         )
@@ -303,25 +326,31 @@ internal fun ReferenceModeSetupScreen(
                             subtitle = strings.text("reference.race.training.subtitle"),
                             art = R.drawable.art_training_target_v11,
                             enabled = true,
+                            height = 72.dp,
                             testTag = "reference-race-local",
                             onClick = onPlayLocal,
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(5.dp))
                         ReferenceSetupAction(
                             title = strings.text("reference.race.records"),
                             subtitle = strings.text("reference.race.records.unavailable"),
                             art = R.drawable.art_records_podium_v11,
+                            artScale = 1.12f,
                             enabled = false,
+                            height = 72.dp,
                             testTag = "reference-race-records",
                             onClick = {},
                         )
                     } else {
+                        Spacer(Modifier.height(27.dp))
                         ReferenceSetupAction(
                             title = strings.text("home.pvp.bot"),
                             subtitle = strings.text("reference.duel.bot.subtitle"),
                             art = R.drawable.art_friend_bot_v11,
+                            artScale = 1.55f,
                             primary = true,
                             enabled = true,
+                            height = 100.dp,
                             testTag = "reference-duel-bot",
                             onClick = onPlayLocal,
                         )
@@ -330,7 +359,9 @@ internal fun ReferenceModeSetupScreen(
                             title = strings.text("home.pvp.online"),
                             subtitle = strings.text("reference.duel.online.subtitle"),
                             art = R.drawable.art_online_globe_v11,
+                            artScale = 1.55f,
                             enabled = onlineAvailable,
+                            height = 88.dp,
                             testTag = "reference-duel-online",
                             onClick = onPlayOnline,
                         )
@@ -340,6 +371,7 @@ internal fun ReferenceModeSetupScreen(
                             subtitle = strings.text("reference.setup.back.subtitle"),
                             vectorBack = true,
                             enabled = true,
+                            height = 78.dp,
                             testTag = "reference-duel-back",
                             onClick = onBack,
                         )
@@ -362,7 +394,13 @@ private fun ReferenceSetupHero(kind: ReferenceSetupKind, compact: Boolean) {
         },
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (compact) Modifier.heightIn(min = 174.dp) else Modifier.height(190.dp))
+            .then(
+                if (compact) {
+                    Modifier.heightIn(min = if (race) 182.dp else 185.dp)
+                } else {
+                    Modifier.height(if (race) 193.dp else 196.dp)
+                },
+            )
             .testTag(if (race) "reference-race-hero" else "reference-duel-hero"),
         rim = Color(0xFFFFD34D),
         radius = 20.dp,
@@ -377,7 +415,12 @@ private fun ReferenceSetupHero(kind: ReferenceSetupKind, compact: Boolean) {
             Image(
                 painter = painterResource(if (race) R.drawable.art_stopwatch_v11 else R.drawable.art_duel_crest_v11),
                 contentDescription = null,
-                modifier = Modifier.size(if (compact) 116.dp else 132.dp),
+                modifier = Modifier
+                    .size(if (compact) 116.dp else 132.dp)
+                    .graphicsLayer(
+                        scaleX = if (race) 1.25f else 1.15f,
+                        scaleY = if (race) 1.25f else 1.15f,
+                    ),
                 contentScale = ContentScale.Fit,
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -414,7 +457,7 @@ private fun ReferenceStepperButton(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .size(width = 58.dp, height = 52.dp)
+            .size(width = 48.dp, height = 52.dp)
             .testTag(testTag),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         color = Color(0xFFFFF0D5),
@@ -433,9 +476,11 @@ private fun ReferenceSetupAction(
     title: String,
     subtitle: String,
     @DrawableRes art: Int? = null,
+    artScale: Float = 1.3f,
     vectorBack: Boolean = false,
     primary: Boolean = false,
     enabled: Boolean,
+    height: Dp,
     testTag: String,
     onClick: () -> Unit,
 ) {
@@ -448,7 +493,7 @@ private fun ReferenceSetupAction(
         colors = colors,
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
+            .height(height)
             .testTag(testTag)
             .semantics { if (!enabled) disabled() }
             .alpha(if (enabled) 1f else .62f)
@@ -464,16 +509,27 @@ private fun ReferenceSetupAction(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when {
-                vectorBack -> Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = FriendsReferenceStyle.Ink,
-                )
+                vectorBack -> Surface(
+                    modifier = Modifier.size(58.dp),
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    color = Color(0xFFFFEAC0),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE3B66B)),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Reply,
+                            contentDescription = null,
+                            modifier = Modifier.size(34.dp),
+                            tint = FriendsReferenceStyle.Ink,
+                        )
+                    }
+                }
                 art != null -> Image(
                     painter = painterResource(art),
                     contentDescription = null,
-                    modifier = Modifier.size(58.dp),
+                    modifier = Modifier
+                        .size(58.dp)
+                        .graphicsLayer(scaleX = artScale, scaleY = artScale),
                     contentScale = ContentScale.Fit,
                 )
             }
@@ -494,6 +550,50 @@ private fun ReferenceSetupAction(
                     lineHeight = 15.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReferenceRaceOnlineNotice() {
+    val strings = LocalAppStrings.current
+    IllustratedSurface(
+        colors = listOf(Color(0xFFFFE8AD), Color(0xFFFFD77A)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .testTag("reference-race-energy"),
+        rim = Color(0xFFFFAF24),
+        radius = 13.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                Icons.Outlined.Public,
+                contentDescription = null,
+                modifier = Modifier.size(27.dp),
+                tint = Color(0xFF0784D6),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    strings.text("reference.race.energy.title"),
+                    color = FriendsReferenceStyle.Ink,
+                    fontSize = 11.5.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    strings.text("reference.race.energy.subtitle"),
+                    color = FriendsReferenceStyle.Ink.copy(alpha = .82f),
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp,
                 )
             }
         }

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -104,13 +105,13 @@ internal fun PremiumOverviewReferenceContent(
             artwork = PremiumOverviewArtwork.RemoveAds,
         ),
         PremiumOverviewRow(
-            title = strings.text("shop.product.pro"),
-            description = strings.text("shop.product.pro.desc"),
+            title = strings.text("shop.premium.overview.pro.title"),
+            description = strings.text("shop.premium.overview.pro.description"),
             artwork = PremiumOverviewArtwork.Icon(Icons.Outlined.Bolt, Color(0xFF285EB7)),
         ),
         PremiumOverviewRow(
-            title = strings.text("shop.product.pro_plus"),
-            description = strings.text("shop.product.pro_plus.desc"),
+            title = strings.text("shop.premium.overview.maximum.title"),
+            description = strings.text("shop.premium.overview.maximum.description"),
             artwork = PremiumOverviewArtwork.Icon(Icons.Outlined.Star, Color(0xFFE9A300)),
         ),
     )
@@ -120,7 +121,7 @@ internal fun PremiumOverviewReferenceContent(
         onClick = onOpenProducts,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = if (compactReference) 320.dp else 300.dp)
+            .heightIn(min = if (compactReference) 325.dp else 300.dp)
             .testTag("shop-premium-overview")
             .semantics {
                 role = Role.Button
@@ -155,7 +156,7 @@ internal fun PremiumOverviewReferenceContent(
                     modifier = Modifier.size(25.dp),
                 )
                 Text(
-                    text = strings.text("shop.tab.premium"),
+                    text = strings.text("shop.premium.overview.title"),
                     fontSize = 19.sp,
                     lineHeight = 22.sp,
                     fontWeight = FontWeight.Bold,
@@ -607,7 +608,9 @@ private fun RemoveAdsBadge(
             Image(
                 painter = painterResource(R.drawable.art_remove_ads_v11),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(scaleX = 1.45f, scaleY = 1.45f),
             )
         }
     }
@@ -651,7 +654,9 @@ private fun ProTextBadge(
         Image(
             painter = painterResource(artworkResource),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = 1.28f, scaleY = 1.28f),
         )
         Text(
             text = label,

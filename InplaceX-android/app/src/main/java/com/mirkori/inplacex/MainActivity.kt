@@ -101,6 +101,7 @@ import com.mirkori.inplacex.ui.screens.profile.GoogleProfileConflictDialog
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
 import com.mirkori.inplacex.ui.screens.shop.ShopPremiumDestination
+import com.mirkori.inplacex.ui.screens.shop.ShopCategory
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
@@ -209,6 +210,9 @@ class MainActivity : ComponentActivity() {
                 var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
                 var shopPremiumDestinationName by rememberSaveable {
                     mutableStateOf(ShopPremiumDestination.OVERVIEW.name)
+                }
+                var shopCategoryName by rememberSaveable {
+                    mutableStateOf(ShopCategory.BOOSTS.name)
                 }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
@@ -781,9 +785,11 @@ class MainActivity : ComponentActivity() {
                     fallbackColor = InplaceXColors.ToyWood,
                 )
                 val shopPremiumDestination = ShopPremiumDestination.valueOf(shopPremiumDestinationName)
+                val shopCategory = ShopCategory.valueOf(shopCategoryName)
                 val isHomeSubpage = currentSection == AppSection.HOME && isNestedHomeScreen
                 val isShopSubpage = currentSection == AppSection.SHOP &&
-                    shopPremiumDestination == ShopPremiumDestination.PRODUCTS
+                    (shopCategory == ShopCategory.PREMIUM ||
+                        shopPremiumDestination == ShopPremiumDestination.PRODUCTS)
                 val illustratedReferenceSection = currentSection == AppSection.HOME ||
                     currentSection == AppSection.SOCIAL ||
                     currentSection == AppSection.COMPANY ||
@@ -822,7 +828,11 @@ class MainActivity : ComponentActivity() {
                                     section == AppSection.HOME && isNestedHomeScreen -> requestExitGame = true
                                     section == AppSection.SOCIAL && isNestedSocialScreen -> requestExitGame = true
                                     section == AppSection.SHOP && isShopSubpage -> {
-                                        shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                        if (shopPremiumDestination == ShopPremiumDestination.PRODUCTS) {
+                                            shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                        } else {
+                                            shopCategoryName = ShopCategory.BOOSTS.name
+                                        }
                                     }
                                 }
                             }
@@ -848,7 +858,11 @@ class MainActivity : ComponentActivity() {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
                                         isShopSubpage -> {
-                                            shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                            if (shopPremiumDestination == ShopPremiumDestination.PRODUCTS) {
+                                                shopPremiumDestinationName = ShopPremiumDestination.OVERVIEW.name
+                                            } else {
+                                                shopCategoryName = ShopCategory.BOOSTS.name
+                                            }
                                         }
                                         else -> requestExitGame = true
                                     }
@@ -1273,6 +1287,10 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onRetryBillingPurchase = {
                                     billingState.pendingProduct?.let(purchaseBilling)
+                                },
+                                category = shopCategory,
+                                onCategoryChange = { category ->
+                                    shopCategoryName = category.name
                                 },
                                 premiumDestination = shopPremiumDestination,
                                 onPremiumDestinationChange = { destination ->

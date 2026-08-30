@@ -107,7 +107,7 @@ internal fun FriendsReferenceTopBar(
 
 @Composable
 private fun ReferenceResourcePill(value: String, label: String, coin: Boolean, modifier: Modifier, showAdd: Boolean, onClick: () -> Unit) {
-    val height = maxOf(44.dp, (19f * LocalDensity.current.fontScale + 12f).dp)
+    val height = maxOf(48.dp, (19f * LocalDensity.current.fontScale + 12f).dp)
     Box(modifier.height(height).semantics { contentDescription = "$label: $value" }
         .clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         IllustratedSurface(FriendsReferenceStyle.Chrome, Modifier.fillMaxWidth(),
@@ -138,9 +138,9 @@ private fun ReferenceChromeAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.size(44.dp).clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
-        IllustratedSurface(FriendsReferenceStyle.Chrome, Modifier.size(38.dp), rim = Color(0xFF5AA8D5), radius = 12.dp) {
-            Icon(icon, description, Modifier.align(Alignment.Center).size(24.dp), tint = FriendsReferenceStyle.LightRim)
+    Box(modifier.size(48.dp).clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
+        IllustratedSurface(FriendsReferenceStyle.Chrome, Modifier.size(44.dp), rim = Color(0xFF5AA8D5), radius = 13.dp) {
+            Icon(icon, description, Modifier.align(Alignment.Center).size(26.dp), tint = FriendsReferenceStyle.LightRim)
         }
     }
 }

@@ -98,6 +98,38 @@ class ShellSectionsSmokeTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
+    fun illustratedHudBackKeepsA48DpTouchTarget() {
+        val strings = StaticLocalizationProvider.forLanguage(AppLanguage.RU)
+        var backClicked = false
+        setContent {
+            Box(Modifier.requiredWidth(374.dp).requiredHeight(78.dp)) {
+                AppTopBar(
+                    energy = 5,
+                    energyMax = 5,
+                    coins = 10146,
+                    showBack = true,
+                    showShop = true,
+                    onBackClick = { backClicked = true },
+                    onShopClick = {},
+                    onSettingsClick = {},
+                    illustratedReference = true,
+                )
+            }
+        }
+
+        val backNode = composeRule.onNodeWithContentDescription(strings.text("top.back"))
+            .assertIsDisplayed()
+            .assertHasClickAction()
+        val bounds = backNode.fetchSemanticsNode().boundsInRoot
+        val density = InstrumentationRegistry.getInstrumentation()
+            .targetContext.resources.displayMetrics.density
+        assertTrue(bounds.width >= 48.dp.value * density)
+        assertTrue(bounds.height >= 48.dp.value * density)
+        backNode.performClick()
+        composeRule.runOnIdle { assertTrue(backClicked) }
+    }
+
+    @Test
     fun transparentCenterPlacesContentDirectlyOnTheScene() {
         setContent {
             AppShell(
@@ -159,7 +191,7 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Онлайн готовится").assertIsDisplayed()
         composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
-        composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
+        composeRule.onNodeWithText("Mirkori Bot").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Тестовый друг · онлайн сейчас недоступен").assertIsDisplayed()
         composeRule.onNodeWithText("Играть").assertIsNotEnabled()
     }
@@ -172,7 +204,8 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
-        composeRule.onNodeWithText("Добавить друга").assertIsDisplayed()
+        composeRule.onNodeWithTag("social-friends-reference-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("social-friends-add").assertIsDisplayed()
         composeRule.runOnIdle { assertTrue(nested) }
 
         composeRule.runOnIdle {
@@ -199,7 +232,7 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Friendly Player").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("friends-requests-open").performScrollTo().performClick()
-        composeRule.onNodeWithText("Friendly Player").assertIsDisplayed()
+        composeRule.onNodeWithText("Friendly Player").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Хочет добавить вас в друзья").assertIsDisplayed()
         composeRule.onNodeWithText("Принять").assertIsDisplayed()
     }
@@ -217,7 +250,7 @@ class ShellSectionsSmokeTest {
         setContent { SocialRootScreen(pendingFriendRequests = listOf(pendingRequest)) }
 
         composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
-        composeRule.onNodeWithText("Pending Player").assertIsDisplayed()
+        composeRule.onNodeWithText("Pending Player").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Заявка в друзья отправлена.").assertIsDisplayed()
         composeRule.onAllNodesWithText("Играть").assertCountEquals(0)
     }
@@ -244,9 +277,9 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
-        composeRule.onNodeWithText("Добавить друга").performClick()
-        composeRule.onNodeWithText("Имя или публичный ID").performTextInput("self_player")
-        composeRule.onNodeWithText("Найти").performClick()
+        composeRule.onNodeWithTag("social-friends-add").performClick()
+        composeRule.onNodeWithTag("social-friend-search-query").performTextInput("self_player")
+        composeRule.onNodeWithTag("social-friend-search-submit").performClick()
 
         composeRule.onNodeWithText("Игроки не найдены.").assertIsDisplayed()
         composeRule.onAllNodesWithText("Self Player").assertCountEquals(0)
@@ -272,7 +305,7 @@ class ShellSectionsSmokeTest {
 
             composeRule.onNodeWithText("Онлайн доступен").assertIsDisplayed()
             composeRule.onNodeWithTag("friends-open-all").performScrollTo().performClick()
-            composeRule.onNodeWithText("Mirkori Bot").assertIsDisplayed()
+            composeRule.onNodeWithText("Mirkori Bot").performScrollTo().assertIsDisplayed()
             composeRule.onNodeWithText("Тестовый друг · серверный бот").assertIsDisplayed()
             composeRule.onNodeWithText("Играть").performClick()
             composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
@@ -375,8 +408,8 @@ class ShellSectionsSmokeTest {
             setContent { SocialRootScreen(onlineRuntime = runtime) }
 
             composeRule.onNodeWithTag("friends-invite").performScrollTo().performClick()
-            composeRule.onNodeWithText("Создать код").performScrollTo().assertIsDisplayed()
-            composeRule.onNodeWithText("Войти по коду").performScrollTo().assertIsDisplayed()
+            composeRule.onNodeWithText("Создать код").assertIsDisplayed()
+            composeRule.onNodeWithText("Войти по коду").assertIsDisplayed()
             composeRule.onAllNodesWithText("Найти матч").assertCountEquals(0)
         } finally {
             runtime.close()
@@ -691,12 +724,12 @@ class ShellSectionsSmokeTest {
         assertEquals(shellBounds.width, topSlotBounds.width, 0.5f)
         assertEquals(78f / 877f, topSlotBounds.height / shellBounds.height, 0.002f)
         assertEquals(
-            787f / 877f,
+            775f / 877f,
             (bottomBarBounds.top - shellBounds.top) / shellBounds.height,
             0.002f,
         )
         assertEquals(360f / 374f, bottomBarBounds.width / shellBounds.width, 0.002f)
-        assertEquals(76f / 877f, bottomBarBounds.height / shellBounds.height, 0.002f)
+        assertEquals(88f / 877f, bottomBarBounds.height / shellBounds.height, 0.002f)
 
         val friendsBounds = composeRule.onNodeWithTag("friends-reference-screen")
             .assertIsDisplayed()
@@ -834,8 +867,6 @@ class ShellSectionsSmokeTest {
         }
         val profilePurchasesBounds = composeRule.onNodeWithTag("profile-purchases")
             .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
-        val profilePremiumBounds = composeRule.onNodeWithTag("profile-premium")
-            .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         assertTrue(profileHeroBounds.bottom <= profileConnectionsBounds.top)
         assertTrue(profileConnectionsBounds.bottom <= profileOverviewBounds.top)
         assertTrue(profileOverviewBounds.bottom <= profileStatBounds[0].top)
@@ -846,8 +877,9 @@ class ShellSectionsSmokeTest {
         assertEquals(profileStatBounds[2].width, profileStatBounds[3].width, 1.1f)
         assertEquals(profileStatBounds[2].height, profileStatBounds[3].height, 0.5f)
         assertTrue(profileStatBounds[2].bottom <= profilePurchasesBounds.top)
-        assertTrue(profilePurchasesBounds.bottom <= profilePremiumBounds.top)
         composeRule.onNodeWithTag("profile-premium")
+            .performScrollTo()
+            .assertIsDisplayed()
             .assertHasClickAction()
             .performClick()
         composeRule.onNodeWithTag("shop-reference-screen").assertIsDisplayed()

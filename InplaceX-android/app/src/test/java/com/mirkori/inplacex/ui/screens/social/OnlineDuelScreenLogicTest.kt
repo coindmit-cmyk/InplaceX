@@ -57,4 +57,11 @@ class OnlineDuelScreenLogicTest {
         assertEquals(8, normalizeOnlineCodeLength(8))
         assertEquals(10, normalizeOnlineCodeLength(11))
     }
+
+    @Test
+    fun hudAndSystemBackShareTheActiveMatchDestinationContract() {
+        assertEquals(OnlineDuelBackTarget.MATCH_SETUP, onlineDuelBackTarget("active"))
+        assertEquals(OnlineDuelBackTarget.SOCIAL_ROOT, onlineDuelBackTarget("finished"))
+        assertEquals(OnlineDuelBackTarget.SOCIAL_ROOT, onlineDuelBackTarget(null))
+    }
 }

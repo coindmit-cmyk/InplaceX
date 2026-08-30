@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
@@ -153,7 +155,10 @@ internal fun SocialFriendsReferenceContent(
                 SocialFriendRow(
                     stableId = "test-friend-bot",
                     title = strings.text("social.test_friend.title"),
-                    subtitle = strings.text("social.test_friend.subtitle"),
+                    subtitle = strings.text(
+                        if (onlineConfigured) "social.test_friend.subtitle"
+                        else "social.test_friend.offline",
+                    ),
                     actionLabel = strings.text("social.test_friend.play"),
                     actionEnabled = onlineConfigured && !operationBusy,
                     actionTag = "social-test-friend-play",
@@ -184,11 +189,15 @@ internal fun SocialFriendsReferenceContent(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (adaptive) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(horizontal = 15.dp, vertical = 4.dp),
+                .padding(horizontal = 21.dp)
+                .padding(top = 1.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SocialReferenceHero(
                 artRes = R.drawable.art_friends_hero_v11,
+                artSize = 107.dp,
+                artScaleX = 1.08f,
+                artScaleY = 1.32f,
                 title = strings.text("social.friends"),
                 description = strings.text("social.friends.subtitle"),
                 modifier = Modifier
@@ -205,7 +214,12 @@ internal fun SocialFriendsReferenceContent(
                     .heightIn(min = 51.dp)
                     .testTag("social-friends-add"),
                 leading = {
-                    Icon(Icons.Outlined.PersonAdd, contentDescription = null, modifier = Modifier.size(25.dp))
+                    Icon(
+                        Icons.Outlined.PersonAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(25.dp),
+                        tint = Color.White,
+                    )
                 },
                 onClick = onOpenAddFriend,
             )
@@ -265,7 +279,7 @@ internal fun SocialFriendsReferenceContent(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             items(rows, key = SocialFriendRow::stableId) { row ->
                                 SocialReferenceFriendRow(row, operationBusy)
@@ -283,21 +297,23 @@ private fun SocialReferenceFriendRow(row: SocialFriendRow, operationBusy: Boolea
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 82.dp)
+            .heightIn(min = 94.dp)
             .background(Color(0xFFFFF2D9).copy(alpha = .72f), RoundedCornerShape(13.dp))
             .border(1.dp, Color(0xFFE4BC78), RoundedCornerShape(13.dp))
             .padding(horizontal = 8.dp, vertical = 8.dp)
             .testTag("social-friend-row-${row.stableId}"),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterStart),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PlayerAvatar(
                 displayName = row.title,
                 avatarUrl = row.avatarUrl,
-                modifier = Modifier.size(58.dp),
+                modifier = Modifier.size(62.dp),
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
@@ -346,11 +362,15 @@ internal fun SocialInvitationsReferenceContent(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (adaptive) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(horizontal = 15.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 3.dp, bottom = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             SocialReferenceHero(
                 artRes = R.drawable.art_invite_envelope_v11,
+                artSize = 65.dp,
+                artScaleX = 1.55f,
+                artScaleY = 2.10f,
                 title = if (friendEntryPoint && !targetDisplayName.isNullOrBlank()) {
                     strings.text("social.friend.match.title").replace("{name}", targetDisplayName)
                 } else {
@@ -362,7 +382,7 @@ internal fun SocialInvitationsReferenceContent(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = if (adaptive) 152.dp else 131.dp)
+                    .heightIn(min = if (adaptive) 152.dp else 130.dp)
                     .testTag("social-invitations-hero"),
             )
             IllustratedSurface(
@@ -375,8 +395,11 @@ internal fun SocialInvitationsReferenceContent(
                 radius = 17.dp,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp)
+                        .padding(top = 16.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
                         strings.text("social.online.settings"),
@@ -424,17 +447,31 @@ internal fun SocialInvitationsReferenceContent(
                             if (friendEntryPoint) "social.online.send_invite" else "social.online.create_code",
                         ),
                         enabled = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp).testTag("social-invite-create-code"),
-                        leading = { Icon(Icons.Outlined.Key, contentDescription = null, modifier = Modifier.size(25.dp)) },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("social-invite-create-code"),
+                        leading = {
+                            Icon(
+                                Icons.Outlined.Key,
+                                contentDescription = null,
+                                modifier = Modifier.size(25.dp),
+                                tint = Color.White,
+                            )
+                        },
                         onClick = onCreateCode,
                     )
                     if (!friendEntryPoint) {
+                        Spacer(Modifier.height(12.dp))
                         ReferenceDivider(strings.text("social.reference.or"))
                         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                             Text(strings.text("social.online.friend_code"), style = FriendsReferenceStyle.Body.copy(fontWeight = FontWeight.Bold))
-                            ReferenceRouteTile(
+                            ReferenceInviteEntryField(
                                 label = strings.text("social.online.friend_code.placeholder"),
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                                    .testTag("social-invite-code-preview"),
+                                onClick = onOpenJoinCode,
+                            )
+                            ReferenceRouteTile(
+                                label = strings.text("social.online.join_code"),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                                     .testTag("social-invite-open-join-code"),
                                 onClick = onOpenJoinCode,
                             )
@@ -462,11 +499,14 @@ internal fun SocialJoinCodeReferenceContent(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (adaptive) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(horizontal = 15.dp, vertical = 4.dp),
+                .padding(horizontal = 21.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SocialReferenceHero(
                 artRes = R.drawable.art_join_shield_v11,
+                artSize = 72.dp,
+                artScaleX = 1.42f,
+                artScaleY = 1.70f,
                 title = strings.text("social.invite.join.title"),
                 description = strings.text("social.invite.join.description"),
                 modifier = Modifier
@@ -484,8 +524,8 @@ internal fun SocialJoinCodeReferenceContent(
                 radius = 17.dp,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(13.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(17.dp),
                 ) {
                     Text(
                         strings.text("social.invite.join.code_label"),
@@ -501,14 +541,14 @@ internal fun SocialJoinCodeReferenceContent(
                         value = inviteCode,
                         onValueChange = onInviteCodeChange,
                         enabled = !busy,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                        modifier = Modifier.fillMaxWidth().height(72.dp),
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFFFEAB5), RoundedCornerShape(13.dp))
                             .border(1.dp, Color(0xFFF0C870), RoundedCornerShape(13.dp))
-                            .padding(horizontal = 10.dp, vertical = 11.dp)
+                            .padding(horizontal = 10.dp, vertical = 15.dp)
                             .testTag("social-invite-expiry-policy"),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -516,16 +556,19 @@ internal fun SocialJoinCodeReferenceContent(
                             Text(strings.text("social.invite.join.expiry"), style = FriendsReferenceStyle.Small)
                         }
                     }
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.height(9.dp))
                     ReferenceBlueButton(
                         label = strings.text("social.invite.join.action"),
                         enabled = inviteCode.length == FriendInviteCodeLength && !busy,
                         busy = busy,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp).testTag("social-invite-join"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).testTag("social-invite-join"),
                         leading = { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(25.dp)) },
                         onClick = onJoin,
                     )
-                    ReferenceDivider(strings.text("social.reference.or"))
+                    Spacer(Modifier.height(7.dp))
+                    Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                        ReferenceDivider(strings.text("social.reference.or"))
+                    }
                     ReferenceRouteTile(
                         label = strings.text("social.invite.create_own"),
                         leading = { Icon(Icons.Outlined.Key, contentDescription = null, modifier = Modifier.size(27.dp)) },
@@ -665,6 +708,9 @@ private fun SocialReferenceHero(
     artRes: Int,
     title: String,
     description: String,
+    artSize: Dp = 98.dp,
+    artScaleX: Float = 1f,
+    artScaleY: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     IllustratedSurface(
@@ -674,11 +720,20 @@ private fun SocialReferenceHero(
         radius = 18.dp,
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 9.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Image(painterResource(artRes), contentDescription = null, modifier = Modifier.size(98.dp))
+            Image(
+                painter = painterResource(artRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(artSize)
+                    .graphicsLayer(scaleX = artScaleX, scaleY = artScaleY),
+            )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(
                     title,
@@ -714,7 +769,10 @@ private fun ReferencePurpleButton(
         radius = 17.dp,
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -747,7 +805,10 @@ private fun ReferenceBlueButton(
         radius = 13.dp,
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -809,7 +870,11 @@ private fun ReferenceCodeLengthStepper(
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier.padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         ReferenceStepButton(
             label = "−",
             enabled = value > MinimumOnlineCodeLength,
@@ -817,7 +882,7 @@ private fun ReferenceCodeLengthStepper(
             modifier = Modifier.testTag("social-invite-code-length-decrease"),
         ) { onValueChange(value - 1) }
         Box(
-            Modifier.weight(1f).heightIn(min = 50.dp)
+            Modifier.weight(1f).heightIn(min = 48.dp)
                 .background(Color(0xFFFFF3DD), RoundedCornerShape(12.dp))
                 .border(1.dp, Color(0xFFEAB96A), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
@@ -846,7 +911,7 @@ private fun ReferenceStepButton(
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = modifier.size(50.dp)
+        modifier = modifier.size(48.dp)
             .semantics { contentDescription = description }
             .background(Color(0xFFFFF1D6), RoundedCornerShape(11.dp))
             .border(1.dp, Color(0xFFE7AD53), RoundedCornerShape(11.dp))
@@ -909,6 +974,29 @@ private fun ReferenceInviteCodeField(
 }
 
 @Composable
+private fun ReferenceInviteEntryField(
+    label: String,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .background(Color(0xFFFFF0D1).copy(alpha = .86f), RoundedCornerShape(11.dp))
+            .border(1.dp, Color(0xFFE5B86E), RoundedCornerShape(11.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = label,
+            style = FriendsReferenceStyle.Body.copy(color = FriendsReferenceStyle.Ink.copy(alpha = .60f)),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 private fun ReferenceDivider(label: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.weight(1f).height(1.dp).background(Color(0xFFE1BE82)))
@@ -931,7 +1019,12 @@ private fun ReferenceRouteTile(
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             leading?.invoke()
             Text(
                 label,

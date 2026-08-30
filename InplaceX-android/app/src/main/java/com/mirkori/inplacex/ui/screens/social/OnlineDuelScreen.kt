@@ -51,6 +51,14 @@ internal enum class OnlineDuelEntryPoint {
     QUICK_MATCH,
 }
 
+internal enum class OnlineDuelBackTarget {
+    MATCH_SETUP,
+    SOCIAL_ROOT,
+}
+
+internal fun onlineDuelBackTarget(activePhase: String?): OnlineDuelBackTarget =
+    if (activePhase == "active") OnlineDuelBackTarget.MATCH_SETUP else OnlineDuelBackTarget.SOCIAL_ROOT
+
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
@@ -62,6 +70,9 @@ internal fun OnlineDuelScreen(
     targetPlayerId: String? = null,
     targetDisplayName: String? = null,
     autoAcceptInviteCode: String? = null,
+    requestBack: Boolean = false,
+    onBackRequestConsumed: () -> Unit = {},
+    onExitDestination: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val strings = LocalAppStrings.current
@@ -218,6 +229,22 @@ internal fun OnlineDuelScreen(
         }
     }
 
+    fun returnFromActiveGame() {
+        guessSubmission.cancel()
+        onActiveSessionChange(null)
+        state = OnlineDuelUiState.Ready
+    }
+
+    LaunchedEffect(requestBack) {
+        if (!requestBack) return@LaunchedEffect
+        val current = state
+        when (onlineDuelBackTarget((current as? OnlineDuelUiState.Playing)?.snapshot?.phase)) {
+            OnlineDuelBackTarget.MATCH_SETUP -> returnFromActiveGame()
+            OnlineDuelBackTarget.SOCIAL_ROOT -> onExitDestination()
+        }
+        onBackRequestConsumed()
+    }
+
     BackHandler(
         enabled = entryPoint == OnlineDuelEntryPoint.INVITES &&
             joinCodeScreenOpen && state == OnlineDuelUiState.Ready,
@@ -306,11 +333,7 @@ internal fun OnlineDuelScreen(
                     }
                 }
             },
-            onBack = {
-                guessSubmission.cancel()
-                onActiveSessionChange(null)
-                state = OnlineDuelUiState.Ready
-            },
+            onBack = ::returnFromActiveGame,
         )
         return
     }

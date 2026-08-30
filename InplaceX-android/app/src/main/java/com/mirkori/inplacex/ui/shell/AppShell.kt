@@ -202,7 +202,7 @@ private fun ShellLayers(
         }
         val bottomSlotHeight = when (bottomMode) {
             BottomLayerMode.NONE -> 0.dp
-            BottomLayerMode.MENU -> if (illustratedReference) 76.dp * referenceScale else maxOf(
+            BottomLayerMode.MENU -> if (illustratedReference) 88.dp * referenceScale else maxOf(
                 screenHeight * layoutConfig.bottomSlotHeightPercent,
                 72.dp,
             )
