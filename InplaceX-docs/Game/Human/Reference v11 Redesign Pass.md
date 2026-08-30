@@ -4,18 +4,20 @@
 
 Документ фиксирует реализованный и локально проверенный v11 reference pass по
 состоянию на 2026-08-30. Это не означает визуальное утверждение владельцем,
-публикацию ветки, прохождение remote CI или merge.
+прохождение remote CI или merge.
 
 - Рабочая ветка: `feature/reference-pages-v9`; проверенный code candidate —
-  `7122ab325d24add8817a478796e6220365e7b9ab`.
+  `066dc32e1857662bc0111d20c5c0d00c4f530eb6`.
 - Реализация девяти surfaces и 16 artwork resources находится в `1901173d`,
   auth/profile integration — в `173e323f`, финальная геометрия, callbacks и
-  truthful-state fixes — в `7122ab32`.
+  truthful-state fixes — в `7122ab32`, а адаптированные online input/recovery
+  semantics из PR #96 — в `066dc32e`.
 - Общий reference PR: [coindmit-cmyk/InplaceX#99](https://github.com/coindmit-cmyk/InplaceX/pull/99),
-  draft, `feature/reference-pages-v9` -> `feature/friends-reference-v8`.
-- Последний проверенный remote HEAD PR #99 — `1a07a4b1`. Code commits
-  `1901173d`, `173e323f`, `7122ab32` и текущая документация из-за отсутствия
-  интернета ещё не опубликованы и не считаются содержимым remote PR.
+  draft, `feature/reference-pages-v9` -> `develop`; base retarget подтверждён
+  через GitHub после восстановления соединения.
+- До публикации combined chain проверенный remote HEAD PR #99 был `1a07a4b1`.
+  Актуальный remote HEAD и CI всегда проверяются в самом PR, а не выводятся из
+  этого исторического значения.
 - Target crops и provenance находятся в `build/visual-qa/reference-v11-targets/`;
   реальные device captures, normalized target/current/overlay/diff и manifests —
   в `build/visual-qa/reference-v11-device-captures/`.
@@ -28,28 +30,32 @@
 
 ## Локальная проверка реализации
 
-На code candidate `7122ab32` выполнена одна команда:
+На code candidate `066dc32e` выполнены:
 
 `gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest`
 
-Результат: `BUILD SUCCESSFUL`. App APK установлен через `adb install -r -t`
-без очистки данных приложения. На OnePlus зависший старый test-runner пришлось
-остановить и переустановить только пакет `com.mirkori.inplacex.test`; пакет и
-данные `com.mirkori.inplacex` не удалялись.
+Результат: `BUILD SUCCESSFUL`. Дополнительно четыре regression instrumentation
+test проверили позднюю hydration профиля, exact retry входящего приглашения,
+продолжение delayed session read после recomposition и приоритет нового quick
+match над старым pending code. App и test APK установлены replacement-командами
+без очистки данных `com.mirkori.inplacex`.
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `app-debug.apk` | `06ac75f55828390bd7103e0bb19b84fc8d05690cb2055239c15ca1ce91e745cb` |
-| `app-debug-androidTest.apk` | `4d7034707eff974c6866023fc13c60c7ee129cf1195dc9b39a382529872d7bf1` |
+| `app-debug.apk` | `0A2D513140C295037765E6B0D7CD209E91B5BF79D828BB6BA7D2F377F63603ED` |
+| `app-debug-androidTest.apk` | `2964B40C3130463B94506A86CCEE53DEDAEDEEB0359E8FAAB7987BFDE39AAF56` |
 
 | Device | API | Screenshot | Verified app crop | Canvas | Instrumentation |
 | --- | ---: | --- | --- | --- | --- |
-| Galaxy S24+ | 35 | `1080x2340` | `[41,0,1039,2340]` | `374x877` | `OK (88 tests)` |
-| OnePlus 9 Pro | 33 | `1080x2412` | `[57,96,1023,2364]` | `374x877` | `OK (88 tests)` |
+| Galaxy S24+ | 35 | `1080x2340` | `[41,0,1039,2340]` | `374x877` | `OK (94 tests)` |
+| OnePlus 9 Pro | 33 | `1080x2412` | `[57,96,1023,2364]` | `374x877` | `OK (94 tests)` |
 
-Полный shell и реальные маршруты сняты с установленного APK. Для игрового
-экрана используются полные app bounds (`[0,0,1080,2340]` на S24+ и
-`[0,96,1080,2364]` на OnePlus), потому что active game не оборачивается в
+Normalized visual captures относятся к финальной геометрии `7122ab32`; commit
+`066dc32e` меняет online input/recovery и не подменяет эти target comparisons.
+Полный shell и реальные маршруты повторно прошли instrumentation на combined
+APK. Для игрового экрана используются полные app bounds
+(`[0,0,1080,2340]` на S24+ и `[0,96,1080,2364]` на OnePlus), потому что active
+game не оборачивается в
 фиксированный reference shell. После финального review повторно сняты «Гонка» и
 «Приглашения»; системный performance overlay на OnePlus исключён повторным
 settled capture.
@@ -219,7 +225,7 @@ V11 artwork получено из одного `4x4` atlas без текста �
 - source atlas находится вне репозитория, provenance/preview лежат в
   игнорируемом `build/`; все 16 output assets отслеживаются Git с `1901173d`.
 
-## Политика PR #99 и auth `e4f91b7f`
+## Политика combined PR #99
 
 Reference scope продолжает существующий PR #99. Новый отдельный reference PR для
 v11 не создаётся.
@@ -231,12 +237,21 @@ v11 не создаётся.
 Это эквивалентная интеграция semantics, а не утверждение, что был cherry-pick
 исходного commit.
 
+Friends pilot из PR #98 уже является предком branch chain. Уникальные части PR
+#96 адаптированы в `066dc32e`: profile-scoped pending invite, notification route,
+confirmed-position input и безопасное восстановление после process recreation.
+Это также не verbatim cherry-pick: более новая auth policy из PR #100 сохранена,
+а старое разрешение linked LOCAL/TELEGRAM -> Google из PR #96 намеренно не
+перенесено.
+
 Проверенный combined candidate сохраняет:
 
 - v11 hierarchy девяти новых surfaces и illustrated Profile composition,
   предназначенную для продолжения PR #99, с truthful state presentation;
 - отдельные Mirkori Games и device-local Google actions из auth fix;
 - отсутствие ложного server logout при локальном Google sign-out;
+- разделённые recovery intents, которые не позволяют старому pending invite
+  перехватить новый quick match или вызов другого друга;
 - существующую session/refresh semantics и явные ошибки auth;
 - реальные callbacks, RU/EN copy и тестовые контракты обеих веток.
 
@@ -244,28 +259,27 @@ v11 не создаётся.
 нужно проверить, не содержит ли base уже `e4f91b7f` или эквивалент `173e323f`,
 затем разрешать конфликты по поведению и повторять проверки combined tree.
 
-Stacked dependency PR #99 от `feature/friends-reference-v8` также должна быть
-явно разрешена до merge. Merge, изменение base и release требуют существующей
-owner/integrator authority; этот документ её не предоставляет.
+PR #99 переведён с прежней stacked base `feature/friends-reference-v8` напрямую
+на `develop`, при этом Friends commit остаётся в истории branch. Merge и release
+требуют существующей owner/integrator authority; этот документ её не
+предоставляет.
 
 ## Оставшиеся gates
 
-Локальная реализация, сборка, device installation, полный instrumentation и
-normalized visual evidence завершены. Незакрыты внешние и owner gates, а также
-два явно перечисленных ниже локальных test gap:
+Локальная реализация, сборка, device installation, полный instrumentation,
+normalized visual evidence и P0/P1 review завершены. Перед merge остаются
+внешние и owner gates:
 
-1. После восстановления интернета проверить актуальное состояние PR #99/#100,
-   remote refs и уникальные online fixes из PR #96; не полагаться на сохранённый
-   snapshot как на текущую истину.
-2. Push commits `1901173d`, `173e323f`, `7122ab32` и этот документ в существующую
-   ветку PR #99; новый reference PR не создавать.
-3. Дождаться remote CI и устранить только воспроизводимые findings. Не обходить
+1. Публиковать combined chain только в существующую ветку PR #99; новый
+   reference PR не создавать.
+2. Проверить remote CI именно на опубликованном combined HEAD и устранять только
+   воспроизводимые findings. Не обходить
    owner/review, protected-path, secret или release gates.
+3. Закрывать PR #96, #98 и #100 как superseded только после зелёного CI PR #99 и
+   проверки, что их уникальное поведение присутствует в combined history.
 4. Получить визуальное утверждение владельца по девяти normalized comparisons.
    Текущие captures доказывают выполненную проверку, но не заменяют acceptance.
-5. Перед интеграцией проверить stacked dependency PR #99 от
-   `feature/friends-reference-v8` и наличие auth semantics в выбранной base.
-   Merge, изменение base и release требуют явной owner/integrator authority.
+5. Не выполнять merge или release без явной owner/integrator authority.
 
 Известные честные отклонения от montage: invite code остаётся восьмисимвольным,
 покупки показывают реальную offline/provider error, Profile сохраняет оба вида
