@@ -1384,6 +1384,45 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onMirkoriSignOut = {
+                                    mirkoriAuthOperation.start()?.let { operationId ->
+                                        mirkoriAuthResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val runtime = mirkoriPlatformRuntime
+                                                if (runtime == null) {
+                                                    mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                                } else {
+                                                    val signedOutState = withContext(Dispatchers.IO) {
+                                                        runtime.signOutOnDevice()
+                                                    }
+                                                    googleCredentialSignIn.signOut()
+                                                    progressState = progressRepository.signOutFromGooglePlay()
+                                                    pendingGoogleProfileConflict = null
+                                                    publicPlayerProfile = null
+                                                    localAvatarPath = null
+                                                    incomingFriendInvites = emptyList()
+                                                    incomingFriendRequests = emptyList()
+                                                    pendingOnlineInviteCode = null
+                                                    activeOnlineSessionStore.clear()
+                                                    activeOnlineSessionId = null
+                                                    mirkoriAccountState = signedOutState
+                                                    mirkoriAuthResultKey = "profile.mirkori.signed_out"
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Mirkori Games local sign-out failed",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                                mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                            } finally {
+                                                mirkoriAuthOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
                                 onPublicHandleChange = { handle ->
                                     publicProfileOperation.start()?.let { operationId ->
                                         publicProfileResultKey = null

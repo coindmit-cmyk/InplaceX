@@ -3,9 +3,36 @@ package com.mirkori.inplacex.ui.screens.social
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnlineDuelScreenLogicTest {
+    @Test
+    fun `home quick match request skips repeated setup`() {
+        assertTrue(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
+                initialSessionId = null,
+                requested = true,
+            ),
+        )
+        assertFalse(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
+                initialSessionId = "active-session",
+                requested = true,
+            ),
+        )
+        assertFalse(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.INVITES,
+                initialSessionId = null,
+                requested = true,
+            ),
+        )
+    }
+
 
     @Test
     fun inviteCodeIsNormalizedToServerAlphabetAndLength() {

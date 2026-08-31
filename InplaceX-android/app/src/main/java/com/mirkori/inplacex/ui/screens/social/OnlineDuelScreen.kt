@@ -59,6 +59,12 @@ internal enum class OnlineDuelBackTarget {
 internal fun onlineDuelBackTarget(activePhase: String?): OnlineDuelBackTarget =
     if (activePhase == "active") OnlineDuelBackTarget.MATCH_SETUP else OnlineDuelBackTarget.SOCIAL_ROOT
 
+internal fun shouldAutoStartQuickMatch(
+    entryPoint: OnlineDuelEntryPoint,
+    initialSessionId: String?,
+    requested: Boolean,
+): Boolean = requested && entryPoint == OnlineDuelEntryPoint.QUICK_MATCH && initialSessionId == null
+
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
@@ -69,6 +75,7 @@ internal fun OnlineDuelScreen(
     entryPoint: OnlineDuelEntryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
     initialPlayStyle: RemoteFriendPlayStyle = RemoteFriendPlayStyle.RACE,
     initialCodeLength: Int = 4,
+    autoStartQuickMatch: Boolean = false,
     targetPlayerId: String? = null,
     targetDisplayName: String? = null,
     autoAcceptInviteCode: String? = null,
@@ -88,7 +95,10 @@ internal fun OnlineDuelScreen(
                 (entryPoint != OnlineDuelEntryPoint.QUICK_MATCH || initialSessionId == null) &&
                 recoveryPendingInviteCode == null
             ) {
-                if (autoAcceptInviteCode == null) OnlineDuelUiState.Ready
+                if (autoAcceptInviteCode == null && !autoStartQuickMatch) OnlineDuelUiState.Ready
+                else if (autoAcceptInviteCode == null) {
+                    OnlineDuelUiState.Loading(strings.text("social.online.searching"))
+                }
                 else OnlineDuelUiState.Loading(strings.text("social.online.joining_friend"))
             } else {
                 OnlineDuelUiState.Loading(strings.text("social.online.restoring"))
@@ -110,6 +120,7 @@ internal fun OnlineDuelScreen(
     var restoredPendingInviteCode by remember { mutableStateOf<String?>(null) }
     var attemptedAutoAcceptCode by remember { mutableStateOf<String?>(null) }
     var completedAutoAcceptCode by remember { mutableStateOf<String?>(null) }
+    var attemptedAutoStart by remember { mutableStateOf(false) }
     val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
 
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
@@ -290,6 +301,13 @@ internal fun OnlineDuelScreen(
         guessSubmission.cancel()
         onActiveSessionChange(null)
         state = OnlineDuelUiState.Ready
+    }
+
+    LaunchedEffect(autoStartQuickMatch) {
+        if (shouldAutoStartQuickMatch(entryPoint, initialSessionId, autoStartQuickMatch) && !attemptedAutoStart) {
+            attemptedAutoStart = true
+            startQuickMatch()
+        }
     }
 
     LaunchedEffect(requestBack) {

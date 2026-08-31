@@ -18,13 +18,16 @@ class ProfilePresentationTest {
     }
 
     @Test
-    fun `connections expose Mirkori login only before account is linked`() {
+    fun `connections expose Mirkori sign in before linking and sign out after linking`() {
         assertEquals(
             ProfileConnectionAction.SIGN_IN,
             mirkoriConnectionAction(MirkoriAccountStateKind.GUEST),
         )
         assertNull(mirkoriConnectionAction(MirkoriAccountStateKind.INITIALIZING))
-        assertNull(mirkoriConnectionAction(MirkoriAccountStateKind.LINKED))
+        assertEquals(
+            ProfileConnectionAction.SIGN_OUT,
+            mirkoriConnectionAction(MirkoriAccountStateKind.LINKED),
+        )
     }
 
     @Test

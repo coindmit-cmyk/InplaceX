@@ -34,6 +34,30 @@ import org.junit.Test
 
 class MirkoriPlatformRuntimeTest {
     @Test
+    fun signOutOnDeviceDropsLinkedCredentialsAndRotatesInstallationWhenOffline() {
+        val linked = MirkoriPersistedState(
+            installation = InstallationIdentity(InstallationId, "I".repeat(43)),
+            session = GameIdentitySession(
+                accountId = OtherAccountId,
+                gamePlayerId = PlayerId,
+                gameId = "inplacex",
+                installationId = null,
+                authMode = PlatformAuthMode.GOOGLE,
+                credentials = credentials("linked"),
+            ),
+        )
+        val store = MemoryStore(linked)
+        val runtime = runtime(QueueTransport(PlatformHttpResponse(503, "{}")), store)
+
+        val result = runSuspend { runtime.signOutOnDevice() }
+
+        assertEquals(MirkoriAccountStateKind.UNAVAILABLE, result.kind)
+        assertNull(store.value?.session)
+        assertFalse(store.value?.installation?.installationId == InstallationId)
+        assertEquals(MirkoriAccountStateKind.UNAVAILABLE, runtime.accountState.value.kind)
+    }
+
+    @Test
     fun protectedStateCodecRoundTripsCredentialsAndPendingLogin() {
         val state = MirkoriPersistedState(
             installation = InstallationIdentity(InstallationId, "I".repeat(43)),

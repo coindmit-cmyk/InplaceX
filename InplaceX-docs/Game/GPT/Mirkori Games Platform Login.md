@@ -136,15 +136,19 @@ failure, and ambiguous response loss preserve the proof and the same command
 identifier for safe retry; an authoritative rejection of the proof clears both
 stores. The raw proof is never logged.
 
-No Mirkori Games sign-out button is exposed in v1 because the platform does not
-yet have a provider-session revocation endpoint. When the Platform profile is
-linked through Google, the Connections section may disconnect the local Google
-Credential Manager state and local Google Play progress flag. This is explicitly
-device-local: the Mirkori Games account, encrypted Platform credentials, refresh
-family, and active online session remain unchanged, and the player can request a
-fresh Google credential on the same linked profile. A future full Mirkori logout
-flow must revoke the Platform session server-side before clearing encrypted
-Platform state.
+The Connections section exposes a clearly described device-local Mirkori Games
+sign-out. After explicit confirmation it clears the encrypted Platform credentials
+and active online recovery state on this installation, disconnects the local Google
+Credential Manager state, rotates the installation identity, and bootstraps a new
+guest profile. The linked Mirkori Games account is not deleted. The Platform still
+has no refresh-family revocation endpoint, so this action must not be described as
+global session revocation; a future full logout flow must revoke the Platform
+session server-side before clearing encrypted Platform state.
+
+The separate Google action only disconnects local Google Credential Manager state
+and the local Google Play progress flag. The Mirkori Games account, encrypted
+Platform credentials, refresh family, and active online session remain unchanged,
+and the player can request a fresh Google credential on the same linked profile.
 
 The native Google action is also available when the current linked Platform
 session was issued through Local, Telegram, or another non-Google provider. It

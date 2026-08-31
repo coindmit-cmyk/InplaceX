@@ -23,6 +23,13 @@
   now start the same verified native Google flow instead of seeing a status-only
   row. The avatar picker uses illustrated character portraits and can import,
   crop, and store a custom photo locally for the current game profile.
+  Linked players can also confirm a device-local Mirkori Games sign-out, which
+  clears local Platform and online recovery credentials and creates a new guest
+  profile without deleting the server account. Custom avatar import now opens
+  the system document provider so images can be selected outside screenshots.
+- Race and duel online actions now start matchmaking immediately with the mode
+  and code length already selected on the preceding screen instead of reopening
+  the same settings form.
 - Online input now shares free-position editing with local play: automatically
   confirmed digits no longer consume keypad presses, and disabling auto mode
   also disables hidden inferred substitutions on submission.

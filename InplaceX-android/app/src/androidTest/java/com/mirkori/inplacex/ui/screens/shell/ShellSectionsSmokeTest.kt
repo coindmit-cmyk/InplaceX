@@ -1042,6 +1042,27 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun linkedMirkoriAccountConfirmsDeviceSignOut() {
+        var signOutRequested = false
+        setContent {
+            ProfileRootScreen(
+                progressState = progress(),
+                mirkoriAccountState = MirkoriAccountState(
+                    kind = MirkoriAccountStateKind.LINKED,
+                    gamePlayerId = "00000000-0000-4000-8000-000000000815",
+                    authMode = PlatformAuthMode.LOCAL,
+                ),
+                onMirkoriSignOut = { signOutRequested = true },
+            )
+        }
+
+        composeRule.onNodeWithText("Выйти из Mirkori Games").performScrollTo().performClick()
+        composeRule.onNodeWithText("Выйти из Mirkori Games?").assertIsDisplayed()
+        composeRule.onNodeWithText("Выйти").performClick()
+        composeRule.runOnIdle { assertTrue(signOutRequested) }
+    }
+
+    @Test
     fun initializingMirkoriAccountDoesNotExposeLegacyGoogleSignOut() {
         setContent {
             ProfileRootScreen(

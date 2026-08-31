@@ -43,8 +43,11 @@ must go through the future authenticated cloud-save contract, not an implicit de
 - a Google-linked profile can disconnect Google Credential Manager on this
   device and reconnect it later; this does not sign out of Mirkori Games or
   clear the Platform session
-- full Mirkori Games logout remains unavailable until the Platform can revoke
-  the server refresh session before encrypted Platform credentials are cleared
+- Mirkori Games offers a confirmed device-local sign-out: it clears this
+  installation's encrypted credentials and online recovery state, disconnects
+  local Google state, and creates a new guest profile without deleting the linked
+  account; global refresh-session revocation remains unavailable until the
+  Platform adds a server revocation endpoint
 
 ## Rewarded Ads
 

@@ -116,6 +116,9 @@ fun SocialRootScreen(
     var quickMatchCodeLength by remember {
         mutableStateOf(normalizeOnlineCodeLength(requestedQuickMatchCodeLength))
     }
+    var startQuickMatchImmediately by remember {
+        mutableStateOf(requestedQuickMatchPlayStyle != null)
+    }
 
     LaunchedEffect(activeDestination) {
         onNestedScreenChange(activeDestination != null)
@@ -147,6 +150,7 @@ fun SocialRootScreen(
         if (onlineRuntime != null) {
             quickMatchPlayStyle = requestedPlayStyle
             quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
+            startQuickMatchImmediately = true
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -234,6 +238,7 @@ fun SocialRootScreen(
                 },
                 initialPlayStyle = quickMatchPlayStyle,
                 initialCodeLength = quickMatchCodeLength,
+                autoStartQuickMatch = startQuickMatchImmediately,
                 targetPlayerId = selectedFriend?.targetPlayerId
                     .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
                 targetDisplayName = selectedFriend?.targetDisplayName
@@ -246,6 +251,7 @@ fun SocialRootScreen(
                     onActiveSessionChange(null)
                     selectedFriend = null
                     autoAcceptInviteCode = null
+                    startQuickMatchImmediately = false
                     activeDestination = null
                 },
             )

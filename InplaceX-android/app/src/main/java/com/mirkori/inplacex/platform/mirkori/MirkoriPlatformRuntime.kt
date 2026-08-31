@@ -226,6 +226,27 @@ class MirkoriPlatformRuntime internal constructor(
         )
     }
 
+    suspend fun signOutOnDevice(): MirkoriAccountState = operationMutex.withLock {
+        store.clear()
+        val freshState = MirkoriPersistedState(sdk.newInstallation())
+        persist(freshState)
+        AppLog.info(
+            tag = LogTag,
+            message = "Mirkori Games credentials cleared on device",
+            attributes = mapOf("outcome" to "local_sign_out"),
+        )
+        try {
+            ensureFreshSession().toAccountState()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE).also {
+                mutableAccountState.value = it
+            }
+        }
+    }
+
     suspend fun loadPublicProfile(): MirkoriPublicProfileResult = operationMutex.withLock {
         try {
             MirkoriPublicProfileResult.Success(
@@ -493,10 +514,16 @@ class MirkoriPlatformRuntime internal constructor(
     }
 
     internal fun logFailure(error: Throwable) {
+        val apiAttributes = (error as? PlatformApiException)?.let { apiError ->
+            mapOf(
+                "httpStatus" to apiError.status.toString(),
+                "errorCode" to apiError.errorCode,
+            )
+        }.orEmpty()
         AppLog.warn(
             tag = LogTag,
             message = "Mirkori Games operation unavailable",
-            attributes = mapOf("errorClass" to error.javaClass.name),
+            attributes = mapOf("errorClass" to error.javaClass.name) + apiAttributes,
         )
     }
 

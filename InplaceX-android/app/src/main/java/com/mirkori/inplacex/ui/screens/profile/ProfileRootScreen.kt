@@ -75,7 +75,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.outlined.PhotoLibrary
 
@@ -93,6 +92,7 @@ fun ProfileRootScreen(
     authInProgress: Boolean = false,
     showGooglePlayCard: Boolean = false,
     onMirkoriSignIn: () -> Unit = {},
+    onMirkoriSignOut: () -> Unit = {},
     onPublicHandleChange: (String) -> Unit = {},
     onDisplayNameChange: (String) -> Unit = {},
     onAvatarChange: (String) -> Unit = {},
@@ -115,13 +115,14 @@ fun ProfileRootScreen(
     }
     var localNameError by remember { mutableStateOf(false) }
     var avatarDialogOpen by remember { mutableStateOf(false) }
+    var mirkoriSignOutDialogOpen by remember { mutableStateOf(false) }
     val visibleDisplayName = publicPlayerProfile?.displayName ?: progressState.playerDisplayName
     val selectedPresetKey = if (localAvatarPath == null) {
         PlayerAvatarPresets.firstOrNull { publicPlayerProfile?.avatarUrl?.endsWith("/${it.key}") == true }?.key
     } else {
         null
     }
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { onCustomAvatarSelected(it.toString()) }
     }
 
@@ -132,6 +133,37 @@ fun ProfileRootScreen(
             publicProfileResultKey == "profile.mirkori.avatar.saved" ||
             publicProfileResultKey == "profile.mirkori.avatar.local_saved"
         ) avatarDialogOpen = false
+    }
+
+    if (mirkoriSignOutDialogOpen) {
+        AlertDialog(
+            shape = RoundedCornerShape(24.dp),
+            containerColor = PageColors.Cream,
+            titleContentColor = PageColors.Text,
+            textContentColor = PageColors.Text,
+            onDismissRequest = { if (!mirkoriAuthInProgress) mirkoriSignOutDialogOpen = false },
+            title = { Text(strings.text("profile.mirkori.sign_out.title")) },
+            text = { Text(strings.text("profile.mirkori.sign_out.message")) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        mirkoriSignOutDialogOpen = false
+                        onMirkoriSignOut()
+                    },
+                    enabled = !mirkoriAuthInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.sign_out.confirm"))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { mirkoriSignOutDialogOpen = false },
+                    enabled = !mirkoriAuthInProgress,
+                ) {
+                    Text(strings.text("profile.mirkori.handle.cancel"))
+                }
+            },
+        )
     }
 
     if (nameDialogOpen) {
@@ -241,9 +273,7 @@ fun ProfileRootScreen(
                     }
                     OutlinedButton(
                         onClick = {
-                            photoPicker.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                            )
+                            imagePicker.launch(arrayOf("image/*"))
                         },
                         enabled = !publicProfileInProgress,
                         modifier = Modifier.fillMaxWidth().testTag("profile-avatar-upload"),
@@ -394,9 +424,16 @@ fun ProfileRootScreen(
             },
             mirkoriConnected = mirkoriAccountState.kind == MirkoriAccountStateKind.LINKED,
             mirkoriAction = mirkoriAction,
-            mirkoriActionLabel = mirkoriAction?.let { strings.text("profile.mirkori.sign_in") },
+            mirkoriActionLabel = when (mirkoriAction) {
+                ProfileConnectionAction.SIGN_IN -> strings.text("profile.mirkori.sign_in")
+                ProfileConnectionAction.SIGN_OUT -> strings.text("profile.mirkori.sign_out")
+                null -> null
+            },
             mirkoriActionEnabled = !mirkoriAuthInProgress,
-            onMirkoriAction = onMirkoriSignIn,
+            onMirkoriAction = when (mirkoriAction) {
+                ProfileConnectionAction.SIGN_OUT -> ({ mirkoriSignOutDialogOpen = true })
+                else -> onMirkoriSignIn
+            },
             showGooglePlay = showGooglePlayCard,
             googleStatus = strings.text(
                 if (googleConnected) {
@@ -1154,9 +1191,8 @@ internal fun mirkoriConnectionAction(accountKind: MirkoriAccountStateKind): Prof
         MirkoriAccountStateKind.GUEST,
         MirkoriAccountStateKind.UNAVAILABLE,
         -> ProfileConnectionAction.SIGN_IN
-        MirkoriAccountStateKind.INITIALIZING,
-        MirkoriAccountStateKind.LINKED,
-        -> null
+        MirkoriAccountStateKind.LINKED -> ProfileConnectionAction.SIGN_OUT
+        MirkoriAccountStateKind.INITIALIZING -> null
     }
 
 internal fun googleConnectionIsActive(
