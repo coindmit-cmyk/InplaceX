@@ -81,6 +81,7 @@ fun HomeRootScreen(
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
+    onNestedScreenChange: (Boolean) -> Unit = {},
     onDebugSecretChange: (String?) -> Unit = {},
     openPositionHints: Int = 0,
     checkDigitHints: Int = 0,
@@ -133,7 +134,8 @@ fun HomeRootScreen(
     val configuredPvpMode = pvpMode.withCodeLength(selectedDuelCodeLength)
 
     LaunchedEffect(screenState) {
-        onInGameChange(screenState != HomeScreenState.ROOT)
+        onInGameChange(screenState == HomeScreenState.PVE_GAME || screenState == HomeScreenState.PVP_GAME)
+        onNestedScreenChange(screenState == HomeScreenState.RACE_MODES || screenState == HomeScreenState.PVP_MODES)
         if (screenState == HomeScreenState.ROOT) {
             onDebugSecretChange(null)
         }
@@ -241,7 +243,7 @@ fun HomeRootScreen(
 
     when (screenState) {
         HomeScreenState.ROOT -> {
-            HomeSelectionScreen(
+            ReferenceHomeSelectionScreen(
                 pveMode = pveMode,
                 pvpMode = pvpMode,
                 onOpenPve = { onScreenStateChange(HomeScreenState.RACE_MODES) },
@@ -251,10 +253,11 @@ fun HomeRootScreen(
         }
 
         HomeScreenState.PVP_MODES -> {
-            PvpModesScreen(
+            ReferenceModeSetupScreen(
+                kind = ReferenceSetupKind.DUEL,
                 codeLength = selectedDuelCodeLength,
                 onCodeLengthChange = { selectedDuelCodeLength = it },
-                onPlayWithBot = {
+                onPlayLocal = {
                     preMatchPhase = PreMatchPhase.SECRET_SELECTION
                     preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
                     botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
@@ -267,21 +270,20 @@ fun HomeRootScreen(
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
-                modeAccentColor = InplaceXColors.ToyPurple,
             )
         }
 
         HomeScreenState.RACE_MODES -> {
-            PvpModesScreen(
+            ReferenceModeSetupScreen(
+                kind = ReferenceSetupKind.RACE,
                 codeLength = selectedRaceCodeLength,
                 onCodeLengthChange = { selectedRaceCodeLength = it },
-                onPlayWithBot = { onScreenStateChange(HomeScreenState.PVE_GAME) },
+                onPlayLocal = { onScreenStateChange(HomeScreenState.PVE_GAME) },
                 onPlayOnline = {
                     onOpenOnlineMatch(RemoteFriendPlayStyle.RACE, selectedRaceCodeLength)
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
-                modeAccentColor = InplaceXColors.ToyOrange,
             )
         }
 

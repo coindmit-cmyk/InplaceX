@@ -133,6 +133,10 @@ class FinalGameplayCaptureTest {
             .fetchSemanticsNode().boundsInRoot
         val firstKeyBounds = composeRule.onNodeWithTag("game-digit-1")
             .fetchSemanticsNode().boundsInRoot
+        val firstToolBounds = composeRule.onNodeWithTag("game-tool-no")
+            .fetchSemanticsNode().boundsInRoot
+        val resetBounds = composeRule.onNodeWithTag("game-reset")
+            .fetchSemanticsNode().boundsInRoot
         val density = InstrumentationRegistry.getInstrumentation()
             .targetContext.resources.displayMetrics.density
         assertTrue("Matrix must end before tools", matrixBounds.bottom <= toolsBounds.top)
@@ -142,9 +146,26 @@ class FinalGameplayCaptureTest {
             firstCellBounds.height <= 27.dp.value * density,
         )
         assertTrue(
-            "Compact keypad visuals must retain a 44dp vertical hit target",
-            firstKeyBounds.height >= 44.dp.value * density,
+            "Compact keypad visuals must retain a 48dp vertical hit target",
+            firstKeyBounds.height >= 48.dp.value * density,
         )
+        assertTrue(
+            "Confidence tools must retain a 48dp vertical hit target",
+            firstToolBounds.height >= 48.dp.value * density,
+        )
+        assertTrue(
+            "Game actions must retain a 48dp vertical hit target " +
+                "(actual=${resetBounds.height / density}dp, input=${inputBounds.height / density}dp)",
+            resetBounds.height >= 48.dp.value * density,
+        )
+        if (stateName == "hints_boosts_selected") {
+            val firstHintBounds = composeRule.onNodeWithTag("game-hint-open-position")
+                .fetchSemanticsNode().boundsInRoot
+            assertTrue(
+                "Hints must retain a 48dp vertical hit target",
+                firstHintBounds.height >= 48.dp.value * density,
+            )
+        }
         if (codeLength > 6) {
             assertTrue("Attempts must be above the matrix", attemptsBounds.bottom <= matrixBounds.top)
             assertTrue(

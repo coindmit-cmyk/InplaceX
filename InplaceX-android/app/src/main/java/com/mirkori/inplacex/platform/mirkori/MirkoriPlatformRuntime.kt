@@ -119,8 +119,6 @@ class MirkoriPlatformRuntime internal constructor(
     suspend fun beginGoogleLogin(): MirkoriLoginResult = operationMutex.withLock {
         try {
             val current = ensureFreshSession()
-            if (current.authMode == PlatformAuthMode.GOOGLE) return@withLock MirkoriLoginResult.AlreadyConnected
-            if (current.authMode != PlatformAuthMode.GUEST) return@withLock MirkoriLoginResult.Rejected
             val state = requireNotNull(persistedState)
             val pending = sdk.beginAccountLogin(
                 profileAccessToken = current.credentials.accessToken,
@@ -226,6 +224,27 @@ class MirkoriPlatformRuntime internal constructor(
             message = "Mirkori Games pending login cancelled",
             attributes = mapOf("outcome" to "kept_current_profile"),
         )
+    }
+
+    suspend fun signOutOnDevice(): MirkoriAccountState = operationMutex.withLock {
+        store.clear()
+        val freshState = MirkoriPersistedState(sdk.newInstallation())
+        persist(freshState)
+        AppLog.info(
+            tag = LogTag,
+            message = "Mirkori Games credentials cleared on device",
+            attributes = mapOf("outcome" to "local_sign_out"),
+        )
+        try {
+            ensureFreshSession().toAccountState()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logFailure(error)
+            MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE).also {
+                mutableAccountState.value = it
+            }
+        }
     }
 
     suspend fun loadPublicProfile(): MirkoriPublicProfileResult = operationMutex.withLock {
@@ -495,10 +514,16 @@ class MirkoriPlatformRuntime internal constructor(
     }
 
     internal fun logFailure(error: Throwable) {
+        val apiAttributes = (error as? PlatformApiException)?.let { apiError ->
+            mapOf(
+                "httpStatus" to apiError.status.toString(),
+                "errorCode" to apiError.errorCode,
+            )
+        }.orEmpty()
         AppLog.warn(
             tag = LogTag,
             message = "Mirkori Games operation unavailable",
-            attributes = mapOf("errorClass" to error.javaClass.name),
+            attributes = mapOf("errorClass" to error.javaClass.name) + apiAttributes,
         )
     }
 

@@ -3,12 +3,40 @@ package com.mirkori.inplacex.ui.screens.social
 import com.mirkori.inplacex.platform.localization.AppLanguage
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnlineDuelScreenLogicTest {
+    @Test
+    fun `home quick match request skips repeated setup`() {
+        assertTrue(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
+                initialSessionId = null,
+                requested = true,
+            ),
+        )
+        assertFalse(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.QUICK_MATCH,
+                initialSessionId = "active-session",
+                requested = true,
+            ),
+        )
+        assertFalse(
+            shouldAutoStartQuickMatch(
+                entryPoint = OnlineDuelEntryPoint.INVITES,
+                initialSessionId = null,
+                requested = true,
+            ),
+        )
+    }
+
 
     @Test
     fun inviteCodeIsNormalizedToServerAlphabetAndLength() {
+        assertEquals(8, FriendInviteCodeLength)
         assertEquals(
             "ABCD2345",
             normalizeFriendInviteCode("a-b-c-d-2-3-4-5-6"),
@@ -17,6 +45,15 @@ class OnlineDuelScreenLogicTest {
             "23456789",
             normalizeFriendInviteCode("01io23456789"),
         )
+    }
+
+    @Test
+    fun invitationExpiryUsesExactServerTimestamp() {
+        val now = 1_000_000L
+
+        assertEquals("10:00", formatFriendInviteRemainingClock(now + 600_000L, now))
+        assertEquals("00:01", formatFriendInviteRemainingClock(now + 1L, now))
+        assertEquals("00:00", formatFriendInviteRemainingClock(now - 1L, now))
     }
 
     @Test
@@ -46,5 +83,12 @@ class OnlineDuelScreenLogicTest {
         assertEquals(4, normalizeOnlineCodeLength(3))
         assertEquals(8, normalizeOnlineCodeLength(8))
         assertEquals(10, normalizeOnlineCodeLength(11))
+    }
+
+    @Test
+    fun hudAndSystemBackShareTheActiveMatchDestinationContract() {
+        assertEquals(OnlineDuelBackTarget.MATCH_SETUP, onlineDuelBackTarget("active"))
+        assertEquals(OnlineDuelBackTarget.SOCIAL_ROOT, onlineDuelBackTarget("finished"))
+        assertEquals(OnlineDuelBackTarget.SOCIAL_ROOT, onlineDuelBackTarget(null))
     }
 }

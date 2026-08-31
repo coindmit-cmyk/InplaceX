@@ -80,6 +80,7 @@ import com.mirkori.inplacex.platform.online.IncomingFriendInviteNotifier
 import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.profile.ProfileAvatarStore
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingAvailability
 import com.mirkori.inplacex.platform.services.BillingNotice
@@ -100,6 +101,7 @@ import com.mirkori.inplacex.ui.screens.profile.ProfileRootScreen
 import com.mirkori.inplacex.ui.screens.profile.GoogleProfileConflictDialog
 import com.mirkori.inplacex.ui.screens.settings.SettingsRootScreen
 import com.mirkori.inplacex.ui.screens.settings.AdPrivacyConsentDialog
+import com.mirkori.inplacex.ui.screens.shop.ShopCategory
 import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
@@ -124,6 +126,7 @@ import java.net.URI
 class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
     private var resumeGeneration by mutableLongStateOf(0L)
+    private var socialNotificationRequest by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
     private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
     private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
@@ -144,6 +147,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(feedbackSettingsStore.read())
                 }
                 val progressRepository = remember { GameProgressRepository(applicationContext) }
+                val profileAvatarStore = remember { ProfileAvatarStore(applicationContext) }
                 val mirkoriPlatformRuntime = remember {
                     runCatching { MirkoriPlatformRuntime.createOrNull(applicationContext) }
                         .onFailure { error ->
@@ -200,11 +204,18 @@ class MainActivity : ComponentActivity() {
                 var currentSection by rememberSaveable {
                     mutableStateOf(initialSectionForActiveOnlineSession(restoredActiveOnlineSessionId))
                 }
+                LaunchedEffect(socialNotificationRequest) {
+                    if (socialNotificationRequest > 0L) currentSection = AppSection.SOCIAL
+                }
                 var activeOnlineSessionId by remember {
                     mutableStateOf(restoredActiveOnlineSessionId)
                 }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
+                var isNestedHomeScreen by rememberSaveable { mutableStateOf(false) }
                 var isNestedSocialScreen by rememberSaveable { mutableStateOf(false) }
+                var shopCategoryName by rememberSaveable {
+                    mutableStateOf(ShopCategory.BOOSTS.name)
+                }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by remember {
@@ -259,6 +270,7 @@ class MainActivity : ComponentActivity() {
                 var mirkoriAccountState by remember {
                     mutableStateOf(MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING))
                 }
+                var localAvatarPath by remember { mutableStateOf<String?>(null) }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
                 var publicPlayerProfile by remember {
@@ -351,6 +363,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                LaunchedEffect(mirkoriAccountState.gamePlayerId) {
+                    localAvatarPath = mirkoriAccountState.gamePlayerId?.let(profileAvatarStore::current)
+                }
                 LaunchedEffect(
                     mirkoriPlatformRuntime,
                     mirkoriAccountState.kind,
@@ -378,6 +393,10 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                val onlinePlayerId = mirkoriAccountState.gamePlayerId
+                var pendingOnlineInviteCode by remember(onlinePlayerId) {
+                    mutableStateOf(onlinePlayerId?.let(activeOnlineSessionStore::readPendingInvite))
+                }
                 var incomingFriendInvites by remember {
                     mutableStateOf(emptyList<OnlineFriendInvite>())
                 }
@@ -401,9 +420,9 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(onlineRuntime) {
                     onDispose { onlineRuntime?.close() }
                 }
-                LaunchedEffect(onlineRuntime) {
-                    if (onlineRuntime == null) {
-                        incomingFriendInvites = emptyList()
+                LaunchedEffect(onlineRuntime, onlinePlayerId) {
+                    incomingFriendInvites = emptyList()
+                    if (onlineRuntime == null || onlinePlayerId == null) {
                         return@LaunchedEffect
                     }
                     while (true) {
@@ -775,6 +794,24 @@ class MainActivity : ComponentActivity() {
                     resourceId = R.drawable.toy_room_bg_v6,
                     fallbackColor = InplaceXColors.ToyWood,
                 )
+                val shopCategory = ShopCategory.valueOf(shopCategoryName)
+                val isHomeSubpage = currentSection == AppSection.HOME && isNestedHomeScreen
+                val isShopSubpage = currentSection == AppSection.SHOP &&
+                    shopCategory == ShopCategory.PREMIUM
+                val illustratedReferenceSection = currentSection == AppSection.HOME ||
+                    currentSection == AppSection.SOCIAL ||
+                    currentSection == AppSection.COMPANY ||
+                    currentSection == AppSection.SHOP ||
+                    currentSection == AppSection.PROFILE
+                val illustratedReference = illustratedReferenceSection &&
+                    !isInGame && !isSettingsOpen && !isVariantToolsOpen
+                val illustratedBackgroundResourceId = if (
+                    currentSection == AppSection.HOME || currentSection == AppSection.SHOP
+                ) {
+                    R.drawable.toy_room_bg_v6
+                } else {
+                    R.drawable.friends_room_v8
+                }
                 val bottomMode = when {
                     isInGame && isPremium -> BottomLayerMode.NONE
                     isInGame && selectedBannerProviderName != null && bannerLoaded ->
@@ -794,6 +831,15 @@ class MainActivity : ComponentActivity() {
                         onSectionChange = { section ->
                             feedbackRuntime.playSound(AppSoundCue.TAP)
                             feedbackRuntime.performHaptic(AppHapticCue.SELECTION)
+                            if (section == currentSection) {
+                                when {
+                                    section == AppSection.HOME && isNestedHomeScreen -> requestExitGame = true
+                                    section == AppSection.SOCIAL && isNestedSocialScreen -> requestExitGame = true
+                                    section == AppSection.SHOP && isShopSubpage -> {
+                                        shopCategoryName = ShopCategory.BOOSTS.name
+                                    }
+                                }
+                            }
                             currentSection = section
                             isSettingsOpen = false
                             isVariantToolsOpen = false
@@ -802,16 +848,20 @@ class MainActivity : ComponentActivity() {
                         topMode = TopLayerMode.OVERLAY,
                         centerMode = CenterLayerMode.TRANSPARENT,
                         backgroundStyle = appBackgroundStyle,
+                        illustratedReference = illustratedReference,
+                        illustratedBackgroundResourceId = illustratedBackgroundResourceId,
                         topContent = {
                             AppTopBar(
                                 energy = progressState.campaignEnergy,
                                 energyMax = progressState.campaignEnergyMax,
                                 coins = progressState.coins,
-                                showBack = isNestedSocialScreen || isInGame || isVariantToolsOpen,
+                                illustratedReference = illustratedReference,
+                                showBack = isHomeSubpage || isShopSubpage || isInGame || isVariantToolsOpen,
                                 showShop = !isInGame,
                                 onBackClick = {
                                     when {
                                         isVariantToolsOpen -> isVariantToolsOpen = false
+                                        isShopSubpage -> shopCategoryName = ShopCategory.BOOSTS.name
                                         else -> requestExitGame = true
                                     }
                                 },
@@ -856,6 +906,7 @@ class MainActivity : ComponentActivity() {
                                     requestExitGame = requestExitGame,
                                     onExitGameConsumed = { requestExitGame = false },
                                     onInGameChange = { inGame -> isInGame = inGame },
+                                    onNestedScreenChange = { nested -> isNestedHomeScreen = nested },
                                     onDebugSecretChange = { currentInspectionValue = it },
                                     openPositionHints = progressState.openPositionHints,
                                     checkDigitHints = progressState.checkDigitHints,
@@ -928,6 +979,14 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
                                 initialActiveSessionId = activeOnlineSessionId,
+                                initialPendingInviteCode = pendingOnlineInviteCode,
+                                onPendingInviteChange = { code ->
+                                    onlinePlayerId?.let { playerId ->
+                                        if (code == null) activeOnlineSessionStore.clearPendingInvite(playerId)
+                                        else activeOnlineSessionStore.writePendingInvite(playerId, code)
+                                        pendingOnlineInviteCode = code
+                                    }
+                                },
                                 onActiveSessionChange = { sessionId ->
                                     if (activeOnlineSessionId != sessionId) {
                                         if (sessionId == null) {
@@ -1235,6 +1294,10 @@ class MainActivity : ComponentActivity() {
                                 onRetryBillingPurchase = {
                                     billingState.pendingProduct?.let(purchaseBilling)
                                 },
+                                category = shopCategory,
+                                onCategoryChange = { category ->
+                                    shopCategoryName = category.name
+                                },
                                 onBuyTemporaryPro = {
                                     val permanentPremiumActive =
                                         billingState.entitlements.proSubscriptionActive ||
@@ -1267,6 +1330,7 @@ class MainActivity : ComponentActivity() {
                                 publicPlayerProfile = publicPlayerProfile,
                                 publicProfileResultKey = publicProfileResultKey,
                                 publicProfileInProgress = publicProfileOperation.inProgress,
+                                localAvatarPath = localAvatarPath,
                                 authResultKey = profileAuthResultKey,
                                 authInProgress = profileAuthOperation.inProgress,
                                 showGooglePlayCard = googleProfileActionsEnabled(),
@@ -1315,6 +1379,45 @@ class MainActivity : ComponentActivity() {
                                             } finally {
                                                 mirkoriAccountState = mirkoriPlatformRuntime?.currentAccountState()
                                                     ?: MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
+                                                mirkoriAuthOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onMirkoriSignOut = {
+                                    mirkoriAuthOperation.start()?.let { operationId ->
+                                        mirkoriAuthResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val runtime = mirkoriPlatformRuntime
+                                                if (runtime == null) {
+                                                    mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                                } else {
+                                                    val signedOutState = withContext(Dispatchers.IO) {
+                                                        runtime.signOutOnDevice()
+                                                    }
+                                                    googleCredentialSignIn.signOut()
+                                                    progressState = progressRepository.signOutFromGooglePlay()
+                                                    pendingGoogleProfileConflict = null
+                                                    publicPlayerProfile = null
+                                                    localAvatarPath = null
+                                                    incomingFriendInvites = emptyList()
+                                                    incomingFriendRequests = emptyList()
+                                                    pendingOnlineInviteCode = null
+                                                    activeOnlineSessionStore.clear()
+                                                    activeOnlineSessionId = null
+                                                    mirkoriAccountState = signedOutState
+                                                    mirkoriAuthResultKey = "profile.mirkori.signed_out"
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Mirkori Games local sign-out failed",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                                mirkoriAuthResultKey = "profile.mirkori.unavailable"
+                                            } finally {
                                                 mirkoriAuthOperation.finish(operationId)
                                             }
                                         }
@@ -1403,6 +1506,8 @@ class MainActivity : ComponentActivity() {
                                                 publicProfileResultKey = when (result) {
                                                     is MirkoriPublicProfileResult.Success -> {
                                                         publicPlayerProfile = result.profile
+                                                        mirkoriAccountState.gamePlayerId?.let(profileAvatarStore::clear)
+                                                        localAvatarPath = null
                                                         "profile.mirkori.avatar.saved"
                                                     }
                                                     MirkoriPublicProfileResult.Rejected ->
@@ -1411,6 +1516,37 @@ class MainActivity : ComponentActivity() {
                                                     MirkoriPublicProfileResult.Unavailable ->
                                                         "profile.mirkori.avatar.unavailable"
                                                 }
+                                            } finally {
+                                                publicProfileOperation.finish(operationId)
+                                            }
+                                        }
+                                    }
+                                },
+                                onCustomAvatarSelected = { uriValue ->
+                                    publicProfileOperation.start()?.let { operationId ->
+                                        publicProfileResultKey = null
+                                        coroutineScope.launch {
+                                            try {
+                                                val playerId = mirkoriAccountState.gamePlayerId
+                                                val imported = if (playerId == null) null else {
+                                                    withContext(Dispatchers.IO) {
+                                                        profileAvatarStore.import(playerId, Uri.parse(uriValue))
+                                                    }
+                                                }
+                                                if (imported == null) {
+                                                    publicProfileResultKey = "profile.mirkori.avatar.local_invalid"
+                                                } else {
+                                                    localAvatarPath = imported
+                                                    publicProfileResultKey = "profile.mirkori.avatar.local_saved"
+                                                }
+                                            } catch (error: Exception) {
+                                                if (error is CancellationException) throw error
+                                                AppLog.warn(
+                                                    tag = "MainActivity",
+                                                    message = "Local profile avatar import failed",
+                                                    attributes = mapOf("errorClass" to error.javaClass.name),
+                                                )
+                                                publicProfileResultKey = "profile.mirkori.avatar.local_invalid"
                                             } finally {
                                                 publicProfileOperation.finish(operationId)
                                             }
@@ -1534,11 +1670,12 @@ class MainActivity : ComponentActivity() {
                                     profileAuthOperation.start()?.let { operationId ->
                                         coroutineScope.launch {
                                             try {
-                                                googleCredentialSignIn.signOut()
-                                                activeOnlineSessionStore.clear()
-                                                activeOnlineSessionId = null
-                                                progressState = progressRepository.signOutFromGooglePlay()
-                                                profileAuthResultKey = "profile.auth.signed_out"
+                                                profileAuthResultKey = if (googleCredentialSignIn.signOut()) {
+                                                    progressState = progressRepository.signOutFromGooglePlay()
+                                                    "profile.auth.signed_out"
+                                                } else {
+                                                    "profile.auth.unavailable"
+                                                }
                                             } catch (error: Exception) {
                                                 if (error is CancellationException) throw error
                                                 AppLog.warn(
@@ -1553,6 +1690,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onOpenShop = { currentSection = AppSection.SHOP },
                             )
                         }
 
@@ -1610,6 +1748,9 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                             savedFriends = emptyList()
                                                             pendingFriendRequests = emptyList()
+                                                            incomingFriendInvites = emptyList()
+                                                            activeOnlineSessionStore.clear()
+                                                            activeOnlineSessionId = null
                                                         }
                                                         mirkoriAccountState = completed.accountState
                                                         progressState = progressRepository.signInWithGooglePlay(
@@ -1814,6 +1955,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun captureMirkoriCallback(intent: Intent?) {
+        if (intent?.action == IncomingFriendInviteNotifier.OpenSocialAction) {
+            socialNotificationRequest += 1L
+            intent.action = null
+        }
         val data = intent?.data ?: return
         if (
             data.scheme.equals("https", ignoreCase = true) &&

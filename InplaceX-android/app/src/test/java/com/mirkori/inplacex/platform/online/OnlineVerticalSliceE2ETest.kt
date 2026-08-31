@@ -31,6 +31,71 @@ import org.junit.Test
 
 class OnlineVerticalSliceE2ETest {
     @Test
+    fun `Google and local principals receive and accept invite then finish the same duel`() = testApplication {
+        val now = Instant.parse("2026-08-26T12:00:00Z")
+        val clock = Clock.fixed(now, ZoneOffset.UTC)
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val firstPlayer = UUID.randomUUID().toString()
+        val secondPlayer = UUID.randomUUID().toString()
+        application {
+            configureOnlineRoutes(
+                verifier = JwtAccessTokenVerifier(
+                    keys.public,
+                    JwtVerificationPolicy.platformGame(TokenIssuer, TokenAudience, GameId),
+                    clock,
+                ),
+                service = AuthoritativeOnlineDuelService(clock = clock),
+            )
+        }
+        fun player(id: String, authMode: String): OnlineDuelClient {
+            val token = AccessToken.from(platformToken(keys.private, UUID.randomUUID().toString(), id, now, authMode))
+            return OnlineDuelClient(KtorOnlineTransport(
+                client,
+                OnlineEndpoint("http://localhost", allowCleartextLoopback = true),
+                object : AccessTokenProvider {
+                    override suspend fun currentAccessToken() = token
+                    override suspend fun refreshAccessToken(rejectedToken: AccessToken) = token
+                },
+            ))
+        }
+        val host = player(firstPlayer, "google")
+        val guest = player(secondPlayer, "local")
+        val outsider = player(UUID.randomUUID().toString(), "google")
+        val invite = (host.createFriendInvite(RemoteFriendPlayStyle.TURN_BASED, 4, secondPlayer)
+            as OnlineClientResult.Success).value
+        val incoming = (guest.listIncomingFriendInvites() as OnlineClientResult.Success).value
+        assertEquals(invite.inviteCode, incoming.single().inviteCode)
+        assertTrue((outsider.listIncomingFriendInvites() as OnlineClientResult.Success).value.isEmpty())
+        val accepted = (guest.acceptFriendInvite(invite.inviteCode) as OnlineClientResult.Success).value
+        val repeated = (guest.acceptFriendInvite(invite.inviteCode) as OnlineClientResult.Success).value
+        val sessionId = requireNotNull(accepted.sessionId)
+        assertEquals(sessionId, repeated.sessionId)
+        assertEquals(sessionId, (host.readFriendInvite(invite.inviteCode) as OnlineClientResult.Success).value.sessionId)
+        assertTrue((guest.listIncomingFriendInvites() as OnlineClientResult.Success).value.isEmpty())
+        assertEquals(OnlineClientResult.MembershipRejected, outsider.readSession(sessionId))
+
+        val setup = (host.readSession(sessionId) as OnlineClientResult.Success).value
+        host.submitSecret(sessionId, setup.revision, "1234") as OnlineClientResult.Success
+        val guestSetup = (guest.readSession(sessionId) as OnlineClientResult.Success).value
+        guest.submitSecret(sessionId, guestSetup.revision, "5678") as OnlineClientResult.Success
+        val active = (host.readSession(sessionId) as OnlineClientResult.Success).value
+        assertEquals("active", active.phase)
+        if (active.currentTurn == "player") {
+            host.submitGuess(sessionId, active.revision, "5678") as OnlineClientResult.Success
+        } else {
+            guest.submitGuess(sessionId, active.revision, "1234") as OnlineClientResult.Success
+        }
+        val hostEnd = (host.readSession(sessionId) as OnlineClientResult.Success).value
+        val guestEnd = (guest.readSession(sessionId) as OnlineClientResult.Success).value
+        assertEquals("finished", hostEnd.phase)
+        assertEquals("finished", guestEnd.phase)
+        assertEquals(hostEnd.revision, guestEnd.revision)
+        assertEquals(if (hostEnd.winner == "player") "opponent" else "player", guestEnd.winner)
+        assertTrue(hostEnd.attempts.filter { it.actor == "opponent" }.all { it.ownGuess == null })
+        assertTrue(guestEnd.attempts.filter { it.actor == "opponent" }.all { it.ownGuess == null })
+    }
+
+    @Test
     fun `fresh Mirkori guest token authorizes the first online request and authoritative turn`() = testApplication {
         val now = Instant.parse("2026-08-07T12:00:00Z")
         val clock = Clock.fixed(now, ZoneOffset.UTC)
@@ -132,11 +197,12 @@ class OnlineVerticalSliceE2ETest {
         accountId: String,
         gamePlayerId: String,
         now: Instant,
+        authMode: String = "guest",
     ): String {
         val encoder = Base64.getUrlEncoder().withoutPadding()
         val header = encoder.encodeToString("""{"alg":"RS256","typ":"JWT"}""".toByteArray())
         val payload = encoder.encodeToString(
-            """{"iss":"$TokenIssuer","aud":"$TokenAudience","sub":"$accountId","pid":"$gamePlayerId","gid":"$GameId","sid":"${UUID.randomUUID()}","amr":"guest","iat":${now.epochSecond},"exp":${now.plusSeconds(900).epochSecond},"jti":"${UUID.randomUUID()}","platform_features":["online-v1"]}"""
+            """{"iss":"$TokenIssuer","aud":"$TokenAudience","sub":"$accountId","pid":"$gamePlayerId","gid":"$GameId","sid":"${UUID.randomUUID()}","amr":"$authMode","iat":${now.epochSecond},"exp":${now.plusSeconds(900).epochSecond},"jti":"${UUID.randomUUID()}","platform_features":["online-v1"]}"""
                 .toByteArray(StandardCharsets.UTF_8),
         )
         val unsigned = "$header.$payload"

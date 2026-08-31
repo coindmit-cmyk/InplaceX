@@ -55,6 +55,7 @@ class IncomingFriendInviteNotifier(context: Context) {
             applicationContext,
             0,
             Intent(applicationContext, MainActivity::class.java).apply {
+                action = OpenSocialAction
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -75,7 +76,8 @@ class IncomingFriendInviteNotifier(context: Context) {
         }
     }
 
-    private companion object {
-        const val ChannelId = "friend_game_invites"
+    companion object {
+        const val OpenSocialAction = "com.mirkori.inplacex.OPEN_SOCIAL_INVITATIONS"
+        private const val ChannelId = "friend_game_invites"
     }
 }

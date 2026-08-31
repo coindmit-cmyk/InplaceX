@@ -136,12 +136,32 @@ failure, and ambiguous response loss preserve the proof and the same command
 identifier for safe retry; an authoritative rejection of the proof clears both
 stores. The raw proof is never logged.
 
-No Mirkori Games sign-out button is exposed in v1 because the platform does not
-yet have a provider-session revocation endpoint. When the Platform profile is
-linked, the legacy Google Play sign-out action is hidden as well: discarding
-only local credentials while leaving the server refresh family active would
-present a false logout. A future logout flow must revoke the Platform session
-server-side before clearing the encrypted local state.
+The Connections section exposes a clearly described device-local Mirkori Games
+sign-out. After explicit confirmation it clears the encrypted Platform credentials
+and active online recovery state on this installation, disconnects the local Google
+Credential Manager state, rotates the installation identity, and bootstraps a new
+guest profile. The linked Mirkori Games account is not deleted. The Platform still
+has no refresh-family revocation endpoint, so this action must not be described as
+global session revocation; a future full logout flow must revoke the Platform
+session server-side before clearing encrypted Platform state.
+
+The separate Google action only disconnects local Google Credential Manager state
+and the local Google Play progress flag. The Mirkori Games account, encrypted
+Platform credentials, refresh family, and active online session remain unchanged,
+and the player can request a fresh Google credential on the same linked profile.
+
+The native Google action is also available when the current linked Platform
+session was issued through Local, Telegram, or another non-Google provider. It
+creates the same installation-bound PKCE session and lets Platform reconcile the
+verified Google account. Profile conflicts remain fail-closed and still require
+the explicit existing-profile confirmation described above.
+
+The Android avatar picker maps the six supported public `avatarKey` values to
+illustrated local portraits. A player may also import a photo through Android's
+system photo picker; Android center-crops it to a bounded 512px JPEG and stores
+it in app-private storage keyed by `gamePlayerId`. This custom photo is explicitly
+device-local because Platform v1 has no authenticated custom-avatar upload or
+media-storage contract. Selecting a public preset removes the local override.
 
 ## Build and App Link
 

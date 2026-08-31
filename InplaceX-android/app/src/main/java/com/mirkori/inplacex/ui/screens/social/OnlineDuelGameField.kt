@@ -21,6 +21,7 @@ import com.mirkori.inplacex.core.analysis.EvidenceDeductionEngine
 import com.mirkori.inplacex.core.analysis.EvidenceInput
 import com.mirkori.inplacex.core.analysis.HypothesisKind
 import com.mirkori.inplacex.core.analysis.ManualHypothesis
+import com.mirkori.inplacex.core.analysis.ProvenFact
 import com.mirkori.inplacex.core.engine.GuessValidator
 import com.mirkori.inplacex.core.match.MatchAttempt
 import com.mirkori.inplacex.core.match.MatchFeedback
@@ -122,8 +123,13 @@ internal fun OnlineDuelGameField(
         totalTimeLimitSeconds = totalTimeLimitSeconds,
     )
 
+    val effectiveFacts = if (editor.autoExcludeEnabled) {
+        uiState.evidence.deduction.provenFacts
+    } else {
+        emptySet()
+    }
+
     fun submitCurrentGuess() {
-        val effectiveFacts = uiState.evidence.deduction.provenFacts
         val guess = uiState.input.guessOrNull(effectiveFacts)
         if (guess == null) {
             editor = editor.copy(status = GameFieldStatus.InputIncomplete)
@@ -169,14 +175,14 @@ internal fun OnlineDuelGameField(
                         }
 
                         GameFieldEvent.MatchRestarted -> editor.clearInputKeepingYes()
-                        else -> editor.reduce(event)
+                        else -> editor.reduce(event, effectiveFacts)
                     }
                 },
                 onAnalysisCellPressed = { digit, position ->
                     editor = editor.changeManualMark(digit, position, snapshot.allowDuplicates)
                 },
                 onDigitPressed = { digit ->
-                    editor = editor.reduce(GameFieldEvent.DigitEntered(digit))
+                    editor = editor.reduce(GameFieldEvent.DigitEntered(digit), effectiveFacts)
                 },
             ),
         )
@@ -191,9 +197,18 @@ internal data class OnlineDuelEditorState(
     val status: GameFieldStatus,
     val acceptedAttemptCount: Int,
 ) {
-    fun reduce(event: GameFieldEvent): OnlineDuelEditorState = when (event) {
-        is GameFieldEvent.DigitEntered -> enterDigit(event.digit)
-        GameFieldEvent.BackspacePressed -> backspace()
+    fun reduce(
+        event: GameFieldEvent,
+        provenFacts: Collection<ProvenFact> = emptySet(),
+    ): OnlineDuelEditorState = when (event) {
+        is GameFieldEvent.DigitEntered -> copy(
+            input = input.enterDigit(event.digit, fixedPositions(provenFacts)),
+            status = GameFieldStatus.Idle,
+        )
+        GameFieldEvent.BackspacePressed -> copy(
+            input = input.backspace(fixedPositions(provenFacts)),
+            status = GameFieldStatus.Idle,
+        )
         is GameFieldEvent.ToolSelected -> copy(
             selectedTool = event.tool,
             status = GameFieldStatus.Idle,
@@ -261,23 +276,14 @@ internal data class OnlineDuelEditorState(
         return copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle)
     }
 
-    private fun enterDigit(digit: Char): OnlineDuelEditorState {
-        if (digit !in '0'..'9') return this
-        val position = input.slots.indexOfFirst { it == null }
-        if (position < 0) return this
-        val slots = input.slots.toMutableList().apply { this[position] = digit }
-        return copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle)
-    }
-
-    private fun backspace(): OnlineDuelEditorState {
-        val fixedPositions = manualMarks
+    private fun fixedPositions(provenFacts: Collection<ProvenFact>): Set<Int> {
+        val positions = manualMarks
             .filter { it.type == GameFieldManualMarkType.YES }
             .mapTo(mutableSetOf(), GameFieldManualMark::position)
-        val position = input.slots.indices.reversed().firstOrNull {
-            it !in fixedPositions && input.slots[it] != null
-        } ?: return this
-        val slots = input.slots.toMutableList().apply { this[position] = null }
-        return copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle)
+        if (autoExcludeEnabled) {
+            provenFacts.filter(ProvenFact::isExactMatch).mapTo(positions, ProvenFact::position)
+        }
+        return positions
     }
 
     companion object {

@@ -83,6 +83,8 @@ fun ScenePageColumn(
     modifier: Modifier = Modifier,
     scrollable: Boolean = false,
     verticalSpacing: Dp = 14.dp,
+    horizontalPadding: Dp = 18.dp,
+    verticalPadding: Dp = 14.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scrollModifier = if (scrollable) {
@@ -95,7 +97,7 @@ fun ScenePageColumn(
         modifier = modifier
             .fillMaxSize()
             .then(scrollModifier)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         content = content
     )

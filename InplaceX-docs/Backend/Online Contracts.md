@@ -296,6 +296,20 @@ authoritative terminal snapshot, explicit match exit, invalid membership, or
 sign-out; guesses, secrets, scores, and revisions are not duplicated in this
 route marker.
 
+Android also persists a pending private-invitation code, scoped to the current
+Platform `gamePlayerId`. Returning to Social reads that same invitation rather
+than creating another one. A matched response first persists the session route
+and then clears the invitation marker; expiry and explicit local cancellation
+clear the marker. Temporary transport/server failure preserves it. This is a
+client recovery pointer, not authorization, and it does not add a server-side
+invite cancellation endpoint. The pointer is consumed only by the invitation
+recovery route: an explicit friend challenge or quick-match action cannot restore
+that older invitation under a different opponent or screen title. If the scoped
+Platform identity becomes available after Social is first composed, the client
+applies the newly loaded pointer once. Initialization retry repeats the operation
+that failed: accepting the selected incoming invite takes precedence, followed by
+active-session resume and then restoration of the owner's pending invitation.
+
 ### Cloud save
 
 The save body is an opaque, versioned game state owned by the player. The

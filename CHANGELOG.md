@@ -2,6 +2,47 @@
 
 ## Unreleased
 
+- Rebuilt the Duel setup against the dedicated `941x1670` owner reference:
+  the purple hero, code-length controls, quick duel, training, records, and
+  surrounding spacing now follow the measured `374x877` canvas. Quick Duel
+  starts the already configured online match, Training starts the existing
+  local flow, and Records remains visibly unavailable until a real destination
+  exists. Dedicated transparent target and trophy artwork replaces the older
+  mismatched card imagery.
+- Premium overview and Premium products now form one continuous scrollable
+  Shop tab instead of a second destination. The overview is no longer a false
+  navigation control, Back returns to Supplies, and the Shop bag and rewarded
+  coin artwork use reference-measured bounds without clipping or drift.
+- Extended the illustrated reference style across Home, Race and Duel setup,
+  the real Friends list, private invitation creation and entry, the active game
+  board, and both Premium surfaces on the established 374×877 shell. The new
+  hierarchy keeps native controls and real online, inventory, billing, timer,
+  attempt, and navigation callbacks; sample friends, presence, ads, balances,
+  and purchase state from the supplied montage are not shipped as production
+  data. Exact crops, intentional target normalization, truthful deviations,
+  artwork provenance, and remaining device evidence gates are documented in
+  `InplaceX-docs/Game/Human/Reference v11 Redesign Pass.md`.
+- Profile now groups Mirkori Games and Google sign-in under one Connections
+  section. Google-linked players can disconnect and reconnect the device Google
+  credential without clearing their Mirkori Games account or active online
+  session, and a failed Credential Manager sign-out no longer reports success.
+  An existing Mirkori account linked through Telegram or another provider can
+  now start the same verified native Google flow instead of seeing a status-only
+  row. The avatar picker uses illustrated character portraits and can import,
+  crop, and store a custom photo locally for the current game profile.
+  Linked players can also confirm a device-local Mirkori Games sign-out, which
+  clears local Platform and online recovery credentials and creates a new guest
+  profile without deleting the server account. Custom avatar import now opens
+  the system document provider so images can be selected outside screenshots.
+- Race and duel online actions now start matchmaking immediately with the mode
+  and code length already selected on the preceding screen instead of reopening
+  the same settings form.
+- Online input now shares free-position editing with local play: automatically
+  confirmed digits no longer consume keypad presses, and disabling auto mode
+  also disables hidden inferred substitutions on submission.
+- Pending private invitations survive screen/process recreation, scoped to
+  the game profile. Social notifications open Social, and accepting a new
+  invite no longer races restoration of the previously selected session.
 - Local bot Race now ends immediately when the opponent solves the shared
   secret. Opponent turns use a slower independent pace, and the progress card
   exposes only attempt numbers and exact-match scores, never the bot's raw guesses.

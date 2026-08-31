@@ -1,312 +1,158 @@
 package com.mirkori.inplacex.ui.screens.company
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.LocalFireDepartment
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.requiredSize
+import com.mirkori.inplacex.R
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
-import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.theme.PageColors
+import com.mirkori.inplacex.ui.theme.PageType
 
 @Composable
 internal fun CompanyScreenHeader(
     strings: LocalizationProvider,
-    energy: Int,
-    energyMax: Int,
     compact: Boolean,
-    chapterRewardLabel: String? = null,
-    onChapterReward: (() -> Unit)? = null,
     retentionRewardAvailable: Boolean,
     onRetentionRewards: () -> Unit,
     onHistory: () -> Unit,
-    onBuyEnergy: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    if (compact) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("company-hero"),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.Transparent,
+        contentColor = Color.White,
+        border = BorderStroke(1.dp, Color(0xFF75B8C9)),
+        shadowElevation = 3.dp,
+    ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp),
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF12677B), PageColors.ChromeDark),
+                    ),
+                )
+                .padding(horizontal = if (compact) 8.dp else 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .shadow(7.dp, RoundedCornerShape(17.dp)),
-                shape = RoundedCornerShape(17.dp),
-                color = InplaceXColors.ToyOrangeTop,
-                border = BorderStroke(2.dp, Color(0xFFFFD959)),
-                shadowElevation = 3.dp,
-            ) {
-                Text(
-                    text = strings.text("company.title"),
-                    color = InplaceXColors.ToyBrown,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
-                )
-            }
-            HeaderIconButton(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.CardGiftcard,
-                        contentDescription = strings.text("company.retention.title"),
-                        tint = if (retentionRewardAvailable) {
-                            InplaceXColors.ToyOrangeTop
-                        } else {
-                            Color.White
-                        },
-                        modifier = Modifier.size(22.dp),
-                    )
-                },
-                onClick = onRetentionRewards,
-                testTag = "company-retention-rewards",
-            )
-            HeaderIconButton(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.History,
-                        contentDescription = strings.text("company.scene.history"),
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp),
-                    )
-                },
                 onClick = onHistory,
-                testTag = "company-history",
-            )
-            if (chapterRewardLabel != null && onChapterReward != null) {
-                HeaderIconButton(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.CardGiftcard,
-                            contentDescription = chapterRewardLabel,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    },
-                    onClick = onChapterReward,
-                    testTag = "company-chapter-reward",
-                )
-            }
-        }
-        return
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 5.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 58.dp),
-        ) {
-            Surface(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .shadow(9.dp, RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
-                color = InplaceXColors.ToyBlueDeep.copy(alpha = 0.96f),
-                border = BorderStroke(2.dp, InplaceXColors.ToyCyan),
-                shadowElevation = 4.dp,
+                    .size(if (compact) 48.dp else 52.dp)
+                    .semantics { contentDescription = strings.text("company.scene.history") }
+                    .testTag("company-history"),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Transparent,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Inplace",
-                        color = InplaceXColors.White,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Text(
-                        text = "X",
-                        color = InplaceXColors.ToyOrangeTop,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(R.drawable.art_company_badge_v10),
+                        contentDescription = null,
+                        modifier = Modifier.requiredSize(if (compact) 58.dp else 64.dp),
+                        contentScale = ContentScale.Fit,
                     )
                 }
             }
-            Box(modifier = Modifier.align(Alignment.CenterStart)) {
-                HeaderIconButton(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.CardGiftcard,
-                            contentDescription = strings.text("company.retention.title"),
-                            tint = if (retentionRewardAvailable) {
-                                InplaceXColors.ToyOrangeTop
-                            } else {
-                                Color.White
-                            },
-                            modifier = Modifier.size(22.dp),
-                        )
-                    },
-                    onClick = onRetentionRewards,
-                    testTag = "company-retention-rewards",
-                )
-            }
-            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-                HeaderIconButton(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.History,
-                            contentDescription = strings.text("company.scene.history"),
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    },
-                    onClick = onHistory,
-                    testTag = "company-history",
-                )
-            }
-        }
 
-        Surface(
-            modifier = Modifier
-                .shadow(9.dp, RoundedCornerShape(18.dp))
-                .fillMaxWidth(if (compact) 0.68f else 0.58f),
-            shape = RoundedCornerShape(18.dp),
-            color = InplaceXColors.ToyOrangeTop,
-            border = BorderStroke(3.dp, Color(0xFFFFD959)),
-            shadowElevation = 4.dp,
-        ) {
-            Text(
-                text = strings.text("company.title"),
-                color = InplaceXColors.ToyBrown,
-                style = if (compact) {
-                    MaterialTheme.typography.headlineSmall
-                } else {
-                    MaterialTheme.typography.headlineMedium
-                },
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = if (compact) 5.dp else 8.dp),
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 9.dp, end = 2.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = strings.text("company.title"),
+                    style = if (compact) PageType.CardTitle else PageType.Title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = strings.text("company.scene.subtitle"),
+                    style = if (compact) {
+                        PageType.Secondary.copy(fontSize = 11.sp, lineHeight = 14.sp)
+                    } else {
+                        PageType.Secondary
+                    },
+                    color = Color.White.copy(alpha = 0.94f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            HeaderAction(
+                icon = Icons.Outlined.CardGiftcard,
+                description = strings.text("company.retention.action"),
+                tint = if (retentionRewardAvailable) Color(0xFFFFD36B) else Color.White,
+                onClick = onRetentionRewards,
+                modifier = Modifier.testTag("company-retention-rewards"),
             )
         }
-        Text(
-            text = strings.text("company.scene.subtitle"),
-            color = InplaceXColors.ToyBrown,
-            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
 @Composable
-private fun HeaderIconButton(
-    icon: @Composable () -> Unit,
+private fun HeaderAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    tint: Color,
     onClick: () -> Unit,
-    testTag: String,
+    modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = Modifier
-            .size(48.dp)
-            .semantics { role = Role.Button }
-            .clickable(onClick = onClick)
-            .testTag(testTag),
-        shape = RoundedCornerShape(17.dp),
-        color = InplaceXColors.ToyBlueDeep,
-        border = BorderStroke(2.dp, InplaceXColors.ToyCyan),
-        shadowElevation = 5.dp,
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.size(48.dp),
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            icon()
-        }
-    }
-}
-
-@Composable
-internal fun CompanyChapterNavigator(
-    strings: LocalizationProvider,
-    chapter: Int,
-    canGoPrevious: Boolean,
-    canGoNext: Boolean,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(38.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        IconButton(
-            onClick = onPrevious,
-            enabled = canGoPrevious,
-            modifier = Modifier.testTag("company-previous-chapter"),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.ChevronLeft,
-                contentDescription = strings.text("company.chapter.previous"),
-                tint = InplaceXColors.ToyBrown,
-            )
-        }
-        Text(
-            text = strings.text("company.chapter.number").replace("{value}", chapter.toString()),
-            color = InplaceXColors.ToyBrown,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(132.dp),
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = tint,
+            modifier = Modifier.size(24.dp),
         )
-        IconButton(
-            onClick = onNext,
-            enabled = canGoNext,
-            modifier = Modifier.testTag("company-next-chapter"),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = strings.text("company.chapter.next"),
-                tint = InplaceXColors.ToyBrown,
-            )
-        }
     }
 }
 
 @Composable
-internal fun CompanyChapterHero(
+internal fun CompanyChapterCard(
     strings: LocalizationProvider,
     chapter: Int,
     totalStars: Int,
@@ -314,166 +160,189 @@ internal fun CompanyChapterHero(
     nextBlockLocked: Boolean,
     rewardAvailable: Boolean,
     rewardClaimed: Boolean,
+    canGoPrevious: Boolean,
+    canGoNext: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
     onRewardClick: () -> Unit,
     compact: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val target = requiredStars.coerceAtLeast(1)
     val progress = (totalStars.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    val rewardLabel = strings.text(
+        when {
+            rewardClaimed -> "company.chapter.reward.claimed"
+            rewardAvailable -> "company.chapter.reward.available"
+            else -> "company.chapter.reward"
+        },
+    )
 
-    Row(
-        modifier = Modifier
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .height(if (compact) 76.dp else 88.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+            .testTag("company-chapter-card"),
     ) {
-        CampaignSideBadge(
-            modifier = Modifier.width(if (compact) 68.dp else 78.dp),
-            background = Brush.verticalGradient(
-                listOf(Color(0xFFFF7B00), Color(0xFFD63A00)),
-            ),
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-            label = strings.text("company.chapter.number").replace("{value}", chapter.toString()),
-        )
-
         Surface(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .shadow(7.dp, RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            color = InplaceXColors.ToyCream,
-            border = BorderStroke(2.dp, InplaceXColors.ToyCreamShadow),
-            shadowElevation = 3.dp,
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(16.dp),
+            color = PageColors.Cream,
+            contentColor = PageColors.Text,
+            border = BorderStroke(1.dp, PageColors.Border),
+            shadowElevation = 4.dp,
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = if (compact) 72.dp else 90.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Star,
-                        contentDescription = null,
-                        tint = InplaceXColors.ToyOrange,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = strings.text("company.chapter.progress")
-                            .replace("{current}", totalStars.toString())
-                            .replace("{required}", requiredStars.toString()),
-                        color = InplaceXColors.ToyBrown,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Black,
-                    )
-                }
-                Box(
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(11.dp)
-                        .background(InplaceXColors.ToyCreamShadow, CircleShape),
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(start = if (compact) 10.dp else 20.dp, end = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
+                if (canGoPrevious) {
+                    IconButton(
+                        onClick = onPrevious,
                         modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .fillMaxHeight()
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                                ),
-                                CircleShape,
-                            ),
-                    )
+                            .size(48.dp)
+                            .testTag("company-previous-chapter"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronLeft,
+                            contentDescription = strings.text("company.chapter.previous"),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
-                Text(
-                    text = if (nextBlockLocked) {
-                        strings.text("company.scene.locked")
-                    } else {
-                        strings.text("company.scene.unlocked")
-                    },
-                    color = InplaceXColors.ToyBrown.copy(alpha = 0.78f),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    Text(
+                        text = chapterHeading(
+                            chapter = chapter,
+                            chapterNumber = sentenceCase(
+                                strings.text("company.chapter.number")
+                                    .replace("{value}", chapter.toString()),
+                            ),
+                            firstChapterTitle = strings.text("company.chapter.first_title"),
+                        ),
+                        style = PageType.Body.copy(
+                            fontSize = if (compact) 15.sp else 17.sp,
+                            lineHeight = if (compact) 18.sp else 21.sp,
+                        ),
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                stateDescription = strings.text(
+                                    if (nextBlockLocked) {
+                                        "company.scene.locked"
+                                    } else {
+                                        "company.scene.unlocked"
+                                    },
+                                )
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .weight(1f)
+                                .size(width = 1.dp, height = 8.dp),
+                            color = PageColors.Success,
+                            trackColor = PageColors.CreamSecondary,
+                        )
+                        Text(
+                            text = strings.text("company.chapter.progress")
+                                .replace("{current}", totalStars.toString())
+                                .replace("{required}", requiredStars.toString()),
+                            style = PageType.Secondary.copy(
+                                fontSize = if (compact) 9.sp else 10.sp,
+                                lineHeight = if (compact) 11.sp else 12.sp,
+                            ),
+                            maxLines = 1,
+                        )
+                    }
+                }
+                if (canGoNext) {
+                    IconButton(
+                        onClick = onNext,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("company-next-chapter"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronRight,
+                            contentDescription = strings.text("company.chapter.next"),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                }
             }
         }
 
-        CampaignSideBadge(
-            modifier = Modifier.width(if (compact) 68.dp else 78.dp),
-            background = Brush.verticalGradient(
-                listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-            ),
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.CardGiftcard,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-            label = strings.text(
-                when {
-                    rewardClaimed -> "company.chapter.reward.claimed"
-                    rewardAvailable -> "company.chapter.reward.available"
-                    else -> "company.chapter.reward"
-                },
-            ),
+        Surface(
             onClick = onRewardClick,
-            testTag = "company-chapter-reward",
-        )
-    }
-}
-
-@Composable
-private fun CampaignSideBadge(
-    modifier: Modifier,
-    background: Brush,
-    icon: @Composable () -> Unit,
-    label: String,
-    onClick: (() -> Unit)? = null,
-    testTag: String? = null,
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxHeight()
-            .shadow(6.dp, RoundedCornerShape(18.dp))
-            .then(
-                if (onClick != null) {
-                    Modifier
-                        .semantics { role = Role.Button }
-                        .clickable(onClick = onClick)
-                } else {
-                    Modifier
-                },
-            )
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.Transparent,
-        border = BorderStroke(2.dp, Color.White.copy(alpha = 0.45f)),
-        shadowElevation = 3.dp,
-    ) {
-        Column(
             modifier = Modifier
-                .background(background)
-                .padding(horizontal = 4.dp, vertical = 7.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+                .align(Alignment.TopEnd)
+                .offset(x = (-5).dp, y = if (compact) 9.dp else 14.dp)
+                .requiredSize(
+                    width = if (compact) 62.dp else 80.dp,
+                    height = if (compact) 84.dp else 100.dp,
+                )
+                .testTag("company-chapter-reward"),
+            shape = RoundedCornerShape(14.dp),
+            color = PageColors.CreamSecondary,
+            contentColor = PageColors.Shop,
+            border = BorderStroke(
+                1.dp,
+                if (rewardAvailable && !rewardClaimed) Color(0xFFE19A19) else PageColors.Border,
+            ),
         ) {
-            icon()
-            Text(
-                text = label,
-                color = Color.White,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-            )
+            Column(
+                modifier = Modifier
+                    .offset(y = (-6).dp)
+                    .padding(horizontal = 4.dp, vertical = 3.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.art_chapter_chest_v10),
+                    contentDescription = rewardLabel,
+                    modifier = Modifier.size(if (compact) 48.dp else 64.dp),
+                    contentScale = ContentScale.Fit,
+                )
+                Text(
+                    text = rewardLabel,
+                    style = PageType.Secondary.copy(
+                        fontSize = if (compact) 9.sp else 10.sp,
+                        lineHeight = if (compact) 10.sp else 11.sp,
+                    ),
+                    color = PageColors.Text,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
+
+private fun sentenceCase(value: String): String = value
+    .lowercase()
+    .replaceFirstChar { character -> character.titlecase() }
+
+private fun chapterHeading(chapter: Int, chapterNumber: String, firstChapterTitle: String): String =
+    if (chapter == 1) "$chapterNumber. $firstChapterTitle" else chapterNumber

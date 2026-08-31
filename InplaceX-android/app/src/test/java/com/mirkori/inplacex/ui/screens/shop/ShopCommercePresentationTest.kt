@@ -22,6 +22,14 @@ class ShopCommercePresentationTest {
         assertTrue(shouldRetryPendingPurchase(state))
         assertTrue(canStartBillingAction(state, BillingProductId.REMOVE_ADS, inProgress = false))
         assertFalse(canStartBillingAction(state, BillingProductId.PRO_SUBSCRIPTION, inProgress = false))
+        assertEquals(
+            PremiumBillingActionTarget.RETRY,
+            premiumBillingActionState(state, BillingProductId.REMOVE_ADS, inProgress = false).target,
+        )
+        assertEquals(
+            PremiumBillingActionTarget.BUY,
+            premiumBillingActionState(state, BillingProductId.PRO_SUBSCRIPTION, inProgress = false).target,
+        )
     }
 
     @Test
@@ -85,6 +93,22 @@ class ShopCommercePresentationTest {
         }
 
         assertEquals("30 days", rendered)
+    }
+
+    @Test
+    fun referenceProductsHideOnlyTheRedundantConfigurationBanner() {
+        val configurationRequired = BillingState(
+            availability = BillingAvailability.UNAVAILABLE,
+            notice = BillingNotice.CONFIGURATION_REQUIRED,
+        )
+        val offline = configurationRequired.copy(
+            availability = BillingAvailability.OFFLINE,
+            notice = BillingNotice.OFFLINE,
+        )
+
+        assertFalse(shouldShowPremiumBillingNotice(configurationRequired, inProgress = false))
+        assertTrue(shouldShowPremiumBillingNotice(offline, inProgress = false))
+        assertTrue(shouldShowPremiumBillingNotice(configurationRequired, inProgress = true))
     }
 
     private fun readyState(): BillingState = BillingState(

@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,7 @@ import com.mirkori.inplacex.ui.screens.shared.SceneActionTile
 import com.mirkori.inplacex.ui.screens.shared.ScenePageColumn
 import com.mirkori.inplacex.ui.screens.shared.PlayerAvatar
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,6 +71,8 @@ fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
     initialActiveSessionId: String? = null,
     onActiveSessionChange: (String?) -> Unit = {},
+    initialPendingInviteCode: String? = null,
+    onPendingInviteChange: (String?) -> Unit = {},
     friends: List<LocalSocialRelationship> = emptyList(),
     pendingFriendRequests: List<LocalSocialRelationship> = emptyList(),
     currentPlayerId: String? = null,
@@ -94,13 +99,26 @@ fun SocialRootScreen(
     val strings = LocalAppStrings.current
     var activeDestination by remember {
         mutableStateOf<SocialDestination?>(
-            if (initialActiveSessionId == null) null else SocialDestination.ONLINE_MATCH,
+            when {
+                requestedQuickMatchPlayStyle != null && onlineRuntime != null ->
+                    SocialDestination.ONLINE_MATCH
+                initialActiveSessionId != null -> SocialDestination.ONLINE_MATCH
+                initialPendingInviteCode != null -> SocialDestination.INVITES
+                else -> null
+            },
         )
     }
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
     var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
-    var quickMatchPlayStyle by remember { mutableStateOf(RemoteFriendPlayStyle.RACE) }
-    var quickMatchCodeLength by remember { mutableStateOf(4) }
+    var quickMatchPlayStyle by remember {
+        mutableStateOf(requestedQuickMatchPlayStyle ?: RemoteFriendPlayStyle.RACE)
+    }
+    var quickMatchCodeLength by remember {
+        mutableStateOf(normalizeOnlineCodeLength(requestedQuickMatchCodeLength))
+    }
+    var startQuickMatchImmediately by remember {
+        mutableStateOf(requestedQuickMatchPlayStyle != null)
+    }
 
     LaunchedEffect(activeDestination) {
         onNestedScreenChange(activeDestination != null)
@@ -112,7 +130,18 @@ fun SocialRootScreen(
     LaunchedEffect(onlineRuntime, initialActiveSessionId) {
         if (initialActiveSessionId != null && onlineRuntime == null) {
             onActiveSessionChange(null)
+            onPendingInviteChange(null)
             activeDestination = null
+        }
+    }
+    LaunchedEffect(onlineRuntime, initialActiveSessionId, initialPendingInviteCode) {
+        if (
+            onlineRuntime != null &&
+            initialActiveSessionId == null &&
+            initialPendingInviteCode != null &&
+            activeDestination == null
+        ) {
+            activeDestination = SocialDestination.INVITES
         }
     }
     LaunchedEffect(requestedQuickMatchPlayStyle, requestedQuickMatchCodeLength, onlineRuntime) {
@@ -121,15 +150,23 @@ fun SocialRootScreen(
         if (onlineRuntime != null) {
             quickMatchPlayStyle = requestedPlayStyle
             quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
+            startQuickMatchImmediately = true
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
     }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
-            onActiveSessionChange(null)
-            activeDestination = null
-            onExitGameConsumed()
+            if (
+                activeDestination != SocialDestination.FRIEND_MATCH &&
+                activeDestination != SocialDestination.ONLINE_MATCH
+            ) {
+                onActiveSessionChange(null)
+                selectedFriend = null
+                autoAcceptInviteCode = null
+                activeDestination = null
+                onExitGameConsumed()
+            }
         }
     }
     DisposableEffect(Unit) {
@@ -138,7 +175,10 @@ fun SocialRootScreen(
             onInGameChange(false)
         }
     }
-    BackHandler(enabled = activeDestination == SocialDestination.FRIENDS) {
+    BackHandler(enabled = activeDestination != null) {
+        onActiveSessionChange(null)
+        selectedFriend = null
+        autoAcceptInviteCode = null
         activeDestination = null
     }
 
@@ -182,118 +222,60 @@ fun SocialRootScreen(
         ) &&
         onlineRuntime != null
     ) {
-        OnlineDuelScreen(
-            runtime = onlineRuntime,
-            initialSessionId = initialActiveSessionId,
-            onActiveSessionChange = onActiveSessionChange,
-            entryPoint = when (activeDestination) {
-                SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
-                SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND
-                else -> OnlineDuelEntryPoint.QUICK_MATCH
-            },
-            initialPlayStyle = quickMatchPlayStyle,
-            initialCodeLength = quickMatchCodeLength,
-            targetPlayerId = selectedFriend?.targetPlayerId
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-            targetDisplayName = selectedFriend?.targetDisplayName
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-            autoAcceptInviteCode = autoAcceptInviteCode
-                .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
-        )
+        key(activeDestination, selectedFriend?.targetPlayerId, autoAcceptInviteCode) {
+            OnlineDuelScreen(
+                runtime = onlineRuntime,
+                initialSessionId = initialActiveSessionId,
+                onActiveSessionChange = onActiveSessionChange,
+                initialPendingInviteCode = initialPendingInviteCode.takeIf {
+                    activeDestination == SocialDestination.INVITES && autoAcceptInviteCode == null
+                },
+                onPendingInviteChange = onPendingInviteChange,
+                entryPoint = when (activeDestination) {
+                    SocialDestination.INVITES -> OnlineDuelEntryPoint.INVITES
+                    SocialDestination.FRIEND_MATCH -> OnlineDuelEntryPoint.FRIEND
+                    else -> OnlineDuelEntryPoint.QUICK_MATCH
+                },
+                initialPlayStyle = quickMatchPlayStyle,
+                initialCodeLength = quickMatchCodeLength,
+                autoStartQuickMatch = startQuickMatchImmediately,
+                targetPlayerId = selectedFriend?.targetPlayerId
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                targetDisplayName = selectedFriend?.targetDisplayName
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                autoAcceptInviteCode = autoAcceptInviteCode
+                    .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
+                requestBack = requestExitGame,
+                onBackRequestConsumed = onExitGameConsumed,
+                onExitDestination = {
+                    onActiveSessionChange(null)
+                    selectedFriend = null
+                    autoAcceptInviteCode = null
+                    startQuickMatchImmediately = false
+                    activeDestination = null
+                },
+            )
+        }
         return
     }
 
-    ScenePageColumn(
-        modifier = Modifier.fillMaxSize(),
-        scrollable = true,
-    ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyBlue.copy(alpha = 0.96f),
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = strings.text("social.title"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-            Text(
-                text = strings.text("social.hero.subtitle"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.88f),
-            )
-            SocialAvailabilityBanner(onlineConfigured = onlineRuntime != null)
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (incomingInvites.isNotEmpty()) {
-                SceneCard(accentColor = InplaceXColors.ToyOrangeTop) {
-                    Text(
-                        text = strings.text("social.invites.incoming.notice")
-                            .replace("{count}", incomingInvites.size.toString()),
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
-                        Text(strings.text("social.invites.open"))
-                    }
-                }
-            }
-            incomingFriendRequests.firstOrNull()?.let { request ->
-                SceneCard(accentColor = InplaceXColors.ToyPurpleTop) {
-                    Text(
-                        text = strings.text("social.friend.request.root_notice")
-                            .replace("{name}", request.player.displayName),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                    Button(onClick = { activeDestination = SocialDestination.FRIENDS }) {
-                        Text(strings.text("social.friend.request.open"))
-                    }
-                }
-            }
-            SceneActionTile(
-                title = strings.text("social.friends"),
-                subtitle = strings.text("social.friends.subtitle"),
-                leadingIcon = Icons.Outlined.Group,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyPurpleTop, InplaceXColors.ToyPurple),
-                ),
-                onClick = { activeDestination = SocialDestination.FRIENDS },
-            )
-            SceneActionTile(
-                title = strings.text("social.invites"),
-                subtitle = strings.text("social.invites.guide"),
-                leadingIcon = Icons.Outlined.MailOutline,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyOrangeTop, InplaceXColors.ToyOrange),
-                ),
-                enabled = onlineRuntime != null,
-                onClick = {
-                    selectedFriend = null
-                    autoAcceptInviteCode = null
-                    activeDestination = SocialDestination.INVITES
-                },
-            )
-            SceneActionTile(
-                title = strings.text("social.online.title"),
-                subtitle = strings.text("social.online.description"),
-                singleLineTitle = true,
-                leadingIcon = Icons.Outlined.EmojiEvents,
-                trailingIcon = Icons.Outlined.ChevronRight,
-                enabled = onlineRuntime != null,
-                accentBrush = Brush.verticalGradient(
-                    listOf(InplaceXColors.ToyGreenTop, InplaceXColors.ToyGreen),
-                ),
-                onClick = {
-                    quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
-                    activeDestination = SocialDestination.ONLINE_MATCH
-                },
-            )
-        }
-    }
+    FriendsReferenceScreen(
+        friends = friends,
+        incomingFriendRequests = incomingFriendRequests,
+        onlineConfigured = onlineRuntime != null,
+        incomingInviteCount = incomingInvites.size,
+        onOpenFriends = { activeDestination = SocialDestination.FRIENDS },
+        onInvite = {
+            selectedFriend = null
+            autoAcceptInviteCode = null
+            activeDestination = SocialDestination.INVITES
+        },
+        onFindMatch = {
+            quickMatchPlayStyle = RemoteFriendPlayStyle.RACE
+            activeDestination = SocialDestination.ONLINE_MATCH
+        },
+        onAcceptFriendRequest = onAcceptFriendRequest,
+    )
 }
 
 private enum class SocialDestination {
@@ -346,7 +328,9 @@ private fun SocialFriendsScreen(
                             friendQuery = it.take(64)
                             addFriendResultKey = null
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("social-friend-search-query"),
                         singleLine = true,
                         label = { Text(strings.text("social.friend.search.query")) },
                     )
@@ -359,28 +343,37 @@ private fun SocialFriendsScreen(
                                 searchInProgress = true
                                 addFriendResultKey = null
                                 coroutineScope.launch {
-                                    when (val result = onSearchPlayers(query)) {
-                                        is MirkoriPlayerSearchResult.Success -> {
-                                            searchResults = result.players.filterNot { player ->
-                                                player.gamePlayerId == currentPlayerId
+                                    try {
+                                        when (val result = onSearchPlayers(query)) {
+                                            is MirkoriPlayerSearchResult.Success -> {
+                                                searchResults = result.players.filterNot { player ->
+                                                    player.gamePlayerId == currentPlayerId
+                                                }
+                                                addFriendResultKey = if (searchResults.isEmpty()) {
+                                                    "social.friend.search.empty"
+                                                } else {
+                                                    null
+                                                }
                                             }
-                                            addFriendResultKey = if (searchResults.isEmpty()) {
-                                                "social.friend.search.empty"
-                                            } else {
-                                                null
-                                            }
+                                            MirkoriPlayerSearchResult.Rejected ->
+                                                addFriendResultKey = "social.friend.search.invalid"
+                                            MirkoriPlayerSearchResult.Unavailable ->
+                                                addFriendResultKey = "social.friend.search.unavailable"
                                         }
-                                        MirkoriPlayerSearchResult.Rejected ->
-                                            addFriendResultKey = "social.friend.search.invalid"
-                                        MirkoriPlayerSearchResult.Unavailable ->
-                                            addFriendResultKey = "social.friend.search.unavailable"
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (_: Exception) {
+                                        addFriendResultKey = "social.friend.search.unavailable"
+                                    } finally {
+                                        searchInProgress = false
                                     }
-                                    searchInProgress = false
                                 }
                             }
                         },
                         enabled = !searchInProgress && currentPlayerId != null,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("social-friend-search-submit"),
                     ) {
                         if (searchInProgress) {
                             CircularProgressIndicator(
@@ -403,12 +396,19 @@ private fun SocialFriendsScreen(
                             onAdd = {
                                 friendOperationInProgress = true
                                 coroutineScope.launch {
-                                    addFriendResultKey = when (onAddFriend(player)) {
-                                        is MirkoriFriendOperationResult.Success -> "social.friend.request.sent"
-                                        MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
-                                        MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                                    try {
+                                        addFriendResultKey = when (onAddFriend(player)) {
+                                            is MirkoriFriendOperationResult.Success -> "social.friend.request.sent"
+                                            MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
+                                            MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
+                                        }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (_: Exception) {
+                                        addFriendResultKey = "social.friend.request.unavailable"
+                                    } finally {
+                                        friendOperationInProgress = false
                                     }
-                                    friendOperationInProgress = false
                                 }
                             },
                         )
@@ -425,128 +425,51 @@ private fun SocialFriendsScreen(
             },
         )
     }
-    ScenePageColumn(
-        modifier = Modifier.fillMaxSize(),
-        scrollable = true,
-    ) {
-        SceneCard(
-            accentColor = InplaceXColors.ToyPurple,
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = strings.text("social.friends"),
-                modifier = Modifier.semantics { heading() },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(strings.text("social.friends.subtitle"))
-        }
-
-        Button(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-            onClick = {
-                friendQuery = ""
-                searchResults = emptyList()
+    SocialFriendsReferenceContent(
+        friends = friends,
+        pendingFriendRequests = pendingFriendRequests,
+        incomingFriendRequests = incomingFriendRequests,
+        incomingInvites = incomingInvites,
+        showTestFriendBot = showTestFriendBot,
+        onlineConfigured = onlineConfigured,
+        operationBusy = friendOperationInProgress,
+        operationMessage = if (addFriendDialogOpen) {
+            null
+        } else {
+            addFriendResultKey?.let(strings::text)
+        },
+        addFriendEnabled = currentPlayerId != null,
+        onOpenAddFriend = {
+            friendQuery = ""
+            searchResults = emptyList()
+            addFriendResultKey = null
+            addFriendDialogOpen = true
+        },
+        onAcceptFriendRequest = { request ->
+            if (!friendOperationInProgress) {
+                friendOperationInProgress = true
                 addFriendResultKey = null
-                addFriendDialogOpen = true
-            },
-            enabled = currentPlayerId != null,
-        ) {
-            Icon(Icons.Outlined.PersonAdd, contentDescription = null)
-            Text(strings.text("social.friend.add.title"), modifier = Modifier.padding(start = 8.dp))
-        }
-
-        incomingFriendRequests.forEach { request ->
-            FriendCard(
-                title = request.player.displayName,
-                subtitle = strings.text("social.friend.request.incoming"),
-                actionLabelKey = "social.friend.request.accept",
-                showPlay = true,
-                playEnabled = !friendOperationInProgress,
-                onPlay = {
-                    friendOperationInProgress = true
-                    coroutineScope.launch {
+                coroutineScope.launch {
+                    try {
                         addFriendResultKey = when (onAcceptFriendRequest(request)) {
                             is MirkoriFriendOperationResult.Success -> "social.friend.request.accepted"
                             MirkoriFriendOperationResult.Rejected -> "social.friend.request.rejected"
                             MirkoriFriendOperationResult.Unavailable -> "social.friend.request.unavailable"
                         }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        addFriendResultKey = "social.friend.request.unavailable"
+                    } finally {
                         friendOperationInProgress = false
                     }
-                },
-            )
-        }
-
-        pendingFriendRequests.forEach { request ->
-            FriendCard(
-                title = request.targetDisplayName,
-                subtitle = strings.text("social.friend.request.sent"),
-            )
-        }
-
-        incomingInvites.forEach { invite ->
-            FriendCard(
-                title = strings.text("social.invites.incoming.title"),
-                subtitle = strings.text(
-                    if (invite.playStyle == RemoteFriendPlayStyle.RACE) {
-                        "social.match.timed"
-                    } else {
-                        "social.match.turn_based"
-                    },
-                ),
-                actionLabelKey = "social.invites.accept",
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = { onAcceptInvite(invite) },
-            )
-        }
-
-        if (showTestFriendBot) {
-            FriendCard(
-                title = strings.text("social.test_friend.title"),
-                subtitle = strings.text(
-                    if (onlineConfigured) {
-                        "social.test_friend.subtitle"
-                    } else {
-                        "social.test_friend.offline"
-                    },
-                ),
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = onPlayTestFriend,
-            )
-        }
-
-        friends.forEach { friend ->
-            FriendCard(
-                title = friend.targetDisplayName,
-                subtitle = friend.note?.takeIf(String::isNotBlank)?.let { "@$it" }
-                    ?: strings.text("social.friend.id_fallback")
-                        .replace("{id}", friend.targetPlayerId.takeLast(8)),
-                showPlay = true,
-                playEnabled = onlineConfigured,
-                onPlay = { onPlayFriend(friend) },
-            )
-        }
-
-        if (
-            friends.isEmpty() &&
-            pendingFriendRequests.isEmpty() &&
-            incomingFriendRequests.isEmpty() &&
-            !showTestFriendBot
-        ) {
-            SocialEmptyCard(
-                title = strings.text("social.friends"),
-                message = strings.text("social.friends.empty"),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Group,
-                        contentDescription = null,
-                    )
-                },
-            )
-        }
-    }
+                }
+            }
+        },
+        onAcceptInvite = onAcceptInvite,
+        onPlayTestFriend = onPlayTestFriend,
+        onPlayFriend = onPlayFriend,
+    )
 }
 
 @Composable
