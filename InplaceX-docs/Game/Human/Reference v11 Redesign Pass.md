@@ -28,6 +28,34 @@
 Скриншоты используются как визуальное свидетельство. Их значения, пользователи,
 статусы, покупки и доступность функций не заменяют реальные контракты приложения.
 
+## Duel v12 follow-up (2026-08-31)
+
+Вкладка «Дуэль» повторно сверстана по отдельному owner reference
+`D:\tmp\Dmit\codex-clipboard-b45dffb3-4ccb-4b4a-89c2-a61d7b3c82cb.png`
+размером `941x1670` (SHA-256
+`6FF301324F28B9026CCF752B0C6C28DB9301102C635E80EC5FF5DFEC0E46E891`).
+Его зафиксированная цель `duel-target-374x877.png` имеет SHA-256
+`6DD99393EC6C57CB2C543F67E8A5B429C025CF4905B38F558204F940ED068489`.
+
+На каноническом холсте измерены HUD `20-75`, hero `100-300`, setup
+`310-781`, quick duel `462-570`, training `579-672`, records `681-769` и
+navigation `794-872`. Финальные device captures и нормализованные
+target/current/side-by-side/overlay/diff находятся в
+`build/visual-qa/reference-duel-v12/`; это локальное evidence, а не часть
+production APK.
+
+Контролы не подменены макетом: «Быстрая дуэль» вызывает реальный online route
+с уже выбранными mode и code length, «Тренировка» вызывает существующий local
+bot flow, а «Рекорды» сохраняют disabled semantics, пока у приложения нет
+соответствующего destination. Для карточек добавлены отдельные прозрачные
+`art_training_target_v12.png` и `art_records_trophy_v12.png`; их происхождение,
+alpha-проверка и hashes записаны в локальном `art-provenance.md`.
+
+Финальный APK установлен без очистки данных на Galaxy S24+ и OnePlus 9 Pro.
+На каждом устройстве прошли четыре сфокусированных duel regression test и весь
+`ShellSectionsSmokeTest`: `OK (52 tests)`. Визуальное утверждение владельцем,
+remote CI и merge остаются отдельными gates.
+
 ## Локальная проверка реализации
 
 На code candidate `066dc32e` выполнены:

@@ -27,6 +27,7 @@ import com.mirkori.inplacex.platform.online.createOnlineHttpClient
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -265,10 +266,12 @@ class OnlineInviteRecoveryTest {
 
     @Test
     fun stalePendingInvitationDoesNotHijackQuickMatchEntry() {
-        val unexpectedRequests = AtomicInteger()
+        val requests = AtomicInteger()
+        val attemptedOperation = AtomicReference<String?>()
         val duel = OnlineDuelClient(object : TransportBoundary {
             override suspend fun execute(request: RemoteRequestSpec): RemoteCallResult {
-                unexpectedRequests.incrementAndGet()
+                requests.incrementAndGet()
+                attemptedOperation.set(request.operation)
                 return RemoteCallResult.HttpFailure(RemoteResponse(503, emptyMap(), "{}"))
             }
 
@@ -299,11 +302,11 @@ class OnlineInviteRecoveryTest {
                     }
                 }
             }
-            composeRule.onNodeWithText(strings.text("social.online.find_opponent"))
+            composeRule.onNodeWithText(strings.text("social.online.error.unavailable"))
                 .assertIsDisplayed()
-            composeRule.onNodeWithText("6 цифр").assertIsDisplayed()
             composeRule.runOnIdle {
-                assertEquals(0, unexpectedRequests.get())
+                assertEquals(1, requests.get())
+                assertEquals("matchmaking.create", attemptedOperation.get())
                 visible.value = false
             }
             composeRule.waitForIdle()

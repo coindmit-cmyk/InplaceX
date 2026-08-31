@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.R
@@ -240,9 +241,15 @@ internal fun ReferenceModeSetupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp)
-                .padding(top = if (race) 11.dp else 13.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(if (race) 5.dp else 6.dp),
+                .padding(
+                    horizontal = when {
+                        race -> 14.dp
+                        compact -> 18.dp
+                        else -> 30.dp
+                    },
+                )
+                .padding(top = if (race) 11.dp else 19.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(if (race) 5.dp else 10.dp),
         ) {
             ReferenceSetupHero(kind = kind, compact = compact)
             IllustratedSurface(
@@ -251,9 +258,9 @@ internal fun ReferenceModeSetupScreen(
                     .fillMaxWidth()
                     .then(
                         if (compact) {
-                            Modifier.heightIn(min = if (race) 457.dp else 451.dp)
+                            Modifier.heightIn(min = if (race) 457.dp else 471.dp)
                         } else {
-                            Modifier.height(if (race) 457.dp else 451.dp)
+                            Modifier.height(if (race) 457.dp else 471.dp)
                         },
                     )
                     .testTag(if (race) "reference-race-setup" else "reference-duel-setup"),
@@ -342,38 +349,46 @@ internal fun ReferenceModeSetupScreen(
                             onClick = {},
                         )
                     } else {
-                        Spacer(Modifier.height(27.dp))
+                        Spacer(Modifier.height(31.dp))
                         ReferenceSetupAction(
-                            title = strings.text("home.pvp.bot"),
-                            subtitle = strings.text("reference.duel.bot.subtitle"),
-                            art = R.drawable.art_friend_bot_v11,
-                            artScale = 1.55f,
+                            title = strings.text("reference.duel.quick"),
+                            subtitle = strings.text("reference.duel.quick.subtitle"),
+                            art = R.drawable.art_duel_crest_v11,
+                            artSize = 64.dp,
+                            artScale = 1.25f,
                             primary = true,
-                            enabled = true,
-                            height = 100.dp,
-                            testTag = "reference-duel-bot",
-                            onClick = onPlayLocal,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        ReferenceSetupAction(
-                            title = strings.text("home.pvp.online"),
-                            subtitle = strings.text("reference.duel.online.subtitle"),
-                            art = R.drawable.art_online_globe_v11,
-                            artScale = 1.55f,
                             enabled = onlineAvailable,
-                            height = 88.dp,
-                            testTag = "reference-duel-online",
+                            height = 112.dp,
+                            titleFontSize = 20.sp,
+                            testTag = "reference-duel-quick",
                             onClick = onPlayOnline,
                         )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(6.dp))
                         ReferenceSetupAction(
-                            title = strings.text("top.back"),
-                            subtitle = strings.text("reference.setup.back.subtitle"),
-                            vectorBack = true,
+                            title = strings.text("reference.race.training"),
+                            subtitle = strings.text("reference.duel.training.subtitle"),
+                            art = R.drawable.art_training_target_v12,
+                            artSize = 64.dp,
+                            artScale = 1.25f,
                             enabled = true,
-                            height = 78.dp,
-                            testTag = "reference-duel-back",
-                            onClick = onBack,
+                            height = 96.dp,
+                            titleFontSize = 20.sp,
+                            testTag = "reference-duel-training",
+                            onClick = onPlayLocal,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        ReferenceSetupAction(
+                            title = strings.text("reference.race.records"),
+                            subtitle = strings.text("reference.duel.records.subtitle"),
+                            art = R.drawable.art_records_trophy_v12,
+                            artSize = 64.dp,
+                            artScale = 1.15f,
+                            enabled = false,
+                            disabledAlpha = .82f,
+                            height = 99.dp,
+                            titleFontSize = 20.sp,
+                            testTag = "reference-duel-records",
+                            onClick = {},
                         )
                     }
                 }
@@ -416,10 +431,17 @@ private fun ReferenceSetupHero(kind: ReferenceSetupKind, compact: Boolean) {
                 painter = painterResource(if (race) R.drawable.art_stopwatch_v11 else R.drawable.art_duel_crest_v11),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(if (compact) 116.dp else 132.dp)
+                    .size(
+                        when {
+                            race && compact -> 116.dp
+                            race -> 132.dp
+                            compact -> 100.dp
+                            else -> 110.dp
+                        },
+                    )
                     .graphicsLayer(
-                        scaleX = if (race) 1.25f else 1.15f,
-                        scaleY = if (race) 1.25f else 1.15f,
+                        scaleX = if (race) 1.25f else 1.05f,
+                        scaleY = if (race) 1.25f else 1.05f,
                     ),
                 contentScale = ContentScale.Fit,
             )
@@ -476,11 +498,14 @@ private fun ReferenceSetupAction(
     title: String,
     subtitle: String,
     @DrawableRes art: Int? = null,
+    artSize: Dp = 58.dp,
     artScale: Float = 1.3f,
     vectorBack: Boolean = false,
     primary: Boolean = false,
     enabled: Boolean,
+    disabledAlpha: Float = .62f,
     height: Dp,
+    titleFontSize: TextUnit = 21.sp,
     testTag: String,
     onClick: () -> Unit,
 ) {
@@ -496,7 +521,7 @@ private fun ReferenceSetupAction(
             .height(height)
             .testTag(testTag)
             .semantics { if (!enabled) disabled() }
-            .alpha(if (enabled) 1f else .62f)
+            .alpha(if (enabled) 1f else disabledAlpha)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         rim = if (primary) Color(0xFFFFC443) else Color(0xFFE1B56D),
         radius = 15.dp,
@@ -528,7 +553,7 @@ private fun ReferenceSetupAction(
                     painter = painterResource(art),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(58.dp)
+                        .size(artSize)
                         .graphicsLayer(scaleX = artScale, scaleY = artScale),
                     contentScale = ContentScale.Fit,
                 )
@@ -537,7 +562,7 @@ private fun ReferenceSetupAction(
                 Text(
                     text = title,
                     color = if (primary) Color.White else FriendsReferenceStyle.Ink,
-                    fontSize = 21.sp,
+                    fontSize = titleFontSize,
                     lineHeight = 24.sp,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,

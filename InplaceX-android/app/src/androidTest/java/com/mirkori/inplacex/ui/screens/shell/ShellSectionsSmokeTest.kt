@@ -1221,7 +1221,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("С ботом").performClick()
+        composeRule.onNodeWithText("Тренировка").performClick()
         composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
         composeRule.onNodeWithText("Подтвердить").performClick()
         composeRule.waitForIdle()
@@ -1261,7 +1261,7 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("С ботом").performClick()
+        composeRule.onNodeWithText("Тренировка").performClick()
         composeRule.onNodeWithText("Секрет (6 цифр)").performTextInput("012345")
         composeRule.onNodeWithText("Подтвердить").performClick()
         composeRule.waitForIdle()
@@ -1346,7 +1346,7 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Дуэль").performClick()
         composeRule.onNodeWithText("+").performClick()
-        composeRule.onNodeWithText("Онлайн‑матч").performClick()
+        composeRule.onNodeWithText("Быстрая дуэль").performClick()
 
         composeRule.runOnIdle {
             assertEquals(RemoteFriendPlayStyle.TURN_BASED, openedOnline)
@@ -1393,7 +1393,8 @@ class ShellSectionsSmokeTest {
         }
 
         composeRule.onNodeWithText("Дуэль").performClick()
-        composeRule.onNodeWithText("Онлайн‑матч").assertIsNotEnabled()
+        composeRule.onNodeWithText("Быстрая дуэль").assertIsNotEnabled()
+        composeRule.onNodeWithTag("reference-duel-records").assertIsNotEnabled()
     }
 
     @Test

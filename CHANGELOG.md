@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Rebuilt the Duel setup against the dedicated `941x1670` owner reference:
+  the purple hero, code-length controls, quick duel, training, records, and
+  surrounding spacing now follow the measured `374x877` canvas. Quick Duel
+  starts the already configured online match, Training starts the existing
+  local flow, and Records remains visibly unavailable until a real destination
+  exists. Dedicated transparent target and trophy artwork replaces the older
+  mismatched card imagery.
 - Premium overview and Premium products now form one continuous scrollable
   Shop tab instead of a second destination. The overview is no longer a false
   navigation control, Back returns to Supplies, and the Shop bag and rewarded
