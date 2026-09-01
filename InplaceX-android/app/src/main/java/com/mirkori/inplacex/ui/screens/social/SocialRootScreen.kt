@@ -91,6 +91,7 @@ fun SocialRootScreen(
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
     requestedQuickMatchCodeLength: Int = 4,
     onQuickMatchRequestConsumed: () -> Unit = {},
+    onReturnToQuickMatchOrigin: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
@@ -118,6 +119,20 @@ fun SocialRootScreen(
     }
     var startQuickMatchImmediately by remember {
         mutableStateOf(requestedQuickMatchPlayStyle != null)
+    }
+    var returnToQuickMatchOrigin by remember {
+        mutableStateOf(requestedQuickMatchPlayStyle != null && onlineRuntime != null)
+    }
+
+    fun exitActiveDestination() {
+        val shouldReturnToOrigin = returnToQuickMatchOrigin
+        onActiveSessionChange(null)
+        selectedFriend = null
+        autoAcceptInviteCode = null
+        startQuickMatchImmediately = false
+        returnToQuickMatchOrigin = false
+        activeDestination = null
+        if (shouldReturnToOrigin) onReturnToQuickMatchOrigin()
     }
 
     LaunchedEffect(activeDestination) {
@@ -151,6 +166,7 @@ fun SocialRootScreen(
             quickMatchPlayStyle = requestedPlayStyle
             quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
             startQuickMatchImmediately = true
+            returnToQuickMatchOrigin = true
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -176,10 +192,7 @@ fun SocialRootScreen(
         }
     }
     BackHandler(enabled = activeDestination != null) {
-        onActiveSessionChange(null)
-        selectedFriend = null
-        autoAcceptInviteCode = null
-        activeDestination = null
+        exitActiveDestination()
     }
 
     if (activeDestination == SocialDestination.FRIENDS) {
@@ -247,13 +260,7 @@ fun SocialRootScreen(
                     .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
                 requestBack = requestExitGame,
                 onBackRequestConsumed = onExitGameConsumed,
-                onExitDestination = {
-                    onActiveSessionChange(null)
-                    selectedFriend = null
-                    autoAcceptInviteCode = null
-                    startQuickMatchImmediately = false
-                    activeDestination = null
-                },
+                onExitDestination = ::exitActiveDestination,
             )
         }
         return

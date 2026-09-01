@@ -395,6 +395,24 @@ class ShellSectionsSmokeTest {
     }
 
     @Test
+    fun cancellingQuickRaceReturnsToRaceSetup() {
+        assertCancellingQuickMatchReturnsToModeSetup(
+            playStyle = RemoteFriendPlayStyle.RACE,
+            homeScreenState = HomeScreenState.RACE_MODES,
+            expectedAction = "Быстрая гонка",
+        )
+    }
+
+    @Test
+    fun cancellingQuickDuelReturnsToDuelSetup() {
+        assertCancellingQuickMatchReturnsToModeSetup(
+            playStyle = RemoteFriendPlayStyle.TURN_BASED,
+            homeScreenState = HomeScreenState.PVP_MODES,
+            expectedAction = "Быстрая дуэль",
+        )
+    }
+
+    @Test
     fun invitationsContainPrivateCodeActionsWithoutRandomMatchmaking() {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
@@ -1804,6 +1822,57 @@ class ShellSectionsSmokeTest {
                     .asAndroidBitmap()
                     .compress(Bitmap.CompressFormat.PNG, 100, stream),
             )
+        }
+    }
+
+    private fun assertCancellingQuickMatchReturnsToModeSetup(
+        playStyle: RemoteFriendPlayStyle,
+        homeScreenState: HomeScreenState,
+        expectedAction: String,
+    ) {
+        val runtime = requireNotNull(
+            OnlineRuntime.createOrNull(
+                context = composeRule.activity,
+                accessTokenProvider = InstrumentedAccessTokenProvider,
+                baseUrl = "http://127.0.0.1:65535",
+                allowCleartextLoopback = true,
+            ),
+        )
+        val section = mutableStateOf(AppSection.SOCIAL)
+        val requestedStyle = mutableStateOf<RemoteFriendPlayStyle?>(playStyle)
+        val requestExit = mutableStateOf(false)
+        val modeState = mutableStateOf(homeScreenState)
+        try {
+            setContent {
+                when (section.value) {
+                    AppSection.HOME -> HomeRootScreen(
+                        screenState = modeState.value,
+                        onScreenStateChange = { modeState.value = it },
+                        onlineAvailable = true,
+                    )
+                    else -> SocialRootScreen(
+                        onlineRuntime = runtime,
+                        requestedQuickMatchPlayStyle = requestedStyle.value,
+                        requestedQuickMatchCodeLength = 6,
+                        onQuickMatchRequestConsumed = { requestedStyle.value = null },
+                        onReturnToQuickMatchOrigin = { section.value = AppSection.HOME },
+                        requestExitGame = requestExit.value,
+                        onExitGameConsumed = { requestExit.value = false },
+                    )
+                }
+            }
+
+            composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
+            composeRule.runOnIdle { requestExit.value = true }
+
+            composeRule.onNodeWithText(expectedAction).assertIsDisplayed()
+            composeRule.onNodeWithTag("friends-reference-screen").assertDoesNotExist()
+            composeRule.runOnIdle {
+                assertEquals(AppSection.HOME, section.value)
+                assertEquals(homeScreenState, modeState.value)
+            }
+        } finally {
+            runtime.close()
         }
     }
 
