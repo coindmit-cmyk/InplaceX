@@ -8,7 +8,7 @@
   persist its end date, claim/heartbeat/release one gameplay lease, enforce a
   live concurrency rejection, retry temporary Platform failures with the same
   request identity, retain membership across temporary typed 5xx failures,
-  retry foreground refresh outside gameplay, distinguish lease loss from
+  retry transient and offline foreground refresh outside gameplay, distinguish lease loss from
   membership loss, complete an unconfirmed release before a new claim,
   and preserve bounded signed offline Pro access;
   Mirkori Pro grants regular Pro only and production activation remains gated.

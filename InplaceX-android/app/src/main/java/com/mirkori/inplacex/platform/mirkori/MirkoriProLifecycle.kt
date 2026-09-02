@@ -31,7 +31,10 @@ internal suspend fun runMirkoriProLifecycle(
     var state = operations.refresh()
     onState(state)
     if (!gameplayActive) {
-        while (state.availability == MirkoriProAvailability.RETRYABLE) {
+        while (
+            state.availability == MirkoriProAvailability.RETRYABLE ||
+            state.availability == MirkoriProAvailability.OFFLINE
+        ) {
             if (!awaitRetryOrHeartbeat()) return
             state = operations.refresh()
             onState(state)
