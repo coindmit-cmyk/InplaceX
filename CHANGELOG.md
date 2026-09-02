@@ -7,7 +7,7 @@
   renew an expiring signed snapshot,
   persist its end date, claim/heartbeat/release one gameplay lease, enforce a
   live concurrency rejection, retry temporary Platform failures with the same
-  request identity, preserve recovery actions across all typed Pro failures,
+  request identity, preserve typed Pro recovery without masking 401 token refresh,
   retain membership across temporary typed 5xx failures,
   retry transient and offline foreground refresh outside gameplay, distinguish lease loss from
   membership loss, retry an unconfirmed heartbeat with the same identity,

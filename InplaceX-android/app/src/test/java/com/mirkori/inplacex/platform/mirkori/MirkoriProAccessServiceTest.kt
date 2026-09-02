@@ -69,7 +69,7 @@ class MirkoriProAccessServiceTest {
         var sessionId = ""
         val transport = RuntimeProTransport(
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
-            { PlatformHttpResponse(401, """{"error":"unauthorized"}""") },
+            { PlatformHttpResponse(401, """{"error":"pro_unavailable"}""") },
             { PlatformHttpResponse(200, refreshedCredentialsJson()) },
             { PlatformHttpResponse(503, """{"error":"provider_unavailable"}""") },
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },

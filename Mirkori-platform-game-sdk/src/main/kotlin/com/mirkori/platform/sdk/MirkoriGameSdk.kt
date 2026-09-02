@@ -863,6 +863,7 @@ class MirkoriGameSdk(
     private suspend fun <T> proApi(block: suspend () -> T): T = try {
         block()
     } catch (error: PlatformApiException) {
+        if (error.recoveryAction == PlatformRecoveryAction.REAUTHENTICATE) throw error
         when (error.errorCode) {
             "pro_configuration_unavailable" ->
                 throw PlatformProConfigurationUnavailableException(error.recoveryAction)

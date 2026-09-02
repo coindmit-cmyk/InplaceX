@@ -111,6 +111,15 @@ class ProGameApiSdkTest {
         }
         assertEquals(PlatformProBenefitUnavailableReason.LEASE, leaseError.reason)
         assertEquals(PlatformRecoveryAction.RESOLVE_CONFLICT, leaseError.recoveryAction)
+        val unauthorized = MirkoriGameSdk(
+            config,
+            ProQueueTransport(PlatformHttpResponse(401, """{"error":"pro_unavailable"}""")),
+        )
+        val authError = assertThrows(PlatformApiException::class.java) {
+            runPro { unauthorized.startProSession(accessToken, accountId, installationId, sessionId) }
+        }
+        assertEquals(PlatformRecoveryAction.REAUTHENTICATE, authError.recoveryAction)
+        assertEquals("pro_unavailable", authError.errorCode)
     }
 
     private fun snapshotEnvelope(privateKey: PrivateKey, accountId: String, now: Instant): String {
