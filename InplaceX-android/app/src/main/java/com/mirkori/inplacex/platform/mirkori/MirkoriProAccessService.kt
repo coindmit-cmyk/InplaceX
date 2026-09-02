@@ -193,6 +193,7 @@ class MirkoriProAccessService(
             if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
                 stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
             } else {
+                pendingRelease = PendingProSessionRelease(lease, sdk.newIdempotencyKey())
                 activeLease = null
                 pendingHeartbeat = null
                 stateFromCache(MirkoriProAvailability.UNAVAILABLE, lease = null)

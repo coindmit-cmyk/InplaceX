@@ -242,25 +242,32 @@ class MirkoriProAccessServiceTest {
     fun nonRetryableHeartbeatDropsTheLeaseAndStopsRetrying() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { PlatformHttpResponse(403, """{"error":"forbidden"}""") },
+            { PlatformHttpResponse(200, leaseJson(sessionId, "released")) },
+        )
         val service = service(
             keys.public,
-            RuntimeProTransport(
-                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
-                { request ->
-                    sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
-                    PlatformHttpResponse(201, leaseJson(sessionId, "active"))
-                },
-                { PlatformHttpResponse(403, """{"error":"forbidden"}""") },
-            ),
+            transport,
             ProMemoryStore(linkedState()),
         )
 
         runProRuntime { service.startOnlineSession() }
         val result = runProRuntime { service.heartbeatOnlineSession() }
+        val released = runProRuntime { service.releaseOnlineSession() }
 
         assertEquals(MirkoriProAvailability.UNAVAILABLE, result.availability)
         assertTrue(result.active)
         assertFalse(result.onlineSessionActive)
+        assertEquals(MirkoriProNotice.SESSION_RELEASED, released.notice)
+        assertTrue(service.cachedState().active)
+        assertFalse(service.cachedState().onlineSessionActive)
+        assertTrue(transport.requests[3].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
     }
 
     @Test
