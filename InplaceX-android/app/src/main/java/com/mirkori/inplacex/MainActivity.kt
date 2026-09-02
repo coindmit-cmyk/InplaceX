@@ -272,6 +272,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 var mirkoriProRefreshGeneration by remember { mutableLongStateOf(0L) }
+                var mirkoriProBlockedForCurrentGameplay by remember { mutableStateOf(false) }
                 val billingOperation = remember { TransientOperationGate() }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var claimedCampaignChapters by remember {
@@ -396,6 +397,7 @@ class MainActivity : ComponentActivity() {
                     if (
                         operations == null ||
                         !activityStarted ||
+                        (isInGame && mirkoriProBlockedForCurrentGameplay) ||
                         mirkoriAccountState.kind == MirkoriAccountStateKind.INITIALIZING
                     ) {
                         return@LaunchedEffect
@@ -404,7 +406,12 @@ class MainActivity : ComponentActivity() {
                         runMirkoriProLifecycle(
                             operations = operations,
                             gameplayActive = isInGame,
-                            onState = { state -> mirkoriProAccessState = state },
+                            onState = { state ->
+                                mirkoriProAccessState = state
+                                if (isInGame && state.notice == MirkoriProNotice.CONCURRENCY_LIMIT) {
+                                    mirkoriProBlockedForCurrentGameplay = true
+                                }
+                            },
                         )
                     } catch (error: CancellationException) {
                         throw error
@@ -421,11 +428,15 @@ class MainActivity : ComponentActivity() {
                     mirkoriProAccessService,
                     mirkoriProAccessState.nextAccessExpiryDelayMs,
                 ) {
-                    if (mirkoriProAccessService == null) return@LaunchedEffect
+                    val service = mirkoriProAccessService ?: return@LaunchedEffect
                     val expiryDelayMs = mirkoriProAccessState.nextAccessExpiryDelayMs
                         ?: return@LaunchedEffect
                     delay(expiryDelayMs.coerceAtLeast(1L))
+                    mirkoriProAccessState = service.cachedState()
                     mirkoriProRefreshGeneration += 1L
+                }
+                LaunchedEffect(isInGame) {
+                    if (!isInGame) mirkoriProBlockedForCurrentGameplay = false
                 }
                 LaunchedEffect(
                     mirkoriPlatformRuntime,
