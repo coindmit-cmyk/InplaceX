@@ -55,6 +55,14 @@ internal suspend fun runMirkoriProLifecycle(
                 state = operations.heartbeatGameplaySession()
                 leaseHeld = state.onlineSessionActive
                 onState(state)
+                if (
+                    leaseHeld &&
+                    state.availability != MirkoriProAvailability.READY &&
+                    state.availability != MirkoriProAvailability.OFFLINE &&
+                    state.availability != MirkoriProAvailability.RETRYABLE
+                ) {
+                    return
+                }
                 continue
             }
             if (state.availability == MirkoriProAvailability.READY) {

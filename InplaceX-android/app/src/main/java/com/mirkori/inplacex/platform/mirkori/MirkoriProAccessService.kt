@@ -76,7 +76,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            handleBenefitUnavailableLocked(error)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
         } catch (error: PlatformApiException) {
@@ -141,11 +141,14 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            handleBenefitUnavailableLocked(error)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
         } catch (error: PlatformApiException) {
             logFailure(error)
+            if (error.recoveryAction != PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+                pendingStart = null
+            }
             stateFromCache(error.proAvailability(), lease = activeLease)
         } catch (error: IOException) {
             logFailure(error)
@@ -184,10 +187,16 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            handleBenefitUnavailableLocked(error)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = true)
         } catch (error: PlatformApiException) {
             logFailure(error)
-            stateFromCache(error.proAvailability(), lease = activeLease)
+            if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+                stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+            } else {
+                activeLease = null
+                pendingHeartbeat = null
+                stateFromCache(MirkoriProAvailability.UNAVAILABLE, lease = null)
+            }
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE, lease = activeLease)
@@ -213,7 +222,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            handleBenefitUnavailableLocked(error)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
         } catch (error: PlatformApiException) {
             logFailure(error)
             stateFromCache(error.proAvailability(), lease = null)
@@ -341,15 +350,22 @@ class MirkoriProAccessService(
 
     private fun MirkoriPlatformRuntime.handleBenefitUnavailableLocked(
         error: PlatformProBenefitUnavailableException,
+        allowLeaseReacquire: Boolean,
     ): MirkoriProAccessState =
         if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
-        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
+        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE && allowLeaseReacquire) {
             logFailure(error)
             activeLease = null
             pendingHeartbeat = null
             stateFromCache(MirkoriProAvailability.RETRYABLE, lease = null)
+        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
+            logFailure(error)
+            activeLease = null
+            pendingStart = null
+            pendingHeartbeat = null
+            stateFromCache(MirkoriProAvailability.UNAVAILABLE, lease = null)
         } else {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         }

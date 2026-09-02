@@ -163,6 +163,25 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
+    fun nonRetryableLeaseLossDuringStartEndsTheAttempt() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""") },
+            ),
+            ProMemoryStore(linkedState()),
+        )
+
+        val result = runProRuntime { service.startOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.UNAVAILABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
+    }
+
+    @Test
     fun unavailableMembershipHeartbeatFailsClosed() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         var sessionId = ""
@@ -217,6 +236,31 @@ class MirkoriProAccessServiceTest {
             transport.requests[2].headers["Idempotency-Key"],
             transport.requests[3].headers["Idempotency-Key"],
         )
+    }
+
+    @Test
+    fun nonRetryableHeartbeatDropsTheLeaseAndStopsRetrying() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { request ->
+                    sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                    PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+                },
+                { PlatformHttpResponse(403, """{"error":"forbidden"}""") },
+            ),
+            ProMemoryStore(linkedState()),
+        )
+
+        runProRuntime { service.startOnlineSession() }
+        val result = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.UNAVAILABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
     }
 
     @Test
