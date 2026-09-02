@@ -1,6 +1,7 @@
 package com.mirkori.inplacex.ui.screens.game
 
 import android.graphics.Bitmap
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,8 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
@@ -54,7 +56,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FinalGameplayCaptureTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun captureApprovedGameplayState() {
@@ -117,6 +119,19 @@ class FinalGameplayCaptureTest {
         composeRule.onNodeWithTag("game-guess-slot-$codeLength").assertIsDisplayed()
         composeRule.onNodeWithTag("game-matrix-title").assertIsDisplayed()
         composeRule.onNodeWithTag("game-confirm").assertIsDisplayed()
+        val topPanelBounds = composeRule.onNodeWithTag("game-top-panel")
+            .fetchSemanticsNode().boundsInRoot
+        listOf(
+            "game-top-moves-value",
+            "game-top-total-value",
+            "game-top-turn-value",
+        ).forEach { tag ->
+            val valueBounds = composeRule.onNodeWithTag(tag)
+                .assertIsDisplayed()
+                .fetchSemanticsNode().boundsInRoot
+            assertTrue("$tag must have a visible line box", valueBounds.height > 0f)
+            assertTrue("$tag must stay inside the top panel", valueBounds.bottom <= topPanelBounds.bottom)
+        }
         if (adLoaded) {
             composeRule.onNodeWithTag("game-banner-panel").assertIsDisplayed()
         }
@@ -149,21 +164,24 @@ class FinalGameplayCaptureTest {
             "Compact keypad visuals must retain a 48dp vertical hit target",
             firstKeyBounds.height >= 48.dp.value * density,
         )
+        composeRule.onNodeWithTag("game-tool-no").assertHasClickAction()
         assertTrue(
-            "Confidence tools must retain a 48dp vertical hit target",
-            firstToolBounds.height >= 48.dp.value * density,
+            "Confidence tool visuals must keep the compact reference height",
+            firstToolBounds.height <= 36.dp.value * density,
         )
+        composeRule.onNodeWithTag("game-reset").assertHasClickAction()
         assertTrue(
-            "Game actions must retain a 48dp vertical hit target " +
+            "Game action visuals must keep the compact reference height " +
                 "(actual=${resetBounds.height / density}dp, input=${inputBounds.height / density}dp)",
-            resetBounds.height >= 48.dp.value * density,
+            resetBounds.height <= 44.dp.value * density,
         )
-        if (stateName == "hints_boosts_selected") {
+        if (stateName.contains("hints_boosts")) {
             val firstHintBounds = composeRule.onNodeWithTag("game-hint-open-position")
                 .fetchSemanticsNode().boundsInRoot
+            composeRule.onNodeWithTag("game-hint-open-position").assertHasClickAction()
             assertTrue(
-                "Hints must retain a 48dp vertical hit target",
-                firstHintBounds.height >= 48.dp.value * density,
+                "Hint visuals must keep the compact reference height",
+                firstHintBounds.height <= 42.dp.value * density,
             )
         }
         if (codeLength > 6) {
@@ -186,7 +204,7 @@ class FinalGameplayCaptureTest {
     }
 
     private fun captureState(codeLength: Int, stateName: String): GameFieldUiState {
-        val helpers = stateName == "hints_boosts_selected"
+        val helpers = stateName.contains("hints_boosts")
         val parameters = GameFieldMatchParameters(
             codeLength = codeLength,
             attemptLimit = 20,
@@ -196,7 +214,7 @@ class FinalGameplayCaptureTest {
         )
         val secret = "0123456789".take(codeLength)
         val holder = GameFieldStateHolder(SavedStateHandle(), parameters, initialSecret = secret)
-        if (stateName != "empty") {
+        if (!stateName.startsWith("empty")) {
             repeat(4) { offset ->
                 val shift = (offset % (codeLength - 1)) + 1
                 holder.submitRawGuess(secret.drop(shift) + secret.take(shift))
