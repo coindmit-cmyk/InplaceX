@@ -409,6 +409,7 @@ class ShellSectionsSmokeTest {
             playStyle = RemoteFriendPlayStyle.TURN_BASED,
             homeScreenState = HomeScreenState.PVP_MODES,
             expectedAction = "Быстрая дуэль",
+            recreateBeforeCancel = true,
         )
     }
 
@@ -1829,6 +1830,7 @@ class ShellSectionsSmokeTest {
         playStyle: RemoteFriendPlayStyle,
         homeScreenState: HomeScreenState,
         expectedAction: String,
+        recreateBeforeCancel: Boolean = false,
     ) {
         val runtime = requireNotNull(
             OnlineRuntime.createOrNull(
@@ -1863,6 +1865,10 @@ class ShellSectionsSmokeTest {
             }
 
             composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
+            if (recreateBeforeCancel) {
+                composeRule.activityRule.scenario.recreate()
+                composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
+            }
             composeRule.runOnIdle { requestExit.value = true }
 
             composeRule.onNodeWithText(expectedAction).assertIsDisplayed()

@@ -39,6 +39,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,7 +121,7 @@ fun SocialRootScreen(
     var startQuickMatchImmediately by remember {
         mutableStateOf(requestedQuickMatchPlayStyle != null)
     }
-    var returnToQuickMatchOrigin by remember {
+    var returnToQuickMatchOrigin by rememberSaveable {
         mutableStateOf(requestedQuickMatchPlayStyle != null && onlineRuntime != null)
     }
 
