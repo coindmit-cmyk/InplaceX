@@ -126,10 +126,11 @@ an access-token refresh or an ambiguous lost response reuses the same session
 ID and idempotency key. A process crash cannot leave a durable client claim
 because the lease itself is not persisted and expires server-side.
 
-This change provides the runtime core only. Release composition still requires
-owner-approved distribution selection and pinned production public keys; no
-production key, provider credential, UI claim, or automatic activation is
-introduced by this implementation.
+The Android composition seam is present but disabled by default. It creates one
+Pro access service only after a build variant explicitly supplies an
+owner-approved distribution and separately pinned production public keys. No
+production key, provider credential, UI claim, gameplay entitlement change, or
+automatic activation is introduced by this implementation.
 
 ## Online identity boundary
 

@@ -28,11 +28,25 @@ import kotlin.coroutines.startCoroutine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MirkoriPlatformRuntimeTest {
+    @Test
+    fun `Pro service is composed once only after explicit configuration`() {
+        assertNull(runtime(QueueTransport(), MemoryStore()).proAccessService)
+
+        val configuredRuntime = runtime(
+            transport = QueueTransport(),
+            store = MemoryStore(),
+            proConfigured = true,
+        )
+
+        assertSame(configuredRuntime.proAccessService, configuredRuntime.proAccessService)
+    }
+
     @Test
     fun signOutOnDeviceDropsLinkedCredentialsAndRotatesInstallationWhenOffline() {
         val linked = MirkoriPersistedState(
@@ -610,7 +624,11 @@ class MirkoriPlatformRuntimeTest {
         assertNull(store.value?.confirmedEntitlements)
     }
 
-    private fun runtime(transport: PlatformTransport, store: MemoryStore): MirkoriPlatformRuntime {
+    private fun runtime(
+        transport: PlatformTransport,
+        store: MemoryStore,
+        proConfigured: Boolean = false,
+    ): MirkoriPlatformRuntime {
         val sdk = MirkoriGameSdk(
             config = MirkoriGameSdkConfig(
                 platformBaseUrl = "https://games.dmit.life",
@@ -620,7 +638,12 @@ class MirkoriPlatformRuntimeTest {
             transport = transport,
             entropy = FixedEntropy,
         )
-        return MirkoriPlatformRuntime(sdk, store, clockMs = { NowMs })
+        return MirkoriPlatformRuntime(
+            sdk = sdk,
+            store = store,
+            clockMs = { NowMs },
+            proConfigured = proConfigured,
+        )
     }
 
     private fun installationStore(): MemoryStore = MemoryStore(

@@ -20,6 +20,11 @@ Android и backend уже содержат рабочие границы для 
 
 - Backend:
   - `online.<variant>.baseUrl`
+- Mirkori Pro (по умолчанию выключен):
+  - `platform.<variant>.pro.enabled`
+  - `platform.<variant>.pro.distributionId`
+  - `platform.<variant>.pro.publicKeys` в формате
+    `key-id=base64-x509-rsa[;next-key-id=...]`
 - Google Play:
   - `provider.<variant>.googlePlay.webClientId`
   - `provider.<variant>.googlePlay.serverClientId`
@@ -84,6 +89,8 @@ Android и backend уже содержат рабочие границы для 
   `inplacex.pro_plus`; локальная конфигурация не может их ротировать;
 - отклоняет управляющие символы и чрезмерно длинные значения;
 - не выводит настроенные значения.
+- при включённом Mirkori Pro требует одновременно distribution ID и набор
+  закреплённых публичных ключей; сама конфигурация не выдаёт пользователю Pro.
 
 Также подписанный кандидат требует полный внешний signing config. Частичный
 набор отклоняется без вывода значений, а debug key не используется ни для

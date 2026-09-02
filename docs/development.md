@@ -33,6 +33,13 @@ InplaceX-android/provider-config.example.properties
 Mirkori Platform, а также запрещает повторяющиеся, управляющие или чрезмерно
 длинные Yandex placement ID.
 
+Mirkori Pro выключен по умолчанию. Для отдельного варианта он включается только
+полным набором `platform.<variant>.pro.enabled=true`,
+`platform.<variant>.pro.distributionId` и
+`platform.<variant>.pro.publicKeys`. Публичные ключи задаются как
+`key-id=base64-x509-rsa[;next-key-id=...]`; приватные ключи в Android-конфигурации
+не используются.
+
 В изолированном worktree можно использовать уже существующий приватный файл
 настроек без копирования:
 
