@@ -1,0 +1,1018 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aistudio.local/agent-control/subagent_invocation.schema.json",
+  "title": "AIStudio Subagent Invocation Contract",
+  "description": "One immutable, bounded and read-only direct-child invocation. Validation never grants or consumes authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "skill_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "version", "bundle_digest", "selection_decision_id", "selection_decision_digest", "registry_snapshot_digest", "load_order"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"},
+        "bundle_digest": {"$ref": "#/$defs/digest"},
+        "selection_decision_id": {"$ref": "#/$defs/id"},
+        "selection_decision_digest": {"$ref": "#/$defs/digest"},
+        "registry_snapshot_digest": {"$ref": "#/$defs/digest"},
+        "load_order": {"type": "integer", "minimum": 0}
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "stage",
+        "project_id"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        },
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        }
+      }
+    },
+    "authority_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_granted",
+        "role_permissions_changed",
+        "approval_gates_bypassed",
+        "worker_ready_changed",
+        "merge_authority_granted",
+        "release_authority_granted",
+        "recurring_automation_changed"
+      ],
+      "properties": {
+        "authority_granted": {
+          "const": false
+        },
+        "role_permissions_changed": {
+          "const": false
+        },
+        "approval_gates_bypassed": {
+          "const": false
+        },
+        "worker_ready_changed": {
+          "const": false
+        },
+        "merge_authority_granted": {
+          "const": false
+        },
+        "release_authority_granted": {
+          "const": false
+        },
+        "recurring_automation_changed": {
+          "const": false
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "reasoning_effort",
+        "capability_profile",
+        "delegation",
+        "parallel_lanes",
+        "route_digest"
+      ],
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reasoning_effort": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extra_high",
+            "max",
+            "ultra"
+          ]
+        },
+        "capability_profile": {
+          "enum": [
+            "efficient",
+            "balanced",
+            "deep",
+            "maximum_coherent",
+            "delegated_deep"
+          ]
+        },
+        "delegation": {
+          "enum": [
+            "allowed",
+            "required"
+          ]
+        },
+        "parallel_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "route_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "journal_ref",
+        "reason_codes"
+      ],
+      "properties": {
+        "journal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+          },
+          "uniqueItems": true
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "plan_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan_id",
+        "plan_content_digest",
+        "work_unit_id"
+      ],
+      "properties": {
+        "plan_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plan_content_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "work_unit_id": {
+          "$ref": "#/$defs/id"
+        },
+        "skill_bindings": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/skill_binding"}
+        }
+      }
+    },
+    "input_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "ref",
+        "digest",
+        "provenance"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "document",
+            "code",
+            "evidence",
+            "artifact",
+            "policy",
+            "state_snapshot"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "captured_at",
+            "revision"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "input_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundle_id",
+        "bundle_digest",
+        "bounded",
+        "unrestricted_parent_context",
+        "secrets_included",
+        "raw_prompts_included",
+        "items"
+      ],
+      "properties": {
+        "bundle_id": {
+          "$ref": "#/$defs/id"
+        },
+        "bundle_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "bounded": {
+          "const": true
+        },
+        "unrestricted_parent_context": {
+          "const": false
+        },
+        "secrets_included": {
+          "const": false
+        },
+        "raw_prompts_included": {
+          "const": false
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/input_item"
+          }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization_id",
+        "issuer",
+        "status",
+        "issued_at",
+        "expires_at",
+        "router_decision_id",
+        "router_decision_digest",
+        "plan_id",
+        "plan_content_digest",
+        "work_unit_id",
+        "input_bundle_digest",
+        "selected_route_digest",
+        "bound_scope_digest",
+        "max_attempts",
+        "single_use",
+        "consumed",
+        "lease_id",
+        "lease_digest",
+        "lease_expires_at",
+        "lease_single_use",
+        "lease_consumed",
+        "grant_digest"
+      ],
+      "properties": {
+        "authorization_id": {
+          "$ref": "#/$defs/id"
+        },
+        "issuer": {
+          "const": "model_resource_router"
+        },
+        "status": {
+          "const": "granted"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "router_decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plan_content_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "work_unit_id": {
+          "$ref": "#/$defs/id"
+        },
+        "input_bundle_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "selected_route_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "bound_scope_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "single_use": {
+          "const": true
+        },
+        "consumed": {
+          "type": "boolean"
+        },
+        "consumed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lease_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lease_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "lease_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lease_single_use": {
+          "const": true
+        },
+        "lease_consumed": {
+          "type": "boolean"
+        },
+        "lease_consumed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "grant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "skill_bindings_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "skill_bindings": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/skill_binding"}
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mode"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "const": "read_only"
+        }
+      }
+    },
+    "execution_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "access_mode",
+        "mutation_allowed",
+        "external_side_effects_allowed",
+        "child_depth",
+        "max_child_depth",
+        "child_spawn_allowed",
+        "parent_authority_inherited",
+        "parent_credentials_inherited",
+        "parent_lock_inherited",
+        "timeout_seconds",
+        "cancellation_grace_seconds"
+      ],
+      "properties": {
+        "access_mode": {
+          "const": "read_only"
+        },
+        "mutation_allowed": {
+          "const": false
+        },
+        "external_side_effects_allowed": {
+          "const": false
+        },
+        "child_depth": {
+          "const": 1
+        },
+        "max_child_depth": {
+          "const": 1
+        },
+        "child_spawn_allowed": {
+          "const": false
+        },
+        "parent_authority_inherited": {
+          "const": false
+        },
+        "parent_credentials_inherited": {
+          "const": false
+        },
+        "parent_lock_inherited": {
+          "const": false
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "cancellation_grace_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        }
+      }
+    },
+    "retry_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_technical_retries",
+        "identical_scope_required",
+        "new_router_decision_on_change",
+        "repeat_deterministic_failure_allowed"
+      ],
+      "properties": {
+        "max_technical_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "identical_scope_required": {
+          "const": true
+        },
+        "new_router_decision_on_change": {
+          "const": true
+        },
+        "repeat_deterministic_failure_allowed": {
+          "const": false
+        }
+      }
+    },
+    "retry_invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_unchanged",
+        "scope_unchanged",
+        "tools_unchanged",
+        "input_unchanged",
+        "permissions_unchanged",
+        "budget_unchanged",
+        "timeout_unchanged",
+        "scope_digest"
+      ],
+      "properties": {
+        "route_unchanged": {
+          "const": true
+        },
+        "scope_unchanged": {
+          "const": true
+        },
+        "tools_unchanged": {
+          "const": true
+        },
+        "input_unchanged": {
+          "const": true
+        },
+        "permissions_unchanged": {
+          "const": true
+        },
+        "budget_unchanged": {
+          "const": true
+        },
+        "timeout_unchanged": {
+          "const": true
+        },
+        "scope_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "result_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result_id",
+        "result_envelope_digest"
+      ],
+      "properties": {
+        "result_id": {
+          "$ref": "#/$defs/id"
+        },
+        "result_envelope_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    }
+  },
+  "required": [
+    "contract_version",
+    "contract_kind",
+    "correlation_id",
+    "producer",
+    "created_at",
+    "revision",
+    "supersedes",
+    "digest_profile",
+    "authority_guard",
+    "audit",
+    "invocation_id",
+    "attempt_id",
+    "attempt_number",
+    "status",
+    "router_decision_id",
+    "router_decision_digest",
+    "plan_ref",
+    "input_bundle",
+    "selected_route",
+    "authorization",
+    "objective",
+    "acceptance_criteria",
+    "tools",
+    "prohibited_actions",
+    "expected_result_schema",
+    "execution_policy",
+    "retry_policy",
+    "idempotency_key",
+    "invocation_digest"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "contract_kind": {
+      "const": "subagent_invocation"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "producer": {
+      "$ref": "#/$defs/producer"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "supersedes": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/id"
+        }
+      ]
+    },
+    "digest_profile": {
+      "const": "jcs-sha256-v1"
+    },
+    "authority_guard": {
+      "$ref": "#/$defs/authority_guard"
+    },
+    "audit": {
+      "$ref": "#/$defs/audit"
+    },
+    "invocation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "attempt_id": {
+      "$ref": "#/$defs/id"
+    },
+    "attempt_number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
+    "status": {
+      "enum": [
+        "authorized",
+        "queued",
+        "running",
+        "completed",
+        "partial",
+        "failed",
+        "blocked",
+        "cancelled",
+        "timed_out"
+      ]
+    },
+    "router_decision_id": {
+      "$ref": "#/$defs/id"
+    },
+    "router_decision_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "plan_ref": {
+      "$ref": "#/$defs/plan_ref"
+    },
+    "input_bundle": {
+      "$ref": "#/$defs/input_bundle"
+    },
+    "selected_route": {
+      "$ref": "#/$defs/route"
+    },
+    "authorization": {
+      "$ref": "#/$defs/authorization"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/tool"
+      }
+    },
+    "prohibited_actions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "expected_result_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "contract_version"
+      ],
+      "properties": {
+        "schema_id": {
+          "const": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json"
+        },
+        "contract_version": {
+          "const": "1.0.0"
+        }
+      }
+    },
+    "execution_policy": {
+      "$ref": "#/$defs/execution_policy"
+    },
+    "retry_policy": {
+      "$ref": "#/$defs/retry_policy"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 256
+    },
+    "invocation_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "retry_of_attempt_id": {
+      "$ref": "#/$defs/id"
+    },
+    "retry_invariants": {
+      "$ref": "#/$defs/retry_invariants"
+    },
+    "queued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actual_route": {
+      "$ref": "#/$defs/route"
+    },
+    "result_ref": {
+      "$ref": "#/$defs/result_ref"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "attempt_number": {
+            "const": 1
+          }
+        },
+        "required": [
+          "attempt_number"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "retry_of_attempt_id"
+              ]
+            },
+            {
+              "required": [
+                "retry_invariants"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attempt_number": {
+            "const": 2
+          }
+        },
+        "required": [
+          "attempt_number"
+        ]
+      },
+      "then": {
+        "required": [
+          "retry_of_attempt_id",
+          "retry_invariants"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "authorized"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authorization": {
+            "properties": {
+              "consumed": {
+                "const": false
+              },
+              "lease_consumed": {
+                "const": false
+              }
+            },
+            "required": [
+              "consumed",
+              "lease_consumed"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "queued_at"
+              ]
+            },
+            {
+              "required": [
+                "started_at"
+              ]
+            },
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "actual_route"
+              ]
+            },
+            {
+              "required": [
+                "result_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "queued"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "queued_at"
+        ],
+        "properties": {
+          "authorization": {
+            "properties": {
+              "consumed": {
+                "const": false
+              },
+              "lease_consumed": {
+                "const": false
+              }
+            },
+            "required": [
+              "consumed",
+              "lease_consumed"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "started_at"
+              ]
+            },
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "actual_route"
+              ]
+            },
+            {
+              "required": [
+                "result_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "queued_at",
+          "started_at",
+          "actual_route"
+        ],
+        "properties": {
+          "authorization": {
+            "required": [
+              "consumed_at",
+              "lease_consumed_at"
+            ],
+            "properties": {
+              "consumed": {
+                "const": true
+              },
+              "lease_consumed": {
+                "const": true
+              }
+            }
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "result_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "completed",
+              "partial",
+              "failed",
+              "blocked",
+              "cancelled",
+              "timed_out"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "started_at",
+          "completed_at",
+          "actual_route",
+          "result_ref"
+        ],
+        "properties": {
+          "authorization": {
+            "required": [
+              "consumed_at",
+              "lease_consumed_at"
+            ],
+            "properties": {
+              "consumed": {
+                "const": true
+              },
+              "lease_consumed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

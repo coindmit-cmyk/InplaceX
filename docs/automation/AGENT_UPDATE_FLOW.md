@@ -67,6 +67,15 @@ Required release gate:
 - run `update_project_agent.py` in dry-run mode against a temporary project root;
 - smoke-test changed helper scripts;
 - review changelog and version metadata.
+- run `scripts/agent_control/github_codex_review_gate.py` for the fix and
+  release PRs; any unresolved Codex P0/P1 thread blocks merge;
+- after resolving a blocking thread, rerun the gate on the exact PR head with
+  `gh workflow run codex-review-gate.yml --ref <head-ref> -f pr_number=<pr-number>`;
+  GitHub exposes thread resolution as an App webhook but not as a GitHub
+  Actions trigger, so resolution without this supported dispatch is not
+  acceptance evidence;
+- record explicit review acceptance because ordinary green CI is necessary but
+  not sufficient acceptance evidence.
 
 ## Protected State
 

@@ -23,6 +23,15 @@ from typing import Any
 import validate_task_queue_readiness
 from codex_model_capability import default_catalog_path, resolve_requested_model
 from project_paths import task_file, task_relpath
+from task_control_postgres import TaskControlPostgres
+
+
+TASK_DB_DSN_ENV_NAME = "AISTUDIO_TASK_DB_DSN_ENV"
+
+
+def task_control_database_from_runtime_env() -> TaskControlPostgres:
+    env_name = os.environ.get(TASK_DB_DSN_ENV_NAME, "").strip() or "AISTUDIO_TASK_DB_DSN"
+    return TaskControlPostgres.from_env(env_name)
 
 
 REQUIRED_WORKER_PACKET_LIST_FIELDS = (
@@ -255,11 +264,11 @@ def needs_fresh_retry_branch(task: dict[str, Any]) -> bool:
     status_history = task.get("status_history")
     if isinstance(status_history, list):
         retry_events = {
-            "design_handoff_integration_retry",
             "worker_finalize_failed_routed",
             "worker_finalize_failed_requeued",
             "worker_launch_failed_requeued",
             "worker_fix_requeued",
+            "design_handoff_integration_retry",
         }
         return any(
             isinstance(item, dict)
@@ -893,11 +902,14 @@ def main() -> int:
     push_ref = args.push_ref or re.sub(r"^origin/", "", args.base_ref)
     claim_root = runtime_root / "claim-worktrees"
     claim_root.mkdir(parents=True, exist_ok=True)
-    attempts = max(1, args.push_retries + 1)
+    postgres_authority = os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") == "postgres"
+    if postgres_authority and not os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID"):
+        raise SystemExit("PostgreSQL task claim requires a managed project session")
+    attempts = 1 if postgres_authority else max(1, args.push_retries + 1)
     last_rejection: dict[str, Any] | None = None
     for attempt in range(1, attempts + 1):
         worktree = claim_worktree_path(claim_root, project_root, args.worker_id, attempt)
-        if args.fetch or attempt > 1:
+        if not postgres_authority and (args.fetch or attempt > 1):
             fetch_origin(project_root)
             refresh_push_ref(project_root, push_ref)
         try:
@@ -907,8 +919,8 @@ def main() -> int:
             profile = load_profile(worktree, args.worker_id)
             queue_path = task_file(worktree, "task_queue.json")
             locks_path = task_file(worktree, "agent_locks.json")
-            queue_relpath = task_relpath(worktree, "task_queue.json")
-            locks_relpath = task_relpath(worktree, "agent_locks.json")
+            queue_relpath = None if postgres_authority else task_relpath(worktree, "task_queue.json")
+            locks_relpath = None if postgres_authority else task_relpath(worktree, "agent_locks.json")
             queue = load_json(queue_path)
             locks = load_json(locks_path)
             repair_result = route_task_packet_defect(
@@ -931,6 +943,9 @@ def main() -> int:
                 event_id = append_packet_defect_event(worktree, repair_result)
                 repair_result["event_id"] = event_id
                 write_json(queue_path, queue)
+                if postgres_authority:
+                    print(json.dumps(repair_result, ensure_ascii=False, indent=2))
+                    return 0
                 run(["git", "add", queue_relpath, task_relpath(worktree, "agent_events.jsonl")], worktree)
                 run(["git", "commit", "-m", f"chore(dispatcher): route packet repair {repair_result['task_id']}"], worktree)
                 push = run(["git", "push", "origin", f"HEAD:{push_ref}"], worktree, check=False)
@@ -966,6 +981,9 @@ def main() -> int:
                     event_id = append_packet_defect_event(worktree, repair_result)
                     repair_result["event_id"] = event_id
                     write_json(queue_path, queue)
+                    if postgres_authority:
+                        print(json.dumps(repair_result, ensure_ascii=False, indent=2))
+                        return 0
                     run(["git", "add", queue_relpath, task_relpath(worktree, "agent_events.jsonl")], worktree)
                     run(["git", "commit", "-m", f"chore(dispatcher): route model capability repair {repair_result['task_id']}"], worktree)
                     push = run(["git", "push", "origin", f"HEAD:{push_ref}"], worktree, check=False)
@@ -999,6 +1017,35 @@ def main() -> int:
                 claim_result["requested_model"] = args.requested_model
                 claim_result["resolved_model"] = model_resolution["resolved_model"]
                 claim_result["model_resolution"] = model_resolution
+            if postgres_authority and not args.dry_run:
+                project_id = os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip()
+                if not project_id:
+                    raise SystemExit("PostgreSQL task claim requires project identity")
+                lease = task_control_database_from_runtime_env().acquire_lease(
+                    project_id,
+                    str(claim_result["task_id"]),
+                    owner_id=f"{args.machine_id}:{args.worker_id}",
+                    ttl_seconds=max(1, int(args.ttl_hours)) * 3600,
+                    metadata={
+                        "session_id": os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID"),
+                        "branch": claim_result.get("branch"),
+                    },
+                )
+                if not lease.get("acquired"):
+                    result = {
+                        "claimed": False,
+                        "reason": "sql_lease_conflict",
+                        "task_id": claim_result["task_id"],
+                        "holder": lease.get("holder"),
+                        "lease_id": lease.get("lease_id"),
+                    }
+                    print(json.dumps(result, ensure_ascii=False, indent=2))
+                    return 0
+                claim_result["sql_lease_id"] = lease["lease_id"]
+                for task in queue.get("tasks") or []:
+                    if isinstance(task, dict) and task_id(task) == claim_result["task_id"]:
+                        task["sql_lease_id"] = lease["lease_id"]
+                        break
             result = {
                 "claimed": True,
                 **claim_result,
@@ -1013,6 +1060,11 @@ def main() -> int:
 
             write_json(queue_path, queue)
             write_json(locks_path, locks)
+            if postgres_authority:
+                result["authority"] = "postgres"
+                result["session_id"] = os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID")
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+                return 0
             run(["git", "add", queue_relpath, locks_relpath], worktree)
             run(["git", "commit", "-m", f"chore(runner): claim {claim_result['task_id']} for {args.worker_id}"], worktree)
             push = run(["git", "push", "origin", f"HEAD:{push_ref}"], worktree, check=False)

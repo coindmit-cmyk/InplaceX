@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Read-only local dashboard for remote agent activity.
+"""Local dashboard for remote agent activity.
 
 The dashboard scans adopted project queues and agent-run reports, stores a
 small SQLite analytics snapshot, and serves HTML plus JSON endpoints.
+Non-chat command endpoints are disabled unless an operator explicitly enables
+the control API with a dedicated bearer token.
 """
 
 from __future__ import annotations
@@ -11,7 +13,9 @@ import argparse
 import base64
 import datetime as dt
 import hashlib
+import hmac
 import html
+import ipaddress
 import os
 import json
 import re
@@ -36,6 +40,7 @@ import collect_codex_session_usage
 import collect_remote_automation_status
 import project_registry
 import project_doctor
+import project_checkout_convergence
 
 try:
     import psutil as _psutil
@@ -2924,7 +2929,131 @@ def local_project_path(project: dict[str, Any], path: str) -> Path:
 
 
 def effective_project_root(project: dict[str, Any]) -> Path:
-    return Path(str(project.get("automation_path") or project.get("local_path") or "")).expanduser()
+    return Path(
+        str(project.get("_dashboard_effective_project_root") or project.get("automation_path") or project.get("local_path") or "")
+    ).expanduser()
+
+
+def _redact_path(path: str | Path | None, *, keep_tail: int = 1) -> str:
+    text = str(path or "").replace("\\", "/").strip()
+    if not text:
+        return ""
+    parts = [part for part in text.split("/") if part]
+    if len(parts) <= keep_tail:
+        return ".../" + "/".join(parts)
+    return ".../" + "/".join(parts[-keep_tail:])
+
+
+def _paths_match(left: Path, right: Path | None) -> bool:
+    if not right:
+        return False
+    try:
+        return left.resolve(strict=False) == right.resolve(strict=False)
+    except OSError:
+        return str(left) == str(right)
+
+
+def build_project_source_snapshot(
+    project: dict[str, Any],
+    managed_root: Path,
+    project_worktree_plan: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], str]:
+    project_id = str(project.get("project_id") or "unknown")
+    configured_path = str(project.get("automation_path") or project.get("local_path") or "")
+    configured_root = Path(configured_path).expanduser() if configured_path else Path("")
+    source_snapshot = {
+        "project_id": project_id,
+        "configured_path_redacted": _redact_path(configured_path),
+        "effective_path_redacted": _redact_path(configured_path),
+        "match": True,
+        "mismatch": False,
+        "expected_branch": "",
+        "branch": "",
+        "commit": "",
+        "action": "inspect_failed",
+        "registry_update_required": False,
+        "warning": "",
+        "freshness": {
+            "state": "unknown",
+            "dirty_kind": "missing",
+            "ahead": None,
+            "behind": None,
+        },
+        "convergence": {
+            "ok": False,
+            "state": "blocked",
+            "action": "inspect_failed",
+            "reason": "",
+        },
+    }
+
+    try:
+        convergence = project_checkout_convergence.converge_checkout(project, managed_root, apply=False)
+    except Exception as exc:
+        message = f"Cannot evaluate project source for {project_id}: {exc}"
+        source_snapshot["warning"] = message
+        source_snapshot["convergence"]["reason"] = str(exc)
+        return source_snapshot, configured_path
+
+    selected_path = str(convergence.get("selected_path") or configured_path)
+    source_snapshot["effective_path_redacted"] = _redact_path(selected_path)
+    source_snapshot["action"] = str(convergence.get("action") or "unknown")
+    source_snapshot["registry_update_required"] = bool(convergence.get("registry_update_required"))
+    source_snapshot["expected_branch"] = str(convergence.get("expected_branch") or "")
+    source_snapshot["convergence"]["ok"] = bool(convergence.get("ok", True))
+    source_snapshot["convergence"]["action"] = source_snapshot["action"]
+    source_snapshot["convergence"]["state"] = "ready" if source_snapshot["convergence"]["ok"] else "blocked"
+    source_snapshot["convergence"]["reason"] = str(convergence.get("reason") or "")
+    source_state = convergence.get("after")
+    if not isinstance(source_state, dict):
+        source_state = convergence.get("before")
+    if isinstance(source_state, dict):
+        source_snapshot["branch"] = str(source_state.get("branch") or source_snapshot["expected_branch"])
+        source_snapshot["commit"] = str(source_state.get("head") or "")
+        source_snapshot["freshness"]["dirty_kind"] = str(source_state.get("dirty_kind") or "missing")
+        source_snapshot["freshness"]["ahead"] = source_state.get("ahead")
+        source_snapshot["freshness"]["behind"] = source_state.get("behind")
+
+    selected_root = Path(selected_path).expanduser() if selected_path else Path("")
+    source_snapshot["match"] = _paths_match(configured_root, selected_root)
+    source_snapshot["mismatch"] = not source_snapshot["match"]
+    warning_parts: list[str] = []
+    if not source_snapshot["match"]:
+        warning_parts.append(
+            (
+                f"Project {project_id} effective source root changed from "
+                f"{source_snapshot['configured_path_redacted']} to {source_snapshot['effective_path_redacted']} for dashboard reads."
+            )
+        )
+    if (
+        not source_snapshot["convergence"]["ok"]
+        and source_snapshot["convergence"]["reason"]
+    ):
+        warning_parts.append(f"Project {project_id} source convergence is blocked: {source_snapshot['convergence']['reason']}")
+    dashboard_path = selected_path
+    if source_snapshot["action"] == "create_clean_managed_checkout" and not selected_root.exists():
+        warning_parts.append(
+            f"Project {project_id} selected managed source {source_snapshot['effective_path_redacted']} is not available locally."
+        )
+        remote_access = (
+            project_worktree_plan.get("remote_access")
+            if isinstance(project_worktree_plan, dict)
+            and isinstance(project_worktree_plan.get("remote_access"), dict)
+            else {}
+        )
+        if configured_root.exists() and not bool(remote_access.get("checked")):
+            dashboard_path = configured_path
+    if warning_parts:
+        source_snapshot["warning"] = "; ".join(warning_parts)
+        source_snapshot["convergence"]["state"] = "stale" if source_snapshot["match"] else "mismatched"
+    is_fresh = (
+        source_snapshot["match"]
+        and source_snapshot["convergence"]["ok"]
+        and source_snapshot["freshness"]["dirty_kind"] in {"clean", "generated_state_only"}
+        and safe_int(source_snapshot["freshness"].get("behind") or 0) == 0
+    )
+    source_snapshot["freshness"]["state"] = "fresh" if is_fresh else "stale"
+    return source_snapshot, dashboard_path
 
 
 def normalize_project(raw: dict[str, Any]) -> dict[str, Any]:
@@ -7188,6 +7317,11 @@ def summarize_project(
     runtime_root: Path,
 ) -> dict[str, Any]:
     warnings: list[str] = []
+    source_snapshot = project.get("source_snapshot")
+    if isinstance(source_snapshot, dict):
+        source_warning = source_snapshot.get("warning")
+        if isinstance(source_warning, str) and source_warning:
+            warnings.append(source_warning)
     tasks, task_warnings = load_project_tasks(project)
     warnings.extend(task_warnings)
     history_tasks, history_warnings = load_project_task_history(project)
@@ -8469,7 +8603,21 @@ def build_snapshot(
         for item in automation_worktree_plan.get("projects") or []
         if isinstance(item, dict)
     }
-    project_reports = [summarize_project(project, runs, human_packets, automation_status, runtime_root) for project in projects]
+    managed_root = runtime_root / "managed-checkouts"
+    dashboard_projects: list[dict[str, Any]] = []
+    for project in projects:
+        dashboard_project = dict(project)
+        source_snapshot, effective_root = build_project_source_snapshot(
+            dashboard_project,
+            managed_root,
+            worktree_plan_by_project.get(str(dashboard_project.get("project_id") or "")),
+        )
+        dashboard_project["source_snapshot"] = source_snapshot
+        dashboard_project["_dashboard_effective_project_root"] = effective_root
+        dashboard_projects.append(dashboard_project)
+    project_reports = [summarize_project(project, runs, human_packets, automation_status, runtime_root) for project in dashboard_projects]
+    for project_report in project_reports:
+        project_report.pop("_dashboard_effective_project_root", None)
     bridge_summary = automation_bridge_summary(project_reports)
     migration_goal_by_project = {
         str(item.get("project_id") or ""): item
@@ -9621,108 +9769,6 @@ def compact_metrics_script() -> str:
       update();
     });
     update();
-  });
-
-  document.querySelectorAll('[data-run-project]').forEach((button) => {
-    const projectId = button.getAttribute('data-project-id');
-    const mode = button.getAttribute('data-run-mode') || 'all';
-    const label = button.textContent || '';
-    button.addEventListener('click', async () => {
-      const feedback = document.getElementById(`run-feedback-${projectId}`);
-      const original = button.disabled;
-      if (feedback) {
-        feedback.className = 'run-feedback';
-        feedback.textContent = 'Запускаем...';
-      }
-      button.disabled = true;
-      document.querySelectorAll(`[data-run-project=\"${projectId}\"]`).forEach((item) => {
-        item.disabled = true;
-      });
-      try {
-        const response = await fetch(`/api/project/${projectId}/run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          if (feedback) {
-            feedback.className = 'run-feedback error';
-            feedback.textContent = `${payload.error || 'Ошибка запуска'}: ${payload.message || response.statusText}`;
-          }
-          return;
-        }
-        if (feedback) {
-          feedback.className = 'run-feedback ok';
-          feedback.textContent = payload.message || `${label} запущен`;
-        }
-      } catch (error) {
-        if (feedback) {
-          feedback.className = 'run-feedback error';
-          feedback.textContent = `Ошибка запуска: ${error.message || error}`;
-        }
-      } finally {
-        button.disabled = original;
-        document.querySelectorAll(`[data-run-project=\"${projectId}\"]`).forEach((item) => {
-          item.disabled = false;
-        });
-        if (feedback && !feedback.textContent) {
-          feedback.textContent = '';
-          feedback.className = 'run-feedback';
-        }
-        setTimeout(() => {
-          if (feedback) {
-            feedback.textContent = '';
-            feedback.className = 'run-feedback';
-          }
-        }, 8000);
-      }
-    });
-  });
-
-  document.querySelectorAll('[data-run-automation]').forEach((button) => {
-    const action = button.getAttribute('data-run-automation');
-    button.addEventListener('click', async () => {
-      const feedback = document.getElementById('automation-feedback');
-      const original = button.disabled;
-      if (feedback) {
-        feedback.className = 'run-feedback';
-        feedback.textContent = 'Ставим команду...';
-      }
-      button.disabled = true;
-      try {
-        const response = await fetch(`/api/automation/${action}/run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apply: false }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          if (feedback) {
-            feedback.className = 'run-feedback error';
-            feedback.textContent = `${payload.error || 'Ошибка команды'}: ${payload.message || response.statusText}`;
-          }
-          return;
-        }
-        if (feedback) {
-          feedback.className = 'run-feedback ok';
-          feedback.textContent = payload.message || 'Команда поставлена';
-        }
-      } catch (error) {
-        if (feedback) {
-          feedback.className = 'run-feedback error';
-          feedback.textContent = `Ошибка команды: ${error.message || error}`;
-        }
-      } finally {
-        button.disabled = original;
-        setTimeout(() => {
-          if (feedback) {
-            feedback.textContent = '';
-            feedback.className = 'run-feedback';
-          }
-        }, 8000);
-      }
-    });
   });
 
   const chatRoot = document.querySelector('[data-dashboard-chat]');
@@ -11405,10 +11451,8 @@ def render_index(snapshot: dict[str, Any]) -> str:
         f'{projects_toggle}'
         '</div>'
         "<h2>Автоматизация</h2>"
-        '<div class="run-controls">'
-        '<button class="button" data-run-automation="worktrees">Worktrees dry-run</button>'
-        '</div>'
-        '<div class="run-feedback" id="automation-feedback"></div>'
+        '<p class="muted">Управляющие действия временно доступны только через '
+        'аутентифицированный control API; браузерные кнопки скрыты.</p>'
         f'{automation_timers_table((snapshot.get("automation_status") or {}).get("timers", []), snapshot.get("automation_progress", []))}'
         f"{warnings}"
         "<h2>Журнал действий</h2>"
@@ -11741,30 +11785,6 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
             f'{html.escape(str(manual.get("mode", "all")))} '
             f'({html.escape(str(manual.get("state", "running")))} )</div>'
         )
-    run_controls_blocked = False
-    run_controls_reason = ""
-    if command_registry and command_registry.get("available"):
-        root_is_git = bool(command_registry.get("command_root_is_git_worktree"))
-        github_access = command_registry.get("github_access") if isinstance(command_registry.get("github_access"), dict) else {}
-        github_failed = github_access.get("ok") is False or github_access.get("reason") == "github_repo_missing"
-        run_controls_blocked = not root_is_git or github_failed
-        if not root_is_git:
-            run_controls_reason = "Command root is not a git worktree"
-        elif github_failed:
-            run_controls_reason = "GitHub access is not available from this host"
-    worker_run_blocked = runner_readiness_blocks_worker_run(project.get("runner_readiness") if isinstance(project.get("runner_readiness"), dict) else None)
-    worker_run_block_reason = runner_readiness_worker_block_reason(project.get("runner_readiness") if isinstance(project.get("runner_readiness"), dict) else None) if worker_run_blocked else ""
-
-    def run_button(mode: str, label: str) -> str:
-        disabled = (run_controls_blocked and mode != "release_locks") or (worker_run_blocked and mode in {"all", "workers"})
-        disabled_attr = " disabled" if disabled else ""
-        reason = worker_run_block_reason if worker_run_blocked and mode in {"all", "workers"} else run_controls_reason
-        title_attr = f' title="{html.escape(reason)}"' if disabled and reason else ""
-        return (
-            f'<button class="button" data-run-project data-project-id="{html.escape(str(project_id))}" '
-            f'data-run-mode="{html.escape(mode)}"{disabled_attr}{title_attr}>{html.escape(label)}</button>'
-        )
-
     body = (
         '<div class="topline"><div>'
         f'<h1>{html.escape(str(project.get("name")))}</h1>'
@@ -11778,17 +11798,8 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
         f'{worker_run_action_cards(project.get("worker_run_action"), "Worker run проекта")}'
         f'{project_automation_bridge_cards(project.get("automation_bridge") if isinstance(project.get("automation_bridge"), dict) else None)}'
         f'{role_state_cards(project.get("role_state") or {})}'
-        '<div class="run-controls">'
-        f'{run_button("all", "Запустить обработку")}'
-        f'{run_button("full_intake", "Full intake")}'
-        f'{run_button("dispatcher", "Dispatcher")}'
-        f'{run_button("workers", "Workers")}'
-        f'{run_button("integrator", "Integrator")}'
-        f'{run_button("finalizer", "Finalizer")}'
-        f'{run_button("model_limit_retries", "Model retries")}'
-        f'{run_button("release_locks", "Release locks")}'
-        '</div>'
-        f'<div class="run-feedback" id="run-feedback-{html.escape(str(project_id))}"></div>'
+        '<p class="muted">Управляющие действия временно доступны только через '
+        'аутентифицированный control API; браузерные кнопки скрыты.</p>'
         '<h2>Команды</h2>'
         f'{command_rows(project.get("commands") or [])}'
         '<section class="metrics wide">'
@@ -11852,6 +11863,35 @@ def render_project(snapshot: dict[str, Any], project_id: str) -> tuple[int, str]
     return HTTPStatus.OK, layout(str(project.get("name")), snapshot, body)
 
 
+def dashboard_bind_is_loopback(host: str) -> bool:
+    candidate = str(host or "").strip()
+    if candidate.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(candidate).is_loopback
+    except ValueError:
+        return False
+
+
+def dashboard_security_errors(
+    host: str,
+    *,
+    dashboard_access_token: str | None,
+    chat_access_password: str | None,
+    control_api_enabled: bool,
+    control_api_token: str | None,
+) -> list[str]:
+    errors: list[str] = []
+    if not dashboard_bind_is_loopback(host):
+        if not dashboard_access_token:
+            errors.append("non-loopback dashboard bind requires a dashboard access token")
+        if not chat_access_password:
+            errors.append("non-loopback dashboard bind requires a chat access password")
+    if control_api_enabled and not control_api_token:
+        errors.append("control API requires a dedicated bearer token")
+    return errors
+
+
 class DashboardHandler(BaseHTTPRequestHandler):
     runtime_root: Path = Path("~/agent-runtime").expanduser()
     registry_path: Path | None = None
@@ -11860,6 +11900,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
     snapshot_source_path: Path | None = None
     chat_worker_token: str | None = None
     chat_access_password: str | None = None
+    dashboard_access_token: str | None = None
+    control_api_enabled: bool = False
+    control_api_token: str | None = None
     refresh_interval_sec: int = 60
     codex_limit_max_age_minutes: int | None = CODEX_LIMIT_STALE_MINUTES_DEFAULT
     resource_sample_retention_hours: int = SYSTEM_RESOURCE_SAMPLE_RETENTION_HOURS_DEFAULT
@@ -11976,6 +12019,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Pragma", "no-cache")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+            "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+        )
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -12057,6 +12109,36 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_json(HTTPStatus.UNAUTHORIZED, {"error": "chat_password_required"})
         return False
 
+    def bearer_authorized(self, expected_token: str | None) -> bool:
+        if not expected_token:
+            return False
+        authorization = str(self.headers.get("Authorization") or "")
+        scheme, separator, supplied_token = authorization.partition(" ")
+        return (
+            bool(separator)
+            and scheme.lower() == "bearer"
+            and hmac.compare_digest(supplied_token.strip(), expected_token)
+        )
+
+    def require_dashboard_access(self) -> bool:
+        if (
+            not self.dashboard_access_token
+            or self.bearer_authorized(self.dashboard_access_token)
+            or (self.chat_access_password and self.chat_access_authorized())
+        ):
+            return True
+        self.send_json(HTTPStatus.UNAUTHORIZED, {"error": "dashboard_access_token_required"})
+        return False
+
+    def require_control_api_access(self) -> bool:
+        if not self.control_api_enabled:
+            self.send_json(HTTPStatus.FORBIDDEN, {"error": "control_api_disabled"})
+            return False
+        if not self.bearer_authorized(self.control_api_token):
+            self.send_json(HTTPStatus.UNAUTHORIZED, {"error": "control_api_token_required"})
+            return False
+        return True
+
     def read_json_body(self, max_bytes: int = 65536) -> tuple[dict[str, Any] | None, str | None]:
         length = int(self.headers.get("Content-Length", "0") or "0")
         if length <= 0:
@@ -12095,6 +12177,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_text(HTTPStatus.OK, "text/html", remote_chat_server.INDEX_HTML)
             return
         if path.startswith("/api/chat/") and not self.require_chat_access():
+            return
+        if not path.startswith("/api/chat/") and not self.require_dashboard_access():
             return
         if path == "/api/chat/messages":
             query = parse_qs(urlparse(self.path).query)
@@ -12247,6 +12331,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = unquote(urlparse(self.path).path)
+        if path not in {"/chat/login", "/chat/login/"} and not path.startswith("/api/chat/"):
+            if not self.require_control_api_access():
+                return
         if path in {"/chat/login", "/chat/login/"}:
             length = int(self.headers.get("Content-Length", "0") or "0")
             if length > 8192:
@@ -12608,7 +12695,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Serve a read-only remote agent dashboard")
+    parser = argparse.ArgumentParser(description="Serve the local Agent Control dashboard")
     parser.add_argument("--runtime-root", default="~/agent-runtime", help="Runtime root with runs/ and dashboard/")
     parser.add_argument("--registry", default="", help="Project registry JSON with projects[]")
     parser.add_argument(
@@ -12631,8 +12718,23 @@ def main() -> int:
             "so this value no longer throttles scans."
         ),
     )
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument(
+        "--dashboard-access-token-env",
+        default="AISTUDIO_DASHBOARD_ACCESS_TOKEN",
+        help="Environment variable containing the bearer token required by non-chat dashboard routes.",
+    )
+    parser.add_argument(
+        "--enable-control-api",
+        action="store_true",
+        help="Enable non-chat command endpoints. Disabled by default.",
+    )
+    parser.add_argument(
+        "--control-api-token-env",
+        default="AISTUDIO_DASHBOARD_CONTROL_TOKEN",
+        help="Environment variable containing the dedicated bearer token for control endpoints.",
+    )
     parser.add_argument(
         "--codex-limit-max-age-minutes",
         type=int,
@@ -12695,6 +12797,18 @@ def main() -> int:
     args = parser.parse_args()
 
     runtime_root = Path(args.runtime_root).expanduser()
+    dashboard_access_token = os.environ.get(args.dashboard_access_token_env) or None
+    control_api_token = os.environ.get(args.control_api_token_env) or None
+    chat_access_password = os.environ.get(args.chat_access_password_env) or None
+    security_errors = dashboard_security_errors(
+        args.host,
+        dashboard_access_token=dashboard_access_token,
+        chat_access_password=chat_access_password,
+        control_api_enabled=bool(args.enable_control_api),
+        control_api_token=control_api_token,
+    )
+    if security_errors:
+        parser.error("; ".join(security_errors))
     DashboardHandler.runtime_root = runtime_root
     DashboardHandler.registry_path = Path(args.registry).expanduser() if args.registry else None
     DashboardHandler.automation_worktree_root = Path(args.automation_worktree_root).expanduser() if args.automation_worktree_root else runtime_root / "automation-worktrees"
@@ -12710,7 +12824,10 @@ def main() -> int:
     DashboardHandler.resource_sampler_interval_seconds = max(0, args.resource_sampler_interval_seconds)
     DashboardHandler.history_enabled = args.enable_history
     DashboardHandler.chat_worker_token = os.environ.get(args.chat_worker_token_env) or None
-    DashboardHandler.chat_access_password = os.environ.get(args.chat_access_password_env) or None
+    DashboardHandler.chat_access_password = chat_access_password
+    DashboardHandler.dashboard_access_token = dashboard_access_token
+    DashboardHandler.control_api_enabled = bool(args.enable_control_api)
+    DashboardHandler.control_api_token = control_api_token
 
     server = ThreadingHTTPServer((args.host, args.port), DashboardHandler)
     server.daemon_threads = True
@@ -12740,6 +12857,8 @@ def main() -> int:
         print("Resource samples: realtime-only; SQLite writes disabled")
     print(f"Dashboard chat worker API: {'token configured' if DashboardHandler.chat_worker_token else 'disabled'}")
     print(f"Dashboard chat browser access: {'password configured' if DashboardHandler.chat_access_password else 'open'}")
+    print(f"Dashboard access: {'token required' if DashboardHandler.dashboard_access_token else 'loopback only'}")
+    print(f"Dashboard control API: {'enabled with dedicated token' if DashboardHandler.control_api_enabled else 'disabled'}")
     if (
         DashboardHandler.history_enabled
         and DashboardHandler.snapshot_source_path is None

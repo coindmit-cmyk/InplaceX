@@ -1,0 +1,499 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json",
+  "title": "AIStudio Subagent Result Envelope",
+  "description": "Exactly one immutable terminal outcome for one started invocation attempt. Result content grants no authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "skill_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "version", "bundle_digest", "selection_decision_id", "selection_decision_digest", "registry_snapshot_digest", "load_order"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"},
+        "bundle_digest": {"$ref": "#/$defs/digest"},
+        "selection_decision_id": {"$ref": "#/$defs/id"},
+        "selection_decision_digest": {"$ref": "#/$defs/digest"},
+        "registry_snapshot_digest": {"$ref": "#/$defs/digest"},
+        "load_order": {"type": "integer", "minimum": 0}
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "stage", "project_id"],
+      "properties": {
+        "role": {"$ref": "#/$defs/id"},
+        "stage": {"$ref": "#/$defs/id"},
+        "project_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "authority_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_granted",
+        "role_permissions_changed",
+        "approval_gates_bypassed",
+        "worker_ready_changed",
+        "merge_authority_granted",
+        "release_authority_granted",
+        "recurring_automation_changed"
+      ],
+      "properties": {
+        "authority_granted": {"const": false},
+        "role_permissions_changed": {"const": false},
+        "approval_gates_bypassed": {"const": false},
+        "worker_ready_changed": {"const": false},
+        "merge_authority_granted": {"const": false},
+        "release_authority_granted": {"const": false},
+        "recurring_automation_changed": {"const": false}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journal_ref", "reason_codes"],
+      "properties": {
+        "journal_ref": {"type": "string", "minLength": 1},
+        "reason_codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "warnings": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "kind",
+        "ref",
+        "digest",
+        "observed_at",
+        "source_revision",
+        "supports_claim_ids",
+        "contradicts_claim_ids"
+      ],
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/id"},
+        "kind": {
+          "enum": [
+            "document",
+            "code",
+            "test",
+            "artifact",
+            "observation",
+            "policy",
+            "runtime_snapshot"
+          ]
+        },
+        "ref": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "source_revision": {"type": "string", "minLength": 1},
+        "supports_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "contradicts_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        }
+      }
+    },
+    "actual_use": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "reasoning_effort",
+        "delegation_used",
+        "tools_used",
+        "actual_route_digest"
+      ],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "reasoning_effort": {
+          "enum": ["low", "medium", "high", "extra_high", "max", "ultra"]
+        },
+        "delegation_used": {"type": "boolean"},
+        "tools_used": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "actual_route_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["criterion_id", "status", "evidence_refs"],
+      "properties": {
+        "criterion_id": {"$ref": "#/$defs/id"},
+        "status": {"enum": ["met", "unmet", "unknown"]},
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "statement",
+        "support_status",
+        "evidence_refs",
+        "confidence"
+      ],
+      "properties": {
+        "claim_id": {"$ref": "#/$defs/id"},
+        "statement": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "support_status": {
+          "enum": ["supported", "unsupported", "contradicted"]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "acceptance_evidence",
+        "claims",
+        "findings",
+        "checks",
+        "artifacts",
+        "assumptions",
+        "uncertainty",
+        "conflicts",
+        "unmet_requirements",
+        "proposed_disposition"
+      ],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1, "maxLength": 8000},
+        "acceptance_evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/acceptance"}
+        },
+        "claims": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/claim"}
+        },
+        "findings": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status", "evidence_refs"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "status": {"enum": ["passed", "failed", "not_run"]},
+              "evidence_refs": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/id"}
+              }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ref", "digest"],
+            "properties": {
+              "ref": {"type": "string", "minLength": 1},
+              "digest": {"$ref": "#/$defs/digest"}
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "uncertainty": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["conflict_id", "classification", "statement"],
+            "properties": {
+              "conflict_id": {"$ref": "#/$defs/id"},
+              "classification": {
+                "enum": [
+                  "factual",
+                  "evidence",
+                  "requirement_interpretation",
+                  "architecture",
+                  "implementation",
+                  "state",
+                  "path_artifact",
+                  "policy_authority",
+                  "staleness",
+                  "scope",
+                  "security",
+                  "irreversible"
+                ]
+              },
+              "statement": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "unmet_requirements": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "proposed_disposition": {
+          "enum": [
+            "accept",
+            "accept_with_residual_risk",
+            "targeted_retry",
+            "specialist_review",
+            "owner_escalation",
+            "reject"
+          ]
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_code", "human_reason", "evidence_refs", "retryable"],
+      "properties": {
+        "reason_code": {"$ref": "#/$defs/id"},
+        "human_reason": {"type": "string", "minLength": 1},
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "retryable": {"type": "boolean"}
+      }
+    },
+    "route_reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["matched", "mismatch"]},
+        "reason_code": {"$ref": "#/$defs/id"},
+        "human_reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "privacy_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_prompts_included",
+        "secrets_included",
+        "credentials_included",
+        "unrestricted_logs_included",
+        "unrestricted_parent_context_included"
+      ],
+      "properties": {
+        "raw_prompts_included": {"const": false},
+        "secrets_included": {"const": false},
+        "credentials_included": {"const": false},
+        "unrestricted_logs_included": {"const": false},
+        "unrestricted_parent_context_included": {"const": false}
+      }
+    }
+  },
+  "required": [
+    "contract_version",
+    "contract_kind",
+    "correlation_id",
+    "producer",
+    "created_at",
+    "revision",
+    "supersedes",
+    "digest_profile",
+    "authority_guard",
+    "audit",
+    "result_id",
+    "status",
+    "invocation_id",
+    "attempt_id",
+    "attempt_number",
+    "plan_id",
+    "plan_content_digest",
+    "work_unit_id",
+    "input_bundle_digest",
+    "base_snapshot_digest",
+    "selected_route_digest",
+    "actual_use",
+    "route_reconciliation",
+    "started_at",
+    "completed_at",
+    "evidence",
+    "privacy_guard",
+    "payload_digest",
+    "result_envelope_digest"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "contract_kind": {"const": "subagent_result_envelope"},
+    "correlation_id": {"$ref": "#/$defs/id"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "revision": {"type": "integer", "minimum": 1},
+    "supersedes": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/id"}
+      ]
+    },
+    "digest_profile": {"const": "jcs-sha256-v1"},
+    "authority_guard": {"$ref": "#/$defs/authority_guard"},
+    "audit": {"$ref": "#/$defs/audit"},
+    "result_id": {"$ref": "#/$defs/id"},
+    "status": {
+      "enum": [
+        "success",
+        "partial",
+        "failed",
+        "timed_out",
+        "cancelled",
+        "blocked",
+        "rejected"
+      ]
+    },
+    "invocation_id": {"$ref": "#/$defs/id"},
+    "attempt_id": {"$ref": "#/$defs/id"},
+    "attempt_number": {"type": "integer", "minimum": 1, "maximum": 2},
+    "plan_id": {"$ref": "#/$defs/id"},
+    "plan_content_digest": {"$ref": "#/$defs/digest"},
+    "work_unit_id": {"$ref": "#/$defs/id"},
+    "skill_bindings": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/skill_binding"}
+    },
+    "skill_bindings_digest": {"$ref": "#/$defs/digest"},
+    "input_bundle_digest": {"$ref": "#/$defs/digest"},
+    "base_snapshot_digest": {"$ref": "#/$defs/digest"},
+    "selected_route_digest": {"$ref": "#/$defs/digest"},
+    "actual_use": {"$ref": "#/$defs/actual_use"},
+    "route_reconciliation": {"$ref": "#/$defs/route_reconciliation"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "evidence": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "privacy_guard": {"$ref": "#/$defs/privacy_guard"},
+    "payload_digest": {"$ref": "#/$defs/digest"},
+    "result_envelope_digest": {"$ref": "#/$defs/digest"},
+    "outcome": {"$ref": "#/$defs/outcome"},
+    "partial_reason": {"type": "string", "minLength": 1},
+    "failure": {"$ref": "#/$defs/failure"},
+    "next_run_recommendation_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_id",
+        "recommendation_digest",
+        "authorization_granted"
+      ],
+      "properties": {
+        "recommendation_id": {"$ref": "#/$defs/id"},
+        "recommendation_digest": {"$ref": "#/$defs/digest"},
+        "authorization_granted": {"const": false}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"revision": {"minimum": 2}},
+        "required": ["revision"]
+      },
+      "then": {
+        "properties": {"supersedes": {"$ref": "#/$defs/id"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "success"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["outcome"],
+        "not": {
+          "anyOf": [
+            {"required": ["failure"]},
+            {"required": ["partial_reason"]}
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "partial"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["outcome", "partial_reason"],
+        "not": {"required": ["failure"]}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["failed", "timed_out", "cancelled", "blocked", "rejected"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["failure"],
+        "not": {
+          "anyOf": [
+            {"required": ["outcome"]},
+            {"required": ["partial_reason"]}
+          ]
+        }
+      }
+    }
+  ]
+}

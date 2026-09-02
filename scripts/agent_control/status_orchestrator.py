@@ -19,11 +19,17 @@ from typing import Any
 
 from event_driven_scheduler import consume_events, update_activity
 from archive_terminal_tasks import archive as archive_terminal_tasks
+from archive_terminal_tasks import apply_archive_transaction
 from archive_terminal_tasks import load_json as load_archive_json
-from archive_terminal_tasks import write_json as write_archive_json
 import llm_dispatch_tagger
 from process_log import append_log
+from process_lock_store import acquire_process_lock as acquire_atomic_process_lock
+from process_lock_store import release_process_lock as release_atomic_process_lock
 from project_paths import task_manager_dir
+import project_state_validator
+from task_state_invariants import normalize_terminal_task
+from task_state_invariants import validate_queue_history_disjoint
+from task_state_invariants import validate_payload as validate_task_state_payload
 
 from evaluate_finalizer_merge_gate import evaluate_gate, run_validate
 
@@ -107,6 +113,7 @@ STATE_SYNC_PATHS = [
     "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
     "AiStudio/Task_manager/route_integration_results.json",
     "AiStudio/Task_manager/task_identity_audit.json",
+    "AiStudio/Task_manager/task_history.json",
     "AiStudio/Task_manager/task_queue.json",
     "AiStudio/Task_manager/worker_candidates.json",
     "AiStudio/Task_manager/worker_pool_last_plan.json",
@@ -159,6 +166,7 @@ NOOP_INTEGRATOR_SCAN_TRANSIENT_PATHS = [
     "AiStudio/Task_manager/task_identity_audit.json",
 ]
 PRE_APPLY_RECOVERABLE_STATE_PATHS = {
+    "AiStudio/Task_manager/agent_process_state.json",
     "AiStudio/Task_manager/allowed_paths_repair_plan.json",
     "AiStudio/Task_manager/auto_finalizer_merge.json",
     "AiStudio/Task_manager/automation_status.json",
@@ -178,6 +186,7 @@ PRE_APPLY_RECOVERABLE_STATE_PATHS = {
     "AiStudio/Task_manager/rebuild_decision_report.json",
     "AiStudio/Task_manager/route_rebuild_and_integration_results.json",
     "AiStudio/Task_manager/route_integration_results.json",
+    "AiStudio/Task_manager/task_history.json",
     "AiStudio/Task_manager/worker_pool_last_plan.json",
 }
 PRE_APPLY_RECOVERABLE_STATE_FILE_PREFIXES = (
@@ -318,56 +327,17 @@ def process_lock_has_live_process(lock: dict[str, Any], project_root: Path) -> b
 
 
 def acquire_process_lock(project_root: Path, process: str, run_id: str, ttl_minutes: int) -> tuple[bool, str | None]:
-    path = task_manager_dir(project_root) / "process_locks.json"
-    data = load_json(path) or {"schema_version": 1, "locks": []}
-    locks = data.setdefault("locks", [])
-    now = datetime.now(timezone.utc)
-    for lock in locks if isinstance(locks, list) else []:
-        if not isinstance(lock, dict):
-            continue
-        if lock.get("process") != process or lock.get("state") != "active":
-            continue
-        expires_at = parse_time(lock.get("expires_at"))
-        if expires_at and expires_at <= now:
-            lock["state"] = "expired"
-            lock["expired_at"] = utc_now()
-            continue
-        live_process = process_lock_has_live_process(lock, project_root)
-        if live_process is False:
-            lock["state"] = "released"
-            lock["released_at"] = utc_now()
-            lock["release_reason"] = "dead_process"
-            lock["released_by"] = "status_orchestrator"
-            continue
-        return False, str(lock.get("run_id") or "unknown")
-    expires = (now + timedelta(minutes=ttl_minutes)).isoformat(timespec="seconds").replace("+00:00", "Z")
-    locks.append({
-        "process": process,
-        "state": "active",
-        "by": "status_orchestrator",
-        "at": utc_now(),
-        "expires_at": expires,
-        "run_id": run_id,
-        "pid": os.getpid(),
-        "host": socket.gethostname(),
-        "project_root": str(project_root),
-    })
-    data["updated_at"] = utc_now()
-    write_json(path, data)
-    return True, None
+    return acquire_atomic_process_lock(
+        project_root,
+        process,
+        run_id,
+        ttl_minutes,
+        live_process_checker=lambda lock: process_lock_has_live_process(lock, project_root),
+    )
 
 
 def release_process_lock(project_root: Path, process: str, run_id: str) -> None:
-    path = task_manager_dir(project_root) / "process_locks.json"
-    data = load_json(path)
-    locks = data.get("locks", []) if isinstance(data, dict) else []
-    for lock in locks if isinstance(locks, list) else []:
-        if isinstance(lock, dict) and lock.get("process") == process and lock.get("run_id") == run_id and lock.get("state") == "active":
-            lock["state"] = "released"
-            lock["released_at"] = utc_now()
-    if isinstance(data, dict):
-        data["updated_at"] = utc_now()
-        write_json(path, data)
+    release_atomic_process_lock(project_root, process, run_id)
 
 
 def run(cmd: list[str]) -> tuple[int, str, str]:
@@ -1024,10 +994,11 @@ def worker_pool_command(
         runtime_root,
         "--max-total-workers",
         str(max_total_workers),
-        "--detach",
         "--replenish-active",
         "--json",
     ]
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() != "postgres":
+        command.append("--detach")
     if worker_base_ref:
         command.extend(["--worker-base-ref", worker_base_ref])
     if worker_context_ref:
@@ -1052,6 +1023,13 @@ def worker_pool_execution_command(
 ) -> tuple[list[str], bool]:
     if not systemd_unit or not sys.platform.startswith("linux"):
         return worker_command, False
+    # The transient unit owns the complete pool lifetime. Keeping --detach here
+    # would let worker lanes outlive the unit and recreate orphaned processes.
+    managed_worker_command = [part for part in worker_command if part != "--detach"]
+    if "--runtime-plan" not in managed_worker_command:
+        managed_worker_command.append("--runtime-plan")
+    if "--wait-for-project-idle-seconds" not in managed_worker_command:
+        managed_worker_command.extend(["--wait-for-project-idle-seconds", "60"])
     project_version = load_json(project_root / "PROJECT_VERSION.json")
     project_id = str(project_version.get("project_id") or project_root.name).strip() or project_root.name
     progress_command = [
@@ -1066,7 +1044,7 @@ def worker_pool_execution_command(
         "--unit",
         systemd_unit,
         "--",
-        *worker_command,
+        *managed_worker_command,
     ]
     command = [
         sys.executable,
@@ -2052,10 +2030,15 @@ def quarantine_pre_apply_generated_state(project_root: Path, report: dict[str, A
 
 
 def git_stage_text(project_root: Path, stage: int, path: str) -> str | None:
-    proc = git_run(project_root, ["show", f":{stage}:{path}"])
+    proc = subprocess.run(
+        ["git", "show", f":{stage}:{path}"],
+        cwd=project_root,
+        capture_output=True,
+        check=False,
+    )
     if proc.returncode != 0:
         return None
-    return proc.stdout
+    return proc.stdout.decode("utf-8", errors="strict")
 
 
 TERMINAL_TASK_STATUSES = {"done", "postponed", "failed", "stale_or_superseded", "duplicate_linked"}
@@ -2187,8 +2170,9 @@ def merge_task_queue_state(ours: dict[str, Any], theirs: dict[str, Any]) -> dict
             task_id = other.get("id")
             current = by_id.get(task_id)
             if current is None:
-                tasks.append(other)
-                by_id[task_id] = other
+                appended = normalize_terminal_task(json.loads(json.dumps(other)))
+                tasks.append(appended)
+                by_id[task_id] = appended
                 continue
             current_terminal_rank = task_terminal_rank(current)
             other_terminal_rank = task_terminal_rank(other)
@@ -2201,6 +2185,9 @@ def merge_task_queue_state(ours: dict[str, Any], theirs: dict[str, Any]) -> dict
                     )
                 ):
                     current.update(other)
+                normalized = normalize_terminal_task(current)
+                current.clear()
+                current.update(normalized)
                 continue
             current_route = integrator_route_record(current)
             other_route = integrator_route_record(other)
@@ -2378,12 +2365,17 @@ def resolve_state_sync_merge_conflicts(project_root: Path) -> dict[str, Any]:
         "AiStudio/Task_manager/automation_bridge_state.json",
         "AiStudio/Task_manager/integrator_direct_merge.json",
         "AiStudio/Task_manager/process_locks.json",
+        "AiStudio/Task_manager/repository_hygiene_state.json",
         "AiStudio/Task_manager/task_queue.json",
         "AiStudio/Task_manager/worker_candidates.json",
     }
     unsupported = [path for path in paths if path not in supported_paths and not path.startswith("docs/reports/workers/")]
     if unsupported:
         return {"ok": False, "reason": "unsupported_state_conflicts", "paths": unsupported}
+    derived_summary = "AiStudio/Project_state/indexes/current_summary.md"
+    paths = [path for path in paths if path != derived_summary] + (
+        [derived_summary] if derived_summary in paths else []
+    )
 
     resolved: list[str] = []
     for path in paths:
@@ -2403,6 +2395,18 @@ def resolve_state_sync_merge_conflicts(project_root: Path) -> dict[str, Any]:
         target = project_root / path
         if path == "AiStudio/Task_manager/task_queue.json":
             payload = merge_task_queue_state(json.loads(ours), json.loads(theirs))
+            merge_issues = validate_task_state_payload(payload, strict_terminal=True)
+            merge_errors = [issue for issue in merge_issues if issue.get("severity") == "error"]
+            if merge_errors:
+                return {
+                    "ok": False,
+                    "reason": "task_state_invariant_validation_failed_after_queue_merge",
+                    "path": path,
+                    "state_validation": {
+                        "errors": len(merge_errors),
+                        "issues": merge_issues,
+                    },
+                }
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         elif path == "AiStudio/Task_manager/agent_locks.json":
             payload = merge_agent_locks_state(json.loads(ours), json.loads(theirs))
@@ -2417,6 +2421,9 @@ def resolve_state_sync_merge_conflicts(project_root: Path) -> dict[str, Any]:
             payload = merge_process_locks_state(json.loads(ours), json.loads(theirs))
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         elif path == "AiStudio/Task_manager/worker_candidates.json":
+            payload = newer_snapshot(json.loads(ours), json.loads(theirs), "generated_at")
+            target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        elif path == "AiStudio/Task_manager/repository_hygiene_state.json":
             payload = newer_snapshot(json.loads(ours), json.loads(theirs), "generated_at")
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         elif path == "AiStudio/Task_manager/integrator_direct_merge.json":
@@ -2446,7 +2453,15 @@ def resolve_state_sync_merge_conflicts(project_root: Path) -> dict[str, Any]:
         if add.returncode != 0:
             return {"ok": False, "reason": "conflict_add_failed", "path": path, "stderr": add.stderr}
         resolved.append(path)
-    return {"ok": True, "resolved_paths": resolved}
+    final_gate = strict_task_state_invariant_gate(project_root)
+    if not final_gate["ok"]:
+        return {
+            "ok": False,
+            "reason": "task_state_invariant_validation_failed_after_conflict_resolution",
+            "resolved_paths": resolved,
+            "state_validation": final_gate,
+        }
+    return {"ok": True, "resolved_paths": resolved, "state_validation": final_gate}
 
 
 def remove_identical_untracked_ref_files(project_root: Path, ref: str) -> dict[str, Any]:
@@ -2476,7 +2491,90 @@ def state_sync_failure_is_fatal(state_sync: Any) -> bool:
     return isinstance(state_sync, dict) and state_sync.get("ok") is False
 
 
+def strict_task_state_invariant_gate(project_root: Path) -> dict[str, Any]:
+    queue_path = task_manager_dir(project_root) / "task_queue.json"
+    history_path = queue_path.with_name("task_history.json")
+    if not queue_path.exists():
+        return {
+            "ok": True,
+            "queue": str(queue_path),
+            "skipped": True,
+            "reason": "task_queue_missing",
+            "errors": 0,
+            "issues": [],
+        }
+    try:
+        payload = load_json(queue_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return {
+            "ok": False,
+            "queue": str(queue_path),
+            "reason": "task_queue_unreadable",
+            "errors": 1,
+            "issues": [{"severity": "error", "code": "task_queue_unreadable", "message": str(exc)}],
+        }
+    issues = validate_task_state_payload(payload, strict_terminal=True)
+    if not history_path.exists():
+        return {
+            "ok": False,
+            "queue": str(queue_path),
+            "history": str(history_path),
+            "reason": "task_history_missing",
+            "errors": 1,
+            "issues": [
+                {
+                    "severity": "error",
+                    "code": "task_history_missing",
+                    "message": "task history is required when task_queue.json exists",
+                }
+            ],
+        }
+    try:
+        history = load_json(history_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return {
+            "ok": False,
+            "queue": str(queue_path),
+            "history": str(history_path),
+            "reason": "task_history_unreadable",
+            "errors": 1,
+            "issues": [{"severity": "error", "code": "task_history_unreadable", "message": str(exc)}],
+        }
+    if not isinstance(history, dict):
+        return {
+            "ok": False,
+            "queue": str(queue_path),
+            "history": str(history_path),
+            "reason": "task_history_unreadable",
+            "errors": 1,
+            "issues": [
+                {
+                    "severity": "error",
+                    "code": "task_history_unreadable",
+                    "message": "task history must be a JSON object",
+                }
+            ],
+        }
+    issues.extend(validate_queue_history_disjoint(payload, history))
+    errors = [issue for issue in issues if issue.get("severity") == "error"]
+    return {
+        "ok": not errors,
+        "queue": str(queue_path),
+        "history": str(history_path),
+        "reason": "task_state_invariants_passed" if not errors else "task_state_invariant_validation_failed",
+        "errors": len(errors),
+        "issues": issues,
+    }
+
+
 def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, exclude_paths: list[str] | None = None) -> dict[str, Any]:
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") == "postgres":
+        return {
+            "skipped": True,
+            "ok": True,
+            "reason": "postgres_task_control_authority",
+            "session_id": os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID"),
+        }
     if run_class not in STATE_SYNC_RUN_CLASSES:
         return {"skipped": True, "reason": "run_class_does_not_require_orchestrator_state_sync"}
     commands: list[dict[str, Any]] = []
@@ -2484,12 +2582,55 @@ def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, e
         proc = git_run(project_root, args)
         commands.append({"command": ["git", *args], "exit_code": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr})
         return proc
+
+    def project_state_pre_push_gate() -> dict[str, Any]:
+        report = project_state_validator.refresh_ref_and_validate(project_root, apply=True)
+        if not report.get("ok") or report.get("skipped"):
+            return report
+        if report.get("refreshed"):
+            summary_path = "AiStudio/Project_state/indexes/current_summary.md"
+            add_summary = run_git(["add", "--", summary_path])
+            if add_summary.returncode != 0:
+                return {
+                    **report,
+                    "ok": False,
+                    "reason": "project_state_summary_add_failed",
+                }
+            amend = run_git(["commit", "--amend", "--no-edit"])
+            if amend.returncode != 0:
+                return {
+                    **report,
+                    "ok": False,
+                    "reason": "project_state_summary_amend_failed",
+                }
+            committed = project_state_validator.refresh_ref_and_validate(project_root)
+            if not committed.get("ok") or committed.get("source_was_stale"):
+                return {
+                    **report,
+                    "ok": False,
+                    "reason": "project_state_committed_snapshot_invalid",
+                    "committed_validation": committed,
+                }
+            report["committed_validation"] = committed
+        return report
     if exclude_paths:
         existing_excludes = existing_git_pathspecs(project_root, exclude_paths)
         if existing_excludes:
             restore = run_git(["restore", "--staged", "--worktree", "--", *existing_excludes])
             if restore.returncode != 0:
                 return {"skipped": False, "ok": False, "reason": "exclude_restore_failed", "commands": commands, "exclude_paths": existing_excludes}
+    initial_project_state = project_state_validator.refresh_ref_and_validate(
+        project_root,
+        apply=True,
+    )
+    if not initial_project_state.get("ok"):
+        return {
+            "skipped": False,
+            "ok": False,
+            "reason": "project_state_refresh_failed",
+            "project_state": initial_project_state,
+            "commands": commands,
+        }
     state_sync_paths = existing_git_pathspecs(project_root, STATE_SYNC_PATHS)
     if not state_sync_paths:
         return {"skipped": True, "reason": "no_existing_state_sync_paths", "commands": commands}
@@ -2515,6 +2656,25 @@ def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, e
             "paths": unreferenced_reports,
             "commands": commands,
         }
+    queue_path = task_manager_dir(project_root) / "task_queue.json"
+    state_issues = (
+        validate_task_state_payload(load_json(queue_path), strict_terminal=True)
+        if queue_path.exists()
+        else []
+    )
+    state_errors = [issue for issue in state_issues if issue.get("severity") == "error"]
+    if state_errors:
+        return {
+            "skipped": False,
+            "ok": False,
+            "reason": "task_state_invariant_validation_failed",
+            "state_validation": {
+                "queue": str(queue_path),
+                "errors": len(state_errors),
+                "issues": state_issues,
+            },
+            "commands": commands,
+        }
     branch = branch_name_from_ref(base_ref)
     add = run_git(["add", "-A", "--", *state_sync_paths])
     if add.returncode != 0:
@@ -2525,6 +2685,24 @@ def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, e
         if "nothing to commit" in text_out or "no changes" in text_out:
             return {"skipped": True, "reason": "nothing_to_commit", "commands": commands}
         return {"skipped": False, "ok": False, "reason": "commit_failed", "commands": commands}
+    pre_push_project_state = project_state_pre_push_gate()
+    if not pre_push_project_state.get("ok"):
+        return {
+            "skipped": False,
+            "ok": False,
+            "reason": "project_state_validation_failed_before_push",
+            "project_state": pre_push_project_state,
+            "commands": commands,
+        }
+    pre_push_gate = strict_task_state_invariant_gate(project_root)
+    if not pre_push_gate["ok"]:
+        return {
+            "skipped": False,
+            "ok": False,
+            "reason": "task_state_invariant_validation_failed_before_push",
+            "state_validation": pre_push_gate,
+            "commands": commands,
+        }
     push = run_git(["push", "origin", f"HEAD:{branch}"])
     if push.returncode == 0:
         return {"skipped": False, "ok": True, "reason": "pushed", "commands": commands}
@@ -2564,6 +2742,28 @@ def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, e
         if conflict_resolution.get("ok") is True and conflict_resolution.get("resolved_paths"):
             continue_rebase = run_git(["-c", "core.editor=true", "rebase", "--continue"])
             if continue_rebase.returncode == 0:
+                post_conflict_project_state = project_state_pre_push_gate()
+                if not post_conflict_project_state.get("ok"):
+                    return finalize_with_transient_process_log_restore(project_root, {
+                        "skipped": False,
+                        "ok": False,
+                        "reason": "project_state_validation_failed_after_conflict_resolution",
+                        "commands": commands,
+                        "untracked_cleanup": untracked_cleanup,
+                        "conflict_resolution": conflict_resolution,
+                        "project_state": post_conflict_project_state,
+                    }, transient_process_logs)
+                post_conflict_gate = strict_task_state_invariant_gate(project_root)
+                if not post_conflict_gate["ok"]:
+                    return finalize_with_transient_process_log_restore(project_root, {
+                        "skipped": False,
+                        "ok": False,
+                        "reason": "task_state_invariant_validation_failed_after_conflict_resolution",
+                        "commands": commands,
+                        "untracked_cleanup": untracked_cleanup,
+                        "conflict_resolution": conflict_resolution,
+                        "state_validation": post_conflict_gate,
+                    }, transient_process_logs)
                 retry = run_git(["push", "origin", f"HEAD:{branch}"])
                 return finalize_with_transient_process_log_restore(project_root, {
                     "skipped": False,
@@ -2622,6 +2822,26 @@ def sync_task_manager_state(project_root: Path, run_class: str, base_ref: str, e
             "commands": commands,
             "untracked_cleanup": untracked_cleanup,
             "conflict_resolution": conflict_resolution,
+        }, transient_process_logs)
+    post_rebase_project_state = project_state_pre_push_gate()
+    if not post_rebase_project_state.get("ok"):
+        return finalize_with_transient_process_log_restore(project_root, {
+            "skipped": False,
+            "ok": False,
+            "reason": "project_state_validation_failed_after_base_sync",
+            "commands": commands,
+            "untracked_cleanup": untracked_cleanup,
+            "project_state": post_rebase_project_state,
+        }, transient_process_logs)
+    post_rebase_gate = strict_task_state_invariant_gate(project_root)
+    if not post_rebase_gate["ok"]:
+        return finalize_with_transient_process_log_restore(project_root, {
+            "skipped": False,
+            "ok": False,
+            "reason": "task_state_invariant_validation_failed_after_base_sync",
+            "commands": commands,
+            "untracked_cleanup": untracked_cleanup,
+            "state_validation": post_rebase_gate,
         }, transient_process_logs)
     retry = run_git(["push", "origin", f"HEAD:{branch}"])
     return finalize_with_transient_process_log_restore(project_root, {
@@ -2812,6 +3032,8 @@ def full_intake_has_action(payload: dict[str, Any] | None) -> bool:
         "repository_tasks_superseded",
         "task_docs_imported",
         "design_imported",
+        "design_history_collisions_removed",
+        "design_closed_package_retired",
         "project_rules_staged",
         "packet_selected",
         "packet_cleanup_selected",
@@ -3046,6 +3268,7 @@ def dispatcher_integration_repair_has_action(payload: dict[str, Any] | None) -> 
         "worker_ready_repaired_count",
         "repair_packets_created_count",
         "repair_packets_linked_count",
+        "decomposition_superseded_count",
     )
     return any(int(payload.get(key) or 0) > 0 for key in actionable_counters)
 
@@ -3201,18 +3424,22 @@ def expired_locks_command(project_root: Path, *, apply: bool) -> list[str]:
 def archive_terminal_queue(project_root: Path, *, apply: bool) -> dict[str, Any]:
     queue_path = task_manager_dir(project_root) / "task_queue.json"
     history_path = task_manager_dir(project_root) / "task_history.json"
-    queue = load_archive_json(queue_path)
-    history = load_archive_json(history_path, {"schema_version": 1, "tasks": []})
-    result = archive_terminal_tasks(queue, history, archived_by="status_orchestrator.py")
+    if apply:
+        result = apply_archive_transaction(
+            queue_path,
+            history_path,
+            archived_by="status_orchestrator.py",
+        )
+    else:
+        queue = load_archive_json(queue_path)
+        history = load_archive_json(history_path, {"schema_version": 1, "tasks": []})
+        result = archive_terminal_tasks(queue, history, archived_by="status_orchestrator.py")
     changed = int(result.get("archived_count") or 0) + int(result.get("skipped_existing_count") or 0) > 0
-    if apply and changed:
-        write_archive_json(queue_path, queue)
-        write_archive_json(history_path, history)
     return {
         **result,
         "queue": str(queue_path),
         "history": str(history_path),
-        "applied": bool(apply and changed),
+        "applied": bool(apply and (changed or result.get("recovery"))),
     }
 
 

@@ -1,0 +1,83 @@
+{
+  "contract_version": "1.1.0",
+  "correlation_id": "corr:nrr:fallback:0001",
+  "producer": {
+    "project_id": "ai-project-agent",
+    "role": "ux-design",
+    "stage": "strict-review",
+    "contract_mode": "strict",
+    "output_class": "inter_role_handoff"
+  },
+  "next_run": "recommended",
+  "next_run_recommendation": {
+    "next_role": "integrator",
+    "next_stage": "ux-synthesis",
+    "capability_profile": "delegated_deep",
+    "reasoning_effort": "ultra",
+    "delegation": "allowed",
+    "complexity": "XL",
+    "risk": "high",
+    "context_coherence": "high",
+    "confidence": 0.92,
+    "rationale": [
+      "multiple independent UX lenses",
+      "mobile and web consistency",
+      "high-stakes human-facing workflow"
+    ],
+    "independent_work_units": 3,
+    "synthesis_required": true,
+    "hop_count": 1,
+    "escalation_budget": 2,
+    "fallback": {
+      "capability_profile": "maximum_coherent",
+      "reasoning_effort": "max"
+    }
+  },
+  "router_decision": {
+    "status": "fallback_selected",
+    "policy_version": "1.1",
+    "decided_at": "2026-07-15T10:31:00Z",
+    "decision_id": "router:decision:0002",
+    "router_decision_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "selected": {
+      "capability_profile": "maximum_coherent",
+      "model_id": "gpt-5.6-sol",
+      "reasoning_effort": "max",
+      "delegation": "forbidden",
+      "parallel_lanes": 1,
+      "cost_class": "scarce",
+      "selected_route_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "fallback_from": "delegated_deep/ultra",
+    "override": {
+      "applied": true,
+      "direction": "fallback",
+      "reason_code": "ultra_capacity_unavailable",
+      "human_reason": "Ultra capacity is unavailable; Router selected the configured coherent Max fallback."
+    },
+    "limits_snapshot_ref": "runtime/codex-limits/latest.json",
+    "delegation_authorized": false
+  },
+  "execution_evidence": {
+    "status": "not_started",
+    "reconciliation_status": "pending"
+  },
+  "authority_guard": {
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed_by_recommendation": false,
+    "delegation_authority_ref": null
+  },
+  "presentation": {
+    "footer_required": true,
+    "variant": "fallback",
+    "debug_details_available": true,
+    "locale": "ru"
+  },
+  "audit": {
+    "journal_ref": "runtime/agent-control/routing-journal.jsonl",
+    "warnings": [
+      "recommended Ultra was not selected"
+    ]
+  }
+}

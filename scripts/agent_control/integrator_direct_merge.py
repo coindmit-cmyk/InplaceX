@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -18,6 +20,8 @@ from typing import Any
 from project_paths import task_manager_dir
 import documentation_impact_checker
 import project_version_gate
+import sync_worker_results
+from task_control_postgres import TaskControlConfigurationError, TaskControlPostgres
 from worker_result_contract_validator import DOCUMENTATION_IMPACT_VALUES, documentation_impact_from_report, task_requires_documentation_impact
 
 TERMINAL_TASK_STATUSES = {"done", "postponed", "failed", "stale_or_superseded", "duplicate_linked"}
@@ -50,9 +54,63 @@ WORKER_PACKET_V2_FIELDS = (
     "integration_notes",
 )
 
+INTEGRITY_EVIDENCE_FAILURE_NO_COMMIT = "missing_worker_result_commit"
+INTEGRITY_EVIDENCE_FAILURE_NO_REPORT_PATH = "missing_worker_report_path"
+INTEGRITY_EVIDENCE_FAILURE_AMBIGUOUS_REPORT_PATH = "ambiguous_worker_report_path"
+INTEGRITY_EVIDENCE_FAILURE_MISSING_CONTEXT = "worker_report_check_context_missing"
+INTEGRITY_EVIDENCE_FAILURE_BRANCH_HEAD_MISMATCH = "worker_result_branch_head_mismatch"
+INTEGRITY_EVIDENCE_FAILURE_CHECK_CLASS_PREFIX = "worker_report_check_"
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def record_sql_integrator_candidates(
+    *,
+    project_id: str,
+    ready_commits: dict[str, str],
+    ready_metadata: dict[str, dict[str, Any]],
+    base_sha: str,
+    state: str,
+) -> list[dict[str, Any]]:
+    dsn_env = os.environ.get("AISTUDIO_TASK_DB_DSN_ENV", "").strip()
+    dsn = os.environ.get(dsn_env, "") if dsn_env else ""
+    if not project_id or not dsn:
+        raise TaskControlConfigurationError(
+            "SQL integrator requires project identity and configured DSN"
+        )
+    database = TaskControlPostgres(dsn)
+    session_id = os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID", "").strip()
+    rows: list[dict[str, Any]] = []
+    for task_id, integration_sha in ready_commits.items():
+        metadata = ready_metadata.get(task_id) or {}
+        work_branch = str(
+            metadata.get("branch") or metadata.get("head_ref") or "direct-integrator"
+        ).strip()
+        identity = f"{project_id}\n{work_branch}\n{task_id}".encode("utf-8")
+        candidate_id = f"integrator-{hashlib.sha256(identity).hexdigest()[:24]}"
+        rows.append(
+            database.upsert_integration_candidate(
+                project_id,
+                task_id,
+                candidate_id=candidate_id,
+                state=state,
+                base_branch="develop",
+                base_sha=base_sha,
+                work_branch=work_branch,
+                head_sha=integration_sha,
+                session_id=session_id,
+                changed_paths=list(metadata.get("changed_paths") or []),
+                evidence={
+                    "source": "integrator_direct_merge",
+                    "session_id": session_id,
+                    "integration_sha": integration_sha,
+                    "target_branch": "develop",
+                },
+            )
+        )
+    return rows
 
 
 def stamp() -> str:
@@ -92,6 +150,93 @@ def has_packet_value(value: Any) -> bool:
 def valid_source_head_sha(value: Any) -> str:
     candidate = str(value or "").strip().lower()
     return candidate if re.fullmatch(r"[0-9a-f]{40}", candidate) else ""
+
+
+def requires_task_bound_immutable_worker_evidence(task: dict[str, Any] | None, item: dict[str, Any] | None) -> bool:
+    if not isinstance(task, dict):
+        # A batch item without its canonical queue row has no trustworthy
+        # output contract or immutable evidence binding. Fail closed via the
+        # context-missing branch in task_bound_immutable_worker_evidence().
+        return True
+    if str(task.get("type") or "") == "repository_hygiene_integration":
+        return False
+    row_status = str(task.get("status") or "").strip().lower()
+    if has_packet_value(task.get("worker_result_commit")) and row_status in {
+        "integration_requested",
+        "needs_worker_fix",
+        "needs_dispatcher_repair",
+    }:
+        return True
+    if has_packet_value(task.get("worker_report")) or has_packet_value(task.get("worker_changed_paths")):
+        return True
+    output_contract = task.get("output_contract")
+    if isinstance(output_contract, dict) and output_contract.get("worker_report_required") is True:
+        return True
+    return False
+
+
+def task_bound_immutable_worker_evidence(
+    project_root: Path,
+    task: dict[str, Any] | None,
+    item: dict[str, Any] | None,
+) -> tuple[bool, str | None, str | None, str | None]:
+    if not isinstance(task, dict):
+        return False, INTEGRITY_EVIDENCE_FAILURE_MISSING_CONTEXT, None, None
+
+    task_id = str(task.get("id") or task.get("task_id") or "").strip()
+    task_id = task_id or "task"
+    worker_result_commit = valid_source_head_sha(task.get("worker_result_commit") or task.get("head_sha"))
+    if not worker_result_commit:
+        return False, INTEGRITY_EVIDENCE_FAILURE_NO_COMMIT, None, None
+
+    worker_report = task.get("worker_report")
+    if has_packet_value(worker_report):
+        # sync_worker_results deliberately preserves older failed/partial reports
+        # in worker_changed_paths while promoting the latest passed supplemental
+        # report to worker_report.  That canonical pointer takes precedence.
+        report_candidates = [str(worker_report)]
+    else:
+        report_candidates = []
+        changed_paths = task.get("worker_changed_paths")
+        if isinstance(changed_paths, list):
+            report_candidates.extend([str(path) for path in changed_paths if has_packet_value(path)])
+    report_paths = list(dict.fromkeys(sync_worker_results.safe_report_paths(report_candidates, task_id)))
+    if len(report_paths) != 1:
+        return False, (
+            INTEGRITY_EVIDENCE_FAILURE_NO_REPORT_PATH
+            if not report_paths
+            else INTEGRITY_EVIDENCE_FAILURE_AMBIGUOUS_REPORT_PATH
+        ), worker_result_commit, (report_paths[0] if report_paths else None)
+
+    report_path = report_paths[0]
+    check_status = sync_worker_results.immutable_worker_report_check_status(
+        project_root,
+        {
+            "id": task_id,
+            "worker_result_commit": worker_result_commit,
+            "worker_changed_paths": [report_path],
+        },
+    )
+    if check_status != "passed":
+        return (
+            False,
+            INTEGRITY_EVIDENCE_FAILURE_MISSING_CONTEXT if not check_status else f"{INTEGRITY_EVIDENCE_FAILURE_CHECK_CLASS_PREFIX}{check_status}",
+            worker_result_commit,
+            report_path,
+        )
+    return True, None, worker_result_commit, report_path
+
+
+def resolved_branch_head_sha(
+    worktree: Path,
+    resolved_branch: str,
+    results: list[dict[str, Any]],
+) -> str:
+    result = run(["git", "rev-parse", resolved_branch], worktree)
+    results.append(result)
+    if result.get("exit_code") != 0:
+        return ""
+    return valid_source_head_sha(result.get("stdout"))
 
 
 def normalized_target_branch(value: Any) -> str:
@@ -876,7 +1021,26 @@ LINE_PRESERVATION_PATHS = {
 UNION_CONFLICT_PATHS = {"CHANGELOG.md"}
 
 GENERIC_METHOD_BEHAVIOR_PATTERN = re.compile(
-    r"^\s*(?:(?:public|private|protected|internal|static|suspend|override|final|open|abstract|inline|operator|external|native|synchronized)\s+)*(?:fun\s+|[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*\s+)([A-Za-z_]\w*)\s*\("
+    r"^\s*(?!(?:return|new|throw|yield|await)\b)(?:(?:public|private|protected|internal)\s+)?"
+    r"(?:static\s+)?(?:<[^()]+>\s+)?[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*(?:\s+[A-Za-z_][A-Za-z0-9_<>,.?\[\]]*)*"
+    r"(?:\s*\[\s*\])*"
+    r"\s+([A-Za-z_]\w*)\s*\("
+)
+KOTLIN_METHOD_BEHAVIOR_PATTERN = re.compile(
+    r"^\s*(?:(?:public|private|protected|internal|open|abstract|final|override|actual|expect|suspend|inline|operator|infix|tailrec|external)\s+)*"
+    r"fun\s+(?:<[^>]+>\s*)?(?:[A-Za-z_][\w.<>?]*\.)?([A-Za-z_]\w*)\s*\("
+)
+KOTLIN_TYPE_BEHAVIOR_PATTERN = re.compile(
+    r"^\s*(?:(?:public|private|protected|internal|open|abstract|final|actual|expect|data|sealed|enum|annotation|value|inner)\s+)*"
+    r"(?:class|interface|object)\s+([A-Za-z_]\w*)\b"
+)
+KOTLIN_ENUM_BODY_PATTERN = re.compile(
+    r"\benum\s+class\s+[A-Za-z_]\w*[^\{]*\{(?P<body>.*?)(?:;|\})",
+    re.DOTALL,
+)
+KOTLIN_ENUM_ENTRY_PATTERN = re.compile(
+    r"(?:^|,)\s*(?:@[A-Za-z_]\w*(?:\([^)]*\))?\s*)*"
+    r"([A-Za-z_]\w*)\s*(?=\(|,|\{|$)",
 )
 
 BEHAVIOR_PATTERNS = (
@@ -897,6 +1061,44 @@ def is_code_behavior_path(path: str) -> bool:
     if not normalized:
         return False
     return Path(normalized).suffix.lower() in CODE_BEHAVIOR_EXTENSIONS
+
+
+def is_test_path(path: str) -> bool:
+    normalized = Path(normalize_path(path))
+    parts = {part.lower() for part in normalized.parts}
+    stem = normalized.stem
+    stem_lower = stem.lower()
+    conventional_suffix = stem_lower.endswith((".test", ".spec", "_test", "_spec", "-test", "-spec"))
+    camel_case_prefix = any(
+        stem.startswith(prefix)
+        and (
+            len(stem) == len(prefix)
+            or stem[len(prefix)].isupper()
+            or stem[len(prefix)].isdigit()
+            or not stem[len(prefix)].isalnum()
+        )
+        for prefix in ("Test",)
+    )
+    camel_case_suffix = stem.endswith(("Test", "Tests", "TestCase", "TestCases"))
+    return (
+        bool(parts & {"test", "tests", "__tests__"})
+        or stem_lower.startswith("test_")
+        or conventional_suffix
+        or camel_case_prefix
+        or camel_case_suffix
+    )
+
+
+def compatible_behavior_move(source: str, destination: str) -> bool:
+    source_path = Path(normalize_path(source))
+    destination_path = Path(normalize_path(destination))
+    if is_line_preservation_path(source) or is_line_preservation_path(destination):
+        return source_path == destination_path
+    return (
+        destination_path.suffix.lower() == source_path.suffix.lower()
+        and destination_path.parent == source_path.parent
+        and is_test_path(destination) == is_test_path(source)
+    )
 
 
 def is_line_preservation_path(path: str) -> bool:
@@ -926,20 +1128,290 @@ def read_text_file(path: Path) -> str:
         return ""
 
 
+def is_java_annotation_fragment(fragment: str) -> bool:
+    match = re.match(r"@[A-Za-z_][\w$.]*", fragment)
+    if not match:
+        return False
+    index = match.end()
+    while index < len(fragment) and fragment[index].isspace():
+        index += 1
+    if index == len(fragment):
+        return True
+    if fragment[index] != "(":
+        return False
+    depth = 0
+    quote = ""
+    escaped = False
+    while index < len(fragment):
+        char = fragment[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return not fragment[index + 1 :].strip()
+        index += 1
+    return False
+
+
+def strip_trailing_java_annotations(prefix: str) -> str:
+    result = prefix.rstrip()
+    while True:
+        annotation_starts = [match.start() for match in re.finditer(r"@[A-Za-z_]", result)]
+        removed = False
+        for start in reversed(annotation_starts):
+            if is_java_annotation_fragment(result[start:]):
+                result = result[:start].rstrip()
+                removed = True
+                break
+        if not removed:
+            return result
+
+
+def java_wildcard_method_token(line: str) -> str | None:
+    candidates = list(re.finditer(r"\b([A-Za-z_]\w*)\s*\(", line))
+    for candidate in reversed(candidates):
+        prefix = line[: candidate.start()].rstrip()
+        while prefix.endswith("]"):
+            bracket = prefix.rfind("[")
+            if bracket < 0 or prefix[bracket + 1 : -1].strip():
+                break
+            prefix = prefix[:bracket].rstrip()
+            prefix = strip_trailing_java_annotations(prefix)
+        if not prefix.endswith(">"):
+            continue
+
+        angle_depth = 0
+        paren_depth = 0
+        brace_depth = 0
+        quote = ""
+        escaped = False
+        wildcard = False
+        outer_start = -1
+        balanced = True
+        rejected = False
+        for index, char in enumerate(prefix):
+            if quote:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == quote:
+                    quote = ""
+                continue
+            if char in {'"', "'"}:
+                quote = char
+            elif char == "(" :
+                paren_depth += 1
+            elif char == ")":
+                paren_depth -= 1
+            elif char == "{":
+                if angle_depth == 0 and paren_depth == 0:
+                    rejected = True
+                    break
+                brace_depth += 1
+            elif char == "}":
+                brace_depth -= 1
+            elif char == "<" and paren_depth == 0:
+                if angle_depth == 0:
+                    outer_start = index
+                angle_depth += 1
+            elif char == ">" and paren_depth == 0:
+                angle_depth -= 1
+                if angle_depth < 0:
+                    balanced = False
+                    break
+            elif char == "?" and angle_depth > 0:
+                wildcard = True
+            elif char in "=;" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+                rejected = True
+                break
+            if paren_depth < 0 or brace_depth < 0:
+                balanced = False
+                break
+
+        if rejected or not balanced or quote or angle_depth or paren_depth or brace_depth or not wildcard:
+            continue
+        before_generic = prefix[:outer_start].rstrip() if outer_start >= 0 else ""
+        if not before_generic or before_generic.endswith("."):
+            continue
+        return str(candidate.group(1))
+    return None
+
+
+def strip_java_comments_line(
+    line: str,
+    block_comment: bool,
+    text_block: bool,
+) -> tuple[str, bool, bool]:
+    output: list[str] = []
+    index = 0
+    quote = ""
+    escaped = False
+    while index < len(line):
+        if block_comment:
+            end = line.find("*/", index)
+            if end < 0:
+                return "".join(output), True, text_block
+            block_comment = False
+            index = end + 2
+            continue
+        if text_block:
+            end = line.find('"""', index)
+            while end >= 0:
+                backslashes = 0
+                cursor = end - 1
+                while cursor >= 0 and line[cursor] == "\\":
+                    backslashes += 1
+                    cursor -= 1
+                if backslashes % 2 == 0:
+                    break
+                end = line.find('"""', end + 3)
+            if end < 0:
+                return "".join(output), block_comment, True
+            text_block = False
+            index = end + 3
+            continue
+        if quote:
+            char = line[index]
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            index += 1
+            continue
+        if line.startswith('"""', index):
+            text_block = True
+            index += 3
+            continue
+        if line.startswith("//", index):
+            break
+        if line.startswith("/*", index):
+            block_comment = True
+            index += 2
+            continue
+        char = line[index]
+        output.append(char)
+        if char in {'"', "'"}:
+            quote = char
+        index += 1
+    return "".join(output), block_comment, text_block
+
+
+def java_fragment_has_declaration_boundary(fragment: str) -> bool:
+    angle_depth = 0
+    paren_depth = 0
+    brace_depth = 0
+    quote = ""
+    escaped = False
+    for char in fragment:
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "<" and paren_depth == 0:
+            angle_depth += 1
+        elif char == ">" and paren_depth == 0 and angle_depth > 0:
+            angle_depth -= 1
+        elif char == "(":
+            paren_depth += 1
+        elif char == ")" and paren_depth > 0:
+            paren_depth -= 1
+        elif char == "{" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+            return True
+        elif char == "{":
+            brace_depth += 1
+        elif char == "}" and brace_depth > 0:
+            brace_depth -= 1
+        elif char == "}" and angle_depth == 0 and paren_depth == 0:
+            return True
+        elif char == ";" and angle_depth == 0 and paren_depth == 0 and brace_depth == 0:
+            return True
+    return False
+
+
 def behavior_patterns_for_path(rel_path: str | None) -> tuple[re.Pattern[str], ...]:
-    if Path(str(rel_path or "")).suffix.lower() == ".py":
+    suffix = Path(str(rel_path or "")).suffix.lower()
+    if suffix == ".py":
         return tuple(pattern for pattern in BEHAVIOR_PATTERNS if pattern is not GENERIC_METHOD_BEHAVIOR_PATTERN)
+    if suffix == ".kt":
+        return (
+            KOTLIN_METHOD_BEHAVIOR_PATTERN,
+            KOTLIN_TYPE_BEHAVIOR_PATTERN,
+            *(
+                pattern
+                for pattern in BEHAVIOR_PATTERNS
+                if pattern not in {GENERIC_METHOD_BEHAVIOR_PATTERN, BEHAVIOR_PATTERNS[1]}
+            ),
+        )
     return BEHAVIOR_PATTERNS
 
 
 def behavior_tokens(text: str, rel_path: str | None = None) -> set[str]:
     tokens: set[str] = set()
+    suffix = Path(str(rel_path or "")).suffix.lower()
+    if suffix == ".kt":
+        for enum_match in KOTLIN_ENUM_BODY_PATTERN.finditer(text):
+            tokens.update(
+                match.group(1)
+                for match in KOTLIN_ENUM_ENTRY_PATTERN.finditer(enum_match.group("body"))
+            )
+    java_block_comment = False
+    java_text_block = False
+    java_declaration_lines: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("//"):
+        if not stripped or (suffix != ".java" and stripped.startswith("#")):
             continue
-        for pattern in behavior_patterns_for_path(rel_path):
-            match = pattern.search(line)
+        behavior_line = line
+        line_in_java_text_block = False
+        if suffix == ".java":
+            line_in_java_text_block = java_text_block
+            scanner_line, java_block_comment, java_text_block = strip_java_comments_line(
+                line,
+                java_block_comment,
+                java_text_block,
+            )
+            line_in_java_text_block = line_in_java_text_block or java_text_block
+            scanner_fragment = scanner_line.strip()
+            behavior_line = line if line_in_java_text_block else scanner_line
+            if scanner_fragment:
+                java_declaration_lines.append(scanner_fragment)
+                declaration_text = " ".join(java_declaration_lines)
+                for start in range(len(java_declaration_lines)):
+                    java_token = java_wildcard_method_token(" ".join(java_declaration_lines[start:]))
+                    if java_token:
+                        tokens.add(java_token)
+                        break
+                if java_fragment_has_declaration_boundary(declaration_text):
+                    java_declaration_lines.clear()
+        elif stripped.startswith("//"):
+            continue
+        if not behavior_line.strip():
+            continue
+        patterns = behavior_patterns_for_path(rel_path)
+        if line_in_java_text_block:
+            patterns = tuple(pattern for pattern in patterns if pattern is not GENERIC_METHOD_BEHAVIOR_PATTERN)
+        for pattern in patterns:
+            match = pattern.search(behavior_line)
             if not match:
                 continue
             token = str(match.group(1)).strip().strip("\"'")
@@ -1190,18 +1662,54 @@ def replaced_test_behaviors(
     return replaced
 
 
+def matched_behavior_relocation_sources(
+    before: dict[str, list[str]],
+    after: dict[str, list[str]],
+) -> set[str]:
+    candidates: dict[str, list[str]] = {}
+    for source, tokens in before.items():
+        source_tokens = set(tokens)
+        if not source_tokens or set(after.get(source, [])):
+            continue
+        candidates[source] = sorted(
+            destination
+            for destination, destination_tokens in after.items()
+            if destination != source
+            and not set(before.get(destination, []))
+            and source_tokens <= set(destination_tokens)
+            and compatible_behavior_move(source, destination)
+        )
+
+    destination_owner: dict[str, str] = {}
+
+    def assign(source: str, seen_destinations: set[str]) -> bool:
+        for destination in candidates.get(source, []):
+            if destination in seen_destinations:
+                continue
+            seen_destinations.add(destination)
+            current_owner = destination_owner.get(destination)
+            if current_owner is None or assign(current_owner, seen_destinations):
+                destination_owner[destination] = source
+                return True
+        return False
+
+    for source in sorted(
+        candidates,
+        key=lambda item: (len(candidates[item]), -len(set(before[item])), item),
+    ):
+        assign(source, set())
+    return set(destination_owner.values())
+
+
 def detect_behavior_regression(before: dict[str, list[str]], after: dict[str, list[str]]) -> dict[str, Any]:
     lost: dict[str, list[str]] = {}
-    newly_added = {
-        token
-        for rel_path, tokens in after.items()
-        for token in set(tokens) - set(before.get(rel_path, []))
-    }
+    relocated_sources = matched_behavior_relocation_sources(before, after)
     for rel_path, tokens in before.items():
         before_tokens = set(tokens)
         after_tokens = set(after.get(rel_path, []))
         missing_tokens = before_tokens - after_tokens
-        missing_tokens -= newly_added
+        if rel_path in relocated_sources:
+            missing_tokens.clear()
         missing_tokens -= replaced_test_behaviors(
             rel_path,
             missing_tokens,
@@ -2020,6 +2528,7 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         task_row = _load_task_row(task_rows, task_id) if task_id else None
         repair_source_head_sha = integration_repair_source_head_sha(task_row, item)
         repairable_worker_failure = is_repairable_integrator_failure_task(task_row, item)
+        evidence_head_sha: str | None = None
         gate_issues = [
             *integration_target_gate_issues(args.base_ref, task_row),
             *_documentation_version_gate_issues(project_root, args.base_ref, task_row, item),
@@ -2032,14 +2541,57 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
                 "documentation_version_gate_issues": gate_issues,
             })
             continue
+        if requires_task_bound_immutable_worker_evidence(task_row, item):
+            evidence_ok, evidence_failure_class, evidence_head_sha, evidence_report_path = task_bound_immutable_worker_evidence(
+                project_root,
+                task_row,
+                item,
+            )
+            if not evidence_ok:
+                routed.append({
+                    "task_id": task_id,
+                    "next_owner": "dispatcher" if repairable_worker_failure else "integrator",
+                    "route": "needs_worker_fix",
+                    "failure_class": evidence_failure_class,
+                    "head_sha": evidence_head_sha or "",
+                    "worker_report": evidence_report_path,
+                    "reason": f"immutable worker evidence validation failed: task={task_id}, class={evidence_failure_class}, head={evidence_head_sha or 'unknown'}",
+                    **({"integration_repair_kind": "worker_report_validation"} if repairable_worker_failure else {}),
+                    **({"integration_repair_source_head_sha": evidence_head_sha} if repairable_worker_failure and evidence_head_sha else {}),
+                })
+                continue
         resolved_branch = resolve_branch_ref(branch, worktree, results)
         if not resolved_branch:
             routed.append({"task_id": task_id, "next_owner": "dispatcher", "reason": "source branch not found"})
             continue
+        if evidence_head_sha:
+            current_branch_head_sha = resolved_branch_head_sha(worktree, resolved_branch, results)
+            if current_branch_head_sha != evidence_head_sha:
+                routed.append({
+                    "task_id": task_id,
+                    "next_owner": "dispatcher" if repairable_worker_failure else "integrator",
+                    "route": "needs_worker_fix",
+                    "failure_class": INTEGRITY_EVIDENCE_FAILURE_BRANCH_HEAD_MISMATCH,
+                    "head_sha": evidence_head_sha,
+                    "current_branch_head_sha": current_branch_head_sha,
+                    "worker_report": evidence_report_path,
+                    "reason": (
+                        "immutable worker evidence validation failed: "
+                        f"task={task_id}, class={INTEGRITY_EVIDENCE_FAILURE_BRANCH_HEAD_MISMATCH}, "
+                        f"evidence_head={evidence_head_sha}, current_head={current_branch_head_sha or 'unknown'}"
+                    ),
+                    **({"integration_repair_kind": "worker_report_validation"} if repairable_worker_failure else {}),
+                    **({"integration_repair_source_head_sha": evidence_head_sha} if repairable_worker_failure else {}),
+                })
+                continue
+        # A mutable branch may advance immediately after the equality check.
+        # Every downstream Git read/apply must therefore use the validated
+        # immutable evidence commit when this gate is active.
+        candidate_ref = evidence_head_sha or resolved_branch
         live_ci_issues, live_ci_evidence, live_ci_commands = repository_hygiene_live_ci_gate(
             worktree,
             args.base_ref,
-            resolved_branch,
+            candidate_ref,
             task_row,
             item,
         )
@@ -2053,7 +2605,7 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
                 "required_ci_evidence": live_ci_evidence,
             })
             continue
-        checkout_paths, missing_paths = paths_existing_at_ref(resolved_branch, paths, worktree, results)
+        checkout_paths, missing_paths = paths_existing_at_ref(candidate_ref, paths, worktree, results)
         if not checkout_paths:
             next_owner = "dispatcher" if task_id.startswith("SRC-") else "worker"
             routed.append({
@@ -2066,13 +2618,13 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         before_texts = {rel_path: read_text_file(worktree / rel_path) for rel_path in checkout_paths}
         behavior_before = behavior_snapshot(worktree, checkout_paths)
         candidate_texts = {
-            rel_path: text_at_ref(worktree, resolved_branch, rel_path)
+            rel_path: text_at_ref(worktree, candidate_ref, rel_path)
             for rel_path in checkout_paths
         }
         candidate_apply, candidate_apply_commands = apply_candidate_delta(
             worktree,
             args.base_ref,
-            resolved_branch,
+            candidate_ref,
             checkout_paths,
         )
         results.extend(candidate_apply_commands)
@@ -2192,6 +2744,8 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         return report
 
     pushed = False
+    ready_commits = dict(zip(ready, commits))
+    sql_integration_candidates = None
     if ready:
         current = run(["git", "rev-parse", args.base_ref], project_root)
         results.append(current)
@@ -2200,6 +2754,31 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
             report = {"schema_version": 1, "created_at": utc_now(), "status": "blocked", "reason": "base_changed_during_direct_merge", "ready": ready, "routed": routed, "command_results": results}
             write_json(report_path, report)
             return report
+        if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() == "postgres":
+            try:
+                sql_integration_candidates = record_sql_integrator_candidates(
+                    project_id=os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip(),
+                    ready_commits=ready_commits,
+                    ready_metadata=ready_metadata,
+                    base_sha=base,
+                    state="integrating",
+                )
+            except Exception as exc:
+                report = {
+                    "schema_version": 1,
+                    "created_at": utc_now(),
+                    "status": "blocked",
+                    "reason": "sql_integration_candidate_record_failed",
+                    "ready": ready,
+                    "routed": routed,
+                    "pushed": False,
+                    "recovery_required": False,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                    "command_results": results,
+                }
+                write_json(report_path, report)
+                return report
         push = run(["git", "push", "origin", "HEAD:develop"], worktree)
         results.append(push)
         pushed = push["exit_code"] == 0
@@ -2207,8 +2786,34 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
             report = {"schema_version": 1, "created_at": utc_now(), "status": "blocked", "reason": "push_failed", "ready": ready, "routed": routed, "command_results": results}
             write_json(report_path, report)
             return report
+        if sql_integration_candidates is not None:
+            try:
+                sql_integration_candidates = record_sql_integrator_candidates(
+                    project_id=os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip(),
+                    ready_commits=ready_commits,
+                    ready_metadata=ready_metadata,
+                    base_sha=base,
+                    state="merged",
+                )
+            except Exception as exc:
+                report = {
+                    "schema_version": 1,
+                    "created_at": utc_now(),
+                    "status": "recovery_required",
+                    "reason": "sql_integration_candidate_merge_record_failed",
+                    "ready": ready,
+                    "routed": routed,
+                    "pushed": True,
+                    "commits": commits,
+                    "sql_integration_candidates": sql_integration_candidates,
+                    "recovery_required": True,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                    "command_results": results,
+                }
+                write_json(report_path, report)
+                return report
 
-    ready_commits = dict(zip(ready, commits))
     if pushed:
         source_pr_closures.update(close_source_pull_requests(worktree, ready_commits, ready_metadata, task_rows, results))
     state_ready_commits = {**source_close_retry_commits, **ready_commits}
@@ -2233,6 +2838,7 @@ def direct_merge(args: argparse.Namespace) -> dict[str, Any]:
         "routed": routed,
         "pushed": pushed,
         "commits": commits,
+        "sql_integration_candidates": sql_integration_candidates,
         "source_pr_closures": source_pr_closures,
         "state_commit": None,
         "command_results": results,

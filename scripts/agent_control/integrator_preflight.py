@@ -63,6 +63,7 @@ COORDINATION_EXACT_PATHS = {
 COORDINATION_PREFIXES = (
     ".agent/",
     "AiStudio/Agent/",
+    "AiStudio/Project_state/intake/inbox/",
     "agent-worktrees/",
     "docs/agent-updates/",
     "docs/reports/",
@@ -77,13 +78,12 @@ COORDINATION_PREFIXES = (
 )
 AGENT_CORE_PROJECT_ID = "ai-project-agent"
 AGENT_CORE_AGENT_VERSION_PATH = ".agent/agent_version.json"
+CANONICAL_PROJECT_IDENTITY_PATHS = {"PROJECT_VERSION.json", ".agent/context.json"}
 PROJECT_DURABLE_INTEGRATION_PATHS = {".agent/START_HERE.md"}
 AGENT_CORE_DURABLE_INTEGRATION_PATHS = {
     ".agent/codebase_intelligence.json",
 }
 AGENT_CORE_DURABLE_INTEGRATION_PREFIXES = ("docs/plans/tasks/",)
-
-
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
@@ -224,9 +224,7 @@ def list_candidate_refs(
         if COMMIT_SHA_RE.fullmatch(raw) and commit_object_available(project_root, raw):
             resolved = raw.lower()
         else:
-            candidates = [raw]
-            if not raw.startswith("origin/"):
-                candidates.append(f"origin/{raw}")
+            candidates = [raw] if raw.startswith("origin/") else [f"origin/{raw}", raw]
             resolved = next((candidate for candidate in candidates if candidate in available), None)
         if not resolved or normalize_branch(resolved) == normalize_branch(base) or resolved in seen:
             continue
@@ -252,6 +250,26 @@ def candidate_changed_paths(project_root: Path, base_ref: str, merge_base_ref: s
     return sorted(set([*active, *base_only_coordination]))
 
 
+def state_only_base_advance(
+    paths: list[str],
+    *,
+    project_root: Path | None = None,
+    project_ref: str | None = None,
+) -> bool:
+    """Return true only when every base-side advance is approved coordination state."""
+    if not paths:
+        return False
+    normalized_paths = {path.replace("\\", "/") for path in paths}
+    if normalized_paths & CANONICAL_PROJECT_IDENTITY_PATHS:
+        return False
+    _, integration_paths = split_coordination_paths(
+        paths,
+        project_root=project_root,
+        project_ref=project_ref,
+    )
+    return not integration_paths
+
+
 def compact_paths(paths: list[str], limit: int) -> list[str]:
     if limit <= 0:
         return paths
@@ -270,9 +288,13 @@ def is_coordination_path(path: str) -> bool:
     return normalized in COORDINATION_EXACT_PATHS or any(normalized.startswith(prefix) for prefix in COORDINATION_PREFIXES)
 
 
-def canonical_project_id(project_root: Path) -> str:
+def canonical_project_id(project_root: Path, *, ref: str | None = None) -> str:
     for relative_path in ("PROJECT_VERSION.json", ".agent/context.json"):
-        metadata = load_json(project_root / relative_path)
+        metadata = (
+            git_json_at_ref(project_root, ref, relative_path)
+            if ref
+            else load_json(project_root / relative_path)
+        )
         if isinstance(metadata, dict):
             value = str(metadata.get("project_id") or metadata.get("project_name") or "").strip()
             if value:
@@ -377,8 +399,16 @@ def apply_agent_version_path_gate(
     return decision
 
 
-def split_coordination_paths(paths: list[str], *, project_root: Path | None = None) -> tuple[list[str], list[str]]:
-    agent_core = project_root is not None and canonical_project_id(project_root) == AGENT_CORE_PROJECT_ID
+def split_coordination_paths(
+    paths: list[str],
+    *,
+    project_root: Path | None = None,
+    project_ref: str | None = None,
+) -> tuple[list[str], list[str]]:
+    agent_core = (
+        project_root is not None
+        and canonical_project_id(project_root, ref=project_ref) == AGENT_CORE_PROJECT_ID
+    )
     coordination: list[str] = []
     integration: list[str] = []
     for path in paths:
@@ -509,11 +539,21 @@ def collect_conflicts(candidates: list[dict[str, Any]], max_conflicts: int, max_
     return conflicts, omitted
 
 
-def collect_candidate(project_root: Path, base: str, ref: str, tasks_by_id: dict[str, dict[str, Any]], max_paths: int) -> dict[str, Any]:
+def collect_candidate(
+    project_root: Path,
+    base: str,
+    ref: str,
+    tasks_by_id: dict[str, dict[str, Any]],
+    max_paths: int,
+    *,
+    base_identity_ref: str | None = None,
+) -> dict[str, Any]:
     head_sha = git_stdout(project_root, ["rev-parse", ref])
     merge_base = git_stdout(project_root, ["merge-base", base, ref])
     full_paths = candidate_changed_paths(project_root, base, merge_base, ref)
+    full_base_advance_paths = changed_paths(project_root, merge_base, base)
     paths = compact_paths(full_paths, max_paths)
+    base_advance_paths = compact_paths(full_base_advance_paths, max_paths)
     coordination_paths, integration_paths = split_coordination_paths(paths, project_root=project_root)
     agent_version_decision = apply_agent_version_path_gate(
         project_root,
@@ -548,6 +588,17 @@ def collect_candidate(project_root: Path, base: str, ref: str, tasks_by_id: dict
         "merge_base_sha": merge_base,
         "ahead_of_base": int(ahead or 0),
         "behind_base": int(behind or 0),
+        "base_advance_paths": base_advance_paths,
+        "base_advance_path_count": len(full_base_advance_paths),
+        "base_advance_paths_truncated": len(base_advance_paths) < len(full_base_advance_paths),
+        "state_only_base_advance": (
+            int(behind or 0) > 0
+            and state_only_base_advance(
+                full_base_advance_paths,
+                project_root=project_root,
+                project_ref=base_identity_ref or base,
+            )
+        ),
         "changed_paths": paths,
         "coordination_changed_paths": coordination_paths,
         "integration_changed_paths": integration_paths,
@@ -610,7 +661,16 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     errors = []
     for ref in list_candidate_refs(project_root, scan_prefixes, args.base, [*routed_task_refs, *hygiene_refs]):
         try:
-            candidates.append(collect_candidate(project_root, args.base, ref, tasks_by_id, args.max_paths_per_candidate))
+            candidates.append(
+                collect_candidate(
+                    project_root,
+                    base_sha,
+                    ref,
+                    tasks_by_id,
+                    args.max_paths_per_candidate,
+                    base_identity_ref=base_sha,
+                )
+            )
         except subprocess.CalledProcessError as exc:
             errors.append({
                 "branch": ref,
@@ -619,14 +679,29 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
 
     conflicts, omitted_conflicts = collect_conflicts(candidates, args.max_conflicts, args.max_overlap_paths)
     dirty = any(line and not line.startswith("##") for line in status.splitlines())
-    stale_candidates = [item for item in candidates if item["behind_base"] > 0]
+    stale_candidates = [
+        item
+        for item in candidates
+        if item["behind_base"] > 0 and not item["state_only_base_advance"]
+    ]
+    state_only_replay_candidates = [
+        item
+        for item in candidates
+        if item["behind_base"] > 0 and item["state_only_base_advance"]
+    ]
     missing_task_trace = [item for item in candidates if item["ahead_of_base"] > 0 and not item["task_ids"]]
 
     blockers = []
     if dirty:
         blockers.append({"code": "dirty_worktree", "severity": "warning", "message": "local worktree has uncommitted changes"})
     for item in stale_candidates:
-        blockers.append({"code": "stale_branch", "severity": "warning", "branch": item["branch"], "behind_base": item["behind_base"]})
+        blockers.append({
+            "code": "stale_branch",
+            "severity": "error",
+            "branch": item["branch"],
+            "behind_base": item["behind_base"],
+            "required_route": "needs_rebase",
+        })
     for item in missing_task_trace:
         blockers.append({"code": "missing_task_trace", "severity": "warning", "branch": item["branch"]})
     for conflict in conflicts:
@@ -656,6 +731,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_ref_fetch": candidate_ref_fetch,
         "candidate_count": len(candidates),
         "candidates": candidates,
+        "state_only_replay_candidate_count": len(state_only_replay_candidates),
         "integration_task_count": len(integration_tasks),
         "integration_tasks": integration_tasks,
         "integration_task_refs": routed_task_refs,

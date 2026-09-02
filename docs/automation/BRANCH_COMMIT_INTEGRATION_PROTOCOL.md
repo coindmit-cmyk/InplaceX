@@ -125,7 +125,9 @@ Every task-related commit should identify the task ID and role. If a commit is p
 
 1. Refresh GitHub Issues, PRs, recent commits, queue, locks and relevant docs.
 2. Confirm or create a task ID.
-3. Create a role branch from the fresh integration branch.
+3. Create a role branch only from the freshly fetched `origin/develop` commit.
+   Record that immutable base SHA in the run evidence. Reusing another role,
+   worker or feature branch as the execution base is forbidden.
 4. For executable worker tasks, set `in_progress` status and lock metadata before edits.
 5. Make changes inside allowed paths only.
 6. Update tests, docs, task page and changelog when required.
@@ -133,15 +135,22 @@ Every task-related commit should identify the task ID and role. If a commit is p
 8. Commit with task and role metadata.
 9. Push the branch to GitHub and open a draft PR to the integration branch.
 10. Set task status to `review` and record branch, commits and PR link.
-11. Auto Integrator checks merge order, conflicts, stale branches and missing checks when multiple branches/PRs need assembly, then records a concrete integration route on its own integrator branch/PR.
+11. Auto Integrator checks merge order, conflicts, stale branches and missing
+    checks when multiple branches/PRs need assembly. A branch that does not
+    contain current `origin/develop` is `needs_rebase`, never a ready candidate.
+    Code from an older branch is source evidence only: replay its task delta on
+    a new branch from current `origin/develop`; never use the old branch tree as
+    the new baseline.
 12. Reviewer/owner reviews the PR when the task or project policy requires it.
 13. Auto Finalizer may merge a verified safe Integrator package into `develop` when the finalizer merge gate passes; risky, ambiguous or owner-only items go to `needs_human`.
 14. If accepted work changed product/runtime code, Auto Finalizer or the responsible human-mode agent updates the project code version before marking the closure complete.
 15. Auto Finalizer records accepted status, releases/flags locks and synchronizes final docs/reports.
 16. Each role performs end-of-run cleanup: archive transient artifacts, remove safe local worktrees/scratch files, record cleanup candidates and report anything intentionally left behind.
 17. After accepted commits are present on the integration branch, temporary role
-branches become cleanup candidates unless an open PR, task link or owner note
-keeps them active.
+    branches become terminal cleanup candidates unless an open PR, task link or
+    owner note keeps them active. The lifecycle runner archives the exact tip,
+    verifies manifest/checksum recovery evidence, removes its worktree and
+    deletes the source ref. A task branch is not permanent project structure.
 18. Mark task `owner_approved` or `done` only after finalizer-gate, merge or owner-approval evidence supports that exact status. Repository Hygiene independently verifies source-tip ancestry, patch/capability equivalence or an explicit no-product-payload disposition; missing proof creates an integration recovery task instead of cleanup.
 19. Release work later flows from the integration branch to release and production branches according to project rules.
 
