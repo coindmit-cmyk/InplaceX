@@ -2,22 +2,22 @@
 
 This module is a source snapshot of
 `coindmit-cmyk/MirkoriGamesPlatform:platform-game-sdk` at merge commit
-`be3f197a154de633e78f04cb7f8be8b3531c28a8`, coordinate
-`com.mirkori.platform:platform-game-sdk:0.2.0`.
+`ac8f56aa3bf29661df8c362c9afabcf77c9ed50e`, coordinate
+`com.mirkori.platform:platform-game-sdk:0.4.4-SNAPSHOT`.
 
-The InplaceX snapshot carries one reviewed transport-metadata extension on top
-of that commit: `PlatformHttpResponse.serverTime` and the SDK's monotonic
+That reviewed snapshot includes guest checkout handoffs, entitlement delivery
+and acknowledgement, signed installed-build decisions, signed Pro membership
+snapshots, and Pro concurrency leases.
+
+The InplaceX snapshot carries two reviewed compatibility extensions on top of
+that commit. `PlatformHttpResponse.serverTime` and the SDK's monotonic
 observation revision expose a transport-validated HTTPS `Date` value without
-changing any Platform request or JSON contract. This is used only to evaluate
-offline timed entitlements without trusting the device wall clock.
-The snapshot also exposes `pendingOrders()` at the reviewed Platform route
+changing any Platform request or JSON contract. Timed entitlements and signed
+installed-build decision validity use that trusted observation instead of
+depending solely on the device wall clock. The snapshot also preserves
+`pendingOrders()` at the reviewed Platform route
 `GET /api/v1/commerce/orders/pending`; Android commerce uses this explicit
 projection instead of inferring active work from bounded order history.
-The Google profile-conflict resolution contract is synchronized from Platform
-merge commit `dfc87e02f7c1201169e5e7da273dbf6942a42a1f` (PR #22): an initial
-conflict remains fail-closed, while an explicit confirmed retry may authorize
-the already existing Google-linked game profile without deleting or merging
-the current guest profile.
 
 It is vendored because the platform repository is private and an InplaceX
 GitHub Actions token cannot safely resolve a cross-repository source or Maven

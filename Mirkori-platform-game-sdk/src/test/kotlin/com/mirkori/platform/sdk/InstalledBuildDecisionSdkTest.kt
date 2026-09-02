@@ -62,6 +62,34 @@ class InstalledBuildDecisionSdkTest {
         }
     }
 
+    @Test
+    fun sdkUsesTransportValidatedServerTimeWhenDeviceClockIsWrong() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val serverTime = Instant.parse("2026-08-30T15:00:00Z")
+        val deviceTime = serverTime.minusSeconds(86_400)
+        val sdk = MirkoriGameSdk(
+            config = MirkoriGameSdkConfig(
+                platformBaseUrl = "https://games.dmit.life",
+                gameId = "inplacex",
+                redirectUri = "https://games.dmit.life/connect/inplacex/callback",
+                distributionId = "rf-mirkori",
+            ),
+            transport = DecisionTransport(
+                response = signedEnvelope(keys.private, requiredPayload(serverTime)),
+                serverTime = serverTime,
+            ),
+            releaseDecisionVerifier = Rs256PlatformReleaseDecisionVerifier(mapOf(KeyId to keys.public)),
+            clock = Clock.fixed(deviceTime, ZoneOffset.UTC),
+        )
+
+        val decision = runDecision {
+            sdk.checkInstalledBuildDecision("inplacex-rf-40", 40)
+        }
+
+        assertEquals(PlatformInstalledBuildStatus.REQUIRED, decision.status)
+        assertEquals(serverTime.toEpochMilli(), sdk.latestServerTimeObservation()?.serverEpochMs)
+    }
+
     private fun requiredPayload(now: Instant): String {
         val fingerprint = "AA:".repeat(31) + "AA"
         return """
@@ -99,12 +127,15 @@ class InstalledBuildDecisionSdkTest {
     }
 }
 
-private class DecisionTransport(private val response: String) : PlatformTransport {
+private class DecisionTransport(
+    private val response: String,
+    private val serverTime: Instant? = null,
+) : PlatformTransport {
     var request: PlatformHttpRequest? = null
 
     override suspend fun execute(request: PlatformHttpRequest): PlatformHttpResponse {
         this.request = request
-        return PlatformHttpResponse(200, response)
+        return PlatformHttpResponse(200, response, serverTime)
     }
 }
 

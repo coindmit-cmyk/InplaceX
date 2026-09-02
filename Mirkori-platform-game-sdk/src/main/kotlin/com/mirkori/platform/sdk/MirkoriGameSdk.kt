@@ -162,7 +162,9 @@ class MirkoriGameSdk(
             require(decision.installedReleaseId == installedReleaseId)
             require(decision.installedVersionCode == installedVersionCode)
             require(decision.policyVersion > 0)
-            val now = clock.instant()
+            val now = latestServerTimeObservation()
+                ?.let { observation -> Instant.ofEpochMilli(observation.serverEpochMs) }
+                ?: clock.instant()
             require(!decision.issuedAt.isAfter(now.plus(AllowedDecisionClockSkew)))
             require(decision.expiresAt.isAfter(now.minus(AllowedDecisionClockSkew)))
             val lifetime = Duration.between(decision.issuedAt, decision.expiresAt)
