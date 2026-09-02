@@ -39,6 +39,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,13 +92,14 @@ fun SocialRootScreen(
     requestedQuickMatchPlayStyle: RemoteFriendPlayStyle? = null,
     requestedQuickMatchCodeLength: Int = 4,
     onQuickMatchRequestConsumed: () -> Unit = {},
+    onReturnToQuickMatchOrigin: () -> Unit = {},
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
     onNestedScreenChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var activeDestination by remember {
+    var activeDestination by rememberSaveable {
         mutableStateOf<SocialDestination?>(
             when {
                 requestedQuickMatchPlayStyle != null && onlineRuntime != null ->
@@ -109,15 +111,29 @@ fun SocialRootScreen(
         )
     }
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
-    var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
-    var quickMatchPlayStyle by remember {
+    var autoAcceptInviteCode by rememberSaveable { mutableStateOf<String?>(null) }
+    var quickMatchPlayStyle by rememberSaveable {
         mutableStateOf(requestedQuickMatchPlayStyle ?: RemoteFriendPlayStyle.RACE)
     }
-    var quickMatchCodeLength by remember {
+    var quickMatchCodeLength by rememberSaveable {
         mutableStateOf(normalizeOnlineCodeLength(requestedQuickMatchCodeLength))
     }
-    var startQuickMatchImmediately by remember {
+    var startQuickMatchImmediately by rememberSaveable {
         mutableStateOf(requestedQuickMatchPlayStyle != null)
+    }
+    var returnToQuickMatchOrigin by rememberSaveable {
+        mutableStateOf(requestedQuickMatchPlayStyle != null && onlineRuntime != null)
+    }
+
+    fun exitActiveDestination() {
+        val shouldReturnToOrigin = returnToQuickMatchOrigin
+        onActiveSessionChange(null)
+        selectedFriend = null
+        autoAcceptInviteCode = null
+        startQuickMatchImmediately = false
+        returnToQuickMatchOrigin = false
+        activeDestination = null
+        if (shouldReturnToOrigin) onReturnToQuickMatchOrigin()
     }
 
     LaunchedEffect(activeDestination) {
@@ -151,6 +167,7 @@ fun SocialRootScreen(
             quickMatchPlayStyle = requestedPlayStyle
             quickMatchCodeLength = normalizeOnlineCodeLength(requestedQuickMatchCodeLength)
             startQuickMatchImmediately = true
+            returnToQuickMatchOrigin = true
             activeDestination = SocialDestination.ONLINE_MATCH
         }
         onQuickMatchRequestConsumed()
@@ -176,10 +193,7 @@ fun SocialRootScreen(
         }
     }
     BackHandler(enabled = activeDestination != null) {
-        onActiveSessionChange(null)
-        selectedFriend = null
-        autoAcceptInviteCode = null
-        activeDestination = null
+        exitActiveDestination()
     }
 
     if (activeDestination == SocialDestination.FRIENDS) {
@@ -247,13 +261,7 @@ fun SocialRootScreen(
                     .takeIf { activeDestination == SocialDestination.FRIEND_MATCH },
                 requestBack = requestExitGame,
                 onBackRequestConsumed = onExitGameConsumed,
-                onExitDestination = {
-                    onActiveSessionChange(null)
-                    selectedFriend = null
-                    autoAcceptInviteCode = null
-                    startQuickMatchImmediately = false
-                    activeDestination = null
-                },
+                onExitDestination = ::exitActiveDestination,
             )
         }
         return

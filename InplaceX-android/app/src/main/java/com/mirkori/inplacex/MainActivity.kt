@@ -1167,6 +1167,9 @@ class MainActivity : ComponentActivity() {
                                 ),
                                 requestedQuickMatchCodeLength = requestedOnlineCodeLength,
                                 onQuickMatchRequestConsumed = { requestedOnlinePlayStyleName = null },
+                                onReturnToQuickMatchOrigin = {
+                                    currentSection = AppSection.HOME
+                                },
                                 requestExitGame = requestExitGame,
                                 onExitGameConsumed = { requestExitGame = false },
                                 onInGameChange = { inGame -> isInGame = inGame },

@@ -63,7 +63,9 @@
   the system document provider so images can be selected outside screenshots.
 - Race and duel online actions now start matchmaking immediately with the mode
   and code length already selected on the preceding screen instead of reopening
-  the same settings form.
+  the same settings form. Cancelling that matchmaking now returns to the Race
+  or Duel setup that launched it; matchmaking opened from Friends still returns
+  to Friends.
 - Online input now shares free-position editing with local play: automatically
   confirmed digits no longer consume keypad presses, and disabling auto mode
   also disables hidden inferred substitutions on submission.
