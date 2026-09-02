@@ -138,6 +138,31 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
+    fun unavailableHeartbeatDropsOnlyLeaseAndKeepsVerifiedMembershipForRetry() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""") },
+        )
+        val store = ProMemoryStore(linkedState())
+        val service = service(keys.public, transport, store)
+
+        val started = runProRuntime { service.startOnlineSession() }
+        val unavailable = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertTrue(started.onlineSessionActive)
+        assertEquals(MirkoriProAvailability.RETRYABLE, unavailable.availability)
+        assertTrue(unavailable.active)
+        assertFalse(unavailable.onlineSessionActive)
+        assertNotNull(store.value?.confirmedProAccess)
+    }
+
+    @Test
     fun reportsConcurrencyLimitWithoutClaimingAnOnlineSession() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val transport = RuntimeProTransport(

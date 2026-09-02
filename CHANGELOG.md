@@ -7,7 +7,8 @@
   renew an expiring signed snapshot,
   persist its end date, claim/heartbeat/release one gameplay lease, enforce a
   live concurrency rejection, retry temporary Platform failures with the same
-  request identity, and preserve bounded signed offline Pro access;
+  request identity, reacquire a server-lost lease without deleting membership,
+  and preserve bounded signed offline Pro access;
   Mirkori Pro grants regular Pro only and production activation remains gated.
 - Added dormant Android composition for the Mirkori Pro runtime. A build
   variant must explicitly opt in with an immutable distribution and separately

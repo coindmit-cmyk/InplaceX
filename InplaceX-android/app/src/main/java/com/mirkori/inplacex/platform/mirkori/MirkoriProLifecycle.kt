@@ -35,7 +35,7 @@ internal suspend fun runMirkoriProLifecycle(
     var leaseHeld = false
     var releaseRequired = false
     try {
-        while (state.active) {
+        while (state.active || state.availability == MirkoriProAvailability.RETRYABLE) {
             if (leaseHeld) {
                 if (!awaitRetryOrHeartbeat()) return
                 state = operations.heartbeatGameplaySession()

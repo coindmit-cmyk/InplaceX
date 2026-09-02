@@ -83,6 +83,8 @@ class MirkoriProLifecycleTest {
         var waits = 0
         val retryable = readyState(leaseActive = false).copy(
             availability = MirkoriProAvailability.RETRYABLE,
+            active = false,
+            validUntilEpochMs = null,
         )
 
         runMirkoriProLifecycle(

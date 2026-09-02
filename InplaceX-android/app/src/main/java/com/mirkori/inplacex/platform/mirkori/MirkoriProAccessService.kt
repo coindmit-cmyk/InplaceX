@@ -173,7 +173,9 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            logFailure(error)
+            activeLease = null
+            stateFromCache(MirkoriProAvailability.RETRYABLE)
         } catch (error: PlatformApiException) {
             logFailure(error)
             stateFromCache(error.proAvailability(), lease = activeLease)
