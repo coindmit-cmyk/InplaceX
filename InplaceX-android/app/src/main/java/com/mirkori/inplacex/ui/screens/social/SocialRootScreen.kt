@@ -99,7 +99,7 @@ fun SocialRootScreen(
     onNestedScreenChange: (Boolean) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
-    var activeDestination by remember {
+    var activeDestination by rememberSaveable {
         mutableStateOf<SocialDestination?>(
             when {
                 requestedQuickMatchPlayStyle != null && onlineRuntime != null ->
@@ -111,14 +111,14 @@ fun SocialRootScreen(
         )
     }
     var selectedFriend by remember { mutableStateOf<LocalSocialRelationship?>(null) }
-    var autoAcceptInviteCode by remember { mutableStateOf<String?>(null) }
-    var quickMatchPlayStyle by remember {
+    var autoAcceptInviteCode by rememberSaveable { mutableStateOf<String?>(null) }
+    var quickMatchPlayStyle by rememberSaveable {
         mutableStateOf(requestedQuickMatchPlayStyle ?: RemoteFriendPlayStyle.RACE)
     }
-    var quickMatchCodeLength by remember {
+    var quickMatchCodeLength by rememberSaveable {
         mutableStateOf(normalizeOnlineCodeLength(requestedQuickMatchCodeLength))
     }
-    var startQuickMatchImmediately by remember {
+    var startQuickMatchImmediately by rememberSaveable {
         mutableStateOf(requestedQuickMatchPlayStyle != null)
     }
     var returnToQuickMatchOrigin by rememberSaveable {
