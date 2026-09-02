@@ -3,6 +3,7 @@ package com.mirkori.inplacex.platform.mirkori
 import com.mirkori.platform.sdk.GameIdentitySession
 import com.mirkori.platform.sdk.PlatformApiException
 import com.mirkori.platform.sdk.PlatformAuthMode
+import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformProBenefitUnavailableException
 import com.mirkori.platform.sdk.PlatformProConcurrencyLimitException
 import com.mirkori.platform.sdk.PlatformProConfigurationUnavailableException
@@ -52,6 +53,9 @@ class MirkoriProAccessService(
     @Volatile
     private var activeLease: PlatformProSessionLease? = null
 
+    @Volatile
+    private var pendingStart: PendingProSessionStart? = null
+
     fun cachedState(): MirkoriProAccessState = stateFromCache(MirkoriProAvailability.CACHED)
 
     suspend fun refresh(): MirkoriProAccessState = runtime.withOperationLock {
@@ -80,24 +84,37 @@ class MirkoriProAccessService(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
             )
-            if (currentLease.onlineSessionActive) return@withOperationLock currentLease
+            if (currentLease.onlineSessionActive) {
+                pendingStart = null
+                return@withOperationLock currentLease
+            }
             val refreshed = refreshLocked()
-            if (!refreshed.active) return@withOperationLock refreshed
+            if (!refreshed.active) {
+                pendingStart = null
+                return@withOperationLock refreshed
+            }
             val session = requireLinkedSession()
             val installationId = requireNotNull(currentPersistedState()).installation.installationId
             require(session.installationId == null || session.installationId == installationId)
-            val sessionId = sdk.newProSessionId()
-            val idempotencyKey = sdk.newIdempotencyKey()
+            val attempt = pendingStart?.takeIf {
+                it.accountId == session.accountId && it.installationId == installationId
+            } ?: PendingProSessionStart(
+                accountId = session.accountId,
+                installationId = installationId,
+                sessionId = sdk.newProSessionId(),
+                idempotencyKey = sdk.newIdempotencyKey(),
+            ).also { pendingStart = it }
             val leaseResult = authenticated(session) { accessToken, current ->
                 sdk.startProSession(
                     profileAccessToken = accessToken,
                     accountId = current.accountId,
                     installationId = installationId,
-                    sessionId = sessionId,
-                    idempotencyKey = idempotencyKey,
+                    sessionId = attempt.sessionId,
+                    idempotencyKey = attempt.idempotencyKey,
                 )
             }
             activeLease = leaseResult.value
+            pendingStart = null
             stateFromCache(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
@@ -108,6 +125,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConcurrencyLimitException) {
             logFailure(error)
             activeLease = null
+            pendingStart = null
             stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
         } catch (error: PlatformProConfigurationUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
@@ -189,6 +207,7 @@ class MirkoriProAccessService(
         val session = ensureFreshSession()
         if (session.authMode == PlatformAuthMode.GUEST) {
             activeLease = null
+            pendingStart = null
             clearConfirmedLocked()
             return MirkoriProAccessState(
                 availability = MirkoriProAvailability.SIGN_IN_REQUIRED,
@@ -202,7 +221,9 @@ class MirkoriProAccessService(
             sdk.proMembershipSnapshot(
                 profileAccessToken = accessToken,
                 accountId = current.accountId,
-                trustedServerTimeFloor = existing?.trustedTimeAnchor?.serverEpochMs?.let(Instant::ofEpochMilli),
+                trustedServerTimeFloor = existing?.trustedTimeAnchor
+                    ?.let(::trustedNowMs)
+                    ?.let(Instant::ofEpochMilli),
             )
         }
         val snapshot = snapshotResult.value
@@ -248,6 +269,7 @@ class MirkoriProAccessService(
     ): MirkoriProAccessState {
         logFailure(error)
         activeLease = null
+        pendingStart = null
         clearConfirmedLocked()
         return MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = false, notice = notice)
     }
@@ -291,6 +313,13 @@ class MirkoriProAccessService(
 private data class ProAuthenticatedResult<T>(
     val session: GameIdentitySession,
     val value: T,
+)
+
+private data class PendingProSessionStart(
+    val accountId: String,
+    val installationId: String,
+    val sessionId: String,
+    val idempotencyKey: PlatformIdempotencyKey,
 )
 
 private class MirkoriProProfileChangedException : IllegalStateException("Mirkori Pro profile changed")

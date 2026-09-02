@@ -12,6 +12,7 @@ import com.mirkori.platform.sdk.PlatformProMembershipSnapshotVerifier
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.Rs256PlatformProSnapshotSignatureVerifier
 import com.mirkori.platform.sdk.SecureEntropy
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -35,6 +36,7 @@ class MirkoriProAccessServiceTest {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val transport = RuntimeProTransport(
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
         )
         val store = ProMemoryStore(linkedState())
         var monotonicMs = 10_000L
@@ -49,7 +51,12 @@ class MirkoriProAccessServiceTest {
         assertEquals("inplacex-pro-v3", refreshed.benefitContentId)
         assertNotNull(store.value?.confirmedProAccess)
         monotonicMs += 1_000L
-        assertTrue(service.cachedState().active)
+        val refreshedAgain = runProRuntime { service.refresh() }
+        assertTrue(refreshedAgain.active)
+        assertEquals(
+            ServerTime.plusMillis(1_000L).toEpochMilli(),
+            store.value?.confirmedProAccess?.trustedTimeAnchor?.serverEpochMs,
+        )
 
         bootMarker += 1L
         assertFalse(service.cachedState().active)
@@ -63,6 +70,8 @@ class MirkoriProAccessServiceTest {
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
             { PlatformHttpResponse(401, """{"error":"unauthorized"}""") },
             { PlatformHttpResponse(200, refreshedCredentialsJson()) },
+            { throw IOException("lease response lost after acceptance") },
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
             { request ->
                 sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
                 PlatformHttpResponse(201, leaseJson(sessionId, "active"))
@@ -72,11 +81,14 @@ class MirkoriProAccessServiceTest {
         )
         val service = service(keys.public, transport, ProMemoryStore(linkedState()))
 
+        val ambiguous = runProRuntime { service.startOnlineSession() }
         val started = runProRuntime { service.startOnlineSession() }
         val duplicateStart = runProRuntime { service.startOnlineSession() }
         val heartbeat = runProRuntime { service.heartbeatOnlineSession() }
         val released = runProRuntime { service.releaseOnlineSession() }
 
+        assertEquals(MirkoriProAvailability.OFFLINE, ambiguous.availability)
+        assertTrue(ambiguous.active)
         assertTrue(started.active)
         assertTrue(started.onlineSessionActive)
         assertEquals(2, started.maxConcurrentSessions)
@@ -85,22 +97,29 @@ class MirkoriProAccessServiceTest {
         assertTrue(heartbeat.onlineSessionActive)
         assertEquals(MirkoriProNotice.SESSION_RELEASED, released.notice)
         assertFalse(released.onlineSessionActive)
-        assertEquals(6, transport.requests.size)
+        assertEquals(8, transport.requests.size)
         assertTrue(transport.requests[0].url.endsWith("/api/v1/pro/snapshot?distributionId=rf-mirkori"))
         assertTrue(transport.requests[1].url.endsWith("/api/v1/pro/leases"))
         assertTrue(transport.requests[2].url.endsWith("/api/v1/auth/refresh"))
         assertTrue(transport.requests[3].url.endsWith("/api/v1/pro/leases"))
-        assertTrue(transport.requests[4].url.endsWith("/api/v1/pro/leases/$LeaseId/heartbeat"))
-        assertTrue(transport.requests[5].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
+        assertTrue(transport.requests[4].url.endsWith("/api/v1/pro/snapshot?distributionId=rf-mirkori"))
+        assertTrue(transport.requests[5].url.endsWith("/api/v1/pro/leases"))
+        assertTrue(transport.requests[6].url.endsWith("/api/v1/pro/leases/$LeaseId/heartbeat"))
+        assertTrue(transport.requests[7].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
         assertEquals(transport.requests[1].body, transport.requests[3].body)
+        assertEquals(transport.requests[1].body, transport.requests[5].body)
         assertEquals(
             transport.requests[1].headers["Idempotency-Key"],
             transport.requests[3].headers["Idempotency-Key"],
         )
-        assertTrue(listOf(1, 3, 4, 5).all { index ->
+        assertEquals(
+            transport.requests[1].headers["Idempotency-Key"],
+            transport.requests[5].headers["Idempotency-Key"],
+        )
+        assertTrue(listOf(1, 3, 5, 6, 7).all { index ->
             transport.requests[index].body.contains("\"sessionId\":\"$sessionId\"")
         })
-        assertTrue(listOf(1, 3, 4, 5).all { index ->
+        assertTrue(listOf(1, 3, 5, 6, 7).all { index ->
             !transport.requests[index].headers["Idempotency-Key"].isNullOrBlank()
         })
     }

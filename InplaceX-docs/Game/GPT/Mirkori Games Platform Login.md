@@ -122,9 +122,9 @@ Online Pro use obtains a short server lease for the encrypted installation and
 one memory-only game-session ID, heartbeats that exact lease, and releases it
 when play ends. The server response remains authoritative claimed capacity and
 reports the configured limit of two or three concurrent sessions. Retry after
-an access-token refresh reuses the same session ID and idempotency key. A
-process crash cannot leave a durable client claim because the lease itself is
-not persisted and expires server-side.
+an access-token refresh or an ambiguous lost response reuses the same session
+ID and idempotency key. A process crash cannot leave a durable client claim
+because the lease itself is not persisted and expires server-side.
 
 This change provides the runtime core only. Release composition still requires
 owner-approved distribution selection and pinned production public keys; no
