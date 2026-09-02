@@ -36,6 +36,7 @@ data class MirkoriProAccessState(
     val availability: MirkoriProAvailability,
     val active: Boolean,
     val validUntilEpochMs: Long? = null,
+    val nextAccessExpiryDelayMs: Long? = null,
     val benefitContentId: String? = null,
     val onlineSessionActive: Boolean = false,
     val leaseExpiresAtEpochMs: Long? = null,
@@ -301,6 +302,14 @@ class MirkoriProAccessService(
             availability = availability,
             active = active,
             validUntilEpochMs = confirmed.validUntilEpochMs,
+            nextAccessExpiryDelayMs = if (active && trustedNow != null) {
+                minOf(
+                    requireNotNull(confirmed.validUntilEpochMs),
+                    confirmed.snapshotExpiresAtEpochMs,
+                ).minus(trustedNow).coerceAtLeast(0L)
+            } else {
+                null
+            },
             benefitContentId = confirmed.benefitContentId,
             onlineSessionActive = activeServerLease != null,
             leaseExpiresAtEpochMs = activeServerLease?.expiresAt?.toEpochMilli(),

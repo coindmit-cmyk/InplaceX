@@ -126,11 +126,16 @@ an access-token refresh or an ambiguous lost response reuses the same session
 ID and idempotency key. A process crash cannot leave a durable client claim
 because the lease itself is not persisted and expires server-side.
 
-The Android composition seam is present but disabled by default. It creates one
-Pro access service only after a build variant explicitly supplies an
-owner-approved distribution and separately pinned production public keys. No
-production key, provider credential, UI claim, gameplay entitlement change, or
-automatic activation is introduced by this implementation.
+The Android composition remains disabled by default and creates one Pro access
+service only after a build variant explicitly supplies an owner-approved
+distribution and separately pinned production public keys. When configured,
+the app refreshes the signed membership on foreground/account changes, applies
+it as regular Pro (never Pro Plus), and records the signed subscription end in
+encrypted Platform state. Entering gameplay claims one short server lease,
+heartbeats it every 30 seconds, and releases it on exit or background. A live
+concurrency rejection blocks Mirkori Pro for that gameplay session; a still
+valid signed snapshot remains available offline. Production keys and activation
+remain separate owner-gated work.
 
 ## Online identity boundary
 

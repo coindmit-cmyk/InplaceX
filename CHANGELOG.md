@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Connected the dormant Mirkori Pro service to the Android app lifecycle and
+  effective game entitlements. Configured builds refresh signed membership,
+  persist its end date, claim/heartbeat/release one gameplay lease, enforce a
+  live concurrency rejection, and preserve bounded signed offline Pro access;
+  Mirkori Pro grants regular Pro only and production activation remains gated.
 - Added dormant Android composition for the Mirkori Pro runtime. A build
   variant must explicitly opt in with an immutable distribution and separately
   pinned RSA public keys before the app creates a Pro access service; disabled

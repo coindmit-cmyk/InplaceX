@@ -48,6 +48,7 @@ class MirkoriProAccessServiceTest {
         assertEquals(MirkoriProAvailability.READY, refreshed.availability)
         assertTrue(refreshed.active)
         assertEquals(ValidUntil.toEpochMilli(), refreshed.validUntilEpochMs)
+        assertEquals(3_600_000L, refreshed.nextAccessExpiryDelayMs)
         assertEquals("inplacex-pro-v3", refreshed.benefitContentId)
         assertNotNull(store.value?.confirmedProAccess)
         monotonicMs += 1_000L

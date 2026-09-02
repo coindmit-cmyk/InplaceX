@@ -74,7 +74,12 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicProfileResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
+import com.mirkori.inplacex.platform.mirkori.MirkoriProAccessState
+import com.mirkori.inplacex.platform.mirkori.MirkoriProAvailability
+import com.mirkori.inplacex.platform.mirkori.MirkoriProNotice
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
+import com.mirkori.inplacex.platform.mirkori.lifecycleOperations
+import com.mirkori.inplacex.platform.mirkori.runMirkoriProLifecycle
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
 import com.mirkori.inplacex.platform.online.IncomingFriendInviteNotifier
 import com.mirkori.inplacex.platform.online.OnlineClientResult
@@ -127,6 +132,7 @@ class MainActivity : ComponentActivity() {
     private var mirkoriCallbackUrl by mutableStateOf<String?>(null)
     private var resumeGeneration by mutableLongStateOf(0L)
     private var socialNotificationRequest by mutableLongStateOf(0L)
+    private var activityStarted by mutableStateOf(false)
     private lateinit var adUsageTracker: AdUsageTracker
     private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
     private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
@@ -254,6 +260,17 @@ class MainActivity : ComponentActivity() {
                 var billingState by remember(billingService) {
                     mutableStateOf(billingService.cachedState())
                 }
+                val mirkoriProAccessService = remember(mirkoriPlatformRuntime) {
+                    mirkoriPlatformRuntime?.proAccessService
+                }
+                val mirkoriProLifecycleOperations = remember(mirkoriProAccessService) {
+                    mirkoriProAccessService?.lifecycleOperations()
+                }
+                var mirkoriProAccessState by remember(mirkoriProAccessService) {
+                    mutableStateOf(
+                        mirkoriProAccessService?.cachedState() ?: MirkoriProAccessState.Unavailable,
+                    )
+                }
                 val billingOperation = remember { TransientOperationGate() }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var claimedCampaignChapters by remember {
@@ -365,6 +382,48 @@ class MainActivity : ComponentActivity() {
                 }
                 LaunchedEffect(mirkoriAccountState.gamePlayerId) {
                     localAvatarPath = mirkoriAccountState.gamePlayerId?.let(profileAvatarStore::current)
+                }
+                LaunchedEffect(
+                    mirkoriProLifecycleOperations,
+                    activityStarted,
+                    isInGame,
+                    mirkoriAccountState.kind,
+                    mirkoriAccountState.gamePlayerId,
+                ) {
+                    val operations = mirkoriProLifecycleOperations
+                    if (
+                        operations == null ||
+                        !activityStarted ||
+                        mirkoriAccountState.kind == MirkoriAccountStateKind.INITIALIZING
+                    ) {
+                        return@LaunchedEffect
+                    }
+                    try {
+                        runMirkoriProLifecycle(
+                            operations = operations,
+                            gameplayActive = isInGame,
+                            onState = { state -> mirkoriProAccessState = state },
+                        )
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        AppLog.warn(
+                            tag = "MainActivity",
+                            message = "Mirkori Pro lifecycle failed",
+                            attributes = mapOf("errorClass" to error.javaClass.name),
+                        )
+                        mirkoriProAccessState = MirkoriProAccessState.Unavailable
+                    }
+                }
+                LaunchedEffect(
+                    mirkoriProAccessService,
+                    mirkoriProAccessState.nextAccessExpiryDelayMs,
+                ) {
+                    val service = mirkoriProAccessService ?: return@LaunchedEffect
+                    val expiryDelayMs = mirkoriProAccessState.nextAccessExpiryDelayMs
+                        ?: return@LaunchedEffect
+                    delay(expiryDelayMs.coerceAtLeast(1L))
+                    mirkoriProAccessState = service.cachedState()
                 }
                 LaunchedEffect(
                     mirkoriPlatformRuntime,
@@ -632,12 +691,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val effectiveProgressState = remember(progressState, billingState.entitlements) {
-                    progressState.withServerPaidEntitlements(billingState.entitlements)
+                val mirkoriProActive = remember(mirkoriProAccessState, isInGame) {
+                    mirkoriProAccessState.grantsProAccess(gameplayActive = isInGame)
                 }
-                val entitlements = remember(billingState.entitlements, progressState, currentTimeMs) {
+                val serverEntitlements = remember(billingState.entitlements, mirkoriProActive) {
+                    billingState.entitlements.withMirkoriProAccess(mirkoriProActive)
+                }
+                val effectiveProgressState = remember(progressState, serverEntitlements) {
+                    progressState.withServerPaidEntitlements(serverEntitlements)
+                }
+                val entitlements = remember(serverEntitlements, progressState, currentTimeMs) {
                     progressState.effectiveMonetizationEntitlements(
-                        serverEntitlements = billingState.entitlements,
+                        serverEntitlements = serverEntitlements,
                         nowMs = currentTimeMs,
                     )
                 }
@@ -1300,8 +1365,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onBuyTemporaryPro = {
                                     val permanentPremiumActive =
-                                        billingState.entitlements.proSubscriptionActive ||
-                                            billingState.entitlements.proPlusSubscriptionActive
+                                        serverEntitlements.effectiveProAccessActive
                                     val purchased = progressRepository.buyTemporaryPro(
                                         permanentPremiumActive = permanentPremiumActive,
                                     )
@@ -1931,10 +1995,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        activityStarted = true
         adUsageTracker.onForeground()
     }
 
     override fun onStop() {
+        activityStarted = false
         adUsageTracker.onBackground()
         super.onStop()
     }
@@ -1993,6 +2059,19 @@ internal fun GameProgressState.effectiveMonetizationEntitlements(
         proPlusSubscriptionActive = paidProgress.proPlusSubscriptionActive,
     )
 }
+
+internal fun MonetizationEntitlements.withMirkoriProAccess(
+    active: Boolean,
+): MonetizationEntitlements = if (active) copy(proSubscriptionActive = true) else this
+
+internal fun MirkoriProAccessState.grantsProAccess(gameplayActive: Boolean): Boolean =
+    active && when {
+        !gameplayActive -> true
+        notice == MirkoriProNotice.CONCURRENCY_LIMIT -> false
+        availability == MirkoriProAvailability.OFFLINE -> true
+        availability == MirkoriProAvailability.READY -> onlineSessionActive
+        else -> false
+    }
 
 internal fun isExternalHttpsCheckoutUrl(value: String): Boolean = runCatching {
     val uri = URI(value)
