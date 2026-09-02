@@ -48,6 +48,7 @@ class MirkoriProAccessServiceTest {
         assertEquals(MirkoriProAvailability.READY, refreshed.availability)
         assertTrue(refreshed.active)
         assertEquals(ValidUntil.toEpochMilli(), refreshed.validUntilEpochMs)
+        assertEquals(3_600_000L, refreshed.nextAccessExpiryDelayMs)
         assertEquals("inplacex-pro-v3", refreshed.benefitContentId)
         assertNotNull(store.value?.confirmedProAccess)
         monotonicMs += 1_000L
@@ -68,8 +69,10 @@ class MirkoriProAccessServiceTest {
         var sessionId = ""
         val transport = RuntimeProTransport(
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
-            { PlatformHttpResponse(401, """{"error":"unauthorized"}""") },
+            { PlatformHttpResponse(401, """{"error":"pro_unavailable"}""") },
             { PlatformHttpResponse(200, refreshedCredentialsJson()) },
+            { PlatformHttpResponse(503, """{"error":"provider_unavailable"}""") },
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
             { throw IOException("lease response lost after acceptance") },
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
             { request ->
@@ -81,12 +84,15 @@ class MirkoriProAccessServiceTest {
         )
         val service = service(keys.public, transport, ProMemoryStore(linkedState()))
 
+        val retryable = runProRuntime { service.startOnlineSession() }
         val ambiguous = runProRuntime { service.startOnlineSession() }
         val started = runProRuntime { service.startOnlineSession() }
         val duplicateStart = runProRuntime { service.startOnlineSession() }
         val heartbeat = runProRuntime { service.heartbeatOnlineSession() }
         val released = runProRuntime { service.releaseOnlineSession() }
 
+        assertEquals(MirkoriProAvailability.RETRYABLE, retryable.availability)
+        assertTrue(retryable.active)
         assertEquals(MirkoriProAvailability.OFFLINE, ambiguous.availability)
         assertTrue(ambiguous.active)
         assertTrue(started.active)
@@ -97,17 +103,20 @@ class MirkoriProAccessServiceTest {
         assertTrue(heartbeat.onlineSessionActive)
         assertEquals(MirkoriProNotice.SESSION_RELEASED, released.notice)
         assertFalse(released.onlineSessionActive)
-        assertEquals(8, transport.requests.size)
+        assertEquals(10, transport.requests.size)
         assertTrue(transport.requests[0].url.endsWith("/api/v1/pro/snapshot?distributionId=rf-mirkori"))
         assertTrue(transport.requests[1].url.endsWith("/api/v1/pro/leases"))
         assertTrue(transport.requests[2].url.endsWith("/api/v1/auth/refresh"))
         assertTrue(transport.requests[3].url.endsWith("/api/v1/pro/leases"))
         assertTrue(transport.requests[4].url.endsWith("/api/v1/pro/snapshot?distributionId=rf-mirkori"))
         assertTrue(transport.requests[5].url.endsWith("/api/v1/pro/leases"))
-        assertTrue(transport.requests[6].url.endsWith("/api/v1/pro/leases/$LeaseId/heartbeat"))
-        assertTrue(transport.requests[7].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
+        assertTrue(transport.requests[6].url.endsWith("/api/v1/pro/snapshot?distributionId=rf-mirkori"))
+        assertTrue(transport.requests[7].url.endsWith("/api/v1/pro/leases"))
+        assertTrue(transport.requests[8].url.endsWith("/api/v1/pro/leases/$LeaseId/heartbeat"))
+        assertTrue(transport.requests[9].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
         assertEquals(transport.requests[1].body, transport.requests[3].body)
         assertEquals(transport.requests[1].body, transport.requests[5].body)
+        assertEquals(transport.requests[1].body, transport.requests[7].body)
         assertEquals(
             transport.requests[1].headers["Idempotency-Key"],
             transport.requests[3].headers["Idempotency-Key"],
@@ -116,12 +125,230 @@ class MirkoriProAccessServiceTest {
             transport.requests[1].headers["Idempotency-Key"],
             transport.requests[5].headers["Idempotency-Key"],
         )
-        assertTrue(listOf(1, 3, 5, 6, 7).all { index ->
+        assertEquals(
+            transport.requests[1].headers["Idempotency-Key"],
+            transport.requests[7].headers["Idempotency-Key"],
+        )
+        assertTrue(listOf(1, 3, 5, 7, 8, 9).all { index ->
             transport.requests[index].body.contains("\"sessionId\":\"$sessionId\"")
         })
-        assertTrue(listOf(1, 3, 5, 6, 7).all { index ->
+        assertTrue(listOf(1, 3, 5, 7, 8, 9).all { index ->
             !transport.requests[index].headers["Idempotency-Key"].isNullOrBlank()
         })
+    }
+
+    @Test
+    fun unavailableHeartbeatDropsOnlyLeaseAndKeepsVerifiedMembershipForRetry() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""") },
+        )
+        val store = ProMemoryStore(linkedState())
+        val service = service(keys.public, transport, store)
+
+        val started = runProRuntime { service.startOnlineSession() }
+        val unavailable = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertTrue(started.onlineSessionActive)
+        assertEquals(MirkoriProAvailability.RETRYABLE, unavailable.availability)
+        assertTrue(unavailable.active)
+        assertFalse(unavailable.onlineSessionActive)
+        assertNotNull(store.value?.confirmedProAccess)
+    }
+
+    @Test
+    fun nonRetryableLeaseLossDuringStartEndsTheAttempt() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""") },
+            ),
+            ProMemoryStore(linkedState()),
+        )
+
+        val result = runProRuntime { service.startOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.UNAVAILABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
+    }
+
+    @Test
+    fun unavailableMembershipHeartbeatFailsClosed() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val store = ProMemoryStore(linkedState())
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { request ->
+                    sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                    PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+                },
+                { PlatformHttpResponse(409, """{"error":"pro_unavailable"}""") },
+            ),
+            store,
+        )
+
+        runProRuntime { service.startOnlineSession() }
+        val unavailable = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.UNAVAILABLE, unavailable.availability)
+        assertFalse(unavailable.active)
+        assertEquals(MirkoriProNotice.MEMBERSHIP_INACTIVE, unavailable.notice)
+        assertEquals(null, store.value?.confirmedProAccess)
+    }
+
+    @Test
+    fun failedHeartbeatIsRetriedWithSameIdentity() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { throw IOException("heartbeat response lost") },
+            { PlatformHttpResponse(200, leaseJson(sessionId, "active", heartbeatOffsetSeconds = 20)) },
+        )
+        val service = service(keys.public, transport, ProMemoryStore(linkedState()))
+
+        runProRuntime { service.startOnlineSession() }
+        val failed = runProRuntime { service.heartbeatOnlineSession() }
+        val recovered = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.OFFLINE, failed.availability)
+        assertTrue(failed.onlineSessionActive)
+        assertEquals(MirkoriProAvailability.READY, recovered.availability)
+        assertTrue(recovered.onlineSessionActive)
+        assertEquals(transport.requests[2].url, transport.requests[3].url)
+        assertEquals(
+            transport.requests[2].headers["Idempotency-Key"],
+            transport.requests[3].headers["Idempotency-Key"],
+        )
+    }
+
+    @Test
+    fun nonRetryableHeartbeatDropsTheLeaseAndStopsRetrying() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { PlatformHttpResponse(403, """{"error":"forbidden"}""") },
+            { PlatformHttpResponse(200, leaseJson(sessionId, "released")) },
+        )
+        val service = service(
+            keys.public,
+            transport,
+            ProMemoryStore(linkedState()),
+        )
+
+        runProRuntime { service.startOnlineSession() }
+        val result = runProRuntime { service.heartbeatOnlineSession() }
+        val released = runProRuntime { service.releaseOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.UNAVAILABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
+        assertEquals(MirkoriProNotice.SESSION_RELEASED, released.notice)
+        assertTrue(service.cachedState().active)
+        assertFalse(service.cachedState().onlineSessionActive)
+        assertTrue(transport.requests[3].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
+    }
+
+    @Test
+    fun retryableTypedReleaseIsRetriedWithSameIdentityBeforeNextClaim() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { PlatformHttpResponse(503, """{"error":"pro_lease_unavailable"}""") },
+            { PlatformHttpResponse(200, leaseJson(sessionId, "released")) },
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+        )
+        val service = service(keys.public, transport, ProMemoryStore(linkedState()))
+
+        val started = runProRuntime { service.startOnlineSession() }
+        val failedRelease = runProRuntime { service.releaseOnlineSession() }
+        val restarted = runProRuntime { service.startOnlineSession() }
+
+        assertTrue(started.onlineSessionActive)
+        assertEquals(MirkoriProAvailability.RETRYABLE, failedRelease.availability)
+        assertTrue(restarted.onlineSessionActive)
+        assertTrue(transport.requests[2].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
+        assertEquals(transport.requests[2].url, transport.requests[3].url)
+        assertEquals(
+            transport.requests[2].headers["Idempotency-Key"],
+            transport.requests[3].headers["Idempotency-Key"],
+        )
+        assertTrue(transport.requests[4].url.contains("/api/v1/pro/snapshot"))
+        assertTrue(transport.requests[5].url.endsWith("/api/v1/pro/leases"))
+    }
+
+    @Test
+    fun temporaryConfigurationFailureRetainsVerifiedMembershipForRetry() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val store = ProMemoryStore(linkedState())
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { PlatformHttpResponse(503, """{"error":"pro_configuration_unavailable"}""") },
+            ),
+            store,
+        )
+
+        val result = runProRuntime { service.startOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.RETRYABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
+        assertNotNull(store.value?.confirmedProAccess)
+    }
+
+    @Test
+    fun temporaryTypedMembershipAndConcurrencyFailuresRemainRetryable() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        listOf("pro_unavailable", "pro_concurrency_limit").forEach { errorCode ->
+            val store = ProMemoryStore(linkedState())
+            val service = service(
+                keys.public,
+                RuntimeProTransport(
+                    { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                    { PlatformHttpResponse(503, """{"error":"$errorCode"}""") },
+                ),
+                store,
+            )
+
+            val result = runProRuntime { service.startOnlineSession() }
+
+            assertEquals(MirkoriProAvailability.RETRYABLE, result.availability)
+            assertTrue(result.active)
+            assertFalse(result.onlineSessionActive)
+            assertNotNull(store.value?.confirmedProAccess)
+        }
     }
 
     @Test

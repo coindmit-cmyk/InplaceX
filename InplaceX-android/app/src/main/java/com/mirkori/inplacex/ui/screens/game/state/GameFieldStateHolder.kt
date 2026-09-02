@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Владелец одной GameField-сессии без Compose-состояния и одноразовых внешних callback-ов. */
 class GameFieldStateHolder(
     private val savedStateHandle: SavedStateHandle,
-    private val parameters: GameFieldMatchParameters = GameFieldMatchParameters(),
+    private var parameters: GameFieldMatchParameters = GameFieldMatchParameters(),
     private val initialSecret: String? = null,
     private val engineFactory: (GameConfig) -> MatchEngine = ::GameEngine,
 ) {
@@ -32,6 +32,7 @@ class GameFieldStateHolder(
     private var latestSnapshot: MatchSnapshot
     private var lastEvidenceInput: EvidenceInput? = null
     private var lastDeduction: DeductionResult? = null
+    private var autoExcludePreferred: Boolean = true
 
     private val _state: MutableStateFlow<GameFieldUiState>
     val state: StateFlow<GameFieldUiState>
@@ -56,6 +57,9 @@ class GameFieldStateHolder(
             latestSnapshot = engine.start(initialSecret)
             _state = MutableStateFlow(createState(snapshot = latestSnapshot))
         }
+        if (parameters.autoModeAvailable) {
+            autoExcludePreferred = _state.value.tools.autoExcludeEnabled
+        }
         persist()
     }
 
@@ -75,14 +79,17 @@ class GameFieldStateHolder(
                 current.copy(tools = current.tools.copy(selectedHint = event.hint), status = GameFieldStatus.Idle),
             )
 
-            is GameFieldEvent.AutoExcludeChanged -> update(
-                current.copy(
-                    tools = current.tools.copy(autoExcludeEnabled = event.enabled),
-                    status = GameFieldStatus.Notice(
-                        if (event.enabled) GameFieldNotice.AutoEnabled else GameFieldNotice.AutoDisabled,
+            is GameFieldEvent.AutoExcludeChanged -> if (parameters.autoModeAvailable) {
+                autoExcludePreferred = event.enabled
+                update(
+                    current.copy(
+                        tools = current.tools.copy(autoExcludeEnabled = event.enabled),
+                        status = GameFieldStatus.Notice(
+                            if (event.enabled) GameFieldNotice.AutoEnabled else GameFieldNotice.AutoDisabled,
+                        ),
                     ),
-                ),
-            )
+                )
+            }
 
             is GameFieldEvent.ManualMarkChanged -> changeManualMark(current, event)
             is GameFieldEvent.ProvenFactRecorded -> update(
@@ -108,6 +115,20 @@ class GameFieldStateHolder(
     }
 
     fun currentSnapshot(): MatchSnapshot = latestSnapshot
+
+    fun updateAutoModeAvailability(available: Boolean) {
+        if (parameters.autoModeAvailable == available) return
+        parameters = parameters.copy(autoModeAvailable = available)
+        val current = _state.value
+        update(
+            current.copy(
+                parameters = parameters,
+                tools = current.tools.copy(
+                    autoExcludeEnabled = available && autoExcludePreferred,
+                ),
+            ),
+        )
+    }
 
     fun submitRawGuess(guess: String) {
         submitGuess(_state.value, guess)

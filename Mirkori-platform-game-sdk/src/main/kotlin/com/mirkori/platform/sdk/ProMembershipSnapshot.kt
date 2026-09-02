@@ -78,11 +78,23 @@ data class PlatformProSessionLease(
     val releasedAt: Instant?,
 )
 
-class PlatformProConfigurationUnavailableException :
+class PlatformProConfigurationUnavailableException(
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
+) :
     IllegalStateException("Pro game configuration is unavailable")
-class PlatformProConcurrencyLimitException :
+class PlatformProConcurrencyLimitException(
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
+) :
     IllegalStateException("Pro concurrent-session limit reached")
-class PlatformProBenefitUnavailableException :
+enum class PlatformProBenefitUnavailableReason {
+    MEMBERSHIP,
+    LEASE,
+}
+
+class PlatformProBenefitUnavailableException(
+    val reason: PlatformProBenefitUnavailableReason = PlatformProBenefitUnavailableReason.MEMBERSHIP,
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
+) :
     IllegalStateException("Pro benefit is unavailable")
 
 class PlatformProTimeAnchor internal constructor(

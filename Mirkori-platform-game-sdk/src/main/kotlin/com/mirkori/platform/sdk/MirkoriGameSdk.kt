@@ -863,10 +863,19 @@ class MirkoriGameSdk(
     private suspend fun <T> proApi(block: suspend () -> T): T = try {
         block()
     } catch (error: PlatformApiException) {
+        if (error.recoveryAction == PlatformRecoveryAction.REAUTHENTICATE) throw error
         when (error.errorCode) {
-            "pro_configuration_unavailable" -> throw PlatformProConfigurationUnavailableException()
-            "pro_concurrency_limit" -> throw PlatformProConcurrencyLimitException()
-            "pro_unavailable", "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException()
+            "pro_configuration_unavailable" ->
+                throw PlatformProConfigurationUnavailableException(error.recoveryAction)
+            "pro_concurrency_limit" -> throw PlatformProConcurrencyLimitException(error.recoveryAction)
+            "pro_unavailable" -> throw PlatformProBenefitUnavailableException(
+                PlatformProBenefitUnavailableReason.MEMBERSHIP,
+                error.recoveryAction,
+            )
+            "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException(
+                PlatformProBenefitUnavailableReason.LEASE,
+                error.recoveryAction,
+            )
             else -> throw error
         }
     }

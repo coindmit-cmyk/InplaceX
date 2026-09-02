@@ -71,7 +71,7 @@ fun GameFieldScreen(
     extraMovesPerBoost: Int = 0,
     extraTimeSecondsPerBoost: Int = 0,
 ) {
-    val matchParameters = remember(params, autoModeAvailable) {
+    val matchParameters = remember(params) {
         params.toMatchParameters(autoModeAvailable)
     }
     val acceptedFixedSecret = remember(matchParameters, fixedSecret) {
@@ -81,6 +81,9 @@ fun GameFieldScreen(
     }
     val viewModel = remember(matchParameters, acceptedFixedSecret) {
         GameFieldViewModel(SavedStateHandle(), matchParameters, acceptedFixedSecret)
+    }
+    LaunchedEffect(viewModel, autoModeAvailable) {
+        viewModel.updateAutoModeAvailability(autoModeAvailable)
     }
     val routeController = remember(viewModel) { GameFieldRouteController(viewModel) }
     val rewardedHintOperation = remember(routeController) { TransientOperationGate() }

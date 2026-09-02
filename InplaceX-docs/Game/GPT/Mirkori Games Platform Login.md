@@ -123,14 +123,29 @@ one memory-only game-session ID, heartbeats that exact lease, and releases it
 when play ends. The server response remains authoritative claimed capacity and
 reports the configured limit of two or three concurrent sessions. Retry after
 an access-token refresh or an ambiguous lost response reuses the same session
-ID and idempotency key. A process crash cannot leave a durable client claim
+ID and idempotency key. Temporary HTTP 408/425/429/5xx responses remain in the
+same gameplay lifecycle and retry that preserved request; a concurrency limit
+does not retry until the player leaves the current match. A server-lost lease
+clears only that lease, retains the still-valid signed membership, and enters
+the same retry path; a membership-level rejection clears access immediately.
+An unconfirmed heartbeat retains its lease and idempotency identity until a
+confirmed heartbeat, lease loss, or release.
+An unconfirmed release retains its lease and idempotency identity in memory and
+is completed before another lease is claimed. A process crash
+cannot leave a durable client claim
 because the lease itself is not persisted and expires server-side.
 
-The Android composition seam is present but disabled by default. It creates one
-Pro access service only after a build variant explicitly supplies an
-owner-approved distribution and separately pinned production public keys. No
-production key, provider credential, UI claim, gameplay entitlement change, or
-automatic activation is introduced by this implementation.
+The Android composition remains disabled by default and creates one Pro access
+service only after a build variant explicitly supplies an owner-approved
+distribution and separately pinned production public keys. When configured,
+the app refreshes the signed membership on foreground/account changes and when
+the current signed snapshot expires, applies it as regular Pro (never Pro
+Plus), and records the signed subscription end in encrypted Platform state.
+Entering gameplay claims one short server lease,
+heartbeats it every 30 seconds, and releases it on exit or background. A live
+concurrency rejection blocks Mirkori Pro for that gameplay session; a still
+valid signed snapshot remains available offline. Production keys and activation
+remain separate owner-gated work.
 
 ## Online identity boundary
 

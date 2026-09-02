@@ -90,16 +90,36 @@ class ProGameApiSdkTest {
             config,
             ProQueueTransport(PlatformHttpResponse(503, """{"error":"pro_configuration_unavailable"}""")),
         )
-        assertThrows(PlatformProConfigurationUnavailableException::class.java) {
+        val configurationError = assertThrows(PlatformProConfigurationUnavailableException::class.java) {
             runPro { unavailable.startProSession(accessToken, accountId, installationId, sessionId) }
         }
+        assertEquals(PlatformRecoveryAction.RETRY_SAME_REQUEST, configurationError.recoveryAction)
         val limited = MirkoriGameSdk(
             config,
             ProQueueTransport(PlatformHttpResponse(409, """{"error":"pro_concurrency_limit"}""")),
         )
-        assertThrows(PlatformProConcurrencyLimitException::class.java) {
+        val limitError = assertThrows(PlatformProConcurrencyLimitException::class.java) {
             runPro { limited.startProSession(accessToken, accountId, installationId, sessionId) }
         }
+        assertEquals(PlatformRecoveryAction.RESOLVE_CONFLICT, limitError.recoveryAction)
+        val leaseUnavailable = MirkoriGameSdk(
+            config,
+            ProQueueTransport(PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""")),
+        )
+        val leaseError = assertThrows(PlatformProBenefitUnavailableException::class.java) {
+            runPro { leaseUnavailable.startProSession(accessToken, accountId, installationId, sessionId) }
+        }
+        assertEquals(PlatformProBenefitUnavailableReason.LEASE, leaseError.reason)
+        assertEquals(PlatformRecoveryAction.RESOLVE_CONFLICT, leaseError.recoveryAction)
+        val unauthorized = MirkoriGameSdk(
+            config,
+            ProQueueTransport(PlatformHttpResponse(401, """{"error":"pro_unavailable"}""")),
+        )
+        val authError = assertThrows(PlatformApiException::class.java) {
+            runPro { unauthorized.startProSession(accessToken, accountId, installationId, sessionId) }
+        }
+        assertEquals(PlatformRecoveryAction.REAUTHENTICATE, authError.recoveryAction)
+        assertEquals("pro_unavailable", authError.errorCode)
     }
 
     private fun snapshotEnvelope(privateKey: PrivateKey, accountId: String, now: Instant): String {

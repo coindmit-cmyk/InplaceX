@@ -5,11 +5,13 @@ import com.mirkori.platform.sdk.PlatformApiException
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformProBenefitUnavailableException
+import com.mirkori.platform.sdk.PlatformProBenefitUnavailableReason
 import com.mirkori.platform.sdk.PlatformProConcurrencyLimitException
 import com.mirkori.platform.sdk.PlatformProConfigurationUnavailableException
 import com.mirkori.platform.sdk.PlatformProMembershipSnapshot
 import com.mirkori.platform.sdk.PlatformProSessionLease
 import com.mirkori.platform.sdk.PlatformProSessionLeaseStatus
+import com.mirkori.platform.sdk.PlatformRecoveryAction
 import java.io.IOException
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
@@ -18,6 +20,7 @@ enum class MirkoriProAvailability {
     CACHED,
     READY,
     OFFLINE,
+    RETRYABLE,
     SIGN_IN_REQUIRED,
     UNAVAILABLE,
 }
@@ -36,6 +39,7 @@ data class MirkoriProAccessState(
     val availability: MirkoriProAvailability,
     val active: Boolean,
     val validUntilEpochMs: Long? = null,
+    val nextAccessExpiryDelayMs: Long? = null,
     val benefitContentId: String? = null,
     val onlineSessionActive: Boolean = false,
     val leaseExpiresAtEpochMs: Long? = null,
@@ -56,6 +60,12 @@ class MirkoriProAccessService(
     @Volatile
     private var pendingStart: PendingProSessionStart? = null
 
+    @Volatile
+    private var pendingRelease: PendingProSessionRelease? = null
+
+    @Volatile
+    private var pendingHeartbeat: PendingProSessionHeartbeat? = null
+
     fun cachedState(): MirkoriProAccessState = stateFromCache(MirkoriProAvailability.CACHED)
 
     suspend fun refresh(): MirkoriProAccessState = runtime.withOperationLock {
@@ -64,11 +74,14 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability())
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE)
@@ -80,6 +93,7 @@ class MirkoriProAccessService(
 
     suspend fun startOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
         try {
+            completePendingReleaseLocked()
             val currentLease = stateFromCache(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
@@ -123,16 +137,19 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConcurrencyLimitException) {
-            logFailure(error)
-            activeLease = null
-            pendingStart = null
-            stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
+            handleConcurrencyLimitLocked(error)
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            if (error.recoveryAction != PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+                pendingStart = null
+            }
+            stateFromCache(error.proAvailability(), lease = activeLease)
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE, lease = activeLease)
@@ -144,16 +161,22 @@ class MirkoriProAccessService(
 
     suspend fun heartbeatOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
         val lease = activeLease
-            ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY)
+            ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY).also {
+                pendingHeartbeat = null
+            }
         try {
             val session = requireLinkedSession()
             val installationId = requireNotNull(currentPersistedState()).installation.installationId
             require(session.accountId == lease.accountId && installationId == lease.installationId)
-            val idempotencyKey = sdk.newIdempotencyKey()
+            val attempt = pendingHeartbeat?.takeIf { it.leaseId == lease.id }
+                ?: PendingProSessionHeartbeat(lease.id, sdk.newIdempotencyKey()).also {
+                    pendingHeartbeat = it
+                }
             val heartbeat = authenticated(session) { accessToken, _ ->
-                sdk.heartbeatProSession(accessToken, lease, idempotencyKey)
+                sdk.heartbeatProSession(accessToken, lease, attempt.idempotencyKey)
             }.value
             activeLease = heartbeat
+            pendingHeartbeat = null
             stateFromCache(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
@@ -162,9 +185,19 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = true)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+                stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+            } else {
+                pendingRelease = PendingProSessionRelease(lease, sdk.newIdempotencyKey())
+                activeLease = null
+                pendingHeartbeat = null
+                stateFromCache(MirkoriProAvailability.UNAVAILABLE, lease = null)
+            }
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE, lease = activeLease)
@@ -176,23 +209,26 @@ class MirkoriProAccessService(
     }
 
     suspend fun releaseOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
-        val lease = activeLease
+        val attempt = pendingRelease ?: activeLease?.let { lease ->
+            PendingProSessionRelease(lease, sdk.newIdempotencyKey()).also { pendingRelease = it }
+        }
             ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY)
+        activeLease = null
+        pendingHeartbeat = null
         try {
-            val session = requireLinkedSession()
-            val installationId = requireNotNull(currentPersistedState()).installation.installationId
-            require(session.accountId == lease.accountId && installationId == lease.installationId)
-            val idempotencyKey = sdk.newIdempotencyKey()
-            authenticated(session) { accessToken, _ ->
-                sdk.releaseProSession(accessToken, lease, idempotencyKey)
-            }
-            activeLease = null
+            completePendingReleaseLocked(attempt)
             stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.SESSION_RELEASED)
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (error: PlatformProConfigurationUnavailableException) {
+            handleConfigurationUnavailableLocked(error)
+        } catch (error: PlatformProBenefitUnavailableException) {
+            handleBenefitUnavailableLocked(error, allowLeaseReacquire = false)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability(), lease = null)
         } catch (error: Exception) {
             logFailure(error)
-            activeLease = null
             stateFromCache(
                 availability = if (error is IOException) {
                     MirkoriProAvailability.OFFLINE
@@ -200,6 +236,33 @@ class MirkoriProAccessService(
                     MirkoriProAvailability.UNAVAILABLE
                 },
             )
+        }
+    }
+
+    private suspend fun MirkoriPlatformRuntime.completePendingReleaseLocked(
+        expected: PendingProSessionRelease? = pendingRelease,
+    ) {
+        val attempt = expected ?: return
+        val session = requireLinkedSession()
+        val installationId = requireNotNull(currentPersistedState()).installation.installationId
+        if (session.accountId != attempt.lease.accountId || installationId != attempt.lease.installationId) {
+            pendingRelease = null
+            return
+        }
+        try {
+            authenticated(session) { accessToken, _ ->
+                sdk.releaseProSession(accessToken, attempt.lease, attempt.idempotencyKey)
+            }
+            pendingRelease = null
+        } catch (error: PlatformProBenefitUnavailableException) {
+            if (
+                error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST ||
+                error.reason != PlatformProBenefitUnavailableReason.LEASE
+            ) {
+                throw error
+            }
+            logFailure(error)
+            pendingRelease = null
         }
     }
 
@@ -270,9 +333,57 @@ class MirkoriProAccessService(
         logFailure(error)
         activeLease = null
         pendingStart = null
+        pendingRelease = null
+        pendingHeartbeat = null
         clearConfirmedLocked()
         return MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = false, notice = notice)
     }
+
+    private fun MirkoriPlatformRuntime.handleConfigurationUnavailableLocked(
+        error: PlatformProConfigurationUnavailableException,
+    ): MirkoriProAccessState =
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else {
+            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+        }
+
+    private fun MirkoriPlatformRuntime.handleBenefitUnavailableLocked(
+        error: PlatformProBenefitUnavailableException,
+        allowLeaseReacquire: Boolean,
+    ): MirkoriProAccessState =
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE && allowLeaseReacquire) {
+            logFailure(error)
+            activeLease = null
+            pendingHeartbeat = null
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = null)
+        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
+            logFailure(error)
+            activeLease = null
+            pendingStart = null
+            pendingHeartbeat = null
+            stateFromCache(MirkoriProAvailability.UNAVAILABLE, lease = null)
+        } else {
+            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+        }
+
+    private fun MirkoriPlatformRuntime.handleConcurrencyLimitLocked(
+        error: PlatformProConcurrencyLimitException,
+    ): MirkoriProAccessState =
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else {
+            logFailure(error)
+            activeLease = null
+            pendingStart = null
+            pendingHeartbeat = null
+            stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
+        }
 
     private fun MirkoriPlatformRuntime.clearConfirmedLocked() {
         currentPersistedState()?.takeIf { it.confirmedProAccess != null }?.let { state ->
@@ -301,6 +412,14 @@ class MirkoriProAccessService(
             availability = availability,
             active = active,
             validUntilEpochMs = confirmed.validUntilEpochMs,
+            nextAccessExpiryDelayMs = if (active && trustedNow != null) {
+                minOf(
+                    requireNotNull(confirmed.validUntilEpochMs),
+                    confirmed.snapshotExpiresAtEpochMs,
+                ).minus(trustedNow).coerceAtLeast(0L)
+            } else {
+                null
+            },
             benefitContentId = confirmed.benefitContentId,
             onlineSessionActive = activeServerLease != null,
             leaseExpiresAtEpochMs = activeServerLease?.expiresAt?.toEpochMilli(),
@@ -322,7 +441,24 @@ private data class PendingProSessionStart(
     val idempotencyKey: PlatformIdempotencyKey,
 )
 
+private data class PendingProSessionRelease(
+    val lease: PlatformProSessionLease,
+    val idempotencyKey: PlatformIdempotencyKey,
+)
+
+private data class PendingProSessionHeartbeat(
+    val leaseId: String,
+    val idempotencyKey: PlatformIdempotencyKey,
+)
+
 private class MirkoriProProfileChangedException : IllegalStateException("Mirkori Pro profile changed")
+
+private fun PlatformApiException.proAvailability(): MirkoriProAvailability =
+    if (recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+        MirkoriProAvailability.RETRYABLE
+    } else {
+        MirkoriProAvailability.UNAVAILABLE
+    }
 
 private fun ConfirmedMirkoriProAccess.belongsTo(
     session: GameIdentitySession,
