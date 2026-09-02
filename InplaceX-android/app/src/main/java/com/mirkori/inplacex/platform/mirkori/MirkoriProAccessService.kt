@@ -63,6 +63,9 @@ class MirkoriProAccessService(
     @Volatile
     private var pendingRelease: PendingProSessionRelease? = null
 
+    @Volatile
+    private var pendingHeartbeat: PendingProSessionHeartbeat? = null
+
     fun cachedState(): MirkoriProAccessState = stateFromCache(MirkoriProAvailability.CACHED)
 
     suspend fun refresh(): MirkoriProAccessState = runtime.withOperationLock {
@@ -158,16 +161,22 @@ class MirkoriProAccessService(
 
     suspend fun heartbeatOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
         val lease = activeLease
-            ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY)
+            ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY).also {
+                pendingHeartbeat = null
+            }
         try {
             val session = requireLinkedSession()
             val installationId = requireNotNull(currentPersistedState()).installation.installationId
             require(session.accountId == lease.accountId && installationId == lease.installationId)
-            val idempotencyKey = sdk.newIdempotencyKey()
+            val attempt = pendingHeartbeat?.takeIf { it.leaseId == lease.id }
+                ?: PendingProSessionHeartbeat(lease.id, sdk.newIdempotencyKey()).also {
+                    pendingHeartbeat = it
+                }
             val heartbeat = authenticated(session) { accessToken, _ ->
-                sdk.heartbeatProSession(accessToken, lease, idempotencyKey)
+                sdk.heartbeatProSession(accessToken, lease, attempt.idempotencyKey)
             }.value
             activeLease = heartbeat
+            pendingHeartbeat = null
             stateFromCache(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
@@ -198,6 +207,7 @@ class MirkoriProAccessService(
         }
             ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY)
         activeLease = null
+        pendingHeartbeat = null
         try {
             completePendingReleaseLocked(attempt)
             stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.SESSION_RELEASED)
@@ -312,6 +322,7 @@ class MirkoriProAccessService(
         activeLease = null
         pendingStart = null
         pendingRelease = null
+        pendingHeartbeat = null
         clearConfirmedLocked()
         return MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = false, notice = notice)
     }
@@ -332,6 +343,7 @@ class MirkoriProAccessService(
         if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
             logFailure(error)
             activeLease = null
+            pendingHeartbeat = null
             stateFromCache(MirkoriProAvailability.RETRYABLE, lease = null)
         } else {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
@@ -395,6 +407,11 @@ private data class PendingProSessionStart(
 
 private data class PendingProSessionRelease(
     val lease: PlatformProSessionLease,
+    val idempotencyKey: PlatformIdempotencyKey,
+)
+
+private data class PendingProSessionHeartbeat(
+    val leaseId: String,
     val idempotencyKey: PlatformIdempotencyKey,
 )
 

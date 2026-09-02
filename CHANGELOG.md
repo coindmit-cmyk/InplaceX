@@ -9,7 +9,8 @@
   live concurrency rejection, retry temporary Platform failures with the same
   request identity, retain membership across temporary typed 5xx failures,
   retry transient and offline foreground refresh outside gameplay, distinguish lease loss from
-  membership loss, complete an unconfirmed release before a new claim,
+  membership loss, retry an unconfirmed heartbeat with the same identity,
+  complete an unconfirmed release before a new claim,
   and preserve bounded signed offline Pro access;
   Mirkori Pro grants regular Pro only and production activation remains gated.
 - Added dormant Android composition for the Mirkori Pro runtime. A build

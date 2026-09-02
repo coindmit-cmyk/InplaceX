@@ -190,6 +190,36 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
+    fun failedHeartbeatIsRetriedWithSameIdentity() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        var sessionId = ""
+        val transport = RuntimeProTransport(
+            { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+            { request ->
+                sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
+                PlatformHttpResponse(201, leaseJson(sessionId, "active"))
+            },
+            { throw IOException("heartbeat response lost") },
+            { PlatformHttpResponse(200, leaseJson(sessionId, "active", heartbeatOffsetSeconds = 20)) },
+        )
+        val service = service(keys.public, transport, ProMemoryStore(linkedState()))
+
+        runProRuntime { service.startOnlineSession() }
+        val failed = runProRuntime { service.heartbeatOnlineSession() }
+        val recovered = runProRuntime { service.heartbeatOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.OFFLINE, failed.availability)
+        assertTrue(failed.onlineSessionActive)
+        assertEquals(MirkoriProAvailability.READY, recovered.availability)
+        assertTrue(recovered.onlineSessionActive)
+        assertEquals(transport.requests[2].url, transport.requests[3].url)
+        assertEquals(
+            transport.requests[2].headers["Idempotency-Key"],
+            transport.requests[3].headers["Idempotency-Key"],
+        )
+    }
+
+    @Test
     fun failedReleaseIsRetriedWithSameIdentityBeforeNextClaim() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         var sessionId = ""
