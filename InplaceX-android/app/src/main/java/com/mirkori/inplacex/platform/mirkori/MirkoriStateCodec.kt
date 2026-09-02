@@ -75,6 +75,23 @@ internal object MirkoriStateCodec {
                 output.writeLong(anchor.monotonicAtObservationMs)
                 output.writeLong(anchor.bootMarker)
             }
+            output.writeBoolean(state.confirmedProAccess != null)
+            state.confirmedProAccess?.let { pro ->
+                output.writeUTF(pro.accountId)
+                output.writeUTF(pro.gamePlayerId)
+                output.writeUTF(pro.distributionId)
+                output.writeBoolean(pro.active)
+                output.writeBoolean(pro.validUntilEpochMs != null)
+                pro.validUntilEpochMs?.let(output::writeLong)
+                output.writeLong(pro.snapshotExpiresAtEpochMs)
+                output.writeLong(pro.membershipVersion)
+                output.writeLong(pro.participationVersion)
+                output.writeUTF(pro.benefitContentId)
+                output.writeLong(pro.policyVersion)
+                output.writeLong(pro.trustedTimeAnchor.serverEpochMs)
+                output.writeLong(pro.trustedTimeAnchor.monotonicAtObservationMs)
+                output.writeLong(pro.trustedTimeAnchor.bootMarker)
+            }
         }
         bytes.toByteArray().also { require(it.size <= MaximumStateBytes) }
     }
@@ -166,6 +183,27 @@ internal object MirkoriStateCodec {
             } else {
                 null
             }
+            val confirmedProAccess = if (formatVersion >= ProStateFormatVersion && input.readBoolean()) {
+                ConfirmedMirkoriProAccess(
+                    accountId = input.readUTF(),
+                    gamePlayerId = input.readUTF(),
+                    distributionId = input.readUTF(),
+                    active = input.readBoolean(),
+                    validUntilEpochMs = if (input.readBoolean()) input.readLong() else null,
+                    snapshotExpiresAtEpochMs = input.readLong(),
+                    membershipVersion = input.readLong(),
+                    participationVersion = input.readLong(),
+                    benefitContentId = input.readUTF(),
+                    policyVersion = input.readLong(),
+                    trustedTimeAnchor = MirkoriTrustedTimeAnchor(
+                        serverEpochMs = input.readLong(),
+                        monotonicAtObservationMs = input.readLong(),
+                        bootMarker = input.readLong(),
+                    ),
+                )
+            } else {
+                null
+            }
             require(input.available() == 0)
             MirkoriPersistedState(
                 installation = installation,
@@ -175,6 +213,7 @@ internal object MirkoriStateCodec {
                 pendingPurchase = pendingPurchase,
                 confirmedEntitlements = confirmedEntitlements,
                 trustedTimeAnchor = trustedTimeAnchor,
+                confirmedProAccess = confirmedProAccess,
             ).also(::validate)
         }
     }
@@ -271,13 +310,31 @@ internal object MirkoriStateCodec {
                 grant.validUntilEpochMs?.let { require(it > entitlements.confirmedAtEpochMs) }
             }
         }
+        state.confirmedProAccess?.let { pro ->
+            val session = requireNotNull(state.session)
+            require(pro.accountId == session.accountId)
+            require(pro.gamePlayerId == session.gamePlayerId)
+            require(pro.distributionId.matches(DistributionIdPattern))
+            require(pro.trustedTimeAnchor.serverEpochMs > 0)
+            require(pro.snapshotExpiresAtEpochMs > pro.trustedTimeAnchor.serverEpochMs)
+            require(pro.participationVersion > 0 && pro.policyVersion > 0)
+            require(pro.benefitContentId.matches(ContentIdPattern))
+            require(
+                (pro.validUntilEpochMs == null && pro.membershipVersion == 0L && !pro.active) ||
+                    (pro.validUntilEpochMs != null && pro.membershipVersion > 0 &&
+                        pro.active == (pro.validUntilEpochMs > pro.trustedTimeAnchor.serverEpochMs)),
+            )
+            require(pro.trustedTimeAnchor.monotonicAtObservationMs >= 0)
+            require(pro.trustedTimeAnchor.bootMarker >= 0)
+        }
     }
 
     private const val MinimumSupportedFormatVersion = 1
     private const val PendingRefreshFormatVersion = 2
     private const val CommerceStateFormatVersion = 3
     private const val ImmutableCommerceFormatVersion = 4
-    private const val FormatVersion = ImmutableCommerceFormatVersion
+    private const val ProStateFormatVersion = 5
+    private const val FormatVersion = ProStateFormatVersion
     private const val CurrentEntitlementSchemaVersion = 1
     private const val MaximumStateBytes = 32 * 1024
     private val HighEntropyTokenPattern = Regex("[A-Za-z0-9_-]{43,128}")
@@ -285,6 +342,8 @@ internal object MirkoriStateCodec {
     private val SessionPattern = Regex("[A-Za-z0-9_-]{64}")
     private val PkcePattern = Regex("[A-Za-z0-9._~-]{43,128}")
     private val ResourceIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
+    private val DistributionIdPattern = Regex("[A-Za-z0-9][A-Za-z0-9._:-]{1,63}")
+    private val ContentIdPattern = Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
     private val CurrencyPattern = Regex("[A-Z]{3}")
     private val LoopbackHosts = setOf("localhost", "127.0.0.1", "::1", "[::1]")
 }

@@ -1,0 +1,202 @@
+package com.mirkori.inplacex.platform.mirkori
+
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class MirkoriProLifecycleTest {
+    @Test
+    fun gameplayRefreshesStartsHeartbeatsAndReleasesOneLease() = runBlocking {
+        val calls = mutableListOf<String>()
+        val emitted = mutableListOf<MirkoriProAccessState>()
+        var heartbeatWaits = 0
+        val ready = readyState(leaseActive = false)
+        val leased = readyState(leaseActive = true)
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; ready },
+                startGameplaySession = { calls += "start"; leased },
+                heartbeatGameplaySession = { calls += "heartbeat"; leased },
+                releaseGameplaySession = {
+                    calls += "release"
+                    ready.copy(notice = MirkoriProNotice.SESSION_RELEASED)
+                },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { heartbeatWaits++ == 0 },
+            onState = emitted::add,
+        )
+
+        assertEquals(listOf("refresh", "start", "heartbeat", "release"), calls)
+        assertEquals(MirkoriProNotice.SESSION_RELEASED, emitted.last().notice)
+    }
+
+    @Test
+    fun offlineGameplayKeepsSignedAccessWithoutClaimingServerCapacity() = runBlocking {
+        val calls = mutableListOf<String>()
+        val offline = readyState(leaseActive = false).copy(
+            availability = MirkoriProAvailability.OFFLINE,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; offline },
+                startGameplaySession = { error("must not start offline") },
+                heartbeatGameplaySession = { error("must not heartbeat offline") },
+                releaseGameplaySession = { error("must not release absent lease") },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { false },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh"), calls)
+    }
+
+    @Test
+    fun concurrencyRejectionEndsTheCurrentGameplayLifecycleWithoutRetry() = runBlocking {
+        val calls = mutableListOf<String>()
+        val limited = readyState(leaseActive = false).copy(
+            notice = MirkoriProNotice.CONCURRENCY_LIMIT,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = { calls += "start"; limited },
+                heartbeatGameplaySession = { error("must not heartbeat rejected lease") },
+                releaseGameplaySession = { error("must not release rejected lease") },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { error("must not retry concurrency rejection") },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "start"), calls)
+    }
+
+    @Test
+    fun retryablePlatformFailureRefreshesAndClaimsWithinTheSameGameplayLifecycle() = runBlocking {
+        val calls = mutableListOf<String>()
+        var refreshCount = 0
+        var waits = 0
+        val retryable = readyState(leaseActive = false).copy(
+            availability = MirkoriProAvailability.RETRYABLE,
+            active = false,
+            validUntilEpochMs = null,
+        )
+        val offline = retryable.copy(availability = MirkoriProAvailability.OFFLINE)
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = {
+                    calls += "refresh"
+                    when (refreshCount++) {
+                        0 -> retryable
+                        1 -> offline
+                        else -> readyState(leaseActive = false)
+                    }
+                },
+                startGameplaySession = { calls += "start"; readyState(leaseActive = true) },
+                heartbeatGameplaySession = { error("heartbeat wait ends the test") },
+                releaseGameplaySession = {
+                    calls += "release"
+                    readyState(leaseActive = false)
+                },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { waits++ < 2 },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "refresh", "refresh", "start", "release"), calls)
+    }
+
+    @Test
+    fun temporaryForegroundFailuresRepeatWithoutStartingGameplayLease() = runBlocking {
+        val calls = mutableListOf<String>()
+        var refreshCount = 0
+        val retryable = MirkoriProAccessState(MirkoriProAvailability.RETRYABLE, active = false)
+        val offline = MirkoriProAccessState(MirkoriProAvailability.OFFLINE, active = false)
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = {
+                    calls += "refresh"
+                    when (refreshCount++) {
+                        0 -> retryable
+                        1 -> offline
+                        else -> readyState(leaseActive = false)
+                    }
+                },
+                startGameplaySession = { error("must not claim outside gameplay") },
+                heartbeatGameplaySession = { error("must not heartbeat outside gameplay") },
+                releaseGameplaySession = { error("must not release outside gameplay") },
+            ),
+            gameplayActive = false,
+            awaitRetryOrHeartbeat = { true },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "refresh", "refresh"), calls)
+    }
+
+    @Test
+    fun membershipLossIsNotOverwrittenByFinalReleaseState() = runBlocking {
+        val calls = mutableListOf<String>()
+        val emitted = mutableListOf<MirkoriProAccessState>()
+        val unavailable = MirkoriProAccessState(
+            availability = MirkoriProAvailability.UNAVAILABLE,
+            active = false,
+            notice = MirkoriProNotice.MEMBERSHIP_INACTIVE,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = { calls += "start"; readyState(leaseActive = true) },
+                heartbeatGameplaySession = { calls += "heartbeat"; unavailable },
+                releaseGameplaySession = {
+                    calls += "release"
+                    MirkoriProAccessState(MirkoriProAvailability.READY, active = false)
+                },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { true },
+            onState = emitted::add,
+        )
+
+        assertEquals(listOf("refresh", "start", "heartbeat", "release"), calls)
+        assertEquals(unavailable, emitted.last())
+    }
+
+    @Test
+    fun nonRetryableStartFailureEndsWithoutAnotherRefresh() = runBlocking {
+        val calls = mutableListOf<String>()
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = {
+                    calls += "start"
+                    MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = true)
+                },
+                heartbeatGameplaySession = { error("must not heartbeat") },
+                releaseGameplaySession = { error("must not release") },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { error("must not retry non-retryable start") },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "start"), calls)
+    }
+
+    private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
+        availability = MirkoriProAvailability.READY,
+        active = true,
+        validUntilEpochMs = 2_000L,
+        onlineSessionActive = leaseActive,
+    )
+}

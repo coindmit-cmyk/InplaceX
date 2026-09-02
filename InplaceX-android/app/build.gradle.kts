@@ -1,5 +1,9 @@
 import java.io.File
 import java.net.URI
+import java.security.KeyFactory
+import java.security.interfaces.RSAPublicKey
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 import java.util.Properties
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -149,6 +153,17 @@ fun localLongProp(
         ?.takeIf(range::contains)
         ?: default
 
+fun localBooleanProp(key: String, default: Boolean): Boolean =
+    localProps.getProperty(key)
+        ?.let { value ->
+            value.toBooleanStrictOrNull()
+                ?: throw GradleException("$key must be true or false")
+        }
+        ?: default
+
+val debugMirkoriProEnabled = localBooleanProp("platform.debug.pro.enabled", false)
+val releaseMirkoriProEnabled = localBooleanProp("platform.release.pro.enabled", false)
+
 fun requiredProductionReleasePropertyKeys(): List<String> = listOf(
     "online.release.baseUrl",
     "platform.release.baseUrl",
@@ -190,6 +205,53 @@ fun validateProviderValueShape(keys: List<String>): List<String> = keys.mapNotNu
 fun validateNoSurroundingWhitespace(keys: List<String>): List<String> = keys.mapNotNull { key ->
     val value = localProps.getProperty(key) ?: return@mapNotNull null
     if (value != value.trim()) "$key must not contain surrounding whitespace" else null
+}
+
+fun validateMirkoriProConfiguration(prefix: String, enabled: Boolean): List<String> = buildList {
+    if (!enabled) return@buildList
+    val distributionKey = "$prefix.distributionId"
+    val publicKeysKey = "$prefix.publicKeys"
+    val distributionId = localProps.getProperty(distributionKey).orEmpty()
+    val encodedPublicKeys = localProps.getProperty(publicKeysKey).orEmpty()
+    if (!distributionId.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) {
+        add("$distributionKey must be a valid immutable resource id")
+    }
+    if (encodedPublicKeys.isBlank()) {
+        add("Missing required enabled Mirkori Pro property: $publicKeysKey")
+        return@buildList
+    }
+    if (encodedPublicKeys.length > 32_768) {
+        add("$publicKeysKey exceeds the maximum supported length")
+        return@buildList
+    }
+    val entries = encodedPublicKeys.split(';')
+    if (entries.size !in 1..8 || entries.any(String::isBlank)) {
+        add("$publicKeysKey must contain between one and eight pinned keys")
+        return@buildList
+    }
+    val keyIds = mutableSetOf<String>()
+    entries.forEach { entry ->
+        val separator = entry.indexOf('=')
+        if (entry != entry.trim() || separator !in 1 until entry.lastIndex) {
+            add("$publicKeysKey contains an invalid key entry")
+            return@forEach
+        }
+        val keyId = entry.substring(0, separator)
+        val encodedKey = entry.substring(separator + 1)
+        if (!keyId.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{2,63}")) || !keyIds.add(keyId)) {
+            add("$publicKeysKey contains an invalid or duplicate key id")
+            return@forEach
+        }
+        val publicKey = runCatching {
+            val bytes = Base64.getDecoder().decode(encodedKey)
+            require(bytes.size in 128..4_096)
+            require(Base64.getEncoder().encodeToString(bytes) == encodedKey)
+            KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(bytes))
+        }.getOrNull()
+        if (publicKey !is RSAPublicKey || publicKey.modulus.bitLength() < 2_048) {
+            add("$publicKeysKey contains an invalid RSA public key")
+        }
+    }
 }
 
 fun isHttpsOrigin(value: String): Boolean =
@@ -262,6 +324,9 @@ android {
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "true")
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.debug.baseUrl", "https://games.dmit.life")}\"")
             buildConfigField("boolean", "MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK", "true")
+            buildConfigField("boolean", "MIRKORI_PRO_ENABLED", debugMirkoriProEnabled.toString())
+            buildConfigField("String", "MIRKORI_PRO_DISTRIBUTION_ID", "\"${localProp("platform.debug.pro.distributionId", "")}\"")
+            buildConfigField("String", "MIRKORI_PRO_PUBLIC_KEYS", "\"${localProp("platform.debug.pro.publicKeys", "")}\"")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"sandbox\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localPropWithFallback("provider.debug.googlePlay.webClientId", "provider.release.googlePlay.webClientId")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localPropWithFallback("provider.debug.googlePlay.gamesProjectId", "provider.release.googlePlay.gamesProjectId")}\"")
@@ -282,6 +347,9 @@ android {
             buildConfigField("boolean", "ONLINE_ALLOW_CLEARTEXT_LOOPBACK", "false")
             buildConfigField("String", "MIRKORI_PLATFORM_BASE_URL", "\"${localProp("platform.release.baseUrl", "https://games.dmit.life")}\"")
             buildConfigField("boolean", "MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK", "false")
+            buildConfigField("boolean", "MIRKORI_PRO_ENABLED", releaseMirkoriProEnabled.toString())
+            buildConfigField("String", "MIRKORI_PRO_DISTRIBUTION_ID", "\"${localProp("platform.release.pro.distributionId", "")}\"")
+            buildConfigField("String", "MIRKORI_PRO_PUBLIC_KEYS", "\"${localProp("platform.release.pro.publicKeys", "")}\"")
             buildConfigField("String", "PROVIDER_ENVIRONMENT", "\"live\"")
             buildConfigField("String", "GOOGLE_PLAY_WEB_CLIENT_ID", "\"${localProp("provider.release.googlePlay.webClientId", "")}\"")
             buildConfigField("String", "GOOGLE_PLAY_GAMES_PROJECT_ID", "\"${localProp("provider.release.googlePlay.gamesProjectId", "")}\"")
@@ -375,6 +443,12 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                 }
             }
             addAll(
+                validateMirkoriProConfiguration(
+                    prefix = "platform.release.pro",
+                    enabled = releaseMirkoriProEnabled,
+                ),
+            )
+            addAll(
                 validateProviderValueShape(
                     listOf(
                         "provider.release.ads.yandex.owner.banner.game",
@@ -391,6 +465,8 @@ val validateProductionReleaseConfig = tasks.register<ValidateReleaseConfigTask>(
                     listOf(
                         "online.release.baseUrl",
                         "platform.release.baseUrl",
+                        "platform.release.pro.distributionId",
+                        "platform.release.pro.publicKeys",
                         "provider.release.ads.yandex.owner.banner.game",
                         "provider.release.ads.yandex.owner.rewarded.general",
                         "provider.release.ads.yandex.owner.interstitial.postMatch",

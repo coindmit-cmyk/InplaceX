@@ -11,7 +11,7 @@ read or written by the Android client.
 
 1. `MirkoriPlatformRuntime` restores one encrypted installation identity or
    creates it once.
-2. The vendored `platform-game-sdk:0.2.0` bootstraps a global guest profile at
+2. The vendored `platform-game-sdk:0.4.4-SNAPSHOT` bootstraps a global guest profile at
    the configured platform origin.
 3. Profile starts a PKCE S256 session and opens its `/connect` URL with the
    system browser. WebView is not used.
@@ -63,8 +63,12 @@ grants, and a trusted server-time/monotonic/boot anchor for timed grants.
 Commerce state is bound to the exact Platform account and `game_player_id`; an
 identity change clears it. Corrupt ciphertext is discarded fail-closed. Secret
 values, checkout URLs, account/profile IDs, idempotency keys, and HTTP bodies
-are never logged. The state codec writes format v4 and continues to read format
-v1/v2/v3 records. Legacy v3 pending purchases restore without inventing a
+are never logged. A verified Pro snapshot additionally stores only its derived
+account/profile/distribution scope, active flag, subscription end, signed
+snapshot expiry and version identifiers with a separate trusted-time anchor;
+the signed envelope and public/private key material are not persisted here.
+The state codec writes format v5 and continues to read format v1/v2/v3/v4
+records. Legacy v3 pending purchases restore without inventing a
 historical price; the first authoritative order read supplies that snapshot.
 
 The access token may be refreshed through the stored rotating refresh token.
@@ -103,6 +107,45 @@ Release product identity is immutable across builds:
 separate configurable sandbox catalog. A future `order_pending` response
 discards only the losing local attempt and then restores the authoritative
 server pending order through the same projection.
+
+## Pro membership runtime
+
+`MirkoriProAccessService` accepts Pro only from a Platform-signed membership
+snapshot pinned to the current account, `inplacex`, and the selected
+distribution. Its server time is captured with the device monotonic clock and
+boot marker. Cached Pro access therefore survives ordinary offline play only
+until both the subscription end and snapshot expiry, and fails closed after a
+reboot, monotonic rollback, identity change, distribution change, invalid
+signature, or unavailable configuration.
+
+Online Pro use obtains a short server lease for the encrypted installation and
+one memory-only game-session ID, heartbeats that exact lease, and releases it
+when play ends. The server response remains authoritative claimed capacity and
+reports the configured limit of two or three concurrent sessions. Retry after
+an access-token refresh or an ambiguous lost response reuses the same session
+ID and idempotency key. Temporary HTTP 408/425/429/5xx responses remain in the
+same gameplay lifecycle and retry that preserved request; a concurrency limit
+does not retry until the player leaves the current match. A server-lost lease
+clears only that lease, retains the still-valid signed membership, and enters
+the same retry path; a membership-level rejection clears access immediately.
+An unconfirmed heartbeat retains its lease and idempotency identity until a
+confirmed heartbeat, lease loss, or release.
+An unconfirmed release retains its lease and idempotency identity in memory and
+is completed before another lease is claimed. A process crash
+cannot leave a durable client claim
+because the lease itself is not persisted and expires server-side.
+
+The Android composition remains disabled by default and creates one Pro access
+service only after a build variant explicitly supplies an owner-approved
+distribution and separately pinned production public keys. When configured,
+the app refreshes the signed membership on foreground/account changes and when
+the current signed snapshot expires, applies it as regular Pro (never Pro
+Plus), and records the signed subscription end in encrypted Platform state.
+Entering gameplay claims one short server lease,
+heartbeats it every 30 seconds, and releases it on exit or background. A live
+concurrency rejection blocks Mirkori Pro for that gameplay session; a still
+valid signed snapshot remains available offline. Production keys and activation
+remain separate owner-gated work.
 
 ## Online identity boundary
 

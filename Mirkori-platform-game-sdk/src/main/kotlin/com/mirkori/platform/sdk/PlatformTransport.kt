@@ -29,6 +29,18 @@ class PlatformHttpResponse(
     override fun toString(): String = "PlatformHttpResponse(status=$status, [redacted])"
 }
 
+enum class PlatformTransportFailure(val retryable: Boolean) {
+    NETWORK_UNAVAILABLE(true),
+    TIMEOUT(true),
+    TLS_REJECTED(false),
+    CANCELLED(false),
+    INVALID_RESPONSE(false),
+}
+
+class PlatformTransportException(
+    val failure: PlatformTransportFailure,
+) : IllegalStateException("Platform transport failed: ${failure.name.lowercase()}")
+
 fun interface PlatformTransport {
     suspend fun execute(request: PlatformHttpRequest): PlatformHttpResponse
 }

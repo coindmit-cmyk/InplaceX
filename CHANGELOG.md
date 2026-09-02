@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Connected the dormant Mirkori Pro service to the Android app lifecycle and
+  effective game entitlements. Configured builds refresh signed membership and
+  renew an expiring signed snapshot,
+  persist its end date, claim/heartbeat/release one gameplay lease, enforce a
+  live concurrency rejection, retry temporary Platform failures with the same
+  request identity, preserve typed Pro recovery without masking 401 token refresh,
+  retain membership across temporary typed 5xx failures,
+  retry transient and offline foreground refresh outside gameplay, distinguish lease loss from
+  membership loss, retry an unconfirmed heartbeat with the same identity,
+  complete an unconfirmed release before a new claim,
+  and preserve bounded signed offline Pro access;
+  Mirkori Pro grants regular Pro only and production activation remains gated.
+- Added dormant Android composition for the Mirkori Pro runtime. A build
+  variant must explicitly opt in with an immutable distribution and separately
+  pinned RSA public keys before the app creates a Pro access service; disabled
+  builds keep the existing identity and commerce runtime unchanged.
+- Added the InplaceX runtime core for Mirkori Pro membership. It verifies the
+  Platform-signed game/distribution snapshot, stores only derived access facts
+  and the subscription end date in encrypted state, evaluates offline access
+  against a monotonic boot-bound time anchor, and controls the server lease for
+  the configured two-to-three concurrent-session policy. Production public-key
+  and distribution wiring remains a separate activation step.
+- Updated the vendored Mirkori Games SDK to the platform's `0.4.4-SNAPSHOT`
+  contract. InplaceX can now consume signed installed-build decisions, guest
+  checkout handoffs, entitlement deliveries, signed Pro membership snapshots,
+  and Pro concurrency leases while preserving its existing pending-order and
+  trusted HTTPS server-time compatibility.
 - Rebuilt the Duel setup against the dedicated `941x1670` owner reference:
   the purple hero, code-length controls, quick duel, training, records, and
   surrounding spacing now follow the measured `374x877` canvas. Quick Duel

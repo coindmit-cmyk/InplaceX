@@ -41,6 +41,10 @@ class GameFieldViewModel(
         _state.value = stateHolder.currentSnapshot()
     }
 
+    fun updateAutoModeAvailability(available: Boolean) {
+        stateHolder.updateAutoModeAvailability(available)
+    }
+
     fun dispatch(event: GameFieldEvent): GameFieldUiState {
         stateHolder.dispatch(event)
         _state.value = stateHolder.currentSnapshot()
