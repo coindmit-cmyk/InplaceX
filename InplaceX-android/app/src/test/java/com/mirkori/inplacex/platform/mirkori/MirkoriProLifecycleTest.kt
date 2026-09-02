@@ -171,6 +171,28 @@ class MirkoriProLifecycleTest {
         assertEquals(unavailable, emitted.last())
     }
 
+    @Test
+    fun nonRetryableStartFailureEndsWithoutAnotherRefresh() = runBlocking {
+        val calls = mutableListOf<String>()
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = {
+                    calls += "start"
+                    MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = true)
+                },
+                heartbeatGameplaySession = { error("must not heartbeat") },
+                releaseGameplaySession = { error("must not release") },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { error("must not retry non-retryable start") },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "start"), calls)
+    }
+
     private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
         availability = MirkoriProAvailability.READY,
         active = true,

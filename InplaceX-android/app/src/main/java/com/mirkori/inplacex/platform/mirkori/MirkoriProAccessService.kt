@@ -137,10 +137,7 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConcurrencyLimitException) {
-            logFailure(error)
-            activeLease = null
-            pendingStart = null
-            stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
+            handleConcurrencyLimitLocked(error)
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
@@ -340,13 +337,30 @@ class MirkoriProAccessService(
     private fun MirkoriPlatformRuntime.handleBenefitUnavailableLocked(
         error: PlatformProBenefitUnavailableException,
     ): MirkoriProAccessState =
-        if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
             logFailure(error)
             activeLease = null
             pendingHeartbeat = null
             stateFromCache(MirkoriProAvailability.RETRYABLE, lease = null)
         } else {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+        }
+
+    private fun MirkoriPlatformRuntime.handleConcurrencyLimitLocked(
+        error: PlatformProConcurrencyLimitException,
+    ): MirkoriProAccessState =
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else {
+            logFailure(error)
+            activeLease = null
+            pendingStart = null
+            pendingHeartbeat = null
+            stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
         }
 
     private fun MirkoriPlatformRuntime.clearConfirmedLocked() {

@@ -278,6 +278,29 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
+    fun temporaryTypedMembershipAndConcurrencyFailuresRemainRetryable() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        listOf("pro_unavailable", "pro_concurrency_limit").forEach { errorCode ->
+            val store = ProMemoryStore(linkedState())
+            val service = service(
+                keys.public,
+                RuntimeProTransport(
+                    { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                    { PlatformHttpResponse(503, """{"error":"$errorCode"}""") },
+                ),
+                store,
+            )
+
+            val result = runProRuntime { service.startOnlineSession() }
+
+            assertEquals(MirkoriProAvailability.RETRYABLE, result.availability)
+            assertTrue(result.active)
+            assertFalse(result.onlineSessionActive)
+            assertNotNull(store.value?.confirmedProAccess)
+        }
+    }
+
+    @Test
     fun reportsConcurrencyLimitWithoutClaimingAnOnlineSession() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val transport = RuntimeProTransport(

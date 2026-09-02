@@ -98,9 +98,10 @@ class ProGameApiSdkTest {
             config,
             ProQueueTransport(PlatformHttpResponse(409, """{"error":"pro_concurrency_limit"}""")),
         )
-        assertThrows(PlatformProConcurrencyLimitException::class.java) {
+        val limitError = assertThrows(PlatformProConcurrencyLimitException::class.java) {
             runPro { limited.startProSession(accessToken, accountId, installationId, sessionId) }
         }
+        assertEquals(PlatformRecoveryAction.RESOLVE_CONFLICT, limitError.recoveryAction)
         val leaseUnavailable = MirkoriGameSdk(
             config,
             ProQueueTransport(PlatformHttpResponse(409, """{"error":"pro_lease_unavailable"}""")),
@@ -109,6 +110,7 @@ class ProGameApiSdkTest {
             runPro { leaseUnavailable.startProSession(accessToken, accountId, installationId, sessionId) }
         }
         assertEquals(PlatformProBenefitUnavailableReason.LEASE, leaseError.reason)
+        assertEquals(PlatformRecoveryAction.RESOLVE_CONFLICT, leaseError.recoveryAction)
     }
 
     private fun snapshotEnvelope(privateKey: PrivateKey, accountId: String, now: Instant): String {

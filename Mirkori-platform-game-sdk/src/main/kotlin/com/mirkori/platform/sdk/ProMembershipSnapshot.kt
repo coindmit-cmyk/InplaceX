@@ -82,7 +82,9 @@ class PlatformProConfigurationUnavailableException(
     val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
 ) :
     IllegalStateException("Pro game configuration is unavailable")
-class PlatformProConcurrencyLimitException :
+class PlatformProConcurrencyLimitException(
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
+) :
     IllegalStateException("Pro concurrent-session limit reached")
 enum class PlatformProBenefitUnavailableReason {
     MEMBERSHIP,
@@ -91,6 +93,7 @@ enum class PlatformProBenefitUnavailableReason {
 
 class PlatformProBenefitUnavailableException(
     val reason: PlatformProBenefitUnavailableReason = PlatformProBenefitUnavailableReason.MEMBERSHIP,
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
 ) :
     IllegalStateException("Pro benefit is unavailable")
 
