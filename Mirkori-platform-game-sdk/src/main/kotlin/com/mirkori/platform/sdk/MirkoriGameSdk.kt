@@ -864,7 +864,8 @@ class MirkoriGameSdk(
         block()
     } catch (error: PlatformApiException) {
         when (error.errorCode) {
-            "pro_configuration_unavailable" -> throw PlatformProConfigurationUnavailableException()
+            "pro_configuration_unavailable" ->
+                throw PlatformProConfigurationUnavailableException(error.recoveryAction)
             "pro_concurrency_limit" -> throw PlatformProConcurrencyLimitException()
             "pro_unavailable", "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException()
             else -> throw error

@@ -78,7 +78,9 @@ data class PlatformProSessionLease(
     val releasedAt: Instant?,
 )
 
-class PlatformProConfigurationUnavailableException :
+class PlatformProConfigurationUnavailableException(
+    val recoveryAction: PlatformRecoveryAction = PlatformRecoveryAction.DO_NOT_RETRY,
+) :
     IllegalStateException("Pro game configuration is unavailable")
 class PlatformProConcurrencyLimitException :
     IllegalStateException("Pro concurrent-session limit reached")

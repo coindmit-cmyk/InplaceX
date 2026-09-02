@@ -90,9 +90,10 @@ class ProGameApiSdkTest {
             config,
             ProQueueTransport(PlatformHttpResponse(503, """{"error":"pro_configuration_unavailable"}""")),
         )
-        assertThrows(PlatformProConfigurationUnavailableException::class.java) {
+        val configurationError = assertThrows(PlatformProConfigurationUnavailableException::class.java) {
             runPro { unavailable.startProSession(accessToken, accountId, installationId, sessionId) }
         }
+        assertEquals(PlatformRecoveryAction.RETRY_SAME_REQUEST, configurationError.recoveryAction)
         val limited = MirkoriGameSdk(
             config,
             ProQueueTransport(PlatformHttpResponse(409, """{"error":"pro_concurrency_limit"}""")),

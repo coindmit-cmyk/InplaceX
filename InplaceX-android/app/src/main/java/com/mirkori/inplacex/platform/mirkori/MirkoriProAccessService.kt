@@ -67,7 +67,7 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         } catch (error: IllegalArgumentException) {
@@ -134,7 +134,7 @@ class MirkoriProAccessService(
             pendingStart = null
             stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.CONCURRENCY_LIMIT)
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         } catch (error: IllegalArgumentException) {
@@ -171,7 +171,7 @@ class MirkoriProAccessService(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: PlatformProConfigurationUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+            handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
             logFailure(error)
             activeLease = null
@@ -287,6 +287,16 @@ class MirkoriProAccessService(
         clearConfirmedLocked()
         return MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = false, notice = notice)
     }
+
+    private fun MirkoriPlatformRuntime.handleConfigurationUnavailableLocked(
+        error: PlatformProConfigurationUnavailableException,
+    ): MirkoriProAccessState =
+        if (error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+            logFailure(error)
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
+        } else {
+            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+        }
 
     private fun MirkoriPlatformRuntime.clearConfirmedLocked() {
         currentPersistedState()?.takeIf { it.confirmedProAccess != null }?.let { state ->

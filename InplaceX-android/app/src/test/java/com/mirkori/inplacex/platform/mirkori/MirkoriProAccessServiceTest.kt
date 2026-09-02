@@ -163,6 +163,27 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
+    fun temporaryConfigurationFailureRetainsVerifiedMembershipForRetry() {
+        val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val store = ProMemoryStore(linkedState())
+        val service = service(
+            keys.public,
+            RuntimeProTransport(
+                { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
+                { PlatformHttpResponse(503, """{"error":"pro_configuration_unavailable"}""") },
+            ),
+            store,
+        )
+
+        val result = runProRuntime { service.startOnlineSession() }
+
+        assertEquals(MirkoriProAvailability.RETRYABLE, result.availability)
+        assertTrue(result.active)
+        assertFalse(result.onlineSessionActive)
+        assertNotNull(store.value?.confirmedProAccess)
+    }
+
+    @Test
     fun reportsConcurrencyLimitWithoutClaimingAnOnlineSession() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val transport = RuntimeProTransport(
