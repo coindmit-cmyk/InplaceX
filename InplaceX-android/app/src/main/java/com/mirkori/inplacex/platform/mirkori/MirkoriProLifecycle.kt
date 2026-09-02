@@ -70,7 +70,8 @@ internal suspend fun runMirkoriProLifecycle(
     } finally {
         if (releaseRequired) {
             withContext(NonCancellable) {
-                onState(operations.releaseGameplaySession())
+                val released = operations.releaseGameplaySession()
+                if (state.active) onState(released)
             }
         }
     }

@@ -132,6 +132,35 @@ class MirkoriProLifecycleTest {
         assertEquals(listOf("refresh", "refresh"), calls)
     }
 
+    @Test
+    fun membershipLossIsNotOverwrittenByFinalReleaseState() = runBlocking {
+        val calls = mutableListOf<String>()
+        val emitted = mutableListOf<MirkoriProAccessState>()
+        val unavailable = MirkoriProAccessState(
+            availability = MirkoriProAvailability.UNAVAILABLE,
+            active = false,
+            notice = MirkoriProNotice.MEMBERSHIP_INACTIVE,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = { calls += "start"; readyState(leaseActive = true) },
+                heartbeatGameplaySession = { calls += "heartbeat"; unavailable },
+                releaseGameplaySession = {
+                    calls += "release"
+                    MirkoriProAccessState(MirkoriProAvailability.READY, active = false)
+                },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { true },
+            onState = emitted::add,
+        )
+
+        assertEquals(listOf("refresh", "start", "heartbeat", "release"), calls)
+        assertEquals(unavailable, emitted.last())
+    }
+
     private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
         availability = MirkoriProAvailability.READY,
         active = true,
