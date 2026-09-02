@@ -143,6 +143,8 @@ class MirkoriProAccessService(
             )
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (error: PlatformProConfigurationUnavailableException) {
+            failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
         } catch (error: PlatformProBenefitUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         } catch (error: IOException) {
