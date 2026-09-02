@@ -37,6 +37,7 @@ class MirkoriPlatformRuntime internal constructor(
     private val clockMs: () -> Long = System::currentTimeMillis,
     private val monotonicClockMs: () -> Long = { System.nanoTime() / 1_000_000L },
     private val bootMarker: () -> Long? = { 0L },
+    proConfigured: Boolean = false,
 ) : AccessTokenProvider, AutoCloseable {
     private val operationMutex = Mutex()
     @Volatile
@@ -44,6 +45,9 @@ class MirkoriPlatformRuntime internal constructor(
     private val mutableAccountState = MutableStateFlow(persistedState.toAccountState())
 
     val accountState: StateFlow<MirkoriAccountState> = mutableAccountState.asStateFlow()
+    val proAccessService: MirkoriProAccessService? by lazy {
+        if (proConfigured) MirkoriProAccessService(this) else null
+    }
 
     fun currentAccountState(): MirkoriAccountState = persistedState.toAccountState()
 
@@ -538,8 +542,16 @@ class MirkoriPlatformRuntime internal constructor(
             context: Context,
             baseUrl: String = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
             allowCleartextLoopback: Boolean = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
+            proEnabled: Boolean = BuildConfig.MIRKORI_PRO_ENABLED,
+            proDistributionId: String = BuildConfig.MIRKORI_PRO_DISTRIBUTION_ID,
+            proPublicKeys: String = BuildConfig.MIRKORI_PRO_PUBLIC_KEYS,
         ): MirkoriPlatformRuntime? {
             if (baseUrl.isBlank()) return null
+            val proConfiguration = MirkoriProClientConfiguration.parseOrNull(
+                enabled = proEnabled,
+                distributionId = proDistributionId,
+                encodedPublicKeys = proPublicKeys,
+            )
             val client = createMirkoriHttpClient()
             return try {
                 val sdk = MirkoriGameSdk(
@@ -548,11 +560,13 @@ class MirkoriPlatformRuntime internal constructor(
                         gameId = "inplacex",
                         redirectUri = RedirectUri,
                         allowCleartextLoopback = allowCleartextLoopback,
+                        distributionId = proConfiguration?.distributionId,
                     ),
                     transport = KtorMirkoriPlatformTransport(
                         client = client,
                         connectivity = AndroidConnectivityGate(context),
                     ),
+                    proSnapshotVerifier = proConfiguration?.snapshotVerifier,
                 )
                 MirkoriPlatformRuntime(
                     sdk = sdk,
@@ -564,6 +578,7 @@ class MirkoriPlatformRuntime internal constructor(
                             Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT).toLong()
                         }.getOrNull()
                     },
+                    proConfigured = proConfiguration != null,
                 )
             } catch (error: Exception) {
                 client.close()

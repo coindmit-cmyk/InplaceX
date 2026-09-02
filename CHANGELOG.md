@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added dormant Android composition for the Mirkori Pro runtime. A build
+  variant must explicitly opt in with an immutable distribution and separately
+  pinned RSA public keys before the app creates a Pro access service; disabled
+  builds keep the existing identity and commerce runtime unchanged.
 - Added the InplaceX runtime core for Mirkori Pro membership. It verifies the
   Platform-signed game/distribution snapshot, stores only derived access facts
   and the subscription end date in encrypted state, evaluates offline access

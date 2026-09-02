@@ -20,6 +20,12 @@
 - the Mirkori Games platform origin uses `platform.debug.baseUrl` or
   `platform.release.baseUrl`; the runtime default is `https://games.dmit.life`,
   while a production candidate requires an explicit release origin
+- Mirkori Pro composition is disabled by default. Each variant enables it only
+  with `platform.<variant>.pro.enabled=true`, one immutable distribution ID,
+  and separately pinned RSA public keys in
+  `key-id=base64-x509-rsa[;next-key-id=...]` format. A partial or invalid
+  enabled configuration fails closed; the key material is never fetched from
+  a membership response
 - shared `defaultConfig` contains no sandbox provider mode, test ad id, or mock billing product default
 
 ## Canonical BuildConfig Fields
@@ -39,6 +45,9 @@
 - `BILLING_PRO_PLUS_SUBSCRIPTION_ID`
 - `MIRKORI_PLATFORM_BASE_URL`
 - `MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK`
+- `MIRKORI_PRO_ENABLED`
+- `MIRKORI_PRO_DISTRIBUTION_ID`
+- `MIRKORI_PRO_PUBLIC_KEYS`
 
 ## Canonical Runtime Model
 
@@ -114,6 +123,9 @@ recovery in the production runbook.
   canonical IDs exactly; the production gate rejects rotation and surrounding
   whitespace so a persisted pending purchase never changes identity
 - a release artifact must not contain debug stub implementations or use a runtime `SANDBOX` value to select them
+- the Android Mirkori runtime exposes one Pro access service only when the
+  variant has a complete pinned configuration. This composition does not grant
+  Pro by itself and does not change billing entitlements or gameplay gates
 
 Absent provider configuration, Credential Manager cancellation, server
 rejection, or network failure leaves the player in guest mode. Debug provider
