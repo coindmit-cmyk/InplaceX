@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Updated the vendored Mirkori Games SDK to the platform's `0.4.4-SNAPSHOT`
+  contract. InplaceX can now consume signed installed-build decisions, guest
+  checkout handoffs, entitlement deliveries, signed Pro membership snapshots,
+  and Pro concurrency leases while preserving its existing pending-order and
+  trusted HTTPS server-time compatibility.
 - Rebuilt the Duel setup against the dedicated `941x1670` owner reference:
   the purple hero, code-length controls, quick duel, training, records, and
   surrounding spacing now follow the measured `374x877` canvas. Quick Duel

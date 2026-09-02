@@ -6,6 +6,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
@@ -15,6 +17,9 @@ class MirkoriGameSdk(
     val config: MirkoriGameSdkConfig,
     private val transport: PlatformTransport,
     private val entropy: SecureEntropy = SecureEntropy.system(),
+    private val releaseDecisionVerifier: PlatformReleaseDecisionVerifier? = null,
+    private val clock: Clock = Clock.systemUTC(),
+    private val proSnapshotVerifier: PlatformProMembershipSnapshotVerifier? = null,
 ) {
     private val codec = SdkJsonCodec()
     private val baseUri = validateBaseUrl(config.platformBaseUrl, config.allowCleartextLoopback)
@@ -23,6 +28,7 @@ class MirkoriGameSdk(
 
     init {
         require(config.gameId.matches(GameIdPattern))
+        config.distributionId?.let { require(it.matches(ResourceIdPattern)) }
     }
 
     fun newInstallation(): InstallationIdentity = InstallationIdentity(
@@ -33,6 +39,8 @@ class MirkoriGameSdk(
     fun newIdempotencyKey(): PlatformIdempotencyKey = PlatformIdempotencyKey(entropy.token(32))
 
     fun latestServerTimeObservation(): PlatformServerTimeObservation? = serverTimeObservation.get()
+
+    fun newProSessionId(): String = UUID.randomUUID().toString()
 
     suspend fun bootstrapGuest(
         installation: InstallationIdentity,
@@ -75,6 +83,211 @@ class MirkoriGameSdk(
                 idempotencyKey = idempotencyKey,
             ),
         )
+    }
+
+    suspend fun checkForUpdate(
+        currentVersionCode: Long,
+        platform: PlatformReleasePlatform = PlatformReleasePlatform.ANDROID,
+        channel: PlatformReleaseChannel = PlatformReleaseChannel.STABLE,
+    ): PlatformUpdateDecision {
+        require(currentVersionCode > 0)
+        return codec.updateDecisionResponse(
+            get(
+                "/api/v1/catalog/games/${config.gameId}/updates" +
+                    "?platform=${platform.wireName}&channel=${channel.wireName}&versionCode=$currentVersionCode",
+            ),
+        ).also { decision ->
+            require(decision.gameId == config.gameId)
+            require(decision.platform == platform && decision.channel == channel)
+            require(decision.currentVersionCode == currentVersionCode)
+            require(decision.required.not() || decision.updateAvailable)
+            require(decision.updateAvailable == (decision.release != null))
+            decision.release?.let { release ->
+                validateRelease(release, currentVersionCode, platform, channel)
+                require(decision.required == (currentVersionCode < release.minimumSupportedVersionCode))
+            }
+        }
+    }
+
+    suspend fun checkForDistributionUpdate(
+        currentVersionCode: Long,
+        channel: PlatformReleaseChannel = PlatformReleaseChannel.STABLE,
+    ): PlatformDistributionUpdateDecision {
+        require(currentVersionCode > 0)
+        val distributionId = requireNotNull(config.distributionId) {
+            "Distribution-aware updates require an immutable SDK distributionId"
+        }
+        return codec.distributionUpdateDecisionResponse(
+            get(
+                "/api/v2/catalog/games/${config.gameId}/updates" +
+                    "?distributionId=${urlEncode(distributionId)}&channel=${channel.wireName}" +
+                    "&versionCode=$currentVersionCode",
+            ),
+        ).also { decision ->
+            require(decision.gameId == config.gameId)
+            validateDistribution(decision.distribution, distributionId, channel)
+            require(decision.channel == channel && decision.currentVersionCode == currentVersionCode)
+            require(decision.required.not() || decision.updateAvailable)
+            require(decision.updateAvailable == (decision.release != null))
+            decision.release?.let { release ->
+                validateDistributionRelease(release, decision.distribution, currentVersionCode, channel)
+                require(decision.required == (currentVersionCode < release.minimumSupportedVersionCode))
+            }
+        }
+    }
+
+    suspend fun checkInstalledBuildDecision(
+        installedReleaseId: String,
+        installedVersionCode: Long,
+        channel: PlatformReleaseChannel = PlatformReleaseChannel.STABLE,
+    ): PlatformInstalledBuildDecision {
+        require(installedReleaseId.matches(ResourceIdPattern))
+        require(installedVersionCode > 0)
+        val distributionId = requireNotNull(config.distributionId) {
+            "Installed-build decisions require an immutable SDK distributionId"
+        }
+        val verifier = requireNotNull(releaseDecisionVerifier) {
+            "Installed-build decisions require pinned platform decision keys"
+        }
+        return codec.installedBuildDecisionResponse(
+            get(
+                "/api/v3/catalog/games/${config.gameId}/installed-build-decision" +
+                    "?distributionId=${urlEncode(distributionId)}&channel=${channel.wireName}" +
+                    "&releaseId=${urlEncode(installedReleaseId)}&versionCode=$installedVersionCode",
+            ),
+            verifier,
+        ).also { decision ->
+            require(decision.gameId == config.gameId && decision.distributionId == distributionId)
+            require(decision.channel == channel)
+            require(decision.installedReleaseId == installedReleaseId)
+            require(decision.installedVersionCode == installedVersionCode)
+            require(decision.policyVersion > 0)
+            val now = clock.instant()
+            require(!decision.issuedAt.isAfter(now.plus(AllowedDecisionClockSkew)))
+            require(decision.expiresAt.isAfter(now.minus(AllowedDecisionClockSkew)))
+            val lifetime = Duration.between(decision.issuedAt, decision.expiresAt)
+            require(lifetime.seconds in 60..900)
+            when (decision.status) {
+                PlatformInstalledBuildStatus.UP_TO_DATE -> {
+                    require(decision.launchAllowed && decision.release == null && decision.distribution != null)
+                    require(decision.reasonCode == null && decision.supportPath == null)
+                }
+                PlatformInstalledBuildStatus.OPTIONAL -> {
+                    require(decision.launchAllowed && decision.release != null && decision.distribution != null)
+                    require(decision.reasonCode == null && decision.supportPath == null)
+                }
+                PlatformInstalledBuildStatus.REQUIRED -> {
+                    require(!decision.launchAllowed && decision.release != null && decision.distribution != null)
+                    require(decision.reasonCode == null && decision.supportPath == null)
+                }
+                PlatformInstalledBuildStatus.UNAVAILABLE -> {
+                    require(!decision.launchAllowed)
+                    require(decision.reasonCode?.matches(ReasonCodePattern) == true)
+                    require(decision.supportPath?.isSafeSupportPath() == true)
+                    require(decision.release == null)
+                }
+                PlatformInstalledBuildStatus.RECALLED -> {
+                    require(!decision.launchAllowed && decision.distribution != null)
+                    require(decision.reasonCode?.matches(ReasonCodePattern) == true)
+                    require(decision.supportPath?.isSafeSupportPath() == true)
+                }
+            }
+            decision.distribution?.let { validateDistribution(it, distributionId, channel) }
+            decision.release?.let { release ->
+                validateDistributionRelease(
+                    release,
+                    requireNotNull(decision.distribution),
+                    installedVersionCode,
+                    channel,
+                )
+            }
+        }
+    }
+
+    suspend fun proMembershipSnapshot(
+        profileAccessToken: String,
+        accountId: String,
+        trustedServerTimeFloor: Instant? = null,
+    ): PlatformProMembershipSnapshot {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(accountId.isCanonicalUuid())
+        val distributionId = requireProDistribution()
+        val verifier = requireNotNull(proSnapshotVerifier) {
+            "Pro membership snapshots require separately pinned Pro keys"
+        }
+        return proApi {
+            verifier.verify(
+                envelopeJson = get(
+                    "/api/v1/pro/snapshot?distributionId=${urlEncode(distributionId)}",
+                    profileAccessToken,
+                ),
+                expectedAccountId = accountId,
+                expectedGameId = config.gameId,
+                expectedDistributionId = distributionId,
+                trustedServerTimeFloor = trustedServerTimeFloor,
+            )
+        }
+    }
+
+    suspend fun startProSession(
+        profileAccessToken: String,
+        accountId: String,
+        installationId: String,
+        sessionId: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformProSessionLease {
+        validateProInputs(profileAccessToken, accountId, installationId, sessionId)
+        val distributionId = requireProDistribution()
+        return proApi {
+            codec.proLeaseResponse(post(
+                path = "/api/v1/pro/leases",
+                body = codec.proLeaseRequest(distributionId, installationId, sessionId),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ))
+        }.also { validateProLease(it, accountId, installationId, sessionId) }
+    }
+
+    suspend fun heartbeatProSession(
+        profileAccessToken: String,
+        lease: PlatformProSessionLease,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformProSessionLease {
+        validateProInputs(profileAccessToken, lease.accountId, lease.installationId, lease.sessionId)
+        validateProLease(lease, lease.accountId, lease.installationId, lease.sessionId)
+        require(lease.status == PlatformProSessionLeaseStatus.ACTIVE)
+        val result = proApi {
+            codec.proLeaseResponse(post(
+                path = "/api/v1/pro/leases/${urlEncode(lease.id)}/heartbeat",
+                body = codec.proLeaseRequest(requireProDistribution(), lease.installationId, lease.sessionId),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ))
+        }
+        require(result.id == lease.id && result.createdAt == lease.createdAt)
+        validateProLease(result, lease.accountId, lease.installationId, lease.sessionId)
+        return result
+    }
+
+    suspend fun releaseProSession(
+        profileAccessToken: String,
+        lease: PlatformProSessionLease,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformProSessionLease {
+        validateProInputs(profileAccessToken, lease.accountId, lease.installationId, lease.sessionId)
+        validateProLease(lease, lease.accountId, lease.installationId, lease.sessionId)
+        val result = proApi {
+            codec.proLeaseResponse(post(
+                path = "/api/v1/pro/leases/${urlEncode(lease.id)}/release",
+                body = codec.proLeaseRequest(requireProDistribution(), lease.installationId, lease.sessionId),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ))
+        }
+        require(result.id == lease.id && result.createdAt == lease.createdAt)
+        validateProLease(result, lease.accountId, lease.installationId, lease.sessionId)
+        require(result.status == PlatformProSessionLeaseStatus.RELEASED && result.releasedAt != null)
+        return result
     }
 
     suspend fun beginAccountLogin(
@@ -140,21 +353,8 @@ class MirkoriGameSdk(
         profileAccessToken: String,
         idToken: String,
         pending: PendingGameLogin,
+        conflictResolution: PlatformProfileConflictResolution = PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
         idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
-    ): GameIdentitySession = completeGoogleAccountLogin(
-        profileAccessToken = profileAccessToken,
-        idToken = idToken,
-        pending = pending,
-        idempotencyKey = idempotencyKey,
-        conflictResolution = PlatformProfileConflictResolution.KEEP_CURRENT_PROFILE,
-    )
-
-    suspend fun completeGoogleAccountLogin(
-        profileAccessToken: String,
-        idToken: String,
-        pending: PendingGameLogin,
-        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
-        conflictResolution: PlatformProfileConflictResolution,
     ): GameIdentitySession {
         require(profileAccessToken.matches(CredentialPattern))
         require(idToken.length in 100..8_192 && idToken.none(Char::isWhitespace))
@@ -244,6 +444,30 @@ class MirkoriGameSdk(
         }
     }
 
+    suspend fun createGuestCheckoutHandoff(
+        guestProfileAccessToken: String,
+        productId: String,
+        currency: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformGuestCheckoutHandoff {
+        require(guestProfileAccessToken.matches(CredentialPattern))
+        require(productId.matches(ResourceIdPattern))
+        require(currency.matches(CurrencyPattern))
+        return codec.guestCheckoutHandoffResponse(
+            post(
+                path = "/api/v1/commerce/guest-checkout-handoffs",
+                body = codec.guestCheckoutHandoffRequest(productId, currency),
+                idempotencyKey = idempotencyKey,
+                bearerToken = guestProfileAccessToken,
+            ),
+        ).also { handoff ->
+            require(handoff.id.isCanonicalUuid())
+            require(handoff.productId == productId && handoff.currency == currency)
+            require(handoff.expiresAt > clock.instant())
+            validateExternalHttpsUrl(handoff.checkoutUrl)
+        }
+    }
+
     suspend fun createCheckout(
         profileAccessToken: String,
         orderId: String,
@@ -264,6 +488,63 @@ class MirkoriGameSdk(
             require(checkout.status == PlatformCheckoutStatus.READY)
             require(checkout.expiresAt > checkout.createdAt && checkout.updatedAt >= checkout.createdAt)
             validateExternalHttpsUrl(checkout.paymentUrl)
+        }
+    }
+
+    suspend fun paymentMethods(
+        profileAccessToken: String,
+        orderId: String,
+        channel: PlatformPaymentChannel,
+    ): PlatformPaymentMethods {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(orderId.isCanonicalUuid())
+        return codec.paymentMethodsResponse(
+            get(
+                "/api/v1/commerce/orders/$orderId/payment-methods?channel=${channel.wireName}",
+                profileAccessToken,
+            ),
+        ).also { result ->
+            require(result.orderId == orderId && result.currency.matches(CurrencyPattern) && result.amountMinor > 0)
+            require(result.countryCode == null || result.countryCode.matches(Regex("[A-Z]{2}")))
+            result.methods.forEach { method ->
+                require(method.id.matches(ResourceIdPattern) && method.nextActionTypes.isNotEmpty())
+            }
+        }
+    }
+
+    suspend fun createPayment(
+        profileAccessToken: String,
+        orderId: String,
+        paymentMethodId: String,
+        channel: PlatformPaymentChannel,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformPayment {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(orderId.isCanonicalUuid())
+        require(paymentMethodId.matches(ResourceIdPattern))
+        return codec.paymentResponse(
+            post(
+                path = "/api/v1/commerce/orders/$orderId/payments",
+                body = codec.createPaymentRequest(paymentMethodId, channel),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { payment ->
+            validatePayment(payment)
+            require(
+                payment.orderId == orderId && payment.paymentMethodId == paymentMethodId && payment.channel == channel,
+            )
+        }
+    }
+
+    suspend fun payment(profileAccessToken: String, paymentId: String): PlatformPayment {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(paymentId.isCanonicalUuid())
+        return codec.paymentResponse(
+            get("/api/v1/commerce/payments/$paymentId", profileAccessToken),
+        ).also { payment ->
+            validatePayment(payment)
+            require(payment.id == paymentId)
         }
     }
 
@@ -313,6 +594,57 @@ class MirkoriGameSdk(
                 )
             }
         }
+    }
+
+    suspend fun pendingGameDeliveries(
+        profileAccessToken: String,
+        limit: Int = 50,
+    ): List<PlatformGameEntitlementDelivery> {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(limit in 1..100)
+        return codec.gameDeliveriesResponse(
+            get("/api/v1/commerce/game-deliveries?limit=$limit", profileAccessToken),
+        ).also { deliveries ->
+            deliveries.forEach { delivery ->
+                require(delivery.id.isCanonicalUuid())
+                require(delivery.entitlementEventId.isCanonicalUuid())
+                require(delivery.entitlementId.isCanonicalUuid())
+                require(delivery.sequenceNumber > 0 && delivery.gameId == config.gameId)
+                require(delivery.productId.matches(ResourceIdPattern))
+                require(delivery.orderId.isCanonicalUuid())
+                require(delivery.entitlementKey.matches(ResourceIdPattern))
+                require(delivery.correctionQuantity >= 0)
+                require(delivery.payloadSha256.matches(Sha256Pattern))
+                require(
+                    if (delivery.entitlementKind == PlatformEntitlementKind.TIME_BOUNDED_PRO) {
+                        delivery.expiresAt != null && delivery.expiresAt > delivery.validFrom
+                    } else {
+                        delivery.expiresAt == null
+                    },
+                )
+                require(
+                    delivery.action == PlatformGameDeliveryAction.GRANT && delivery.quantityDelta > 0 ||
+                        delivery.action == PlatformGameDeliveryAction.REVOKE && delivery.quantityDelta <= 0,
+                )
+            }
+        }
+    }
+
+    suspend fun acknowledgeGameDelivery(
+        profileAccessToken: String,
+        deliveryId: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformGameDeliveryAcknowledgement {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(deliveryId.isCanonicalUuid())
+        return codec.gameDeliveryAcknowledgementResponse(
+            post(
+                path = "/api/v1/commerce/game-deliveries/$deliveryId/ack",
+                body = codec.gameDeliveryAcknowledgementRequest(),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { acknowledgement -> require(acknowledgement.deliveryId == deliveryId) }
     }
 
     suspend fun consumeEntitlement(
@@ -526,6 +858,54 @@ class MirkoriGameSdk(
         return response.body
     }
 
+    private suspend fun <T> proApi(block: suspend () -> T): T = try {
+        block()
+    } catch (error: PlatformApiException) {
+        when (error.errorCode) {
+            "pro_configuration_unavailable" -> throw PlatformProConfigurationUnavailableException()
+            "pro_concurrency_limit" -> throw PlatformProConcurrencyLimitException()
+            "pro_unavailable", "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException()
+            else -> throw error
+        }
+    }
+
+    private fun requireProDistribution(): String = requireNotNull(config.distributionId) {
+        "Pro requires an immutable SDK distributionId"
+    }
+
+    private fun validateProInputs(
+        profileAccessToken: String,
+        accountId: String,
+        installationId: String,
+        sessionId: String,
+    ) {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(accountId.isCanonicalUuid())
+        require(installationId.isCanonicalUuid())
+        require(sessionId.isCanonicalUuid())
+    }
+
+    private fun validateProLease(
+        lease: PlatformProSessionLease,
+        accountId: String,
+        installationId: String,
+        sessionId: String,
+    ) {
+        require(lease.id.isCanonicalUuid())
+        require(lease.accountId == accountId && lease.accountId.isCanonicalUuid())
+        require(lease.gameId == config.gameId)
+        require(lease.distributionId == requireProDistribution())
+        require(lease.installationId == installationId && lease.installationId.isCanonicalUuid())
+        require(lease.sessionId == sessionId && lease.sessionId.isCanonicalUuid())
+        require(lease.benefitContentId.matches(ResourceIdPattern))
+        require(lease.membershipVersion > 0 && lease.participationVersion > 0 && lease.policyVersion > 0)
+        require(lease.maxConcurrentSessions in 2..3)
+        require(lease.lastHeartbeatAt >= lease.createdAt && lease.expiresAt > lease.createdAt)
+        require((lease.status == PlatformProSessionLeaseStatus.ACTIVE && lease.releasedAt == null) ||
+            (lease.status == PlatformProSessionLeaseStatus.RELEASED && lease.releasedAt != null &&
+                lease.releasedAt >= lease.createdAt))
+    }
+
     private fun validateOrder(order: PlatformOrder) {
         require(order.id.isCanonicalUuid())
         require(order.gameId == config.gameId)
@@ -533,6 +913,140 @@ class MirkoriGameSdk(
         require(order.productId.matches(ResourceIdPattern))
         require(order.currency.matches(CurrencyPattern) && order.amountMinor > 0)
         require(order.updatedAt >= order.createdAt)
+    }
+
+    private fun validateRelease(
+        release: PlatformGameRelease,
+        currentVersionCode: Long,
+        platform: PlatformReleasePlatform,
+        channel: PlatformReleaseChannel,
+    ) {
+        require(release.id.matches(ResourceIdPattern) && release.gameId == config.gameId)
+        require(release.platform == platform && release.channel == channel)
+        require(release.versionName.length in 1..64 && release.versionName.none(Char::isISOControl))
+        require(release.versionCode > currentVersionCode)
+        require(release.minimumSupportedVersionCode in 1..release.versionCode)
+        require(release.changelog.length in 1..4000 && release.changelog.trim() == release.changelog)
+        require(release.fileName.matches(FileNamePattern))
+        require(release.sizeBytes in 1..MaximumArtifactBytes)
+        require(release.sha256.matches(Sha256Pattern))
+        validateArtifactUrl(release.downloadUrl, release.id, release.fileName)
+        if (platform == PlatformReleasePlatform.ANDROID) {
+            require(release.minimumAndroidSdk in 21..100)
+            require(release.fileName.endsWith(".apk", ignoreCase = true))
+            require(release.packageName?.matches(AndroidPackagePattern) == true)
+            require(release.signingCertificateSha256Fingerprints.isNotEmpty())
+            require(release.signingCertificateSha256Fingerprints.distinct().size == release.signingCertificateSha256Fingerprints.size)
+            require(release.signingCertificateSha256Fingerprints.all(CertificateFingerprintPattern::matches))
+        } else {
+            require(release.minimumAndroidSdk == null && release.packageName == null)
+            require(release.signingCertificateSha256Fingerprints.isEmpty())
+        }
+    }
+
+    private fun validateDistribution(
+        distribution: PlatformDistributionVariant,
+        expectedDistributionId: String,
+        expectedChannel: PlatformReleaseChannel,
+    ) {
+        require(distribution.id == expectedDistributionId && distribution.gameId == config.gameId)
+        require(distribution.platform == PlatformReleasePlatform.ANDROID)
+        require(distribution.packageName.matches(AndroidPackagePattern))
+        require(distribution.signingIdentityRef.matches(ResourceIdPattern))
+        require(distribution.signingCertificateSha256Fingerprints.isNotEmpty())
+        require(
+            distribution.signingCertificateSha256Fingerprints.distinct().size ==
+                distribution.signingCertificateSha256Fingerprints.size,
+        )
+        require(distribution.signingCertificateSha256Fingerprints.all(CertificateFingerprintPattern::matches))
+        require(expectedChannel in distribution.releaseChannels)
+        require(distribution.status == PlatformDistributionStatus.ACTIVE)
+        require(distribution.effectiveConfigurationVersion > 0)
+        require(
+            distribution.marketScope == PlatformDistributionMarketScope.RF &&
+                distribution.paymentChannel == PlatformDistributionPaymentChannel.MIRKORI ||
+                distribution.marketScope == PlatformDistributionMarketScope.GLOBAL &&
+                distribution.paymentChannel == PlatformDistributionPaymentChannel.GOOGLE_PLAY,
+        )
+        require(
+            distribution.marketScope == PlatformDistributionMarketScope.RF &&
+                distribution.deliveryChannel == PlatformDistributionDeliveryChannel.DIRECT_APK ||
+                distribution.marketScope == PlatformDistributionMarketScope.GLOBAL &&
+                distribution.deliveryChannel == PlatformDistributionDeliveryChannel.GOOGLE_PLAY,
+        )
+    }
+
+    private fun validateDistributionRelease(
+        release: PlatformDistributionGameRelease,
+        distribution: PlatformDistributionVariant,
+        currentVersionCode: Long,
+        channel: PlatformReleaseChannel,
+    ) {
+        require(release.id.matches(ResourceIdPattern) && release.gameId == config.gameId)
+        require(release.distributionId == distribution.id)
+        require(release.platform == distribution.platform && release.channel == channel)
+        require(release.versionName.length in 1..64 && release.versionName.none(Char::isISOControl))
+        require(release.versionCode > currentVersionCode)
+        require(release.minimumSupportedVersionCode in 1..release.versionCode)
+        require(release.minimumAndroidSdk in 21..100)
+        require(release.changelogs.keys == setOf("ru", "en"))
+        require(release.changelogs.values.all { it.length in 1..4000 && it.trim() == it })
+        require(release.fileName.matches(FileNamePattern) && release.fileName.endsWith(".apk", ignoreCase = true))
+        require(release.sizeBytes in 1..MaximumArtifactBytes)
+        require(release.sha256.matches(Sha256Pattern))
+        when (distribution.deliveryChannel) {
+            PlatformDistributionDeliveryChannel.DIRECT_APK ->
+                validateArtifactUrl(requireNotNull(release.downloadUrl), release.id, release.fileName)
+            PlatformDistributionDeliveryChannel.GOOGLE_PLAY -> require(release.downloadUrl == null)
+        }
+        require(release.packageName == distribution.packageName)
+        require(release.signingIdentityRef == distribution.signingIdentityRef)
+        require(
+            release.signingCertificateSha256Fingerprints == distribution.signingCertificateSha256Fingerprints,
+        )
+    }
+
+    private fun validateArtifactUrl(value: String, releaseId: String, fileName: String) {
+        validateExternalHttpsUrl(value)
+        val uri = URI(value)
+        require(uri.query == null)
+        require(uri.rawPath == "/downloads/${urlEncode(releaseId)}/${urlEncode(fileName)}")
+    }
+
+    private fun validatePayment(payment: PlatformPayment) {
+        require(payment.id.isCanonicalUuid() && payment.orderId.isCanonicalUuid())
+        require(payment.paymentMethodId.matches(ResourceIdPattern))
+        require(payment.currency.matches(CurrencyPattern) && payment.amountMinor > 0)
+        require(payment.updatedAt >= payment.createdAt)
+        payment.expiresAt?.let { require(it > payment.createdAt) }
+        payment.nextAction?.let { action ->
+            when (action.type) {
+                PlatformPaymentNextActionType.REDIRECT -> {
+                    requireNotNull(action.url).let(::validateExternalHttpsUrl)
+                    require(action.fallbackUrl == null && action.sdkAdapter == null && action.clientToken == null)
+                }
+                PlatformPaymentNextActionType.DEEP_LINK -> {
+                    requireNotNull(action.url).let(::validatePaymentDeepLink)
+                    action.fallbackUrl?.let(::validateExternalHttpsUrl)
+                    require(action.sdkAdapter == null && action.clientToken == null)
+                }
+                PlatformPaymentNextActionType.EMBEDDED_SDK -> {
+                    require(action.url == null && action.fallbackUrl == null)
+                    require(action.sdkAdapter?.matches(ProviderPattern) == true)
+                    require(action.clientToken?.length in 16..8192)
+                }
+            }
+        }
+        require(payment.status == PlatformPaymentStatus.REQUIRES_ACTION || payment.nextAction == null)
+    }
+
+    private fun validatePaymentDeepLink(value: String) {
+        require(value.length in 1..4096 && value.none(Char::isISOControl))
+        val uri = URI(value)
+        require(
+            !uri.scheme.isNullOrBlank() && !uri.scheme.equals("http", true) && !uri.scheme.equals("https", true) &&
+                uri.userInfo == null && uri.fragment == null,
+        )
     }
 
     private fun validatePublicProfile(profile: PlatformPublicPlayerProfile) {
@@ -595,8 +1109,15 @@ class MirkoriGameSdk(
         val ResourceIdPattern = Regex("[a-z0-9][a-z0-9._-]{1,63}")
         val CurrencyPattern = Regex("[A-Z]{3}")
         val ProviderPattern = Regex("[a-z0-9][a-z0-9_-]{1,31}")
+        val ReasonCodePattern = Regex("[a-z0-9][a-z0-9._-]{2,63}")
         val PublicHandlePattern = Regex("[a-z0-9_]{3,24}")
+        val FileNamePattern = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+        val Sha256Pattern = Regex("[0-9a-f]{64}")
+        val AndroidPackagePattern = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+")
+        val CertificateFingerprintPattern = Regex("(?:[0-9A-F]{2}:){31}[0-9A-F]{2}")
         val PublicAvatarKeys = setOf("rocket", "robot", "star", "gamepad", "heart", "bolt")
+        const val MaximumArtifactBytes = 4L * 1024L * 1024L * 1024L
+        val AllowedDecisionClockSkew: Duration = Duration.ofSeconds(30)
     }
 }
 
@@ -669,6 +1190,13 @@ private fun constantTimeEqual(first: String, second: String): Boolean = MessageD
     second.toByteArray(StandardCharsets.US_ASCII),
 )
 
+private fun urlEncode(value: String): String =
+    URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20")
+
 private fun String.isCanonicalUuid(): Boolean = runCatching { UUID.fromString(this).toString() == this }.getOrDefault(false)
+
+private fun String.isSafeSupportPath(): Boolean =
+    matches(Regex("/[A-Za-z0-9._~/-]{1,255}")) && !startsWith("//") && '?' !in this && '#' !in this &&
+        split('/').drop(1).all { it.isNotEmpty() && it != "." && it != ".." }
 
 private val LoopbackHosts = setOf("localhost", "127.0.0.1", "::1", "[::1]")
