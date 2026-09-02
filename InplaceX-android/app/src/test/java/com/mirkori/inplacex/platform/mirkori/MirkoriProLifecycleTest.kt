@@ -86,12 +86,17 @@ class MirkoriProLifecycleTest {
             active = false,
             validUntilEpochMs = null,
         )
+        val offline = retryable.copy(availability = MirkoriProAvailability.OFFLINE)
 
         runMirkoriProLifecycle(
             operations = MirkoriProLifecycleOperations(
                 refresh = {
                     calls += "refresh"
-                    if (refreshCount++ == 0) retryable else readyState(leaseActive = false)
+                    when (refreshCount++) {
+                        0 -> retryable
+                        1 -> offline
+                        else -> readyState(leaseActive = false)
+                    }
                 },
                 startGameplaySession = { calls += "start"; readyState(leaseActive = true) },
                 heartbeatGameplaySession = { error("heartbeat wait ends the test") },
@@ -101,11 +106,11 @@ class MirkoriProLifecycleTest {
                 },
             ),
             gameplayActive = true,
-            awaitRetryOrHeartbeat = { waits++ == 0 },
+            awaitRetryOrHeartbeat = { waits++ < 2 },
             onState = {},
         )
 
-        assertEquals(listOf("refresh", "refresh", "start", "release"), calls)
+        assertEquals(listOf("refresh", "refresh", "refresh", "start", "release"), calls)
     }
 
     @Test
