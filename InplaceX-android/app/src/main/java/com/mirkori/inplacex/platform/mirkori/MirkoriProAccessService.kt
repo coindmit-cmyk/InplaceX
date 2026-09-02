@@ -245,7 +245,12 @@ class MirkoriProAccessService(
             }
             pendingRelease = null
         } catch (error: PlatformProBenefitUnavailableException) {
-            if (error.reason != PlatformProBenefitUnavailableReason.LEASE) throw error
+            if (
+                error.recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST ||
+                error.reason != PlatformProBenefitUnavailableReason.LEASE
+            ) {
+                throw error
+            }
             logFailure(error)
             pendingRelease = null
         }

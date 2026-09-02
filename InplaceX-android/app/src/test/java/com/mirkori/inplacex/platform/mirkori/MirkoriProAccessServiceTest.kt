@@ -220,7 +220,7 @@ class MirkoriProAccessServiceTest {
     }
 
     @Test
-    fun failedReleaseIsRetriedWithSameIdentityBeforeNextClaim() {
+    fun retryableTypedReleaseIsRetriedWithSameIdentityBeforeNextClaim() {
         val keys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         var sessionId = ""
         val transport = RuntimeProTransport(
@@ -229,7 +229,7 @@ class MirkoriProAccessServiceTest {
                 sessionId = requireNotNull(SessionIdPattern.find(request.body)?.groupValues?.get(1))
                 PlatformHttpResponse(201, leaseJson(sessionId, "active"))
             },
-            { throw IOException("release response lost") },
+            { PlatformHttpResponse(503, """{"error":"pro_lease_unavailable"}""") },
             { PlatformHttpResponse(200, leaseJson(sessionId, "released")) },
             { PlatformHttpResponse(200, snapshotEnvelope(keys.private)) },
             { request ->
@@ -244,7 +244,7 @@ class MirkoriProAccessServiceTest {
         val restarted = runProRuntime { service.startOnlineSession() }
 
         assertTrue(started.onlineSessionActive)
-        assertEquals(MirkoriProAvailability.OFFLINE, failedRelease.availability)
+        assertEquals(MirkoriProAvailability.RETRYABLE, failedRelease.availability)
         assertTrue(restarted.onlineSessionActive)
         assertTrue(transport.requests[2].url.endsWith("/api/v1/pro/leases/$LeaseId/release"))
         assertEquals(transport.requests[2].url, transport.requests[3].url)
