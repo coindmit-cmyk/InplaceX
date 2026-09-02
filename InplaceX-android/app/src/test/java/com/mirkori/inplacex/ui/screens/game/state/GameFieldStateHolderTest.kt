@@ -29,6 +29,19 @@ class GameFieldStateHolderTest {
         assertEquals('1', source.state.value.input.slots.first())
         assertEquals(false, source.state.value.parameters.autoModeAvailable)
         assertEquals(false, source.state.value.tools.autoExcludeEnabled)
+
+        source.updateAutoModeAvailability(available = true)
+
+        assertSame(snapshot, source.currentSnapshot())
+        assertEquals('1', source.state.value.input.slots.first())
+        assertEquals(true, source.state.value.parameters.autoModeAvailable)
+        assertEquals(true, source.state.value.tools.autoExcludeEnabled)
+
+        source.dispatch(GameFieldEvent.AutoExcludeChanged(false))
+        source.updateAutoModeAvailability(available = false)
+        source.updateAutoModeAvailability(available = true)
+
+        assertEquals(false, source.state.value.tools.autoExcludeEnabled)
     }
 
     @Test

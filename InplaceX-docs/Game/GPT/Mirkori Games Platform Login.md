@@ -129,9 +129,10 @@ because the lease itself is not persisted and expires server-side.
 The Android composition remains disabled by default and creates one Pro access
 service only after a build variant explicitly supplies an owner-approved
 distribution and separately pinned production public keys. When configured,
-the app refreshes the signed membership on foreground/account changes, applies
-it as regular Pro (never Pro Plus), and records the signed subscription end in
-encrypted Platform state. Entering gameplay claims one short server lease,
+the app refreshes the signed membership on foreground/account changes and when
+the current signed snapshot expires, applies it as regular Pro (never Pro
+Plus), and records the signed subscription end in encrypted Platform state.
+Entering gameplay claims one short server lease,
 heartbeats it every 30 seconds, and releases it on exit or background. A live
 concurrency rejection blocks Mirkori Pro for that gameplay session; a still
 valid signed snapshot remains available offline. Production keys and activation

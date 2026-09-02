@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Connected the dormant Mirkori Pro service to the Android app lifecycle and
-  effective game entitlements. Configured builds refresh signed membership,
+  effective game entitlements. Configured builds refresh signed membership and
+  renew an expiring signed snapshot,
   persist its end date, claim/heartbeat/release one gameplay lease, enforce a
   live concurrency rejection, and preserve bounded signed offline Pro access;
   Mirkori Pro grants regular Pro only and production activation remains gated.

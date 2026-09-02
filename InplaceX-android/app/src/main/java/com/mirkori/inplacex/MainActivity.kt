@@ -271,6 +271,7 @@ class MainActivity : ComponentActivity() {
                         mirkoriProAccessService?.cachedState() ?: MirkoriProAccessState.Unavailable,
                     )
                 }
+                var mirkoriProRefreshGeneration by remember { mutableLongStateOf(0L) }
                 val billingOperation = remember { TransientOperationGate() }
                 var campaignProgress by remember { mutableStateOf<List<CampaignLevelProgress>>(emptyList()) }
                 var claimedCampaignChapters by remember {
@@ -389,6 +390,7 @@ class MainActivity : ComponentActivity() {
                     isInGame,
                     mirkoriAccountState.kind,
                     mirkoriAccountState.gamePlayerId,
+                    mirkoriProRefreshGeneration,
                 ) {
                     val operations = mirkoriProLifecycleOperations
                     if (
@@ -419,11 +421,11 @@ class MainActivity : ComponentActivity() {
                     mirkoriProAccessService,
                     mirkoriProAccessState.nextAccessExpiryDelayMs,
                 ) {
-                    val service = mirkoriProAccessService ?: return@LaunchedEffect
+                    if (mirkoriProAccessService == null) return@LaunchedEffect
                     val expiryDelayMs = mirkoriProAccessState.nextAccessExpiryDelayMs
                         ?: return@LaunchedEffect
                     delay(expiryDelayMs.coerceAtLeast(1L))
-                    mirkoriProAccessState = service.cachedState()
+                    mirkoriProRefreshGeneration += 1L
                 }
                 LaunchedEffect(
                     mirkoriPlatformRuntime,
@@ -696,6 +698,9 @@ class MainActivity : ComponentActivity() {
                 }
                 val serverEntitlements = remember(billingState.entitlements, mirkoriProActive) {
                     billingState.entitlements.withMirkoriProAccess(mirkoriProActive)
+                }
+                val effectiveBillingState = remember(billingState, serverEntitlements) {
+                    billingState.copy(entitlements = serverEntitlements)
                 }
                 val effectiveProgressState = remember(progressState, serverEntitlements) {
                     progressState.withServerPaidEntitlements(serverEntitlements)
@@ -1285,7 +1290,7 @@ class MainActivity : ComponentActivity() {
                             currentSection == AppSection.SHOP -> ShopRootScreen(
                                 progressState = effectiveProgressState,
                                 nowMs = currentTimeMs,
-                                billingState = billingState,
+                                billingState = effectiveBillingState,
                                 billingInProgress = billingOperation.inProgress,
                                 onRefreshBilling = refreshBilling,
                                 onOpenProfile = { currentSection = AppSection.PROFILE },
