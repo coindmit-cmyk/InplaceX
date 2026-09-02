@@ -127,7 +127,9 @@ ID and idempotency key. Temporary HTTP 408/425/429/5xx responses remain in the
 same gameplay lifecycle and retry that preserved request; a concurrency limit
 does not retry until the player leaves the current match. A server-lost lease
 clears only that lease, retains the still-valid signed membership, and enters
-the same retry path. A process crash
+the same retry path; a membership-level rejection clears access immediately.
+An unconfirmed release retains its lease and idempotency identity in memory and
+is completed before another lease is claimed. A process crash
 cannot leave a durable client claim
 because the lease itself is not persisted and expires server-side.
 

@@ -5,6 +5,7 @@ import com.mirkori.platform.sdk.PlatformApiException
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformIdempotencyKey
 import com.mirkori.platform.sdk.PlatformProBenefitUnavailableException
+import com.mirkori.platform.sdk.PlatformProBenefitUnavailableReason
 import com.mirkori.platform.sdk.PlatformProConcurrencyLimitException
 import com.mirkori.platform.sdk.PlatformProConfigurationUnavailableException
 import com.mirkori.platform.sdk.PlatformProMembershipSnapshot
@@ -59,6 +60,9 @@ class MirkoriProAccessService(
     @Volatile
     private var pendingStart: PendingProSessionStart? = null
 
+    @Volatile
+    private var pendingRelease: PendingProSessionRelease? = null
+
     fun cachedState(): MirkoriProAccessState = stateFromCache(MirkoriProAvailability.CACHED)
 
     suspend fun refresh(): MirkoriProAccessState = runtime.withOperationLock {
@@ -69,7 +73,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            handleBenefitUnavailableLocked(error)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
         } catch (error: PlatformApiException) {
@@ -86,6 +90,7 @@ class MirkoriProAccessService(
 
     suspend fun startOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
         try {
+            completePendingReleaseLocked()
             val currentLease = stateFromCache(
                 availability = MirkoriProAvailability.READY,
                 notice = MirkoriProNotice.SESSION_ACTIVE,
@@ -136,7 +141,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+            handleBenefitUnavailableLocked(error)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
         } catch (error: PlatformApiException) {
@@ -173,9 +178,7 @@ class MirkoriProAccessService(
         } catch (error: PlatformProConfigurationUnavailableException) {
             handleConfigurationUnavailableLocked(error)
         } catch (error: PlatformProBenefitUnavailableException) {
-            logFailure(error)
-            activeLease = null
-            stateFromCache(MirkoriProAvailability.RETRYABLE)
+            handleBenefitUnavailableLocked(error)
         } catch (error: PlatformApiException) {
             logFailure(error)
             stateFromCache(error.proAvailability(), lease = activeLease)
@@ -190,23 +193,25 @@ class MirkoriProAccessService(
     }
 
     suspend fun releaseOnlineSession(): MirkoriProAccessState = runtime.withOperationLock {
-        val lease = activeLease
+        val attempt = pendingRelease ?: activeLease?.let { lease ->
+            PendingProSessionRelease(lease, sdk.newIdempotencyKey()).also { pendingRelease = it }
+        }
             ?: return@withOperationLock stateFromCache(MirkoriProAvailability.READY)
+        activeLease = null
         try {
-            val session = requireLinkedSession()
-            val installationId = requireNotNull(currentPersistedState()).installation.installationId
-            require(session.accountId == lease.accountId && installationId == lease.installationId)
-            val idempotencyKey = sdk.newIdempotencyKey()
-            authenticated(session) { accessToken, _ ->
-                sdk.releaseProSession(accessToken, lease, idempotencyKey)
-            }
-            activeLease = null
+            completePendingReleaseLocked(attempt)
             stateFromCache(MirkoriProAvailability.READY, MirkoriProNotice.SESSION_RELEASED)
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (error: PlatformProConfigurationUnavailableException) {
+            handleConfigurationUnavailableLocked(error)
+        } catch (error: PlatformProBenefitUnavailableException) {
+            handleBenefitUnavailableLocked(error)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability(), lease = null)
         } catch (error: Exception) {
             logFailure(error)
-            activeLease = null
             stateFromCache(
                 availability = if (error is IOException) {
                     MirkoriProAvailability.OFFLINE
@@ -214,6 +219,28 @@ class MirkoriProAccessService(
                     MirkoriProAvailability.UNAVAILABLE
                 },
             )
+        }
+    }
+
+    private suspend fun MirkoriPlatformRuntime.completePendingReleaseLocked(
+        expected: PendingProSessionRelease? = pendingRelease,
+    ) {
+        val attempt = expected ?: return
+        val session = requireLinkedSession()
+        val installationId = requireNotNull(currentPersistedState()).installation.installationId
+        if (session.accountId != attempt.lease.accountId || installationId != attempt.lease.installationId) {
+            pendingRelease = null
+            return
+        }
+        try {
+            authenticated(session) { accessToken, _ ->
+                sdk.releaseProSession(accessToken, attempt.lease, attempt.idempotencyKey)
+            }
+            pendingRelease = null
+        } catch (error: PlatformProBenefitUnavailableException) {
+            if (error.reason != PlatformProBenefitUnavailableReason.LEASE) throw error
+            logFailure(error)
+            pendingRelease = null
         }
     }
 
@@ -284,6 +311,7 @@ class MirkoriProAccessService(
         logFailure(error)
         activeLease = null
         pendingStart = null
+        pendingRelease = null
         clearConfirmedLocked()
         return MirkoriProAccessState(MirkoriProAvailability.UNAVAILABLE, active = false, notice = notice)
     }
@@ -296,6 +324,17 @@ class MirkoriProAccessService(
             stateFromCache(MirkoriProAvailability.RETRYABLE, lease = activeLease)
         } else {
             failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
+        }
+
+    private fun MirkoriPlatformRuntime.handleBenefitUnavailableLocked(
+        error: PlatformProBenefitUnavailableException,
+    ): MirkoriProAccessState =
+        if (error.reason == PlatformProBenefitUnavailableReason.LEASE) {
+            logFailure(error)
+            activeLease = null
+            stateFromCache(MirkoriProAvailability.RETRYABLE, lease = null)
+        } else {
+            failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         }
 
     private fun MirkoriPlatformRuntime.clearConfirmedLocked() {
@@ -351,6 +390,11 @@ private data class PendingProSessionStart(
     val accountId: String,
     val installationId: String,
     val sessionId: String,
+    val idempotencyKey: PlatformIdempotencyKey,
+)
+
+private data class PendingProSessionRelease(
+    val lease: PlatformProSessionLease,
     val idempotencyKey: PlatformIdempotencyKey,
 )
 

@@ -867,7 +867,12 @@ class MirkoriGameSdk(
             "pro_configuration_unavailable" ->
                 throw PlatformProConfigurationUnavailableException(error.recoveryAction)
             "pro_concurrency_limit" -> throw PlatformProConcurrencyLimitException()
-            "pro_unavailable", "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException()
+            "pro_unavailable" -> throw PlatformProBenefitUnavailableException(
+                PlatformProBenefitUnavailableReason.MEMBERSHIP,
+            )
+            "pro_lease_unavailable" -> throw PlatformProBenefitUnavailableException(
+                PlatformProBenefitUnavailableReason.LEASE,
+            )
             else -> throw error
         }
     }

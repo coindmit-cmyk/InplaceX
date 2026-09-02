@@ -84,7 +84,14 @@ class PlatformProConfigurationUnavailableException(
     IllegalStateException("Pro game configuration is unavailable")
 class PlatformProConcurrencyLimitException :
     IllegalStateException("Pro concurrent-session limit reached")
-class PlatformProBenefitUnavailableException :
+enum class PlatformProBenefitUnavailableReason {
+    MEMBERSHIP,
+    LEASE,
+}
+
+class PlatformProBenefitUnavailableException(
+    val reason: PlatformProBenefitUnavailableReason = PlatformProBenefitUnavailableReason.MEMBERSHIP,
+) :
     IllegalStateException("Pro benefit is unavailable")
 
 class PlatformProTimeAnchor internal constructor(

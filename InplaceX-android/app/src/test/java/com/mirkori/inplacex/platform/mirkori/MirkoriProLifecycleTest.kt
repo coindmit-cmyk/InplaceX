@@ -108,6 +108,30 @@ class MirkoriProLifecycleTest {
         assertEquals(listOf("refresh", "refresh", "start", "release"), calls)
     }
 
+    @Test
+    fun retryableForegroundRefreshRepeatsWithoutStartingGameplayLease() = runBlocking {
+        val calls = mutableListOf<String>()
+        var refreshCount = 0
+        val retryable = MirkoriProAccessState(MirkoriProAvailability.RETRYABLE, active = false)
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = {
+                    calls += "refresh"
+                    if (refreshCount++ == 0) retryable else readyState(leaseActive = false)
+                },
+                startGameplaySession = { error("must not claim outside gameplay") },
+                heartbeatGameplaySession = { error("must not heartbeat outside gameplay") },
+                releaseGameplaySession = { error("must not release outside gameplay") },
+            ),
+            gameplayActive = false,
+            awaitRetryOrHeartbeat = { true },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "refresh"), calls)
+    }
+
     private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
         availability = MirkoriProAvailability.READY,
         active = true,
