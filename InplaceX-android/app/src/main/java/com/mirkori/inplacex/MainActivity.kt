@@ -2085,7 +2085,7 @@ internal fun MirkoriProAccessState.grantsProAccess(gameplayActive: Boolean): Boo
         !gameplayActive -> true
         notice == MirkoriProNotice.CONCURRENCY_LIMIT -> false
         availability == MirkoriProAvailability.OFFLINE -> true
-        availability == MirkoriProAvailability.READY -> onlineSessionActive
+        onlineSessionActive -> true
         else -> false
     }
 

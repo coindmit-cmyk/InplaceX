@@ -76,6 +76,36 @@ class MirkoriProLifecycleTest {
         assertEquals(listOf("refresh", "start"), calls)
     }
 
+    @Test
+    fun retryablePlatformFailureRefreshesAndClaimsWithinTheSameGameplayLifecycle() = runBlocking {
+        val calls = mutableListOf<String>()
+        var refreshCount = 0
+        var waits = 0
+        val retryable = readyState(leaseActive = false).copy(
+            availability = MirkoriProAvailability.RETRYABLE,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = {
+                    calls += "refresh"
+                    if (refreshCount++ == 0) retryable else readyState(leaseActive = false)
+                },
+                startGameplaySession = { calls += "start"; readyState(leaseActive = true) },
+                heartbeatGameplaySession = { error("heartbeat wait ends the test") },
+                releaseGameplaySession = {
+                    calls += "release"
+                    readyState(leaseActive = false)
+                },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { waits++ == 0 },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "refresh", "start", "release"), calls)
+    }
+
     private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
         availability = MirkoriProAvailability.READY,
         active = true,

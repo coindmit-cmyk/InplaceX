@@ -50,7 +50,10 @@ internal suspend fun runMirkoriProLifecycle(
                 onState(state)
                 if (state.notice == MirkoriProNotice.CONCURRENCY_LIMIT) return
                 if (leaseHeld) continue
-            } else if (state.availability != MirkoriProAvailability.OFFLINE) {
+            } else if (
+                state.availability != MirkoriProAvailability.OFFLINE &&
+                state.availability != MirkoriProAvailability.RETRYABLE
+            ) {
                 return
             }
             if (!awaitRetryOrHeartbeat()) return

@@ -123,7 +123,10 @@ one memory-only game-session ID, heartbeats that exact lease, and releases it
 when play ends. The server response remains authoritative claimed capacity and
 reports the configured limit of two or three concurrent sessions. Retry after
 an access-token refresh or an ambiguous lost response reuses the same session
-ID and idempotency key. A process crash cannot leave a durable client claim
+ID and idempotency key. Temporary HTTP 408/425/429/5xx responses remain in the
+same gameplay lifecycle and retry that preserved request; a concurrency limit
+does not retry until the player leaves the current match. A process crash
+cannot leave a durable client claim
 because the lease itself is not persisted and expires server-side.
 
 The Android composition remains disabled by default and creates one Pro access

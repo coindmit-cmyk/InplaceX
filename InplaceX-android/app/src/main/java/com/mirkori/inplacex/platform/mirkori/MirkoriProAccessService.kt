@@ -10,6 +10,7 @@ import com.mirkori.platform.sdk.PlatformProConfigurationUnavailableException
 import com.mirkori.platform.sdk.PlatformProMembershipSnapshot
 import com.mirkori.platform.sdk.PlatformProSessionLease
 import com.mirkori.platform.sdk.PlatformProSessionLeaseStatus
+import com.mirkori.platform.sdk.PlatformRecoveryAction
 import java.io.IOException
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
@@ -18,6 +19,7 @@ enum class MirkoriProAvailability {
     CACHED,
     READY,
     OFFLINE,
+    RETRYABLE,
     SIGN_IN_REQUIRED,
     UNAVAILABLE,
 }
@@ -70,6 +72,9 @@ class MirkoriProAccessService(
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability())
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE)
@@ -134,6 +139,9 @@ class MirkoriProAccessService(
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
         } catch (error: IllegalArgumentException) {
             failClosedLocked(error, MirkoriProNotice.INVALID_SNAPSHOT)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability(), lease = activeLease)
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE, lease = activeLease)
@@ -166,6 +174,9 @@ class MirkoriProAccessService(
             failClosedLocked(error, MirkoriProNotice.CONFIGURATION_UNAVAILABLE)
         } catch (error: PlatformProBenefitUnavailableException) {
             failClosedLocked(error, MirkoriProNotice.MEMBERSHIP_INACTIVE)
+        } catch (error: PlatformApiException) {
+            logFailure(error)
+            stateFromCache(error.proAvailability(), lease = activeLease)
         } catch (error: IOException) {
             logFailure(error)
             stateFromCache(MirkoriProAvailability.OFFLINE, lease = activeLease)
@@ -332,6 +343,13 @@ private data class PendingProSessionStart(
 )
 
 private class MirkoriProProfileChangedException : IllegalStateException("Mirkori Pro profile changed")
+
+private fun PlatformApiException.proAvailability(): MirkoriProAvailability =
+    if (recoveryAction == PlatformRecoveryAction.RETRY_SAME_REQUEST) {
+        MirkoriProAvailability.RETRYABLE
+    } else {
+        MirkoriProAvailability.UNAVAILABLE
+    }
 
 private fun ConfirmedMirkoriProAccess.belongsTo(
     session: GameIdentitySession,
