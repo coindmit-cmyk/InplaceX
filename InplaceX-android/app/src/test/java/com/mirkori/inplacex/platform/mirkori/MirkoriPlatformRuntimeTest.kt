@@ -108,6 +108,23 @@ class MirkoriPlatformRuntimeTest {
                 monotonicAtObservationMs = 10_000L,
                 bootMarker = 3L,
             ),
+            confirmedProAccess = ConfirmedMirkoriProAccess(
+                accountId = AccountId,
+                gamePlayerId = PlayerId,
+                distributionId = "rf-mirkori",
+                active = true,
+                validUntilEpochMs = ExpiresAtMs,
+                snapshotExpiresAtEpochMs = ExpiresAtMs,
+                membershipVersion = 2L,
+                participationVersion = 3L,
+                benefitContentId = "inplacex-pro-v3",
+                policyVersion = 4L,
+                trustedTimeAnchor = MirkoriTrustedTimeAnchor(
+                    serverEpochMs = NowMs,
+                    monotonicAtObservationMs = 10_000L,
+                    bootMarker = 3L,
+                ),
+            ),
         )
 
         val encoded = MirkoriStateCodec.encode(state)
@@ -129,7 +146,11 @@ class MirkoriPlatformRuntimeTest {
         assertEquals(9_900L, decoded.pendingPurchase?.offerSnapshot?.amountMinor)
         assertEquals(4L, decoded.pendingPurchase?.offerSnapshot?.productVersion)
         assertEquals(3L, decoded.trustedTimeAnchor?.bootMarker)
+        assertEquals(ExpiresAtMs, decoded.confirmedProAccess?.validUntilEpochMs)
+        assertEquals("inplacex-pro-v3", decoded.confirmedProAccess?.benefitContentId)
+        assertEquals(3L, decoded.confirmedProAccess?.trustedTimeAnchor?.bootMarker)
         assertFalse(decoded.pendingRefresh.toString().contains(state.session?.credentials?.refreshToken.orEmpty()))
+        assertFalse(decoded.confirmedProAccess.toString().contains(AccountId))
         assertFalse(decoded.pendingPurchase.toString().contains(AccountId))
         assertThrows(IllegalArgumentException::class.java) {
             MirkoriStateCodec.decode(encoded + 1)
@@ -141,12 +162,13 @@ class MirkoriPlatformRuntimeTest {
         val encoded = MirkoriStateCodec.encode(
             MirkoriPersistedState(InstallationIdentity(InstallationId, "I".repeat(43))),
         )
-        val legacy = encoded.copyOf(encoded.size - 4).also { ByteBuffer.wrap(it).putInt(1) }
+        val legacy = encoded.copyOf(encoded.size - 5).also { ByteBuffer.wrap(it).putInt(1) }
 
         val decoded = MirkoriStateCodec.decode(legacy)
 
         assertEquals(InstallationId, decoded.installation.installationId)
         assertNull(decoded.pendingRefresh)
+        assertNull(decoded.confirmedProAccess)
     }
 
     @Test
@@ -157,6 +179,7 @@ class MirkoriPlatformRuntimeTest {
         assertEquals("00000000-0000-4000-8000-000000000804", decoded.pendingPurchase?.orderId)
         assertNull(decoded.pendingPurchase?.offerSnapshot)
         assertNull(decoded.trustedTimeAnchor)
+        assertNull(decoded.confirmedProAccess)
     }
 
     @Test

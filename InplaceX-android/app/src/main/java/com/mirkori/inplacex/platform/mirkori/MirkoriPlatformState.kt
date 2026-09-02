@@ -14,6 +14,7 @@ data class MirkoriPersistedState(
     val pendingPurchase: PendingMirkoriPurchase? = null,
     val confirmedEntitlements: ConfirmedMirkoriEntitlements? = null,
     val trustedTimeAnchor: MirkoriTrustedTimeAnchor? = null,
+    val confirmedProAccess: ConfirmedMirkoriProAccess? = null,
 )
 
 data class PendingMirkoriRefresh(
@@ -48,6 +49,26 @@ data class MirkoriTrustedTimeAnchor(
     val monotonicAtObservationMs: Long,
     val bootMarker: Long,
 )
+
+data class ConfirmedMirkoriProAccess(
+    val accountId: String,
+    val gamePlayerId: String,
+    val distributionId: String,
+    val active: Boolean,
+    val validUntilEpochMs: Long?,
+    val snapshotExpiresAtEpochMs: Long,
+    val membershipVersion: Long,
+    val participationVersion: Long,
+    val benefitContentId: String,
+    val policyVersion: Long,
+    val trustedTimeAnchor: MirkoriTrustedTimeAnchor,
+) {
+    fun activeAt(trustedNowMs: Long?): Boolean =
+        active && validUntilEpochMs != null && trustedNowMs != null &&
+            validUntilEpochMs > trustedNowMs && snapshotExpiresAtEpochMs > trustedNowMs
+
+    override fun toString(): String = "ConfirmedMirkoriProAccess([redacted])"
+}
 
 data class MirkoriFeatureGrant(
     val active: Boolean,
