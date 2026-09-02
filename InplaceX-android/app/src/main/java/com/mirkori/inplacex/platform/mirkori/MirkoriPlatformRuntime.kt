@@ -57,11 +57,15 @@ class MirkoriPlatformRuntime internal constructor(
         val observation = sdk.latestServerTimeObservation()
             ?.takeIf { it.revision > revisionBefore }
             ?: return null
+        return newTrustedTimeAnchor(observation.serverEpochMs)
+    }
+
+    internal fun newTrustedTimeAnchor(serverEpochMs: Long): MirkoriTrustedTimeAnchor? {
         val currentBoot = bootMarker() ?: return null
         val monotonicNow = monotonicClockMs()
-        if (currentBoot < 0 || monotonicNow < 0 || observation.serverEpochMs <= 0) return null
+        if (currentBoot < 0 || monotonicNow < 0 || serverEpochMs <= 0) return null
         return MirkoriTrustedTimeAnchor(
-            serverEpochMs = observation.serverEpochMs,
+            serverEpochMs = serverEpochMs,
             monotonicAtObservationMs = monotonicNow,
             bootMarker = currentBoot,
         )
@@ -594,6 +598,7 @@ private fun MirkoriPersistedState.withSession(newSession: GameIdentitySession): 
         pendingLogin = pendingLogin.takeIf { sameProfile },
         pendingPurchase = pendingPurchase.takeIf { sameProfile },
         confirmedEntitlements = confirmedEntitlements.takeIf { sameProfile },
+        confirmedProAccess = confirmedProAccess.takeIf { sameProfile },
     )
 }
 

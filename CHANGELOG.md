@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added the InplaceX runtime core for Mirkori Pro membership. It verifies the
+  Platform-signed game/distribution snapshot, stores only derived access facts
+  and the subscription end date in encrypted state, evaluates offline access
+  against a monotonic boot-bound time anchor, and controls the server lease for
+  the configured two-to-three concurrent-session policy. Production public-key
+  and distribution wiring remains a separate activation step.
 - Updated the vendored Mirkori Games SDK to the platform's `0.4.4-SNAPSHOT`
   contract. InplaceX can now consume signed installed-build decisions, guest
   checkout handoffs, entitlement deliveries, signed Pro membership snapshots,
