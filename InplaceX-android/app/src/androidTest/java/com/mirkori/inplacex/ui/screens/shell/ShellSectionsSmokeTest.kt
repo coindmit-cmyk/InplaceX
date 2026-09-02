@@ -22,6 +22,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -1844,29 +1845,36 @@ class ShellSectionsSmokeTest {
         val requestedStyle = mutableStateOf<RemoteFriendPlayStyle?>(playStyle)
         val requestExit = mutableStateOf(false)
         val modeState = mutableStateOf(homeScreenState)
+        val restorationTester = StateRestorationTester(composeRule)
         try {
-            setContent {
-                when (section.value) {
-                    AppSection.HOME -> HomeRootScreen(
-                        screenState = modeState.value,
-                        onScreenStateChange = { modeState.value = it },
-                        onlineAvailable = true,
-                    )
-                    else -> SocialRootScreen(
-                        onlineRuntime = runtime,
-                        requestedQuickMatchPlayStyle = requestedStyle.value,
-                        requestedQuickMatchCodeLength = 6,
-                        onQuickMatchRequestConsumed = { requestedStyle.value = null },
-                        onReturnToQuickMatchOrigin = { section.value = AppSection.HOME },
-                        requestExitGame = requestExit.value,
-                        onExitGameConsumed = { requestExit.value = false },
-                    )
+            restorationTester.setContent {
+                CompositionLocalProvider(
+                    LocalAppStrings provides StaticLocalizationProvider.forLanguage(AppLanguage.RU),
+                ) {
+                    InplaceXTheme {
+                        when (section.value) {
+                            AppSection.HOME -> HomeRootScreen(
+                                screenState = modeState.value,
+                                onScreenStateChange = { modeState.value = it },
+                                onlineAvailable = true,
+                            )
+                            else -> SocialRootScreen(
+                                onlineRuntime = runtime,
+                                requestedQuickMatchPlayStyle = requestedStyle.value,
+                                requestedQuickMatchCodeLength = 6,
+                                onQuickMatchRequestConsumed = { requestedStyle.value = null },
+                                onReturnToQuickMatchOrigin = { section.value = AppSection.HOME },
+                                requestExitGame = requestExit.value,
+                                onExitGameConsumed = { requestExit.value = false },
+                            )
+                        }
+                    }
                 }
             }
 
             composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
             if (recreateBeforeCancel) {
-                composeRule.activityRule.scenario.recreate()
+                restorationTester.emulateSavedInstanceStateRestore()
                 composeRule.onNodeWithText("Онлайн‑матч").assertIsDisplayed()
             }
             composeRule.runOnIdle { requestExit.value = true }
