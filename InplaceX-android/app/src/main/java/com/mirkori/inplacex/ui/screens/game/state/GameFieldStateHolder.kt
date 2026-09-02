@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Владелец одной GameField-сессии без Compose-состояния и одноразовых внешних callback-ов. */
 class GameFieldStateHolder(
     private val savedStateHandle: SavedStateHandle,
-    private val parameters: GameFieldMatchParameters = GameFieldMatchParameters(),
+    private var parameters: GameFieldMatchParameters = GameFieldMatchParameters(),
     private val initialSecret: String? = null,
     private val engineFactory: (GameConfig) -> MatchEngine = ::GameEngine,
 ) {
@@ -108,6 +108,20 @@ class GameFieldStateHolder(
     }
 
     fun currentSnapshot(): MatchSnapshot = latestSnapshot
+
+    fun updateAutoModeAvailability(available: Boolean) {
+        if (parameters.autoModeAvailable == available) return
+        parameters = parameters.copy(autoModeAvailable = available)
+        val current = _state.value
+        update(
+            current.copy(
+                parameters = parameters,
+                tools = current.tools.copy(
+                    autoExcludeEnabled = current.tools.autoExcludeEnabled && available,
+                ),
+            ),
+        )
+    }
 
     fun submitRawGuess(guess: String) {
         submitGuess(_state.value, guess)

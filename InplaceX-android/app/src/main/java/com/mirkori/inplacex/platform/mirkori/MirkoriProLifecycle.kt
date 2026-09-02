@@ -48,6 +48,7 @@ internal suspend fun runMirkoriProLifecycle(
                 leaseHeld = state.onlineSessionActive
                 releaseRequired = releaseRequired || leaseHeld
                 onState(state)
+                if (state.notice == MirkoriProNotice.CONCURRENCY_LIMIT) return
                 if (leaseHeld) continue
             } else if (state.availability != MirkoriProAvailability.OFFLINE) {
                 return

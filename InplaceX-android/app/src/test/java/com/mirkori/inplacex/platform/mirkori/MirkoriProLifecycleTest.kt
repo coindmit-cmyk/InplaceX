@@ -54,6 +54,28 @@ class MirkoriProLifecycleTest {
         assertEquals(listOf("refresh"), calls)
     }
 
+    @Test
+    fun concurrencyRejectionEndsTheCurrentGameplayLifecycleWithoutRetry() = runBlocking {
+        val calls = mutableListOf<String>()
+        val limited = readyState(leaseActive = false).copy(
+            notice = MirkoriProNotice.CONCURRENCY_LIMIT,
+        )
+
+        runMirkoriProLifecycle(
+            operations = MirkoriProLifecycleOperations(
+                refresh = { calls += "refresh"; readyState(leaseActive = false) },
+                startGameplaySession = { calls += "start"; limited },
+                heartbeatGameplaySession = { error("must not heartbeat rejected lease") },
+                releaseGameplaySession = { error("must not release rejected lease") },
+            ),
+            gameplayActive = true,
+            awaitRetryOrHeartbeat = { error("must not retry concurrency rejection") },
+            onState = {},
+        )
+
+        assertEquals(listOf("refresh", "start"), calls)
+    }
+
     private fun readyState(leaseActive: Boolean) = MirkoriProAccessState(
         availability = MirkoriProAvailability.READY,
         active = true,

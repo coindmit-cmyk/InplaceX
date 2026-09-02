@@ -14,6 +14,24 @@ import org.junit.Test
 class GameFieldStateHolderTest {
 
     @Test
+    fun `dynamic auto mode access preserves the active match and disables its tool`() {
+        val source = GameFieldStateHolder(
+            SavedStateHandle(),
+            parameters.copy(autoModeAvailable = true),
+            initialSecret = "1234",
+        )
+        source.dispatch(GameFieldEvent.DigitEntered('1'))
+        val snapshot = source.currentSnapshot()
+
+        source.updateAutoModeAvailability(available = false)
+
+        assertSame(snapshot, source.currentSnapshot())
+        assertEquals('1', source.state.value.input.slots.first())
+        assertEquals(false, source.state.value.parameters.autoModeAvailable)
+        assertEquals(false, source.state.value.tools.autoExcludeEnabled)
+    }
+
+    @Test
     fun `race opponent victory terminates the shared match and freezes its clock`() {
         val source = GameFieldStateHolder(
             SavedStateHandle(),
