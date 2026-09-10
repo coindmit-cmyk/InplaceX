@@ -3,6 +3,10 @@
 ## Source of Provider IDs
 
 - provider ids are resolved from `local.properties` during Android build and are scoped to a build variant
+- every Android variant also has one immutable compile-time distribution flavor:
+  `rf` uses `rf-mirkori`, package `com.mirkori.inplacex.rf`, Mirkori payments and
+  direct APK delivery; `global` uses `global-google`, package
+  `com.mirkori.inplacex`, Google Play payments and Google Play delivery
 - an isolated worktree or CI runner may point to the same private-format file
   with `-PinplacexProviderConfigFile=<absolute-path>`; the file remains outside Git
 - debug reads `provider.debug.*` keys and supplies sandbox product defaults when those keys are absent
@@ -48,6 +52,8 @@
 - `MIRKORI_PRO_ENABLED`
 - `MIRKORI_PRO_DISTRIBUTION_ID`
 - `MIRKORI_PRO_PUBLIC_KEYS`
+- `MIRKORI_DISTRIBUTION_ID`
+- `MIRKORI_BILLING_CURRENCY`
 
 ## Canonical Runtime Model
 
@@ -114,8 +120,15 @@ recovery in the production runbook.
   developer network; debug/live retains the backend market resolver
 - banner, rewarded, and post-match UI call sites use `AndroidAdRuntime`; reward
   state changes only after the provider reports completion
-- billing uses the typed Mirkori Platform SDK/runtime for catalog, checkout,
-  order polling, and entitlements; no Google Play Billing adapter is composed
+- billing uses the typed Mirkori Platform SDK/runtime for catalog, orders,
+  payment attempts, polling, and entitlements. The `rf` flavor composes the
+  existing Mirkori HTTPS browser checkout. Only the `global` flavor contains
+  Google Play Billing 9.1.0 and its `embedded_sdk` adapter
+- the global adapter accepts only the Platform-selected `google_play` method,
+  sets the exact opaque Platform `clientToken` as the Play Billing obfuscated
+  profile ID, restores matching owned/pending purchases on app resume, and
+  submits the raw purchase token only to the Platform verification endpoint.
+  Client callbacks never mark an order paid or grant an entitlement
 - release product IDs are immutable Platform IDs:
   `inplacex.remove_ads`, `inplacex.pro`, and `inplacex.pro_plus`. Debug IDs
   remain configurable for sandbox catalogs
@@ -145,8 +158,8 @@ resolved without a header. `INPLACEX_AD_MARKET_REQUIRED=true` makes missing or
 ambiguous production configuration fail at startup. The older trusted country
 header remains an exclusive compatibility mode.
 
-Ordinary `:app:assembleRelease` is deliberately allowed to produce an unsigned
-artifact for PR compilation and static checks. The distribution-only
+Ordinary `:app:assembleRelease` is deliberately allowed to produce both unsigned
+distribution artifacts for PR compilation and static checks. The distribution-only
 `:app:releaseCandidate` task depends on `:app:validateProductionReleaseConfig`
 and `:app:validateReleaseSigningConfig`. It checks strict HTTPS origins for the
 online backend and Mirkori Games Platform, requires live Yandex banner and
@@ -154,6 +167,11 @@ rewarded placement IDs, verifies that configured Yandex IDs are distinct, and
 compiles the three canonical Mirkori Platform product IDs and rejects any
 conflicting optional legacy assertions without printing configured values. The post-match interstitial is optional and fails closed
 when absent.
+
+The signed `releaseCandidate` is specifically the RF direct-distribution APK at
+`app/build/outputs/apk/rf/signedReleaseCandidate/app-rf-signedReleaseCandidate.apk`.
+The global flavor is delivered through Google Play and is not published as that
+direct APK candidate.
 
 Android version identity is centralized in
 `InplaceX-android/version.properties`. Release signing is accepted only as a

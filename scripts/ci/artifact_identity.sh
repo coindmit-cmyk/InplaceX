@@ -166,7 +166,7 @@ package_name=$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" "$aapt_output" | hea
 version_code=$(sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p" "$aapt_output" | head -n 1)
 version_name=$(sed -n "s/^package:.*versionName='\([^']*\)'.*/\1/p" "$aapt_output" | head -n 1)
 minimum_android_sdk=$(sed -n "s/^sdkVersion:'\([^']*\)'.*/\1/p" "$aapt_output" | head -n 1)
-[[ "$package_name" == 'com.mirkori.inplacex' ]] || die 'APK package name is not com.mirkori.inplacex'
+[[ "$package_name" == 'com.mirkori.inplacex.rf' ]] || die 'APK package name is not com.mirkori.inplacex.rf'
 [[ "$version_code" =~ ^[0-9]+$ && "$version_code" -gt 0 ]] || die 'APK versionCode is invalid'
 [[ "$version_name" =~ ^[0-9A-Za-z][0-9A-Za-z._-]{0,63}$ ]] || die 'APK versionName is invalid'
 [[ "$minimum_android_sdk" =~ ^[0-9]+$ && "$minimum_android_sdk" -gt 0 ]] || die 'APK minimum Android SDK is invalid'

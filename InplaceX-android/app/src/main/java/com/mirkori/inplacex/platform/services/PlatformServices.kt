@@ -142,12 +142,14 @@ interface ProfileService {
     fun currentSession(): AuthSession
 }
 
-interface BillingService {
+interface BillingService : AutoCloseable {
     fun cachedState(): BillingState
 
     suspend fun refresh(): BillingState
 
     suspend fun purchase(productId: BillingProductId): BillingPurchaseResult
+
+    override fun close() = Unit
 }
 
 interface SocialService {

@@ -22,7 +22,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Iterator
 
 
-PACKAGE_NAME = "com.mirkori.inplacex"
+PACKAGE_NAME = "com.mirkori.inplacex.rf"
 GAME_ID = "inplacex"
 GAME_SLUG = "inplacex"
 CATALOG_SCHEMA_VERSION = 1
@@ -33,7 +33,7 @@ SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 FINGERPRINT_PATTERN = re.compile(r"(?:[0-9A-F]{2}:){31}[0-9A-F]{2}\Z")
 RELEASE_ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]{1,63}\Z")
 FILE_NAME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
-EXPECTED_SOURCE_FILE_NAME = "app-signedReleaseCandidate.apk"
+EXPECTED_SOURCE_FILE_NAME = "app-rf-signedReleaseCandidate.apk"
 PLATFORM_VALIDATOR_RELATIVE_PATH = PurePosixPath("ops/catalog_release_tool.py")
 PROVENANCE_SCHEMA_VERSION = 1
 PROVENANCE_SUFFIX = ".provenance"

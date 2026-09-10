@@ -30,9 +30,10 @@
   - `purchase(productId)`
 
 `BillingService` is asynchronous and returns typed availability, notice,
-catalog, pending-order, and server-confirmed entitlement state. A purchase may
-return only a validated external HTTPS checkout URL or an updated fail-closed
-state; opening a browser is never proof of payment.
+catalog, pending-order, and server-confirmed entitlement state. The RF flavor
+may return a validated external HTTPS checkout URL; the global flavor performs
+the Platform-selected Google Play flow and returns only updated state. Browser
+navigation and Play callbacks are never payment proof.
 
 ## Auth Model
 
@@ -96,10 +97,10 @@ state; opening a browser is never proof of payment.
   - `autoTableAssistEnabled`
   - `infiniteHintsEnabled`
 
-## Mirkori Checkout Flow
+## Distribution Checkout Flow
 
 1. Android refreshes the Platform catalog and current entitlements for the
-   linked account/profile.
+   current guest or linked game profile.
 2. Before creating a new order, Android calls the explicit authenticated
    `/api/v1/commerce/orders/pending` projection, never the bounded order
    history. Exactly one compatible `PENDING` order is restored; multiple,
@@ -114,14 +115,29 @@ state; opening a browser is never proof of payment.
    If order creation returns `order_pending`, the losing local attempt is
    cleared and the same pending-order reconciliation is repeated; cancellation
    still propagates and cannot be converted into a retry state.
-4. Android accepts only an SDK-validated external HTTPS checkout URL and opens
-   it in the system browser. WebView and non-HTTPS destinations fail closed.
-5. Returning to the app triggers order polling and entitlement refresh. Browser
-   return, provider redirect, or a `PAID` order alone does not unlock anything.
-6. Permanent access changes only after the Platform returns the matching active
+4. The immutable Android distribution selects the payment path. `rf-mirkori`
+   (`com.mirkori.inplacex.rf`) keeps the validated external HTTPS Mirkori
+   checkout and currently requires a linked profile. `global-google`
+   (`com.mirkori.inplacex`) accepts guest and linked profiles and permits only
+   the Platform-returned `google_play` Android method with
+   `nextAction.type=embedded_sdk` and `sdkAdapter=google_play_billing`.
+5. Global sets the exact opaque `clientToken` as
+   `BillingFlowParams.setObfuscatedProfileId`, queries owned purchases on every
+   foreground commerce refresh, and launches Play only when no matching owned
+   or pending purchase exists. Product, package, distribution, payment channel,
+   obfuscated profile, and order must all match.
+6. A `PURCHASED` token is sent only to
+   `/api/v1/commerce/payments/{paymentId}/google-play-purchase` with the persisted
+   idempotency identity. It is never stored or logged by InplaceX. Pending and
+   cancelled Play results remain explicit fail-closed states; the server owns
+   acknowledgement or consumption after durable settlement.
+7. Returning to the app triggers order polling, owned-purchase recovery, and
+   entitlement refresh. Browser return, provider redirect, Play callback, or a
+   `PAID` order alone does not unlock anything.
+8. Permanent access changes only after the Platform returns the matching active
    entitlement grant for the current account/profile. A paid order without the
    grant remains explicitly `AWAITING_ENTITLEMENT`.
-7. Cancelled/refunded orders are terminal even if the product was delisted or
+9. Cancelled/refunded orders are terminal even if the product was delisted or
    repriced. Expired or reconciliation-required checkout links, offline state,
    Platform `503`, token refresh, and retry remain explicit UI states. A conclusively
    expired checkout retains its key and blocks a replacement until the server
@@ -130,10 +146,11 @@ state; opening a browser is never proof of payment.
    `Date` observation plus the device monotonic clock and persisted boot marker;
    wall-clock changes never extend access. Clock rollback or reboot fails timed
    access closed until a fresh trusted server observation is available.
-8. Current YooKassa checkout is prepaid, fixed-term access with no automatic
+10. Current YooKassa and Google Play product contracts are prepaid, fixed-term
+   access with no automatic
    renewal. UI must say `Pro access`/`Pro+ access`, show the typed offer duration
    when available, and never claim that this flow is a recurring subscription.
-9. Platform response bodies are streamed with a hard 64 KiB limit. Overflow
+11. Platform response bodies are streamed with a hard 64 KiB limit. Overflow
    explicitly cancels the response body channel before returning a typed
    transport failure.
 
@@ -213,8 +230,10 @@ This is intentionally separate from permanent hint inventory.
 - debug builds may use `StubGooglePlayAuthService`, `StubAdService`, and
   `StubBillingService` only when no real Mirkori billing runtime is injected
 - release builds never contain or resolve those stub classes, even if runtime configuration says `SANDBOX`
-- release composes `MirkoriBillingService`; absent/invalid Platform commerce
-  configuration fails closed through `UnavailableBillingService`
+- release composes `MirkoriBillingService`; its compile-time distribution
+  source set selects RF browser checkout or global Google Play Billing.
+  Absent/invalid Platform commerce configuration fails closed through
+  `UnavailableBillingService`
 - Yandex Mobile Ads SDK 8 is the temporary active owner adapter for banner and
   rewarded placements in every market until another provider is connected;
   post-match interstitial is enabled only when its optional placement id is

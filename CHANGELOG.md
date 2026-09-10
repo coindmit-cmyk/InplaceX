@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Split Android into immutable `rf` and `global` distribution flavors. RF now
+  uses package `com.mirkori.inplacex.rf`, distribution `rf-mirkori`, RUB and the
+  existing Mirkori browser checkout; global keeps `com.mirkori.inplacex`, binds
+  orders to `global-google`, and uses Google Play Billing 9.1.0 with USD offers.
+  The global adapter supports guest or linked game profiles, restores owned or
+  pending purchases on resume, sends the raw purchase token only to Mirkori
+  Platform verification, and unlocks nothing until the server returns both the
+  paid order and matching entitlement. Play Console products, credentials,
+  permissions, testing tracks and production activation remain owner gates.
+- Updated the vendored Mirkori Games SDK to `0.4.5-SNAPSHOT` for immutable
+  distribution-bound orders and server-side Google Play purchase verification.
 - Connected the dormant Mirkori Pro service to the Android app lifecycle and
   effective game entitlements. Configured builds refresh signed membership and
   renew an expiring signed snapshot,

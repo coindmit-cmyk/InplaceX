@@ -309,6 +309,21 @@ android {
 
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("rf") {
+            dimension = "distribution"
+            applicationIdSuffix = ".rf"
+            buildConfigField("String", "MIRKORI_DISTRIBUTION_ID", "\"rf-mirkori\"")
+            buildConfigField("String", "MIRKORI_BILLING_CURRENCY", "\"RUB\"")
+        }
+        create("global") {
+            dimension = "distribution"
+            buildConfigField("String", "MIRKORI_DISTRIBUTION_ID", "\"global-google\"")
+            buildConfigField("String", "MIRKORI_BILLING_CURRENCY", "\"USD\"")
+        }
+    }
+
     val releaseCandidateSigning = releaseSigningValues?.let { values ->
         signingConfigs.create("releaseCandidate") {
             storeFile = rootProject.file(values.storeFile)
@@ -498,7 +513,7 @@ val validateReleaseSigningConfig = tasks.register<ValidateReleaseConfigTask>(
     )
 }
 
-tasks.matching { it.name == "preSignedReleaseCandidateBuild" }.configureEach {
+tasks.matching { it.name == "preRfSignedReleaseCandidateBuild" }.configureEach {
     dependsOn(validateProductionReleaseConfig, validateReleaseSigningConfig)
 }
 
@@ -520,10 +535,10 @@ val releaseCandidateProcessEnvironment = System.getenv()
 
 tasks.register<Exec>("releaseCandidate") {
     group = "distribution"
-    description = "Builds and verifies a signed production APK and writes its immutable release identity bundle."
-    dependsOn("assembleSignedReleaseCandidate")
+    description = "Builds and verifies the signed RF direct-distribution APK and writes its immutable identity bundle."
+    dependsOn("assembleRfSignedReleaseCandidate")
     workingDir(rootProject.rootDir)
-    inputs.file(layout.buildDirectory.file("outputs/apk/signedReleaseCandidate/app-signedReleaseCandidate.apk"))
+    inputs.file(layout.buildDirectory.file("outputs/apk/rf/signedReleaseCandidate/app-rf-signedReleaseCandidate.apk"))
     inputs.file(rootProject.file("scripts/ci/artifact_identity.sh"))
     inputs.property("expectedCertificateSha256", expectedReleaseCertificateSha256.orEmpty())
     outputs.dir(rootProject.layout.buildDirectory.dir("release-candidates"))
@@ -534,7 +549,7 @@ tasks.register<Exec>("releaseCandidate") {
         "-p",
         "scripts/ci/artifact_identity.sh",
         "--apk",
-        "InplaceX-android/app/build/outputs/apk/signedReleaseCandidate/app-signedReleaseCandidate.apk",
+        "InplaceX-android/app/build/outputs/apk/rf/signedReleaseCandidate/app-rf-signedReleaseCandidate.apk",
         "--output-dir",
         "build/release-candidates",
         "--artifact-type",
@@ -547,6 +562,11 @@ tasks.register<Exec>("releaseCandidate") {
 }
 
 androidComponents {
+    beforeVariants(selector().withBuildType("signedReleaseCandidate")) { variantBuilder ->
+        if (variantBuilder.productFlavors.contains("distribution" to "global")) {
+            variantBuilder.enable = false
+        }
+    }
     beforeVariants(selector().withBuildType("release")) { variantBuilder ->
         (variantBuilder as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
     }
@@ -577,6 +597,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.google.identity.googleid)
+    "globalImplementation"(libs.google.play.billing)
     implementation(libs.yandex.mobileads)
     implementation(libs.yandex.mobileads.compose)
 

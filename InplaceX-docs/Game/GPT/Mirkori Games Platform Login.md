@@ -11,7 +11,7 @@ read or written by the Android client.
 
 1. `MirkoriPlatformRuntime` restores one encrypted installation identity or
    creates it once.
-2. The vendored `platform-game-sdk:0.4.4-SNAPSHOT` bootstraps a global guest profile at
+2. The vendored `platform-game-sdk:0.4.5-SNAPSHOT` bootstraps a global guest profile at
    the configured platform origin.
 3. Profile starts a PKCE S256 session and opens its `/connect` URL with the
    system browser. WebView is not used.
@@ -208,7 +208,8 @@ media-storage contract. Selecting a public preset removes the local override.
 
 ## Build and App Link
 
-- application ID: `com.mirkori.inplacex`
+- application IDs: `com.mirkori.inplacex.rf` for `rf-mirkori` and
+  `com.mirkori.inplacex` for `global-google`
 - platform base URL fields are variant-specific public configuration
 - release cleartext is always disabled
 - debug cleartext is allowed only for loopback by the SDK

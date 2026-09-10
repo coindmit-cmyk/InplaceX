@@ -71,9 +71,10 @@ internal class SdkJsonCodec {
             }
         }.toString()
 
-    fun createOrderRequest(productId: String, currency: String): String = buildJsonObject {
+    fun createOrderRequest(productId: String, currency: String, distributionId: String? = null): String = buildJsonObject {
         put("productId", productId)
         put("currency", currency)
+        distributionId?.let { put("distributionId", it) }
     }.toString()
 
     fun guestCheckoutHandoffRequest(productId: String, currency: String): String =
@@ -119,6 +120,10 @@ internal class SdkJsonCodec {
     fun createPaymentRequest(methodId: String, channel: PlatformPaymentChannel): String = buildJsonObject {
         put("paymentMethodId", methodId)
         put("channel", channel.wireName)
+    }.toString()
+
+    fun googlePlayPurchaseRequest(purchaseToken: String): String = buildJsonObject {
+        put("purchaseToken", purchaseToken)
     }.toString()
 
     fun consumptionRequest(quantity: Long): String = buildJsonObject {
@@ -317,16 +322,25 @@ internal class SdkJsonCodec {
 
     fun paymentMethodsResponse(body: String): PlatformPaymentMethods {
         val root = objectBody(body)
-        require(
-            root.keys == setOf("schemaVersion", "orderId", "currency", "amountMinor", "methods") ||
-                root.keys == setOf("schemaVersion", "orderId", "currency", "amountMinor", "countryCode", "methods")
+        val required = setOf("schemaVersion", "orderId", "currency", "amountMinor", "methods")
+        val optional = setOf(
+            "countryCode", "distributionId", "distributionPaymentChannel", "distributionPackageName",
         )
+        require(root.keys.containsAll(required) && root.keys.all { it in required || it in optional })
         require(root.long("schemaVersion") == 1L)
         return PlatformPaymentMethods(
             orderId = root.string("orderId", 64),
             currency = root.string("currency", 3),
             amountMinor = root.long("amountMinor"),
             countryCode = root["countryCode"]?.let { root.string("countryCode", 2) },
+            distributionId = root["distributionId"]?.let { root.string("distributionId", 64) },
+            distributionPaymentChannel = root["distributionPaymentChannel"]?.let {
+                PlatformDistributionPaymentChannel.fromWireName(root.string("distributionPaymentChannel", 32))
+                    ?: reject()
+            },
+            distributionPackageName = root["distributionPackageName"]?.let {
+                root.string("distributionPackageName", 255)
+            },
             methods = root.array("methods", 32).map { element ->
                 val method = element.objectValue()
                 method.requireExactFields("id", "category", "displayName", "nextActionTypes")
@@ -348,7 +362,22 @@ internal class SdkJsonCodec {
         val root = objectBody(body)
         root.requireExactFields("schemaVersion", "payment")
         require(root.long("schemaVersion") == 1L)
-        val payment = root["payment"]?.objectValue() ?: reject()
+        return payment(root["payment"]?.objectValue() ?: reject())
+    }
+
+    fun googlePlayPurchaseResponse(body: String): PlatformStorePurchaseResult {
+        val root = objectBody(body)
+        root.requireExactFields("schemaVersion", "payment", "order", "entitlements", "providerFinalized")
+        require(root.long("schemaVersion") == 1L)
+        return PlatformStorePurchaseResult(
+            payment = payment(root["payment"]?.objectValue() ?: reject()),
+            order = order(root["order"]?.objectValue() ?: reject()),
+            entitlements = root.array("entitlements", 256).map(::entitlement),
+            providerFinalized = root.boolean("providerFinalized"),
+        )
+    }
+
+    private fun payment(payment: JsonObject): PlatformPayment {
         val required = setOf(
             "id", "orderId", "status", "paymentMethodId", "channel", "currency", "amountMinor", "createdAt", "updatedAt",
         )
@@ -645,9 +674,14 @@ internal class SdkJsonCodec {
     }
 
     private fun order(value: JsonObject): PlatformOrder {
-        value.requireExactFields(
-            "id", "gameId", "gamePlayerId", "productId", "currency", "amountMinor", "status", "createdAt", "updatedAt",
+        val required = setOf(
+            "id", "gameId", "gamePlayerId", "productId", "currency", "amountMinor",
+            "status", "createdAt", "updatedAt",
         )
+        val optional = setOf(
+            "tenderType", "pointsAmount", "distributionId", "distributionPaymentChannel", "distributionPackageName",
+        )
+        require(value.keys.containsAll(required) && value.keys.all { it in required || it in optional })
         return PlatformOrder(
             id = value.string("id", 64),
             gameId = value.string("gameId", 64),
@@ -658,6 +692,18 @@ internal class SdkJsonCodec {
             status = PlatformOrderStatus.fromWireName(value.string("status", 16)) ?: reject(),
             createdAt = value.instant("createdAt"),
             updatedAt = value.instant("updatedAt"),
+            tenderType = value["tenderType"]?.let {
+                PlatformOrderTenderType.fromWireName(value.string("tenderType", 16)) ?: reject()
+            } ?: PlatformOrderTenderType.MONEY,
+            pointsAmount = value["pointsAmount"]?.let { value.long("pointsAmount") },
+            distributionId = value["distributionId"]?.let { value.string("distributionId", 64) },
+            distributionPaymentChannel = value["distributionPaymentChannel"]?.let {
+                PlatformDistributionPaymentChannel.fromWireName(value.string("distributionPaymentChannel", 32))
+                    ?: reject()
+            },
+            distributionPackageName = value["distributionPackageName"]?.let {
+                value.string("distributionPackageName", 255)
+            },
         )
     }
 

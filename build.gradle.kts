@@ -23,7 +23,7 @@ val verificationTasks = listOf(
     ":InplaceX-logging:test",
     ":Mirkori-platform-game-sdk:test",
     ":InplaceX-test-support:test",
-    ":app:testDebugUnitTest",
+    ":app:testGlobalDebugUnitTest",
     ":testReleaseDistribution",
 )
 

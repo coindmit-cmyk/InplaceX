@@ -245,6 +245,15 @@ enum class PlatformOrderStatus(val wireName: String) {
     }
 }
 
+enum class PlatformOrderTenderType(val wireName: String) {
+    MONEY("money"),
+    POINTS("points");
+
+    internal companion object {
+        fun fromWireName(value: String): PlatformOrderTenderType? = entries.firstOrNull { it.wireName == value }
+    }
+}
+
 enum class PlatformCheckoutStatus(val wireName: String) {
     CREATING("creating"),
     READY("ready"),
@@ -320,6 +329,9 @@ data class PlatformPaymentMethods(
     val amountMinor: Long,
     val countryCode: String?,
     val methods: List<PlatformPaymentMethod>,
+    val distributionId: String? = null,
+    val distributionPaymentChannel: PlatformDistributionPaymentChannel? = null,
+    val distributionPackageName: String? = null,
 )
 
 class PlatformPaymentNextAction(
@@ -383,6 +395,18 @@ data class PlatformOrder(
     val status: PlatformOrderStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val tenderType: PlatformOrderTenderType = PlatformOrderTenderType.MONEY,
+    val pointsAmount: Long? = null,
+    val distributionId: String? = null,
+    val distributionPaymentChannel: PlatformDistributionPaymentChannel? = null,
+    val distributionPackageName: String? = null,
+)
+
+data class PlatformStorePurchaseResult(
+    val payment: PlatformPayment,
+    val order: PlatformOrder,
+    val entitlements: List<PlatformEntitlement>,
+    val providerFinalized: Boolean,
 )
 
 class PlatformGuestCheckoutHandoff(
