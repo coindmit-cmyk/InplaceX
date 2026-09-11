@@ -15,8 +15,13 @@ import com.mirkori.platform.sdk.PlatformApiException
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformEntitlement
 import com.mirkori.platform.sdk.PlatformEntitlementType
+import com.mirkori.platform.sdk.PlatformDistributionPaymentChannel
 import com.mirkori.platform.sdk.PlatformOrder
 import com.mirkori.platform.sdk.PlatformOrderStatus
+import com.mirkori.platform.sdk.PlatformPaymentChannel
+import com.mirkori.platform.sdk.PlatformPaymentMethodCategory
+import com.mirkori.platform.sdk.PlatformPaymentNextActionType
+import com.mirkori.platform.sdk.PlatformPaymentStatus
 import com.mirkori.platform.sdk.PlatformProductKind
 import com.mirkori.platform.sdk.PlatformProductOffer
 import kotlinx.coroutines.CancellationException
@@ -26,10 +31,11 @@ import kotlinx.coroutines.CancellationException
  * A browser return is never treated as payment proof: only a paid order plus a matching
  * server entitlement can unlock a feature.
  */
-class MirkoriBillingService(
+class MirkoriBillingService internal constructor(
     private val runtime: MirkoriPlatformRuntime,
     private val config: BillingProviderConfig,
     private val currency: String = DefaultCurrency,
+    private val paymentFlow: MirkoriPaymentFlow = BrowserMirkoriPaymentFlow,
 ) : BillingService {
     @Volatile
     private var lastState = runtime.cachedCommerceState(
@@ -52,6 +58,7 @@ class MirkoriBillingService(
         config = config,
         currency = currency,
         previousProducts = lastState.products,
+        paymentFlow = paymentFlow,
     ).also { lastState = it }
 
     override suspend fun purchase(productId: BillingProductId): BillingPurchaseResult =
@@ -60,7 +67,10 @@ class MirkoriBillingService(
             currency = currency,
             productId = productId,
             previousProducts = lastState.products,
+            paymentFlow = paymentFlow,
         ).also { lastState = it.state }
+
+    override fun close() = paymentFlow.close()
 
     private companion object {
         const val DefaultCurrency = "RUB"
@@ -97,6 +107,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
     config: BillingProviderConfig,
     currency: String,
     previousProducts: Map<BillingProductId, BillingProduct>,
+    paymentFlow: MirkoriPaymentFlow,
 ): BillingState = withOperationLock {
     if (!config.isConfigured) {
         return@withOperationLock cachedCommerceState(
@@ -107,7 +118,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
         )
     }
     try {
-        synchronizeCommerceLocked(config, currency, BillingNotice.NONE)
+        synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow)
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (error: PlatformApiException) {
@@ -120,6 +131,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
                     previousProducts,
                     BillingNotice.PRODUCT_ALREADY_ACTIVE,
                     "refresh",
+                    paymentFlow,
                 )
             }
 
@@ -131,6 +143,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
                     previousProducts,
                     BillingNotice.AWAITING_PAYMENT,
                     "refresh",
+                    paymentFlow,
                 )
             }
 
@@ -149,6 +162,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
     currency: String,
     productId: BillingProductId,
     previousProducts: Map<BillingProductId, BillingProduct>,
+    paymentFlow: MirkoriPaymentFlow,
 ): BillingPurchaseResult = withOperationLock {
     if (!config.isConfigured) {
         return@withOperationLock BillingPurchaseResult.StateUpdated(
@@ -164,7 +178,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
         var session = ensureFreshSession()
         val offers = sdk.products(currency)
         val catalog = projectCatalog(offers, config)
-        if (session.authMode == PlatformAuthMode.GUEST) {
+        if (session.authMode == PlatformAuthMode.GUEST && !paymentFlow.allowsGuest) {
             return@withOperationLock BillingPurchaseResult.StateUpdated(
                 cachedCommerceState(
                     config = config,
@@ -224,46 +238,46 @@ private suspend fun MirkoriPlatformRuntime.purchase(
         val order = restored.order
         when (order.status) {
             PlatformOrderStatus.PAID -> BillingPurchaseResult.StateUpdated(
-                synchronizeCommerceLocked(config, currency, BillingNotice.NONE),
+                synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow),
             )
 
             PlatformOrderStatus.CANCELLED -> {
                 persist(requireNotNull(currentPersistedState()).copy(pendingPurchase = null))
                 BillingPurchaseResult.StateUpdated(
-                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_CANCELLED),
+                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_CANCELLED, paymentFlow),
                 )
             }
 
             PlatformOrderStatus.REFUNDED -> {
                 persist(requireNotNull(currentPersistedState()).copy(pendingPurchase = null))
                 BillingPurchaseResult.StateUpdated(
-                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_REFUNDED),
+                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_REFUNDED, paymentFlow),
                 )
             }
 
             PlatformOrderStatus.PENDING -> {
-                val checkoutResult = authenticated(session) { token ->
-                    sdk.createCheckout(
-                        profileAccessToken = token,
-                        orderId = order.id,
-                        idempotencyKey = pending.checkoutIdempotencyKey,
+                when (val result = paymentFlow.start(this, session, pending, order)) {
+                    is MirkoriPaymentFlowResult.ExternalCheckout -> BillingPurchaseResult.OpenExternalCheckout(
+                        checkoutUrl = result.url,
+                        state = cachedCommerceState(
+                            config = config,
+                            previousProducts = catalog.products,
+                            notice = BillingNotice.CHECKOUT_OPENED,
+                            availability = BillingAvailability.READY,
+                        ),
+                    )
+                    MirkoriPaymentFlowResult.Settled -> BillingPurchaseResult.StateUpdated(
+                        synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow),
+                    )
+                    is MirkoriPaymentFlowResult.Notice -> BillingPurchaseResult.StateUpdated(
+                        cachedCommerceState(
+                            config = config,
+                            previousProducts = catalog.products,
+                            notice = result.notice,
+                            availability = result.availability,
+                        ),
                     )
                 }
-                require(checkoutResult.value.orderId == order.id)
-                AppLog.info(
-                    tag = LogTag,
-                    message = "Mirkori checkout prepared",
-                    attributes = mapOf("outcome" to "browser_ready"),
-                )
-                BillingPurchaseResult.OpenExternalCheckout(
-                    checkoutUrl = checkoutResult.value.paymentUrl,
-                    state = cachedCommerceState(
-                        config = config,
-                        previousProducts = catalog.products,
-                        notice = BillingNotice.CHECKOUT_OPENED,
-                        availability = BillingAvailability.READY,
-                    ),
-                )
             }
         }
     } catch (cancelled: CancellationException) {
@@ -278,6 +292,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
                     previousProducts,
                     BillingNotice.PRODUCT_ALREADY_ACTIVE,
                     "purchase",
+                    paymentFlow,
                 )
             }
 
@@ -289,6 +304,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
                     previousProducts,
                     BillingNotice.AWAITING_PAYMENT,
                     "purchase",
+                    paymentFlow,
                 )
             }
 
@@ -320,8 +336,9 @@ private suspend fun MirkoriPlatformRuntime.recoverCommerceAfterServerSignal(
     previousProducts: Map<BillingProductId, BillingProduct>,
     notice: BillingNotice,
     operation: String,
+    paymentFlow: MirkoriPaymentFlow,
 ): BillingState = try {
-    synchronizeCommerceLocked(config, currency, notice)
+    synchronizeCommerceLocked(config, currency, notice, paymentFlow)
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (retryError: Exception) {
@@ -332,6 +349,7 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
     config: BillingProviderConfig,
     currency: String,
     initialNotice: BillingNotice,
+    paymentFlow: MirkoriPaymentFlow,
 ): BillingState {
     val timeRevisionBeforeSync = serverTimeRevision()
     var session = ensureFreshSession()
@@ -342,6 +360,7 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
     var pending = reconciliation.pending
     var pendingOrder: PlatformOrder? = null
     var notice = initialNotice
+    var availability = BillingAvailability.READY
 
     if (pending != null) {
         val pendingBillingId = config.billingProductIdFor(pending.productId)
@@ -354,8 +373,24 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
         session = restored.session
         pending = restored.pending
         pendingOrder = restored.order
+        if (pendingOrder.status == PlatformOrderStatus.PENDING) {
+            when (val recovery = paymentFlow.recover(this, session, pending, pendingOrder)) {
+                MirkoriPaymentFlowResult.Settled -> {
+                    val refreshed = ensurePendingOrder(session, pending, catalog.offers[pendingBillingId])
+                    session = refreshed.session
+                    pending = refreshed.pending
+                    pendingOrder = refreshed.order
+                }
+                is MirkoriPaymentFlowResult.Notice -> {
+                    notice = recovery.notice
+                    availability = recovery.availability
+                }
+                is MirkoriPaymentFlowResult.ExternalCheckout -> throw CommerceContractException()
+            }
+        }
         notice = when (pendingOrder.status) {
-            PlatformOrderStatus.PENDING -> BillingNotice.AWAITING_PAYMENT
+            PlatformOrderStatus.PENDING -> notice.takeUnless { it == BillingNotice.NONE }
+                ?: BillingNotice.AWAITING_PAYMENT
             PlatformOrderStatus.PAID -> BillingNotice.AWAITING_ENTITLEMENT
             PlatformOrderStatus.CANCELLED -> BillingNotice.PAYMENT_CANCELLED
             PlatformOrderStatus.REFUNDED -> BillingNotice.PAYMENT_REFUNDED
@@ -413,7 +448,7 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
         ),
     )
     return BillingState(
-        availability = BillingAvailability.READY,
+        availability = availability,
         products = catalog.products,
         entitlements = confirmed.toEntitlements(trustedNowMs),
         pendingProduct = pending?.productId?.let(config::billingProductIdFor),
@@ -536,6 +571,8 @@ private fun MirkoriPlatformRuntime.commerceFailureState(
             BillingAvailability.READY to BillingNotice.LINKED_ACCOUNT_REQUIRED
         error is PlatformApiException && error.status == 503 ->
             BillingAvailability.UNAVAILABLE to BillingNotice.PROVIDER_UNAVAILABLE
+        error is CommercePaymentAttemptTerminalException ->
+            BillingAvailability.READY to BillingNotice.RETRY_REQUIRED
         error is CommercePendingAmbiguousException ->
             BillingAvailability.READY to BillingNotice.BUSY
         else -> BillingAvailability.UNAVAILABLE to BillingNotice.RETRY_REQUIRED
@@ -731,6 +768,225 @@ private class CommerceProfileChangedException : IllegalStateException("Commerce 
 private class CommerceContractException : IllegalStateException("Commerce contract rejected")
 
 private class CommercePendingAmbiguousException : IllegalStateException("Pending commerce state is ambiguous")
+
+private class CommercePaymentAttemptTerminalException : IllegalStateException("Payment attempt is terminal")
+
+internal interface MirkoriPaymentFlow : AutoCloseable {
+    val allowsGuest: Boolean
+
+    suspend fun start(
+        runtime: MirkoriPlatformRuntime,
+        session: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+    ): MirkoriPaymentFlowResult
+
+    suspend fun recover(
+        runtime: MirkoriPlatformRuntime,
+        session: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+    ): MirkoriPaymentFlowResult = MirkoriPaymentFlowResult.Notice(BillingNotice.AWAITING_PAYMENT)
+
+    override fun close() = Unit
+}
+
+internal sealed interface MirkoriPaymentFlowResult {
+    data class ExternalCheckout(val url: String) : MirkoriPaymentFlowResult
+
+    data object Settled : MirkoriPaymentFlowResult
+
+    data class Notice(
+        val notice: BillingNotice,
+        val availability: BillingAvailability = BillingAvailability.READY,
+    ) : MirkoriPaymentFlowResult
+}
+
+private data object BrowserMirkoriPaymentFlow : MirkoriPaymentFlow {
+    override val allowsGuest: Boolean = false
+
+    override suspend fun start(
+        runtime: MirkoriPlatformRuntime,
+        session: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+    ): MirkoriPaymentFlowResult {
+        val checkoutResult = runtime.authenticated(session) { token ->
+            runtime.sdk.createCheckout(
+                profileAccessToken = token,
+                orderId = order.id,
+                idempotencyKey = pending.checkoutIdempotencyKey,
+            )
+        }
+        require(checkoutResult.value.orderId == order.id)
+        AppLog.info(
+            tag = LogTag,
+            message = "Mirkori checkout prepared",
+            attributes = mapOf("outcome" to "browser_ready"),
+        )
+        return MirkoriPaymentFlowResult.ExternalCheckout(checkoutResult.value.paymentUrl)
+    }
+}
+
+internal enum class GooglePlayPurchaseState {
+    NONE,
+    PENDING,
+    PURCHASED,
+    CANCELLED,
+    UNAVAILABLE,
+}
+
+internal class GooglePlayPurchase(
+    val state: GooglePlayPurchaseState,
+    val productId: String? = null,
+    val purchaseToken: String? = null,
+    val obfuscatedProfileId: String? = null,
+) {
+    init {
+        if (state == GooglePlayPurchaseState.PURCHASED) {
+            require(!productId.isNullOrBlank())
+            require(purchaseToken?.length in 16..4096)
+            require(!obfuscatedProfileId.isNullOrBlank())
+        } else {
+            require(purchaseToken == null)
+        }
+    }
+
+    override fun toString(): String = "GooglePlayPurchase(state=$state, [redacted])"
+}
+
+internal interface GooglePlayBillingGateway : AutoCloseable {
+    suspend fun query(productId: String, obfuscatedProfileId: String): GooglePlayPurchase
+
+    suspend fun launch(productId: String, obfuscatedProfileId: String): GooglePlayPurchase
+}
+
+internal class GooglePlayMirkoriPaymentFlow(
+    private val gateway: GooglePlayBillingGateway,
+    private val expectedDistributionId: String,
+    private val expectedPackageName: String,
+) : MirkoriPaymentFlow {
+    override val allowsGuest: Boolean = true
+
+    override suspend fun start(
+        runtime: MirkoriPlatformRuntime,
+        session: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+    ): MirkoriPaymentFlowResult = continuePayment(runtime, session, pending, order, launchWhenMissing = true)
+
+    override suspend fun recover(
+        runtime: MirkoriPlatformRuntime,
+        session: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+    ): MirkoriPaymentFlowResult = continuePayment(runtime, session, pending, order, launchWhenMissing = false)
+
+    override fun close() = gateway.close()
+
+    private suspend fun continuePayment(
+        runtime: MirkoriPlatformRuntime,
+        initialSession: GameIdentitySession,
+        pending: PendingMirkoriPurchase,
+        order: PlatformOrder,
+        launchWhenMissing: Boolean,
+    ): MirkoriPaymentFlowResult {
+        require(order.distributionId == expectedDistributionId)
+        require(order.distributionPaymentChannel == PlatformDistributionPaymentChannel.GOOGLE_PLAY)
+        require(order.distributionPackageName == expectedPackageName)
+        var session = initialSession
+        val methodsResult = runtime.authenticated(session) { token ->
+            runtime.sdk.paymentMethods(token, order.id, PlatformPaymentChannel.ANDROID)
+        }
+        session = methodsResult.session
+        val methods = methodsResult.value
+        require(methods.distributionId == expectedDistributionId)
+        require(methods.distributionPaymentChannel == PlatformDistributionPaymentChannel.GOOGLE_PLAY)
+        require(methods.distributionPackageName == expectedPackageName)
+        val method = methods.methods.singleOrNull { candidate ->
+            candidate.id == GooglePlayMethodId &&
+                candidate.category == PlatformPaymentMethodCategory.STORE &&
+                PlatformPaymentNextActionType.EMBEDDED_SDK in candidate.nextActionTypes
+        } ?: throw CommerceContractException()
+        val paymentResult = runtime.authenticated(session) { token ->
+            runtime.sdk.createPayment(
+                profileAccessToken = token,
+                orderId = order.id,
+                paymentMethodId = method.id,
+                channel = PlatformPaymentChannel.ANDROID,
+                idempotencyKey = pending.checkoutIdempotencyKey,
+            )
+        }
+        session = paymentResult.session
+        val payment = paymentResult.value
+        require(payment.orderId == order.id)
+        require(payment.currency == order.currency && payment.amountMinor == order.amountMinor)
+        when (payment.status) {
+            PlatformPaymentStatus.SUCCEEDED -> return MirkoriPaymentFlowResult.Settled
+            PlatformPaymentStatus.PROCESSING -> return MirkoriPaymentFlowResult.Notice(
+                BillingNotice.AWAITING_ENTITLEMENT,
+            )
+            PlatformPaymentStatus.CANCELLED,
+            PlatformPaymentStatus.FAILED,
+            PlatformPaymentStatus.EXPIRED,
+            -> {
+                runtime.rotatePaymentIdempotencyKey(pending)
+                throw CommercePaymentAttemptTerminalException()
+            }
+            PlatformPaymentStatus.CREATING -> return MirkoriPaymentFlowResult.Notice(BillingNotice.AWAITING_PAYMENT)
+            PlatformPaymentStatus.REQUIRES_ACTION -> Unit
+        }
+        val action = payment.nextAction ?: throw CommerceContractException()
+        require(action.type == PlatformPaymentNextActionType.EMBEDDED_SDK)
+        require(action.sdkAdapter == GooglePlaySdkAdapter)
+        val clientToken = requireNotNull(action.clientToken)
+        val restored = gateway.query(order.productId, clientToken)
+        val purchase = if (restored.state == GooglePlayPurchaseState.NONE && launchWhenMissing) {
+            gateway.launch(order.productId, clientToken)
+        } else {
+            restored
+        }
+        return when (purchase.state) {
+            GooglePlayPurchaseState.PURCHASED -> {
+                require(purchase.productId == order.productId)
+                require(purchase.obfuscatedProfileId == clientToken)
+                val verification = runtime.authenticated(session) { token ->
+                    runtime.sdk.verifyGooglePlayPurchase(
+                        profileAccessToken = token,
+                        paymentId = payment.id,
+                        purchaseToken = requireNotNull(purchase.purchaseToken),
+                        idempotencyKey = pending.orderIdempotencyKey,
+                    )
+                }
+                require(verification.value.order.id == order.id)
+                MirkoriPaymentFlowResult.Settled
+            }
+            GooglePlayPurchaseState.PENDING -> MirkoriPaymentFlowResult.Notice(BillingNotice.AWAITING_PAYMENT)
+            GooglePlayPurchaseState.CANCELLED -> MirkoriPaymentFlowResult.Notice(BillingNotice.PAYMENT_CANCELLED)
+            GooglePlayPurchaseState.UNAVAILABLE -> MirkoriPaymentFlowResult.Notice(
+                BillingNotice.PROVIDER_UNAVAILABLE,
+                BillingAvailability.UNAVAILABLE,
+            )
+            GooglePlayPurchaseState.NONE -> MirkoriPaymentFlowResult.Notice(BillingNotice.AWAITING_PAYMENT)
+        }
+    }
+
+    private fun MirkoriPlatformRuntime.rotatePaymentIdempotencyKey(pending: PendingMirkoriPurchase) {
+        val state = currentPersistedState() ?: return
+        if (state.pendingPurchase == pending) {
+            persist(
+                state.copy(
+                    pendingPurchase = pending.copy(checkoutIdempotencyKey = sdk.newIdempotencyKey()),
+                ),
+            )
+        }
+    }
+
+    private companion object {
+        const val GooglePlayMethodId = "google_play"
+        const val GooglePlaySdkAdapter = "google_play_billing"
+    }
+}
 
 private const val LogTag = "MirkoriCommerce"
 private const val EntitlementContractSchemaVersion = 1

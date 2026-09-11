@@ -542,6 +542,7 @@ class MirkoriPlatformRuntime internal constructor(
             context: Context,
             baseUrl: String = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
             allowCleartextLoopback: Boolean = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
+            distributionId: String = BuildConfig.MIRKORI_DISTRIBUTION_ID,
             proEnabled: Boolean = BuildConfig.MIRKORI_PRO_ENABLED,
             proDistributionId: String = BuildConfig.MIRKORI_PRO_DISTRIBUTION_ID,
             proPublicKeys: String = BuildConfig.MIRKORI_PRO_PUBLIC_KEYS,
@@ -552,6 +553,8 @@ class MirkoriPlatformRuntime internal constructor(
                 distributionId = proDistributionId,
                 encodedPublicKeys = proPublicKeys,
             )
+            require(distributionId.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}")))
+            require(proConfiguration == null || proConfiguration.distributionId == distributionId)
             val client = createMirkoriHttpClient()
             return try {
                 val sdk = MirkoriGameSdk(
@@ -560,7 +563,7 @@ class MirkoriPlatformRuntime internal constructor(
                         gameId = "inplacex",
                         redirectUri = RedirectUri,
                         allowCleartextLoopback = allowCleartextLoopback,
-                        distributionId = proConfiguration?.distributionId,
+                        distributionId = distributionId,
                     ),
                     transport = KtorMirkoriPlatformTransport(
                         client = client,

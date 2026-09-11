@@ -24,4 +24,4 @@ serial=${devices[0]}
 [[ "$(adb -s "$serial" get-state)" == 'device' ]] || die 'emulator is not ready'
 [[ "$(adb -s "$serial" shell getprop sys.boot_completed | tr -d '\r')" == '1' ]] || die 'emulator boot is incomplete'
 
-./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest --no-configuration-cache
+./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache

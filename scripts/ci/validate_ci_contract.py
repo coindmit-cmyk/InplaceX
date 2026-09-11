@@ -21,8 +21,8 @@ ARTIFACT_SCRIPT = ROOT / "scripts/ci/artifact_identity.sh"
 INSTRUMENTATION_SCRIPT = ROOT / "scripts/ci/run_instrumentation.sh"
 HOSTILE_FIXTURES = ROOT / "scripts/ci/contract_mutations/hostile_fixtures.json"
 
-ARTIFACT_SCRIPT_SHA256 = "534b632e95854e547f73d10e0d7bdfae3b7eaa195193703fd7c4d7e4f354e4c8"
-INSTRUMENTATION_SCRIPT_SHA256 = "ac415fe647a3a7bbf4d752c021debb8e00c3ce8b8332886cac2844d81ad7291a"
+ARTIFACT_SCRIPT_SHA256 = "b0e7e699ff3c769ddbc72c1e7cc6cb4226404e1a29b58e1ea5289b6e744b0896"
+INSTRUMENTATION_SCRIPT_SHA256 = "d59fa52a6d3d04018256717b6c34fccdb36264ba69395f801839ffb7562bb352"
 EMULATOR_ACTION = "ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d"
 ACTIONLINT_ACTION = "raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7"
 
@@ -164,11 +164,11 @@ def validate(
 
     require_exact_run(verify, "Run unit verification", "./gradlew verifyProject", "step.verify.unit.exact-run")
     require_exact_run(verify, "Run Android lint", "./gradlew lint", "step.verify.lint.exact-run")
-    require_exact_run(verify, "Assemble debug APK", "./gradlew :app:assembleDebug", "step.verify.debug.exact-run")
+    require_exact_run(verify, "Assemble debug APK", "./gradlew :app:assembleRfDebug", "step.verify.debug.exact-run")
     require_exact_run(
         verify,
         "Write debug artifact identity",
-        "bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/debug/app-debug.apk --output-dir build/ci-artifacts --artifact-type debug --expected-signing verified",
+        "bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/rf/debug/app-rf-debug.apk --output-dir build/ci-artifacts --artifact-type debug --expected-signing verified",
         "step.verify.artifact.exact-run",
     )
 
@@ -206,13 +206,13 @@ def validate(
     require_exact_run(
         release,
         "Run release unit tests",
-        "./gradlew :app:testReleaseUnitTest",
+        "./gradlew :app:testRfReleaseUnitTest",
         "step.release.unit.exact-run",
     )
     require_exact_run(
         release,
         "Run release lint",
-        "./gradlew :app:lintRelease",
+        "./gradlew :app:lintRfRelease :app:lintGlobalRelease",
         "step.release.lint.exact-run",
     )
     require_exact_run(
@@ -224,7 +224,7 @@ def validate(
     require_exact_run(
         release,
         "Write release artifact identity",
-        "bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/release/app-release-unsigned.apk --output-dir build/ci-release-artifacts --artifact-type release --expected-signing unverified",
+        "bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/rf/release/app-rf-release-unsigned.apk --output-dir build/ci-release-artifacts --artifact-type release --expected-signing unverified",
         "step.release.artifact.exact-run",
     )
 
@@ -374,7 +374,7 @@ def write_fake_aapt(
     path.write_text(
         "#!/usr/bin/env bash\n"
         "cat <<'EOF'\n"
-        f"package: name='com.mirkori.inplacex' versionCode='{version_code}' versionName='{version_name}'\n"
+        f"package: name='com.mirkori.inplacex.rf' versionCode='{version_code}' versionName='{version_name}'\n"
         "sdkVersion:'29'\n"
         f"{debug_line}"
         "EOF\n",
@@ -406,7 +406,7 @@ def run_fake_artifact_tests() -> int:
             raise ContractError("fake-apksigner.verified", result.stderr)
         manifest = json.loads(next(verified_output.glob("*.json")).read_text(encoding="utf-8"))
         expected_fields = {
-            "packageName": "com.mirkori.inplacex",
+            "packageName": "com.mirkori.inplacex.rf",
             "versionName": "1.0",
             "versionCode": 1,
             "minimumAndroidSdk": 29,

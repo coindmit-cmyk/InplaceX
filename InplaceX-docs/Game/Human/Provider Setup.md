@@ -15,8 +15,13 @@ Android и backend уже содержат рабочие границы для 
 
 ## Android-параметры
 
-Для каждого варианта используются отдельные ключи: `<variant>` — `debug` или
-`release`.
+Для каждого build type используются отдельные ключи: `<variant>` — `debug` или
+`release`. Поверх него всегда выбирается distribution flavor:
+
+- `rf`: `rf-mirkori`, `com.mirkori.inplacex.rf`, Mirkori checkout, RUB;
+- `global`: `global-google`, `com.mirkori.inplacex`, Google Play Billing, USD.
+
+Эти значения вшиты в сборку и не переопределяются через `local.properties`.
 
 - Backend:
   - `online.<variant>.baseUrl`
@@ -73,8 +78,8 @@ Android и backend уже содержат рабочие границы для 
 
 ## Release-gate
 
-Обычная команда `:app:assembleRelease` остаётся unsigned-проверкой для PR CI.
-Публикуемый APK создаётся отдельной командой `:app:releaseCandidate`, которая
+Обычная команда `:app:assembleRelease` собирает оба unsigned-варианта для PR CI.
+Публикуемый RF APK создаётся отдельной командой `:app:releaseCandidate`, которая
 автоматически запускает `:app:validateProductionReleaseConfig` и
 `:app:validateReleaseSigningConfig`.
 
@@ -102,7 +107,9 @@ keystore должны находиться вне Git.
 
 Обычные `assembleRelease` и `assembleInternalDistribution` всегда unsigned,
 даже при наличии signing config. Только отдельный `signedReleaseCandidate`
-получает production key. Команда `releaseCandidate` атомарно создаёт чистый
+получает production key. Это только `rfSignedReleaseCandidate`; global-сборка
+публикуется через Google Play, а не как direct APK. Команда `releaseCandidate`
+атомарно создаёт чистый
 каталог `build/release-candidates/<releaseId>`; `releaseId` ограничен 64
 символами по контракту Mirkori. Повтор с другим APK SHA-256 либо stale-файлами
 останавливается без перезаписи уже созданного кандидата.
@@ -129,8 +136,9 @@ activation state, а отдельное activation evidence появляется
 отпечатка сертификата в активном каталоге; отдельного редактируемого файла нет.
 Добавление нового отпечатка в каталог само по себе не даёт ему доверия и не
 изменяет внешний root-owned trust policy Platform. До первого релиза или ротации
-policy должна явно разрешать пакет `com.mirkori.inplacex` и все объявленные
-сертификаты; старый и новый ключи сохраняют overlap до завершения миграции.
+policy должна явно разрешать RF-пакет `com.mirkori.inplacex.rf` и все объявленные
+сертификаты; global-пакет `com.mirkori.inplacex` имеет отдельную Google Play
+signing identity. Старый и новый ключи сохраняют overlap до завершения миграции.
 
 ## Backend и определение рынка
 

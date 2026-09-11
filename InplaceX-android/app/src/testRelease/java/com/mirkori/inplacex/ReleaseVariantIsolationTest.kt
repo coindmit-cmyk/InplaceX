@@ -16,8 +16,14 @@ import org.junit.Test
 
 class ReleaseVariantIsolationTest {
     @Test
-    fun `release Mirkori platform identity is HTTPS and bound to the production package`() {
-        assertEquals("com.mirkori.inplacex", BuildConfig.APPLICATION_ID)
+    fun `release Mirkori platform identity is HTTPS and bound to its distribution package`() {
+        val expectedPackage = when (BuildConfig.MIRKORI_DISTRIBUTION_ID) {
+            "rf-mirkori" -> "com.mirkori.inplacex.rf"
+            "global-google" -> "com.mirkori.inplacex"
+            else -> error("Unknown release distribution ${BuildConfig.MIRKORI_DISTRIBUTION_ID}")
+        }
+
+        assertEquals(expectedPackage, BuildConfig.APPLICATION_ID)
         assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
         assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
         assertFalse(testFriendBotEnabled())

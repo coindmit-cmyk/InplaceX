@@ -36,7 +36,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             self.assertEqual(1, catalog["schemaVersion"])
             self.assertEqual(["inplacex"], [game["id"] for game in catalog["games"]])
             game = catalog["games"][0]
-            self.assertEqual("com.mirkori.inplacex", game["androidAppLink"]["packageName"])
+            self.assertEqual("com.mirkori.inplacex.rf", game["androidAppLink"]["packageName"])
             self.assertEqual([self.fingerprint()], game["androidAppLink"]["certificateSha256Fingerprints"])
             release = game["releases"][0]
             self.assertEqual("inplacex-1.0-1", release["id"])
@@ -379,6 +379,21 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         self.assertIn("setEnvironment(releaseCandidateProcessEnvironment)", app_gradle_script)
         self.assertIn('releaseCandidateBash,\n        "-p",', app_gradle_script)
 
+    def test_global_distribution_cannot_build_rf_signed_release_candidate(self) -> None:
+        app_gradle_script = (
+            MODULE_PATH.parents[2] / "InplaceX-android" / "app" / "build.gradle.kts"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(
+            'beforeVariants(selector().withBuildType("signedReleaseCandidate"))',
+            app_gradle_script,
+        )
+        self.assertIn(
+            'variantBuilder.productFlavors.contains("distribution" to "global")',
+            app_gradle_script,
+        )
+        self.assertIn("variantBuilder.enable = false", app_gradle_script)
+
     def test_release_candidate_bash_rejects_imported_functions(self) -> None:
         if os.name == "nt":
             bash = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe"
@@ -597,8 +612,8 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             "artifact_type": "release",
             "releaseId": release_id,
             "fileName": apk_name,
-            "sourceFileName": "app-signedReleaseCandidate.apk",
-            "packageName": "com.mirkori.inplacex",
+            "sourceFileName": "app-rf-signedReleaseCandidate.apk",
+            "packageName": "com.mirkori.inplacex.rf",
             "version": version_name,
             "version_code": version_code,
             "versionName": version_name,
@@ -623,7 +638,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             encoding="utf-8",
         )
         (candidate / "apk-metadata-release.txt").write_text(
-            "package_name=com.mirkori.inplacex\n"
+            "package_name=com.mirkori.inplacex.rf\n"
             f"version_name={version_name}\n"
             f"version_code={version_code}\n"
             "minimum_android_sdk=29\n"

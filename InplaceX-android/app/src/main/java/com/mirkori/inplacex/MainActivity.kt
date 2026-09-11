@@ -73,7 +73,7 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriIncomingFriendRequestsResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicProfileResult
-import com.mirkori.inplacex.platform.mirkori.MirkoriBillingService
+import com.mirkori.inplacex.platform.mirkori.createDistributionBillingService
 import com.mirkori.inplacex.platform.mirkori.MirkoriProAccessState
 import com.mirkori.inplacex.platform.mirkori.MirkoriProAvailability
 import com.mirkori.inplacex.platform.mirkori.MirkoriProNotice
@@ -165,15 +165,19 @@ class MainActivity : ComponentActivity() {
                         }
                         .getOrNull()
                 }
-                DisposableEffect(mirkoriPlatformRuntime) {
-                    onDispose { mirkoriPlatformRuntime?.close() }
-                }
                 val liveBillingService = remember(mirkoriPlatformRuntime) {
                     mirkoriPlatformRuntime?.let { runtime ->
-                        MirkoriBillingService(
+                        createDistributionBillingService(
+                            activity = this@MainActivity,
                             runtime = runtime,
                             config = AppConfigCatalog.platformConfig.providers.billing,
                         )
+                    }
+                }
+                DisposableEffect(mirkoriPlatformRuntime, liveBillingService) {
+                    onDispose {
+                        liveBillingService?.close()
+                        mirkoriPlatformRuntime?.close()
                     }
                 }
                 val providerServices = remember(liveBillingService) {

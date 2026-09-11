@@ -33,6 +33,63 @@ import org.junit.Test
 
 class MirkoriBillingServiceTest {
     @Test
+    fun globalGooglePlayGuestPurchaseIsVerifiedBeforeEntitlementUnlock() {
+        val orderId = "00000000-0000-4000-8000-000000000801"
+        val paymentId = "00000000-0000-4000-8000-000000000802"
+        val clientToken = paymentId
+        val purchaseToken = "google-play-purchase-token-801"
+        val pendingOrder = globalOrderJson(orderId, "pending")
+        val paidOrder = globalOrderJson(orderId, "paid")
+        val payment = """{"id":"$paymentId","orderId":"$orderId","status":"requires_action","paymentMethodId":"google_play","channel":"android","currency":"USD","amountMinor":9900,"expiresAt":"2026-09-12T10:00:00Z","createdAt":"2026-09-11T10:00:00Z","updatedAt":"2026-09-11T10:00:01Z","nextAction":{"type":"embedded_sdk","sdkAdapter":"google_play_billing","clientToken":"$clientToken"}}"""
+        val succeededPayment = """{"id":"$paymentId","orderId":"$orderId","status":"succeeded","paymentMethodId":"google_play","channel":"android","currency":"USD","amountMinor":9900,"createdAt":"2026-09-11T10:00:00Z","updatedAt":"2026-09-11T10:00:05Z"}"""
+        val entitlement = """{"key":"ads.disabled","type":"durable","quantity":1}"""
+        val transport = ScriptedTransport(
+            response(globalProductsJson()),
+            response(ordersJson()),
+            response(pendingOrder, status = 201),
+            response(
+                """{"schemaVersion":1,"orderId":"$orderId","currency":"USD","amountMinor":9900,"countryCode":"US","distributionId":"global-google","distributionPaymentChannel":"google_play","distributionPackageName":"com.mirkori.inplacex","methods":[{"id":"google_play","category":"store","displayName":"Google Play","nextActionTypes":["embedded_sdk"]}]}""",
+            ),
+            response("""{"schemaVersion":1,"payment":$payment}""", status = 201),
+            response(
+                """{"schemaVersion":1,"payment":$succeededPayment,"order":$paidOrder,"entitlements":[$entitlement],"providerFinalized":true}""",
+            ),
+            response(globalProductsJson()),
+            response(paidOrder),
+            response(entitlementsJson(entitlement)),
+        )
+        val gateway = RecordingGooglePlayGateway(
+            GooglePlayPurchase(GooglePlayPurchaseState.NONE),
+            GooglePlayPurchase(
+                state = GooglePlayPurchaseState.PURCHASED,
+                productId = "remove_ads",
+                purchaseToken = purchaseToken,
+                obfuscatedProfileId = clientToken,
+            ),
+        )
+        val service = service(
+            transport = transport,
+            store = linkedStore(authMode = PlatformAuthMode.GUEST),
+            distributionId = "global-google",
+            currency = "USD",
+            paymentFlow = GooglePlayMirkoriPaymentFlow(
+                gateway = gateway,
+                expectedDistributionId = "global-google",
+                expectedPackageName = "com.mirkori.inplacex",
+            ),
+        )
+
+        val result = runSuspend { service.purchase(BillingProductId.REMOVE_ADS) }
+
+        assertTrue(result is BillingPurchaseResult.StateUpdated)
+        assertEquals(BillingNotice.PAYMENT_CONFIRMED, result.state.notice)
+        assertTrue(result.state.entitlements.adFreePurchased)
+        assertEquals(listOf("query", "launch"), gateway.operations)
+        assertTrue(transport.requests.any { it.url.endsWith("/payments/$paymentId/google-play-purchase") })
+        assertFalse(transport.requests.toString().contains(purchaseToken))
+    }
+
+    @Test
     fun guestCannotCreateOrderOrCheckout() {
         val transport = ScriptedTransport(response(productsJson()))
         val store = linkedStore(authMode = PlatformAuthMode.GUEST)
@@ -550,26 +607,38 @@ class MirkoriBillingServiceTest {
         store: BillingMemoryStore,
         nowMs: Long = NowMs,
         bootMarker: Long = TestBootMarker,
+        distributionId: String? = null,
+        currency: String = "RUB",
+        paymentFlow: MirkoriPaymentFlow? = null,
     ): MirkoriBillingService {
         val sdk = MirkoriGameSdk(
             MirkoriGameSdkConfig(
                 platformBaseUrl = "https://games.dmit.life",
                 gameId = "inplacex",
                 redirectUri = MirkoriPlatformRuntime.RedirectUri,
+                distributionId = distributionId,
             ),
             transport,
             BillingCountingEntropy(),
         )
-        return MirkoriBillingService(
-            runtime = MirkoriPlatformRuntime(
-                sdk = sdk,
-                store = store,
-                clockMs = { nowMs },
-                monotonicClockMs = { nowMs },
-                bootMarker = { bootMarker },
-            ),
-            config = BillingProviderConfig("remove_ads", "pro_subscription", "pro_plus_subscription"),
+        val runtime = MirkoriPlatformRuntime(
+            sdk = sdk,
+            store = store,
+            clockMs = { nowMs },
+            monotonicClockMs = { nowMs },
+            bootMarker = { bootMarker },
         )
+        val config = BillingProviderConfig("remove_ads", "pro_subscription", "pro_plus_subscription")
+        return if (paymentFlow == null) {
+            MirkoriBillingService(runtime = runtime, config = config, currency = currency)
+        } else {
+            MirkoriBillingService(
+                runtime = runtime,
+                config = config,
+                currency = currency,
+                paymentFlow = paymentFlow,
+            )
+        }
     }
 
     private fun linkedStore(
@@ -626,6 +695,25 @@ class MirkoriBillingServiceTest {
         const val NowMs = 1_786_000_000_000L
         const val TestBootMarker = 7L
     }
+}
+
+private class RecordingGooglePlayGateway(
+    private val queried: GooglePlayPurchase,
+    private val launched: GooglePlayPurchase,
+) : GooglePlayBillingGateway {
+    val operations = mutableListOf<String>()
+
+    override suspend fun query(productId: String, obfuscatedProfileId: String): GooglePlayPurchase {
+        operations += "query"
+        return queried
+    }
+
+    override suspend fun launch(productId: String, obfuscatedProfileId: String): GooglePlayPurchase {
+        operations += "launch"
+        return launched
+    }
+
+    override fun close() = Unit
 }
 
 private class BillingMemoryStore(initial: MirkoriPersistedState) : SecureMirkoriStateStore {
@@ -694,6 +782,12 @@ private fun productsJson(
     }
     return """{"schemaVersion":1,"products":[${offers.joinToString(",")}]}"""
 }
+
+private fun globalProductsJson(): String =
+    productsJson().replace("\"currency\":\"RUB\"", "\"currency\":\"USD\"")
+
+private fun globalOrderJson(orderId: String, status: String): String =
+    """{"id":"$orderId","gameId":"inplacex","gamePlayerId":"00000000-0000-4000-8000-000000000952","productId":"remove_ads","currency":"USD","amountMinor":9900,"tenderType":"money","distributionId":"global-google","distributionPaymentChannel":"google_play","distributionPackageName":"com.mirkori.inplacex","status":"$status","createdAt":"2026-09-11T10:00:00Z","updatedAt":"2026-09-11T10:00:05Z"}"""
 
 private fun orderJson(
     orderId: String,

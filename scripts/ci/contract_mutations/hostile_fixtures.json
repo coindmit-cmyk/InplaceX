@@ -51,15 +51,15 @@
   {
     "name": "release_unit_short_circuit",
     "target": "workflow",
-    "anchor": "        run: ./gradlew :app:testReleaseUnitTest",
-    "replacement": "        run: ./gradlew :app:testReleaseUnitTest || true",
+    "anchor": "        run: ./gradlew :app:testRfReleaseUnitTest",
+    "replacement": "        run: ./gradlew :app:testRfReleaseUnitTest || true",
     "expected": "step.release.unit.exact-run"
   },
   {
     "name": "release_lint_echo",
     "target": "workflow",
-    "anchor": "        run: ./gradlew :app:lintRelease",
-    "replacement": "        run: echo ./gradlew :app:lintRelease",
+    "anchor": "        run: ./gradlew :app:lintRfRelease :app:lintGlobalRelease",
+    "replacement": "        run: echo ./gradlew :app:lintRfRelease :app:lintGlobalRelease",
     "expected": "step.release.lint.exact-run"
   },
   {
@@ -93,8 +93,8 @@
   {
     "name": "instrumentation_script_noop",
     "target": "instrumentation_script",
-    "anchor": "./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest --no-configuration-cache",
-    "replacement": "echo ./gradlew :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest --no-configuration-cache",
+    "anchor": "./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache",
+    "replacement": "echo ./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache",
     "expected": "script.instrumentation.sha256"
   }
 ]

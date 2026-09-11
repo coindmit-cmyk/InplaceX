@@ -436,13 +436,14 @@ class MirkoriGameSdk(
         return codec.orderResponse(
             post(
                 path = "/api/v1/commerce/orders",
-                body = codec.createOrderRequest(productId, currency),
+                body = codec.createOrderRequest(productId, currency, config.distributionId),
                 idempotencyKey = idempotencyKey,
                 bearerToken = profileAccessToken,
             ),
         ).also { order ->
             validateOrder(order)
             require(order.productId == productId && order.currency == currency)
+            require(order.distributionId == config.distributionId)
         }
     }
 
@@ -508,6 +509,13 @@ class MirkoriGameSdk(
         ).also { result ->
             require(result.orderId == orderId && result.currency.matches(CurrencyPattern) && result.amountMinor > 0)
             require(result.countryCode == null || result.countryCode.matches(Regex("[A-Z]{2}")))
+            require(result.distributionId == config.distributionId)
+            if (result.distributionId == null) {
+                require(result.distributionPaymentChannel == null && result.distributionPackageName == null)
+            } else {
+                require(result.distributionPaymentChannel != null)
+                require(result.distributionPackageName?.matches(AndroidPackagePattern) == true)
+            }
             result.methods.forEach { method ->
                 require(method.id.matches(ResourceIdPattern) && method.nextActionTypes.isNotEmpty())
             }
@@ -547,6 +555,36 @@ class MirkoriGameSdk(
         ).also { payment ->
             validatePayment(payment)
             require(payment.id == paymentId)
+        }
+    }
+
+    suspend fun verifyGooglePlayPurchase(
+        profileAccessToken: String,
+        paymentId: String,
+        purchaseToken: String,
+        idempotencyKey: PlatformIdempotencyKey = newIdempotencyKey(),
+    ): PlatformStorePurchaseResult {
+        require(profileAccessToken.matches(CredentialPattern))
+        require(paymentId.isCanonicalUuid())
+        require(purchaseToken.length in 16..4096 && purchaseToken.none(Char::isISOControl))
+        val distributionId = requireNotNull(config.distributionId) {
+            "Google Play purchases require an immutable SDK distributionId"
+        }
+        return codec.googlePlayPurchaseResponse(
+            post(
+                path = "/api/v1/commerce/payments/$paymentId/google-play-purchase",
+                body = codec.googlePlayPurchaseRequest(purchaseToken),
+                idempotencyKey = idempotencyKey,
+                bearerToken = profileAccessToken,
+            ),
+        ).also { result ->
+            validatePayment(result.payment)
+            validateOrder(result.order)
+            require(result.payment.id == paymentId && result.payment.status == PlatformPaymentStatus.SUCCEEDED)
+            require(result.order.id == result.payment.orderId && result.order.status == PlatformOrderStatus.PAID)
+            require(result.order.distributionId == distributionId)
+            require(result.order.distributionPaymentChannel == PlatformDistributionPaymentChannel.GOOGLE_PLAY)
+            require(result.providerFinalized)
         }
     }
 
@@ -923,6 +961,22 @@ class MirkoriGameSdk(
         require(order.gamePlayerId.isCanonicalUuid())
         require(order.productId.matches(ResourceIdPattern))
         require(order.currency.matches(CurrencyPattern) && order.amountMinor > 0)
+        require(
+            if (order.tenderType == PlatformOrderTenderType.POINTS) {
+                order.pointsAmount != null && order.pointsAmount > 0
+            } else {
+                order.pointsAmount == null
+            },
+        )
+        require(
+            if (order.distributionId == null) {
+                order.distributionPaymentChannel == null && order.distributionPackageName == null
+            } else {
+                order.distributionId.matches(ResourceIdPattern) &&
+                    order.distributionPaymentChannel != null &&
+                    order.distributionPackageName?.matches(AndroidPackagePattern) == true
+            },
+        )
         require(order.updatedAt >= order.createdAt)
     }
 

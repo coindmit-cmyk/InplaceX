@@ -2,12 +2,13 @@
 
 This module is a source snapshot of
 `coindmit-cmyk/MirkoriGamesPlatform:platform-game-sdk` at merge commit
-`ac8f56aa3bf29661df8c362c9afabcf77c9ed50e`, coordinate
-`com.mirkori.platform:platform-game-sdk:0.4.4-SNAPSHOT`.
+`4b198e19c3bea4964f77f6091a1972a78bfe62d6`, coordinate
+`com.mirkori.platform:platform-game-sdk:0.4.5-SNAPSHOT`.
 
 That reviewed snapshot includes guest checkout handoffs, entitlement delivery
 and acknowledgement, signed installed-build decisions, signed Pro membership
-snapshots, and Pro concurrency leases.
+snapshots, Pro concurrency leases, distribution-bound orders, and server-only
+Google Play purchase-token verification.
 
 The InplaceX snapshot carries two reviewed compatibility extensions on top of
 that commit. `PlatformHttpResponse.serverTime` and the SDK's monotonic
