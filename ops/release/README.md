@@ -20,8 +20,8 @@ Routine publication requires an export of Platform's exact resolved active
 `backup`. The builder cannot discover server activation state by itself. The
 Platform publisher must independently compare the candidate with its live
 `current` and reject removal or mutation of active games, releases, artifacts,
-package names, or certificate overlap. `--allow-empty-base` is reserved for a
-separately reviewed first bootstrap.
+package names, or certificate overlap. The builder accepts only the current
+schema-v3 base; first bootstrap remains a separate Platform operator procedure.
 
 The supported workflow requires all three Platform validator inputs:
 
@@ -72,8 +72,15 @@ New-Item -ItemType Directory -Path D:\secure\inplacex-platform-releases -ErrorAc
   -PinplacexPlatformCatalogOutputDir=D:\secure\inplacex-platform-releases\catalog-inplacex-1.0-1 `
   -PinplacexPlatformCatalogMinimumSupportedVersionCode=1 `
   -PinplacexPlatformCatalogPublishedAt=2026-08-07T12:00:00Z `
-  "-PinplacexPlatformCatalogChangelog=Первый ограниченный релиз."
+  "-PinplacexPlatformCatalogChangelogRu=Первый ограниченный релиз." `
+  "-PinplacexPlatformCatalogChangelogEn=Initial limited release."
 ```
+
+When the active base does not yet contain InplaceX, also pass the public
+Google Play signing fingerprint as
+`-PinplacexPlatformGlobalCertificateSha256=AA:BB:...:FF`. An existing InplaceX
+entry remains authoritative and the optional property must match its current
+global certificate lineage.
 
 The task derives the exact candidate directory from canonical Android version
 properties and requires its identity manifest to contain the current full
@@ -95,8 +102,10 @@ immutable sibling directory `<catalog-output>.provenance` containing canonical
 binds:
 
 - exact InplaceX commit, package, release ID, version and certificate;
+- immutable `rf-mirkori` distribution and `inplacex-rf-signing` identity;
 - APK file name, size and SHA-256;
-- candidate and previous catalog manifest SHA-256;
+- candidate and previous catalog manifest SHA-256 plus the exact transition
+  audit SHA-256;
 - exact Platform repository commit, validator relative path and tool SHA-256;
 - `validationStatus=passed` and `activationProof=false`.
 
@@ -122,6 +131,8 @@ following fail-closed contract before InplaceX release activation:
    exact live/public HTTPS smoke checks succeed.
 
 `assetlinks.json` is not copied by hand. Platform derives it from the activated
-catalog's `androidAppLink`. Adding a certificate is declarative only and never
-modifies Platform's external root-owned trust policy; first release and rotation
-must be preapproved there, with old/new overlap retained through migration.
+distribution catalog. The candidate RF certificate is appended only to the
+`rf-mirkori` lineage and increments its configuration version; `global-google`
+remains independent. Adding a certificate is declarative only and never modifies
+Platform's external root-owned trust policy; first release and rotation must be
+preapproved there, with old/new overlap retained through migration.

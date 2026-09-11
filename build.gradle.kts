@@ -143,7 +143,11 @@ tasks.register<Exec>("buildPlatformCatalogRelease") {
                     "inplacexPlatformCatalogMinimumSupportedVersionCode must be a positive integer",
                 )
         val publishedAt = requiredReleaseDistributionProperty("inplacexPlatformCatalogPublishedAt")
-        val changelog = requiredReleaseDistributionProperty("inplacexPlatformCatalogChangelog")
+        val changelogRu = requiredReleaseDistributionProperty("inplacexPlatformCatalogChangelogRu")
+        val changelogEn = requiredReleaseDistributionProperty("inplacexPlatformCatalogChangelogEn")
+        val globalCertificateSha256 = providers.gradleProperty("inplacexPlatformGlobalCertificateSha256")
+            .orNull
+            ?.takeIf(String::isNotBlank)
         val channel = providers.gradleProperty("inplacexPlatformCatalogChannel")
             .orNull
             ?.takeIf(String::isNotBlank)
@@ -183,9 +187,14 @@ tasks.register<Exec>("buildPlatformCatalogRelease") {
             minimumSupportedVersionCode.toString(),
             "--published-at",
             publishedAt,
-            "--changelog",
-            changelog,
+            "--changelog-ru",
+            changelogRu,
+            "--changelog-en",
+            changelogEn,
         )
+        if (globalCertificateSha256 != null) {
+            args("--global-certificate-sha256", globalCertificateSha256)
+        }
     }
 }
 
