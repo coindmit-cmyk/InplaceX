@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.platform.mirkori
 
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.platform.sdk.MirkoriGameSdk
 import com.mirkori.platform.sdk.PlatformDistributionDeliveryChannel
 import com.mirkori.platform.sdk.PlatformDistributionUpdateDecision
@@ -63,7 +64,12 @@ internal class MirkoriUpdateService(
         source.check(installedVersionCode).toResult()
     } catch (cancelled: CancellationException) {
         throw cancelled
-    } catch (_: Exception) {
+    } catch (error: Exception) {
+        AppLog.warn(
+            tag = LogTag,
+            message = "Mirkori update check is unavailable",
+            attributes = mapOf("errorClass" to error.javaClass.name),
+        )
         MirkoriUpdateCheckResult.Unavailable
     }
 
@@ -97,6 +103,7 @@ internal class MirkoriUpdateService(
     }
 
     private companion object {
+        const val LogTag = "MirkoriUpdate"
         val AndroidPackageNamePattern = Regex("[a-zA-Z][a-zA-Z0-9_]*(?:\\.[a-zA-Z][a-zA-Z0-9_]*)+")
     }
 }
