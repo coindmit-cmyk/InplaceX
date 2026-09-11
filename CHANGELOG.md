@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Connected server-authoritative InplaceX duel facts to Mirkori Games Platform.
+  PostgreSQL migration v11 stores ordered gameplay `start`/`heartbeat`/`end`
+  events and one idempotent `first_win` achievement in a transactional outbox;
+  a backend-only worker retries transient failures with the same event ID and
+  dead-letters permanent failures without exposing the game credential.
+  Delivery is disabled by default and production activation remains an owner
+  gate requiring a Platform game-server credential in an external secret file.
+- Updated the vendored Mirkori Games SDK to `0.4.6-SNAPSHOT` with the reviewed
+  backend-only achievement and gameplay telemetry client.
 - Connected both Android distributions to Mirkori Platform game-entitlement
   delivery. InplaceX now applies purchased coin grants/refund deltas exactly
   once in an atomic SQLite v11 journal, retries acknowledgement with the same

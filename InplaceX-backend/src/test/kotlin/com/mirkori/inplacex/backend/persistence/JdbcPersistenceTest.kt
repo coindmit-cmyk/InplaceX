@@ -40,6 +40,8 @@ class JdbcPersistenceTest {
                     "PRIVATE_DUEL_INVITES",
                     "ONLINE_COMMAND_RESULTS",
                     "LEGACY_ONLINE_SESSION_MIGRATIONS",
+                    "MIRKORI_GAMEPLAY_SESSIONS",
+                    "MIRKORI_TELEMETRY_OUTBOX",
                 ),
                 connection.metaData.getTables(null, null, "%", arrayOf("TABLE")).use { resultSet ->
                     buildSet {
@@ -53,38 +55,56 @@ class JdbcPersistenceTest {
                             "DUEL_PARTICIPANTS", "DUEL_SECRETS", "DUEL_TURNS",
                             "PRIVATE_DUEL_INVITES", "ONLINE_COMMAND_RESULTS",
                             "LEGACY_ONLINE_SESSION_MIGRATIONS",
+                            "MIRKORI_GAMEPLAY_SESSIONS", "MIRKORI_TELEMETRY_OUTBOX",
                         ),
                     )
                 },
             )
-            assertEquals(10, connection.createStatement().use { statement ->
+            assertEquals(11, connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT COUNT(*) FROM inplacex_schema_history").use { resultSet ->
                     resultSet.next()
                     resultSet.getInt(1)
                 }
             })
-            assertEquals(10, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+            assertEquals(11, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
         }
     }
 
     @Test
     fun migrationChecksumsAreBackfilledForACompatibleLegacyHistoryTable() {
         val dataSource = newDataSource()
-        val runner = JdbcMigrationRunner()
+        val runner = JdbcMigrationRunner(DatabaseMigrations.all.take(10))
         runner.migrate(dataSource)
         dataSource.connection.use { connection ->
             connection.createStatement().use { it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum") }
         }
 
         assertThrows(IllegalArgumentException::class.java) {
-            runner.migrate(dataSource)
+            JdbcMigrationRunner().migrate(dataSource)
         }
         val acknowledgedRunner = JdbcMigrationRunner(allowLegacyChecksumBackfill = true)
         acknowledgedRunner.migrate(dataSource)
         acknowledgedRunner.verify(dataSource)
 
         dataSource.connection.use { connection ->
-            assertEquals(10, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+            assertEquals(11, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
+        }
+    }
+
+    @Test
+    fun currentMigrationChecksumsAreBackfilledForAnExactLegacyHistoryTable() {
+        val dataSource = newDataSource()
+        JdbcMigrationRunner().migrate(dataSource)
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum") }
+        }
+
+        val acknowledgedRunner = JdbcMigrationRunner(allowLegacyChecksumBackfill = true)
+        acknowledgedRunner.migrate(dataSource)
+        acknowledgedRunner.verify(dataSource)
+
+        dataSource.connection.use { connection ->
+            assertEquals(11, count(connection, "SELECT COUNT(*) FROM inplacex_schema_history WHERE LENGTH(checksum) = 64"))
         }
     }
 
@@ -99,7 +119,7 @@ class JdbcPersistenceTest {
     @Test
     fun legacyChecksumBackfillDoesNotPartiallyWriteBeforeHistoryValidationCompletes() {
         val dataSource = newDataSource()
-        JdbcMigrationRunner().migrate(dataSource)
+        JdbcMigrationRunner(DatabaseMigrations.all.take(10)).migrate(dataSource)
         dataSource.connection.use { connection ->
             connection.createStatement().use { statement ->
                 statement.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")

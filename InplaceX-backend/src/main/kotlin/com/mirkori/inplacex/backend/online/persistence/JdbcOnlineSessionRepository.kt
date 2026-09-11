@@ -1,5 +1,7 @@
 package com.mirkori.inplacex.backend.online.persistence
 
+import com.mirkori.inplacex.backend.mirkori.DurableMirkoriTelemetryProjection
+import com.mirkori.inplacex.backend.mirkori.MirkoriTelemetrySessionJournal
 import java.sql.Connection
 import java.time.Instant
 import java.time.ZoneOffset
@@ -14,6 +16,7 @@ data class DurableOnlineSession(
     val startedAt: Instant?,
     val finishedAt: Instant?,
     val expiresAt: Instant?,
+    val telemetry: DurableMirkoriTelemetryProjection? = null,
 )
 
 data class DurableSessionCoordination<T>(
@@ -63,6 +66,7 @@ interface OnlineSessionRepository : AutoCloseable {
 class JdbcOnlineSessionRepository(
     private val dataSource: DataSource,
     private val cipher: OnlineStateCipher,
+    private val telemetryJournal: MirkoriTelemetrySessionJournal? = null,
 ) : OnlineSessionRepository {
     override fun deleteExpired(now: Instant) {
         dataSource.transaction { connection ->
@@ -245,6 +249,7 @@ class JdbcOnlineSessionRepository(
                 statement.setInstantOrNull(9, session.expiresAt)
                 statement.executeUpdate()
             }
+            telemetryJournal?.recordSessionState(connection, session)
         } finally {
             encrypted.wipe()
         }
@@ -372,6 +377,7 @@ class JdbcOnlineSessionRepository(
                 sessionRevision = session.revision,
                 createdAt = Instant.now(),
             )
+            telemetryJournal?.recordSessionState(connection, session)
         } finally {
             encrypted.wipe()
         }

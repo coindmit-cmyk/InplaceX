@@ -14,3 +14,4 @@ This section is reserved for backend-specific documentation:
 - [Локальные контейнеры и операции PostgreSQL](Local%20Containers%20Runbook.md)
 - [Геомаршрутизация рекламы в production](Advertising%20Market%20Operations.md)
 - [Production deployment InplaceX online backend](Production%20Deployment.md)
+- [Mirkori trusted telemetry: outbox, retries and activation](Mirkori%20Telemetry%20Operations.md)

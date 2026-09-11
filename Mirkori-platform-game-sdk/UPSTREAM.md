@@ -1,14 +1,18 @@
 # Vendored platform-game-sdk
 
 This module is a source snapshot of
-`coindmit-cmyk/MirkoriGamesPlatform:platform-game-sdk` at merge commit
-`4b198e19c3bea4964f77f6091a1972a78bfe62d6`, coordinate
-`com.mirkori.platform:platform-game-sdk:0.4.5-SNAPSHOT`.
+`coindmit-cmyk/MirkoriGamesPlatform:platform-game-sdk` through merge commit
+`71234e8e3427d3737d52c7b8a2bc062b40a7894b`, coordinate
+`com.mirkori.platform:platform-game-sdk:0.4.6-SNAPSHOT`.
 
 That reviewed snapshot includes guest checkout handoffs, entitlement delivery
 and acknowledgement, signed installed-build decisions, signed Pro membership
 snapshots, Pro concurrency leases, distribution-bound orders, and server-only
 Google Play purchase-token verification.
+
+The `0.4.6-SNAPSHOT` update adds the backend-only game-server telemetry client
+for achievement and ordered gameplay facts. It accepts a per-call redacted
+server credential and is not wired into the Android module.
 
 The InplaceX snapshot carries two reviewed compatibility extensions on top of
 that commit. `PlatformHttpResponse.serverTime` and the SDK's monotonic

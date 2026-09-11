@@ -9,6 +9,7 @@ data class BackendRuntimeConfig(
     val database: DatabaseRuntimeConfig? = null,
     val online: OnlineRuntimeConfig? = null,
     val adMarket: AdMarketRuntimeConfig? = null,
+    val mirkoriTelemetry: MirkoriTelemetryRuntimeConfig? = null,
     val releaseIdentity: BackendReleaseIdentity? = null,
 ) {
     val isProduction: Boolean
@@ -20,6 +21,12 @@ data class BackendRuntimeConfig(
         }
         require(environment.matches(EnvironmentPattern)) {
             "Backend environment has an invalid format"
+        }
+        require(mirkoriTelemetry == null || database != null) {
+            "Mirkori telemetry requires PostgreSQL persistence"
+        }
+        require(!isProduction || mirkoriTelemetry?.allowCleartextLoopback != true) {
+            "Production Mirkori telemetry forbids cleartext loopback"
         }
         if (isProduction) {
             require(
@@ -57,18 +64,23 @@ data class BackendRuntimeConfig(
             val database = DatabaseRuntimeConfig.fromEnvironmentOrNull(environment)
             val online = OnlineRuntimeConfig.fromEnvironmentOrNull(environment)
             val releaseIdentity = BackendReleaseIdentity.fromEnvironmentOrNull(environment)
+            val runtimeEnvironment = environment["INPLACEX_BACKEND_ENVIRONMENT"]
+                ?.takeIf(String::isNotBlank)
+                ?: DefaultEnvironment
             require(database == null || online == null || online.stateEncryptionKey != null) {
                 "${OnlineRuntimeConfig.StateEncryptionKey} is required when PostgreSQL online runtime is enabled"
             }
             return BackendRuntimeConfig(
                 host = environment["INPLACEX_BACKEND_HOST"]?.takeIf(String::isNotBlank) ?: DefaultHost,
                 port = port,
-                environment = environment["INPLACEX_BACKEND_ENVIRONMENT"]
-                    ?.takeIf(String::isNotBlank)
-                    ?: DefaultEnvironment,
+                environment = runtimeEnvironment,
                 database = database,
                 online = online,
                 adMarket = AdMarketRuntimeConfig.fromEnvironmentOrNull(environment),
+                mirkoriTelemetry = MirkoriTelemetryRuntimeConfig.fromEnvironmentOrNull(
+                    environment = environment,
+                    production = runtimeEnvironment == ProductionEnvironment,
+                ),
                 releaseIdentity = releaseIdentity,
             )
         }

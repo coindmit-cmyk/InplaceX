@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.mirkori.platform"
-version = "0.4.5-SNAPSHOT"
+version = "0.4.6-SNAPSHOT"
 
 java {
     toolchain {

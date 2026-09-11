@@ -10,6 +10,10 @@ import com.mirkori.inplacex.backend.health.ReadinessProbe
 import com.mirkori.inplacex.backend.health.ReadinessMetrics
 import com.mirkori.inplacex.backend.health.ReadinessMetricsSource
 import com.mirkori.inplacex.backend.health.configureHealthRoutes
+import com.mirkori.inplacex.backend.mirkori.JavaHttpPlatformTransport
+import com.mirkori.inplacex.backend.mirkori.JdbcMirkoriTelemetryJournal
+import com.mirkori.inplacex.backend.mirkori.MirkoriPlatformTelemetrySender
+import com.mirkori.inplacex.backend.mirkori.MirkoriTelemetryWorker
 import com.mirkori.inplacex.backend.online.AuthoritativeOnlineDuelService
 import com.mirkori.inplacex.backend.online.configureOnlineRoutes
 import com.mirkori.inplacex.backend.online.OnlinePlayerProvisioner
@@ -18,6 +22,8 @@ import com.mirkori.inplacex.backend.online.persistence.InMemoryOnlineSessionEven
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionEventSequence
 import com.mirkori.inplacex.backend.online.persistence.JdbcOnlineSessionRepository
 import com.mirkori.inplacex.logging.InplaceXLogger
+import com.mirkori.platform.sdk.MirkoriGameServerTelemetryClient
+import com.mirkori.platform.sdk.MirkoriGameServerTelemetryConfig
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.ApplicationStopped
@@ -85,10 +91,8 @@ fun Application.backendModule(
     val database = config.database?.let { databaseConfig ->
         PostgresDatabase.connect(databaseConfig).also { it.migrate() }
     }
-    database?.let { databaseHandle ->
-        environment.monitor.subscribe(ApplicationStopped) {
-            databaseHandle.close()
-        }
+    val telemetryJournal = database?.let { databaseHandle ->
+        JdbcMirkoriTelemetryJournal(databaseHandle.dataSource)
     }
     val onlineService = config.online?.let { onlineConfig ->
         val sessionEvents = database?.let { JdbcOnlineSessionEventSequence(it.dataSource) }
@@ -97,6 +101,7 @@ fun Application.backendModule(
             JdbcOnlineSessionRepository(
                 dataSource = databaseHandle.dataSource,
                 cipher = requireNotNull(onlineConfig.stateEncryptionKey).createCipher(),
+                telemetryJournal = telemetryJournal,
             )
         }
         val lobbyRepository = database?.let { databaseHandle ->
@@ -132,6 +137,30 @@ fun Application.backendModule(
             )
         }
     }
+    val telemetryWorker = config.mirkoriTelemetry?.let { telemetryConfig ->
+        val client = MirkoriGameServerTelemetryClient(
+            config = MirkoriGameServerTelemetryConfig(
+                platformBaseUrl = telemetryConfig.platformBaseUrl,
+                gameId = telemetryConfig.gameId,
+                allowCleartextLoopback = telemetryConfig.allowCleartextLoopback,
+            ),
+            transport = JavaHttpPlatformTransport(),
+        )
+        MirkoriTelemetryWorker(
+            journal = requireNotNull(telemetryJournal),
+            sender = MirkoriPlatformTelemetrySender(client, telemetryConfig.readCredential()),
+            logger = logger,
+            heartbeatInterval = telemetryConfig.heartbeatInterval,
+            claimLease = telemetryConfig.claimLease,
+            pollInterval = telemetryConfig.pollInterval,
+        ).also(MirkoriTelemetryWorker::start)
+    }
+    telemetryWorker?.let { worker ->
+        environment.monitor.subscribe(ApplicationStopped) { worker.close() }
+    }
+    database?.let { databaseHandle ->
+        environment.monitor.subscribe(ApplicationStopped) { databaseHandle.close() }
+    }
     logger.info(
         tag = "BackendRuntime",
         message = "backend module initialized",
@@ -142,6 +171,7 @@ fun Application.backendModule(
             "databaseConfigured" to (database != null).toString(),
             "onlineConfigured" to (onlineService != null).toString(),
             "onlinePersistenceConfigured" to (database != null && onlineService != null).toString(),
+            "mirkoriTelemetryConfigured" to (telemetryWorker != null).toString(),
             "adMarketConfigured" to (config.adMarket != null).toString(),
             "adMarketSource" to (config.adMarket?.source?.name ?: "NONE"),
         ),

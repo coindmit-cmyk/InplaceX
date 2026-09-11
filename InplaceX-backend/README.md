@@ -88,6 +88,17 @@ Current state:
   strings, payloads and exception messages are not emitted. A database-backed
   runtime also exposes counter/gauge telemetry at loopback-only `GET /metrics`;
   nginx deliberately does not publish this endpoint.
+- PostgreSQL migration v11 adds a durable Mirkori Games telemetry journal.
+  Authoritative online duels enqueue one gameplay stream per verified Platform
+  game profile (`start`, four-minute `heartbeat`, `end`) and one idempotent
+  `first_win` fact for the winner in the same transaction as the duel state.
+  Network delivery runs outside that transaction, preserves the stored event ID
+  across retry, enforces per-session sequence order and dead-letters permanent
+  failures. The Android app never receives the game-server credential.
+- Mirkori telemetry delivery is disabled by default. Enabling it requires
+  PostgreSQL, HTTPS, `INPLACEX_MIRKORI_TELEMETRY_ENABLED=true`, the Platform base
+  URL and an absolute external credential-file path. See the operator runbook;
+  issuing the credential and production activation are owner gates.
 
 The release runtime currently exposes matchmaking create/read, friend invite
 create/read/accept, session read/reconnect/secret/turn routes, the v1 session
@@ -104,3 +115,6 @@ Production GeoIP setup and verification:
 
 Production deployment, secret file modes, immutable image evidence and rollback:
 [`InplaceX-docs/Backend/Production Deployment.md`](../InplaceX-docs/Backend/Production%20Deployment.md).
+
+Mirkori trusted telemetry and owner-gated activation:
+[`InplaceX-docs/Backend/Mirkori Telemetry Operations.md`](../InplaceX-docs/Backend/Mirkori%20Telemetry%20Operations.md).
