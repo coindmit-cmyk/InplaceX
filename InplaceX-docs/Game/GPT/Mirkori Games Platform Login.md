@@ -208,6 +208,17 @@ media-storage contract. Selecting a public preset removes the local override.
 
 ## Build and App Link
 
+The app checks the Mirkori Release Catalog whenever its activity enters the
+foreground. The compiled `MIRKORI_DISTRIBUTION_ID`, package name and Android
+`VERSION_CODE` are sent through the vendored SDK's distribution-aware update
+contract. The SDK rejects a response for another game, distribution, package,
+channel or current version. An optional release can be deferred for the current
+app session; a required release is a non-dismissible UI gate. RF builds open
+the catalog-validated direct APK URL in the system handler, while global builds
+open their package in Google Play. The app does not download, execute or grant
+trust to APK bytes itself, and a network or contract failure does not modify
+progress, purchases or gameplay.
+
 - application IDs: `com.mirkori.inplacex.rf` for `rf-mirkori` and
   `com.mirkori.inplacex` for `global-google`
 - platform base URL fields are variant-specific public configuration
