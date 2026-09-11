@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.mirkori.inplacex"
-version = "1.0"
+version = "1.1"
 
 java {
     toolchain {
@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":InplaceX-auth-core"))
     implementation(project(":InplaceX-bot-core"))
     implementation(project(":InplaceX-logging"))
+    implementation(project(":Mirkori-platform-game-sdk"))
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)

@@ -69,6 +69,11 @@ object DatabaseMigrations {
             description = "add targeted friend invites",
             sql = readResource("db/migration/V10__add_targeted_friend_invites.sql"),
         ),
+        SqlMigration(
+            version = "11",
+            description = "add durable Mirkori telemetry outbox",
+            sql = readResource("db/migration/V11__add_mirkori_telemetry_outbox.sql"),
+        ),
     )
 
     private fun readResource(path: String): String = requireNotNull(
@@ -261,18 +266,23 @@ class JdbcMigrationRunner(
         require(
             appliedVersions == LegacyV1ToV8 ||
                 appliedVersions == LegacyV1ToV9 ||
-                appliedVersions == LegacyV1ToV10,
+                appliedVersions == LegacyV1ToV10 ||
+                appliedVersions == LegacyV1ToV11,
         ) {
             "Legacy checksum baseline requires an exact known migration history"
         }
         if (connection.metaData.databaseProductName.equals("PostgreSQL", ignoreCase = true)) {
             val expected = when (appliedVersions) {
-                LegacyV1ToV8 -> LegacyPostgresV1ToV8SchemaSha256
-                LegacyV1ToV9 -> LegacyPostgresV1ToV9SchemaSha256
-                else -> LegacyPostgresV1ToV10SchemaSha256
+                LegacyV1ToV8 -> setOf(LegacyPostgresV1ToV8SchemaSha256)
+                LegacyV1ToV9 -> setOf(LegacyPostgresV1ToV9SchemaSha256)
+                LegacyV1ToV10 -> setOf(LegacyPostgresV1ToV10SchemaSha256)
+                else -> setOf(
+                    LegacyPostgresV1ToV11SchemaSha256,
+                    LegacyPostgresRestoredV1ToV11SchemaSha256,
+                )
             }
             val actual = postgresSchemaFingerprint(connection)
-            require(actual == expected) {
+            require(actual in expected) {
                 "Legacy PostgreSQL schema fingerprint does not match the exact reviewed baseline (actual=$actual)"
             }
             return
@@ -364,12 +374,17 @@ class JdbcMigrationRunner(
         val LegacyV1ToV8 = (1..8).map(Int::toString).toSet()
         val LegacyV1ToV9 = (1..9).map(Int::toString).toSet()
         val LegacyV1ToV10 = (1..10).map(Int::toString).toSet()
+        val LegacyV1ToV11 = (1..11).map(Int::toString).toSet()
         const val LegacyPostgresV1ToV8SchemaSha256 =
             "2b4467c0d68a20de18ee4df08f285a4386e246d73c868387ebc30d17a76aae5d"
         const val LegacyPostgresV1ToV9SchemaSha256 =
             "a612721cba6f83be81c6827458b185686a1f2d061d92300636382fe7ce272640"
         const val LegacyPostgresV1ToV10SchemaSha256 =
             "74d30af53909d7cdfd4a21db26cabc4e907d7663e7345e4437d1d0dd54049ee0"
+        const val LegacyPostgresV1ToV11SchemaSha256 =
+            "b40d3f7f79c8c842003131c549ae2774b8d5604f0414c4bd381cbe5fb66262b1"
+        const val LegacyPostgresRestoredV1ToV11SchemaSha256 =
+            "9a264489609259377a6f0593bfdcf061302265f06a9af07a0c175f4548ce6b27"
         val PostgresSchemaFingerprintSql =
             """
             WITH managed_tables AS (
@@ -458,6 +473,39 @@ class JdbcMigrationRunner(
                 ),
             ),
             "10" to mapOf("private_duel_invites" to setOf("target_player_id")),
+            "11" to mapOf(
+                "mirkori_gameplay_sessions" to setOf(
+                    "duel_session_id",
+                    "game_profile_id",
+                    "platform_session_id",
+                    "next_sequence",
+                    "last_event_at",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                ),
+                "mirkori_telemetry_outbox" to setOf(
+                    "event_id",
+                    "fact_type",
+                    "game_profile_id",
+                    "achievement_id",
+                    "platform_session_id",
+                    "sequence_number",
+                    "gameplay_event_type",
+                    "occurred_at",
+                    "status",
+                    "attempt_count",
+                    "next_attempt_at",
+                    "claim_token",
+                    "claimed_until",
+                    "platform_decision",
+                    "platform_session_status",
+                    "trusted_duration_seconds",
+                    "last_error_code",
+                    "created_at",
+                    "updated_at",
+                ),
+            ),
         )
         val KnownLegacyIndexesByVersion: Map<String, Map<String, Set<String>>> = mapOf(
             "6" to mapOf("matchmaking_tickets" to setOf("idx_matchmaking_command_replay")),
@@ -470,6 +518,13 @@ class JdbcMigrationRunner(
             "8" to mapOf("duel_events" to setOf("idx_duel_events_session_cursor")),
             "10" to mapOf(
                 "private_duel_invites" to setOf("idx_private_invites_target_waiting"),
+            ),
+            "11" to mapOf(
+                "mirkori_gameplay_sessions" to setOf("idx_mirkori_gameplay_open"),
+                "mirkori_telemetry_outbox" to setOf(
+                    "idx_mirkori_gameplay_sequence",
+                    "idx_mirkori_telemetry_due",
+                ),
             ),
         )
     }

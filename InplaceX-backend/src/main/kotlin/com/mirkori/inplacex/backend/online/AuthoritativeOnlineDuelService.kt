@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.backend.online
 
+import com.mirkori.inplacex.backend.mirkori.DurableMirkoriTelemetryProjection
 import com.mirkori.inplacex.backend.bot.ServerBotPlayer
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejectedException
 import com.mirkori.inplacex.backend.domain.duel.DuelCommandRejection
@@ -1386,6 +1387,12 @@ class AuthoritativeOnlineDuelService(
                 startedAt = startedAt,
                 finishedAt = finishedAt,
                 expiresAt = finishedAt?.plus(finishedSessionRetention),
+                telemetry = DurableMirkoriTelemetryProjection(
+                    gameProfileIds = memberships.keys.toSet(),
+                    winnerGameProfileId = snapshot.winner?.let { winner ->
+                        memberships.entries.singleOrNull { (_, participant) -> participant == winner }?.key
+                    },
+                ),
             )
         }
 

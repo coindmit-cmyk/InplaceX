@@ -17,7 +17,7 @@ class LegacySchemaFingerprintPostgresIntegrationTest {
         PostgreSQLContainer<Nothing>("postgres:16-alpine").use { postgres ->
             postgres.start()
             val source = dataSource(postgres, postgres.databaseName)
-            JdbcMigrationRunner().migrate(source)
+            JdbcMigrationRunner(migrations = DatabaseMigrations.all.take(10)).migrate(source)
             source.connection.use { connection ->
                 connection.createStatement().use {
                     it.execute("UPDATE inplacex_schema_history SET checksum = NULL")
@@ -72,13 +72,47 @@ class LegacySchemaFingerprintPostgresIntegrationTest {
 
             JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(exact)
             JdbcMigrationRunner().verify(exact)
-            assertEquals(10, countHistory(exact))
+            assertEquals(11, countHistory(exact))
             exact.connection.use { connection ->
                 connection.createStatement().use {
                     it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")
                 }
             }
             JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(exact)
+            JdbcMigrationRunner().verify(exact)
+            assertEquals(11, countHistory(exact))
+            exact.connection.use { connection ->
+                connection.createStatement().use {
+                    it.execute("ALTER TABLE inplacex_schema_history DROP COLUMN checksum")
+                }
+            }
+            val dump = postgres.execInContainer(
+                "pg_dump",
+                "--format=custom",
+                "--no-owner",
+                "--no-privileges",
+                "--username=${postgres.username}",
+                "--dbname=${postgres.databaseName}",
+                "--file=/tmp/exact-v11.dump",
+            )
+            check(dump.exitCode == 0) { dump.stderr }
+            postgres.createConnection("").use { connection ->
+                connection.createStatement().use { it.execute("CREATE DATABASE restored_v11") }
+            }
+            val restore = postgres.execInContainer(
+                "pg_restore",
+                "--exit-on-error",
+                "--no-owner",
+                "--no-privileges",
+                "--username=${postgres.username}",
+                "--dbname=restored_v11",
+                "/tmp/exact-v11.dump",
+            )
+            check(restore.exitCode == 0) { restore.stderr }
+            val restored = dataSource(postgres, "restored_v11")
+            JdbcMigrationRunner(allowLegacyChecksumBackfill = true).migrate(restored)
+            JdbcMigrationRunner().verify(restored)
+            assertEquals(11, countHistory(restored))
 
             postgres.createConnection("").use { connection ->
                 connection.createStatement().use { it.execute("CREATE DATABASE tampered") }

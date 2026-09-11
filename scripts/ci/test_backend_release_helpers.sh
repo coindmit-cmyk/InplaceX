@@ -204,12 +204,16 @@ release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|1'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|9'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10|1'
 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10|10'
+release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10,11|1'
+release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10,11|11'
 release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8|0'
 release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8,9|0'
 release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10|0'
+release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10,11|0'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8|9'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9|0'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10|11'
+expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,8,9,10,11|12'
 expect_status 75 release_validate_legacy_checksum_history '1,2,3,4,5,6,7,9|1'
 expect_status 75 release_validate_completed_legacy_checksum_history '1,2,3,4,5,6,7,8|1'
 
@@ -768,7 +772,7 @@ for required in (
     'run_with_failed_candidate_start',
     'COMPLETED_BACKEND_UP fail-once',
     '[[ "$(cat "$backend_up_counter")" == "3" ]]',
-    '[[ "$recovered_migration_state" == "10|0" ]]',
+    '[[ "$recovered_migration_state" == "11|0" ]]',
     'final_legacy_ack_environment',
 ):
     if required not in runtime_test:
