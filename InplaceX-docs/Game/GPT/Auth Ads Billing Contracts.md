@@ -154,6 +154,40 @@ navigation and Play callbacks are never payment proof.
    explicitly cancels the response body channel before returning a typed
    transport failure.
 
+## Game Purchase Delivery
+
+- After a successful entitlement projection refresh, both Android
+  distributions poll `/api/v1/commerce/game-deliveries` with the current
+  profile token. A `401` refreshes the same account/player session before the
+  exact request is retried.
+- InplaceX applies `coins` and the legacy-compatible `currency.coins`
+  `consumable_balance` keys to the local coin balance. The balance mutation and
+  insertion of the immutable delivery journal row occur in one SQLite
+  transaction.
+- The journal is scoped to the Platform account and game player and retains the
+  delivery/event/entitlement/order identities, sequence, action, signed payload
+  hash, exact quantity delta, correction quantity, validity, and one persisted
+  acknowledgement idempotency key. A replay with changed immutable data fails
+  closed.
+- Process loss after local application but before acknowledgement cannot grant
+  value twice: the next poll finds the same journal row, skips the balance
+  mutation, and retries `ack` with the stored key. The local acknowledged time
+  is written only after the Platform returns the matching acknowledgement.
+- Refund delivery applies only the signed `quantityDelta`. A non-zero
+  `correctionQuantity` remains an operator-side correction obligation and is
+  never converted into additional local debit or credit.
+- Before local application, the exact `productId` must resolve uniquely in the
+  freshly fetched Platform catalog and its product kind, entitlement key/type,
+  and original quantity must match the delivery. A missing, duplicate, or
+  mismatched product remains pending and is not acknowledged.
+- `ads.disabled`, `pro.active`, and `pro-plus.active` delivery events are
+  journalled and acknowledged only after the authoritative entitlement
+  projection has been persisted. Unknown products, entitlement keys, kinds,
+  and permanent-game deliveries remain pending and are never acknowledged by
+  this game adapter.
+- After refresh or purchase, Compose reloads the same local progress repository
+  so delivered coins become visible without restarting the app.
+
 ## Rewarded Hint Flow
 
 1. player taps a hint with zero stock

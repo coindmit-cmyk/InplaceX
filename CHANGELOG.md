@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Connected both Android distributions to Mirkori Platform game-entitlement
+  delivery. InplaceX now applies purchased coin grants/refund deltas exactly
+  once in an atomic SQLite v11 journal, retries acknowledgement with the same
+  persisted idempotency key after interruption, records projection-managed
+  paid entitlements only after a successful server refresh, leaves unsupported
+  deliveries unacknowledged, and refreshes the visible coin balance immediately.
 - Split Android into immutable `rf` and `global` distribution flavors. RF now
   uses package `com.mirkori.inplacex.rf`, distribution `rf-mirkori`, RUB and the
   existing Mirkori browser checkout; global keeps `com.mirkori.inplacex`, binds

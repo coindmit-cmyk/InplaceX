@@ -36,6 +36,7 @@ class MirkoriBillingService internal constructor(
     private val config: BillingProviderConfig,
     private val currency: String = DefaultCurrency,
     private val paymentFlow: MirkoriPaymentFlow = BrowserMirkoriPaymentFlow,
+    private val deliveryApplier: MirkoriGameDeliveryApplier? = null,
 ) : BillingService {
     @Volatile
     private var lastState = runtime.cachedCommerceState(
@@ -59,6 +60,7 @@ class MirkoriBillingService internal constructor(
         currency = currency,
         previousProducts = lastState.products,
         paymentFlow = paymentFlow,
+        deliveryApplier = deliveryApplier,
     ).also { lastState = it }
 
     override suspend fun purchase(productId: BillingProductId): BillingPurchaseResult =
@@ -68,6 +70,7 @@ class MirkoriBillingService internal constructor(
             productId = productId,
             previousProducts = lastState.products,
             paymentFlow = paymentFlow,
+            deliveryApplier = deliveryApplier,
         ).also { lastState = it.state }
 
     override fun close() = paymentFlow.close()
@@ -108,6 +111,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
     currency: String,
     previousProducts: Map<BillingProductId, BillingProduct>,
     paymentFlow: MirkoriPaymentFlow,
+    deliveryApplier: MirkoriGameDeliveryApplier?,
 ): BillingState = withOperationLock {
     if (!config.isConfigured) {
         return@withOperationLock cachedCommerceState(
@@ -118,7 +122,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
         )
     }
     try {
-        synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow)
+        synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow, deliveryApplier)
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (error: PlatformApiException) {
@@ -132,6 +136,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
                     BillingNotice.PRODUCT_ALREADY_ACTIVE,
                     "refresh",
                     paymentFlow,
+                    deliveryApplier,
                 )
             }
 
@@ -144,6 +149,7 @@ private suspend fun MirkoriPlatformRuntime.refreshCommerce(
                     BillingNotice.AWAITING_PAYMENT,
                     "refresh",
                     paymentFlow,
+                    deliveryApplier,
                 )
             }
 
@@ -163,6 +169,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
     productId: BillingProductId,
     previousProducts: Map<BillingProductId, BillingProduct>,
     paymentFlow: MirkoriPaymentFlow,
+    deliveryApplier: MirkoriGameDeliveryApplier?,
 ): BillingPurchaseResult = withOperationLock {
     if (!config.isConfigured) {
         return@withOperationLock BillingPurchaseResult.StateUpdated(
@@ -238,20 +245,32 @@ private suspend fun MirkoriPlatformRuntime.purchase(
         val order = restored.order
         when (order.status) {
             PlatformOrderStatus.PAID -> BillingPurchaseResult.StateUpdated(
-                synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow),
+                synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow, deliveryApplier),
             )
 
             PlatformOrderStatus.CANCELLED -> {
                 persist(requireNotNull(currentPersistedState()).copy(pendingPurchase = null))
                 BillingPurchaseResult.StateUpdated(
-                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_CANCELLED, paymentFlow),
+                    synchronizeCommerceLocked(
+                        config,
+                        currency,
+                        BillingNotice.PAYMENT_CANCELLED,
+                        paymentFlow,
+                        deliveryApplier,
+                    ),
                 )
             }
 
             PlatformOrderStatus.REFUNDED -> {
                 persist(requireNotNull(currentPersistedState()).copy(pendingPurchase = null))
                 BillingPurchaseResult.StateUpdated(
-                    synchronizeCommerceLocked(config, currency, BillingNotice.PAYMENT_REFUNDED, paymentFlow),
+                    synchronizeCommerceLocked(
+                        config,
+                        currency,
+                        BillingNotice.PAYMENT_REFUNDED,
+                        paymentFlow,
+                        deliveryApplier,
+                    ),
                 )
             }
 
@@ -267,7 +286,13 @@ private suspend fun MirkoriPlatformRuntime.purchase(
                         ),
                     )
                     MirkoriPaymentFlowResult.Settled -> BillingPurchaseResult.StateUpdated(
-                        synchronizeCommerceLocked(config, currency, BillingNotice.NONE, paymentFlow),
+                        synchronizeCommerceLocked(
+                            config,
+                            currency,
+                            BillingNotice.NONE,
+                            paymentFlow,
+                            deliveryApplier,
+                        ),
                     )
                     is MirkoriPaymentFlowResult.Notice -> BillingPurchaseResult.StateUpdated(
                         cachedCommerceState(
@@ -293,6 +318,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
                     BillingNotice.PRODUCT_ALREADY_ACTIVE,
                     "purchase",
                     paymentFlow,
+                    deliveryApplier,
                 )
             }
 
@@ -305,6 +331,7 @@ private suspend fun MirkoriPlatformRuntime.purchase(
                     BillingNotice.AWAITING_PAYMENT,
                     "purchase",
                     paymentFlow,
+                    deliveryApplier,
                 )
             }
 
@@ -337,8 +364,9 @@ private suspend fun MirkoriPlatformRuntime.recoverCommerceAfterServerSignal(
     notice: BillingNotice,
     operation: String,
     paymentFlow: MirkoriPaymentFlow,
+    deliveryApplier: MirkoriGameDeliveryApplier?,
 ): BillingState = try {
-    synchronizeCommerceLocked(config, currency, notice, paymentFlow)
+    synchronizeCommerceLocked(config, currency, notice, paymentFlow, deliveryApplier)
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (retryError: Exception) {
@@ -350,6 +378,7 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
     currency: String,
     initialNotice: BillingNotice,
     paymentFlow: MirkoriPaymentFlow,
+    deliveryApplier: MirkoriGameDeliveryApplier?,
 ): BillingState {
     val timeRevisionBeforeSync = serverTimeRevision()
     var session = ensureFreshSession()
@@ -439,6 +468,9 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
             trustedTimeAnchor = trustedTimeAnchor,
         ),
     )
+    if (deliveryApplier != null) {
+        synchronizeGameDeliveriesLocked(session, offers, deliveryApplier)
+    }
     AppLog.info(
         tag = LogTag,
         message = "Mirkori commerce synchronized",
@@ -456,6 +488,56 @@ private suspend fun MirkoriPlatformRuntime.synchronizeCommerceLocked(
         notice = notice,
         nextEntitlementExpiryDelayMs = confirmed.nextExpiryDelayMs(trustedNowMs),
     )
+}
+
+private suspend fun MirkoriPlatformRuntime.synchronizeGameDeliveriesLocked(
+    initialSession: GameIdentitySession,
+    offers: List<PlatformProductOffer>,
+    deliveryApplier: MirkoriGameDeliveryApplier,
+) {
+    val pendingResult = authenticated(initialSession) { token ->
+        sdk.pendingGameDeliveries(token)
+    }
+    var session = pendingResult.session
+    var appliedCount = 0
+    var unsupportedCount = 0
+    pendingResult.value.forEach { delivery ->
+        val prepared = deliveryApplier.prepare(
+            accountId = session.accountId,
+            gamePlayerId = session.gamePlayerId,
+            delivery = delivery,
+            productOffer = offers.singleOrNull { it.id == delivery.productId },
+            newIdempotencyKey = sdk.newIdempotencyKey(),
+        )
+        if (prepared == null) {
+            unsupportedCount += 1
+            return@forEach
+        }
+        val acknowledgement = authenticated(session) { token ->
+            sdk.acknowledgeGameDelivery(
+                profileAccessToken = token,
+                deliveryId = delivery.id,
+                idempotencyKey = prepared.idempotencyKey,
+            )
+        }
+        session = acknowledgement.session
+        deliveryApplier.markAcknowledged(
+            deliveryId = delivery.id,
+            idempotencyKey = prepared.idempotencyKey,
+            acknowledgedAtMs = acknowledgement.value.acknowledgedAt.toEpochMilli(),
+        )
+        appliedCount += 1
+    }
+    if (pendingResult.value.isNotEmpty()) {
+        AppLog.info(
+            tag = LogTag,
+            message = "Mirkori game deliveries synchronized",
+            attributes = mapOf(
+                "applied" to appliedCount.toString(),
+                "unsupported" to unsupportedCount.toString(),
+            ),
+        )
+    }
 }
 
 private suspend fun MirkoriPlatformRuntime.reconcilePendingOrderIfNeeded(
