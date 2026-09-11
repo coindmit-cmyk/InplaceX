@@ -59,6 +59,7 @@ internal open class GameProgressDatabase(
 
         createCampaignChapterRewardsTable(db)
         createRetentionRewardClaimsTable(db)
+        createMirkoriGameDeliveriesTable(db)
 
         createPlatformTables(db)
     }
@@ -134,6 +135,10 @@ internal open class GameProgressDatabase(
         if (oldVersion < 10) {
             createRetentionRewardClaimsTable(db)
         }
+
+        if (oldVersion < 11) {
+            createMirkoriGameDeliveriesTable(db)
+        }
     }
 
     private fun createCampaignChapterRewardsTable(db: SQLiteDatabase) {
@@ -156,6 +161,38 @@ internal open class GameProgressDatabase(
                 PRIMARY KEY ($COL_RETENTION_REWARD_TYPE, $COL_RETENTION_PERIOD_KEY)
             )
             """.trimIndent()
+        )
+    }
+
+    private fun createMirkoriGameDeliveriesTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_MIRKORI_GAME_DELIVERIES (
+                $COL_DELIVERY_ID TEXT PRIMARY KEY,
+                $COL_DELIVERY_ACCOUNT_ID TEXT NOT NULL,
+                $COL_DELIVERY_GAME_PLAYER_ID TEXT NOT NULL,
+                $COL_DELIVERY_ENTITLEMENT_EVENT_ID TEXT NOT NULL UNIQUE,
+                $COL_DELIVERY_ENTITLEMENT_ID TEXT NOT NULL,
+                $COL_DELIVERY_SEQUENCE_NUMBER INTEGER NOT NULL,
+                $COL_DELIVERY_ACTION TEXT NOT NULL,
+                $COL_DELIVERY_GAME_ID TEXT NOT NULL,
+                $COL_DELIVERY_PRODUCT_ID TEXT NOT NULL,
+                $COL_DELIVERY_ORDER_ID TEXT NOT NULL,
+                $COL_DELIVERY_ENTITLEMENT_KEY TEXT NOT NULL,
+                $COL_DELIVERY_ENTITLEMENT_KIND TEXT NOT NULL,
+                $COL_DELIVERY_APPLICATION TEXT NOT NULL,
+                $COL_DELIVERY_QUANTITY_DELTA INTEGER NOT NULL,
+                $COL_DELIVERY_VALID_FROM_MS INTEGER NOT NULL,
+                $COL_DELIVERY_EXPIRES_AT_MS INTEGER,
+                $COL_DELIVERY_CORRECTION_QUANTITY INTEGER NOT NULL,
+                $COL_DELIVERY_PAYLOAD_SHA256 TEXT NOT NULL,
+                $COL_DELIVERY_CREATED_AT_MS INTEGER NOT NULL,
+                $COL_DELIVERY_ACK_IDEMPOTENCY_KEY TEXT NOT NULL,
+                $COL_DELIVERY_APPLIED_AT_MS INTEGER NOT NULL,
+                $COL_DELIVERY_ACKNOWLEDGED_AT_MS INTEGER,
+                UNIQUE($COL_DELIVERY_ENTITLEMENT_ID, $COL_DELIVERY_SEQUENCE_NUMBER)
+            )
+            """.trimIndent(),
         )
     }
 
@@ -343,7 +380,7 @@ internal open class GameProgressDatabase(
     }
 
     companion object {
-        private const val DB_VERSION = 10
+        private const val DB_VERSION = 11
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
@@ -357,6 +394,7 @@ internal open class GameProgressDatabase(
         const val TABLE_ONLINE_MATCHES = "online_matches"
         const val TABLE_ONLINE_MATCH_TURNS = "online_match_turns"
         const val TABLE_SYNC_QUEUE = "sync_queue"
+        const val TABLE_MIRKORI_GAME_DELIVERIES = "mirkori_game_entitlement_deliveries"
         const val COL_ID = "id"
         const val COL_PLAYER_DISPLAY_NAME = "player_display_name"
         const val COL_GOOGLE_PLAY_SIGNED_IN = "google_play_signed_in"
@@ -390,6 +428,28 @@ internal open class GameProgressDatabase(
         const val COL_RETENTION_REWARD_TYPE = "reward_type"
         const val COL_RETENTION_PERIOD_KEY = "period_key"
         const val COL_RETENTION_CLAIMED_AT_MS = "claimed_at_ms"
+        const val COL_DELIVERY_ID = "delivery_id"
+        const val COL_DELIVERY_ACCOUNT_ID = "account_id"
+        const val COL_DELIVERY_GAME_PLAYER_ID = "game_player_id"
+        const val COL_DELIVERY_ENTITLEMENT_EVENT_ID = "entitlement_event_id"
+        const val COL_DELIVERY_ENTITLEMENT_ID = "entitlement_id"
+        const val COL_DELIVERY_SEQUENCE_NUMBER = "sequence_number"
+        const val COL_DELIVERY_ACTION = "action"
+        const val COL_DELIVERY_GAME_ID = "game_id"
+        const val COL_DELIVERY_PRODUCT_ID = "product_id"
+        const val COL_DELIVERY_ORDER_ID = "order_id"
+        const val COL_DELIVERY_ENTITLEMENT_KEY = "entitlement_key"
+        const val COL_DELIVERY_ENTITLEMENT_KIND = "entitlement_kind"
+        const val COL_DELIVERY_APPLICATION = "application"
+        const val COL_DELIVERY_QUANTITY_DELTA = "quantity_delta"
+        const val COL_DELIVERY_VALID_FROM_MS = "valid_from_ms"
+        const val COL_DELIVERY_EXPIRES_AT_MS = "expires_at_ms"
+        const val COL_DELIVERY_CORRECTION_QUANTITY = "correction_quantity"
+        const val COL_DELIVERY_PAYLOAD_SHA256 = "payload_sha256"
+        const val COL_DELIVERY_CREATED_AT_MS = "created_at_ms"
+        const val COL_DELIVERY_ACK_IDEMPOTENCY_KEY = "ack_idempotency_key"
+        const val COL_DELIVERY_APPLIED_AT_MS = "applied_at_ms"
+        const val COL_DELIVERY_ACKNOWLEDGED_AT_MS = "acknowledged_at_ms"
         const val PROFILE_ID = 1
     }
 }

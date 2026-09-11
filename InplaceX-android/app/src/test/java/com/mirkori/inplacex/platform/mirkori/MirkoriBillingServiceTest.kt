@@ -11,9 +11,17 @@ import com.mirkori.platform.sdk.MirkoriGameSdk
 import com.mirkori.platform.sdk.MirkoriGameSdkConfig
 import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCredentials
+import com.mirkori.platform.sdk.PlatformEntitlementKind
+import com.mirkori.platform.sdk.PlatformEntitlementType
+import com.mirkori.platform.sdk.PlatformGameEntitlementDelivery
+import com.mirkori.platform.sdk.PlatformGameDeliveryAction
 import com.mirkori.platform.sdk.PlatformHttpRequest
 import com.mirkori.platform.sdk.PlatformHttpResponse
 import com.mirkori.platform.sdk.PlatformIdempotencyKey
+import com.mirkori.platform.sdk.PlatformProductGrant
+import com.mirkori.platform.sdk.PlatformProductKind
+import com.mirkori.platform.sdk.PlatformProductOffer
+import com.mirkori.platform.sdk.PlatformProductPrice
 import com.mirkori.platform.sdk.PlatformTransport
 import com.mirkori.platform.sdk.SecureEntropy
 import java.time.Instant
@@ -602,6 +610,46 @@ class MirkoriBillingServiceTest {
         assertFalse(rebooted.entitlements.proSubscriptionActive)
     }
 
+    @Test
+    fun refreshAppliesPendingGameDeliveryBeforeAcknowledgingWithPersistedKey() {
+        val deliveryId = "00000000-0000-4000-8000-000000000971"
+        val delivery = """{"id":"$deliveryId","entitlementEventId":"00000000-0000-4000-8000-000000000972","entitlementId":"00000000-0000-4000-8000-000000000973","sequenceNumber":1,"action":"grant","gameId":"inplacex","productId":"inplacex.coins-100","orderId":"00000000-0000-4000-8000-000000000974","entitlementKey":"coins","entitlementKind":"consumable_balance","quantityDelta":100,"validFrom":"2026-08-07T10:01:00Z","correctionQuantity":0,"payloadSha256":"${"a".repeat(64)}","createdAt":"2026-08-07T10:01:00Z"}"""
+        val transport = ScriptedTransport(
+            response(productsJson()),
+            response(ordersJson()),
+            response(entitlementsJson()),
+            response("""{"schemaVersion":1,"deliveries":[$delivery]}"""),
+            response(
+                """{"schemaVersion":1,"acknowledgement":{"deliveryId":"$deliveryId","acknowledgedAt":"2026-08-07T10:01:30Z"}}""",
+            ),
+        )
+        val applier = RecordingDeliveryApplier()
+
+        val refreshed = runSuspend {
+            service(transport, linkedStore(), deliveryApplier = applier).refresh()
+        }
+
+        assertEquals(BillingAvailability.READY, refreshed.availability)
+        assertEquals(listOf("prepare:$deliveryId", "acknowledged:$deliveryId"), applier.operations)
+        assertEquals("coins", applier.delivery?.entitlementKey)
+        assertTrue(transport.requests[3].url.endsWith("/api/v1/commerce/game-deliveries?limit=50"))
+        assertTrue(transport.requests[4].url.endsWith("/api/v1/commerce/game-deliveries/$deliveryId/ack"))
+        assertEquals("persisted-delivery-key", transport.requests[4].headers["Idempotency-Key"])
+        assertEquals("{\"applied\":true}", transport.requests[4].body)
+    }
+
+    @Test
+    fun deliveryApplicationRejectsUnknownProductEvenWhenEntitlementIsKnown() {
+        val delivery = gameDelivery(productId = "inplacex.coins-unknown")
+        val knownOffer = coinOffer(productId = "inplacex.coins-100")
+
+        assertNull(delivery.validatedApplication(knownOffer))
+        assertEquals(
+            com.mirkori.inplacex.data.local.MirkoriDeliveryApplication.COINS,
+            gameDelivery(productId = knownOffer.id).validatedApplication(knownOffer),
+        )
+    }
+
     private fun service(
         transport: PlatformTransport,
         store: BillingMemoryStore,
@@ -610,6 +658,7 @@ class MirkoriBillingServiceTest {
         distributionId: String? = null,
         currency: String = "RUB",
         paymentFlow: MirkoriPaymentFlow? = null,
+        deliveryApplier: MirkoriGameDeliveryApplier? = null,
     ): MirkoriBillingService {
         val sdk = MirkoriGameSdk(
             MirkoriGameSdkConfig(
@@ -630,13 +679,19 @@ class MirkoriBillingServiceTest {
         )
         val config = BillingProviderConfig("remove_ads", "pro_subscription", "pro_plus_subscription")
         return if (paymentFlow == null) {
-            MirkoriBillingService(runtime = runtime, config = config, currency = currency)
+            MirkoriBillingService(
+                runtime = runtime,
+                config = config,
+                currency = currency,
+                deliveryApplier = deliveryApplier,
+            )
         } else {
             MirkoriBillingService(
                 runtime = runtime,
                 config = config,
                 currency = currency,
                 paymentFlow = paymentFlow,
+                deliveryApplier = deliveryApplier,
             )
         }
     }
@@ -694,6 +749,35 @@ class MirkoriBillingServiceTest {
         const val InstallationId = "00000000-0000-4000-8000-000000000953"
         const val NowMs = 1_786_000_000_000L
         const val TestBootMarker = 7L
+    }
+}
+
+private class RecordingDeliveryApplier : MirkoriGameDeliveryApplier {
+    val operations = mutableListOf<String>()
+    var delivery: PlatformGameEntitlementDelivery? = null
+
+    override fun prepare(
+        accountId: String,
+        gamePlayerId: String,
+        delivery: PlatformGameEntitlementDelivery,
+        productOffer: PlatformProductOffer?,
+        newIdempotencyKey: PlatformIdempotencyKey,
+    ): PreparedMirkoriDeliveryAcknowledgement {
+        assertEquals(delivery.productId, productOffer?.id)
+        operations += "prepare:${delivery.id}"
+        this.delivery = delivery
+        return PreparedMirkoriDeliveryAcknowledgement(
+            PlatformIdempotencyKey("persisted-delivery-key"),
+        )
+    }
+
+    override fun markAcknowledged(
+        deliveryId: String,
+        idempotencyKey: PlatformIdempotencyKey,
+        acknowledgedAtMs: Long,
+    ) {
+        assertEquals("persisted-delivery-key", idempotencyKey.value)
+        operations += "acknowledged:$deliveryId"
     }
 }
 
@@ -779,9 +863,50 @@ private fun productsJson(
         add(
             """{"id":"pro_plus_subscription","gameId":"inplacex","slug":"pro-plus","displayName":"Pro+","description":"Pro+","productKind":"addon","version":1,"price":{"currency":"RUB","amountMinor":29900},"grants":[{"entitlementKey":"pro-plus.active","type":"timed","quantity":1,"durationSeconds":2592000}]}""",
         )
+        add(
+            """{"id":"inplacex.coins-100","gameId":"inplacex","slug":"coins-100","displayName":"100 монет","description":"Игровая валюта","productKind":"currency","version":1,"price":{"currency":"RUB","amountMinor":9900},"grants":[{"entitlementKey":"coins","type":"consumable","quantity":100}]}""",
+        )
     }
     return """{"schemaVersion":1,"products":[${offers.joinToString(",")}]}"""
 }
+
+private fun gameDelivery(productId: String): PlatformGameEntitlementDelivery = PlatformGameEntitlementDelivery(
+    id = "00000000-0000-4000-8000-000000000971",
+    entitlementEventId = "00000000-0000-4000-8000-000000000972",
+    entitlementId = "00000000-0000-4000-8000-000000000973",
+    sequenceNumber = 1,
+    action = PlatformGameDeliveryAction.GRANT,
+    gameId = "inplacex",
+    productId = productId,
+    orderId = "00000000-0000-4000-8000-000000000974",
+    entitlementKey = "coins",
+    entitlementKind = PlatformEntitlementKind.CONSUMABLE_BALANCE,
+    quantityDelta = 100,
+    validFrom = Instant.parse("2026-08-07T10:01:00Z"),
+    expiresAt = null,
+    correctionQuantity = 0,
+    payloadSha256 = "a".repeat(64),
+    createdAt = Instant.parse("2026-08-07T10:01:00Z"),
+)
+
+private fun coinOffer(productId: String): PlatformProductOffer = PlatformProductOffer(
+    id = productId,
+    gameId = "inplacex",
+    slug = "coins-100",
+    displayName = "100 монет",
+    description = "Игровая валюта",
+    kind = PlatformProductKind.CURRENCY,
+    version = 1,
+    price = PlatformProductPrice("RUB", 9_900),
+    grants = listOf(
+        PlatformProductGrant(
+            entitlementKey = "coins",
+            type = PlatformEntitlementType.CONSUMABLE,
+            quantity = 100,
+            durationSeconds = null,
+        ),
+    ),
+)
 
 private fun globalProductsJson(): String =
     productsJson().replace("\"currency\":\"RUB\"", "\"currency\":\"USD\"")

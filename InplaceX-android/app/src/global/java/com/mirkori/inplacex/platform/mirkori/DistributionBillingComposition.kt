@@ -12,6 +12,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.mirkori.inplacex.BuildConfig
+import com.mirkori.inplacex.data.local.GameProgressRepository
 import com.mirkori.inplacex.platform.config.BillingProviderConfig
 import com.mirkori.inplacex.platform.services.BillingService
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,10 +24,12 @@ internal fun createDistributionBillingService(
     activity: Activity,
     runtime: MirkoriPlatformRuntime,
     config: BillingProviderConfig,
+    progressRepository: GameProgressRepository,
 ): BillingService = MirkoriBillingService(
     runtime = runtime,
     config = config,
     currency = BuildConfig.MIRKORI_BILLING_CURRENCY,
+    deliveryApplier = InplaceXMirkoriGameDeliveryApplier(progressRepository),
     paymentFlow = GooglePlayMirkoriPaymentFlow(
         gateway = AndroidGooglePlayBillingGateway(activity),
         expectedDistributionId = BuildConfig.MIRKORI_DISTRIBUTION_ID,

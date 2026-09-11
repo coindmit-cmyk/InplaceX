@@ -171,6 +171,7 @@ class MainActivity : ComponentActivity() {
                             activity = this@MainActivity,
                             runtime = runtime,
                             config = AppConfigCatalog.platformConfig.providers.billing,
+                            progressRepository = progressRepository,
                         )
                     }
                 }
@@ -644,8 +645,13 @@ class MainActivity : ComponentActivity() {
                     }
                     val operationId = billingOperation.start() ?: return@LaunchedEffect
                     try {
-                        val refreshed = withContext(Dispatchers.IO) { billingService.refresh() }
-                        if (billingOperation.isCurrent(operationId)) billingState = refreshed
+                        val (refreshed, refreshedProgress) = withContext(Dispatchers.IO) {
+                            billingService.refresh() to progressRepository.loadState()
+                        }
+                        if (billingOperation.isCurrent(operationId)) {
+                            billingState = refreshed
+                            progressState = refreshedProgress
+                        }
                     } finally {
                         billingOperation.finish(operationId)
                     }
@@ -730,8 +736,13 @@ class MainActivity : ComponentActivity() {
                     billingOperation.start()?.let { operationId ->
                         coroutineScope.launch {
                             try {
-                                val refreshed = withContext(Dispatchers.IO) { billingService.refresh() }
-                                if (billingOperation.isCurrent(operationId)) billingState = refreshed
+                                val (refreshed, refreshedProgress) = withContext(Dispatchers.IO) {
+                                    billingService.refresh() to progressRepository.loadState()
+                                }
+                                if (billingOperation.isCurrent(operationId)) {
+                                    billingState = refreshed
+                                    progressState = refreshedProgress
+                                }
                             } catch (error: Exception) {
                                 if (error is CancellationException) throw error
                                 AppLog.warn(
@@ -749,11 +760,12 @@ class MainActivity : ComponentActivity() {
                     billingOperation.start()?.let { operationId ->
                         coroutineScope.launch {
                             try {
-                                val result = withContext(Dispatchers.IO) {
-                                    billingService.purchase(productId)
+                                val (result, refreshedProgress) = withContext(Dispatchers.IO) {
+                                    billingService.purchase(productId) to progressRepository.loadState()
                                 }
                                 if (billingOperation.isCurrent(operationId)) {
                                     billingState = result.state
+                                    progressState = refreshedProgress
                                     if (result is BillingPurchaseResult.OpenExternalCheckout) {
                                         if (isExternalHttpsCheckoutUrl(result.checkoutUrl)) {
                                             val browserOpened = runCatching {

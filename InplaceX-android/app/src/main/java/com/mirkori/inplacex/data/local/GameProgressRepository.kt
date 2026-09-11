@@ -58,6 +58,48 @@ data class RetentionRewardStatus(
         get() = dailyAvailable || weeklyAvailable
 }
 
+internal enum class MirkoriDeliveryApplication {
+    COINS,
+    SERVER_ENTITLEMENT_PROJECTION,
+}
+
+internal data class LocalMirkoriGameDelivery(
+    val deliveryId: String,
+    val accountId: String,
+    val gamePlayerId: String,
+    val entitlementEventId: String,
+    val entitlementId: String,
+    val sequenceNumber: Long,
+    val action: String,
+    val gameId: String,
+    val productId: String,
+    val orderId: String,
+    val entitlementKey: String,
+    val entitlementKind: String,
+    val quantityDelta: Long,
+    val validFromMs: Long,
+    val expiresAtMs: Long?,
+    val correctionQuantity: Long,
+    val payloadSha256: String,
+    val createdAtMs: Long,
+    val application: MirkoriDeliveryApplication,
+)
+
+internal data class PreparedMirkoriGameDelivery(
+    val acknowledgementIdempotencyKey: String,
+    val acknowledgedAtMs: Long?,
+)
+
+private data class StoredMirkoriGameDelivery(
+    val delivery: LocalMirkoriGameDelivery,
+    val acknowledgementIdempotencyKey: String,
+    val acknowledgedAtMs: Long?,
+)
+
+internal class MirkoriGameDeliveryConflictException : IllegalStateException()
+
+internal class MirkoriGameDeliveryCannotApplyException : IllegalStateException()
+
 data class GameProgressState(
     val playerDisplayName: String,
     val googlePlaySignedIn: Boolean,
@@ -304,6 +346,87 @@ class GameProgressRepository(
     fun addCoins(amount: Int): GameProgressState {
         require(amount >= 0) { "amount must be >= 0" }
         return mutate { row -> row.copy(coins = row.coins + amount) }
+    }
+
+    internal fun prepareMirkoriGameDelivery(
+        delivery: LocalMirkoriGameDelivery,
+        newAcknowledgementIdempotencyKey: String,
+    ): PreparedMirkoriGameDelivery {
+        require(delivery.deliveryId.isNotBlank())
+        require(delivery.accountId.isNotBlank() && delivery.gamePlayerId.isNotBlank())
+        require(delivery.entitlementEventId.isNotBlank() && delivery.entitlementId.isNotBlank())
+        require(delivery.sequenceNumber > 0)
+        require(delivery.correctionQuantity >= 0)
+        require(delivery.payloadSha256.matches(Regex("[a-f0-9]{64}")))
+        require(newAcknowledgementIdempotencyKey.matches(Regex("[A-Za-z0-9._~-]{1,128}")))
+
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        return try {
+            val existing = loadMirkoriGameDelivery(db, delivery.deliveryId)
+            val prepared = if (existing != null) {
+                if (existing.delivery != delivery) throw MirkoriGameDeliveryConflictException()
+                PreparedMirkoriGameDelivery(
+                    acknowledgementIdempotencyKey = existing.acknowledgementIdempotencyKey,
+                    acknowledgedAtMs = existing.acknowledgedAtMs,
+                )
+            } else {
+                if (delivery.application == MirkoriDeliveryApplication.COINS) {
+                    ensureDefaultRow(db)
+                    val row = loadRow(db)
+                    val updatedCoins = try {
+                        Math.addExact(row.coins.toLong(), delivery.quantityDelta)
+                    } catch (_: ArithmeticException) {
+                        throw MirkoriGameDeliveryCannotApplyException()
+                    }
+                    if (updatedCoins !in 0L..Int.MAX_VALUE.toLong()) {
+                        throw MirkoriGameDeliveryCannotApplyException()
+                    }
+                    writeRow(db, row.copy(coins = updatedCoins.toInt()))
+                }
+                insertMirkoriGameDelivery(
+                    db = db,
+                    delivery = delivery,
+                    acknowledgementIdempotencyKey = newAcknowledgementIdempotencyKey,
+                    appliedAtMs = databaseConfig.nowMs(),
+                )
+                PreparedMirkoriGameDelivery(newAcknowledgementIdempotencyKey, null)
+            }
+            db.setTransactionSuccessful()
+            prepared
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    internal fun markMirkoriGameDeliveryAcknowledged(
+        deliveryId: String,
+        acknowledgementIdempotencyKey: String,
+        acknowledgedAtMs: Long,
+    ) {
+        require(deliveryId.isNotBlank())
+        require(acknowledgementIdempotencyKey.matches(Regex("[A-Za-z0-9._~-]{1,128}")))
+        require(acknowledgedAtMs > 0)
+        val db = helper.writableDatabase
+        val updated = db.update(
+            GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES,
+            ContentValues().apply {
+                put(GameProgressDatabase.COL_DELIVERY_ACKNOWLEDGED_AT_MS, acknowledgedAtMs)
+            },
+            "${GameProgressDatabase.COL_DELIVERY_ID} = ? AND " +
+                "${GameProgressDatabase.COL_DELIVERY_ACK_IDEMPOTENCY_KEY} = ? AND " +
+                "${GameProgressDatabase.COL_DELIVERY_ACKNOWLEDGED_AT_MS} IS NULL",
+            arrayOf(deliveryId, acknowledgementIdempotencyKey),
+        )
+        if (updated == 1) return
+        val existing = loadMirkoriGameDelivery(db, deliveryId)
+            ?: throw MirkoriGameDeliveryConflictException()
+        if (
+            existing.acknowledgementIdempotencyKey != acknowledgementIdempotencyKey ||
+            existing.acknowledgedAtMs == null
+        ) {
+            throw MirkoriGameDeliveryConflictException()
+        }
     }
 
     fun grantRewardedCoins(amount: Int): GameProgressState {
@@ -643,6 +766,97 @@ class GameProgressRepository(
         val updated = transform(current)
         writeRow(db, updated)
         return updated.toState()
+    }
+
+    private fun insertMirkoriGameDelivery(
+        db: SQLiteDatabase,
+        delivery: LocalMirkoriGameDelivery,
+        acknowledgementIdempotencyKey: String,
+        appliedAtMs: Long,
+    ) {
+        val inserted = db.insertOrThrow(
+            GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES,
+            null,
+            ContentValues().apply {
+                put(GameProgressDatabase.COL_DELIVERY_ID, delivery.deliveryId)
+                put(GameProgressDatabase.COL_DELIVERY_ACCOUNT_ID, delivery.accountId)
+                put(GameProgressDatabase.COL_DELIVERY_GAME_PLAYER_ID, delivery.gamePlayerId)
+                put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_EVENT_ID, delivery.entitlementEventId)
+                put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_ID, delivery.entitlementId)
+                put(GameProgressDatabase.COL_DELIVERY_SEQUENCE_NUMBER, delivery.sequenceNumber)
+                put(GameProgressDatabase.COL_DELIVERY_ACTION, delivery.action)
+                put(GameProgressDatabase.COL_DELIVERY_GAME_ID, delivery.gameId)
+                put(GameProgressDatabase.COL_DELIVERY_PRODUCT_ID, delivery.productId)
+                put(GameProgressDatabase.COL_DELIVERY_ORDER_ID, delivery.orderId)
+                put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KEY, delivery.entitlementKey)
+                put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KIND, delivery.entitlementKind)
+                put(GameProgressDatabase.COL_DELIVERY_APPLICATION, delivery.application.name)
+                put(GameProgressDatabase.COL_DELIVERY_QUANTITY_DELTA, delivery.quantityDelta)
+                put(GameProgressDatabase.COL_DELIVERY_VALID_FROM_MS, delivery.validFromMs)
+                delivery.expiresAtMs?.let {
+                    put(GameProgressDatabase.COL_DELIVERY_EXPIRES_AT_MS, it)
+                } ?: putNull(GameProgressDatabase.COL_DELIVERY_EXPIRES_AT_MS)
+                put(GameProgressDatabase.COL_DELIVERY_CORRECTION_QUANTITY, delivery.correctionQuantity)
+                put(GameProgressDatabase.COL_DELIVERY_PAYLOAD_SHA256, delivery.payloadSha256)
+                put(GameProgressDatabase.COL_DELIVERY_CREATED_AT_MS, delivery.createdAtMs)
+                put(GameProgressDatabase.COL_DELIVERY_ACK_IDEMPOTENCY_KEY, acknowledgementIdempotencyKey)
+                put(GameProgressDatabase.COL_DELIVERY_APPLIED_AT_MS, appliedAtMs)
+                putNull(GameProgressDatabase.COL_DELIVERY_ACKNOWLEDGED_AT_MS)
+            },
+        )
+        if (inserted == -1L) throw MirkoriGameDeliveryConflictException()
+    }
+
+    private fun loadMirkoriGameDelivery(
+        db: SQLiteDatabase,
+        deliveryId: String,
+    ): StoredMirkoriGameDelivery? {
+        return db.query(
+            GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES,
+            null,
+            "${GameProgressDatabase.COL_DELIVERY_ID} = ?",
+            arrayOf(deliveryId),
+            null,
+            null,
+            null,
+        ).use { cursor ->
+            if (!cursor.moveToFirst()) return@use null
+            fun string(column: String) = cursor.getString(cursor.getColumnIndexOrThrow(column))
+            fun long(column: String) = cursor.getLong(cursor.getColumnIndexOrThrow(column))
+            fun nullableLong(column: String): Long? {
+                val index = cursor.getColumnIndexOrThrow(column)
+                return if (cursor.isNull(index)) null else cursor.getLong(index)
+            }
+            StoredMirkoriGameDelivery(
+                delivery = LocalMirkoriGameDelivery(
+                    deliveryId = string(GameProgressDatabase.COL_DELIVERY_ID),
+                    accountId = string(GameProgressDatabase.COL_DELIVERY_ACCOUNT_ID),
+                    gamePlayerId = string(GameProgressDatabase.COL_DELIVERY_GAME_PLAYER_ID),
+                    entitlementEventId = string(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_EVENT_ID),
+                    entitlementId = string(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_ID),
+                    sequenceNumber = long(GameProgressDatabase.COL_DELIVERY_SEQUENCE_NUMBER),
+                    action = string(GameProgressDatabase.COL_DELIVERY_ACTION),
+                    gameId = string(GameProgressDatabase.COL_DELIVERY_GAME_ID),
+                    productId = string(GameProgressDatabase.COL_DELIVERY_PRODUCT_ID),
+                    orderId = string(GameProgressDatabase.COL_DELIVERY_ORDER_ID),
+                    entitlementKey = string(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KEY),
+                    entitlementKind = string(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KIND),
+                    quantityDelta = long(GameProgressDatabase.COL_DELIVERY_QUANTITY_DELTA),
+                    validFromMs = long(GameProgressDatabase.COL_DELIVERY_VALID_FROM_MS),
+                    expiresAtMs = nullableLong(GameProgressDatabase.COL_DELIVERY_EXPIRES_AT_MS),
+                    correctionQuantity = long(GameProgressDatabase.COL_DELIVERY_CORRECTION_QUANTITY),
+                    payloadSha256 = string(GameProgressDatabase.COL_DELIVERY_PAYLOAD_SHA256),
+                    createdAtMs = long(GameProgressDatabase.COL_DELIVERY_CREATED_AT_MS),
+                    application = MirkoriDeliveryApplication.valueOf(
+                        string(GameProgressDatabase.COL_DELIVERY_APPLICATION),
+                    ),
+                ),
+                acknowledgementIdempotencyKey = string(
+                    GameProgressDatabase.COL_DELIVERY_ACK_IDEMPOTENCY_KEY,
+                ),
+                acknowledgedAtMs = nullableLong(GameProgressDatabase.COL_DELIVERY_ACKNOWLEDGED_AT_MS),
+            )
+        }
     }
 
     private fun applyEnergyRegen(row: ProgressRow, nowMs: Long): ProgressRow {
