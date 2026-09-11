@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Updated the Mirkori Games Telegram download catalog for Platform schema v3.
+  It now validates the RF and global distribution contract plus complete
+  lifecycle coverage, exposes only active RF Mirkori direct-APK releases,
+  keeps stable-over-beta selection, and never publishes Google Play,
+  delisted, or recalled artifacts as direct download links.
 - Migrated the signed InplaceX release builder to Mirkori Platform catalog
   schema v3. It now preserves the independent `rf-mirkori` and `global-google`
   distribution identities, emits RU/EN changelogs and an active lifecycle

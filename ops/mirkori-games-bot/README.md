@@ -5,9 +5,12 @@
 произвольные пути или URL от пользователя.
 
 Production-бот читает тот же активный каталог Mirkori Games Platform, что сайт
-и Android update API. Для каждой игры он предпочитает последний `stable`
-Android-релиз, а при его отсутствии показывает последний `beta`. Поэтому сайт
-и Telegram всегда ведут на один release ID, APK и SHA-256.
+и Android update API. В schema v3 он публикует только активную российскую
+дистрибуцию `rf + mirkori + direct_apk`: предпочитает последний публичный
+`stable`, а при его отсутствии показывает публичный `beta`. Релизы
+`global + google_play`, а также `delisted` и `recalled` никогда не получают
+прямую Telegram-ссылку. Поэтому сайт и Telegram ведут на один разрешённый
+release ID, APK и SHA-256.
 
 ## Безопасность
 
@@ -17,6 +20,8 @@ Android-релиз, а при его отсутствии показывает �
   `MIRKORI_GAMES_PUBLIC_DOWNLOADS=true`;
 - перед выдачей ссылки бот повторно вычисляет SHA-256 APK и сравнивает его с
   активным Platform `catalog.json`;
+- schema v3 должна содержать обе независимые Android-дистрибуции и lifecycle
+  policy для каждого релиза; неполный или противоречивый каталог закрывается;
 - путь APK обязан находиться внутри Platform `artifacts`;
 - URL обязан вести на разрешённый HTTPS-домен и путь `/downloads/*.apk`;
 - каталог не содержит токенов, chat ID или иных персональных данных.
@@ -61,7 +66,9 @@ python3 current/bot.py \
 Только после успешной проверки каталога разрешается перезапускать сервис.
 
 Кнопка использует immutable HTTPS URL, сформированный из Platform release ID и
-точного имени APK. Legacy `publish_release.py`, `games.example.json` и старый
+точного имени APK. Schema v1/v2 остаются читаемыми на время миграции, но
+production-публикация использует schema v3. Legacy `publish_release.py`,
+`games.example.json` и старый
 путь `inplacex.dmit.life/downloads/InplaceX.apk` сохраняются только для
 локальной совместимости и не являются production-источником.
 
