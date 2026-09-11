@@ -78,6 +78,9 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriProAccessState
 import com.mirkori.inplacex.platform.mirkori.MirkoriProAvailability
 import com.mirkori.inplacex.platform.mirkori.MirkoriProNotice
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlatformRuntime
+import com.mirkori.inplacex.platform.mirkori.MirkoriUpdateCheckResult
+import com.mirkori.inplacex.platform.mirkori.MirkoriUpdateLauncher
+import com.mirkori.inplacex.platform.mirkori.MirkoriUpdateService
 import com.mirkori.inplacex.platform.mirkori.lifecycleOperations
 import com.mirkori.inplacex.platform.mirkori.runMirkoriProLifecycle
 import com.mirkori.inplacex.platform.online.ActiveOnlineSessionStore
@@ -111,6 +114,7 @@ import com.mirkori.inplacex.ui.screens.shop.ShopRootScreen
 import com.mirkori.inplacex.ui.screens.social.SocialRootScreen
 import com.mirkori.inplacex.ui.shell.AppShell
 import com.mirkori.inplacex.ui.shell.AppTopBar
+import com.mirkori.inplacex.ui.update.MirkoriUpdateDialog
 import com.mirkori.inplacex.ui.shell.BottomLayerMode
 import com.mirkori.inplacex.ui.shell.CenterLayerMode
 import com.mirkori.inplacex.ui.shell.TopLayerMode
@@ -164,6 +168,16 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         .getOrNull()
+                }
+                val mirkoriUpdateService = remember(mirkoriPlatformRuntime) {
+                    mirkoriPlatformRuntime?.let { runtime ->
+                        MirkoriUpdateService(
+                            sdk = runtime.sdk,
+                            installedVersionCode = BuildConfig.VERSION_CODE.toLong(),
+                            installedPackageName = BuildConfig.APPLICATION_ID,
+                            installedAndroidSdk = Build.VERSION.SDK_INT,
+                        )
+                    }
                 }
                 val liveBillingService = remember(mirkoriPlatformRuntime) {
                     mirkoriPlatformRuntime?.let { runtime ->
@@ -294,6 +308,10 @@ class MainActivity : ComponentActivity() {
                 var mirkoriAccountState by remember {
                     mutableStateOf(MirkoriAccountState(MirkoriAccountStateKind.INITIALIZING))
                 }
+                var mirkoriUpdateResult by remember {
+                    mutableStateOf<MirkoriUpdateCheckResult?>(null)
+                }
+                var dismissedOptionalUpdateId by rememberSaveable { mutableStateOf<String?>(null) }
                 var localAvatarPath by remember { mutableStateOf<String?>(null) }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
@@ -378,6 +396,20 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val currentLanguage = AppLanguage.valueOf(currentLanguageName)
+                LaunchedEffect(mirkoriUpdateService, activityStarted) {
+                    if (!activityStarted || mirkoriUpdateService == null) return@LaunchedEffect
+                    val result = mirkoriUpdateService.check()
+                    mirkoriUpdateResult = when (result) {
+                        is MirkoriUpdateCheckResult.Available -> {
+                            result.takeUnless {
+                                !it.update.required && it.update.releaseId == dismissedOptionalUpdateId
+                            }
+                        }
+                        MirkoriUpdateCheckResult.Current,
+                        MirkoriUpdateCheckResult.Unavailable,
+                        -> null
+                    }
+                }
                 LaunchedEffect(mirkoriPlatformRuntime) {
                     if (mirkoriPlatformRuntime == null) {
                         mirkoriAccountState = MirkoriAccountState(MirkoriAccountStateKind.UNAVAILABLE)
@@ -1998,6 +2030,22 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
+                    }
+                    (mirkoriUpdateResult as? MirkoriUpdateCheckResult.Available)?.let { result ->
+                        MirkoriUpdateDialog(
+                            strings = strings,
+                            language = currentLanguage,
+                            update = result.update,
+                            onOpen = {
+                                if (MirkoriUpdateLauncher.open(this@MainActivity, result.update.target)) {
+                                    if (!result.update.required) mirkoriUpdateResult = null
+                                }
+                            },
+                            onDismiss = {
+                                dismissedOptionalUpdateId = result.update.releaseId
+                                mirkoriUpdateResult = null
+                            },
+                        )
                     }
                 }
             }

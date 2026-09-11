@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Connected the Android app to the Mirkori distribution-aware release catalog.
+  Each foreground launch now checks the exact RF or global distribution and
+  installed version. Optional updates can be deferred for the current app
+  session, required updates block the game UI, RF opens the SDK-validated APK
+  URL, and global opens Google Play. Network or contract failures fail open
+  without changing gameplay, purchases, or local progress.
 - Connected server-authoritative InplaceX duel facts to Mirkori Games Platform.
   PostgreSQL migration v11 stores ordered gameplay `start`/`heartbeat`/`end`
   events and one idempotent `first_win` achievement in a transactional outbox;
