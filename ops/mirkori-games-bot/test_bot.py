@@ -13,7 +13,178 @@ from bot import (
 )
 
 
+def write_platform_v3_catalog(
+    root: Path,
+    *,
+    rf_stable_status: str = "active",
+    rf_beta_status: str = "active",
+    rf_relative_path: str | None = None,
+    omit_policy_for: str | None = None,
+) -> Path:
+    fingerprint = ":".join(["AA"] * 32)
+    distributions = [
+        {
+            "id": "rf-mirkori",
+            "platform": "android",
+            "marketScope": "rf",
+            "packageName": "com.mirkori.inplacex.rf",
+            "signingIdentityRef": "inplacex-rf-release",
+            "certificateSha256Fingerprints": [fingerprint],
+            "paymentChannel": "mirkori",
+            "deliveryChannel": "direct_apk",
+            "releaseChannels": ["stable", "beta"],
+            "status": "active",
+            "effectiveConfigurationVersion": 1,
+        },
+        {
+            "id": "global-google",
+            "platform": "android",
+            "marketScope": "global",
+            "packageName": "com.mirkori.inplacex",
+            "signingIdentityRef": "inplacex-global-play",
+            "certificateSha256Fingerprints": [fingerprint],
+            "paymentChannel": "google_play",
+            "deliveryChannel": "google_play",
+            "releaseChannels": ["stable", "beta"],
+            "status": "active",
+            "effectiveConfigurationVersion": 1,
+        },
+    ]
+    release_specs = [
+        ("inplacex-rf-stable-5", "rf-mirkori", "stable", 5),
+        ("inplacex-rf-beta-9", "rf-mirkori", "beta", 9),
+        ("inplacex-global-stable-20", "global-google", "stable", 20),
+    ]
+    releases = []
+    for release_id, distribution_id, channel, version_code in release_specs:
+        relative = Path("inplacex") / distribution_id / channel / f"InplaceX-{version_code}.apk"
+        apk = root / relative
+        apk.parent.mkdir(parents=True, exist_ok=True)
+        apk.write_bytes(f"verified-{release_id}".encode())
+        releases.append(
+            {
+                "id": release_id,
+                "distributionId": distribution_id,
+                "channel": channel,
+                "versionName": f"1.0.{version_code}",
+                "versionCode": version_code,
+                "minimumSupportedVersionCode": 1,
+                "minimumAndroidSdk": 26,
+                "publishedAt": "2026-09-01T12:00:00Z",
+                "changelogs": {"ru": f"Релиз {version_code}\nПроверено", "en": f"Release {version_code}\nVerified"},
+                "fileName": apk.name,
+                "relativePath": (
+                    rf_relative_path
+                    if distribution_id == "rf-mirkori" and channel == "stable" and rf_relative_path is not None
+                    else relative.as_posix()
+                ),
+                "sizeBytes": apk.stat().st_size,
+                "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+            },
+        )
+    statuses = {
+        "inplacex-rf-stable-5": rf_stable_status,
+        "inplacex-rf-beta-9": rf_beta_status,
+        "inplacex-global-stable-20": "active",
+    }
+    policies = [
+        {
+            "releaseId": release_id,
+            "status": status,
+            "effectiveAt": "2026-09-02T12:00:00Z",
+            "policyVersion": 1,
+            **(
+                {"reasonCode": "security_recall", "supportPath": "/ru/support/releases"}
+                if status == "recalled"
+                else {}
+            ),
+        }
+        for release_id, status in statuses.items()
+        if release_id != omit_policy_for
+    ]
+    catalog = root / "catalog-v3.json"
+    catalog.write_text(
+        json.dumps(
+            {
+                "schemaVersion": 3,
+                "games": [
+                    {
+                        "id": "inplacex",
+                        "slug": "inplacex",
+                        "displayName": "InplaceX",
+                        "description": "Logic game",
+                        "distributionVariants": distributions,
+                        "releases": releases,
+                        "releasePolicies": policies,
+                    },
+                ],
+            },
+        ),
+        encoding="utf-8",
+    )
+    return catalog
+
+
 class CatalogTest(unittest.TestCase):
+    def test_platform_v3_selects_active_rf_stable_and_never_global_google(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            release = load_platform_catalog(write_platform_v3_catalog(root), root)[0]
+
+            self.assertEqual("1.0.5", release.version)
+            self.assertEqual("Релиз 5\nПроверено", release.notes)
+            self.assertEqual(
+                "https://games.dmit.life/downloads/inplacex-rf-stable-5/InplaceX-5.apk",
+                release.download_url,
+            )
+
+    def test_platform_v3_falls_back_to_active_rf_beta(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            release = load_platform_catalog(
+                write_platform_v3_catalog(root, rf_stable_status="delisted"),
+                root,
+            )[0]
+
+            self.assertEqual("1.0.9", release.version)
+            self.assertIn("inplacex-rf-beta-9", release.download_url)
+
+    def test_platform_v3_rejects_catalog_with_only_global_delivery(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            with self.assertRaisesRegex(ValueError, "no active RF direct APK"):
+                load_platform_catalog(
+                    write_platform_v3_catalog(
+                        root,
+                        rf_stable_status="delisted",
+                        rf_beta_status="recalled",
+                    ),
+                    root,
+                )
+
+    def test_platform_v3_requires_lifecycle_policy_for_every_release(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            with self.assertRaisesRegex(ValueError, "cover every release"):
+                load_platform_catalog(
+                    write_platform_v3_catalog(root, omit_policy_for="inplacex-rf-beta-9"),
+                    root,
+                )
+
+    def test_platform_v3_rejects_artifact_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            with self.assertRaisesRegex(ValueError, "artifact path is invalid"):
+                load_platform_catalog(
+                    write_platform_v3_catalog(root, rf_relative_path="../InplaceX-5.apk"),
+                    root,
+                )
+
     def test_platform_catalog_prefers_latest_stable_then_beta_release(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
