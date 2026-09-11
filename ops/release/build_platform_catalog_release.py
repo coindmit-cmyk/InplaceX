@@ -22,10 +22,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Iterator
 
 
-PACKAGE_NAME = "com.mirkori.inplacex.rf"
+RF_PACKAGE_NAME = "com.mirkori.inplacex.rf"
+GLOBAL_PACKAGE_NAME = "com.mirkori.inplacex"
 GAME_ID = "inplacex"
 GAME_SLUG = "inplacex"
-CATALOG_SCHEMA_VERSION = 1
+CATALOG_SCHEMA_VERSION = 3
 IDENTITY_SCHEMA_VERSION = 1
 MAX_JSON_BYTES = 1024 * 1024
 MAX_APK_BYTES = 4 * 1024 * 1024 * 1024
@@ -35,8 +36,12 @@ RELEASE_ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]{1,63}\Z")
 FILE_NAME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 EXPECTED_SOURCE_FILE_NAME = "app-rf-signedReleaseCandidate.apk"
 PLATFORM_VALIDATOR_RELATIVE_PATH = PurePosixPath("ops/catalog_release_tool.py")
-PROVENANCE_SCHEMA_VERSION = 1
+PROVENANCE_SCHEMA_VERSION = 2
 PROVENANCE_SUFFIX = ".provenance"
+RF_DISTRIBUTION_ID = "rf-mirkori"
+GLOBAL_DISTRIBUTION_ID = "global-google"
+RF_SIGNING_IDENTITY_REF = "inplacex-rf-signing"
+GLOBAL_SIGNING_IDENTITY_REF = "inplacex-global-signing"
 EXPECTED_IDENTITY_FIELDS = {
     "schemaVersion",
     "artifact",
@@ -59,23 +64,44 @@ EXPECTED_IDENTITY_FIELDS = {
     "certificateSha256Fingerprint",
     "debuggable",
 }
-EXPECTED_RELEASE_FIELDS = {
+EXPECTED_DISTRIBUTION_FIELDS = {
     "id",
     "platform",
+    "marketScope",
+    "packageName",
+    "signingIdentityRef",
+    "certificateSha256Fingerprints",
+    "paymentChannel",
+    "deliveryChannel",
+    "releaseChannels",
+    "status",
+    "effectiveConfigurationVersion",
+}
+EXPECTED_RELEASE_FIELDS = {
+    "id",
+    "distributionId",
     "channel",
     "versionName",
     "versionCode",
     "minimumSupportedVersionCode",
     "minimumAndroidSdk",
     "publishedAt",
-    "changelog",
+    "changelogs",
     "fileName",
     "relativePath",
     "sizeBytes",
     "sha256",
 }
-EXPECTED_GAME_FIELDS = {"id", "slug", "displayName", "description", "releases"}
-EXPECTED_APP_LINK_FIELDS = {"packageName", "certificateSha256Fingerprints"}
+EXPECTED_POLICY_FIELDS = {"releaseId", "status", "effectiveAt", "policyVersion"}
+EXPECTED_GAME_FIELDS = {
+    "id",
+    "slug",
+    "displayName",
+    "description",
+    "distributionVariants",
+    "releases",
+    "releasePolicies",
+}
 
 
 class ReleaseBuildError(ValueError):
@@ -323,7 +349,13 @@ def platform_schema_constants(tool_bytes: bytes) -> dict[str, Any]:
     except (UnicodeDecodeError, SyntaxError) as error:
         raise ReleaseBuildError("Platform validator tool is not valid UTF-8 Python") from error
     constants: dict[str, Any] = {}
-    requested = {"SCHEMA_VERSION", "GAME_FIELDS", "APP_LINK_FIELDS", "RELEASE_FIELDS"}
+    requested = {
+        "LIFECYCLE_SCHEMA_VERSION",
+        "GAME_FIELDS",
+        "DISTRIBUTION_FIELDS",
+        "DISTRIBUTION_RELEASE_FIELDS",
+        "LIFECYCLE_POLICY_FIELDS",
+    }
     for node in tree.body:
         if not isinstance(node, ast.Assign) or len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
             continue
@@ -339,10 +371,20 @@ def platform_schema_constants(tool_bytes: bytes) -> dict[str, Any]:
 
 def validate_platform_schema_contract(tool_bytes: bytes) -> None:
     constants = platform_schema_constants(tool_bytes)
-    require(constants["SCHEMA_VERSION"] == CATALOG_SCHEMA_VERSION, "Platform catalog schemaVersion differs")
-    require(set(constants["GAME_FIELDS"]) == EXPECTED_GAME_FIELDS, "Platform game fields differ")
-    require(set(constants["APP_LINK_FIELDS"]) == EXPECTED_APP_LINK_FIELDS, "Platform app-link fields differ")
-    require(set(constants["RELEASE_FIELDS"]) == EXPECTED_RELEASE_FIELDS, "Platform release fields differ")
+    require(
+        constants["LIFECYCLE_SCHEMA_VERSION"] == CATALOG_SCHEMA_VERSION,
+        "Platform lifecycle catalog schemaVersion differs",
+    )
+    require(
+        set(constants["GAME_FIELDS"]) | {"distributionVariants", "releasePolicies"} == EXPECTED_GAME_FIELDS,
+        "Platform lifecycle game fields differ",
+    )
+    require(set(constants["DISTRIBUTION_FIELDS"]) == EXPECTED_DISTRIBUTION_FIELDS, "Platform distribution fields differ")
+    require(
+        set(constants["DISTRIBUTION_RELEASE_FIELDS"]) == EXPECTED_RELEASE_FIELDS,
+        "Platform distribution release fields differ",
+    )
+    require(set(constants["LIFECYCLE_POLICY_FIELDS"]) == EXPECTED_POLICY_FIELDS, "Platform lifecycle policy fields differ")
 
 
 def validate_platform_checkout(
@@ -382,10 +424,10 @@ def validate_platform_checkout(
 def run_platform_validator(
     validator: PlatformValidatorIdentity,
     catalog_directory: Path,
-    previous_release_directory: Path | None,
+    previous_release_directory: Path,
     temporary_parent: Path,
     boundary_guard: DirectoryBoundaryGuard,
-) -> None:
+) -> str:
     boundary_guard.verify()
     validation_directory = Path(tempfile.mkdtemp(prefix=".platform-validator.tmp.", dir=temporary_parent))
     try:
@@ -394,9 +436,16 @@ def run_platform_validator(
         tool_copy.write_bytes(validator.tool_bytes)
         require(sha256_file(tool_copy) == validator.tool_sha256, "private Platform validator copy differs")
         boundary_guard.verify()
-        command = [sys.executable, "-I", str(tool_copy), "validate", str(catalog_directory), "--quiet"]
-        if previous_release_directory is not None:
-            command.extend(["--previous-release-directory", str(previous_release_directory)])
+        command = [
+            sys.executable,
+            "-I",
+            str(tool_copy),
+            "validate",
+            str(catalog_directory),
+            "--quiet",
+            "--previous-release-directory",
+            str(previous_release_directory),
+        ]
         result = subprocess.run(
             command,
             capture_output=True,
@@ -409,7 +458,33 @@ def run_platform_validator(
         )
         if result.returncode != 0:
             raise ReleaseBuildError("exact Platform validator rejected the catalog snapshot")
+        audit = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                str(tool_copy),
+                "transition-audit",
+                str(previous_release_directory),
+                str(catalog_directory),
+            ],
+            capture_output=True,
+            check=False,
+            env=isolated_python_environment(),
+        )
+        require(audit.returncode == 0, "exact Platform transition audit rejected the catalog snapshot")
+        require(not audit.stderr, "exact Platform transition audit wrote unexpected stderr")
+        require(1 <= len(audit.stdout) <= 128 * 1024, "Platform transition audit output has an invalid size")
+        try:
+            audit_value = json.loads(audit.stdout)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ReleaseBuildError("Platform transition audit is not valid UTF-8 JSON") from error
+        require(isinstance(audit_value, dict), "Platform transition audit root must be an object")
+        canonical_audit = (
+            json.dumps(audit_value, ensure_ascii=False, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        require(audit.stdout == canonical_audit, "Platform transition audit is not canonical")
         boundary_guard.verify()
+        return sha256_bytes(canonical_audit)
     finally:
         if validation_directory.exists():
             shutil.rmtree(validation_directory)
@@ -481,7 +556,7 @@ def candidate_manifest(candidate_directory: Path) -> tuple[dict[str, Any], Path]
     require(identity["signing_status"] == "verified", "candidate signature is not verified")
     require(identity["signingStatus"] == "verified", "candidate signing status is inconsistent")
     require(identity["debuggable"] is False, "debuggable candidate is forbidden")
-    require(identity["packageName"] == PACKAGE_NAME, "candidate package name is invalid")
+    require(identity["packageName"] == RF_PACKAGE_NAME, "candidate package name is invalid")
     require(identity["version"] == identity["versionName"], "candidate version fields disagree")
     require(identity["version_code"] == identity["versionCode"], "candidate version code fields disagree")
     require(
@@ -544,7 +619,7 @@ def candidate_manifest(candidate_directory: Path) -> tuple[dict[str, Any], Path]
         {"package_name", "version_name", "version_code", "minimum_android_sdk", "debuggable"},
         "candidate APK metadata",
     )
-    require(metadata_values["package_name"] == PACKAGE_NAME, "candidate metadata package name differs")
+    require(metadata_values["package_name"] == RF_PACKAGE_NAME, "candidate metadata package name differs")
     require(metadata_values["version_name"] == identity["versionName"], "candidate metadata versionName differs")
     require(metadata_values["version_code"] == str(identity["versionCode"]), "candidate metadata versionCode differs")
     require(
@@ -592,11 +667,7 @@ def validate_base_catalog(base_directory: Path) -> dict[str, Any]:
     release_ids: set[str] = set()
     version_keys: set[tuple[str, str, str, int]] = set()
     for game in manifest["games"]:
-        require(
-            isinstance(game, dict)
-            and set(game) in (EXPECTED_GAME_FIELDS, EXPECTED_GAME_FIELDS | {"androidAppLink"}),
-            "base game fields are invalid",
-        )
+        require(isinstance(game, dict) and set(game) == EXPECTED_GAME_FIELDS, "base game fields are invalid")
         game_id = safe_text(game["id"], "base game id", 2, 64)
         require(RELEASE_ID_PATTERN.fullmatch(game_id) is not None and game_id not in game_ids, "base game id is invalid")
         game_ids.add(game_id)
@@ -608,32 +679,73 @@ def validate_base_catalog(base_directory: Path) -> dict[str, Any]:
         game_slugs.add(slug)
         safe_text(game["displayName"], "base game displayName", 1, 120)
         safe_text(game["description"], "base game description", 1, 1000)
-        app_link = game.get("androidAppLink")
-        if app_link is not None:
-            require(isinstance(app_link, dict) and set(app_link) == EXPECTED_APP_LINK_FIELDS, "base androidAppLink is invalid")
-            package_name = safe_text(app_link["packageName"], "base Android package name", 3, 255)
+        variants = game["distributionVariants"]
+        require(isinstance(variants, list) and len(variants) == 2, "base game requires exactly two distributions")
+        distributions: dict[str, dict[str, Any]] = {}
+        scopes: set[str] = set()
+        for variant in variants:
+            require(
+                isinstance(variant, dict) and set(variant) == EXPECTED_DISTRIBUTION_FIELDS,
+                "base distribution fields are invalid",
+            )
+            distribution_id = safe_text(variant["id"], "base distribution id", 2, 64)
+            require(
+                RELEASE_ID_PATTERN.fullmatch(distribution_id) is not None and distribution_id not in distributions,
+                "base distribution id is invalid or duplicated",
+            )
+            require(variant["platform"] == "android", "base distribution platform is invalid")
+            market_scope = variant["marketScope"]
+            capability = (market_scope, variant["paymentChannel"], variant["deliveryChannel"])
+            require(
+                capability in {
+                    ("rf", "mirkori", "direct_apk"),
+                    ("global", "google_play", "google_play"),
+                },
+                "base distribution capabilities are incompatible",
+            )
+            scopes.add(market_scope)
+            package_name = safe_text(variant["packageName"], "base distribution package name", 3, 255)
             require(
                 re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", package_name) is not None,
-                "base Android package name is invalid",
+                "base distribution package name is invalid",
             )
-            fingerprints = app_link["certificateSha256Fingerprints"]
+            signing_ref = safe_text(variant["signingIdentityRef"], "base signing identity reference", 2, 64)
+            require(RELEASE_ID_PATTERN.fullmatch(signing_ref) is not None, "base signing identity reference is invalid")
+            fingerprints = variant["certificateSha256Fingerprints"]
             require(isinstance(fingerprints, list) and fingerprints, "base certificate list is invalid")
-            require(len({normalize_fingerprint(value) for value in fingerprints}) == len(fingerprints), "base certificate list is duplicated")
+            normalized_fingerprints = [normalize_fingerprint(value) for value in fingerprints]
+            require(len(set(normalized_fingerprints)) == len(fingerprints), "base certificate list is duplicated")
+            channels = variant["releaseChannels"]
+            require(
+                isinstance(channels, list)
+                and channels
+                and len(set(channels)) == len(channels)
+                and set(channels) <= {"stable", "beta"},
+                "base distribution release channels are invalid",
+            )
+            require(variant["status"] == "active", "base distribution status is invalid")
+            require(
+                isinstance(variant["effectiveConfigurationVersion"], int)
+                and not isinstance(variant["effectiveConfigurationVersion"], bool)
+                and variant["effectiveConfigurationVersion"] > 0,
+                "base distribution configuration version is invalid",
+            )
+            distributions[distribution_id] = variant
+        require(scopes == {"rf", "global"}, "base game requires RF and global distributions")
         releases = game["releases"]
         require(isinstance(releases, list), "base releases must be an array")
+        game_release_ids: set[str] = set()
+        published_by_release: dict[str, datetime] = {}
         for release in releases:
             require(isinstance(release, dict) and set(release) == EXPECTED_RELEASE_FIELDS, "base release fields are invalid")
             release_id = safe_text(release["id"], "base release id", 2, 64)
             require(RELEASE_ID_PATTERN.fullmatch(release_id) is not None and release_id not in release_ids, "base release id is invalid")
             release_ids.add(release_id)
-            require(
-                isinstance(release["platform"], str) and release["platform"] in {"android", "windows"},
-                "base platform is invalid",
-            )
-            require(
-                isinstance(release["channel"], str) and release["channel"] in {"stable", "beta"},
-                "base channel is invalid",
-            )
+            game_release_ids.add(release_id)
+            distribution_id = safe_text(release["distributionId"], "base release distribution id", 2, 64)
+            distribution = distributions.get(distribution_id)
+            require(distribution is not None, "base release references an unknown distribution")
+            require(release["channel"] in distribution["releaseChannels"], "base release channel is not enabled")
             safe_text(release["versionName"], "base versionName", 1, 64)
             require(
                 isinstance(release["versionCode"], int)
@@ -647,17 +759,13 @@ def validate_base_catalog(base_directory: Path) -> dict[str, Any]:
                 and 1 <= release["minimumSupportedVersionCode"] <= release["versionCode"],
                 "base minimum supported versionCode is invalid",
             )
-            if release["platform"] == "android":
-                require(app_link is not None, "base Android release requires androidAppLink")
-                require(
-                    isinstance(release["minimumAndroidSdk"], int)
-                    and not isinstance(release["minimumAndroidSdk"], bool)
-                    and 21 <= release["minimumAndroidSdk"] <= 100,
-                    "base minimum Android SDK is invalid",
-                )
-            else:
-                require(release["minimumAndroidSdk"] is None, "base Windows release has an Android minimum SDK")
-            key = (game_id, release["platform"], release["channel"], release["versionCode"])
+            require(
+                isinstance(release["minimumAndroidSdk"], int)
+                and not isinstance(release["minimumAndroidSdk"], bool)
+                and 21 <= release["minimumAndroidSdk"] <= 100,
+                "base minimum Android SDK is invalid",
+            )
+            key = (game_id, distribution_id, release["channel"], release["versionCode"])
             require(key not in version_keys, "base catalog has duplicate versionCode")
             version_keys.add(key)
             relative = validate_relative_path(release["relativePath"])
@@ -668,10 +776,7 @@ def validate_base_catalog(base_directory: Path) -> dict[str, Any]:
             file_name = safe_text(release["fileName"], "base artifact fileName", 1, 128)
             require(FILE_NAME_PATTERN.fullmatch(file_name) is not None, "base artifact fileName is invalid")
             require(relative.name == file_name, "base artifact fileName differs from its path")
-            require(
-                release["platform"] != "android" or file_name.lower().endswith(".apk"),
-                "base Android artifact must be an APK",
-            )
+            require(file_name.lower().endswith(".apk"), "base distribution artifact must be an APK")
             require(
                 isinstance(release["sizeBytes"], int)
                 and not isinstance(release["sizeBytes"], bool)
@@ -684,8 +789,38 @@ def validate_base_catalog(base_directory: Path) -> dict[str, Any]:
                 "base artifact hash is invalid",
             )
             require(sha256_file(artifact) == release["sha256"], "base artifact hash differs")
-            canonical_utc_instant(release["publishedAt"])
-            safe_text(release["changelog"], "base changelog", 1, 4000)
+            published = canonical_utc_instant(release["publishedAt"])
+            published_by_release[release_id] = datetime.fromisoformat(published[:-1] + "+00:00")
+            changelogs = release["changelogs"]
+            require(isinstance(changelogs, dict) and set(changelogs) == {"ru", "en"}, "base changelogs are invalid")
+            safe_text(changelogs["ru"], "base Russian changelog", 1, 4000)
+            safe_text(changelogs["en"], "base English changelog", 1, 4000)
+        policies = game["releasePolicies"]
+        require(isinstance(policies, list) and len(policies) == len(releases), "base release policies are incomplete")
+        policy_release_ids: set[str] = set()
+        for policy in policies:
+            require(isinstance(policy, dict), "base release policy is invalid")
+            status = policy.get("status")
+            fields = EXPECTED_POLICY_FIELDS | ({"reasonCode", "supportPath"} if status == "recalled" else set())
+            require(set(policy) == fields, "base release policy fields are invalid")
+            release_id = safe_text(policy["releaseId"], "base release policy id", 2, 64)
+            require(release_id in game_release_ids and release_id not in policy_release_ids, "base release policy id is invalid")
+            policy_release_ids.add(release_id)
+            require(status in {"active", "delisted", "recalled"}, "base release policy status is invalid")
+            require(
+                isinstance(policy["policyVersion"], int)
+                and not isinstance(policy["policyVersion"], bool)
+                and policy["policyVersion"] > 0,
+                "base release policy version is invalid",
+            )
+            effective_at = canonical_utc_instant(policy["effectiveAt"])
+            effective_instant = datetime.fromisoformat(effective_at[:-1] + "+00:00")
+            require(effective_instant >= published_by_release[release_id], "base release policy predates its release")
+            if status == "recalled":
+                safe_text(policy["reasonCode"], "base recall reason code", 3, 64)
+                support_path = safe_text(policy["supportPath"], "base recall support path", 2, 255)
+                require(support_path.startswith("/") and ".." not in support_path.split("/"), "base recall support path is invalid")
+        require(policy_release_ids == game_release_ids, "base release policies do not cover every release")
     actual: set[PurePosixPath] = set()
     for root, directories, files in os.walk(artifacts, followlinks=False):
         root_path = Path(root)
@@ -739,7 +874,8 @@ def release_provenance(
     identity: dict[str, Any],
     catalog_directory_name: str,
     catalog_manifest_sha256: str,
-    previous_catalog_manifest_sha256: str | None,
+    previous_catalog_manifest_sha256: str,
+    transition_audit_sha256: str,
     validator: PlatformValidatorIdentity,
 ) -> dict[str, Any]:
     return {
@@ -752,6 +888,8 @@ def release_provenance(
         },
         "release": {
             "releaseId": identity["releaseId"],
+            "distributionId": RF_DISTRIBUTION_ID,
+            "signingIdentityRef": RF_SIGNING_IDENTITY_REF,
             "versionName": identity["versionName"],
             "versionCode": identity["versionCode"],
             "apkFileName": identity["fileName"],
@@ -764,6 +902,7 @@ def release_provenance(
             "manifestFileName": "catalog.json",
             "manifestSha256": catalog_manifest_sha256,
             "previousManifestSha256": previous_catalog_manifest_sha256,
+            "transitionAuditSha256": transition_audit_sha256,
         },
         "platformValidator": {
             "repositoryCommit": validator.commit,
@@ -816,57 +955,112 @@ def fsync_tree(directory: Path) -> None:
 
 def build_catalog(
     identity: dict[str, Any],
-    base_manifest: dict[str, Any] | None,
+    base_manifest: dict[str, Any],
     channel: str,
     minimum_supported_version_code: int,
     published_at: str,
-    changelog: str,
+    changelog_ru: str,
+    changelog_en: str,
     description: str,
+    global_certificate_sha256: str | None,
 ) -> dict[str, Any]:
-    games = [] if base_manifest is None else json.loads(json.dumps(base_manifest["games"]))
+    games = json.loads(json.dumps(base_manifest["games"]))
     game = next((item for item in games if item["id"] == GAME_ID), None)
     fingerprint = identity["certificateSha256Fingerprint"]
     if game is None:
+        require(
+            global_certificate_sha256 is not None,
+            "global certificate SHA-256 is required when the base catalog has no InplaceX game",
+        )
         game = {
             "id": GAME_ID,
             "slug": GAME_SLUG,
             "displayName": "InplaceX",
             "description": description,
-            "androidAppLink": {
-                "packageName": PACKAGE_NAME,
-                "certificateSha256Fingerprints": [fingerprint],
-            },
+            "distributionVariants": [
+                {
+                    "id": RF_DISTRIBUTION_ID,
+                    "platform": "android",
+                    "marketScope": "rf",
+                    "packageName": RF_PACKAGE_NAME,
+                    "signingIdentityRef": RF_SIGNING_IDENTITY_REF,
+                    "certificateSha256Fingerprints": [fingerprint],
+                    "paymentChannel": "mirkori",
+                    "deliveryChannel": "direct_apk",
+                    "releaseChannels": ["stable", "beta"],
+                    "status": "active",
+                    "effectiveConfigurationVersion": 1,
+                },
+                {
+                    "id": GLOBAL_DISTRIBUTION_ID,
+                    "platform": "android",
+                    "marketScope": "global",
+                    "packageName": GLOBAL_PACKAGE_NAME,
+                    "signingIdentityRef": GLOBAL_SIGNING_IDENTITY_REF,
+                    "certificateSha256Fingerprints": [global_certificate_sha256],
+                    "paymentChannel": "google_play",
+                    "deliveryChannel": "google_play",
+                    "releaseChannels": ["stable", "beta"],
+                    "status": "active",
+                    "effectiveConfigurationVersion": 1,
+                },
+            ],
             "releases": [],
+            "releasePolicies": [],
         }
         games.append(game)
     else:
         require(game["slug"] == GAME_SLUG, "existing InplaceX slug is incompatible")
-        app_link = game.get("androidAppLink")
-        if app_link is None:
-            app_link = {
-                "packageName": PACKAGE_NAME,
-                "certificateSha256Fingerprints": [],
-            }
-            game["androidAppLink"] = app_link
-        require(app_link["packageName"] == PACKAGE_NAME, "existing InplaceX app link is incompatible")
-        fingerprints = [normalize_fingerprint(value) for value in app_link["certificateSha256Fingerprints"]]
+        variants = {variant["id"]: variant for variant in game["distributionVariants"]}
+        require(set(variants) == {RF_DISTRIBUTION_ID, GLOBAL_DISTRIBUTION_ID}, "existing InplaceX distributions are incompatible")
+        rf_variant = variants[RF_DISTRIBUTION_ID]
+        global_variant = variants[GLOBAL_DISTRIBUTION_ID]
+        require(
+            (
+                rf_variant["marketScope"],
+                rf_variant["packageName"],
+                rf_variant["signingIdentityRef"],
+                rf_variant["paymentChannel"],
+                rf_variant["deliveryChannel"],
+            )
+            == ("rf", RF_PACKAGE_NAME, RF_SIGNING_IDENTITY_REF, "mirkori", "direct_apk"),
+            "existing InplaceX RF distribution is incompatible",
+        )
+        require(
+            (
+                global_variant["marketScope"],
+                global_variant["packageName"],
+                global_variant["signingIdentityRef"],
+                global_variant["paymentChannel"],
+                global_variant["deliveryChannel"],
+            )
+            == ("global", GLOBAL_PACKAGE_NAME, GLOBAL_SIGNING_IDENTITY_REF, "google_play", "google_play"),
+            "existing InplaceX global distribution is incompatible",
+        )
+        if global_certificate_sha256 is not None:
+            require(
+                global_certificate_sha256 in global_variant["certificateSha256Fingerprints"],
+                "supplied global certificate is absent from the existing distribution",
+            )
+        fingerprints = [normalize_fingerprint(value) for value in rf_variant["certificateSha256Fingerprints"]]
         if fingerprint not in fingerprints:
             fingerprints.append(fingerprint)
-        app_link["certificateSha256Fingerprints"] = fingerprints
+            rf_variant["effectiveConfigurationVersion"] += 1
+        rf_variant["certificateSha256Fingerprints"] = fingerprints
 
     version_code = identity["versionCode"]
     release_id = identity["releaseId"]
-    artifact_path = f"{GAME_ID}/android/{channel}/{release_id}/{identity['fileName']}"
+    artifact_path = f"{GAME_ID}/{RF_DISTRIBUTION_ID}/{channel}/{release_id}/{identity['fileName']}"
     new_release = {
         "id": release_id,
-        "platform": "android",
+        "distributionId": RF_DISTRIBUTION_ID,
         "channel": channel,
         "versionName": identity["versionName"],
         "versionCode": version_code,
         "minimumSupportedVersionCode": minimum_supported_version_code,
         "minimumAndroidSdk": identity["minimumAndroidSdk"],
         "publishedAt": published_at,
-        "changelog": changelog,
+        "changelogs": {"ru": changelog_ru, "en": changelog_en},
         "fileName": identity["fileName"],
         "relativePath": artifact_path,
         "sizeBytes": identity["sizeBytes"],
@@ -874,20 +1068,29 @@ def build_catalog(
     }
     existing_by_id = {release["id"]: release for release in game["releases"]}
     existing_by_version = {
-        (release["platform"], release["channel"], release["versionCode"]): release
+        (release["distributionId"], release["channel"], release["versionCode"]): release
         for release in game["releases"]
     }
     same_id = existing_by_id.get(release_id)
-    same_version = existing_by_version.get(("android", channel, version_code))
+    same_version = existing_by_version.get((RF_DISTRIBUTION_ID, channel, version_code))
     if same_id is not None or same_version is not None:
         existing = same_id or same_version
         require(existing == new_release, "release id or versionCode already exists with different metadata")
     else:
         game["releases"].append(new_release)
+        game["releasePolicies"].append(
+            {
+                "releaseId": release_id,
+                "status": "active",
+                "effectiveAt": published_at,
+                "policyVersion": 1,
+            }
+        )
     game["releases"] = sorted(
         game["releases"],
-        key=lambda item: (item["platform"], item["channel"], item["versionCode"], item["id"]),
+        key=lambda item: (item["distributionId"], item["channel"], item["versionCode"], item["id"]),
     )
+    game["releasePolicies"] = sorted(game["releasePolicies"], key=lambda item: item["releaseId"])
     games.sort(key=lambda item: item["id"])
     return {"schemaVersion": CATALOG_SCHEMA_VERSION, "games": games}
 
@@ -926,27 +1129,33 @@ def main(arguments: Iterable[str] | None = None) -> int:
     parser.add_argument("--expected-commit", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--base-release-dir", type=Path)
-    parser.add_argument("--allow-empty-base", action="store_true")
     parser.add_argument("--platform-repo-dir", type=Path, required=True)
     parser.add_argument("--expected-platform-commit", required=True)
     parser.add_argument("--expected-platform-validator-sha256", required=True)
     parser.add_argument("--channel", choices=("stable", "beta"), default="stable")
     parser.add_argument("--minimum-supported-version-code", type=int, required=True)
     parser.add_argument("--published-at", required=True)
-    parser.add_argument("--changelog", required=True)
+    parser.add_argument("--changelog-ru", required=True)
+    parser.add_argument("--changelog-en", required=True)
+    parser.add_argument("--global-certificate-sha256")
     parser.add_argument(
         "--description",
         default="Логическая игра: размещайте числа по правилам и проходите кампанию.",
     )
     args = parser.parse_args(arguments)
-    require(args.base_release_dir is not None or args.allow_empty_base, "base catalog is required unless --allow-empty-base is explicit")
-    require(not (args.base_release_dir is not None and args.allow_empty_base), "choose a base catalog or --allow-empty-base")
+    require(args.base_release_dir is not None, "current schema-v3 base catalog is required")
     require(args.minimum_supported_version_code > 0, "minimum supported versionCode must be positive")
     expected_commit = safe_text(args.expected_commit, "expected commit", 40, 40)
     require(re.fullmatch(r"[0-9a-f]{40}", expected_commit) is not None, "expected commit is invalid")
     published_at = canonical_utc_instant(args.published_at)
-    changelog = safe_text(args.changelog, "changelog", 1, 4000)
+    changelog_ru = safe_text(args.changelog_ru, "Russian changelog", 1, 4000)
+    changelog_en = safe_text(args.changelog_en, "English changelog", 1, 4000)
     description = safe_text(args.description, "description", 1, 1000)
+    global_certificate_sha256 = (
+        normalize_fingerprint(args.global_certificate_sha256)
+        if args.global_certificate_sha256 is not None
+        else None
+    )
     expected_platform_commit = safe_text(args.expected_platform_commit, "expected Platform commit", 40, 40)
     require(re.fullmatch(r"[0-9a-f]{40}", expected_platform_commit) is not None, "expected Platform commit is invalid")
     expected_platform_validator_sha256 = safe_text(
@@ -961,7 +1170,7 @@ def main(arguments: Iterable[str] | None = None) -> int:
     )
 
     candidate_directory = real_directory(args.candidate_dir, "release candidate directory")
-    base_directory = real_directory(args.base_release_dir, "base catalog directory") if args.base_release_dir else None
+    base_directory = real_directory(args.base_release_dir, "base catalog directory")
     platform_repository = real_directory(args.platform_repo_dir, "Platform repository directory")
     output = args.output_dir.absolute()
     require(
@@ -984,8 +1193,7 @@ def main(arguments: Iterable[str] | None = None) -> int:
         (output_parent, "output parent directory"),
         (platform_repository, "Platform repository directory"),
     ]
-    if base_directory is not None:
-        guarded_directories.append((base_directory, "base catalog directory"))
+    guarded_directories.append((base_directory, "base catalog directory"))
 
     staging: Path | None = None
     provenance_staging: Path | None = None
@@ -1001,34 +1209,31 @@ def main(arguments: Iterable[str] | None = None) -> int:
             args.minimum_supported_version_code <= identity["versionCode"],
             "minimum supported versionCode exceeds candidate versionCode",
         )
-        source_roots = [apk.parent]
-        if base_directory is not None:
-            source_roots.append(base_directory)
+        source_roots = [apk.parent, base_directory]
         for source_root in source_roots:
             require(
                 output_parent != source_root and source_root not in output_parent.parents,
                 "output parent must not be inside an input directory",
             )
-        base_manifest = validate_base_catalog(base_directory) if base_directory else None
-        previous_manifest_sha256 = sha256_file(base_directory / "catalog.json") if base_directory else None
+        base_manifest = validate_base_catalog(base_directory)
+        previous_manifest_sha256 = sha256_file(base_directory / "catalog.json")
         boundary_guard.verify()
         staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.tmp.", dir=output_parent))
         try:
             real_directory(staging, "catalog staging directory")
             boundary_guard.verify()
             artifacts = staging / "artifacts"
-            if base_directory is not None:
-                copy_tree_without_links(base_directory / "artifacts", artifacts)
-            else:
-                artifacts.mkdir()
+            copy_tree_without_links(base_directory / "artifacts", artifacts)
             catalog = build_catalog(
                 identity,
                 base_manifest,
                 args.channel,
                 args.minimum_supported_version_code,
                 published_at,
-                changelog,
+                changelog_ru,
+                changelog_en,
                 description,
+                global_certificate_sha256,
             )
             release = next(
                 release
@@ -1052,7 +1257,13 @@ def main(arguments: Iterable[str] | None = None) -> int:
             )
             validate_base_catalog(staging)
             boundary_guard.verify()
-            run_platform_validator(validator, staging, base_directory, output_parent, boundary_guard)
+            transition_audit_sha256 = run_platform_validator(
+                validator,
+                staging,
+                base_directory,
+                output_parent,
+                boundary_guard,
+            )
             catalog_manifest_sha256 = sha256_file(manifest_path)
             fsync_tree(staging)
             provenance = release_provenance(
@@ -1060,6 +1271,7 @@ def main(arguments: Iterable[str] | None = None) -> int:
                 output.name,
                 catalog_manifest_sha256,
                 previous_manifest_sha256,
+                transition_audit_sha256,
                 validator,
             )
             boundary_guard.verify()

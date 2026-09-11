@@ -196,8 +196,8 @@ publication requires an export of Platform's exact resolved active `current`
 catalog as its base, never a remembered copy or `backup`. The builder preserves
 that supplied snapshot but cannot prove server activation state; the Platform
 publisher independently requires the candidate to retain the active games,
-releases, and artifacts. An empty base is available only through the explicit
-one-time `--allow-empty-base` bootstrap flag.
+releases, and artifacts. The builder requires the current schema-v3 catalog;
+first bootstrap remains a separate Platform operator procedure.
 
 The supported Gradle `buildPlatformCatalogRelease` workflow depends on
 `:app:releaseCandidate` and the opt-in `testPlatformReleaseContract`, derives its
@@ -221,14 +221,16 @@ SHA-256, binding the exact InplaceX commit/APK/certificate/catalog hash to the
 exact Platform commit and validator hash. Its `activationProof` is always
 `false`: Platform must verify and durably retain the attestation beside its
 activation state, then create separate evidence only after activation, restart,
-and live/public HTTPS smoke checks.
+and live/public HTTPS smoke checks. Provenance schema v2 additionally binds the
+exact `rf-mirkori` distribution, `inplacex-rf-signing` identity and canonical
+catalog transition-audit SHA-256.
 
 The exact reviewed Mirkori Platform `catalog_release_tool.py` remains the final
 authority: it independently verifies the real APK and complete catalog before
 server publication. The public `/.well-known/assetlinks.json` response is
 derived from the activated catalog rather than maintained as a separate mutable
-file. Adding the candidate certificate to `androidAppLink` is declarative only:
-the builder never edits or overrides Platform's external root-owned catalog
-trust policy. That policy must preapprove the exact InplaceX package and every
-declared certificate; an intentional rotation requires an approved old/new
-overlap before publication.
+file. The builder keeps exact `rf-mirkori` and `global-google` variants, changes
+only the RF certificate lineage for an RF APK, and never edits or overrides
+Platform's external root-owned catalog trust policy. That policy must preapprove
+the exact distribution package and every declared certificate; an intentional
+rotation requires an approved old/new overlap before publication.

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Migrated the signed InplaceX release builder to Mirkori Platform catalog
+  schema v3. It now preserves the independent `rf-mirkori` and `global-google`
+  distribution identities, emits RU/EN changelogs and an active lifecycle
+  policy for the RF APK, and binds provenance v2 to the exact canonical catalog
+  transition audit. Legacy schema-v1 and empty-base publication are rejected.
 - Connected the Android app to the Mirkori distribution-aware release catalog.
   Each foreground launch now checks the exact RF or global distribution and
   installed version. Optional updates can be deferred for the current app

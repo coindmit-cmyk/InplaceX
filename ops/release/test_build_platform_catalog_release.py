@@ -30,18 +30,29 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             candidate = self.create_candidate(root)
             output = root / "catalog-release"
 
-            self.run_builder(candidate, output, "--allow-empty-base")
+            self.run_builder(candidate, output, *self.base_arguments(candidate))
 
             catalog = json.loads((output / "catalog.json").read_text(encoding="utf-8"))
-            self.assertEqual(1, catalog["schemaVersion"])
+            self.assertEqual(3, catalog["schemaVersion"])
             self.assertEqual(["inplacex"], [game["id"] for game in catalog["games"]])
             game = catalog["games"][0]
-            self.assertEqual("com.mirkori.inplacex.rf", game["androidAppLink"]["packageName"])
-            self.assertEqual([self.fingerprint()], game["androidAppLink"]["certificateSha256Fingerprints"])
+            self.assertEqual(["rf-mirkori", "global-google"], [item["id"] for item in game["distributionVariants"]])
+            rf_distribution = game["distributionVariants"][0]
+            self.assertEqual("com.mirkori.inplacex.rf", rf_distribution["packageName"])
+            self.assertEqual([self.fingerprint()], rf_distribution["certificateSha256Fingerprints"])
             release = game["releases"][0]
             self.assertEqual("inplacex-1.0-1", release["id"])
+            self.assertEqual("rf-mirkori", release["distributionId"])
+            self.assertEqual(
+                {"ru": "Первый ограниченный релиз.", "en": "Initial limited release."},
+                release["changelogs"],
+            )
             self.assertEqual(1, release["minimumSupportedVersionCode"])
             self.assertEqual("2026-08-07T12:00:00Z", release["publishedAt"])
+            self.assertEqual(
+                [{"releaseId": "inplacex-1.0-1", "status": "active", "effectiveAt": "2026-08-07T12:00:00Z", "policyVersion": 1}],
+                game["releasePolicies"],
+            )
             artifact = output / "artifacts" / Path(release["relativePath"])
             self.assertEqual(b"signed-production-apk", artifact.read_bytes())
             self.assertEqual(release["sha256"], hashlib.sha256(artifact.read_bytes()).hexdigest())
@@ -49,9 +60,13 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             provenance_path = provenance_directory / "release-provenance.json"
             provenance_bytes = provenance_path.read_bytes()
             provenance = json.loads(provenance_bytes)
+            self.assertEqual(2, provenance["schemaVersion"])
             self.assertFalse(provenance["activationProof"])
             self.assertEqual("a" * 40, provenance["inplaceX"]["commit"])
+            self.assertEqual("rf-mirkori", provenance["release"]["distributionId"])
+            self.assertEqual("inplacex-rf-signing", provenance["release"]["signingIdentityRef"])
             self.assertEqual(release["sha256"], provenance["release"]["apkSha256"])
+            self.assertEqual("e" * 64, provenance["catalog"]["transitionAuditSha256"])
             self.assertEqual(
                 hashlib.sha256((output / "catalog.json").read_bytes()).hexdigest(),
                 provenance["catalog"]["manifestSha256"],
@@ -70,7 +85,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             missing_parent = root / "must-not-be-created"
 
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(candidate, missing_parent / "catalog-release", "--allow-empty-base")
+                self.run_builder(candidate, missing_parent / "catalog-release", *self.base_arguments(candidate))
 
             self.assertFalse(missing_parent.exists())
 
@@ -88,7 +103,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                 ),
                 self.assertRaises(release_builder.ReleaseBuildError),
             ):
-                self.run_builder(candidate, output_parent / "catalog-release", "--allow-empty-base")
+                self.run_builder(candidate, output_parent / "catalog-release", *self.base_arguments(candidate))
 
             self.assertEqual([], list(output_parent.iterdir()))
 
@@ -105,17 +120,52 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             self.assertEqual(["another-game", "inplacex"], [game["id"] for game in catalog["games"]])
             another = catalog["games"][0]
             self.assertEqual("another-release", another["releases"][0]["id"])
+            inplacex = catalog["games"][1]
+            self.assertEqual(
+                {"rf-mirkori", "global-google"},
+                {distribution["id"] for distribution in inplacex["distributionVariants"]},
+            )
             self.assertEqual(
                 b"other-game-artifact",
-                (output / "artifacts" / "another-game" / "windows" / "another.zip").read_bytes(),
+                (output / "artifacts" / "another-game" / "rf" / "another.apk").read_bytes(),
             )
+
+    def test_new_inplacex_game_requires_explicit_global_signing_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            identity, _ = release_builder.candidate_manifest(self.create_candidate(root))
+            base_manifest = release_builder.validate_base_catalog(self.create_base_catalog(root))
+
+            with self.assertRaisesRegex(release_builder.ReleaseBuildError, "global certificate"):
+                release_builder.build_catalog(
+                    identity,
+                    base_manifest,
+                    "stable",
+                    1,
+                    "2026-08-07T12:00:00Z",
+                    "Первый релиз.",
+                    "Initial release.",
+                    "Game",
+                    None,
+                )
+
+    def test_rejects_legacy_catalog_base(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = self.create_base_catalog(Path(directory))
+            manifest_path = base / "catalog.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["schemaVersion"] = 1
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(release_builder.ReleaseBuildError, "unsupported base catalog schema"):
+                release_builder.validate_base_catalog(base)
 
     def test_preserves_release_and_certificate_history_during_rotation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             first_candidate = self.create_candidate(root)
             base = root / "base-output"
-            self.run_builder(first_candidate, base, "--allow-empty-base")
+            self.run_builder(first_candidate, base, *self.base_arguments(first_candidate))
             second_parent = root / "second-candidate"
             second_parent.mkdir()
             next_fingerprint = ":".join(["CD"] * 32)
@@ -130,10 +180,12 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             self.run_builder(second_candidate, output, "--base-release-dir", str(base))
 
             game = json.loads((output / "catalog.json").read_text(encoding="utf-8"))["games"][0]
+            rf_distribution = next(item for item in game["distributionVariants"] if item["id"] == "rf-mirkori")
             self.assertEqual(
                 [self.fingerprint(), next_fingerprint],
-                game["androidAppLink"]["certificateSha256Fingerprints"],
+                rf_distribution["certificateSha256Fingerprints"],
             )
+            self.assertEqual(2, rf_distribution["effectiveConfigurationVersion"])
             self.assertEqual(
                 ["inplacex-1.0-1", "inplacex-1.1-2"],
                 [release["id"] for release in game["releases"]],
@@ -147,7 +199,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             output = root / "catalog-release"
 
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(candidate, output, "--allow-empty-base")
+                self.run_builder(candidate, output, *self.base_arguments(candidate))
 
             self.assertFalse(output.exists())
             self.assertEqual([], list(root.glob(".catalog-release.tmp.*")))
@@ -157,11 +209,11 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             root = Path(directory)
             candidate = self.create_candidate(root)
             output = root / "catalog-release"
-            self.run_builder(candidate, output, "--allow-empty-base")
+            self.run_builder(candidate, output, *self.base_arguments(candidate))
             (output / "catalog.json").write_text("{}\n", encoding="utf-8")
 
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(candidate, output, "--allow-empty-base")
+                self.run_builder(candidate, output, *self.base_arguments(candidate))
 
             self.assertEqual("{}\n", (output / "catalog.json").read_text(encoding="utf-8"))
 
@@ -175,7 +227,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             (provenance / "release-provenance.json").write_text("{}\n", encoding="utf-8")
 
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(candidate, output, "--allow-empty-base")
+                self.run_builder(candidate, output, *self.base_arguments(candidate))
 
             self.assertFalse(output.exists())
             self.assertEqual("{}\n", (provenance / "release-provenance.json").read_text(encoding="utf-8"))
@@ -185,7 +237,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             root = Path(directory)
             candidate = self.create_candidate(root)
             base_output = root / "base"
-            self.run_builder(candidate, base_output, "--allow-empty-base")
+            self.run_builder(candidate, base_output, *self.base_arguments(candidate))
             manifest_path = candidate / "InplaceX-1.0-1.json"
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             manifest["releaseId"] = "inplacex-1.0-hotfix-1"
@@ -216,7 +268,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                 self.run_builder(
                     candidate,
                     root / "wrong-commit-output",
-                    "--allow-empty-base",
+                    *self.base_arguments(candidate),
                     expected_commit="b" * 40,
                 )
 
@@ -232,32 +284,26 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             root = Path(directory)
             candidate = self.create_candidate(root)
             output = root / "catalog-release"
-            self.run_builder(candidate, output, "--allow-empty-base")
+            self.run_builder(candidate, output, *self.base_arguments(candidate))
             unexpected = output / "unexpected-empty-directory"
             unexpected.mkdir()
 
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(candidate, output, "--allow-empty-base")
+                self.run_builder(candidate, output, *self.base_arguments(candidate))
 
             self.assertTrue(unexpected.is_dir())
 
     def test_rejects_catalog_shapes_rejected_by_platform(self) -> None:
         def duplicate_slug(catalog: dict, _: Path) -> None:
-            catalog["games"].append(
-                {
-                    "id": "third-game",
-                    "slug": "another-game",
-                    "displayName": "Third Game",
-                    "description": "Duplicate slugs are forbidden by Platform.",
-                    "releases": [],
-                }
-            )
+            game = json.loads(json.dumps(catalog["games"][0]))
+            game.update(id="third-game", slug="another-game", displayName="Third Game")
+            catalog["games"].append(game)
 
         def relative_path(value: str):
             return lambda catalog, _: catalog["games"][0]["releases"][0].update(relativePath=value)
 
         def boolean_size(catalog: dict, base: Path) -> None:
-            artifact = base / "artifacts" / "another-game" / "windows" / "another.zip"
+            artifact = base / "artifacts" / "another-game" / "rf" / "another.apk"
             artifact.write_bytes(b"x")
             release = catalog["games"][0]["releases"][0]
             release["sizeBytes"] = True
@@ -265,18 +311,13 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
 
         def android_non_apk(catalog: dict, _: Path) -> None:
             game = catalog["games"][0]
-            game["androidAppLink"] = {
-                "packageName": "com.example.another",
-                "certificateSha256Fingerprints": [self.fingerprint()],
-            }
             release = game["releases"][0]
-            release["platform"] = "android"
-            release["minimumAndroidSdk"] = 29
+            release["fileName"] = "another.zip"
 
         mutations = {
             "duplicate slug": duplicate_slug,
-            "double slash": relative_path("another-game//windows/another.zip"),
-            "dot segment": relative_path("another-game/./windows/another.zip"),
+            "double slash": relative_path("another-game//rf/another.apk"),
+            "dot segment": relative_path("another-game/./rf/another.apk"),
             "boolean size": boolean_size,
             "Android non-APK": android_non_apk,
         }
@@ -335,7 +376,7 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                 self.run_builder(
                     real_candidate,
                     output_parent_link / "catalog-release",
-                    "--allow-empty-base",
+                    *self.base_arguments(real_candidate),
                 )
 
             missing_descendant = output_parent_link / "must-not-be-created"
@@ -343,16 +384,16 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                 self.run_builder(
                     real_candidate,
                     missing_descendant / "catalog-release",
-                    "--allow-empty-base",
+                    *self.base_arguments(real_candidate),
                 )
             self.assertFalse(real_output_parent.joinpath("must-not-be-created").exists())
 
             real_output = root / "real-output"
-            self.run_builder(real_candidate, real_output, "--allow-empty-base")
+            self.run_builder(real_candidate, real_output, *self.base_arguments(real_candidate))
             output_link = root / "output-link"
             junction(output_link, real_output)
             with self.assertRaises(release_builder.ReleaseBuildError):
-                self.run_builder(real_candidate, output_link, "--allow-empty-base")
+                self.run_builder(real_candidate, output_link, *self.base_arguments(real_candidate))
 
     def test_gradle_workflow_consumes_exact_release_candidate_and_commit(self) -> None:
         gradle_script = (MODULE_PATH.parents[2] / "build.gradle.kts").read_text(encoding="utf-8")
@@ -368,6 +409,11 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             'inplacexPlatformRepositoryDir',
             'inplacexPlatformExpectedCommit',
             'inplacexPlatformValidatorSha256',
+            'inplacexPlatformCatalogChangelogRu',
+            'inplacexPlatformCatalogChangelogEn',
+            'inplacexPlatformGlobalCertificateSha256',
+            '"--changelog-ru"',
+            '"--changelog-en"',
             'verify_platform_release_contract.py',
             '"-I"',
             '"--no-replace-objects"',
@@ -497,6 +543,44 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
                     hashlib.sha256(tool.read_bytes()).hexdigest(),
                 )
 
+    def test_hashes_exact_canonical_platform_transition_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = root / "candidate"
+            previous = root / "previous"
+            candidate.mkdir()
+            previous.mkdir()
+            tool_bytes = b"print('validator')\n"
+            validator = release_builder.PlatformValidatorIdentity(
+                root,
+                "c" * 40,
+                root / "catalog_release_tool.py",
+                hashlib.sha256(tool_bytes).hexdigest(),
+                tool_bytes,
+            )
+            audit_bytes = b'{"schemaVersion":1,"addedReleaseIds":["inplacex-1.0-1"]}\n'
+            guard = mock.Mock()
+            with mock.patch.object(
+                release_builder.subprocess,
+                "run",
+                side_effect=(
+                    subprocess.CompletedProcess([], 0, stdout=b"", stderr=b""),
+                    subprocess.CompletedProcess([], 0, stdout=audit_bytes, stderr=b""),
+                ),
+            ) as run:
+                digest = release_builder.run_platform_validator(
+                    validator,
+                    candidate,
+                    previous,
+                    root,
+                    guard,
+                )
+
+            self.assertEqual(hashlib.sha256(audit_bytes).hexdigest(), digest)
+            self.assertIn("--previous-release-directory", run.call_args_list[0].args[0])
+            self.assertEqual("transition-audit", run.call_args_list[1].args[0][3])
+            self.assertGreaterEqual(guard.verify.call_count, 3)
+
     def test_rejects_platform_checkout_hidden_by_replace_ref(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = self.create_platform_repository(Path(directory))
@@ -541,8 +625,12 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
             "1",
             "--published-at",
             "2026-08-07T12:00:00Z",
-            "--changelog",
+            "--changelog-ru",
             "Первый ограниченный релиз.",
+            "--changelog-en",
+            "Initial limited release.",
+            "--global-certificate-sha256",
+            self.global_fingerprint(),
         ]
         validator = release_builder.PlatformValidatorIdentity(
             output.parent,
@@ -553,24 +641,32 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         )
         with (
             mock.patch.object(release_builder, "validate_platform_checkout", return_value=validator),
-            mock.patch.object(release_builder, "run_platform_validator"),
+            mock.patch.object(release_builder, "run_platform_validator", return_value="e" * 64),
             contextlib.redirect_stdout(io.StringIO()),
         ):
             release_builder.main(arguments)
 
-    def create_platform_repository(self, root: Path, schema_version: int = 1) -> Path:
+    def base_arguments(self, candidate: Path) -> tuple[str, str]:
+        return "--base-release-dir", str(self.create_inplacex_base(candidate.parent))
+
+    def create_platform_repository(self, root: Path, schema_version: int = 3) -> Path:
         repository = root / "platform"
         tool = repository / "ops" / "catalog_release_tool.py"
         tool.parent.mkdir(parents=True)
         tool.write_bytes((
-            f"SCHEMA_VERSION = {schema_version}\n"
+            f"LIFECYCLE_SCHEMA_VERSION = {schema_version}\n"
             "GAME_FIELDS = {'id', 'slug', 'displayName', 'description', 'releases'}\n"
-            "APP_LINK_FIELDS = {'packageName', 'certificateSha256Fingerprints'}\n"
-            "RELEASE_FIELDS = {\n"
-            "    'id', 'platform', 'channel', 'versionName', 'versionCode',\n"
-            "    'minimumSupportedVersionCode', 'minimumAndroidSdk', 'publishedAt',\n"
-            "    'changelog', 'fileName', 'relativePath', 'sizeBytes', 'sha256',\n"
+            "DISTRIBUTION_FIELDS = {\n"
+            "    'id', 'platform', 'marketScope', 'packageName', 'signingIdentityRef',\n"
+            "    'certificateSha256Fingerprints', 'paymentChannel', 'deliveryChannel',\n"
+            "    'releaseChannels', 'status', 'effectiveConfigurationVersion',\n"
             "}\n"
+            "DISTRIBUTION_RELEASE_FIELDS = {\n"
+            "    'id', 'distributionId', 'channel', 'versionName', 'versionCode',\n"
+            "    'minimumSupportedVersionCode', 'minimumAndroidSdk', 'publishedAt',\n"
+            "    'changelogs', 'fileName', 'relativePath', 'sizeBytes', 'sha256',\n"
+            "}\n"
+            "LIFECYCLE_POLICY_FIELDS = {'releaseId', 'status', 'effectiveAt', 'policyVersion'}\n"
         ).encode("utf-8"))
         self.git(repository, "init", "--quiet")
         self.git(repository, "config", "user.email", "release-test@example.invalid")
@@ -649,33 +745,57 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
 
     def create_base_catalog(self, root: Path) -> Path:
         base = root / "base"
-        artifact = base / "artifacts" / "another-game" / "windows" / "another.zip"
+        artifact = base / "artifacts" / "another-game" / "rf" / "another.apk"
         artifact.parent.mkdir(parents=True)
         artifact.write_bytes(b"other-game-artifact")
         digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
         catalog = {
-            "schemaVersion": 1,
+            "schemaVersion": 3,
             "games": [
                 {
                     "id": "another-game",
                     "slug": "another-game",
                     "displayName": "Another Game",
                     "description": "Existing game must remain in the shared catalog.",
+                    "distributionVariants": [
+                        self.distribution(
+                            "another-rf",
+                            "rf",
+                            "games.example.another.rf",
+                            "another-rf-signing",
+                            self.fingerprint(),
+                        ),
+                        self.distribution(
+                            "another-global",
+                            "global",
+                            "games.example.another",
+                            "another-global-signing",
+                            self.global_fingerprint(),
+                        ),
+                    ],
                     "releases": [
                         {
                             "id": "another-release",
-                            "platform": "windows",
+                            "distributionId": "another-rf",
                             "channel": "stable",
                             "versionName": "2.0",
                             "versionCode": 2,
                             "minimumSupportedVersionCode": 1,
-                            "minimumAndroidSdk": None,
+                            "minimumAndroidSdk": 29,
                             "publishedAt": "2026-08-01T00:00:00Z",
-                            "changelog": "Existing release.",
-                            "fileName": "another.zip",
-                            "relativePath": "another-game/windows/another.zip",
+                            "changelogs": {"ru": "Существующий релиз.", "en": "Existing release."},
+                            "fileName": "another.apk",
+                            "relativePath": "another-game/rf/another.apk",
                             "sizeBytes": artifact.stat().st_size,
                             "sha256": digest,
+                        }
+                    ],
+                    "releasePolicies": [
+                        {
+                            "releaseId": "another-release",
+                            "status": "active",
+                            "effectiveAt": "2026-08-01T00:00:00Z",
+                            "policyVersion": 1,
                         }
                     ],
                 }
@@ -684,9 +804,73 @@ class PlatformCatalogReleaseBuilderTest(unittest.TestCase):
         (base / "catalog.json").write_text(json.dumps(catalog), encoding="utf-8")
         return base
 
+    def create_inplacex_base(self, root: Path) -> Path:
+        base = root / "schema3-base"
+        if base.exists():
+            return base
+        (base / "artifacts").mkdir(parents=True)
+        catalog = {
+            "schemaVersion": 3,
+            "games": [
+                {
+                    "id": "inplacex",
+                    "slug": "inplacex",
+                    "displayName": "InplaceX",
+                    "description": "Existing distribution authority.",
+                    "distributionVariants": [
+                        self.distribution(
+                            "rf-mirkori",
+                            "rf",
+                            "com.mirkori.inplacex.rf",
+                            "inplacex-rf-signing",
+                            self.fingerprint(),
+                        ),
+                        self.distribution(
+                            "global-google",
+                            "global",
+                            "com.mirkori.inplacex",
+                            "inplacex-global-signing",
+                            self.global_fingerprint(),
+                        ),
+                    ],
+                    "releases": [],
+                    "releasePolicies": [],
+                }
+            ],
+        }
+        (base / "catalog.json").write_text(json.dumps(catalog), encoding="utf-8")
+        return base
+
+    @staticmethod
+    def distribution(
+        distribution_id: str,
+        market_scope: str,
+        package_name: str,
+        signing_identity_ref: str,
+        fingerprint: str,
+    ) -> dict[str, object]:
+        global_distribution = market_scope == "global"
+        return {
+            "id": distribution_id,
+            "platform": "android",
+            "marketScope": market_scope,
+            "packageName": package_name,
+            "signingIdentityRef": signing_identity_ref,
+            "certificateSha256Fingerprints": [fingerprint],
+            "paymentChannel": "google_play" if global_distribution else "mirkori",
+            "deliveryChannel": "google_play" if global_distribution else "direct_apk",
+            "releaseChannels": ["stable", "beta"],
+            "status": "active",
+            "effectiveConfigurationVersion": 1,
+        }
+
     @staticmethod
     def fingerprint() -> str:
         return ":".join(["AB"] * 32)
+
+    @staticmethod
+    def global_fingerprint() -> str:
+        return ":".join(["EF"] * 32)
 
 
 if __name__ == "__main__":
