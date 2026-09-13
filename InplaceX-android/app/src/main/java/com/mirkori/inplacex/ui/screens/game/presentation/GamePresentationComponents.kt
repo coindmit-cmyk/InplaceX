@@ -48,9 +48,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mirkori.inplacex.R
@@ -100,12 +103,12 @@ internal data class GameReferenceLayoutSpec(
     val boardHorizontalOffset: Dp = (-2).dp,
     val boardToHelpersGap: Dp = 5.dp,
     val lowerPanelWidth: Dp = 326.dp,
-    val helpersHeight: Dp = 48.dp,
-    val helpersToToolsGap: Dp = 2.dp,
-    val toolsHeight: Dp = 48.dp,
-    val toolsToInputGap: Dp = 2.dp,
-    val inputHeight: Dp = 174.dp,
-    val inputToBannerGap: Dp = 0.dp,
+    val helpersHeight: Dp = 42.dp,
+    val helpersToToolsGap: Dp = 5.dp,
+    val toolsHeight: Dp = 35.dp,
+    val toolsToInputGap: Dp = 4.dp,
+    val inputHeight: Dp = 166.dp,
+    val inputToBannerGap: Dp = 11.dp,
     val bannerWidth: Dp = 334.dp,
     val bannerHeight: Dp = 99.dp,
 )
@@ -899,6 +902,7 @@ private fun ReferenceGameTopPanel(
                         bonusMoves = uiState.counters.bonusMoves,
                     ),
                     valueColor = FinalUiColors.ModeOrangeText,
+                    valueTag = "game-top-moves-value",
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider(
@@ -909,6 +913,7 @@ private fun ReferenceGameTopPanel(
                     label = strings.text("game.top.total"),
                     value = totalValue,
                     valueColor = FinalUiColors.PrimaryDeep,
+                    valueTag = "game-top-total-value",
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider(
@@ -919,6 +924,7 @@ private fun ReferenceGameTopPanel(
                     label = strings.text("game.top.turn"),
                     value = timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
                     valueColor = FinalUiColors.ModeGreenDeep,
+                    valueTag = "game-top-turn-value",
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -932,6 +938,7 @@ private fun GameInfoMetric(
     value: String,
     valueColor: Color,
     modifier: Modifier,
+    valueTag: String? = null,
 ) {
     Column(
         modifier = modifier.padding(horizontal = 2.dp),
@@ -939,19 +946,40 @@ private fun GameInfoMetric(
     ) {
         Text(
             text = label,
-            fontSize = 10.sp,
-            color = FinalUiColors.WarmTextMuted,
+            style = gameMetricTextStyle(
+                fontSize = 10.sp,
+                lineHeight = 11.sp,
+                color = FinalUiColors.WarmTextMuted,
+                weight = FontWeight.Normal,
+            ),
             maxLines = 1,
         )
         Text(
             text = value,
-            fontSize = 12.sp,
-            color = valueColor,
-            fontWeight = FontWeight.Bold,
+            modifier = if (valueTag != null) Modifier.testTag(valueTag) else Modifier,
+            style = gameMetricTextStyle(
+                fontSize = 12.sp,
+                lineHeight = 13.sp,
+                color = valueColor,
+                weight = FontWeight.Bold,
+            ),
             maxLines = 1,
         )
     }
 }
+
+internal fun gameMetricTextStyle(
+    fontSize: TextUnit,
+    lineHeight: TextUnit,
+    color: Color,
+    weight: FontWeight,
+): TextStyle = TextStyle(
+    fontSize = fontSize,
+    lineHeight = lineHeight,
+    color = color,
+    fontWeight = weight,
+    platformStyle = PlatformTextStyle(includeFontPadding = false),
+)
 
 @Composable
 fun GameAttemptsPanel(

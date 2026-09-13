@@ -40,6 +40,20 @@ class GamePresentationComponentsTest {
     }
 
     @Test
+    fun `top metric uses a tight line box so its value is not clipped`() {
+        val style = gameMetricTextStyle(
+            fontSize = 12.sp,
+            lineHeight = 13.sp,
+            color = Color.Black,
+            weight = FontWeight.Bold,
+        )
+
+        assertEquals(12.sp, style.fontSize)
+        assertEquals(13.sp, style.lineHeight)
+        assertEquals(PlatformTextStyle(includeFontPadding = false), style.platformStyle)
+    }
+
+    @Test
     fun `analysis uses the latest mark for a matching cell only`() {
         val marks = listOf(
             GameFieldManualMark(0, '1', GameFieldManualMarkType.NO),
@@ -124,12 +138,12 @@ class GamePresentationComponentsTest {
         assertEquals((-2).dp, spec.boardHorizontalOffset)
         assertEquals(5.dp, spec.boardToHelpersGap)
         assertEquals(326.dp, spec.lowerPanelWidth)
-        assertEquals(48.dp, spec.helpersHeight)
-        assertEquals(2.dp, spec.helpersToToolsGap)
-        assertEquals(48.dp, spec.toolsHeight)
-        assertEquals(2.dp, spec.toolsToInputGap)
-        assertEquals(174.dp, spec.inputHeight)
-        assertEquals(0.dp, spec.inputToBannerGap)
+        assertEquals(42.dp, spec.helpersHeight)
+        assertEquals(5.dp, spec.helpersToToolsGap)
+        assertEquals(35.dp, spec.toolsHeight)
+        assertEquals(4.dp, spec.toolsToInputGap)
+        assertEquals(166.dp, spec.inputHeight)
+        assertEquals(11.dp, spec.inputToBannerGap)
         assertEquals(334.dp, spec.bannerWidth)
         assertEquals(99.dp, spec.bannerHeight)
     }
