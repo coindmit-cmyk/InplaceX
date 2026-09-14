@@ -170,6 +170,71 @@ def check_freshness(
     }
 
 
+def check_task_branch_contract(
+    repo: Path,
+    *,
+    base_ref: str,
+    branch_ref: str,
+    remote: str = "origin",
+    expected_base_ref: str = "origin/develop",
+    expected_base_sha: str | None = None,
+    fetch: bool = False,
+) -> dict[str, Any]:
+    """Require one task branch to descend from the current integration base."""
+
+    normalized_base = base_ref.removeprefix("refs/remotes/")
+    normalized_expected = expected_base_ref.removeprefix("refs/remotes/")
+    report = check_freshness(
+        repo,
+        base_ref=base_ref,
+        local_ref=branch_ref,
+        remote=remote,
+        fetch=fetch,
+        auto_ff=False,
+    )
+    errors = list(report.get("errors") or [])
+    if normalized_base != normalized_expected:
+        errors.append(
+            {
+                "code": "invalid_task_base_ref",
+                "message": f"task branches must use {expected_base_ref}, not {base_ref}",
+            }
+        )
+    actual_base_sha = str(report.get("base_sha") or "").lower()
+    expected_sha = str(expected_base_sha or "").strip().lower()
+    if expected_sha and actual_base_sha != expected_sha:
+        errors.append(
+            {
+                "code": "base_sha_changed",
+                "message": f"{base_ref} no longer matches the accepted base SHA",
+            }
+        )
+    if report.get("local_contains_base") is False:
+        errors = [
+            error
+            for error in errors
+            if error.get("code") != "local_checkout_behind_remote"
+        ]
+        errors.append(
+            {
+                "code": "task_branch_missing_current_base",
+                "message": (
+                    f"task branch {branch_ref} does not contain current {base_ref}; "
+                    "rebuild or rebase it before integration"
+                ),
+            }
+        )
+    return {
+        **report,
+        "ok": not errors,
+        "contract": "develop_task_branch_v1",
+        "branch_ref": branch_ref,
+        "expected_base_ref": expected_base_ref,
+        "expected_base_sha": expected_sha or None,
+        "errors": errors,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate that local files are fresh relative to GitHub.")
     parser.add_argument("--project-root", default=".")
@@ -178,17 +243,35 @@ def main() -> int:
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--fetch", action="store_true", help="Refresh remote refs before checking freshness.")
     parser.add_argument("--auto-ff", action="store_true", help="Fast-forward a clean checkout when it is only behind the base ref.")
+    parser.add_argument(
+        "--task-branch-contract",
+        action="store_true",
+        help="Require --local-ref to descend from the current task integration base.",
+    )
+    parser.add_argument("--expected-base-ref", default="origin/develop")
+    parser.add_argument("--expected-base-sha")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    report = check_freshness(
-        Path(args.project_root),
-        base_ref=args.base_ref,
-        local_ref=args.local_ref,
-        remote=args.remote,
-        fetch=args.fetch,
-        auto_ff=args.auto_ff,
-    )
+    if args.task_branch_contract:
+        report = check_task_branch_contract(
+            Path(args.project_root),
+            base_ref=args.base_ref,
+            branch_ref=args.local_ref,
+            remote=args.remote,
+            expected_base_ref=args.expected_base_ref,
+            expected_base_sha=args.expected_base_sha,
+            fetch=args.fetch,
+        )
+    else:
+        report = check_freshness(
+            Path(args.project_root),
+            base_ref=args.base_ref,
+            local_ref=args.local_ref,
+            remote=args.remote,
+            fetch=args.fetch,
+            auto_ff=args.auto_ff,
+        )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     elif report["ok"]:

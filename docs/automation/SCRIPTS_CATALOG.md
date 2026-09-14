@@ -93,6 +93,14 @@ Generated from `templates/agent-control/automation_manifest.json`.
 | `entry_preflight` | `scripts/agent_control/entry_preflight.py` | `dispatcher` | `true` | `false` | `active` |
 | `project_version_gate` | `scripts/agent_control/project_version_gate.py` | `architect` | `true` | `false` | `active` |
 | `execution_lease_manager` | `scripts/agent_control/execution_lease_manager.py` | `remote-automation-host` | `true` | `false` | `active` |
+| `execution_audit_journal` | `scripts/agent_control/execution_audit_journal.py` | `architect` | `true` | `false` | `active` |
+| `execution_contract_validator` | `scripts/agent_control/execution_contract_validator.py` | `dispatcher` | `false` | `true` | `active` |
+| `execution_plan_compiler` | `scripts/agent_control/execution_plan_compiler.py` | `dispatcher` | `false` | `true` | `active` |
+| `next_run_footer_renderer` | `scripts/agent_control/next_run_footer_renderer.py` | `architect` | `false` | `true` | `active` |
+| `next_run_recommendation_validator` | `scripts/agent_control/next_run_recommendation_validator.py` | `dispatcher` | `false` | `true` | `active` |
+| `read_only_subagent_launcher` | `scripts/agent_control/read_only_subagent_launcher.py` | `remote-automation-host` | `true` | `false` | `active` |
+| `result_integration_engine` | `scripts/agent_control/result_integration_engine.py` | `integrator` | `false` | `true` | `active` |
+| `result_lane_accounting` | `scripts/agent_control/result_lane_accounting.py` | `integrator` | `false` | `true` | `active` |
 | `command_bus` | `scripts/agent_control/command_bus.py` | `remote-automation-host` | `true` | `false` | `active` |
 | `command_consumer` | `scripts/agent_control/command_consumer.py` | `remote-automation-host` | `true` | `false` | `active` |
 | `install_codex_role_skills` | `scripts/agent_control/install_codex_role_skills.py` | `agent-update-manager` | `true` | `false` | `active` |

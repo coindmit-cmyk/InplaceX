@@ -155,10 +155,12 @@ def scope_patterns_overlap(left: str, right: str) -> bool:
         return True
     if left.endswith("/**"):
         base = left[:-3].rstrip("/")
-        return right == base or right.startswith(base + "/")
+        if right == base or right.startswith(base + "/"):
+            return True
     if right.endswith("/**"):
         base = right[:-3].rstrip("/")
-        return left == base or left.startswith(base + "/")
+        if left == base or left.startswith(base + "/"):
+            return True
     return fnmatch(right, left) or fnmatch(left, right)
 
 

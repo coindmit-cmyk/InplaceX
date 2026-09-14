@@ -19,6 +19,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from github_freshness_guard import check_task_branch_contract
+from project_paths import task_manager_dir
+
 
 DEFAULT_MODELS = {
     "auto-worker-5.3-mini": "gpt-5.3-codex-spark",
@@ -103,19 +106,20 @@ def align_worker_worktree_to_base(worktree_path: Path, base_ref: str) -> None:
         )
 
 
-def add_worker_worktree(repo: Path, branch: str, worktree_path: Path, base_ref: str) -> None:
+def add_worker_worktree(repo: Path, branch: str, worktree_path: Path, base_ref: str) -> bool:
     command = worktree_add_command(repo, branch, worktree_path, base_ref)
+    created_branch = "-b" in command
     proc = run(command, repo, check=False)
     if proc.returncode == 0:
         align_worker_worktree_to_base(worktree_path, base_ref)
-        return
+        return created_branch
     stderr = proc.stderr or ""
     if "-b" in command and "already exists" in stderr.lower():
         retry = git_longpaths_command("worktree", "add", git_path_arg(worktree_path), branch)
         retry_proc = run(retry, repo, check=False)
         if retry_proc.returncode == 0:
             align_worker_worktree_to_base(worktree_path, base_ref)
-            return
+            return False
         raise RuntimeError(
             "git worktree add retry failed\n"
             f"command: {retry}\nstdout: {retry_proc.stdout}\nstderr: {retry_proc.stderr}"
@@ -128,7 +132,7 @@ def add_worker_worktree(repo: Path, branch: str, worktree_path: Path, base_ref: 
             retry_proc = run(command, repo, check=False)
             if retry_proc.returncode == 0:
                 align_worker_worktree_to_base(worktree_path, base_ref)
-                return
+                return created_branch
             raise RuntimeError(
                 "git worktree add retry after stale cleanup failed\n"
                 f"command: {command}\nstdout: {retry_proc.stdout}\nstderr: {retry_proc.stderr}"
@@ -141,6 +145,18 @@ def add_worker_worktree(repo: Path, branch: str, worktree_path: Path, base_ref: 
         "git worktree add failed\n"
         f"command: {command}\nstdout: {proc.stdout}\nstderr: {proc.stderr}"
     )
+
+
+def cleanup_failed_worker_worktree(repo: Path, branch: str, worktree_path: Path, *, remove_branch: bool) -> str | None:
+    remove = run(["git", "worktree", "remove", "--force", git_path_arg(worktree_path)], repo, check=False)
+    if remove.returncode != 0:
+        return f"worktree removal failed: {remove.stderr.strip() or remove.stdout.strip()}"
+    if not remove_branch:
+        return None
+    delete = run(["git", "branch", "-D", branch], repo, check=False)
+    if delete.returncode != 0:
+        return f"worker branch removal failed: {delete.stderr.strip() or delete.stdout.strip()}"
+    return None
 
 
 def load_json(path: Path) -> Any:
@@ -171,6 +187,63 @@ def resolve_model(project_root: Path, worker_id: str, explicit_model: str | None
 def ref_has_path(repo: Path, ref: str, path: str) -> bool:
     proc = run(["git", "cat-file", "-e", f"{ref}:{path}"], repo, check=False)
     return proc.returncode == 0
+
+
+def as_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def exact_repository_path(value: Any) -> str | None:
+    normalized = str(value or "").replace("\\", "/").strip()
+    if (
+        not normalized
+        or normalized.startswith(("runtime-generated:", "http://", "https://", "file://", "/", "../", "~/"))
+        or re.match(r"^[A-Za-z]:/", normalized)
+        or any(marker in normalized for marker in ("*", "?", "[", "]", "{", "}"))
+        or any(part in {"", ".", ".."} for part in normalized.split("/"))
+    ):
+        return None
+    return normalized
+
+
+def exact_repository_input_refs(task: dict[str, Any]) -> tuple[list[str], list[str]]:
+    input_refs = task.get("input_refs") if isinstance(task.get("input_refs"), dict) else {}
+    values = as_list(input_refs.get("allowed_paths"))
+
+    required: list[str] = []
+    invalid: list[str] = []
+    seen_required: set[str] = set()
+    seen_invalid: set[str] = set()
+    for value in values:
+        if isinstance(value, dict):
+            value = value.get("path")
+        ref = exact_repository_path(value)
+        if ref is None:
+            raw = str(value or "").strip()
+            if raw and raw not in seen_invalid:
+                seen_invalid.add(raw)
+                invalid.append(raw)
+            continue
+        if ref not in seen_required:
+            seen_required.add(ref)
+            required.append(ref)
+    return required, invalid
+
+
+def validate_required_input_refs(project_root: Path, base_ref: str, task: dict[str, Any], task_id: str | None = None) -> None:
+    required, invalid = exact_repository_input_refs(task)
+    if invalid:
+        raise SystemExit(
+            "task input refs include non-repository paths that cannot be safely validated: "
+            + ", ".join(invalid)
+        )
+    missing = [ref for ref in required if not ref_has_path(project_root, base_ref, ref)]
+    if missing:
+        raise SystemExit(f"missing required task input refs for {task_id or 'task'}: " + ", ".join(missing))
 
 
 def resolve_ref_sha(repo: Path, ref: str) -> str:
@@ -258,7 +331,7 @@ def build_branch(machine_id: str, worker_id: str, run_id: str) -> str:
 
 
 def task_context(worktree: Path, task_id: str) -> dict[str, Any]:
-    queue_path = worktree / "AiStudio" / "Task_manager" / "task_queue.json"
+    queue_path = task_manager_dir(worktree) / "task_queue.json"
     try:
         queue = json.loads(queue_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -494,6 +567,9 @@ def main() -> int:
         "context_paths": args.context_path,
         "context_checkout": [],
         "worker_id": args.worker_id,
+        "agent_role": "worker",
+        "execution_stage": "worker",
+        "attempt_id": run_id,
         "model": model,
         "reasoning_effort": args.reasoning_effort,
         "prompt": args.prompt,
@@ -513,12 +589,26 @@ def main() -> int:
         return 0
 
     ensure_codex(args.codex_bin)
-    if args.fetch:
-        run(["git", "fetch", "--all", "--prune"], project_root)
+    base_guard = check_task_branch_contract(
+        project_root,
+        base_ref=args.base_ref,
+        branch_ref=args.base_ref,
+        expected_base_ref="origin/develop",
+        fetch=True,
+    )
+    if not base_guard.get("ok"):
+        errors = "; ".join(str(item.get("message") or item.get("code")) for item in base_guard.get("errors") or [])
+        raise SystemExit(f"task branch base guard failed: {errors}")
 
     base_ref_sha = resolve_ref_sha(project_root, args.base_ref)
     context_ref_sha = resolve_ref_sha(project_root, args.context_ref) if args.context_ref else None
     plan["base_ref_sha"] = base_ref_sha
+    plan["base_contract"] = {
+        "name": base_guard.get("contract"),
+        "base_ref": args.base_ref,
+        "base_sha": base_ref_sha,
+        "fetched": base_guard.get("fetched"),
+    }
     plan["context_ref_sha"] = context_ref_sha
     worktree_root.mkdir(parents=True, exist_ok=True)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -527,23 +617,42 @@ def main() -> int:
     if worktree_path.exists():
         raise SystemExit(f"worktree path already exists: {worktree_path}")
 
-    add_worker_worktree(project_root, branch, worktree_path, base_ref_sha)
+    created_branch = add_worker_worktree(project_root, branch, worktree_path, base_ref_sha)
     if args.context_ref:
         context_paths = args.context_path or [
             "AiStudio/Task_manager/task_queue.json",
             "AiStudio/Task_manager/tasks",
             "AiStudio/Task_manager/clean_rebuild_plan.json",
         ]
+        if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY") == "postgres":
+            context_paths = [
+                path for path in context_paths
+                if not path.replace("\\", "/").startswith("AiStudio/Task_manager/")
+            ]
         plan["context_paths"] = context_paths
         plan["context_checkout"] = checkout_context_paths(worktree_path, str(context_ref_sha), context_paths)
 
     prompt = args.prompt
+    task_data: dict[str, Any] = {}
     if args.task_id:
+        try:
+            task_data = task_context(worktree_path, args.task_id)
+            validate_required_input_refs(project_root, base_ref_sha, task_data, task_id=args.task_id)
+        except SystemExit as exc:
+            cleanup_error = cleanup_failed_worker_worktree(
+                project_root,
+                branch,
+                worktree_path,
+                remove_branch=created_branch is True,
+            )
+            if cleanup_error:
+                raise SystemExit(f"{exc}; {cleanup_error}") from exc
+            raise
         prompt = build_task_prompt(
             args.prompt,
             args.task_id,
             args.task_title,
-            task_context(worktree_path, args.task_id),
+            task_data,
             base_ref_sha=base_ref_sha,
         )
 

@@ -1,0 +1,146 @@
+{
+  "contract_version": "1.0.0",
+  "contract_kind": "subagent_invocation",
+  "correlation_id": "corr-exec-001",
+  "producer": {
+    "role": "dispatcher",
+    "stage": "execution-contracts",
+    "project_id": "ai-project-agent"
+  },
+  "created_at": "2026-07-15T11:30:00Z",
+  "revision": 1,
+  "supersedes": null,
+  "digest_profile": "jcs-sha256-v1",
+  "authority_guard": {
+    "authority_granted": false,
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed": false,
+    "merge_authority_granted": false,
+    "release_authority_granted": false,
+    "recurring_automation_changed": false
+  },
+  "audit": {
+    "journal_ref": "runtime://audit/corr-exec-001",
+    "reason_codes": [],
+    "warnings": []
+  },
+  "invocation_id": "inv-ux-001",
+  "attempt_id": "attempt-ux-001",
+  "attempt_number": 1,
+  "status": "authorized",
+  "router_decision_id": "router-decision-001",
+  "router_decision_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "plan_ref": {
+    "plan_id": "plan-exec-001",
+    "plan_content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "work_unit_id": "unit-ux"
+  },
+  "input_bundle": {
+    "bundle_id": "bundle-ux-001",
+    "bundle_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "bounded": true,
+    "unrestricted_parent_context": false,
+    "secrets_included": false,
+    "raw_prompts_included": false,
+    "items": [
+      {
+        "kind": "document",
+        "ref": "docs/design/ux-contract.md",
+        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "provenance": {
+          "source": "git:develop",
+          "captured_at": "2026-07-15T11:25:00Z",
+          "revision": "87bf3c6"
+        }
+      },
+      {
+        "kind": "code",
+        "ref": "schemas/agent-control/next_run_recommendation.schema.json",
+        "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "provenance": {
+          "source": "git:develop",
+          "captured_at": "2026-07-15T11:25:00Z",
+          "revision": "87bf3c6"
+        }
+      }
+    ]
+  },
+  "selected_route": {
+    "model_id": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "capability_profile": "maximum_coherent",
+    "delegation": "allowed",
+    "parallel_lanes": 2,
+    "route_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "authorization": {
+    "authorization_id": "auth-ux-001",
+    "issuer": "model_resource_router",
+    "status": "granted",
+    "issued_at": "2026-07-15T11:29:00Z",
+    "expires_at": "2027-07-15T11:29:00Z",
+    "router_decision_id": "router-decision-001",
+    "router_decision_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plan_id": "plan-exec-001",
+    "plan_content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "work_unit_id": "unit-ux",
+    "input_bundle_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "selected_route_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "bound_scope_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "max_attempts": 2,
+    "single_use": true,
+    "consumed": false,
+    "lease_id": "lease-ux-001",
+    "lease_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "lease_expires_at": "2027-07-15T11:29:00Z",
+    "lease_single_use": true,
+    "lease_consumed": false,
+    "grant_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "objective": "Review the human-facing execution flow for disclosure, degraded states and mobile/web consistency.",
+  "acceptance_criteria": [
+    "required lane states are visible",
+    "technical identifiers remain disclosure-only"
+  ],
+  "tools": [
+    {
+      "name": "repository-read",
+      "mode": "read_only"
+    },
+    {
+      "name": "schema-validator",
+      "mode": "read_only"
+    }
+  ],
+  "prohibited_actions": [
+    "modify repository state",
+    "launch another child",
+    "send external messages"
+  ],
+  "expected_result_schema": {
+    "schema_id": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json",
+    "contract_version": "1.0.0"
+  },
+  "execution_policy": {
+    "access_mode": "read_only",
+    "mutation_allowed": false,
+    "external_side_effects_allowed": false,
+    "child_depth": 1,
+    "max_child_depth": 1,
+    "child_spawn_allowed": false,
+    "parent_authority_inherited": false,
+    "parent_credentials_inherited": false,
+    "parent_lock_inherited": false,
+    "timeout_seconds": 1800,
+    "cancellation_grace_seconds": 30
+  },
+  "retry_policy": {
+    "max_technical_retries": 1,
+    "identical_scope_required": true,
+    "new_router_decision_on_change": true,
+    "repeat_deterministic_failure_allowed": false
+  },
+  "idempotency_key": "corr-exec-001:inv-ux-001:attempt-1",
+  "invocation_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+}

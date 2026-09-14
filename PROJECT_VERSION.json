@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "project_id": "inplacex",
+  "branch_role": "develop",
+  "product_version": "0.1.0+develop.fc576fe80bf3",
+  "state_revision": 1,
+  "documentation_revision": 1,
+  "content_base_commit": "fc576fe80bf3c757bba3d68f34afc42f740d406e",
+  "recorded_by_commit": "fc576fe80bf3c757bba3d68f34afc42f740d406e",
+  "component_versions": [
+    {
+      "id": "android-client",
+      "kind": "application",
+      "version": "develop-fc576fe80bf3",
+      "path": "InplaceX-android",
+      "owner": "android",
+      "updated_at": "2026-08-03T04:10:00Z",
+      "updated_by": "codex/sql-task-control-adoption-v001",
+      "source_ref": "origin/develop@fc576fe80bf3c757bba3d68f34afc42f740d406e"
+    },
+    {
+      "id": "bot-core",
+      "kind": "application",
+      "version": "develop-fc576fe80bf3",
+      "path": "InplaceX-bot-core",
+      "owner": "backend",
+      "updated_at": "2026-08-03T04:10:00Z",
+      "updated_by": "codex/sql-task-control-adoption-v001",
+      "source_ref": "origin/develop@fc576fe80bf3c757bba3d68f34afc42f740d406e"
+    },
+    {
+      "id": "backend-runtime",
+      "kind": "application",
+      "version": "develop-fc576fe80bf3",
+      "path": "InplaceX-backend",
+      "owner": "backend",
+      "updated_at": "2026-08-03T04:10:00Z",
+      "updated_by": "codex/sql-task-control-adoption-v001",
+      "source_ref": "origin/develop@fc576fe80bf3c757bba3d68f34afc42f740d406e"
+    },
+    {
+      "id": "agent-core-standard",
+      "kind": "automation",
+      "version": "v0.4.22.390",
+      "path": ".agent,scripts/agent_control",
+      "owner": "agent-update-manager",
+      "updated_at": "2026-08-03T10:44:00Z",
+      "updated_by": "codex/sql-task-control-adoption-v001",
+      "source_ref": "coindmit-cmyk/ai-project-agent:release/main@b5b8a88115bb7ce0d208f63474563b11e4afdb5a"
+    }
+  ],
+  "source_of_truth": "github",
+  "updated_at": "2026-08-03T10:44:00Z",
+  "updated_by": "codex/sql-task-control-adoption-v001",
+  "project_index": "README.md",
+  "documentation_manifest": "DOCUMENTATION_MANIFEST.json",
+  "task_manager": "AiStudio/Task_manager/task_queue.json"
+}

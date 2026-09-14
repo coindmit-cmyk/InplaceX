@@ -66,6 +66,80 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def project_checkout_idle(project_root: Path) -> dict[str, Any]:
+    git_dir = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if git_dir.returncode != 0:
+        return {
+            "idle": False,
+            "reason": "git_dir_unavailable",
+            "stderr": git_dir.stderr.strip(),
+        }
+    git_dir_path = Path(git_dir.stdout.strip())
+    if not git_dir_path.is_absolute():
+        git_dir_path = (project_root / git_dir_path).resolve()
+    index_locked = (git_dir_path / "index.lock").exists()
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        return {
+            "idle": False,
+            "reason": "git_status_failed",
+            "index_locked": index_locked,
+            "stderr": status.stderr.strip(),
+        }
+    changed_paths = [line for line in status.stdout.splitlines() if line.strip()]
+    return {
+        "idle": not index_locked and not changed_paths,
+        "reason": "idle" if not index_locked and not changed_paths else "checkout_busy",
+        "index_locked": index_locked,
+        "changed_path_count": len(changed_paths),
+    }
+
+
+def wait_for_project_checkout_idle(
+    project_root: Path,
+    timeout_seconds: float,
+    *,
+    poll_seconds: float = 0.25,
+    stable_polls: int = 2,
+) -> dict[str, Any]:
+    started = time.monotonic()
+    consecutive_idle = 0
+    observation: dict[str, Any] = {"idle": False, "reason": "not_checked"}
+    while True:
+        observation = project_checkout_idle(project_root)
+        consecutive_idle = consecutive_idle + 1 if observation.get("idle") else 0
+        elapsed = time.monotonic() - started
+        if consecutive_idle >= stable_polls:
+            return {
+                "ok": True,
+                "reason": "project_checkout_idle",
+                "wait_seconds": round(elapsed, 3),
+                "stable_polls": consecutive_idle,
+                "observation": observation,
+            }
+        if elapsed >= timeout_seconds:
+            return {
+                "ok": False,
+                "reason": "project_checkout_idle_timeout",
+                "wait_seconds": round(elapsed, 3),
+                "stable_polls": consecutive_idle,
+                "observation": observation,
+            }
+        time.sleep(min(poll_seconds, max(0.0, timeout_seconds - elapsed)))
+
+
 def worker_profiles(project_root: Path) -> dict[str, dict[str, Any]]:
     data = load_json(project_root / ".agent" / "worker_profiles.json")
     profiles = data if isinstance(data, list) else data.get("profiles", []) if isinstance(data, dict) else []
@@ -228,6 +302,46 @@ def choose_claimable_task_id(
     return claim_next_task.task_id(task) if task else None
 
 
+def claimable_class_counts(
+    project_root: Path,
+    profiles_by_id: dict[str, dict[str, Any]],
+    slots: list[str],
+    locked_ids: set[str],
+) -> Counter[str]:
+    """Count every eligible queued task for the available profile slots.
+
+    This intentionally differs from provisional slot selection: a single
+    profile slot can only reserve one task, while dry-run fairness evidence
+    must still describe the full claimable background and primary backlog.
+    """
+    queue = load_json(task_file(project_root, "task_queue.json"))
+    tasks = [task for task in queue.get("tasks") or [] if isinstance(task, dict)]
+    completed_ids = claim_next_task.completed_task_ids(tasks)
+    tasks_by_id = {
+        claim_next_task.task_id(task): task
+        for task in tasks
+        if claim_next_task.task_id(task)
+    }
+    profiles = list(dict.fromkeys(slots))
+    counts: Counter[str] = Counter()
+    for task in tasks:
+        if any(
+            claim_next_task.eligible(
+                task,
+                profiles_by_id.get(profile_id)
+                or claim_next_task.DEFAULT_PROFILES.get(profile_id, {"selection_order": []}),
+                profile_id,
+                locked_ids,
+                completed_ids,
+                tasks_by_id=tasks_by_id,
+            )
+            for profile_id in profiles
+        ):
+            task_class, _ = claim_next_task.scheduling_class(task)
+            counts[task_class] += 1
+    return counts
+
+
 def expanded_profile_slots(profiles: list[str], profiles_by_id: dict[str, dict[str, Any]], limit: int) -> list[str]:
     result: list[str] = []
     maximum = max((int((profiles_by_id.get(profile) or {}).get("max_parallel_lanes") or 1) for profile in profiles), default=1)
@@ -327,7 +441,12 @@ def profile_slot_fairness_plan(
             reservation_deferred_reason = "no_available_capacity"
 
     selected_classes = Counter(str(item["scheduling_class"]) for item in selected)
-    candidate_classes = Counter(str(item["scheduling_class"]) for item in ranked if item["task_id"])
+    candidate_classes = claimable_class_counts(
+        project_root,
+        profiles_by_id,
+        slots,
+        locked_ids,
+    )
     evidence = {
         "candidate_class_counts": dict(sorted(candidate_classes.items())),
         "selected_class_counts": dict(sorted(selected_classes.items())),
@@ -539,9 +658,9 @@ def persist_worker_pool_plan(
     runtime_root: Path,
     report: dict[str, Any],
     *,
-    detached: bool,
+    runtime_only: bool,
 ) -> Path:
-    if not detached:
+    if not runtime_only:
         return write_worker_pool_plan(project_root, report)
     report["schema_version"] = WORKER_POOL_PLAN_SCHEMA_VERSION
     output = runtime_root / "worker-pool-plans" / project_root.name / "latest.json"
@@ -571,11 +690,40 @@ def main() -> int:
     parser.add_argument("--fetch", action="store_true")
     parser.add_argument("--apply", action="store_true", help="Actually start worker runner lanes. Default prints a plan.")
     parser.add_argument("--detach", action="store_true", help="Return after lanes start; each lane owns its execution lease and result lifecycle.")
+    parser.add_argument("--runtime-plan", action="store_true", help="Persist the pool plan under runtime-root instead of the tracked project checkout.")
+    parser.add_argument("--wait-for-project-idle-seconds", type=float, default=0.0, help="Before apply, wait fail-closed for an unlocked clean checkout. 0 disables the barrier.")
     parser.add_argument("--replenish-active", action="store_true", help="Fill free capacity only when every active lock maps to an exact live worker cycle.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
+    runtime_only_plan = bool(args.detach or args.runtime_plan)
+    if args.apply and args.wait_for_project_idle_seconds > 0:
+        checkout_barrier = wait_for_project_checkout_idle(
+            project_root,
+            args.wait_for_project_idle_seconds,
+        )
+        if not checkout_barrier.get("ok"):
+            report = {
+                "generated_at": utc_now(),
+                "apply": args.apply,
+                "status": "blocked",
+                "error": "project_checkout_idle_timeout",
+                "selected_count": 0,
+                "skipped_count": 1,
+                "skipped": [{"reason": "project_checkout_idle_timeout"}],
+                "budget_allowed": {},
+                "launches": [],
+                "checkout_barrier": checkout_barrier,
+            }
+            persist_worker_pool_plan(
+                project_root,
+                Path(args.runtime_root).expanduser(),
+                report,
+                runtime_only=runtime_only_plan,
+            )
+            print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else "project checkout idle timeout")
+            return 2
     running = running_worker_cycles(project_root) if args.apply else []
     if running and not args.replenish_active:
         report = {
@@ -592,7 +740,7 @@ def main() -> int:
             project_root,
             Path(args.runtime_root).expanduser(),
             report,
-            detached=bool(args.detach),
+            runtime_only=runtime_only_plan,
         )
         append_log(project_root, "worker-pool", "worker_pool_already_running", severity="info", running=running)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else "worker pool already running")
@@ -616,7 +764,7 @@ def main() -> int:
             project_root,
             Path(args.runtime_root).expanduser(),
             report,
-            detached=bool(args.detach),
+            runtime_only=runtime_only_plan,
         )
         append_log(project_root, "worker-pool", "worker_lock_preflight_failed", severity="warning", preflight=preflight)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else "worker lock preflight failed")
@@ -644,7 +792,7 @@ def main() -> int:
             project_root,
             Path(args.runtime_root).expanduser(),
             report,
-            detached=bool(args.detach),
+            runtime_only=runtime_only_plan,
         )
         append_log(project_root, "worker-pool", reason, severity="warning", codex_bin=args.codex_bin)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else reason)
@@ -681,7 +829,7 @@ def main() -> int:
             project_root,
             Path(args.runtime_root).expanduser(),
             report,
-            detached=bool(args.detach),
+            runtime_only=runtime_only_plan,
         )
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else "worker capacity full")
         return 0
@@ -1031,7 +1179,7 @@ def main() -> int:
             project_root,
             Path(args.runtime_root).expanduser(),
             report,
-            detached=bool(args.detach),
+            runtime_only=runtime_only_plan,
         )
     print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else f"worker lanes: {len(launches)}")
     return 0

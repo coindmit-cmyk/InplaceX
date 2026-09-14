@@ -1,0 +1,21 @@
+{
+  "$schema": "../../schemas/agent-control/task_control_database.schema.json",
+  "schema_version": 1,
+  "mode": "cutover",
+  "source_of_truth": "postgres",
+  "cutover_enabled": true,
+  "dsn_env": "AISTUDIO_TASK_DB_DSN",
+  "registry_path": "/home/agent/agent-runtime/chat-bridge/projects.local.json",
+  "required_project_ids": [
+    "ai-project-agent",
+    "e-shop",
+    "residentguard",
+    "myvpn",
+    "inplacex"
+  ],
+  "include_disabled_projects": false,
+  "max_shadow_age_seconds": 900,
+  "backup_manifest": "/srv/aistudio-hdd/task-control-postgres/latest.manifest.json",
+  "runtime_root": "/home/agent/agent-runtime/task-control",
+  "session_ttl_seconds": 14400
+}

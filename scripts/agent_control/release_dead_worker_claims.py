@@ -645,12 +645,13 @@ def dead_worker_reasons_from_last_plan(
     default_reason: str = "worker model unavailable or interrupted before producing a worker result",
     plan_path: Path | None = None,
 ) -> dict[str, str]:
-    plans = project_root / "AiStudio" / "Task_manager"
-    last_plan = load_json(plan_path or (plans / "worker_pool_last_plan.json"))
+    last_plan = load_json(
+        plan_path or task_file(project_root, "worker_pool_last_plan.json")
+    )
     launches = last_plan.get("launches")
     if not isinstance(launches, list):
         return {}
-    process_state = load_json(plans / "agent_process_state.json")
+    process_state = load_json(task_file(project_root, "agent_process_state.json"))
     if require_worker_pool_inactive and not worker_pool_is_inactive(process_state):
         return {}
     dead: dict[str, str] = {}
@@ -679,12 +680,13 @@ def dead_task_reasons_from_last_plan(
     Older plans without planned_task_id remain eligible only through the
     worker-id fallback after the whole pool is proven inactive.
     """
-    plans = project_root / "AiStudio" / "Task_manager"
-    last_plan = load_json(plan_path or (plans / "worker_pool_last_plan.json"))
+    last_plan = load_json(
+        plan_path or task_file(project_root, "worker_pool_last_plan.json")
+    )
     launches = last_plan.get("launches")
     if not isinstance(launches, list):
         return {}
-    process_state = load_json(plans / "agent_process_state.json")
+    process_state = load_json(task_file(project_root, "agent_process_state.json"))
     if require_worker_pool_inactive and not worker_pool_is_inactive(process_state):
         return {}
     dead: dict[str, str] = {}
@@ -703,8 +705,9 @@ def live_launch_evidence_from_last_plan(
     *,
     plan_path: Path | None = None,
 ) -> dict[str, Any]:
-    plans = project_root / "AiStudio" / "Task_manager"
-    last_plan = load_json(plan_path or (plans / "worker_pool_last_plan.json"))
+    last_plan = load_json(
+        plan_path or task_file(project_root, "worker_pool_last_plan.json")
+    )
     launches = last_plan.get("launches")
     live: list[dict[str, Any]] = []
     if isinstance(launches, list):

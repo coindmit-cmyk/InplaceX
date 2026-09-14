@@ -1,0 +1,852 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aistudio.local/schemas/agent-control/next-run-recommendation/1.1.0",
+  "title": "AiStudio Next Run Recommendation Contract v1.1",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "correlation_id",
+    "producer",
+    "next_run",
+    "authority_guard",
+    "presentation"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.1.0"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "producer": {
+      "type": "object",
+      "required": [
+        "project_id",
+        "role",
+        "stage",
+        "contract_mode"
+      ],
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_mode": {
+          "enum": [
+            "strict",
+            "legacy_compatible"
+          ]
+        },
+        "output_class": {
+          "enum": [
+            "owner_visible_response",
+            "inter_role_handoff",
+            "machine_artifact",
+            "low_level_event"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "next_run": {
+      "enum": [
+        "recommended",
+        "none"
+      ]
+    },
+    "next_run_recommendation": {
+      "$ref": "#/$defs/recommendation"
+    },
+    "router_decision": {
+      "$ref": "#/$defs/router_decision"
+    },
+    "execution_evidence": {
+      "$ref": "#/$defs/execution_evidence"
+    },
+    "execution_plan_ref": {
+      "type": "object",
+      "required": [
+        "plan_id",
+        "plan_content_digest"
+      ],
+      "properties": {
+        "plan_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plan_content_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authority_guard": {
+      "type": "object",
+      "required": [
+        "role_permissions_changed",
+        "approval_gates_bypassed",
+        "worker_ready_changed_by_recommendation"
+      ],
+      "properties": {
+        "role_permissions_changed": {
+          "const": false
+        },
+        "approval_gates_bypassed": {
+          "const": false
+        },
+        "worker_ready_changed_by_recommendation": {
+          "const": false
+        },
+        "delegation_authority_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "presentation": {
+      "type": "object",
+      "required": [
+        "footer_required",
+        "variant",
+        "debug_details_available"
+      ],
+      "properties": {
+        "footer_required": {
+          "type": "boolean"
+        },
+        "variant": {
+          "enum": [
+            "normal",
+            "recommendation_only",
+            "override",
+            "fallback",
+            "terminal",
+            "legacy",
+            "blocked",
+            "none"
+          ]
+        },
+        "debug_details_available": {
+          "type": "boolean"
+        },
+        "locale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "journal_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "next_run": {
+              "const": "recommended"
+            }
+          },
+          "required": [
+            "next_run_recommendation"
+          ],
+          "not": {
+            "properties": {
+            "router_decision": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "terminal_none"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "router_decision"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "next_run": {
+              "const": "none"
+            },
+            "router_decision": {
+              "$ref": "#/$defs/router_terminal"
+            },
+            "execution_evidence": {
+              "$ref": "#/$defs/evidence_not_applicable"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "next_run_recommendation"
+                ]
+              },
+              {
+                "required": [
+                  "execution_plan_ref"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "selected_route": {
+      "type": "object",
+      "required": [
+        "capability_profile",
+        "model_id",
+        "reasoning_effort",
+        "delegation",
+        "parallel_lanes",
+        "cost_class",
+        "selected_route_digest"
+      ],
+      "properties": {
+        "capability_profile": {
+          "enum": [
+            "efficient",
+            "balanced",
+            "deep",
+            "maximum_coherent",
+            "delegated_deep"
+          ]
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reasoning_effort": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extra_high",
+            "max",
+            "ultra"
+          ]
+        },
+        "delegation": {
+          "enum": [
+            "forbidden",
+            "allowed",
+            "required"
+          ]
+        },
+        "parallel_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "cost_class": {
+          "enum": [
+            "low",
+            "standard",
+            "premium",
+            "scarce"
+          ]
+        },
+        "selected_route_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "next_role",
+        "next_stage",
+        "capability_profile",
+        "reasoning_effort",
+        "delegation",
+        "complexity",
+        "risk",
+        "context_coherence",
+        "confidence",
+        "rationale",
+        "fallback"
+      ],
+      "properties": {
+        "next_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next_stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability_profile": {
+          "enum": [
+            "efficient",
+            "balanced",
+            "deep",
+            "maximum_coherent",
+            "delegated_deep"
+          ]
+        },
+        "reasoning_effort": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extra_high",
+            "max",
+            "ultra"
+          ]
+        },
+        "delegation": {
+          "enum": [
+            "forbidden",
+            "allowed",
+            "required"
+          ]
+        },
+        "complexity": {
+          "enum": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        "risk": {
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ]
+        },
+        "context_coherence": {
+          "enum": [
+            "bounded",
+            "normal",
+            "high",
+            "maximum"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rationale": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "independent_work_units": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "synthesis_required": {
+          "type": "boolean"
+        },
+        "hop_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "escalation_budget": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "fallback": {
+          "type": "object",
+          "required": [
+            "capability_profile",
+            "reasoning_effort"
+          ],
+          "properties": {
+            "capability_profile": {
+              "enum": [
+                "efficient",
+                "balanced",
+                "deep",
+                "maximum_coherent",
+                "delegated_deep"
+              ]
+            },
+            "reasoning_effort": {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "extra_high",
+                "max",
+                "ultra"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_selected": {
+      "type": "object",
+      "required": [
+        "status",
+        "policy_version",
+        "decided_at",
+        "decision_id",
+        "router_decision_digest",
+        "selected"
+      ],
+      "properties": {
+        "status": {
+          "const": "selected"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "selected": {
+          "$ref": "#/$defs/selected_route"
+        },
+        "override": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "applied",
+                "direction"
+              ],
+              "properties": {
+                "applied": {
+                  "const": false
+                },
+                "direction": {
+                  "const": "none"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "applied",
+                "direction",
+                "reason_code",
+                "human_reason"
+              ],
+              "properties": {
+                "applied": {
+                  "const": true
+                },
+                "direction": {
+                  "enum": [
+                    "raised",
+                    "lowered",
+                    "substituted"
+                  ]
+                },
+                "reason_code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "human_reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 240
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "limits_snapshot_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "delegation_authorized": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_fallback": {
+      "type": "object",
+      "required": [
+        "status",
+        "policy_version",
+        "decided_at",
+        "decision_id",
+        "router_decision_digest",
+        "selected",
+        "fallback_from",
+        "override"
+      ],
+      "properties": {
+        "status": {
+          "const": "fallback_selected"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "selected": {
+          "$ref": "#/$defs/selected_route"
+        },
+        "fallback_from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "override": {
+          "type": "object",
+          "required": [
+            "applied",
+            "direction",
+            "reason_code",
+            "human_reason"
+          ],
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "direction": {
+              "const": "fallback"
+            },
+            "reason_code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "human_reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "additionalProperties": false
+        },
+        "limits_snapshot_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "delegation_authorized": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_blocked": {
+      "type": "object",
+      "required": [
+        "status",
+        "policy_version",
+        "decided_at",
+        "decision_id",
+        "router_decision_digest",
+        "block_reason_code",
+        "human_reason"
+      ],
+      "properties": {
+        "status": {
+          "const": "blocked"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "block_reason_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "human_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_terminal": {
+      "type": "object",
+      "required": [
+        "status",
+        "policy_version",
+        "decided_at",
+        "decision_id",
+        "router_decision_digest"
+      ],
+      "properties": {
+        "status": {
+          "const": "terminal_none"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_decision": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/router_selected"
+        },
+        {
+          "$ref": "#/$defs/router_fallback"
+        },
+        {
+          "$ref": "#/$defs/router_blocked"
+        },
+        {
+          "$ref": "#/$defs/router_terminal"
+        }
+      ]
+    },
+    "actual_use": {
+      "type": "object",
+      "required": [
+        "model_id",
+        "reasoning_effort",
+        "delegation_used",
+        "parallel_lanes"
+      ],
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reasoning_effort": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extra_high",
+            "max",
+            "ultra"
+          ]
+        },
+        "delegation_used": {
+          "type": "boolean"
+        },
+        "parallel_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_not_started": {
+      "type": "object",
+      "required": [
+        "status",
+        "reconciliation_status"
+      ],
+      "properties": {
+        "status": {
+          "const": "not_started"
+        },
+        "reconciliation_status": {
+          "const": "pending"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_started": {
+      "type": "object",
+      "required": [
+        "status",
+        "run_id",
+        "started_at",
+        "actually_used",
+        "reconciliation_status"
+      ],
+      "properties": {
+        "status": {
+          "const": "started"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actually_used": {
+          "$ref": "#/$defs/actual_use"
+        },
+        "reconciliation_status": {
+          "const": "pending"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_finished": {
+      "type": "object",
+      "required": [
+        "status",
+        "run_id",
+        "started_at",
+        "completed_at",
+        "actually_used",
+        "evidence_ref",
+        "reconciliation_status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "completed",
+            "failed"
+          ]
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actually_used": {
+          "$ref": "#/$defs/actual_use"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reconciliation_status": {
+          "enum": [
+            "matched",
+            "mismatch"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_not_applicable": {
+      "type": "object",
+      "required": [
+        "status",
+        "reconciliation_status"
+      ],
+      "properties": {
+        "status": {
+          "const": "not_applicable"
+        },
+        "reconciliation_status": {
+          "const": "not_applicable"
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution_evidence": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/evidence_not_started"
+        },
+        {
+          "$ref": "#/$defs/evidence_started"
+        },
+        {
+          "$ref": "#/$defs/evidence_finished"
+        },
+        {
+          "$ref": "#/$defs/evidence_not_applicable"
+        }
+      ]
+    }
+  }
+}

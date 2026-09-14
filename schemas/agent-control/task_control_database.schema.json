@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-project-agent/task-control-database.schema.json",
+  "title": "AiStudio Task Control PostgreSQL Runtime Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "source_of_truth",
+    "cutover_enabled",
+    "dsn_env",
+    "registry_path",
+    "required_project_ids",
+    "include_disabled_projects",
+    "max_shadow_age_seconds",
+    "backup_manifest",
+    "runtime_root",
+    "session_ttl_seconds"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": ["shadow", "cutover"]
+    },
+    "source_of_truth": {
+      "enum": ["json_git", "postgres"]
+    },
+    "cutover_enabled": {
+      "type": "boolean"
+    },
+    "dsn_env": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,127}$"
+    },
+    "registry_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_project_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+      }
+    },
+    "include_disabled_projects": {
+      "type": "boolean"
+    },
+    "max_shadow_age_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 86400
+    },
+    "backup_manifest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_ttl_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 86400
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "mode": {"const": "shadow"},
+        "source_of_truth": {"const": "json_git"},
+        "cutover_enabled": {"const": false}
+      }
+    },
+    {
+      "properties": {
+        "mode": {"const": "cutover"},
+        "source_of_truth": {"const": "postgres"},
+        "cutover_enabled": {"const": true}
+      }
+    }
+  ]
+}

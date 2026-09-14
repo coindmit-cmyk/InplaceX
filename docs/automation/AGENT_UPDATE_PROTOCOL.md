@@ -44,6 +44,13 @@ Before promoting `develop` to `release/main` or creating a stable tag, run and r
 - `update_project_agent.py` dry-run against a temporary project root that is not the agent repository;
 - smoke tests for changed helper scripts;
 - changelog and `VERSION` review;
+- machine-readable `Codex Review Gate` evidence with zero unresolved Codex
+  P0/P1 review threads;
+- a fresh `workflow_dispatch` of `codex-review-gate.yml` on the exact PR head
+  after the last blocking thread is resolved; a stale check from before
+  resolution is not acceptance evidence;
+- explicit review acceptance evidence; ordinary green CI alone is not release
+  acceptance;
 - final `git status` and remote-ref check before tagging.
 
 If any check fails, do not update `release/main` and do not create a stable tag. Fix the issue in `develop`, rerun the gate, then promote only after the gate passes.

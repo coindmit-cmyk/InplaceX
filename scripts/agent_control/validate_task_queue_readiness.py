@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from task_state_invariants import validate_task_state
 
 CLAIMABLE_STATUSES = {"planned", "needs_stronger_agent", "worker_ready"}
 NON_WORKER_STATUSES = {
@@ -192,6 +193,25 @@ def unsafe_allowed_paths(task: dict[str, Any]) -> list[str]:
         for path in as_list(task.get("allowed_paths"))
         if not is_repository_relative_scope_path(path)
     ]
+
+
+def invalid_required_input_refs(task: dict[str, Any]) -> list[str]:
+    input_refs = task.get("input_refs") if isinstance(task.get("input_refs"), dict) else {}
+    invalid: list[str] = []
+    for value in as_list(input_refs.get("allowed_paths")):
+        if isinstance(value, dict):
+            value = value.get("path")
+        path = str(value or "").replace("\\", "/").strip()
+        if not path:
+            continue
+        if (
+            path.startswith(("runtime-generated:", "http://", "https://", "file://", "/", "../", "~/"))
+            or re.match(r"^[A-Za-z]:/", path)
+            or any(marker in path for marker in ("*", "?", "[", "]", "{", "}"))
+            or any(part in {"", ".", ".."} for part in path.split("/"))
+        ):
+            invalid.append(path)
+    return invalid
 
 
 def pattern_covers_path(pattern: str, candidate: str) -> bool:
@@ -393,6 +413,9 @@ def validate_task(task: dict[str, Any], index: int, issues: list[dict[str, str]]
     normalization_status = str(task.get("normalization_status") or "")
     decision = str(task.get("dispatcher_decision") or "")
     claimable_packet = status in CLAIMABLE_STATUSES
+    # Intake and migration accept legacy terminal rows. Canonical writers and
+    # the pre-commit state gate apply the strict terminal projection.
+    issues.extend(validate_task_state(task, path=path, strict_terminal=False))
 
     if decision and decision not in DECISIONS:
         add_issue(issues, "error", "unknown_dispatcher_decision", path, f"unknown dispatcher_decision: {decision}")
@@ -469,6 +492,16 @@ def validate_task(task: dict[str, Any], index: int, issues: list[dict[str, str]]
             for field in WORKER_PACKET_V2_FIELDS:
                 if not has_value(task.get(field)):
                     add_issue(issues, "error", "missing_worker_packet_v2_field", path, f"worker packet v2 missing {field}")
+            invalid_inputs = invalid_required_input_refs(task)
+            if invalid_inputs:
+                add_issue(
+                    issues,
+                    "error",
+                    "invalid_required_input_ref",
+                    f"{path}.input_refs.allowed_paths",
+                    "required input refs must be exact repository-relative paths, not output globs or unsafe paths: "
+                    + ", ".join(invalid_inputs),
+                )
             output_contract = task.get("output_contract")
             if isinstance(output_contract, dict):
                 if is_forbidden_worker_report_path(output_contract.get("worker_report_path")):

@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -12,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from project_paths import task_manager_dir
+from task_control_postgres import TaskControlConfigurationError, TaskControlPostgres
 
 from evaluate_finalizer_merge_gate import evaluate_gate, run_validate
 
@@ -434,6 +437,12 @@ def record_finalizer_state_commit(
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() == "postgres":
+        # The enclosing managed session commits queue/history to PostgreSQL
+        # after this child returns. Product integration remains a Git push,
+        # but a second Git Task Manager state commit is neither needed nor safe.
+        return None, []
+
     state_paths = [
         "AiStudio/Task_manager/agent_events.jsonl",
         "AiStudio/Task_manager/agent_locks.json",
@@ -450,6 +459,54 @@ def record_finalizer_state_commit(
     git_text(project_root, ["commit", "-m", "chore(finalizer): record finalization state"], cwd=worktree)
     state_sha = git_text(project_root, ["rev-parse", "HEAD"], cwd=worktree)
     return state_sha, []
+
+
+def record_sql_finalizer_candidates(
+    *,
+    data: dict[str, Any],
+    project_id: str,
+    target_branch: str,
+    target_sha_before: str,
+    integration_sha: str,
+    state: str,
+) -> list[dict[str, Any]]:
+    dsn_env = os.environ.get("AISTUDIO_TASK_DB_DSN_ENV", "").strip()
+    dsn = os.environ.get(dsn_env, "") if dsn_env else ""
+    if not project_id or not dsn:
+        raise TaskControlConfigurationError(
+            "SQL finalizer requires project identity and configured DSN"
+        )
+    package_branch = str(data.get("package_branch") or "").strip()
+    session_id = os.environ.get("AISTUDIO_TASK_CONTROL_SESSION_ID", "").strip()
+    database = TaskControlPostgres(dsn)
+    rows: list[dict[str, Any]] = []
+    for raw_task_id in data.get("ready_to_finalize") or []:
+        task_id = str(raw_task_id or "").strip()
+        if not task_id:
+            continue
+        identity = f"{project_id}\n{package_branch}\n{task_id}".encode("utf-8")
+        candidate_id = f"finalizer-{hashlib.sha256(identity).hexdigest()[:24]}"
+        rows.append(
+            database.upsert_integration_candidate(
+                project_id,
+                task_id,
+                candidate_id=candidate_id,
+                state=state,
+                base_branch=target_branch,
+                base_sha=target_sha_before,
+                work_branch=package_branch,
+                head_sha=integration_sha,
+                session_id=session_id,
+                evidence={
+                    "source": "auto_finalizer_merge",
+                    "session_id": session_id,
+                    "package_branch": package_branch,
+                    "target_branch": target_branch,
+                    "integration_sha": integration_sha,
+                },
+            )
+        )
+    return rows
 
 
 def build_blocked_report(
@@ -708,11 +765,35 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
         report["issues"].extend(lock_errors)
         report["state_sync"] = {"ok": False, "reason": "exact_lock_release_blocked"}
         return report
-    if not state_commit:
+    sql_state_pending = (
+        os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() == "postgres"
+    )
+    if not state_commit and not sql_state_pending:
         report["decision"] = "finalization_blocked"
         report["issues"].append({"task": "state_commit", "reason": "finalizer produced no canonical state commit"})
         report["state_sync"] = {"ok": False, "reason": "state_commit_missing"}
         return report
+
+    if sql_state_pending:
+        try:
+            report["sql_integration_candidates"] = record_sql_finalizer_candidates(
+                data=data,
+                project_id=os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip(),
+                target_branch=target_branch,
+                target_sha_before=target_sha_before,
+                integration_sha=integration_sha,
+                state="integrating",
+            )
+        except Exception as exc:
+            report["decision"] = "finalization_blocked"
+            report["issues"].append(
+                {"task": "sql_integration_candidate", "reason": str(exc)}
+            )
+            report["state_sync"] = {
+                "ok": False,
+                "reason": "sql_pending_integration_record_failed",
+            }
+            return report
 
     push = run_git(project_root, ["push", args.remote, f"HEAD:{target_branch}"], cwd=worktree)
     report["commands"].append({"command": ["git", "push", args.remote, f"HEAD:{target_branch}"], "exit_code": push.returncode})
@@ -723,9 +804,38 @@ def finalize(args: argparse.Namespace) -> dict[str, Any]:
         return report
 
     report["pushed"] = True
+    if sql_state_pending:
+        try:
+            report["sql_integration_candidates"] = record_sql_finalizer_candidates(
+                data=data,
+                project_id=os.environ.get("AISTUDIO_TASK_CONTROL_PROJECT_ID", "").strip(),
+                target_branch=target_branch,
+                target_sha_before=target_sha_before,
+                integration_sha=integration_sha,
+                state="merged",
+            )
+        except Exception as exc:
+            report["decision"] = "finalization_blocked"
+            report["issues"].append(
+                {"task": "sql_integration_candidate", "reason": str(exc)}
+            )
+            report["state_sync"] = {
+                "ok": False,
+                "reason": "sql_merged_integration_record_failed",
+                "recovery_required": True,
+            }
+            return report
     report["state_commit"] = state_commit
-    report["target_sha_after"] = state_commit
-    report["state_sync"] = {"ok": True, "reason": "integration_and_finalizer_state_pushed_once"}
+    report["target_sha_after"] = state_commit or integration_sha
+    report["state_sync"] = (
+        {
+            "ok": True,
+            "reason": "task_state_staged_for_postgres_session_commit",
+            "pending_session_commit": True,
+        }
+        if sql_state_pending
+        else {"ok": True, "reason": "integration_and_finalizer_state_pushed_once"}
+    )
     return report
 
 

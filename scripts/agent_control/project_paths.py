@@ -7,6 +7,7 @@ cleanup tools, but runtime readers must not silently choose it.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
@@ -15,6 +16,13 @@ LEGACY_TASK_MANAGER = Path("docs") / "plans"
 
 
 def task_manager_dir(project_root: Path) -> Path:
+    override = os.environ.get("AISTUDIO_TASK_MANAGER_DIR", "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    if os.environ.get("AISTUDIO_TASK_CONTROL_AUTHORITY", "").strip() == "postgres":
+        raise RuntimeError(
+            "PostgreSQL Task Control authority requires a managed project session"
+        )
     return project_root / CANONICAL_TASK_MANAGER
 
 
@@ -27,7 +35,9 @@ def task_file(project_root: Path, name: str) -> Path:
 
 
 def task_relpath(project_root: Path, name: str) -> str:
-    return task_file(project_root, name).relative_to(project_root).as_posix()
+    # Repository references remain canonical even when file I/O is redirected
+    # to an external PostgreSQL compatibility-session mirror.
+    return (CANONICAL_TASK_MANAGER / name).as_posix()
 
 
 def task_reports_dir(project_root: Path) -> Path:
@@ -35,7 +45,7 @@ def task_reports_dir(project_root: Path) -> Path:
 
 
 def task_reports_relpath(project_root: Path) -> str:
-    return task_reports_dir(project_root).relative_to(project_root).as_posix()
+    return (CANONICAL_TASK_MANAGER / "reports").as_posix()
 
 
 def task_process_logs_dir(project_root: Path) -> Path:

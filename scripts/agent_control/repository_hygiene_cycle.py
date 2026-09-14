@@ -735,6 +735,29 @@ def active_lock_task_ids(locks: dict[str, Any]) -> set[str]:
     }
 
 
+def release_active_task_locks(locks: dict[str, Any] | None, task_id: str, now: str) -> bool:
+    if not isinstance(locks, dict) or not isinstance(locks.get("locks"), list):
+        return False
+    changed = False
+    for lock in locks["locks"]:
+        if not isinstance(lock, dict) or str(lock.get("task_id") or "").strip() != task_id:
+            continue
+        if str(lock.get("state") or "").lower() not in ACTIVE_LOCK_STATES:
+            continue
+        lock.update(
+            {
+                "state": "released",
+                "released_at": now,
+                "released_by": "scripts/agent_control/repository_hygiene_cycle.py",
+                "release_reason": "active task had no unique payload and was already represented in base",
+            }
+        )
+        changed = True
+    if changed:
+        locks["updated_at"] = now
+    return changed
+
+
 def task_lock_is_free(task: dict[str, Any]) -> bool:
     lock = task.get("lock")
     state = lock.get("state") if isinstance(lock, dict) else lock
@@ -893,10 +916,16 @@ def reconcile_integrated_superseded_children(
     candidate_parent_ids: set[str],
     active_pr_numbers: set[int],
     active_lock_ids: set[str],
+    locks: dict[str, Any] | None = None,
     apply: bool,
     now: str,
 ) -> dict[str, Any]:
-    """Close only unstarted decomposition children whose exact payload is on base."""
+    """Close decomposition children whose source payload is already on base.
+
+    Active children without unique payload can be safely reconciled so stale active
+    claims do not block cleanup. Active children with unique worker evidence are
+    preserved for Integrator review.
+    """
 
     tasks = queue.get("tasks") if isinstance(queue, dict) else None
     if not isinstance(tasks, list):
@@ -984,6 +1013,7 @@ def reconcile_integrated_superseded_children(
         )
 
     resolved: list[str] = []
+    released_lock_ids: list[str] = []
     protected: list[str] = []
     for task_id, task in by_id.items():
         if str(task.get("type") or "") != "clean-rebuild":
@@ -1007,28 +1037,97 @@ def reconcile_integrated_superseded_children(
             protected.append(task_id)
             continue
         status = str(task.get("status") or "").lower()
+        integration_status = str(task.get("integration_status") or "").lower()
         parent_merge_proven = proof["proof"] == "parent_merge_commit_ancestor"
-        child_is_active = status in {"claimed", "in_progress", "running"}
-        if not task_lock_is_free(task) or task_id in active_lock_ids or child_is_active:
+        handoff_reference_payload = any(
+            task.get(field)
+            for field in (
+                "branch", "github_branch", "worker_branch", "synced_from_worker_branch",
+                "pr", "github_pr", "pull_request",
+            )
+        ) and branch_cleanup_planner.integrator_waiting_reference(
+            {
+                "type": "task_queue_active",
+                "task_status": status,
+                "next_owner": task.get("next_owner") or task.get("next_role"),
+                "integration_status": integration_status,
+                "worker_result_present": bool(
+                    task.get("worker_result_commit")
+                    or task.get("head_sha")
+                    or task.get("worker_report")
+                    or task.get("last_agent_report")
+                ),
+            }
+        )
+        has_unique_payload = bool(
+            task.get("worker_result")
+            or task.get("worker_report")
+            or task.get("worker_result_report")
+            or task.get("last_agent_report")
+            or task.get("integration_report")
+            or task.get("worker_result_commit")
+            or task.get("head_sha")
+            or (isinstance(task.get("commits"), list) and bool(task.get("commits")))
+            or task.get("worker_result_evidence")
+            or task.get("worker_result_payload")
+            or handoff_reference_payload
+        )
+        child_is_actively_executing = bool(
+            status in {"claimed", "in_progress", "running", "worker_claimed", "agent_working"}
+            or task.get("started_at")
+            or task.get("claimed_at")
+            or task.get("worker_id")
+            or task.get("machine_id")
+        )
+        if has_unique_payload:
             protected.append(task_id)
             continue
-        if not parent_merge_proven and (
-            status not in PRE_EXECUTION_STATUSES or task_has_execution_evidence(task)
-        ):
+        # A canonical active claim may still have a live Worker which has not
+        # published its result metadata yet.  Never terminalize the task or
+        # release that lease here; a later cycle can reconcile it after the
+        # normal worker/recovery path has ended the claim.
+        if task_id in active_lock_ids:
             protected.append(task_id)
             continue
-        if status in TERMINAL_STATUSES:
-            protected.append(task_id)
-            continue
+        if not child_is_actively_executing:
+            if not task_lock_is_free(task) or task_id in active_lock_ids:
+                protected.append(task_id)
+                continue
+            if not parent_merge_proven and (
+                status not in PRE_EXECUTION_STATUSES or task_has_execution_evidence(task)
+            ):
+                protected.append(task_id)
+                continue
+            if status in TERMINAL_STATUSES:
+                protected.append(task_id)
+                continue
         resolved.append(task_id)
         if not apply:
             continue
+        if release_active_task_locks(locks, task_id, now):
+            released_lock_ids.append(task_id)
         evidence = {
             **proof,
             "base_ref": base_ref,
             "base_sha": base_sha,
             "checked_at": now,
         }
+        lock = task.get("lock")
+        if isinstance(lock, dict):
+            lock.update(
+                {
+                    "state": "free",
+                    "by": None,
+                    "at": None,
+                    "expires_at": None,
+                    "released_at": now,
+                    "released_by": "scripts/agent_control/repository_hygiene_cycle.py",
+                    "release_reason": "active task had no unique payload and was already represented in base",
+                }
+            )
+        else:
+            task["lock"] = "free"
+
         task.update(
             {
                 "status": "stale_or_superseded",
@@ -1071,6 +1170,8 @@ def reconcile_integrated_superseded_children(
         "base_ref": base_ref,
         "base_sha": base_sha,
         "changed": changed,
+        "released_lock_ids": sorted(released_lock_ids),
+        "locks_changed": bool(released_lock_ids),
     }
 
 
@@ -1741,7 +1842,8 @@ def run_cycle(
     queue_path = task_file(project_root, "task_queue.json")
     queue = load_json(queue_path, {"schema_version": 1, "tasks": []})
     task_report = apply_group_tasks(queue, groups, apply=apply, now=now)
-    locks = load_json(task_file(project_root, "agent_locks.json"), {"schema_version": 1, "locks": []})
+    locks_path = task_file(project_root, "agent_locks.json")
+    locks = load_json(locks_path, {"schema_version": 1, "locks": []})
     merged_parent_report = reconcile_merged_repository_tasks(
         queue,
         merged_pr_rows,
@@ -1765,6 +1867,7 @@ def run_cycle(
         candidate_parent_ids=set(task_report.get("superseded_task_ids") or []),
         active_pr_numbers={number for group in groups for number in group.get("pr_numbers") or []},
         active_lock_ids=active_lock_task_ids(locks),
+        locks=locks,
         apply=apply,
         now=now,
     )
@@ -1926,6 +2029,8 @@ def run_cycle(
         task_report[key] = len(task_report.get(key.replace("_count", "_task_ids")) or [])
     task_report["changed"] = bool(task_report.get("changed") or recovery_report.get("changed"))
     if apply and task_report["changed"]:
+        if descendant_report.get("locks_changed"):
+            write_json(locks_path, locks)
         queue["updated_at"] = now
         write_json(queue_path, queue)
         event_report = append_queue_event(project_root, task_report, groups, now)

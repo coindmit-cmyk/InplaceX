@@ -106,28 +106,13 @@ If the checkout is behind GitHub or cannot be refreshed safely, stop normal work
 <!-- BEGIN AISTUDIO MANAGED: execution-recommendation -->
 ## Execution Recommendation Gate
 
-Before the first substantive task action, every interactive GPT or Codex chat
-must tell the owner which concrete model and reasoning effort it recommends.
-Mandatory orientation reads may happen first when they are needed to classify
-the task, but implementation, mutation, delegation and long-running checks must
-wait until the recommendation is visible.
-
-Use this compact format once per task, and repeat it only when scope or risk
-changes materially:
+Before the first substantive action, an interactive GPT or Codex chat states:
 
 ```text
-Execution recommendation: <model>, reasoning <effort>, complexity <S|M|L|XL> - <short reason>.
+Execution recommendation: task <type>, complexity <S|M|L|XL>, skills <list>, capability <profile>, model <model>, reasoning <effort> - <short reason>.
 ```
 
-Resolve the recommendation through `.agent/model_routing_policy.json` and the
-task rules in `.agent/routing.md`. This is a recommendation, not a claim that
-the chat changed its own model. If the active model is materially weaker than
-the recommendation for high-risk work, report the mismatch before continuing.
-
-Automation uses the same classification. Every identified executable task
-must carry `complexity = S|M|L|XL`; the central Router records the selected
-model and canonical reasoning effort. A task without a valid complexity must
-fail closed for Dispatcher repair instead of inheriting a role-only default.
+This is a recommendation, not a model switch or execution authorization. Automation uses the existing Model Resource Router as final authority.
 <!-- END AISTUDIO MANAGED: execution-recommendation -->
 ## Develop-First Rule
 

@@ -130,6 +130,7 @@ EXECUTABLE_CHECK_COMMANDS = {
 }
 EXECUTABLE_SCRIPT_SUFFIXES = {".bat", ".cmd", ".ps1", ".py", ".sh"}
 GENERATED_PACKET_WRITER = "scripts/agent_control/dispatcher_packet_repair.py"
+NO_EXISTING_CODE_REFS = "runtime-generated:no-existing-code-refs-declared"
 TRUSTED_REQUESTED_SCOPE_VERIFIERS = {
     "scripts/agent_control/run_worker_cycle.py",
     "scripts/agent_control/sync_worker_results.py",
@@ -288,6 +289,56 @@ def safe_verified_scope_paths(task: dict[str, Any], values: Any) -> list[str]:
             continue
         verified.append(normalized)
     return unique_strings(verified)
+
+
+def exact_repository_ref(value: Any) -> str | None:
+    normalized = str(value or "").replace("\\", "/").strip()
+    if (
+        not normalized
+        or normalized.startswith(("runtime-generated:", "http://", "https://", "file://", "/", "../", "~/"))
+        or re.match(r"^[A-Za-z]:/", normalized)
+        or any(marker in normalized for marker in ("*", "?", "[", "]", "{", "}"))
+        or any(part in {"", ".", ".."} for part in normalized.split("/"))
+    ):
+        return None
+    return normalized
+
+
+def exact_repository_refs(values: Any) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in as_list(values):
+        if isinstance(value, dict):
+            value = value.get("path")
+        ref = exact_repository_ref(value)
+        if ref is None or ref in seen:
+            continue
+        seen.add(ref)
+        result.append(ref)
+    return result
+
+
+def build_input_refs(task: dict[str, Any], normalized_task: dict[str, Any] | None = None) -> dict[str, Any]:
+    normalized = normalized_task or task
+    existing = task.get("input_refs") if isinstance(task.get("input_refs"), dict) else {}
+    declaration_source = str(existing.get("declaration_source") or "").strip().lower()
+    explicit = declaration_source == "explicit"
+    required_paths = list(as_list(existing.get("allowed_paths"))) if explicit else []
+    return {
+        **existing,
+        "base_branch": existing.get("base_branch") or normalized.get("base_branch") or "develop",
+        "base_ref": existing.get("base_ref") or normalized.get("base_ref") or "origin/develop",
+        "allowed_paths": required_paths,
+        "forbidden_paths": list(normalized.get("forbidden_paths") or existing.get("forbidden_paths") or []),
+        "context_docs": list(normalized.get("context_docs") or existing.get("context_docs") or []),
+        "source_file": normalized.get("source_file") or existing.get("source_file"),
+        "worker_source_branch": (
+            existing.get("worker_source_branch")
+            or normalized.get("branch")
+            or normalized.get("github_branch")
+        ),
+        "declaration_source": "explicit" if explicit else "none",
+    }
 
 
 def verified_requested_allowed_paths(task: dict[str, Any]) -> list[str]:
@@ -732,17 +783,22 @@ def build_task_refs(task: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def build_code_refs(task: dict[str, Any]) -> list[str]:
-    inventory = task.get("context_inventory") if isinstance(task.get("context_inventory"), dict) else {}
     input_refs = task.get("input_refs") if isinstance(task.get("input_refs"), dict) else {}
+    inventory = task.get("context_inventory") if isinstance(task.get("context_inventory"), dict) else {}
+    prior_worker_outputs = (
+        [
+            *exact_repository_refs(task.get("changed_paths")),
+            *exact_repository_refs(task.get("integration_changed_paths")),
+        ]
+        if str(task.get("status") or "") == "needs_worker_fix"
+        else []
+    )
     return unique_strings([
-        *as_list(task.get("code_refs")),
-        *as_list(task.get("target_files")),
-        *as_list(task.get("changed_paths")),
-        *as_list(task.get("integration_changed_paths")),
-        *as_list(task.get("allowed_paths")),
-        *as_list(inventory.get("code_refs")),
-        *as_list(input_refs.get("allowed_paths")),
-        *as_list(input_refs.get("changed_paths")),
+        *exact_repository_refs(task.get("code_refs")),
+        *exact_repository_refs(input_refs.get("allowed_paths")),
+        *exact_repository_refs(inventory.get("code_refs")),
+        *exact_repository_refs(task.get("allowed_paths")),
+        *prior_worker_outputs,
     ])
 
 
@@ -881,25 +937,16 @@ def apply_v2_packet(task: dict[str, Any], repaired_at: str) -> dict[str, Any]:
         "repaired_by": "scripts/agent_control/dispatcher_packet_repair.py",
     }
     updated["doc_refs"] = updated.get("doc_refs") or build_doc_refs(updated)
-    code_refs = build_code_refs(updated)
-    updated["code_refs"] = code_refs
+    updated["input_refs"] = build_input_refs(task, updated)
+    updated["code_refs"] = build_code_refs(updated) or [NO_EXISTING_CODE_REFS]
+    code_refs = updated["code_refs"]
     updated["context_inventory"] = updated.get("context_inventory") or build_context_inventory(updated, updated["doc_refs"], code_refs)
     if isinstance(updated.get("context_inventory"), dict):
         updated["context_inventory"]["code_refs"] = unique_strings([
             *as_list(updated["context_inventory"].get("code_refs")),
-            *code_refs,
+            *as_list(code_refs),
         ])
-    updated["input_refs"] = updated.get("input_refs") or {
-        "base_branch": updated.get("base_branch") or "develop",
-        "base_ref": updated.get("base_ref") or "origin/develop",
-        "allowed_paths": updated.get("allowed_paths") or [],
-        "forbidden_paths": updated.get("forbidden_paths") or [],
-        "context_docs": updated.get("context_docs") or [],
-        "source_file": updated.get("source_file"),
-        "worker_source_branch": updated.get("branch") or updated.get("github_branch"),
-    }
     if isinstance(updated.get("input_refs"), dict):
-        updated["input_refs"]["allowed_paths"] = normalized_allowed_paths
         updated["input_refs"]["forbidden_paths"] = list(updated.get("forbidden_paths") or [])
     output_contract = updated.get("output_contract")
     if not isinstance(output_contract, dict):
@@ -985,18 +1032,21 @@ def clean_worker_ready_metadata(task: dict[str, Any], repaired_at: str) -> dict[
     if normalized_allowed_paths != unique_strings(as_list(updated.get("allowed_paths"))):
         updated["allowed_paths"] = normalized_allowed_paths
         cleaned_fields.append("allowed_paths")
-        if isinstance(updated.get("input_refs"), dict):
-            updated["input_refs"]["allowed_paths"] = normalized_allowed_paths
-        code_refs = unique_strings([*as_list(updated.get("code_refs")), *normalized_allowed_paths])
+        code_refs = build_code_refs(updated) or [NO_EXISTING_CODE_REFS]
         if code_refs != unique_strings(as_list(updated.get("code_refs"))):
             updated["code_refs"] = code_refs
             cleaned_fields.append("code_refs")
         inventory = updated.get("context_inventory")
         if isinstance(inventory, dict):
-            inventory_code_refs = unique_strings([*as_list(inventory.get("code_refs")), *normalized_allowed_paths])
+            inventory_code_refs = unique_strings([*as_list(inventory.get("code_refs")), *as_list(code_refs)])
             if inventory_code_refs != unique_strings(as_list(inventory.get("code_refs"))):
                 inventory["code_refs"] = inventory_code_refs
                 cleaned_fields.append("context_inventory.code_refs")
+    if isinstance(updated.get("input_refs"), dict):
+        repaired_input_refs = build_input_refs(updated)
+        if repaired_input_refs != updated["input_refs"]:
+            updated["input_refs"] = repaired_input_refs
+            cleaned_fields.append("input_refs")
     if allowed_path_notes:
         notes = unique_strings([*as_list(updated.get("allowed_path_notes")), *allowed_path_notes])
         if notes != unique_strings(as_list(updated.get("allowed_path_notes"))):

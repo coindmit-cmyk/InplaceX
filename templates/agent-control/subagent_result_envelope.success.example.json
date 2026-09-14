@@ -1,0 +1,136 @@
+{
+  "contract_version": "1.0.0",
+  "contract_kind": "subagent_result_envelope",
+  "correlation_id": "corr-exec-001",
+  "producer": {
+    "role": "ux-design",
+    "stage": "strict-review",
+    "project_id": "ai-project-agent"
+  },
+  "created_at": "2026-07-15T11:50:00Z",
+  "revision": 1,
+  "supersedes": null,
+  "digest_profile": "jcs-sha256-v1",
+  "authority_guard": {
+    "authority_granted": false,
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed": false,
+    "merge_authority_granted": false,
+    "release_authority_granted": false,
+    "recurring_automation_changed": false
+  },
+  "audit": {
+    "journal_ref": "runtime://audit/corr-exec-001",
+    "reason_codes": [],
+    "warnings": []
+  },
+  "result_id": "result-ux-001",
+  "status": "success",
+  "invocation_id": "inv-ux-001",
+  "attempt_id": "attempt-ux-001",
+  "attempt_number": 1,
+  "plan_id": "plan-exec-001",
+  "plan_content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "work_unit_id": "unit-ux",
+  "input_bundle_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "base_snapshot_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+  "selected_route_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "actual_use": {
+    "model_id": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "delegation_used": false,
+    "tools_used": [
+      "repository-read",
+      "schema-validator"
+    ],
+    "actual_route_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "route_reconciliation": {
+    "status": "matched"
+  },
+  "started_at": "2026-07-15T11:31:00Z",
+  "completed_at": "2026-07-15T11:49:00Z",
+  "evidence": [
+    {
+      "evidence_id": "evidence-ux-001",
+      "kind": "document",
+      "ref": "docs/design/ux-contract.md",
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "observed_at": "2026-07-15T11:40:00Z",
+      "source_revision": "87bf3c6",
+      "supports_claim_ids": [
+        "claim-ux-001"
+      ],
+      "contradicts_claim_ids": []
+    },
+    {
+      "evidence_id": "evidence-test-001",
+      "kind": "test",
+      "ref": "tests/test_execution_contract_validator.py::test_valid_result",
+      "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "observed_at": "2026-07-15T11:48:00Z",
+      "source_revision": "87bf3c6",
+      "supports_claim_ids": [
+        "claim-ux-001"
+      ],
+      "contradicts_claim_ids": []
+    }
+  ],
+  "privacy_guard": {
+    "raw_prompts_included": false,
+    "secrets_included": false,
+    "credentials_included": false,
+    "unrestricted_logs_included": false,
+    "unrestricted_parent_context_included": false
+  },
+  "payload_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "result_envelope_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "outcome": {
+    "summary": "Required UX lifecycle states and disclosure boundaries are covered.",
+    "acceptance_evidence": [
+      {
+        "criterion_id": "criterion-states",
+        "status": "met",
+        "evidence_refs": [
+          "evidence-ux-001"
+        ]
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "claim-ux-001",
+        "statement": "The default presentation distinguishes recommended, authorized and actually used states.",
+        "support_status": "supported",
+        "evidence_refs": [
+          "evidence-ux-001",
+          "evidence-test-001"
+        ],
+        "confidence": 0.94
+      }
+    ],
+    "findings": [
+      "Footer stays bounded and technical ids remain disclosure-only."
+    ],
+    "checks": [
+      {
+        "name": "ux-state-review",
+        "status": "passed",
+        "evidence_refs": [
+          "evidence-test-001"
+        ]
+      }
+    ],
+    "artifacts": [
+      {
+        "ref": "docs/design/ux-contract.md",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ],
+    "assumptions": [],
+    "uncertainty": [],
+    "conflicts": [],
+    "unmet_requirements": [],
+    "proposed_disposition": "accept"
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "contract_version": "1.0.0",
+  "contract_kind": "result_integration",
+  "correlation_id": "corr-exec-001",
+  "producer": {
+    "role": "integrator",
+    "stage": "result-synthesis",
+    "project_id": "ai-project-agent"
+  },
+  "created_at": "2026-07-15T12:10:00Z",
+  "revision": 1,
+  "supersedes": null,
+  "digest_profile": "jcs-sha256-v1",
+  "authority_guard": {
+    "authority_granted": false,
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed": false,
+    "merge_authority_granted": false,
+    "release_authority_granted": false,
+    "recurring_automation_changed": false
+  },
+  "audit": {
+    "journal_ref": "runtime://audit/corr-exec-001",
+    "reason_codes": [],
+    "warnings": []
+  },
+  "integration_id": "integration-exec-001",
+  "status": "ready_for_finalizer",
+  "plan_id": "plan-exec-001",
+  "plan_content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "input_result_set_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "expected_results": [
+    {
+      "invocation_id": "inv-ux-001",
+      "attempt_id": "attempt-ux-001",
+      "work_unit_id": "unit-ux",
+      "criticality": "required"
+    },
+    {
+      "invocation_id": "inv-policy-001",
+      "attempt_id": "attempt-policy-001",
+      "work_unit_id": "unit-policy",
+      "criticality": "required"
+    }
+  ],
+  "received_results": [
+    {
+      "result_id": "result-ux-001",
+      "invocation_id": "inv-ux-001",
+      "attempt_id": "attempt-ux-001",
+      "work_unit_id": "unit-ux",
+      "status": "success",
+      "result_envelope_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "result_id": "result-policy-001",
+      "invocation_id": "inv-policy-001",
+      "attempt_id": "attempt-policy-001",
+      "work_unit_id": "unit-policy",
+      "status": "success",
+      "result_envelope_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "orphan_results": [],
+  "result_accounting": [
+    {
+      "invocation_id": "inv-ux-001",
+      "attempt_id": "attempt-ux-001",
+      "work_unit_id": "unit-ux",
+      "disposition": "accepted",
+      "result_id": "result-ux-001",
+      "reason_code": "accepted-verified"
+    },
+    {
+      "invocation_id": "inv-policy-001",
+      "attempt_id": "attempt-policy-001",
+      "work_unit_id": "unit-policy",
+      "disposition": "accepted",
+      "result_id": "result-policy-001",
+      "reason_code": "accepted-verified"
+    }
+  ],
+  "requirement_coverage": [
+    {
+      "requirement_id": "exec-fr-016",
+      "status": "covered",
+      "evidence_refs": [
+        "result-policy-001"
+      ]
+    },
+    {
+      "requirement_id": "exec-fr-060",
+      "status": "covered",
+      "evidence_refs": [
+        "result-ux-001",
+        "result-policy-001"
+      ]
+    }
+  ],
+  "lane_coverage": [
+    {
+      "work_unit_id": "unit-ux",
+      "status": "accepted",
+      "chosen_attempt_id": "attempt-ux-001",
+      "chosen_result_id": "result-ux-001",
+      "superseded_attempt_ids": [],
+      "reason_code": "accepted-latest-success"
+    },
+    {
+      "work_unit_id": "unit-policy",
+      "status": "accepted",
+      "chosen_attempt_id": "attempt-policy-001",
+      "chosen_result_id": "result-policy-001",
+      "superseded_attempt_ids": [],
+      "reason_code": "accepted-latest-success"
+    }
+  ],
+  "conflicts": [],
+  "blockers": [],
+  "synthesis": {
+    "summary": "All required UX and policy lanes succeeded with compatible evidence.",
+    "accepted_result_ids": [
+      "result-ux-001",
+      "result-policy-001"
+    ],
+    "excluded_results": [],
+    "accepted_claim_ids": [
+      "claim-ux-001",
+      "claim-policy-001"
+    ],
+    "excluded_claims": [],
+    "requirement_coverage": [
+      "exec-fr-016",
+      "exec-fr-060"
+    ],
+    "artifacts": [
+      {
+        "ref": "docs/design/ux-contract.md",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ],
+    "preservation_checks": [
+      {
+        "name": "capability-preservation",
+        "status": "passed",
+        "evidence_ref": "report://preservation/exec-001"
+      }
+    ],
+    "residual_risks": [],
+    "confidence": 0.92,
+    "confidence_method": "weakest_critical_evidence",
+    "weakest_critical_evidence_confidence": 0.92,
+    "synthesis_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "finalizer_handoff": {
+    "handoff_id": "handoff-finalizer-001",
+    "integration_id": "integration-exec-001",
+    "integration_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "synthesis_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "input_result_set_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "package_evidence_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "required_accounting_complete": true,
+    "blocking_conflicts_resolved": true,
+    "required_checks_passed": true,
+    "finalizer_may_modify": false,
+    "merge_authority_granted": false
+  },
+  "integration_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+}

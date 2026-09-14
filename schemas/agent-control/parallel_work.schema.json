@@ -1,0 +1,1283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.aistudio.local/agent-control/parallel_work.schema.json",
+  "title": "AIStudio Parallel Work Contract",
+  "description": "One deterministic read-only DAG constrained by Router-authorized capacity. It is not a scheduler or launch grant.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "skill_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "version", "bundle_digest", "selection_decision_id", "selection_decision_digest", "registry_snapshot_digest", "load_order"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"},
+        "bundle_digest": {"$ref": "#/$defs/digest"},
+        "selection_decision_id": {"$ref": "#/$defs/id"},
+        "selection_decision_digest": {"$ref": "#/$defs/digest"},
+        "registry_snapshot_digest": {"$ref": "#/$defs/digest"},
+        "load_order": {"type": "integer", "minimum": 0}
+      }
+    },
+    "work_unit_skill_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work_unit_id", "skill_bindings"],
+      "properties": {
+        "work_unit_id": {"$ref": "#/$defs/id"},
+        "skill_bindings": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/skill_binding"}}
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "stage",
+        "project_id"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        },
+        "stage": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        },
+        "project_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+        }
+      }
+    },
+    "authority_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_granted",
+        "role_permissions_changed",
+        "approval_gates_bypassed",
+        "worker_ready_changed",
+        "merge_authority_granted",
+        "release_authority_granted",
+        "recurring_automation_changed"
+      ],
+      "properties": {
+        "authority_granted": {
+          "const": false
+        },
+        "role_permissions_changed": {
+          "const": false
+        },
+        "approval_gates_bypassed": {
+          "const": false
+        },
+        "worker_ready_changed": {
+          "const": false
+        },
+        "merge_authority_granted": {
+          "const": false
+        },
+        "release_authority_granted": {
+          "const": false
+        },
+        "recurring_automation_changed": {
+          "const": false
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "journal_ref",
+        "reason_codes"
+      ],
+      "properties": {
+        "journal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._:-]{2,127}$"
+          },
+          "uniqueItems": true
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "resource_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read_refs",
+        "exclusive_keys"
+      ],
+      "properties": {
+        "read_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "exclusive_keys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^*?\\[\\]]+$"
+          }
+        }
+      }
+    },
+    "work_unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_unit_id",
+        "order",
+        "criticality",
+        "objective",
+        "acceptance_criteria",
+        "target_role",
+        "target_stage",
+        "capability_profile",
+        "access_mode",
+        "mutation_allowed",
+        "resources",
+        "expected_result_schema",
+        "timeout_seconds"
+      ],
+      "properties": {
+        "work_unit_id": {
+          "$ref": "#/$defs/id"
+        },
+        "skill_bindings": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/skill_binding"}
+        },
+        "input_bundle_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "criticality": {
+          "enum": [
+            "required",
+            "optional"
+          ]
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "target_role": {
+          "$ref": "#/$defs/id"
+        },
+        "target_stage": {
+          "$ref": "#/$defs/id"
+        },
+        "capability_profile": {
+          "enum": [
+            "efficient",
+            "balanced",
+            "deep",
+            "maximum_coherent",
+            "delegated_deep"
+          ]
+        },
+        "access_mode": {
+          "const": "read_only"
+        },
+        "mutation_allowed": {
+          "const": false
+        },
+        "resources": {
+          "$ref": "#/$defs/resource_set"
+        },
+        "expected_result_schema": {
+          "const": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "type"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "success",
+            "completion",
+            "artifact_ready",
+            "approval",
+            "integration_accepted"
+          ]
+        }
+      }
+    },
+    "barrier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "barrier_id",
+        "members",
+        "required_members",
+        "release_condition",
+        "bypass_allowed"
+      ],
+      "properties": {
+        "barrier_id": {
+          "$ref": "#/$defs/id"
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "required_members": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "release_condition": {
+          "enum": [
+            "all_required_success",
+            "all_completion",
+            "approval",
+            "integration_accepted"
+          ]
+        },
+        "bypass_allowed": {
+          "const": false
+        }
+      }
+    },
+    "hmac_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proof_version",
+        "issuer",
+        "algorithm",
+        "subject",
+        "key_id",
+        "proof"
+      ],
+      "properties": {
+        "proof_version": {
+          "const": "1.0.0"
+        },
+        "issuer": {
+          "const": "model_resource_router"
+        },
+        "algorithm": {
+          "const": "hmac-sha256"
+        },
+        "subject": {
+          "const": "delegation_authorization"
+        },
+        "key_id": {
+          "$ref": "#/$defs/id"
+        },
+        "proof": {
+          "type": "string",
+          "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "capacity_envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "router_authorized_lanes",
+        "plan_requested_lanes",
+        "plan_work_units",
+        "project_policy_ceiling",
+        "worker_policy_ceiling",
+        "runtime_capacity_ceiling",
+        "authorized_lanes",
+        "max_attempts_per_unit",
+        "max_total_invocations",
+        "budget_digest"
+      ],
+      "properties": {
+        "router_authorized_lanes": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "plan_requested_lanes": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "plan_work_units": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
+        },
+        "project_policy_ceiling": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "worker_policy_ceiling": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "runtime_capacity_ceiling": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "authorized_lanes": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "max_attempts_per_unit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "max_total_invocations": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "budget_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "router_authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization_id",
+        "status",
+        "issued_at",
+        "expires_at",
+        "router_decision_id",
+        "plan_id",
+        "plan_content_digest",
+        "authorized_lanes",
+        "max_total_invocations",
+        "budget_digest",
+        "grant_digest"
+      ],
+      "properties": {
+        "authorization_version": {
+          "const": "1.0.0"
+        },
+        "authorization_id": {
+          "$ref": "#/$defs/id"
+        },
+        "issuer": {
+          "const": "model_resource_router"
+        },
+        "status": {
+          "const": "granted"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "router_decision_id": {
+          "$ref": "#/$defs/id"
+        },
+        "router_decision_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "router_decision_provenance_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "router_provenance_key_id": {
+          "$ref": "#/$defs/id"
+        },
+        "selected_route_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plan_content_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "work_unit_scope_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "input_scope_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "bound_scope_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "digest_profile": {
+          "const": "jcs-sha256-v1"
+        },
+        "immutable": {
+          "const": true
+        },
+        "authorized_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "max_attempts_per_unit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "max_total_invocations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "budget_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "grant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "skill_bindings_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "skill_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/work_unit_skill_bindings"}
+        },
+        "invocation_grants_single_use": {
+          "const": true
+        },
+        "capacity_envelope": {
+          "$ref": "#/$defs/capacity_envelope"
+        },
+        "authorization_proof": {
+          "$ref": "#/$defs/hmac_proof"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "authorization_version"
+            ]
+          },
+          "then": {
+            "required": [
+              "issuer",
+              "router_decision_digest",
+              "router_decision_provenance_digest",
+              "router_provenance_key_id",
+              "selected_route_digest",
+              "work_unit_scope_digest",
+              "input_scope_digest",
+              "bound_scope_digest",
+              "digest_profile",
+              "immutable",
+              "max_attempts_per_unit",
+              "invocation_grants_single_use",
+              "capacity_envelope",
+              "authorization_proof"
+            ],
+            "properties": {
+              "authorized_lanes": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 64
+              },
+              "max_total_invocations": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 64
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {"required": ["issuer"]},
+                {"required": ["router_decision_digest"]},
+                {"required": ["router_decision_provenance_digest"]},
+                {"required": ["router_provenance_key_id"]},
+                {"required": ["selected_route_digest"]},
+                {"required": ["work_unit_scope_digest"]},
+                {"required": ["input_scope_digest"]},
+                {"required": ["bound_scope_digest"]},
+                {"required": ["digest_profile"]},
+                {"required": ["immutable"]},
+                {"required": ["max_attempts_per_unit"]},
+                {"required": ["invocation_grants_single_use"]},
+                {"required": ["capacity_envelope"]},
+                {"required": ["authorization_proof"]}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "contract_version",
+    "contract_kind",
+    "correlation_id",
+    "producer",
+    "created_at",
+    "revision",
+    "supersedes",
+    "digest_profile",
+    "authority_guard",
+    "audit",
+    "plan_id",
+    "status",
+    "base_snapshot",
+    "plan_content_digest",
+    "router_decision_id",
+    "risk",
+    "capacity",
+    "work_units",
+    "dependencies",
+    "barriers",
+    "completion_policy",
+    "failure_policy",
+    "cancellation_policy",
+    "integration_gate",
+    "deterministic_ready_order",
+    "progress_denominator"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "contract_kind": {
+      "const": "parallel_work"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/id"
+    },
+    "producer": {
+      "$ref": "#/$defs/producer"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "supersedes": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/id"
+        }
+      ]
+    },
+    "digest_profile": {
+      "const": "jcs-sha256-v1"
+    },
+    "authority_guard": {
+      "$ref": "#/$defs/authority_guard"
+    },
+    "audit": {
+      "$ref": "#/$defs/audit"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/id"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "validated",
+        "authorized",
+        "running",
+        "awaiting_integration",
+        "completed",
+        "blocked",
+        "cancelled"
+      ]
+    },
+    "base_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "digest",
+        "immutable"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "immutable": {
+          "const": true
+        }
+      }
+    },
+    "plan_content_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "router_decision_id": {
+      "$ref": "#/$defs/id"
+    },
+    "router_decision_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "router_decision_provenance_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "router_provenance_key_id": {
+      "$ref": "#/$defs/id"
+    },
+    "selected_route_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "work_unit_scope_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "input_scope_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "risk": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "capacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested_lanes",
+        "authorized_lanes",
+        "effective_lanes",
+        "max_total_invocations",
+        "max_attempts_per_unit",
+        "budget_digest"
+      ],
+      "properties": {
+        "requested_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "authorized_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "effective_lanes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "max_total_invocations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "max_attempts_per_unit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "budget_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "work_units": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/work_unit"
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
+    },
+    "barriers": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/barrier"
+      }
+    },
+    "completion_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_units",
+        "optional_units",
+        "quorum_allowed",
+        "minimum_success_allowed"
+      ],
+      "properties": {
+        "required_units": {
+          "const": "all_success"
+        },
+        "optional_units": {
+          "const": "allow_explicit_residual_risk"
+        },
+        "quorum_allowed": {
+          "const": false
+        },
+        "minimum_success_allowed": {
+          "const": false
+        }
+      }
+    },
+    "failure_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_failure",
+        "optional_failure",
+        "dependent_failure"
+      ],
+      "properties": {
+        "required_failure": {
+          "const": "block_integration"
+        },
+        "optional_failure": {
+          "const": "record_residual_risk"
+        },
+        "dependent_failure": {
+          "const": "block_hard_dependents"
+        }
+      }
+    },
+    "cancellation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_cancel_queued",
+        "running_grace_seconds",
+        "retain_evidence"
+      ],
+      "properties": {
+        "parent_cancel_queued": {
+          "const": true
+        },
+        "running_grace_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "retain_evidence": {
+          "const": true
+        }
+      }
+    },
+    "integration_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_work_unit_ids",
+        "all_required_must_succeed",
+        "missing_required_blocks"
+      ],
+      "properties": {
+        "required_work_unit_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "all_required_must_succeed": {
+          "const": true
+        },
+        "missing_required_blocks": {
+          "const": true
+        }
+      }
+    },
+    "deterministic_ready_order": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "progress_denominator": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 128
+    },
+    "revision_change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "progress_denominator_changed",
+        "reason",
+        "approved_before_execution"
+      ],
+      "properties": {
+        "progress_denominator_changed": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_before_execution": {
+          "type": "boolean"
+        }
+      }
+    },
+    "router_authorization": {
+      "$ref": "#/$defs/router_authorization"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "integration_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integration_id",
+        "integration_digest"
+      ],
+      "properties": {
+        "integration_id": {
+          "$ref": "#/$defs/id"
+        },
+        "integration_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "terminal_reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "human_reason"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/id"
+        },
+        "human_reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "validated"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_decision_digest"
+        ],
+        "properties": {
+          "work_units": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "properties": {
+                "input_bundle_digest": {}
+              },
+              "required": [
+                "input_bundle_digest"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "router_authorization": {
+            "type": "object",
+            "properties": {
+              "authorization_version": {}
+            },
+            "required": [
+              "authorization_version"
+            ]
+          }
+        },
+        "required": [
+          "router_authorization"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_decision_digest",
+          "router_decision_provenance_digest",
+          "router_provenance_key_id",
+          "selected_route_digest",
+          "work_unit_scope_digest",
+          "input_scope_digest"
+        ],
+        "properties": {
+          "router_decision_digest": {},
+          "router_decision_provenance_digest": {},
+          "router_provenance_key_id": {},
+          "selected_route_digest": {},
+          "work_unit_scope_digest": {},
+          "input_scope_digest": {},
+          "capacity": {
+            "type": "object",
+            "properties": {
+              "requested_lanes": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 64
+              },
+              "authorized_lanes": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 64
+              },
+              "max_total_invocations": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 64
+              }
+            }
+          },
+          "work_units": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "properties": {
+                "input_bundle_digest": {}
+              },
+              "required": [
+                "input_bundle_digest"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 2
+          }
+        },
+        "required": [
+          "revision"
+        ]
+      },
+      "then": {
+        "required": [
+          "revision_change"
+        ],
+        "properties": {
+          "supersedes": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "proposed",
+              "validated"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "router_authorization"
+              ]
+            },
+            {
+              "required": [
+                "started_at"
+              ]
+            },
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "integration_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "authorized"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_authorization"
+        ],
+        "properties": {
+          "router_authorization": {
+            "type": "object",
+            "properties": {
+              "authorization_version": {}
+            },
+            "required": [
+              "authorization_version"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "started_at"
+              ]
+            },
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "integration_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_authorization",
+          "started_at"
+        ],
+        "properties": {
+          "router_authorization": {
+            "type": "object",
+            "properties": {
+              "authorization_version": {}
+            },
+            "required": [
+              "authorization_version"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "completed_at"
+              ]
+            },
+            {
+              "required": [
+                "integration_ref"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "awaiting_integration"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_authorization",
+          "started_at",
+          "completed_at"
+        ],
+        "not": {
+          "required": [
+            "integration_ref"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "completed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "router_authorization",
+          "started_at",
+          "completed_at",
+          "integration_ref"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "blocked",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "completed_at",
+          "terminal_reason"
+        ],
+        "not": {
+          "required": [
+            "integration_ref"
+          ]
+        }
+      }
+    }
+  ]
+}

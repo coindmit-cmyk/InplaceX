@@ -601,6 +601,7 @@ def classify_candidate(
     service_paths = coordination_paths(candidate)
     ahead = int(candidate.get("ahead_of_base") or 0)
     behind = int(candidate.get("behind_base") or 0)
+    state_only_behind = behind > 0 and candidate.get("state_only_base_advance") is True
     pr = prs_by_branch.get(normalized)
     task_records = [tasks_by_id[item.upper()] for item in task_ids if item.upper() in tasks_by_id]
     if recovery and not task_records:
@@ -648,7 +649,7 @@ def classify_candidate(
             blockers.extend(scope)
         if item_risk == "high":
             blockers.append("high-risk paths require owner/strong review")
-        if strict_fresh_base and behind > 0:
+        if behind > 0 and not state_only_behind:
             blockers.append(f"behind base by {behind} commits")
         if strict_product_conflicts and branch_conflicts:
             blockers.append("product changed-path overlap with another candidate")
@@ -669,9 +670,9 @@ def classify_candidate(
             classification = NEEDS_INTEGRATOR_REVIEW
             next_owner = "auto-integrator"
             reason = "; ".join(metadata_scope)
-        elif strict_fresh_base and behind > 0:
-            classification = NEEDS_INTEGRATOR_REVIEW
-            next_owner = "auto-integrator"
+        elif behind > 0 and not state_only_behind:
+            classification = NEEDS_REBASE
+            next_owner = "worker"
             reason = "; ".join(blockers)
         elif strict_product_conflicts and branch_conflicts:
             classification = NEEDS_INTEGRATOR_REVIEW
@@ -686,13 +687,13 @@ def classify_candidate(
             next_owner = "auto-integrator"
             reason = "; ".join(blockers)
 
-    if behind > 0 and classification == READY:
-        warnings.append(f"behind base by {behind}; Integrator should update/rebase before final handoff")
     is_draft = pr_is_draft(pr) if pr else False
     if is_draft and classification == READY:
         warnings.append("draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target")
     if check_state in {"missing", "unknown"} and classification == READY:
         warnings.append(f"GitHub checks {check_state}; local/task evidence required")
+    if state_only_behind and classification == READY:
+        evidence.append(f"state_only_base_advance={behind}")
     if branch_conflicts:
         evidence.append(f"product_conflicts={len(branch_conflicts)}")
         if classification == READY:
@@ -730,6 +731,7 @@ def classify_candidate(
         "mirror_refs": candidate.get("mirror_refs") or [branch],
         "ahead_of_base": ahead,
         "behind_base": behind,
+        "state_only_base_advance": state_only_behind,
         "check_state": check_state,
         "merge_state": (pr.get("mergeStateStatus") or pr.get("merge_state")) if pr else None,
         "is_draft": is_draft if pr else None,
@@ -785,7 +787,7 @@ def build_report(preflight: dict[str, Any], args: argparse.Namespace) -> dict[st
         "policy": {
             "require_checks": bool(args.require_checks),
             "block_drafts": bool(args.block_drafts),
-            "strict_fresh_base": bool(args.strict_fresh_base),
+            "strict_fresh_base": True,
             "max_task_ids": max_task_ids,
             "strict_product_conflicts": strict_product_conflicts,
             "clean_rebuild_recovery": bool(recovery_by_branch),
@@ -832,7 +834,12 @@ def main() -> int:
     parser.add_argument("--base", help="Override base branch label in report.")
     parser.add_argument("--require-checks", action="store_true", help="Classify missing/unknown checks as needs_checks.")
     parser.add_argument("--block-drafts", action="store_true", help="Classify draft PRs as draft_only.")
-    parser.add_argument("--strict-fresh-base", action="store_true", help="Classify behind-base candidates as needs_rebase.")
+    parser.add_argument(
+        "--strict-fresh-base",
+        action="store_true",
+        default=True,
+        help="Compatibility flag; behind-base candidates are always classified as needs_rebase.",
+    )
     parser.add_argument("--strict-product-conflicts", action="store_true", help="Classify product path overlaps as needs_rebase instead of leaving them for module-aware batching.")
     parser.add_argument("--max-task-ids", type=int, default=5, help="Route candidates with more inferred task ids to Dispatcher.")
     parser.add_argument("--json", action="store_true")

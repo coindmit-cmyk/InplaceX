@@ -1,0 +1,193 @@
+{
+  "contract_version": "1.0.0",
+  "contract_kind": "parallel_work",
+  "correlation_id": "corr-exec-001",
+  "producer": {
+    "role": "plan-compiler",
+    "stage": "execution-contracts",
+    "project_id": "ai-project-agent"
+  },
+  "created_at": "2026-07-15T11:28:00Z",
+  "revision": 1,
+  "supersedes": null,
+  "digest_profile": "jcs-sha256-v1",
+  "authority_guard": {
+    "authority_granted": false,
+    "role_permissions_changed": false,
+    "approval_gates_bypassed": false,
+    "worker_ready_changed": false,
+    "merge_authority_granted": false,
+    "release_authority_granted": false,
+    "recurring_automation_changed": false
+  },
+  "audit": {
+    "journal_ref": "runtime://audit/corr-exec-001",
+    "reason_codes": [],
+    "warnings": []
+  },
+  "plan_id": "plan-exec-001",
+  "status": "authorized",
+  "base_snapshot": {
+    "ref": "git:develop@87bf3c6",
+    "digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "immutable": true
+  },
+  "plan_content_digest": "sha256:8af0fc1ca8e8868d67e08b9e444d3828808bfb92175e026262ed031811a80bc8",
+  "router_decision_id": "router:decision:validator001",
+  "risk": "high",
+  "capacity": {
+    "requested_lanes": 2,
+    "authorized_lanes": 2,
+    "effective_lanes": 2,
+    "max_total_invocations": 4,
+    "max_attempts_per_unit": 2,
+    "budget_digest": "sha256:b213274c86029e3900d78b423a9c9620cada79982690faa902a77345a36e168c"
+  },
+  "work_units": [
+    {
+      "work_unit_id": "unit-ux",
+      "order": 0,
+      "criticality": "required",
+      "objective": "Review UX states and disclosure.",
+      "acceptance_criteria": [
+        "all required states covered"
+      ],
+      "target_role": "ux-design",
+      "target_stage": "strict-review",
+      "capability_profile": "deep",
+      "access_mode": "read_only",
+      "mutation_allowed": false,
+      "resources": {
+        "read_refs": [
+          "docs/design/**",
+          "schemas/agent-control/**"
+        ],
+        "exclusive_keys": []
+      },
+      "expected_result_schema": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json",
+      "timeout_seconds": 1800,
+      "input_bundle_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "work_unit_id": "unit-policy",
+      "order": 1,
+      "criticality": "required",
+      "objective": "Review authority and policy invariants.",
+      "acceptance_criteria": [
+        "no advisory field grants authority"
+      ],
+      "target_role": "architect",
+      "target_stage": "policy-review",
+      "capability_profile": "deep",
+      "access_mode": "read_only",
+      "mutation_allowed": false,
+      "resources": {
+        "read_refs": [
+          ".agent/model_routing_policy.json",
+          "schemas/agent-control/**"
+        ],
+        "exclusive_keys": []
+      },
+      "expected_result_schema": "https://schemas.aistudio.local/agent-control/subagent_result_envelope.schema.json",
+      "timeout_seconds": 1800,
+      "input_bundle_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "dependencies": [],
+  "barriers": [
+    {
+      "barrier_id": "barrier-integration",
+      "members": [
+        "unit-ux",
+        "unit-policy"
+      ],
+      "required_members": [
+        "unit-ux",
+        "unit-policy"
+      ],
+      "release_condition": "all_required_success",
+      "bypass_allowed": false
+    }
+  ],
+  "completion_policy": {
+    "required_units": "all_success",
+    "optional_units": "allow_explicit_residual_risk",
+    "quorum_allowed": false,
+    "minimum_success_allowed": false
+  },
+  "failure_policy": {
+    "required_failure": "block_integration",
+    "optional_failure": "record_residual_risk",
+    "dependent_failure": "block_hard_dependents"
+  },
+  "cancellation_policy": {
+    "parent_cancel_queued": true,
+    "running_grace_seconds": 30,
+    "retain_evidence": true
+  },
+  "integration_gate": {
+    "required_work_unit_ids": [
+      "unit-ux",
+      "unit-policy"
+    ],
+    "all_required_must_succeed": true,
+    "missing_required_blocks": true
+  },
+  "deterministic_ready_order": [
+    "unit-ux",
+    "unit-policy"
+  ],
+  "progress_denominator": 2,
+  "router_decision_digest": "sha256:0dc01713a2b7f6a4b77da24e5ce08561bb09be5f36afdde659d69386aa8559a2",
+  "router_decision_provenance_digest": "sha256:5135a47ccd7c2423652169c7ccb3017adce65373fa87b492b310dabeacad72f6",
+  "selected_route_digest": "sha256:f3f6fe9c6f00dbe8e4b299bde0245c4ec95bae78432f9e56ae7da168b1172c34",
+  "work_unit_scope_digest": "sha256:44a6188612d0ff1b5019ad25c112005c37459a578c9899e031ef804fe93dd1d0",
+  "input_scope_digest": "sha256:1ea69499babe0f1aebbd47cafd153dd106cece35e1e939c81e514e76d0d12d45",
+  "router_provenance_key_id": "router:key:e2b07b1465643cfc262b3708",
+  "router_authorization": {
+    "authorization_version": "1.0.0",
+    "authorization_id": "router:authorization:374d400bc7a0dc5563b2503f",
+    "issuer": "model_resource_router",
+    "status": "granted",
+    "issued_at": "2026-07-15T12:25:00.000000Z",
+    "expires_at": "2026-07-15T12:40:00.000000Z",
+    "digest_profile": "jcs-sha256-v1",
+    "immutable": true,
+    "router_decision_id": "router:decision:validator001",
+    "router_decision_digest": "sha256:0dc01713a2b7f6a4b77da24e5ce08561bb09be5f36afdde659d69386aa8559a2",
+    "router_decision_provenance_digest": "sha256:5135a47ccd7c2423652169c7ccb3017adce65373fa87b492b310dabeacad72f6",
+    "router_provenance_key_id": "router:key:e2b07b1465643cfc262b3708",
+    "selected_route_digest": "sha256:f3f6fe9c6f00dbe8e4b299bde0245c4ec95bae78432f9e56ae7da168b1172c34",
+    "plan_id": "plan-exec-001",
+    "plan_content_digest": "sha256:8af0fc1ca8e8868d67e08b9e444d3828808bfb92175e026262ed031811a80bc8",
+    "work_unit_scope_digest": "sha256:44a6188612d0ff1b5019ad25c112005c37459a578c9899e031ef804fe93dd1d0",
+    "input_scope_digest": "sha256:1ea69499babe0f1aebbd47cafd153dd106cece35e1e939c81e514e76d0d12d45",
+    "bound_scope_digest": "sha256:8f6a0c2dec94746eb29612b32870a10036ae84fc5b7bee034c7c21cb7390c59d",
+    "authorized_lanes": 2,
+    "max_attempts_per_unit": 2,
+    "max_total_invocations": 4,
+    "budget_digest": "sha256:b213274c86029e3900d78b423a9c9620cada79982690faa902a77345a36e168c",
+    "invocation_grants_single_use": true,
+    "capacity_envelope": {
+      "router_authorized_lanes": 2,
+      "plan_requested_lanes": 2,
+      "plan_work_units": 2,
+      "project_policy_ceiling": 4,
+      "worker_policy_ceiling": 2,
+      "runtime_capacity_ceiling": 3,
+      "authorized_lanes": 2,
+      "max_attempts_per_unit": 2,
+      "max_total_invocations": 4,
+      "budget_digest": "sha256:b213274c86029e3900d78b423a9c9620cada79982690faa902a77345a36e168c"
+    },
+    "grant_digest": "sha256:997396cc0fb72467cd28cb6e478a252ca0a14f3cfa7c6c5c704b45e2e5cf2a7a",
+    "authorization_proof": {
+      "proof_version": "1.0.0",
+      "issuer": "model_resource_router",
+      "algorithm": "hmac-sha256",
+      "subject": "delegation_authorization",
+      "key_id": "router:key:e2b07b1465643cfc262b3708",
+      "proof": "hmac-sha256:6c23ead3d308a1ade6edf3f1eda8cad8cf2e5def5102732aa10aad7f43bd9696"
+    }
+  }
+}

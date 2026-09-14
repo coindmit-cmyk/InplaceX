@@ -595,6 +595,23 @@ def scan_reports_for_branches(root: Path, branch_names: list[str], refs: dict[st
             add_reference(refs, branch, marker, path, "")
 
 
+def active_worktree_branches(porcelain: str) -> list[str]:
+    branches: list[str] = []
+    for block in porcelain.split("\n\n"):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if any(line.startswith("prunable") for line in lines):
+            continue
+        branch_line = next((line for line in lines if line.startswith("branch ")), None)
+        if not branch_line:
+            continue
+        branch = branch_line.removeprefix("branch ").strip()
+        if branch.startswith("refs/heads/"):
+            branch = branch.removeprefix("refs/heads/")
+        if branch:
+            branches.append(branch)
+    return branches
+
+
 def aistudio_reference_index(
     project_root: Path,
     branch_names: list[str],
@@ -615,14 +632,8 @@ def aistudio_reference_index(
         scan_reports_for_branches(root / "process-logs", branch_names, refs)
     worktrees = run_git(project_root, ["worktree", "list", "--porcelain"])
     if worktrees.returncode == 0:
-        for line in worktrees.stdout.splitlines():
-            if not line.startswith("branch "):
-                continue
-            branch = line.removeprefix("branch ").strip()
-            if branch.startswith("refs/heads/"):
-                branch = branch.removeprefix("refs/heads/")
-            if branch:
-                add_reference(refs, branch, "worktree_active", project_root, "git worktree")
+        for branch in active_worktree_branches(worktrees.stdout):
+            add_reference(refs, branch, "worktree_active", project_root, "git worktree")
     for host in (codex_activity or {}).get("hosts") or []:
         if not isinstance(host, dict) or not host.get("fresh"):
             continue
@@ -1339,6 +1350,8 @@ def classify_branch(
         if contains_runtime_churn(record.changed_paths):
             reason += " with runtime/task-manager churn"
         commands.append(archive_command(record, remote, policy.archive_prefix))
+    elif not pr_evidence_available and not merged:
+        classification, action, confidence, reason = "unknown_needs_review", "review", "low", "PR metadata unavailable for unmerged branch"
     elif evidence.get("status") in {"needs_reconciliation", "untracked"}:
         classification, action, confidence = "integration_recovery_candidate", "route_integration_recovery", "high"
         if evidence.get("status") == "needs_reconciliation":
@@ -1347,8 +1360,6 @@ def classify_branch(
             reason = "closed unmerged PR branch still has unique commits"
         else:
             reason = "old unmerged branch has unique commits and no terminal task reference"
-    elif not pr_evidence_available and not merged:
-        classification, action, confidence, reason = "unknown_needs_review", "review", "low", "PR metadata unavailable for unmerged branch"
     else:
         classification, action, confidence, reason = "unknown_needs_review", "review", "low", "insufficient or contradictory evidence"
 

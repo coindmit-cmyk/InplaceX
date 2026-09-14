@@ -1,0 +1,7 @@
+{
+  "response_text": "Implementation completed.",
+  "handoff": {
+    "next_role": "Integrator",
+    "reason": "Legacy producer emitted no Next Run 1.1.0 contract."
+  }
+}

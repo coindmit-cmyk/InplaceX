@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 DEFAULT_LOOKBACK_DAYS = 8
 DEFAULT_MAX_DETAIL_ROWS = 500
 WEEKLY_WINDOW_MINUTES = 7 * 24 * 60
@@ -120,6 +120,18 @@ def model_label(model: Any) -> str:
     return value or "unknown"
 
 
+def stage_from_role(role: Any) -> str:
+    value = slug(role)
+    aliases = {
+        "auto-worker": "worker",
+        "automation-worker": "worker",
+        "strong-integrator": "integrator",
+        "auto-finalizer": "finalizer",
+        "manual-codex": "manual",
+    }
+    return aliases.get(value, value if value != "unknown" else "unattributed")
+
+
 def reset_bucket(value: Any) -> int | None:
     epoch = safe_int(value)
     if not epoch:
@@ -206,18 +218,139 @@ def scan_launches(runtime_root: Path) -> dict[str, dict[str, Any]]:
         if not worktree:
             continue
         run_dir = Path(str(data.get("run_dir") or path.parent))
+        agent_role = str(data.get("agent_role") or "worker").strip() or "worker"
+        explicit_stage = str(data.get("execution_stage") or data.get("stage") or "").strip()
+        execution_stage = slug(explicit_stage) if explicit_stage else stage_from_role(agent_role)
+        run_id = run_dir.name or path.parent.name
         launches[worktree] = {
-            "run_id": run_dir.name or path.parent.name,
+            "_project_root": normalized_path(data.get("project_root")),
+            "run_id": run_id,
+            "attempt_id": str(data.get("attempt_id") or run_id),
+            "attempt_number": safe_int(data.get("attempt_number")) or None,
             "task_id": str(data.get("task_id") or "").strip() or None,
             "task_title": str(data.get("task_title") or "").strip() or None,
             "agent_id": str(data.get("worker_id") or "").strip() or None,
-            "agent_role": "worker",
+            "agent_role": agent_role,
+            "execution_stage": execution_stage,
+            "stage_attribution_source": (
+                "launch_execution_stage" if explicit_stage else "launch_agent_role"
+            ),
             "project_id": project_id_from_root(data.get("project_root")),
             "launch_model": str(data.get("model") or "").strip() or None,
             "launch_reasoning_effort": str(data.get("reasoning_effort") or "").strip() or None,
             "attribution_source": "launch_worktree_exact",
         }
     return launches
+
+
+def task_records(path: Path) -> list[dict[str, Any]]:
+    payload = read_json(path)
+    for key in ("tasks", "history", "items"):
+        rows = payload.get(key)
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return []
+
+
+def canonical_task_outcome(task: dict[str, Any], source: str) -> dict[str, Any]:
+    status = str(task.get("final_status") or task.get("status") or "").strip().lower()
+    integration_status = str(task.get("integration_status") or "").strip().lower()
+    finalization_status = str(task.get("finalization_status") or "").strip().lower()
+    merge_commit = str(task.get("merge_commit") or task.get("accepted_commit") or "").strip()
+    finalized_at = str(task.get("finalized_at") or task.get("closed_at") or "").strip() or None
+    finalized_by = str(task.get("finalized_by") or task.get("closed_by") or "").strip() or None
+    accepted = (
+        status == "done"
+        and integration_status in {"finalized", "already_integrated"}
+        and finalization_status in {"recorded", "done_recorded", "finalized", "complete", "completed"}
+        and bool(merge_commit)
+    )
+    if accepted:
+        outcome = "accepted"
+        reason = "canonical_finalizer_evidence"
+    elif status in {"rejected", "failed"}:
+        outcome = "rejected"
+        reason = f"terminal_status:{status}"
+    elif status in {"cancelled", "canceled"}:
+        outcome = "cancelled"
+        reason = f"terminal_status:{status}"
+    else:
+        outcome = "inconclusive"
+        reason = "canonical_acceptance_evidence_missing"
+    return {
+        "task_outcome": outcome,
+        "task_outcome_reason": reason,
+        "task_outcome_source": source,
+        "accepted_commit": merge_commit or None,
+        "accepted_at": finalized_at,
+        "acceptance_authority": finalized_by,
+    }
+
+
+def load_task_outcomes(launches: dict[str, dict[str, Any]]) -> dict[tuple[str, str], dict[str, Any]]:
+    project_roots = {
+        (str(launch.get("project_id") or ""), str(launch.get("_project_root") or ""))
+        for launch in launches.values()
+        if launch.get("project_id") and launch.get("_project_root")
+    }
+    outcomes: dict[tuple[str, str], dict[str, Any]] = {}
+    for project_id, root_text in sorted(project_roots):
+        task_manager = Path(root_text) / "AiStudio" / "Task_manager"
+        for filename, source in (
+            ("task_history.json", "task_history"),
+            ("task_queue.json", "task_queue"),
+        ):
+            for task in task_records(task_manager / filename):
+                task_id = str(task.get("id") or task.get("canonical_task_id") or "").strip()
+                if not task_id:
+                    continue
+                outcomes[(project_id, task_id)] = canonical_task_outcome(task, source)
+    return outcomes
+
+
+def join_task_outcomes(
+    rows: list[dict[str, Any]],
+    outcomes: dict[tuple[str, str], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    for row in rows:
+        key = (str(row.get("project_id") or ""), str(row.get("task_id") or ""))
+        outcome = outcomes.get(key) or {
+            "task_outcome": "inconclusive",
+            "task_outcome_reason": "canonical_task_record_missing",
+            "task_outcome_source": None,
+            "accepted_commit": None,
+            "accepted_at": None,
+            "acceptance_authority": None,
+        }
+        row.update(outcome)
+        accepted = outcome["task_outcome"] == "accepted"
+        row["tokens_per_accepted_result"] = row.get("effective_tokens") if accepted else None
+        row["rejected_and_retry_token_share"] = (
+            round(safe_int(row.get("incomplete_effective_tokens")) / safe_int(row.get("effective_tokens")), 6)
+            if safe_int(row.get("effective_tokens"))
+            else None
+        )
+        row["cache_hit_ratio"] = (
+            round(safe_int(row.get("cached_input_tokens")) / safe_int(row.get("input_tokens")), 6)
+            if safe_int(row.get("input_tokens"))
+            else None
+        )
+        row["accepted_first_pass"] = bool(
+            accepted
+            and safe_int(row.get("attempt_count")) == 1
+            and safe_int(row.get("completed_session_count")) == 1
+        )
+        row["baseline_eligible"] = bool(
+            accepted
+            and safe_int(row.get("completed_session_count")) > 0
+            and safe_int(row.get("effective_tokens")) > 0
+        )
+        row["baseline_eligibility_reason"] = (
+            "accepted_quality_authority_present"
+            if row["baseline_eligible"]
+            else "accepted_outcome_required"
+        )
+    return rows
 
 
 def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
@@ -233,6 +366,8 @@ def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
             "task_id": None,
             "agent_id": agent_id,
             "agent_role": "worker",
+            "execution_stage": "worker",
+            "stage_attribution_source": "worktree_role_inferred",
             "attribution_source": "worktree_path_inferred",
         }
     if "integrator-worktrees" in lowered:
@@ -242,6 +377,8 @@ def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
             "task_id": None,
             "agent_id": "strong-integrator",
             "agent_role": "integrator",
+            "execution_stage": "integrator",
+            "stage_attribution_source": "worktree_role_inferred",
             "attribution_source": "integrator_path_inferred",
         }
     if "agent-relay-worktrees" in lowered:
@@ -250,6 +387,8 @@ def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
             "task_id": None,
             "agent_id": "agent-control",
             "agent_role": "automation",
+            "execution_stage": "automation",
+            "stage_attribution_source": "worktree_role_inferred",
             "attribution_source": "agent_relay_path_inferred",
         }
     if "devops" in lowered:
@@ -259,6 +398,8 @@ def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
             "task_id": None,
             "agent_id": "manual-codex",
             "agent_role": "manual",
+            "execution_stage": "manual",
+            "stage_attribution_source": "project_role_inferred",
             "attribution_source": "project_path_inferred",
         }
     return {
@@ -266,6 +407,8 @@ def infer_context_from_cwd(cwd: str) -> dict[str, Any]:
         "task_id": None,
         "agent_id": "unattributed",
         "agent_role": "unknown",
+        "execution_stage": "unattributed",
+        "stage_attribution_source": "unattributed",
         "attribution_source": "unattributed",
     }
 
@@ -312,6 +455,44 @@ def parse_session(path: Path) -> dict[str, Any] | None:
     last_token_at: str | None = None
     last_event_at: str | None = None
     task_complete = False
+    turn_active = False
+    task_started_pending_context = False
+    turn_context_pending_task_start = False
+    turn_start_effective_tokens = 0
+    completed_effective_tokens = 0
+    incomplete_effective_tokens = 0
+    completed_turn_count = 0
+    incomplete_turn_count = 0
+
+    def current_effective_tokens() -> int:
+        usage = total_usage or {}
+        input_tokens = safe_int(usage.get("input_tokens"))
+        cached_input_tokens = min(input_tokens, safe_int(usage.get("cached_input_tokens")))
+        return max(0, input_tokens - cached_input_tokens) + safe_int(usage.get("output_tokens"))
+
+    def start_turn() -> None:
+        nonlocal turn_active, turn_start_effective_tokens, task_complete
+        turn_active = True
+        task_complete = False
+        turn_start_effective_tokens = (
+            0
+            if completed_turn_count + incomplete_turn_count == 0
+            else current_effective_tokens()
+        )
+
+    def close_turn(*, complete: bool) -> None:
+        nonlocal turn_active, task_complete
+        nonlocal completed_effective_tokens, incomplete_effective_tokens
+        nonlocal completed_turn_count, incomplete_turn_count
+        delta = max(0, current_effective_tokens() - turn_start_effective_tokens)
+        if complete:
+            completed_effective_tokens += delta
+            completed_turn_count += 1
+        else:
+            incomplete_effective_tokens += delta
+            incomplete_turn_count += 1
+        turn_active = False
+        task_complete = complete
 
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -333,11 +514,27 @@ def parse_session(path: Path) -> dict[str, Any] | None:
         payload_type = str(payload.get("type") or "")
         if event_type == "session_meta" and not meta:
             meta = payload
+        elif event_type == "event_msg" and payload_type == "task_started":
+            if turn_context_pending_task_start:
+                turn_context_pending_task_start = False
+                task_started_pending_context = False
+            else:
+                if turn_active:
+                    close_turn(complete=False)
+                start_turn()
+                task_started_pending_context = True
         elif event_type == "turn_context":
             if model is None and payload.get("model"):
                 model = str(payload.get("model"))
             if effort is None and payload.get("effort"):
                 effort = str(payload.get("effort"))
+            if task_started_pending_context:
+                task_started_pending_context = False
+            else:
+                if turn_active:
+                    close_turn(complete=False)
+                start_turn()
+                turn_context_pending_task_start = True
         elif event_type == "event_msg" and payload_type == "token_count":
             info = payload.get("info") if isinstance(payload.get("info"), dict) else {}
             current_usage = info.get("total_token_usage")
@@ -358,7 +555,14 @@ def parse_session(path: Path) -> dict[str, Any] | None:
                 bucket["last_at"] = timestamp
                 selected_rate_bucket = bucket_key
         elif event_type == "event_msg" and payload_type == "task_complete":
-            task_complete = True
+            task_started_pending_context = False
+            turn_context_pending_task_start = False
+            if not turn_active:
+                start_turn()
+            close_turn(complete=True)
+
+    if turn_active:
+        close_turn(complete=False)
 
     session_id = str(meta.get("id") or meta.get("session_id") or path.stem).strip()
     cwd = normalized_path(meta.get("cwd"))
@@ -371,6 +575,14 @@ def parse_session(path: Path) -> dict[str, Any] | None:
     output_tokens = safe_int(tokens.get("output_tokens"))
     reasoning_output_tokens = safe_int(tokens.get("reasoning_output_tokens"))
     total_tokens = safe_int(tokens.get("total_tokens")) or input_tokens + output_tokens
+    effective_tokens = max(0, input_tokens - cached_input_tokens) + output_tokens
+    classified_effective_tokens = completed_effective_tokens + incomplete_effective_tokens
+    if classified_effective_tokens < effective_tokens:
+        unclassified_effective_tokens = effective_tokens - classified_effective_tokens
+        if task_complete:
+            completed_effective_tokens += unclassified_effective_tokens
+        else:
+            incomplete_effective_tokens += unclassified_effective_tokens
     started_at = str(meta.get("timestamp") or "").strip() or None
     finished_at = last_token_at or last_event_at
     started_dt = parse_datetime(started_at)
@@ -406,6 +618,11 @@ def parse_session(path: Path) -> dict[str, Any] | None:
         "output_tokens": output_tokens,
         "reasoning_output_tokens": reasoning_output_tokens,
         "total_tokens": total_tokens,
+        "effective_tokens": effective_tokens,
+        "completed_effective_tokens": completed_effective_tokens,
+        "incomplete_effective_tokens": incomplete_effective_tokens,
+        "completed_turn_count": completed_turn_count,
+        "incomplete_turn_count": incomplete_turn_count,
         "has_token_usage": bool(total_usage),
         "rate_limit_id": last_rate.get("limit_id"),
         "rate_window_minutes": safe_int(last_rate.get("window_minutes")) or None,
@@ -448,6 +665,17 @@ def aggregate_rows(
         elif dimension == "project":
             key = str(session.get("project_id") or "unattributed")
             label = key
+        elif dimension == "stage":
+            key = str(session.get("execution_stage") or "unattributed")
+            label = key
+        elif dimension == "task_stage":
+            task_id = str(session.get("task_id") or "").strip()
+            if not task_id:
+                continue
+            project_id = str(session.get("project_id") or "unknown")
+            stage = str(session.get("execution_stage") or "unattributed")
+            key = f"{project_id}:{task_id}:{stage}"
+            label = f"{task_id} · {stage}"
         else:
             key = str(session.get("model") or "unknown")
             label = key
@@ -457,16 +685,27 @@ def aggregate_rows(
             {
                 "id": key,
                 "label": label,
-                "project_id": session.get("project_id") if dimension == "task" else None,
-                "task_id": session.get("task_id") if dimension == "task" else None,
+                "project_id": session.get("project_id") if dimension in {"task", "task_stage"} else None,
+                "task_id": session.get("task_id") if dimension in {"task", "task_stage"} else None,
+                "execution_stage": (
+                    session.get("execution_stage")
+                    if dimension in {"stage", "task_stage"}
+                    else None
+                ),
                 "session_count": 0,
+                "attempt_count": 0,
                 "completed_session_count": 0,
+                "completed_turn_count": 0,
+                "incomplete_turn_count": 0,
                 "input_tokens": 0,
                 "cached_input_tokens": 0,
                 "uncached_input_tokens": 0,
                 "output_tokens": 0,
                 "reasoning_output_tokens": 0,
                 "total_tokens": 0,
+                "effective_tokens": 0,
+                "completed_effective_tokens": 0,
+                "incomplete_effective_tokens": 0,
                 "tokens_last_24h": 0,
                 "estimated_general_limit_percent": 0.0,
                 "estimated_spark_limit_percent": 0.0,
@@ -474,11 +713,14 @@ def aggregate_rows(
                 "_models": set(),
                 "_agents": set(),
                 "_projects": set(),
+                "_attempts": set(),
             },
         )
         row["session_count"] += 1
         if session.get("complete"):
             row["completed_session_count"] += 1
+        row["completed_turn_count"] += safe_int(session.get("completed_turn_count"))
+        row["incomplete_turn_count"] += safe_int(session.get("incomplete_turn_count"))
         for field in (
             "input_tokens",
             "cached_input_tokens",
@@ -486,8 +728,11 @@ def aggregate_rows(
             "output_tokens",
             "reasoning_output_tokens",
             "total_tokens",
+            "effective_tokens",
         ):
             row[field] += safe_int(session.get(field))
+        row["completed_effective_tokens"] += safe_int(session.get("completed_effective_tokens"))
+        row["incomplete_effective_tokens"] += safe_int(session.get("incomplete_effective_tokens"))
         started_at = parse_datetime(session.get("started_at"))
         if started_at is not None and started_at >= since_24h:
             row["tokens_last_24h"] += safe_int(session.get("total_tokens"))
@@ -503,14 +748,22 @@ def aggregate_rows(
             row["_agents"].add(str(session["agent_id"]))
         if session.get("project_id"):
             row["_projects"].add(str(session["project_id"]))
+        if session.get("attempt_id"):
+            row["_attempts"].add(str(session["attempt_id"]))
 
     rows: list[dict[str, Any]] = []
     for row in buckets.values():
         row["models"] = sorted(row.pop("_models"))
         row["agents"] = sorted(row.pop("_agents"))
         row["projects"] = sorted(row.pop("_projects"))
+        row["attempt_count"] = len(row.pop("_attempts"))
         row["estimated_general_limit_percent"] = round(row["estimated_general_limit_percent"], 4)
         row["estimated_spark_limit_percent"] = round(row["estimated_spark_limit_percent"], 4)
+        row["incomplete_effective_percent"] = (
+            round(row["incomplete_effective_tokens"] * 100.0 / row["effective_tokens"], 2)
+            if row["effective_tokens"]
+            else None
+        )
         rows.append(row)
     rows.sort(key=lambda item: (-safe_int(item.get("total_tokens")), str(item.get("label") or "")))
     return rows
@@ -542,6 +795,7 @@ def collect_usage(
     now = (now or dt.datetime.now(dt.timezone.utc)).astimezone(dt.timezone.utc)
     cutoff = now - dt.timedelta(days=max(1, lookback_days))
     launches = scan_launches(runtime_root)
+    task_outcomes = load_task_outcomes(launches)
     sessions: list[dict[str, Any]] = []
 
     if sessions_root.exists():
@@ -568,7 +822,15 @@ def collect_usage(
                 if spawned_agent:
                     session["agent_id"] = spawned_agent
                     session["agent_role"] = "subagent"
+                    session["execution_stage"] = "subagent"
+                    session["stage_attribution_source"] = "session_spawn_exact"
                     session["attribution_source"] = "session_spawn_exact"
+            session["attempt_id"] = str(
+                session.get("attempt_id")
+                or session.get("run_id")
+                or session.get("session_id")
+            )
+            session["outcome"] = "completed" if session.get("complete") else "incomplete"
             session["model"] = model_label(session.get("model"))
             session["model_family"] = model_family(session.get("model"))
             session["estimated_general_limit_percent"] = 0.0
@@ -696,6 +958,15 @@ def collect_usage(
     ]
     token_sessions = [session for session in sessions if session.get("has_token_usage")]
     total_tokens = sum(safe_int(session.get("total_tokens")) for session in token_sessions)
+    effective_tokens = sum(safe_int(session.get("effective_tokens")) for session in token_sessions)
+    completed_effective_tokens = sum(
+        safe_int(session.get("completed_effective_tokens"))
+        for session in token_sessions
+    )
+    incomplete_effective_tokens = sum(
+        safe_int(session.get("incomplete_effective_tokens"))
+        for session in token_sessions
+    )
     task_tokens = sum(
         safe_int(session.get("total_tokens"))
         for session in token_sessions
@@ -707,6 +978,33 @@ def collect_usage(
         safe_int(session.get("total_tokens"))
         for session in current_token_sessions
         if session.get("task_id")
+    )
+    by_stage = aggregate_rows(sessions, "stage", now=now)
+    task_efficiency = join_task_outcomes(
+        aggregate_rows(sessions, "task", now=now),
+        task_outcomes,
+    )
+    by_task_stage = join_task_outcomes(
+        aggregate_rows(sessions, "task_stage", now=now),
+        task_outcomes,
+    )
+    outcome_effective_tokens = sum(
+        safe_int(row.get("effective_tokens"))
+        for row in task_efficiency
+        if row.get("task_outcome") != "inconclusive"
+    )
+    stage_rows_total = sum(safe_int(row.get("total_tokens")) for row in by_stage)
+    stage_rows_effective = sum(safe_int(row.get("effective_tokens")) for row in by_stage)
+    stage_attributed_tokens = sum(
+        safe_int(session.get("total_tokens"))
+        for session in token_sessions
+        if session.get("execution_stage") != "unattributed"
+    )
+    detail_sessions = sorted(
+        sessions,
+        key=lambda session: parse_datetime(session.get("started_at"))
+        or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+        reverse=True,
     )
 
     report = {
@@ -720,6 +1018,12 @@ def collect_usage(
             "observed_limit_delta_percent": "Global pool movement during one session; non-additive when sessions overlap.",
             "estimated_limit_percent": "Additive allocation of observed pool movement, weighted by exact session tokens.",
             "unallocated_baseline_percent": "Current pool usage that predates or is outside captured attributable sessions.",
+            "execution_stage": "The model-execution lifecycle stage from exact launch metadata or a declared path-role fallback.",
+            "stage_reconciliation": "Stage row totals must equal exact session token totals; the difference must be zero.",
+            "effective_tokens": "Diagnostic spend metric: uncached_input_tokens plus output_tokens. It is not a provider billing claim.",
+            "incomplete_effective_tokens": "Effective-token deltas from turns whose latest lifecycle did not reach task_complete; observational retry-cost evidence, not proof that no artifact was produced.",
+            "accepted_outcome": "Canonical task acceptance requires done status, finalized integration, recorded finalization and an accepted merge commit.",
+            "baseline_eligible": "Only accepted tasks with canonical authority, completed usage and non-zero effective tokens enter future baseline samples.",
         },
         "coverage": {
             "captured_session_count": len(sessions),
@@ -727,8 +1031,22 @@ def collect_usage(
             "sessions_without_tokens": len(sessions) - len(token_sessions),
             "sessions_attributed_to_tasks": len([session for session in token_sessions if session.get("task_id")]),
             "tokens_total": total_tokens,
+            "effective_tokens_total": effective_tokens,
+            "completed_effective_tokens": completed_effective_tokens,
+            "incomplete_effective_tokens": incomplete_effective_tokens,
+            "incomplete_effective_percent": (
+                round(incomplete_effective_tokens * 100.0 / effective_tokens, 2)
+                if effective_tokens
+                else None
+            ),
             "tokens_attributed_to_tasks": task_tokens,
             "task_token_attribution_percent": round(task_tokens * 100.0 / total_tokens, 2) if total_tokens else None,
+            "tokens_attributed_to_stages": stage_attributed_tokens,
+            "stage_token_attribution_percent": (
+                round(stage_attributed_tokens * 100.0 / total_tokens, 2)
+                if total_tokens
+                else None
+            ),
             "current_pool_tokens_total": current_total_tokens,
             "current_pool_tokens_attributed_to_tasks": current_task_tokens,
             "current_pool_task_token_attribution_percent": (
@@ -746,15 +1064,73 @@ def collect_usage(
             "uncached_input_tokens": sum(safe_int(session.get("uncached_input_tokens")) for session in last_24h_sessions),
             "output_tokens": sum(safe_int(session.get("output_tokens")) for session in last_24h_sessions),
             "reasoning_output_tokens": sum(safe_int(session.get("reasoning_output_tokens")) for session in last_24h_sessions),
+            "effective_tokens": sum(safe_int(session.get("effective_tokens")) for session in last_24h_sessions),
+            "incomplete_effective_tokens": sum(
+                safe_int(session.get("incomplete_effective_tokens"))
+                for session in last_24h_sessions
+            ),
         },
         "weekly_pools": sorted(current_pools, key=lambda item: item["pool_id"]),
-        "by_task": aggregate_rows(current_sessions, "task", now=now),
+        "by_task": join_task_outcomes(
+            aggregate_rows(current_sessions, "task", now=now),
+            task_outcomes,
+        ),
         "by_agent": aggregate_rows(current_sessions, "agent", now=now),
         "by_project": aggregate_rows(current_sessions, "project", now=now),
         "by_model": aggregate_rows(current_sessions, "model", now=now),
+        "by_stage": by_stage,
+        "by_task_stage": by_task_stage,
+        "task_efficiency": task_efficiency,
+        "outcome_coverage": {
+            "task_count": len(task_efficiency),
+            "accepted_task_count": len(
+                [row for row in task_efficiency if row.get("task_outcome") == "accepted"]
+            ),
+            "rejected_task_count": len(
+                [row for row in task_efficiency if row.get("task_outcome") == "rejected"]
+            ),
+            "cancelled_task_count": len(
+                [row for row in task_efficiency if row.get("task_outcome") == "cancelled"]
+            ),
+            "inconclusive_task_count": len(
+                [row for row in task_efficiency if row.get("task_outcome") == "inconclusive"]
+            ),
+            "baseline_eligible_task_count": len(
+                [row for row in task_efficiency if row.get("baseline_eligible")]
+            ),
+            "accepted_first_pass_task_count": len(
+                [row for row in task_efficiency if row.get("accepted_first_pass")]
+            ),
+            "task_effective_tokens_total": sum(
+                safe_int(row.get("effective_tokens")) for row in task_efficiency
+            ),
+            "task_effective_tokens_with_terminal_outcome": outcome_effective_tokens,
+            "terminal_outcome_effective_token_coverage_percent": (
+                round(
+                    outcome_effective_tokens
+                    * 100.0
+                    / sum(safe_int(row.get("effective_tokens")) for row in task_efficiency),
+                    2,
+                )
+                if task_efficiency
+                and sum(safe_int(row.get("effective_tokens")) for row in task_efficiency)
+                else None
+            ),
+        },
+        "stage_reconciliation": {
+            "scope": f"lookback_{max(1, lookback_days)}d",
+            "exact_session_tokens": total_tokens,
+            "stage_rows_tokens": stage_rows_total,
+            "difference_tokens": stage_rows_total - total_tokens,
+            "balanced": stage_rows_total == total_tokens,
+            "exact_effective_tokens": effective_tokens,
+            "stage_rows_effective_tokens": stage_rows_effective,
+            "effective_difference_tokens": stage_rows_effective - effective_tokens,
+            "effective_balanced": stage_rows_effective == effective_tokens,
+        },
         "sessions": [
             public_session_row(session)
-            for session in current_sessions[: max(1, max_detail_rows)]
+            for session in detail_sessions[: max(1, max_detail_rows)]
         ],
     }
     return report

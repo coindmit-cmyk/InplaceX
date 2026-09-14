@@ -33,6 +33,7 @@ from integrator_direct_merge import (
 from integrator_preflight import is_coordination_path, split_coordination_paths
 from project_paths import task_file
 from repository_pr_decomposition_planner import build_decomposition_plan
+from task_state_invariants import normalize_terminal_task
 
 
 INTEGRATION_REPAIR_MARKERS = {
@@ -92,6 +93,9 @@ MANUAL_REPAIR_MARKERS = (
 DECOMPOSITION_IMPLEMENTATION_CATEGORIES = {"automation", "code", "contract", "asset"}
 COLLAPSED_REPAIR_REASON = (
     "exact-head CI-green source PR is already implemented; unstarted decomposition is superseded"
+)
+TERMINAL_PARENT_DECOMPOSITION_REASON = (
+    "terminal parent task is no longer actionable; unstarted decomposition is superseded"
 )
 
 
@@ -1641,6 +1645,80 @@ def collapse_unstarted_decomposition_for_green_pr(
     }
 
 
+def collapse_unstarted_decomposition_for_terminal_history(
+    tasks: list[Any],
+    history_tasks: list[Any],
+    locks_path: Path,
+    now: str,
+) -> list[dict[str, Any]]:
+    active_ids = {
+        task_id(item)
+        for item in tasks
+        if isinstance(item, dict) and task_id(item)
+    }
+    terminal_parents = {
+        task_id(item): item
+        for item in history_tasks
+        if (
+            isinstance(item, dict)
+            and task_id(item)
+            and str(item.get("status") or "") in TERMINAL_TASK_STATUSES
+        )
+    }
+    children_by_parent: dict[str, list[dict[str, Any]]] = {}
+    for item in tasks:
+        if not isinstance(item, dict):
+            continue
+        parent_id = str(
+            item.get("integration_repair_parent_id")
+            or item.get("parent_task_id")
+            or item.get("source_task_id")
+            or ""
+        ).strip()
+        if (
+            not parent_id
+            or parent_id in active_ids
+            or parent_id not in terminal_parents
+            or str(item.get("integration_repair_kind") or "") != "proactive_pr_decomposition"
+        ):
+            continue
+        children_by_parent.setdefault(parent_id, []).append(item)
+
+    collapsed: list[dict[str, Any]] = []
+    for parent_id, children in children_by_parent.items():
+        if any(
+            str(child.get("clean_rebuild_route") or "").strip() == "auto_integrator_repair"
+            for child in children
+        ):
+            continue
+        if any(not decomposition_child_is_refreshable(child, locks_path) for child in children):
+            continue
+        for child in children:
+            terminal = normalize_terminal_task(
+                {
+                    **child,
+                    "status": "stale_or_superseded",
+                    "requires_human_attention": False,
+                    "status_reason": TERMINAL_PARENT_DECOMPOSITION_REASON,
+                    "closed_at": now,
+                    "closed_by": "scripts/agent_control/dispatcher_integration_repair.py",
+                },
+                now=now,
+            )
+            terminal["integration_status"] = "superseded_by_terminal_parent"
+            child.clear()
+            child.update(terminal)
+        collapsed.append(
+            {
+                "task_id": parent_id,
+                "classification": "decomposition_superseded",
+                "reason": TERMINAL_PARENT_DECOMPOSITION_REASON,
+                "child_ids": [task_id(child) for child in children],
+            }
+        )
+    return collapsed
+
+
 def route_decomposition_refresh_blocked(parent: dict[str, Any], now: str, reason: str) -> dict[str, Any]:
     unchanged = (
         str(parent.get("status") or "") == "needs_dispatcher_repair"
@@ -2862,12 +2940,27 @@ def repair_queue(
     routes = readiness_routes(readiness_path_for(queue_path))
     exhausted_integrator = integrator_report_exhausted(integrator_direct_merge_path_for(queue_path))
     lock_path = locks_path_for(queue_path)
+    history_path = queue_path.parent / "task_history.json"
+    history_tasks: list[Any] = []
+    if history_path.is_file():
+        history_data = load_json(history_path)
+        raw_history_tasks = history_data.get("tasks")
+        if isinstance(raw_history_tasks, list):
+            history_tasks = raw_history_tasks
     used_ids = {
         task_id(item)
         for item in tasks
         if isinstance(item, dict) and task_id(item)
     }
     dependency_migrations = migrate_existing_decomposition_dependencies(tasks)
+    decomposition_superseded.extend(
+        collapse_unstarted_decomposition_for_terminal_history(
+            tasks,
+            history_tasks,
+            lock_path,
+            now,
+        )
+    )
 
     for index, task in enumerate(tasks):
         if not isinstance(task, dict):

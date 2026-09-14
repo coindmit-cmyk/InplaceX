@@ -12,6 +12,7 @@ from typing import Any
 
 import documentation_impact_checker
 import project_version_gate
+from project_paths import task_file
 from validate_integration_handoff import validate as validate_handoff
 from worker_result_contract_validator import DOCUMENTATION_IMPACT_VALUES, documentation_impact_from_report
 
@@ -38,7 +39,7 @@ def _to_task_set(values: Any) -> set[str]:
 
 
 def _task_map(project_root: Path) -> dict[str, dict[str, Any]]:
-    path = project_root / "AiStudio" / "Task_manager" / "task_queue.json"
+    path = task_file(project_root, "task_queue.json")
     if not path.exists():
         return {}
     try:
