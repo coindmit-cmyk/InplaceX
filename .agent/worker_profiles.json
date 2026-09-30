@@ -1,0 +1,354 @@
+[
+  {
+    "worker_id": "auto-worker-5.3-mini",
+    "phase": "phase_2",
+    "runner": "remote-automation-host",
+    "runner_mode": "phase_2_runner",
+    "launcher": "remote-codex-desktop",
+    "enabled": true,
+    "autostart_enabled": false,
+    "model_family": "5.3 mini",
+    "codex_model": "gpt-5.3-codex-spark",
+    "model_candidates": [
+      "gpt-5.3-codex-spark",
+      "gpt-5.6-luna"
+    ],
+    "reasoning_effort": "medium",
+    "execution_compatibility": {
+      "metadata_version": "1.0.0",
+      "contract_versions": {
+        "next_run_recommendation": [
+          "1.1.0"
+        ],
+        "parallel_work": [
+          "1.0.0"
+        ],
+        "subagent_invocation": [
+          "1.0.0"
+        ],
+        "subagent_result_envelope": [
+          "1.0.0"
+        ],
+        "result_integration": [
+          "1.0.0"
+        ]
+      },
+      "capability_profiles": [
+        "efficient",
+        "balanced"
+      ],
+      "reasoning_efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "legacy_read_aliases": {
+        "xhigh": "extra_high",
+        "very_high": "extra_high"
+      },
+      "direct_subagent_access_modes": [
+        "read_only"
+      ],
+      "model_selection": "central_model_router",
+      "authority_effect": "none",
+      "write_execution_requires": "complete_worker_packet_v2"
+    },
+    "allowed_complexity": [
+      "S"
+    ],
+    "selection_order": [
+      "S"
+    ],
+    "allowed_types": [
+      "docs",
+      "tests",
+      "automation",
+      "small-fix",
+      "backlog"
+    ],
+    "forbidden_types": [
+      "production-secrets",
+      "release-merge"
+    ],
+    "allowed_access": [
+      "none"
+    ],
+    "branch_lane": "remote/<machine-id>/auto-worker-5-3-mini/",
+    "max_active_locks": 1,
+    "max_parallel_lanes": 3,
+    "max_tasks_per_session": 10,
+    "max_session_minutes": 60,
+    "model_limit_policy": {
+      "new_task_min_remaining_percent": 0,
+      "manual_reserve_percent": 0
+    },
+    "autostart_interval_minutes": 360,
+    "queue_policy": "shared_queue_filter"
+  },
+  {
+    "worker_id": "auto-worker-5.3",
+    "phase": "phase_2",
+    "runner": "remote-automation-host",
+    "runner_mode": "phase_2_runner",
+    "launcher": "remote-codex-desktop",
+    "enabled": true,
+    "autostart_enabled": false,
+    "model_family": "5.3",
+    "codex_model": "gpt-5.3-codex-spark",
+    "model_candidates": [
+      "gpt-5.3-codex-spark",
+      "gpt-5.6-luna",
+      "gpt-5.6-terra"
+    ],
+    "reasoning_effort": "high",
+    "execution_compatibility": {
+      "metadata_version": "1.0.0",
+      "contract_versions": {
+        "next_run_recommendation": [
+          "1.1.0"
+        ],
+        "parallel_work": [
+          "1.0.0"
+        ],
+        "subagent_invocation": [
+          "1.0.0"
+        ],
+        "subagent_result_envelope": [
+          "1.0.0"
+        ],
+        "result_integration": [
+          "1.0.0"
+        ]
+      },
+      "capability_profiles": [
+        "balanced",
+        "deep"
+      ],
+      "reasoning_efforts": [
+        "medium",
+        "high",
+        "extra_high"
+      ],
+      "legacy_read_aliases": {
+        "xhigh": "extra_high",
+        "very_high": "extra_high"
+      },
+      "direct_subagent_access_modes": [
+        "read_only"
+      ],
+      "model_selection": "central_model_router",
+      "authority_effect": "none",
+      "write_execution_requires": "complete_worker_packet_v2"
+    },
+    "allowed_complexity": [
+      "M",
+      "S"
+    ],
+    "selection_order": [
+      "M",
+      "S"
+    ],
+    "allowed_types": [
+      "docs",
+      "tests",
+      "automation",
+      "focused-implementation",
+      "implementation",
+      "backlog",
+      "contract"
+    ],
+    "forbidden_types": [
+      "production-secrets",
+      "release-merge"
+    ],
+    "allowed_access": [
+      "none"
+    ],
+    "branch_lane": "remote/<machine-id>/auto-worker-5-3/",
+    "max_active_locks": 1,
+    "max_parallel_lanes": 3,
+    "max_tasks_per_session": 8,
+    "max_session_minutes": 120,
+    "model_limit_policy": {
+      "new_task_min_remaining_percent": 0,
+      "manual_reserve_percent": 0
+    },
+    "autostart_interval_minutes": 360,
+    "queue_policy": "shared_queue_filter"
+  },
+  {
+    "worker_id": "auto-worker-5.5",
+    "phase": "phase_2",
+    "runner": "remote-automation-host",
+    "runner_mode": "phase_2_runner",
+    "launcher": "remote-codex-desktop",
+    "enabled": true,
+    "autostart_enabled": false,
+    "model_family": "5.5",
+    "codex_model": "gpt-5.6-terra",
+    "model_candidates": [
+      "gpt-5.6-terra",
+      "gpt-5.6-sol",
+      "gpt-5.6-luna"
+    ],
+    "reasoning_effort": "medium",
+    "execution_compatibility": {
+      "metadata_version": "1.0.0",
+      "contract_versions": {
+        "next_run_recommendation": [
+          "1.1.0"
+        ],
+        "parallel_work": [
+          "1.0.0"
+        ],
+        "subagent_invocation": [
+          "1.0.0"
+        ],
+        "subagent_result_envelope": [
+          "1.0.0"
+        ],
+        "result_integration": [
+          "1.0.0"
+        ]
+      },
+      "capability_profiles": [
+        "deep",
+        "maximum_coherent"
+      ],
+      "reasoning_efforts": [
+        "high",
+        "extra_high",
+        "max"
+      ],
+      "legacy_read_aliases": {
+        "xhigh": "extra_high",
+        "very_high": "extra_high"
+      },
+      "direct_subagent_access_modes": [
+        "read_only"
+      ],
+      "model_selection": "central_model_router",
+      "authority_effect": "none",
+      "write_execution_requires": "complete_worker_packet_v2"
+    },
+    "allowed_complexity": [
+      "L"
+    ],
+    "selection_order": [
+      "L"
+    ],
+    "allowed_types": [
+      "implementation",
+      "integration",
+      "tests",
+      "migration",
+      "docs"
+    ],
+    "forbidden_types": [
+      "production-secrets",
+      "release-merge"
+    ],
+    "allowed_access": [
+      "none"
+    ],
+    "branch_lane": "remote/<machine-id>/auto-worker-5-5/",
+    "max_active_locks": 1,
+    "max_parallel_lanes": 2,
+    "max_tasks_per_session": 3,
+    "max_session_minutes": 180,
+    "model_limit_policy": {
+      "new_task_min_remaining_percent": 15,
+      "manual_reserve_percent": 10
+    },
+    "autostart_interval_minutes": 360,
+    "queue_policy": "shared_queue_filter"
+  },
+  {
+    "worker_id": "auto-worker-5.5max",
+    "phase": "phase_2",
+    "runner": "remote-automation-host",
+    "runner_mode": "phase_2_runner",
+    "launcher": "remote-codex-desktop",
+    "enabled": true,
+    "autostart_enabled": false,
+    "model_family": "5.5",
+    "codex_model": "gpt-5.6-sol",
+    "model_candidates": [
+      "gpt-5.6-sol",
+      "gpt-5.6-terra"
+    ],
+    "reasoning_effort": "xhigh",
+    "execution_compatibility": {
+      "metadata_version": "1.0.0",
+      "contract_versions": {
+        "next_run_recommendation": [
+          "1.1.0"
+        ],
+        "parallel_work": [
+          "1.0.0"
+        ],
+        "subagent_invocation": [
+          "1.0.0"
+        ],
+        "subagent_result_envelope": [
+          "1.0.0"
+        ],
+        "result_integration": [
+          "1.0.0"
+        ]
+      },
+      "capability_profiles": [
+        "deep",
+        "maximum_coherent",
+        "delegated_deep"
+      ],
+      "reasoning_efforts": [
+        "extra_high",
+        "max",
+        "ultra"
+      ],
+      "legacy_read_aliases": {
+        "xhigh": "extra_high",
+        "very_high": "extra_high"
+      },
+      "direct_subagent_access_modes": [
+        "read_only"
+      ],
+      "model_selection": "central_model_router",
+      "authority_effect": "none",
+      "write_execution_requires": "complete_worker_packet_v2"
+    },
+    "allowed_complexity": [
+      "XL",
+      "L"
+    ],
+    "selection_order": [
+      "XL",
+      "L"
+    ],
+    "allowed_types": [
+      "worker-ready-xl",
+      "critical-implementation",
+      "release-critical",
+      "integration"
+    ],
+    "forbidden_types": [
+      "production-secrets",
+      "release-merge-without-owner"
+    ],
+    "allowed_access": [
+      "none"
+    ],
+    "branch_lane": "remote/<machine-id>/auto-worker-5-5max/",
+    "max_active_locks": 1,
+    "max_parallel_lanes": 2,
+    "max_tasks_per_session": 1,
+    "max_session_minutes": 240,
+    "model_limit_policy": {
+      "new_task_min_remaining_percent": 15,
+      "manual_reserve_percent": 10
+    },
+    "autostart_interval_minutes": 360,
+    "queue_policy": "shared_queue_filter"
+  }
+]

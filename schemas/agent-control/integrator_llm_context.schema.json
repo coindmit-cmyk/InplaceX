@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegratorLLMContext",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "project",
+    "base_branch",
+    "summary",
+    "candidates",
+    "source_context_hash",
+    "redaction"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "created_at": { "type": "string" },
+    "project": { "type": "string" },
+    "base_branch": { "type": "string" },
+    "base_sha": { "type": ["string", "null"] },
+    "source_context_hash": { "type": "string" },
+    "summary": { "type": "object" },
+    "candidates": { "type": "array" },
+    "batch": { "type": "object" },
+    "path_conflicts": { "type": "array" },
+    "blockers": { "type": "array" },
+    "handoff_validation": { "type": ["object", "null"] },
+    "advisory_only_boundary": { "type": "object" },
+    "redaction": {
+      "type": "object",
+      "required": ["redaction_count", "full_file_contents_included", "full_diffs_included"],
+      "properties": {
+        "redaction_count": { "type": "integer", "minimum": 0 },
+        "full_file_contents_included": { "const": false },
+        "full_diffs_included": { "const": false }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

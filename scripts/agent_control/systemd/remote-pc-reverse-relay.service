@@ -1,0 +1,17 @@
+[Unit]
+Description=AiStudio reverse SSH relay to VPS
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/aistudio/remote-pc-relay.env
+ExecStartPre=/usr/bin/test -r ${IDENTITY_FILE}
+ExecStartPre=/usr/bin/test -r ${KNOWN_HOSTS_FILE}
+ExecStart=/usr/bin/ssh -NT -i ${IDENTITY_FILE} -p ${RELAY_SSH_PORT} -o BatchMode=yes -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${KNOWN_HOSTS_FILE} -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -R ${RELAY_BIND_HOST}:${RELAY_BIND_PORT}:${REMOTE_PC_SSH_HOST}:${REMOTE_PC_SSH_PORT} ${RELAY_USER}@${RELAY_HOST}
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=default.target

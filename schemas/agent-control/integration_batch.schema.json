@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegrationBatch",
+  "type": "object",
+  "required": ["schema_version", "batch_id", "created_at", "target_branch", "included", "excluded", "handoff_ready"],
+  "properties": {
+    "schema_version": {"type": "integer"},
+    "batch_id": {"type": "string"},
+    "created_at": {"type": "string"},
+    "target_branch": {"type": "string"},
+    "base_sha": {"type": ["string", "null"]},
+    "risk_class": {"type": "string"},
+    "strategy": {"type": "string"},
+    "included": {"type": "array"},
+    "excluded": {"type": "array"},
+    "included_count": {"type": "integer"},
+    "excluded_count": {"type": "integer"},
+    "excluded_counts": {"type": "object"},
+    "checks_required": {"type": "array"},
+    "handoff_ready": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

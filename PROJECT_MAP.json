@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "project_id": "inplacex",
+  "source_human_map": "PROJECT_MAP.md",
+  "status": "initial_machine_readable_authority",
+  "updated_at": "2026-07-16T21:43:48Z",
+  "updated_by": "codex",
+  "modules": [
+    {"module_id": "inplacex.android-app", "area": "Android application", "primary_paths": ["InplaceX-android/app/**"], "purpose": "Compose UI, navigation, Android integrations and current local game runtime wiring.", "status": "existing_implemented"},
+    {"module_id": "inplacex.bot-core", "area": "Shared game and bot core", "primary_paths": ["InplaceX-bot-core/**"], "purpose": "Transport-independent game rules, scoring, validation, secret generation and bot behavior.", "status": "existing_implemented"},
+    {"module_id": "inplacex.backend", "area": "Backend runtime", "primary_paths": ["InplaceX-backend/**"], "purpose": "Backend-facing JVM runtime and server-side bot participant adapter.", "status": "existing_implemented"},
+    {"module_id": "inplacex.logging", "area": "Shared logging", "primary_paths": ["InplaceX-logging/**"], "purpose": "Logging contracts, levels, sinks and sensitive-field sanitization.", "status": "existing_implemented"},
+    {"module_id": "inplacex.test-support", "area": "Shared test infrastructure", "primary_paths": ["InplaceX-test-support/**"], "purpose": "Reusable JVM test sinks and test-only helper infrastructure.", "status": "existing_support"},
+    {"module_id": "inplacex.docs-canonical", "area": "Canonical product and architecture documentation", "primary_paths": ["InplaceX-docs/**"], "purpose": "Human product/UX truth and GPT-facing architecture, contract and ADR authority.", "status": "existing_support"},
+    {"module_id": "inplacex.docs-onboarding", "area": "Root onboarding documentation", "primary_paths": ["docs/**", "README.md"], "purpose": "Short setup, command and navigation references into canonical documentation.", "status": "existing_support"},
+    {"module_id": "inplacex.agent-rules", "area": "Agent orientation and project rules", "primary_paths": ["AGENTS.md", ".agent/**"], "purpose": "Project-specific source-of-truth, architecture, workflow and safety instructions.", "status": "existing_support"},
+    {"module_id": "inplacex.build", "area": "Gradle build and scripts", "primary_paths": ["settings.gradle.kts", "build.gradle.kts", "gradle/**", "gradlew", "gradlew.bat", "scripts/**"], "purpose": "Multi-module build, verification, packaging and isolated developer tooling.", "status": "existing_support"},
+    {"module_id": "inplacex.tests", "area": "Repository verification", "primary_paths": ["tests/**", "**/src/test/**", "**/src/androidTest/**"], "purpose": "Root, JVM, Android unit and instrumented verification coverage.", "status": "existing_support"},
+    {"module_id": "inplacex.root-metadata", "area": "Project metadata", "primary_paths": ["CHANGELOG.md", "PROJECT_MAP.md", "PROJECT_MAP.json", ".env.example", ".editorconfig"], "purpose": "Change history, Project Map authority and safe repository-level examples.", "status": "existing_support"}
+  ],
+  "coverage_patterns": ["InplaceX-android/**", "InplaceX-bot-core/**", "InplaceX-backend/**", "InplaceX-logging/**", "InplaceX-test-support/**", "InplaceX-docs/**", "docs/**", "AGENTS.md", ".agent/**", "scripts/**", "tests/**", "settings.gradle.kts", "build.gradle.kts", "gradle/**", "gradlew", "gradlew.bat", "README.md", "CHANGELOG.md", "PROJECT_MAP.md", "PROJECT_MAP.json"],
+  "task_binding_rules": [
+    "Bind work to the physical module that owns the behavior; shared game rules never move into Android UI or backend adapters.",
+    "Canonical product and architecture contract changes update InplaceX-docs in the same change.",
+    "Provider identifiers, credentials and local machine configuration remain outside committed source truth."
+  ],
+  "known_gaps": [
+    "File-level ownership remains progressive backfill.",
+    "This initial map records current physical modules; future clients and online modes remain planned, not implemented."
+  ]
+}

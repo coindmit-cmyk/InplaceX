@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aistudio.local/schemas/agent-control/second_brain_intake.schema.json",
+  "title": "AiStudio Second Brain Intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tenant_id", "project_id", "summary", "source_refs", "consent_state"],
+  "properties": {
+    "tenant_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "project_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "subject_user_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "memory_type": {
+      "type": "string",
+      "enum": ["project_profile", "decision", "rejected_idea", "task_context", "source_note", "customer_idea", "pattern"]
+    },
+    "access_level": {
+      "type": "string",
+      "enum": ["project", "user", "internal", "owner_only", "public"]
+    },
+    "summary": {"type": "string", "minLength": 1, "maxLength": 20000},
+    "facts": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "decisions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "rejected_ideas": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "tags": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "source_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "raw_text": {"type": "string", "maxLength": 5000000},
+    "consent_state": {"type": "string", "enum": ["unknown", "granted", "denied", "not_required"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "freshness_state": {"type": "string", "enum": ["current", "review_required", "stale", "historical"]},
+    "freshness_reason": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "next_review_at": {"type": "string", "format": "date-time"},
+    "retention_until": {"type": "string", "format": "date-time"},
+    "idempotency_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"access_level": {"const": "user"}}, "required": ["access_level"]},
+      "then": {"required": ["subject_user_id"]}
+    }
+  ]
+}

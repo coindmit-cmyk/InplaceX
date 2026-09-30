@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegratorLLMAdvice",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "source_context_hash",
+    "model",
+    "route",
+    "status",
+    "overall_summary",
+    "confidence",
+    "candidate_advice",
+    "batch_suggestions",
+    "warnings",
+    "forbidden_actions_detected"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "created_at": { "type": "string" },
+    "source_context_hash": { "type": "string" },
+    "model": { "type": "string" },
+    "route": { "const": "LOCAL_INTEGRATOR_ASSISTANT" },
+    "status": {
+      "enum": ["ok", "invalid", "blocked", "dry_run"]
+    },
+    "overall_summary": { "type": "string" },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "candidate_advice": { "type": "array" },
+    "batch_suggestions": { "type": "array" },
+    "warnings": { "type": "array" },
+    "forbidden_actions_detected": { "type": "array" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "storage": {
+    "active_db": "C:/Users/USER/AppData/Local/AiStudio/second-brain/second-brain.sqlite3",
+    "bulk_archive_root": "//REMOTE-AISTUDIO/aistudio-data/archive/second-brain"
+  },
+  "pattern_library": {
+    "tenant_id": "aistudio-internal",
+    "project_id": "pattern-library"
+  },
+  "policy": {
+    "max_results": 50
+  }
+}

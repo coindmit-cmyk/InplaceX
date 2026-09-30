@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-07-30T07:35:00Z",
+  "summary": {
+    "candidate_count": 0,
+    "scheduling_class_counts": {},
+    "integration_continuation_count": 0,
+    "primary_candidate_count": 0,
+    "background_candidate_count": 0,
+    "primary_slot_reservation_required": false
+  },
+  "candidates": []
+}

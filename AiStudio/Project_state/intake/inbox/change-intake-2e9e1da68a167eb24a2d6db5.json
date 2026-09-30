@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-2e9e1da68a167eb24a2d6db5",
+  "type": "change",
+  "subtype": "defect",
+  "status": "new",
+  "created_at": "2026-07-29T23:28:56Z",
+  "updated_at": "2026-07-29T23:28:56Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "Merge remote-tracking branch 'automation/develop' into feature/online-duel-choice-v1",
+  "pr_number": 21,
+  "route": "defect",
+  "event_name": "task_packet_defect",
+  "event_id": "change-intake-2e9e1da68a167eb24a2d6db5",
+  "next_owner": "Dispatcher",
+  "next_action": "create task packet, attach evidence, or mark stale/duplicate",
+  "handoff": null,
+  "changed_paths": [
+    "CHANGELOG.md",
+    "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelGameField.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/OnlineDuelScreen.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/localization/LocalizationCatalogTest.kt",
+    "InplaceX-docs/Game/Human/App Shell UX v4.md"
+  ],
+  "source_refs": [
+    "origin/feature/online-duel-choice-v1"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260729T232856Z/CHANGE_INTAKE_CYCLE_20260729T232856Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}

@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "promotion_threshold": {
+    "attempts": 100,
+    "successes": 100,
+    "failures": 0
+  },
+  "defaults": {
+    "llm_candidate": false,
+    "execution_mode": "codex_only"
+  },
+  "queue": {
+    "enabled": true,
+    "concurrency_per_kind": 1
+  },
+  "pre_worker": {
+    "enabled": true,
+    "max_tasks_per_cycle": 1,
+    "max_attempts_per_task": 1,
+    "fallback": "codex",
+    "task_kinds": ["automation/project_rules_remediation/task_pipeline"]
+  },
+  "idle_learning": {
+    "enabled": true,
+    "mode": "advisory_only",
+    "max_prompts_per_cycle": 1,
+    "roles": [
+      "dispatcher_research",
+      "architect_research",
+      "reviewer"
+    ],
+    "topics": [
+      "Find smaller Worker Packet v2 candidates that local LLM can safely help with.",
+      "Suggest dispatcher splits that reduce broad task scope without changing code.",
+      "Review recent failed quality gates and propose prompt-contract improvements."
+    ]
+  },
+  "execution_host": {
+    "required_kind": "remote_pc",
+    "owner_laptop_allowed": false,
+    "owner_laptop_role": "control_and_manual_work_only"
+  },
+  "context": {
+    "packet_mode": "full_worker_packet",
+    "include_doc_refs": true,
+    "include_input_refs": true,
+    "include_allowed_path_evidence": true,
+    "include_all_project_docs": false,
+    "redact_secrets": true
+  },
+  "granularity": {
+    "max_complexity": "M",
+    "max_allowed_paths": 4,
+    "max_checks": 6
+  },
+  "task_kinds": {
+    "docs": {
+      "llm_candidate": true,
+      "execution_mode": "parallel_debug",
+      "model": "qwen2.5-coder:14b",
+      "prompt": "llm/prompts/task_packet_parallel_debug.md",
+      "evidence": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0,
+        "last_evaluated_at": null
+      }
+    },
+    "tests": {
+      "llm_candidate": true,
+      "execution_mode": "parallel_debug",
+      "model": "qwen2.5-coder:14b",
+      "prompt": "llm/prompts/task_packet_parallel_debug.md",
+      "evidence": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0,
+        "last_evaluated_at": null
+      }
+    },
+    "automation/project_rules_remediation/project_map": {
+      "llm_candidate": false,
+      "execution_mode": "codex_only",
+      "triage_only": true,
+      "model": "qwen2.5-coder:14b",
+      "prompt": "llm/prompts/task_packet_parallel_debug.md",
+      "evidence": {"attempts": 0, "successes": 0, "failures": 0, "last_evaluated_at": null}
+    },
+    "automation/project_rules_remediation/task_pipeline": {
+      "llm_candidate": true,
+      "execution_mode": "parallel_debug",
+      "triage_only": true,
+      "triage_route_on_pass": "dispatcher_repair",
+      "model": "qwen2.5-coder:14b",
+      "prompt": "llm/prompts/task_packet_parallel_debug.md",
+      "evidence": {"attempts": 0, "successes": 0, "failures": 0, "last_evaluated_at": null}
+    }
+  }
+}

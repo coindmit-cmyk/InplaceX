@@ -1,0 +1,495 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-29T18:28:22Z",
+  "project": "inplacex",
+  "project_root_name": "inplacex",
+  "base_branch": "origin/develop",
+  "base_sha": "7d2e7f2690ffb11751b065117576477b66e2c2c8",
+  "source_files": {
+    "preflight": "AiStudio/Task_manager/integrator_preflight.json",
+    "readiness": "AiStudio/Task_manager/pr_readiness_report.json",
+    "integration_batch": "AiStudio/Task_manager/integration_batch.json",
+    "pre_integrator_repair": "AiStudio/Task_manager/pre_integrator_repair.json"
+  },
+  "summary": {
+    "preflight_candidate_count": 5,
+    "readiness_counts": {
+      "needs_integrator_review": 2,
+      "ready_candidate": 3
+    },
+    "batch_included_count": 3,
+    "batch_excluded_count": 2,
+    "excluded_route_counts": {
+      "excluded_from_package": 2
+    },
+    "handoff_ready": true,
+    "dirty_worktree": true
+  },
+  "candidates": [
+    {
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "pr": null,
+      "head_sha": "82e6dc228d73516e8132e4fc926f723033be1459",
+      "task_ids": [
+        "INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S29"
+      ],
+      "classification": "needs_integrator_review",
+      "risk_class": "high",
+      "reason": "high-risk paths require owner/strong review",
+      "next_owner": "auto-integrator",
+      "ahead_of_base": 1,
+      "behind_base": 530,
+      "check_state": "unknown",
+      "changed_paths": [
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/AndroidKeystoreGuestSessionStore.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/GuestAuthSession.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/data/sync/CloudSaveSyncAdapterTest.kt"
+      ],
+      "coordination_changed_paths": [
+        ".agent/agent_version.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json",
+        "AiStudio/Task_manager/owner_directives.json"
+      ],
+      "evidence": [
+        "no PR metadata snapshot"
+      ],
+      "warnings": []
+    },
+    {
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "pr": 5,
+      "head_sha": "1270470ca5dff7c836dcb0c1058f85eabc6d20e8",
+      "task_ids": [
+        "REPO-PR-5"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "medium",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 1,
+      "behind_base": 567,
+      "check_state": "passed",
+      "changed_paths": [
+        ".github/workflows/ci.yml",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+        "docs/automation/CI_FOUNDATION.md",
+        "scripts/ci/artifact_identity.sh",
+        "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+        "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+        "scripts/ci/contract_mutations/fail_connected_noop.yml",
+        "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+        "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+        "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+        "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+        "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+        "scripts/ci/contract_mutations/fail_short_circuit.yml",
+        "scripts/ci/contract_mutations/pass_artifact.yml",
+        "scripts/ci/contract_mutations/pass_baseline.yml",
+        "scripts/ci/validate_ci_contract.py"
+      ],
+      "coordination_changed_paths": [
+        ".agent/agent_version.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json"
+      ],
+      "evidence": [],
+      "warnings": [
+        "behind base by 567; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target"
+      ]
+    },
+    {
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "normalized_branch": "AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "pr": 4,
+      "head_sha": "4e721c31fb9f438d09c4ac322084c3fcd2832977",
+      "task_ids": [
+        "REPO-PR-4"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "low",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 1,
+      "behind_base": 571,
+      "check_state": "passed",
+      "changed_paths": [
+        "scripts/agent_control/capability_preservation_check.py"
+      ],
+      "coordination_changed_paths": [
+        ".agent/agent_version.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json"
+      ],
+      "evidence": [],
+      "warnings": [
+        "behind base by 571; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target"
+      ]
+    },
+    {
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "normalized_branch": "feature/backend-auth-boundary-v1",
+      "pr": 8,
+      "head_sha": "66a0d853b282e5e57b0ad0617a66e678fad2c92f",
+      "task_ids": [
+        "REPO-PR-8"
+      ],
+      "classification": "needs_integrator_review",
+      "risk_class": "high",
+      "reason": "high-risk paths require owner/strong review",
+      "next_owner": "auto-integrator",
+      "ahead_of_base": 1,
+      "behind_base": 553,
+      "check_state": "passed",
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifier.kt",
+        "InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityService.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/auth/JwtAccessTokenVerifierTest.kt",
+        "InplaceX-backend/src/test/kotlin/com/mirkori/inplacex/backend/identity/GuestIdentityServiceTest.kt",
+        "InplaceX-docs/Backend/Ktor Architecture.md"
+      ],
+      "coordination_changed_paths": [
+        ".agent/agent_version.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json"
+      ],
+      "evidence": [
+        "product_conflicts=1"
+      ],
+      "warnings": []
+    },
+    {
+      "branch": "origin/feature/online-foundation-v1",
+      "normalized_branch": "feature/online-foundation-v1",
+      "pr": 7,
+      "head_sha": "11b3d222bfd0d3df5a6ffaea583030f8087ab5a0",
+      "task_ids": [
+        "REPO-PR-7"
+      ],
+      "classification": "ready_candidate",
+      "risk_class": "medium",
+      "reason": "traceable candidate with no blocking product overlap",
+      "next_owner": "integration_batch_builder",
+      "ahead_of_base": 1,
+      "behind_base": 553,
+      "check_state": "passed",
+      "changed_paths": [
+        "CHANGELOG.md",
+        "InplaceX-android/app/build.gradle.kts",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+        "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+        "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+        "InplaceX-docs/Backend/Online Contracts.md",
+        "gradle/libs.versions.toml"
+      ],
+      "coordination_changed_paths": [
+        ".agent/agent_version.json",
+        "AiStudio/Task_manager/agent_activity_state.json",
+        "AiStudio/Task_manager/agent_events.jsonl",
+        "AiStudio/Task_manager/agent_locks.json",
+        "AiStudio/Task_manager/agent_process_state.json",
+        "AiStudio/Task_manager/agent_runner_state.json",
+        "AiStudio/Task_manager/automation_bridge_state.json",
+        "AiStudio/Task_manager/candidate_salvage_audit.json",
+        "AiStudio/Task_manager/clean_rebuild_plan.json",
+        "AiStudio/Task_manager/clean_rebuild_queue_bridge_report.json",
+        "AiStudio/Task_manager/integration_batch.json",
+        "AiStudio/Task_manager/integration_candidates.batch.json",
+        "AiStudio/Task_manager/integration_candidates.json",
+        "AiStudio/Task_manager/integration_pr_snapshot_latest.json",
+        "AiStudio/Task_manager/integrator_direct_merge.json",
+        "AiStudio/Task_manager/integrator_llm_advice.json",
+        "AiStudio/Task_manager/integrator_llm_advice.validation.json",
+        "AiStudio/Task_manager/integrator_llm_context.json",
+        "AiStudio/Task_manager/integrator_preflight.json",
+        "AiStudio/Task_manager/loop_agent_orchestrator.json"
+      ],
+      "evidence": [
+        "product_conflicts=1"
+      ],
+      "warnings": [
+        "behind base by 553; Integrator should update/rebase before final handoff",
+        "draft worker PR accepted as source artifact; package branch/PR is the Finalizer merge target",
+        "product path overlaps another candidate; batch builder must isolate by module/path"
+      ]
+    }
+  ],
+  "batch": {
+    "batch_id": "BATCH-20260729-145553",
+    "included": [
+      {
+        "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+        "task_ids": [
+          "REPO-PR-4"
+        ],
+        "classification": "ready_candidate",
+        "risk_class": "low",
+        "route": null,
+        "reason": "traceable candidate with no blocking product overlap",
+        "next_owner": "integration_batch_builder",
+        "changed_paths": [
+          "scripts/agent_control/capability_preservation_check.py"
+        ],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": "origin/feature/online-foundation-v1",
+        "task_ids": [
+          "REPO-PR-7"
+        ],
+        "classification": "ready_candidate",
+        "risk_class": "medium",
+        "route": null,
+        "reason": "traceable candidate with no blocking product overlap",
+        "next_owner": "integration_batch_builder",
+        "changed_paths": [
+          "CHANGELOG.md",
+          "InplaceX-android/app/build.gradle.kts",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+          "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+          "InplaceX-docs/Backend/Online Contracts.md",
+          "gradle/libs.versions.toml"
+        ],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+        "task_ids": [
+          "REPO-PR-5"
+        ],
+        "classification": "ready_candidate",
+        "risk_class": "medium",
+        "route": null,
+        "reason": "traceable candidate with no blocking product overlap",
+        "next_owner": "integration_batch_builder",
+        "changed_paths": [
+          ".github/workflows/ci.yml",
+          "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/company/CompanyRootScreen.kt",
+          "docs/automation/CI_FOUNDATION.md",
+          "scripts/ci/artifact_identity.sh",
+          "scripts/ci/contract_mutations/fail_artifact_static_signing.yml",
+          "scripts/ci/contract_mutations/fail_boot_wait_bypass.yml",
+          "scripts/ci/contract_mutations/fail_connected_noop.yml",
+          "scripts/ci/contract_mutations/fail_continue_on_error.yml",
+          "scripts/ci/contract_mutations/fail_emulator_noop.yml",
+          "scripts/ci/contract_mutations/fail_instrumentation_if_false.yml",
+          "scripts/ci/contract_mutations/fail_kvm_skipped.yml",
+          "scripts/ci/contract_mutations/fail_release_missing_assemble.yml",
+          "scripts/ci/contract_mutations/fail_short_circuit.yml",
+          "scripts/ci/contract_mutations/pass_artifact.yml",
+          "scripts/ci/contract_mutations/pass_baseline.yml",
+          "scripts/ci/validate_ci_contract.py"
+        ],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      }
+    ],
+    "excluded": [
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "excluded_from_package",
+        "reason": "task already routed to manual Integrator review in central queue",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      },
+      {
+        "branch": null,
+        "task_ids": [],
+        "classification": null,
+        "risk_class": null,
+        "route": "excluded_from_package",
+        "reason": "task already routed to manual Integrator review in central queue",
+        "next_owner": null,
+        "changed_paths": [],
+        "migration_sensitive": null,
+        "migration_compatibility_policy": null,
+        "integrator_must_adapt_migrations": null
+      }
+    ]
+  },
+  "path_conflicts": [
+    {
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    }
+  ],
+  "blockers": [
+    {
+      "code": "dirty_worktree",
+      "severity": "warning",
+      "message": "local worktree has uncommitted changes"
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "AiStudio/Agent/worker/aistudio/auto-worker-5.5/intake-design-pd-inplacex-final-20260725-v002-s29/android-guest-auth-and-cloud-save-adapter",
+      "behind_base": 530
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.3/intake-design-pd-inplacex-final-20260725-v002-s17/s17-aistudio-sdk-aware-lint-and-blocking-quality-retry-20260726T124045Z",
+      "behind_base": 567
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z",
+      "behind_base": 571
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/feature/backend-auth-boundary-v1",
+      "behind_base": 553
+    },
+    {
+      "code": "stale_branch",
+      "severity": "warning",
+      "branch": "origin/feature/online-foundation-v1",
+      "behind_base": 553
+    },
+    {
+      "code": "changed_path_overlap",
+      "left": "origin/feature/backend-auth-boundary-v1",
+      "right": "origin/feature/online-foundation-v1",
+      "overlap_paths": [
+        "CHANGELOG.md"
+      ],
+      "overlap_path_count": 1,
+      "overlap_paths_truncated": false,
+      "omitted_overlap_path_count": 0,
+      "severity": "warning"
+    }
+  ],
+  "handoff_validation": null,
+  "advisory_questions": [
+    "Explain the most important blockers and their next owners.",
+    "Suggest safe small batch groups only when supported by context.",
+    "Explain why excluded items should not enter the current finalizer package.",
+    "Explain handoff validator warnings without proposing direct mutation."
+  ],
+  "advisory_only_boundary": {
+    "llm_may": [
+      "explain blockers",
+      "explain path conflicts",
+      "suggest safe batch groups",
+      "draft rejection_detail text",
+      "explain validator warnings"
+    ],
+    "llm_must_not": [
+      "merge",
+      "push",
+      "delete branch",
+      "close PR",
+      "release lock",
+      "mark task done",
+      "edit queue",
+      "edit locks",
+      "edit events",
+      "edit handoff"
+    ]
+  },
+  "source_context_hash": "6d8cac527935e73b6037f6f0bf37e2fcdcf5f6e4aa19ca1a7c401e46b3c14a45",
+  "redaction": {
+    "redaction_count": 0,
+    "stats": {
+      "pattern_matches": 0
+    },
+    "full_file_contents_included": false,
+    "full_diffs_included": false
+  }
+}

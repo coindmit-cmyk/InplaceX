@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-project-agent/model_routing_policy.schema.json",
+  "title": "Codex model, capability profile and capacity routing policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "model_registry",
+    "reasoning_effort_policy",
+    "capability_profiles",
+    "capacity",
+    "roles",
+    "complexity"
+  ],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "limits_max_age_minutes": {"type": "integer", "minimum": 1},
+    "manual_reserve_percent": {"type": "integer", "minimum": 0, "maximum": 100},
+    "model_registry": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["model_id", "enabled"],
+        "properties": {
+          "model_id": {"type": "string", "minLength": 1},
+          "enabled": {"type": "boolean"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "reasoning_effort_policy": {
+      "type": "object",
+      "required": ["canonical_values", "read_aliases", "write_policy", "ultra"],
+      "properties": {
+        "canonical_values": {
+          "const": ["low", "medium", "high", "extra_high", "max", "ultra"]
+        },
+        "read_aliases": {
+          "type": "object",
+          "required": ["xhigh", "very_high"],
+          "properties": {
+            "xhigh": {"const": "extra_high"},
+            "very_high": {"const": "extra_high"}
+          },
+          "additionalProperties": false
+        },
+        "write_policy": {"const": "canonical_only"},
+        "ultra": {
+          "type": "object",
+          "required": [
+            "requires_capability_profile",
+            "requires_delegation",
+            "minimum_independent_work_units",
+            "documentation_label_is_sufficient"
+          ],
+          "properties": {
+            "requires_capability_profile": {"const": "delegated_deep"},
+            "requires_delegation": {
+              "const": ["allowed", "required"]
+            },
+            "minimum_independent_work_units": {"type": "integer", "minimum": 2},
+            "documentation_label_is_sufficient": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability_profiles": {
+      "type": "object",
+      "required": [
+        "efficient",
+        "balanced",
+        "deep",
+        "maximum_coherent",
+        "delegated_deep"
+      ],
+      "properties": {
+        "efficient": {"$ref": "#/$defs/capabilityProfile"},
+        "balanced": {"$ref": "#/$defs/capabilityProfile"},
+        "deep": {"$ref": "#/$defs/capabilityProfile"},
+        "maximum_coherent": {"$ref": "#/$defs/capabilityProfile"},
+        "delegated_deep": {"$ref": "#/$defs/capabilityProfile"}
+      },
+      "additionalProperties": false
+    },
+    "capacity": {
+      "type": "object",
+      "required": ["minimum_workers", "normal_workers", "high_workers", "maximum_workers"],
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "roles": {"$ref": "#/$defs/routeMap"},
+    "complexity": {"$ref": "#/$defs/routeMap"}
+  },
+  "$defs": {
+    "canonicalEffort": {
+      "enum": ["low", "medium", "high", "extra_high", "max", "ultra"]
+    },
+    "capabilityProfile": {
+      "type": "object",
+      "required": [
+        "description",
+        "model_preferences",
+        "default_reasoning_effort",
+        "delegation",
+        "context_coherence",
+        "cost_class",
+        "requires_independent_work_units"
+      ],
+      "properties": {
+        "description": {"type": "string", "minLength": 1},
+        "model_preferences": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "default_reasoning_effort": {"$ref": "#/$defs/canonicalEffort"},
+        "delegation": {"enum": ["forbidden", "allowed", "required"]},
+        "context_coherence": {"enum": ["bounded", "normal", "high", "maximum"]},
+        "cost_class": {"enum": ["low", "standard", "premium", "scarce"]},
+        "requires_independent_work_units": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "routeMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["models", "effort"],
+        "properties": {
+          "models": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "effort": {
+            "enum": ["low", "medium", "high", "extra_high", "xhigh", "very_high", "max", "ultra"],
+            "description": "Canonical writers use extra_high; xhigh and very_high remain accepted as legacy read aliases."
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

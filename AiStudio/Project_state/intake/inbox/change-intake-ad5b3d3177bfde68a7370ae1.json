@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-ad5b3d3177bfde68a7370ae1",
+  "type": "change",
+  "subtype": "defect",
+  "status": "new",
+  "created_at": "2026-07-26T20:31:58Z",
+  "updated_at": "2026-07-26T20:31:58Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "feat(android): add guarded online transport foundation",
+  "pr_number": 7,
+  "route": "defect",
+  "event_name": "task_packet_defect",
+  "event_id": "change-intake-ad5b3d3177bfde68a7370ae1",
+  "next_owner": "Dispatcher",
+  "next_action": "create task packet, attach evidence, or mark stale/duplicate",
+  "handoff": null,
+  "changed_paths": [
+    "CHANGELOG.md",
+    "InplaceX-android/app/build.gradle.kts",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/KtorOnlineTransport.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/OnlineContracts.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/online/RemotePlatformGateway.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/KtorOnlineTransportTest.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/platform/online/RemotePlatformGatewayTest.kt",
+    "InplaceX-docs/Backend/Online Contracts.md",
+    "InplaceX-logging/src/main/kotlin/com/mirkori/inplacex/logging/InplaceXLog.kt",
+    "InplaceX-logging/src/test/kotlin/com/mirkori/inplacex/logging/InplaceXLoggerTest.kt",
+    "gradle/libs.versions.toml"
+  ],
+  "source_refs": [
+    "origin/feature/online-foundation-v1"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260726T203158Z/CHANGE_INTAKE_CYCLE_20260726T203158Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}

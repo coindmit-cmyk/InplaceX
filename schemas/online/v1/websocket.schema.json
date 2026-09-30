@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.inplacex.dev/online/v1/websocket.schema.json",
+  "title": "InplaceX Online WebSocket envelopes and events v1",
+  "$defs": {
+    "CursorPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lastSeenEventSeq": {
+          "$ref": "common.schema.json#/$defs/EventSequence"
+        }
+      }
+    },
+    "PingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "SubscribePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lastSeenEventSeq": {
+          "$ref": "common.schema.json#/$defs/EventSequence"
+        }
+      }
+    },
+    "SecretStatusChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sessionId", "revision", "participantId", "secretSubmitted"],
+      "properties": {
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "participantId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "secretSubmitted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "PhaseChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sessionId", "revision", "phase"],
+      "properties": {
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "common.schema.json#/$defs/Revision"
+        },
+        "phase": {
+          "$ref": "common.schema.json#/$defs/SessionPhase"
+        }
+      }
+    },
+    "PresenceChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["participantId", "connected"],
+      "properties": {
+        "participantId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "connected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ReplayGap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot", "requestedAfterEventSeq"],
+      "properties": {
+        "snapshot": {
+          "$ref": "common.schema.json#/$defs/DuelSnapshot"
+        },
+        "requestedAfterEventSeq": {
+          "$ref": "common.schema.json#/$defs/EventSequence"
+        }
+      }
+    },
+    "Heartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["serverTime"],
+      "properties": {
+        "serverTime": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        }
+      }
+    },
+    "Matched": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ticket"],
+      "properties": {
+        "ticket": {
+          "$ref": "rest.schema.json#/$defs/MatchmakingTicket"
+        }
+      }
+    },
+    "ClientEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "messageId", "requestId", "sessionId", "type", "payload"],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "common.schema.json#/$defs/SchemaVersion"
+        },
+        "messageId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "requestId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "session.subscribe",
+            "session.resync",
+            "session.ping",
+            "duel.submitSecret",
+            "duel.submitGuess"
+          ]
+        },
+        "payload": {}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.subscribe"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/SubscribePayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.resync"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/CursorPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.ping"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/PingPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.submitSecret"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/DuelSubmitSecretCommand"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.submitGuess"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/DuelSubmitGuessCommand"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ServerEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "messageId",
+        "requestId",
+        "sessionId",
+        "eventSeq",
+        "sentAt",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "common.schema.json#/$defs/SchemaVersion"
+        },
+        "messageId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "requestId": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessionId": {
+          "$ref": "common.schema.json#/$defs/Uuid"
+        },
+        "eventSeq": {
+          "$ref": "common.schema.json#/$defs/EventSequence"
+        },
+        "sentAt": {
+          "$ref": "common.schema.json#/$defs/Instant"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "session.snapshot",
+            "session.replayGap",
+            "session.participantPresenceChanged",
+            "duel.secretStatusChanged",
+            "duel.turnResult",
+            "duel.phaseChanged",
+            "duel.finished",
+            "matchmaking.matched",
+            "session.error",
+            "connection.heartbeat"
+          ]
+        },
+        "payload": {}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.snapshot"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/SessionSnapshotResponse"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.replayGap"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/ReplayGap"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.participantPresenceChanged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/PresenceChanged"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.secretStatusChanged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/SecretStatusChanged"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.turnResult"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/DuelTurnResult"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.phaseChanged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/PhaseChanged"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duel.finished"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/SessionSnapshotResponse"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "matchmaking.matched"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/Matched"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "session.error"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "rest.schema.json#/$defs/ErrorResponse"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "connection.heartbeat"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/Heartbeat"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ClientEnvelope"
+    },
+    {
+      "$ref": "#/$defs/ServerEnvelope"
+    }
+  ]
+}

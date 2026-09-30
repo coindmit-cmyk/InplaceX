@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-7918d17127794d6e426d4a91",
+  "type": "change",
+  "subtype": "defect",
+  "status": "new",
+  "created_at": "2026-07-26T20:31:58Z",
+  "updated_at": "2026-07-26T20:31:58Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "feat(android): redesign primary shell sections",
+  "pr_number": 6,
+  "route": "defect",
+  "event_name": "task_packet_defect",
+  "event_id": "change-intake-7918d17127794d6e426d4a91",
+  "next_owner": "Dispatcher",
+  "next_action": "create task packet, attach evidence, or mark stale/duplicate",
+  "handoff": null,
+  "changed_paths": [
+    "InplaceX-android/app/src/androidTest/java/com/mirkori/inplacex/ui/screens/shell/ShellSectionsSmokeTest.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/MainActivity.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/HomeCatalog.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/platform/localization/SecondaryCatalog.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeRootScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/HomeScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/profile/ProfileRootScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/race_setup/RaceSetupScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shared/SceneChrome.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/shop/ShopRootScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppBottomMenu.kt",
+    "InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/shell/AppShell.kt",
+    "InplaceX-android/app/src/test/java/com/mirkori/inplacex/ui/screens/profile/ProfilePresentationTest.kt",
+    "InplaceX-docs/Game/Human/App Shell UX v4.md",
+    "InplaceX-docs/Game/Human/assets/app-shell-v4-friends-tall.png",
+    "InplaceX-docs/Game/Human/assets/app-shell-v4-home-tall.png",
+    "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-compact.png",
+    "InplaceX-docs/Game/Human/assets/app-shell-v4-profile-tall.png",
+    "InplaceX-docs/Game/Human/assets/app-shell-v4-shop-tall.png"
+  ],
+  "source_refs": [
+    "origin/codex/app-shell-ux-v4"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260726T203158Z/CHANGE_INTAKE_CYCLE_20260726T203158Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}

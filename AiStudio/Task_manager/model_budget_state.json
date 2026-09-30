@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "updated_at": null,
+  "limits": {
+    "codex_5_3": {
+      "state": "ok",
+      "remaining_estimate": null,
+      "pause_until": null
+    },
+    "codex_5_5": {
+      "state": "ok",
+      "remaining_estimate": null,
+      "pause_until": null
+    }
+  },
+  "policy": {
+    "pause_5_5_below_percent": 15,
+    "allow_script_only_when_exhausted": true,
+    "allow_5_3_for_s_m_when_5_5_exhausted": true,
+    "split_large_tasks_when_strong_model_unavailable": true
+  }
+}

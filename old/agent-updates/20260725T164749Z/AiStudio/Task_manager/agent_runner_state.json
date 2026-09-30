@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "phase": "phase_2",
+  "phase2_reference": true,
+  "phase2_active": true,
+  "updated_at": "2026-07-25T16:08:02Z",
+  "automation_host": {
+    "kind": "remote_pc",
+    "mode": "phase_2_remote_runner",
+    "authority": "runner_cycles",
+    "enabled": true,
+    "autostart_enabled": false,
+    "scheduler_enabled": false,
+    "host_id": null,
+    "notes": "Default Phase 2 execution host policy. Do not store hostnames, IP addresses, tokens or secrets here.",
+    "last_seen_at": null
+  },
+  "active_runs": [],
+  "history": []
+}

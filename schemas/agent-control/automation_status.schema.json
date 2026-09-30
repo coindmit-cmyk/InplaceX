@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutomationStatus",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "updated_at",
+    "counts",
+    "next_actions"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer"
+    },
+    "project": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object"
+    },
+    "next_actions": {
+      "type": "array"
+    },
+    "human_queue": {
+      "type": "array"
+    },
+    "blocked": {
+      "type": "array"
+    },
+    "latest_reports": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

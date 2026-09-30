@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "phase": "phase_2",
+  "phase2_reference": true,
+  "phase2_active": true,
+  "updated_at": null,
+  "automation_host": {
+    "kind": "remote_pc",
+    "mode": "phase_2_remote_runner",
+    "authority": "runner_cycles",
+    "execution_host_required": true,
+    "local_llm_host": "remote_pc",
+    "owner_laptop_role": "control_and_manual_work_only",
+    "enabled": true,
+    "autostart_enabled": false,
+    "scheduler_enabled": false,
+    "host_id": null,
+    "machine_id": null,
+    "notes": "Default Phase 2 execution host policy. Do not store hostnames, IP addresses, tokens or secrets here."
+  },
+  "active_runs": [],
+  "history": []
+}

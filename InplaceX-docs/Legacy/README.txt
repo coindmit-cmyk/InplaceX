@@ -1,0 +1,1 @@
+Заменить файл: app/src/main/java/com/mirkori/inplacex/ui/screens/game/GameFieldScreen.kt\nСохранил текущий дизайн и структуру. Добавил вызов tryAutoSolve(), LOCK_YES бордер, и неупрощённую интеграцию логики.\n

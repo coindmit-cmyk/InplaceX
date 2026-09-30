@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "package_id": "PD-INPLACEX-FINAL-20260725-v002",
+  "package_version": "2.0.0",
+  "preserved_commit": "2ee8252",
+  "agent_core_version": "v0.4.22.327",
+  "supersedes": "PD-INPLACEX-FINAL-20260725-v001"
+}

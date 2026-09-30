@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "id": "intake:change-intake-6506fee35074d51c283729d2",
+  "type": "change",
+  "subtype": "queue",
+  "status": "new",
+  "created_at": "2026-07-26T20:31:58Z",
+  "updated_at": "2026-07-26T20:31:58Z",
+  "source": "change_intake_cycle",
+  "source_kind": "pr",
+  "access_level": "project",
+  "summary": "chore(agent): worker result CRB-INTEGRATION-CAPABILITY-PRESERVATION-CHECK",
+  "pr_number": 4,
+  "route": "queue",
+  "event_name": "queue_changed",
+  "event_id": "change-intake-6506fee35074d51c283729d2",
+  "next_owner": "Dispatcher",
+  "next_action": null,
+  "handoff": null,
+  "changed_paths": [
+    "AiStudio/Task_manager/agent_locks.json",
+    "AiStudio/Task_manager/task_queue.json",
+    "docs/automation/PHASE_2_RUNNER_CONTRACT.md",
+    "docs/reports/integration/CAPABILITY_PRESERVATION_INTEGRATOR_ACCEPTANCE_4E721C3_20260726.md",
+    "docs/reports/integration/S17_INTEGRATOR_REVIEW_1270470_20260726.md",
+    "docs/reports/integration/S17_INTEGRATOR_REVIEW_6965EE9_20260726.md",
+    "docs/reports/integration/S17_INTEGRATOR_REVIEW_C09BF40_20260726.md",
+    "docs/reports/integration/S17_OWNER_GATE_43E10A5_20260726.md",
+    "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_69D80BB_20260726.md",
+    "docs/reports/integration/S25_PREREQ_A_INTEGRATOR_REVIEW_F3151A5_20260726.md",
+    "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T122358Z.md",
+    "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125356Z.md",
+    "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T125500Z.md",
+    "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132502Z.md",
+    "docs/reports/workers/WORKER_RESULT_CRB-S25-PREREQ-A-AUTH-PRINCIPAL-MEMBERSHIP_20260726T132558Z.md",
+    "docs/reports/workers/WORKER_RESULT_INTAKE-DESIGN-PD-INPLACEX-FINAL-20260725-V002-S17_20260726T122709Z.md",
+    "scripts/agent_control/capability_preservation_check.py",
+    "scripts/agent_control/claim_next_task.py",
+    "scripts/agent_control/run_worker_cycle.py",
+    "scripts/agent_control/test_capability_preservation_check.py",
+    "scripts/agent_control/test_worker_execution_lease_propagation.py",
+    "scripts/agent_control/worker_pool_manager.py"
+  ],
+  "source_refs": [
+    "origin/AiStudio/Agent/worker/aistudio-manual/auto-worker-5.5max/crb-integration-capability-preservation-check/implement-fail-closed-capability-preservation-in-retry-20260726T122229Z"
+  ],
+  "evidence_refs": [
+    "/mnt/d/agent-runtime/full-intake-cycle/inplacex/status-orchestrator/pr-change-intake/20260726T203158Z/CHANGE_INTAKE_CYCLE_20260726T203158Z.json"
+  ],
+  "worker_ready": false,
+  "task_queue_mutation_allowed": false
+}

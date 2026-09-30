@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "recovery_id": "remote-aistudio-pc",
+  "remote_pc": {
+    "ipv4_address": "192.168.88.162",
+    "mac_address": "02:00:00:00:00:01",
+    "ssh_port": 22,
+    "os_interface": "enp3s0",
+    "network_profile": "netplan-enp3s0",
+    "linux_user": "main"
+  },
+  "network": {
+    "target_cidr": "192.168.88.0/24",
+    "broadcast_address": "192.168.88.255",
+    "wol_port": 9
+  },
+  "initiator": {
+    "kind": "mikrotik_routeros",
+    "ipv4_cidr": "192.168.88.1/24",
+    "same_l2": true,
+    "lan_interface": "bridge"
+  },
+  "router": {
+    "vendor": "mikrotik_routeros",
+    "lan_interface": "bridge",
+    "script_name": "aistudio-pc-wol-watchdog",
+    "scheduler_name": "aistudio-pc-wol-watchdog"
+  },
+  "watchdog": {
+    "interval_seconds": 180,
+    "ping_count": 3
+  },
+  "rtc_fallback": {
+    "enabled": true,
+    "device": "/sys/class/rtc/rtc0/wakealarm",
+    "wake_after_seconds": 900,
+    "refresh_interval_seconds": 300
+  }
+}

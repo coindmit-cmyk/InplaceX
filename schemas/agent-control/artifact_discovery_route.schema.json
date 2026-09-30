@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aistudio.local/schemas/agent-control/artifact_discovery_route.schema.json",
+  "title": "Artifact Discovery Route",
+  "type": "object",
+  "required": ["source_finding_id", "owner", "action", "blocking", "task_type"],
+  "properties": {
+    "source_finding_id": {"type": "string"},
+    "owner": {"type": "string"},
+    "action": {"type": "string"},
+    "task_type": {"type": "string"},
+    "blocking": {"type": "boolean"},
+    "reason": {"type": "string"},
+    "task_candidate": {"type": "object"}
+  },
+  "additionalProperties": true
+}
