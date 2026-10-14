@@ -23,4 +23,10 @@ data class GameModeDefinition(
     val preMatchConfig: PreMatchConfig? = null,
     val botDifficulty: BotDifficulty? = null,
     val campaignLevelNumber: Int? = null,
-)
+) {
+    init {
+        require(turnTimeLimitSeconds == null || turnTimeLimitSeconds > 0) {
+            "turnTimeLimitSeconds must be null or positive"
+        }
+    }
+}
