@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Preserved the displayed local game's secret, guesses, partial input, analysis
+  and elapsed timer across Activity recreation without counting the match start
+  twice. Replaced the unrelated-ViewModel recreation test with a debug-only
+  fixture that exercises the production screen and checks a fresh session.
 - Recorded the October 14 project audit and A01 recovery: both primary develop
   checkouts now use the published baseline while local commits, WIP and task
   state remain preserved. Documented freshness checks and one sequential audit PR.
