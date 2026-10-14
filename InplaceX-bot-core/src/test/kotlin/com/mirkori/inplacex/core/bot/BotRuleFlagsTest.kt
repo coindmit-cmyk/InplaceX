@@ -77,4 +77,60 @@ class BotRuleFlagsTest {
         }
         throw AssertionError("bot did not finish the maximum-run regression")
     }
+
+    @Test
+    fun friendRulesAcceptRepeatedDigitsUpToThreeConsecutivelyAfterRoundTrip() {
+        val config = GameConfig(
+            codeLength = 6,
+            allowDuplicates = true,
+            attemptLimit = 20,
+            forbidAllSameDigitsGuess = false,
+            forbidAdjacentDuplicates = false,
+            forbidTripleDuplicates = false,
+            maxConsecutiveDuplicateDigits = 3,
+        )
+        val rules = config.toBotMatchRules().toGameConfig().toBotMatchRules()
+
+        // Documented friend-rule outcomes: separated repeats and a run of three are valid; four are not.
+        assertTrue(rules.isValidCode("111234"))
+        assertTrue(rules.isValidCode("121212"))
+        assertFalse(rules.isValidCode("111123"))
+    }
+
+    @Test
+    fun duplicateFlagsPreserveLiteralCodeOutcomesAfterRoundTrip() {
+        fun roundTrip(config: GameConfig) =
+            config.toBotMatchRules().toGameConfig().toBotMatchRules()
+
+        val permissive = GameConfig(
+            codeLength = 6,
+            allowDuplicates = true,
+            attemptLimit = 20,
+            forbidAllSameDigitsGuess = false,
+            forbidAdjacentDuplicates = false,
+            forbidTripleDuplicates = false,
+            maxConsecutiveDuplicateDigits = null,
+        )
+        val permissiveRules = roundTrip(permissive)
+        assertTrue(permissiveRules.isValidCode("111111"))
+        assertTrue(permissiveRules.isValidCode("112345"))
+        assertTrue(permissiveRules.isValidCode("111234"))
+        assertTrue(permissiveRules.isValidCode("121345"))
+
+        val noDuplicatesRules = roundTrip(permissive.copy(allowDuplicates = false))
+        assertFalse(noDuplicatesRules.isValidCode("121345"))
+        assertTrue(noDuplicatesRules.isValidCode("123456"))
+
+        val noAllSameRules = roundTrip(permissive.copy(forbidAllSameDigitsGuess = true))
+        assertFalse(noAllSameRules.isValidCode("111111"))
+        assertTrue(noAllSameRules.isValidCode("121212"))
+
+        val noAdjacentRules = roundTrip(permissive.copy(forbidAdjacentDuplicates = true))
+        assertFalse(noAdjacentRules.isValidCode("112345"))
+        assertTrue(noAdjacentRules.isValidCode("121345"))
+
+        val noTripleRules = roundTrip(permissive.copy(forbidTripleDuplicates = true))
+        assertFalse(noTripleRules.isValidCode("111234"))
+        assertTrue(noTripleRules.isValidCode("112345"))
+    }
 }
