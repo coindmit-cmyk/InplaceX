@@ -123,4 +123,34 @@ class CampaignLevelGeneratorTest {
         assertEquals(tier, definition.difficultyTier)
         assertEquals(codeLength, definition.config.codeLength)
     }
+
+    @Test
+    fun reserveBudgetsMatchDocumentedTierRoleFixtures() {
+        fun assertFixture(
+            level: Int,
+            tier: CampaignDifficultyTier,
+            role: CampaignBlockRole,
+            codeLength: Int,
+            solverTarget: Int,
+            attemptLimit: Int,
+        ) {
+            val definition = CampaignLevelGenerator.generate(level)
+
+            assertEquals("tier at level $level", tier, definition.difficultyTier)
+            assertEquals("role at level $level", role, definition.blockRole)
+            assertEquals("code length at level $level", codeLength, definition.config.codeLength)
+            assertEquals(
+                "perfect-rating solver target at level $level",
+                solverTarget,
+                definition.ratingPolicy.targetAttemptsForPerfect,
+            )
+            assertEquals("attempt limit at level $level", attemptLimit, definition.config.attemptLimit)
+        }
+
+        assertFixture(15, CampaignDifficultyTier.MEDIUM, CampaignBlockRole.SPIKE, 5, 14, 17)
+        assertFixture(20, CampaignDifficultyTier.MEDIUM, CampaignBlockRole.HARDCORE, 5, 14, 16)
+        assertFixture(85, CampaignDifficultyTier.HARD, CampaignBlockRole.SPIKE, 6, 15, 17)
+        assertFixture(225, CampaignDifficultyTier.HARDCORE, CampaignBlockRole.SPIKE, 9, 21, 22)
+        assertFixture(305, CampaignDifficultyTier.HARDCORE, CampaignBlockRole.SPIKE, 10, 24, 25)
+    }
 }
