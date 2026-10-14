@@ -58,6 +58,56 @@ class InplaceXLoggerTest {
     }
 
     @Test
+    fun `logger redacts provider id attribute keys`() {
+        val sink = RecordingLogSink()
+        val logger = InplaceXLogger(
+            sink = sink,
+            minLevel = LogLevel.DEBUG,
+            clockMillis = { 250L },
+        )
+
+        logger.info(
+            tag = "Provider",
+            message = "provider configured",
+            attributes = mapOf(
+                "providerId" to "synthetic-provider-id-one",
+                "ProviderId" to "synthetic-provider-id-two",
+            ),
+        )
+
+        val event = sink.events.single()
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["providerId"])
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["ProviderId"])
+        assertTrue(event.toString().contains("synthetic-provider-id-one").not())
+        assertTrue(event.toString().contains("synthetic-provider-id-two").not())
+    }
+
+    @Test
+    fun `logger preserves public provider and environment attributes`() {
+        val sink = RecordingLogSink()
+        val logger = InplaceXLogger(
+            sink = sink,
+            minLevel = LogLevel.DEBUG,
+            clockMillis = { 275L },
+        )
+
+        logger.info(
+            tag = "Provider",
+            message = "provider configured",
+            attributes = mapOf(
+                "providerId" to "synthetic-provider-id-three",
+                "providerName" to "Example Provider",
+                "environment" to "sandbox",
+            ),
+        )
+
+        val event = sink.events.single()
+        assertEquals(SensitiveKeyLogSanitizer.RedactedValue, event.attributes["providerId"])
+        assertEquals("Example Provider", event.attributes["providerName"])
+        assertEquals("sandbox", event.attributes["environment"])
+    }
+
+    @Test
     fun `logger records throwable class without throwable message`() {
         val sink = RecordingLogSink()
         val logger = InplaceXLogger(
