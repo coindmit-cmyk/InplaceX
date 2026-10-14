@@ -49,6 +49,7 @@ class SensitiveKeyLogSanitizer(
             "authorization",
             "cookie",
             "credential",
+            "email",
             "guess",
             "integrity",
             "key",
@@ -59,6 +60,7 @@ class SensitiveKeyLogSanitizer(
             "rawpayload",
             "secret",
             "token",
+            "verificationcode",
         )
     }
 }
