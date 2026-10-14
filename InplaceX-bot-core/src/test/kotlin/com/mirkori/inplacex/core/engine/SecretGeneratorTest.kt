@@ -2,6 +2,7 @@ package com.mirkori.inplacex.core.engine
 
 import com.mirkori.inplacex.core.model.GameConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -71,5 +72,55 @@ class SecretGeneratorTest {
         )
 
         assertEquals(SecretGenerator.generate(config), SecretGenerator.generate(config))
+    }
+
+    @Test
+    fun `duplicate enabled secrets have valid shape at boundary lengths`() {
+        val seeds = listOf(0L, 1L, 42L)
+        listOf(4, 20).forEach { codeLength ->
+            seeds.forEach { seed ->
+                val secret = SecretGenerator.generate(
+                    GameConfig(
+                        codeLength = codeLength,
+                        allowDuplicates = true,
+                        attemptLimit = 40,
+                        maxConsecutiveDuplicateDigits = 3,
+                        seed = seed,
+                    ),
+                )
+
+                assertEquals("length for codeLength=$codeLength, seed=$seed", codeLength, secret.length)
+                assertTrue(
+                    "all characters must be decimal digits for codeLength=$codeLength, seed=$seed",
+                    secret.all { it in '0'..'9' },
+                )
+                for (start in 0..secret.length - 4) {
+                    val first = secret[start]
+                    assertTrue(
+                        "no four-digit window may repeat one digit for codeLength=$codeLength, seed=$seed, start=$start",
+                        (1..3).any { offset -> secret[start + offset] != first },
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `no duplicates secrets contain each decimal digit`() {
+        val decimalAlphabet = ('0'..'9').toSet()
+        listOf(0L, 1L, 42L).forEach { seed ->
+            val secret = SecretGenerator.generate(
+                GameConfig(
+                    codeLength = 10,
+                    allowDuplicates = false,
+                    attemptLimit = 40,
+                    seed = seed,
+                ),
+            )
+
+            assertEquals("length for seed=$seed", 10, secret.length)
+            assertEquals("distinct digit count for seed=$seed", 10, secret.toSet().size)
+            assertEquals("decimal alphabet for seed=$seed", decimalAlphabet, secret.toSet())
+        }
     }
 }
