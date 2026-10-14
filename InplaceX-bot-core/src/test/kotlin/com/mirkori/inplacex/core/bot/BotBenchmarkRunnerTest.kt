@@ -47,4 +47,30 @@ class BotBenchmarkRunnerTest {
         assertTrue("analyst bot should finish reference secret", run.won)
         assertTrue("analyst bot took too many moves: ${run.moves}", run.moves <= 18)
     }
+
+    @Test
+    fun targetMovesRoundFractionalBudgetsUpward() {
+        val profile = BotProfiles.hard.copy(
+            targetMovesMultiplier = 1.25,
+            minimumMoves = 1,
+            expertBonusMoves = 0,
+        )
+
+        assertEquals(5, profile.targetMovesForCodeLength(4))
+        assertEquals(7, profile.targetMovesForCodeLength(5))
+        assertEquals(25, profile.targetMovesForCodeLength(20))
+    }
+
+    @Test
+    fun minimumMoveFloorDoesNotCapLargerBudgets() {
+        val profile = BotProfiles.hard.copy(
+            targetMovesMultiplier = 1.25,
+            minimumMoves = 9,
+            expertBonusMoves = 0,
+        )
+
+        assertEquals(9, profile.targetMovesForCodeLength(4))
+        assertEquals(9, profile.targetMovesForCodeLength(5))
+        assertEquals(25, profile.targetMovesForCodeLength(20))
+    }
 }
