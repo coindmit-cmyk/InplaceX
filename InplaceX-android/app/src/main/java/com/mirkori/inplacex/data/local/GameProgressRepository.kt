@@ -314,8 +314,49 @@ class GameProgressRepository(
         }
     }
 
-    fun buyCampaignEnergy(costCoins: Int, amount: Int = 1): Boolean = spendCoinsAndMutate(costCoins) { row ->
-        row.copy(campaignEnergy = (row.campaignEnergy + amount).coerceAtMost(MAX_CAMPAIGN_ENERGY))
+    fun buyCampaignEnergy(costCoins: Int, amount: Int = 1): Boolean {
+        require(costCoins >= 0) { "costCoins must be >= 0" }
+        require(amount > 0) { "amount must be > 0" }
+
+        val db = helper.writableDatabase
+        val nowMs = databaseConfig.nowMs()
+        db.beginTransaction()
+        try {
+            ensureDefaultRow(db)
+            val storedRow = loadRow(db)
+            val regenerated = applyEnergyRegen(storedRow, nowMs)
+            val available = (MAX_CAMPAIGN_ENERGY - regenerated.campaignEnergy).coerceAtLeast(0)
+            val fullRow = regenerated.campaignEnergy >= MAX_CAMPAIGN_ENERGY
+            val affordable = regenerated.coins >= costCoins
+            if (fullRow || !affordable) {
+                if (regenerated != storedRow) writeRow(db, regenerated)
+                AppLog.info(
+                    tag = "CampaignEnergyPurchase",
+                    message = "Campaign energy purchase finished",
+                    attributes = mapOf("outcome" to if (fullRow) "full" else "insufficient_coins"),
+                )
+                db.setTransactionSuccessful()
+                return false
+            }
+
+            val increment = minOf(amount, available)
+            writeRow(
+                db,
+                regenerated.copy(
+                    coins = regenerated.coins - costCoins,
+                    campaignEnergy = regenerated.campaignEnergy + increment,
+                ),
+            )
+            AppLog.info(
+                tag = "CampaignEnergyPurchase",
+                message = "Campaign energy purchase finished",
+                attributes = mapOf("outcome" to "purchased"),
+            )
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
     }
 
     fun buyTemporaryPro(

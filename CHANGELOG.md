@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Rejected campaign-energy purchases that cannot increase stock, including
+  regeneration to full capacity and concurrent purchases of the last slot.
+  Coin deduction and energy update now share one SQLite transaction; the shop
+  disables full-energy purchases with a localized explanation.
 - Preserved the displayed local game's secret, guesses, partial input, analysis
   and elapsed timer across Activity recreation without counting the match start
   twice. Replaced the unrelated-ViewModel recreation test with a debug-only
