@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Enforced positive configured turn limits in game-mode definitions and kept
+  post-match ads blocked through the first twenty completed games.
+- Redacted provider IDs, email addresses, and verification codes in shared
+  logging, with contract coverage for safe public attributes and exceptions.
+- Expanded independent tests for core rules, exact scores, campaign budgets
+  and ratings, bot boundaries, match lifecycle, hints, and auth diagnostics.
+
+
 - Moved the pure match lifecycle/contracts, campaign rules, rating, progression,
   and mode definitions out of the Android app into `InplaceX-bot-core`; local
   Android and backend matches now consume one physical source of truth.
