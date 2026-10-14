@@ -5,6 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.SavedStateHandle
@@ -73,8 +76,23 @@ fun GameFieldScreen(
             GuessValidator.validate(candidate, matchParameters.toGameConfig())
         }
     }
+    val savedStateHandle = rememberSaveable(
+        matchParameters,
+        acceptedFixedSecret,
+        saver = Saver(
+            save = { handle ->
+                handle.keys().associateWith { key -> handle.get<Any?>(key) }
+            },
+            restore = { saved -> SavedStateHandle(saved) },
+        ),
+    ) {
+        SavedStateHandle()
+    }
     val viewModel = remember(matchParameters, acceptedFixedSecret) {
-        GameFieldViewModel(SavedStateHandle(), matchParameters, acceptedFixedSecret)
+        GameFieldViewModel(savedStateHandle, matchParameters, acceptedFixedSecret)
+    }
+    var matchStartReported by rememberSaveable(matchParameters, acceptedFixedSecret) {
+        androidx.compose.runtime.mutableStateOf(false)
     }
     val routeController = remember(viewModel) { GameFieldRouteController(viewModel) }
     val holderState by viewModel.uiState.collectAsState()
@@ -117,7 +135,10 @@ fun GameFieldScreen(
                 "fixedSecret" to (fixedSecret != null).toString(),
             ),
         )
-        currentLifecycleCallbacks.onMatchStarted()
+        if (!matchStartReported) {
+            currentLifecycleCallbacks.onMatchStarted()
+            matchStartReported = true
+        }
     }
     LaunchedEffect(holderState.match.debugSecret) {
         onDebugSecretChange(holderState.match.debugSecret)

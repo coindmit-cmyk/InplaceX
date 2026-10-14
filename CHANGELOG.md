@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Kept active Android match history, input, and timers across Activity
+  recreation without recording another match start; added a MainActivity
+  instrumentation regression for accepted history and the attempt counter.
+
 - Enforced positive configured turn limits in game-mode definitions and kept
   post-match ads blocked through the first twenty completed games.
 - Redacted provider IDs, email addresses, and verification codes in shared
