@@ -57,8 +57,9 @@ class AdPlacementPolicyTest {
         val free = entitlements()
 
         assertFalse(AdPlacementPolicy.shouldShowPostMatchInterstitial(19, free))
-        assertTrue(AdPlacementPolicy.shouldShowPostMatchInterstitial(20, free))
+        assertFalse(AdPlacementPolicy.shouldShowPostMatchInterstitial(20, free))
         assertFalse(AdPlacementPolicy.shouldShowPostMatchInterstitial(21, free))
+        assertTrue(AdPlacementPolicy.shouldShowPostMatchInterstitial(24, free))
         assertFalse(
             AdPlacementPolicy.shouldShowPostMatchInterstitial(
                 matchesPlayed = 24,
