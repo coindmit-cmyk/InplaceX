@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Recorded the October 14 project audit and A01 recovery: both primary develop
+  checkouts now use the published baseline while local commits, WIP and task
+  state remain preserved. Documented freshness checks and one sequential audit PR.
 - Updated the Mirkori Games Telegram download catalog for Platform schema v3.
   It now validates the RF and global distribution contract plus complete
   lifecycle coverage, exposes only active RF Mirkori direct-APK releases,
