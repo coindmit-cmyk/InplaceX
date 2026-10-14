@@ -349,7 +349,7 @@ fun GameAnalysisPanel(
         )
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(verticalGap, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             repeat(10) { digit ->
@@ -529,6 +529,7 @@ fun GameToolsPanel(
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
+    val autoModeEnabled = uiState.parameters.autoModeAvailable
     Row(
         modifier = modifier.padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -556,12 +557,16 @@ fun GameToolsPanel(
         )
         FilledTonalButton(
             onClick = { onAutoExcludeChanged(!uiState.tools.autoExcludeEnabled) },
-            enabled = uiState.parameters.autoModeAvailable,
+            enabled = autoModeEnabled,
             modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         ) {
             Text(
                 when {
-                    !uiState.parameters.autoModeAvailable -> strings.text("game.auto_mode.pro")
+                    !autoModeEnabled -> strings.text("game.auto_mode.pro")
                     uiState.tools.autoExcludeEnabled -> strings.text("game.auto_mode.auto")
                     else -> strings.text("game.auto_mode.manual")
                 },

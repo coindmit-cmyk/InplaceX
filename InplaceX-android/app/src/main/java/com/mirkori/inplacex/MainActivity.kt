@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
                 var currentSection by rememberSaveable { mutableStateOf(AppSection.HOME) }
                 var isInGame by rememberSaveable { mutableStateOf(false) }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
+                var socialAutoQuickMatchRequested by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var isVariantToolsOpen by rememberSaveable { mutableStateOf(false) }
                 var variantToolsEnabled by rememberSaveable { mutableStateOf(false) }
@@ -279,24 +280,31 @@ class MainActivity : ComponentActivity() {
                                             adService.showInterstitial(InterstitialPlacement.POST_MATCH)
                                         }
                                     },
-                                    onRecordPvpResult = { won ->
-                                        progressState = progressRepository.recordModeResult(GameModeStatType.PVP_DUEL, won)
-                                        if (adService.shouldShowPostGameInterstitial(progressState.matchesPlayed, entitlements)) {
-                                            adService.showInterstitial(InterstitialPlacement.POST_MATCH)
-                                        }
+                                     onRecordPvpResult = { won ->
+                                         progressState = progressRepository.recordModeResult(GameModeStatType.PVP_DUEL, won)
+                                         if (adService.shouldShowPostGameInterstitial(progressState.matchesPlayed, entitlements)) {
+                                             adService.showInterstitial(InterstitialPlacement.POST_MATCH)
+                                         }
+                                     },
+                                     onOpenCompany = {
+                                         currentSection = AppSection.COMPANY
+                                     },
+                                    onOpenOnlineMatch = {
+                                        currentSection = AppSection.SOCIAL
+                                        socialAutoQuickMatchRequested = true
                                     },
-                                    onOpenCompany = {
-                                        currentSection = AppSection.COMPANY
-                                    },
-                                )
+                                 )
 
-                            currentSection == AppSection.SOCIAL -> SocialRootScreen(
-                                onlineRuntime = onlineRuntime,
-                                showTestFriendBot = testFriendBotEnabled(),
-                                requestExitGame = requestExitGame,
-                                onExitGameConsumed = { requestExitGame = false },
-                                onInGameChange = { inGame -> isInGame = inGame },
-                            )
+                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
+                                 onlineRuntime = onlineRuntime,
+                                 showTestFriendBot = testFriendBotEnabled(),
+                                 autoModeAvailable = progressState.autoTableAssistEnabledAt(currentTimeMs),
+                                 requestExitGame = requestExitGame,
+                                 onExitGameConsumed = { requestExitGame = false },
+                                 onInGameChange = { inGame -> isInGame = inGame },
+                                 autoStartQuickMatch = socialAutoQuickMatchRequested,
+                                 onQuickMatchRequestHandled = { socialAutoQuickMatchRequested = false },
+                             )
 
                             currentSection == AppSection.COMPANY -> CompanyRootScreen(
                                 progressState = progressState,

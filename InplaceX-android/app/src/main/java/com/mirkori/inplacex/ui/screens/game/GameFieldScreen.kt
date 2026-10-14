@@ -71,6 +71,7 @@ fun GameFieldScreen(
     val matchParameters = remember(params, autoModeAvailable) {
         params.toMatchParameters(autoModeAvailable)
     }
+    val hasMoveLimit = params.limitMoves > 0
     val acceptedFixedSecret = remember(matchParameters, fixedSecret) {
         fixedSecret?.takeIf { candidate ->
             GuessValidator.validate(candidate, matchParameters.toGameConfig())
@@ -158,7 +159,8 @@ fun GameFieldScreen(
             turnLabel = turnLabel,
             secondaryStatusText = secondaryStatusText,
             inputEnabled = inputEnabled,
-            configuredMoveLimit = params.limitMoves,
+            configuredMoveLimit = if (hasMoveLimit) params.limitMoves else null,
+            movesUnlimited = !hasMoveLimit,
             openPositionHints = routeController.visibleHintCount(
                 GameFieldHintMode.OPEN_POSITION,
                 hintInventory,

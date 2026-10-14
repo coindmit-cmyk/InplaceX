@@ -88,11 +88,13 @@ fun HomeRootScreen(
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
     onOpenCompany: () -> Unit = {},
+    onOpenOnlineMatch: () -> Unit = {},
 ) {
     var showExitDialog by rememberSaveable { mutableStateOf(false) }
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
+    var showPvpModes by rememberSaveable { mutableStateOf(false) }
     var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
     var raceResultElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
@@ -118,6 +120,7 @@ fun HomeRootScreen(
         onInGameChange(screenState != HomeScreenState.ROOT)
         if (screenState == HomeScreenState.ROOT) {
             onDebugSecretChange(null)
+            showPvpModes = false
         }
     }
 
@@ -178,6 +181,15 @@ fun HomeRootScreen(
         onDebugSecretChange(null)
     }
 
+    fun openLocalDuel() {
+        preMatchPhase = PreMatchPhase.SECRET_SELECTION
+        preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
+        botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
+        preMatchSecretInput = ""
+        preMatchError = null
+        showPreMatchDialog = true
+    }
+
     BackHandler(
         enabled = showExitDialog ||
             showPreMatchDialog ||
@@ -208,22 +220,32 @@ fun HomeRootScreen(
         showExitDialog = true
     }
 
+    BackHandler(
+        enabled = screenState == HomeScreenState.ROOT && showPvpModes,
+    ) {
+        showPvpModes = false
+    }
+
     when (screenState) {
         HomeScreenState.ROOT -> {
-            HomeSelectionScreen(
-                pveMode = pveMode,
-                pvpMode = pvpMode,
-                onOpenPve = { onScreenStateChange(HomeScreenState.PVE_GAME) },
-                onOpenPvp = {
-                    preMatchPhase = PreMatchPhase.SECRET_SELECTION
-                    preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
-                    botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
-                    preMatchSecretInput = ""
-                    preMatchError = null
-                    showPreMatchDialog = true
-                },
-                onOpenCompany = onOpenCompany,
-            )
+            if (showPvpModes) {
+                PvpModesScreen(
+                    onBack = { showPvpModes = false },
+                    onPlayWithFriend = { openLocalDuel() },
+                    onPlayOnline = {
+                        showPvpModes = false
+                        onOpenOnlineMatch()
+                    },
+                )
+            } else {
+                HomeSelectionScreen(
+                    pveMode = pveMode,
+                    pvpMode = pvpMode,
+                    onOpenPve = { onScreenStateChange(HomeScreenState.PVE_GAME) },
+                    onOpenPvp = { showPvpModes = true },
+                    onOpenCompany = onOpenCompany,
+                )
+            }
         }
 
         HomeScreenState.PVE_GAME -> {

@@ -117,6 +117,20 @@ internal open class GameProgressDatabase(
         }
     }
 
+    open override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_SYNC_QUEUE")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ONLINE_MATCH_TURNS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ONLINE_MATCHES")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ONLINE_ROOM_MEMBERS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ONLINE_ROOMS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_SOCIAL_RELATIONSHIPS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_IDENTITY_LINKS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_PLAYER_PROFILE")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_CAMPAIGN_PROGRESS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_PROGRESS")
+        onCreate(db)
+    }
+
     private fun createPlatformTables(db: SQLiteDatabase) {
         db.execSQL(
             """

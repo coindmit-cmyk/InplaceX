@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
     autoStartQuickMatch: Boolean = false,
+    autoModeAvailable: Boolean = true,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -179,6 +180,7 @@ internal fun OnlineDuelScreen(
             snapshot = snapshot,
             knownPlayerGuesses = knownPlayerGuesses,
             submitting = guessSubmitting,
+            autoModeAvailable = autoModeAvailable,
             onSubmitGuess = { submitted ->
                 if (!guessSubmitting) {
                     guessSubmitting = true

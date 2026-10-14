@@ -49,16 +49,19 @@ import com.mirkori.inplacex.ui.theme.InplaceXColors
 fun SocialRootScreen(
     onlineRuntime: OnlineRuntime? = null,
     showTestFriendBot: Boolean = false,
+    autoModeAvailable: Boolean = true,
     requestExitGame: Boolean = false,
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
+    autoStartQuickMatch: Boolean = false,
+    onQuickMatchRequestHandled: () -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var onlineDuelOpen by remember { mutableStateOf(false) }
-    var autoStartQuickMatch by remember { mutableStateOf(false) }
+    var autoStartQuickMatchRequestedForRuntime by remember { mutableStateOf(false) }
 
     fun openOnline(autoStart: Boolean = false) {
-        autoStartQuickMatch = autoStart
+        autoStartQuickMatchRequestedForRuntime = autoStart
         onlineDuelOpen = true
     }
 
@@ -78,13 +81,24 @@ fun SocialRootScreen(
     if (onlineDuelOpen && onlineRuntime != null) {
         OnlineDuelScreen(
             runtime = onlineRuntime,
-            autoStartQuickMatch = autoStartQuickMatch,
+            autoStartQuickMatch = autoStartQuickMatchRequestedForRuntime,
+            autoModeAvailable = autoModeAvailable,
             onBack = {
                 onlineDuelOpen = false
-                autoStartQuickMatch = false
+                autoStartQuickMatchRequestedForRuntime = false
             },
         )
         return
+    }
+
+    LaunchedEffect(autoStartQuickMatch, onlineRuntime) {
+        if (!autoStartQuickMatch) {
+            return@LaunchedEffect
+        }
+        if (onlineRuntime != null) {
+            openOnline(autoStart = true)
+        }
+        onQuickMatchRequestHandled()
     }
 
     ScenePageColumn(

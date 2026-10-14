@@ -81,14 +81,38 @@ class GuessValidatorTest {
     }
 
     @Test
-    fun messageBridgePreservesExistingMessagesWithoutDrivingValidation() {
-        val config = config(forbidAdjacentDuplicates = true)
-
-        assertEquals("Adjacent duplicates are forbidden", GuessValidator.validateOrMessage("112345", config))
-        assertEquals(
-            GuessValidationReason.ADJACENT_DUPLICATES,
-            GuessValidator.validateOrReason("112345", config),
+    fun messageBridgeReturnsForAllTypedRejections() {
+        val cases = listOf(
+            Triple("12345", config(), GuessValidationReason.INVALID_LENGTH),
+            Triple("1234a6", config(), GuessValidationReason.NON_DIGIT),
+            Triple("112345", config(allowDuplicates = false), GuessValidationReason.DUPLICATE_DIGITS),
+            Triple("111111", config(), GuessValidationReason.ALL_SAME_DIGITS),
+            Triple("112345", config(forbidAdjacentDuplicates = true), GuessValidationReason.ADJACENT_DUPLICATES),
+            Triple("111234", config(forbidTripleDuplicates = true), GuessValidationReason.TRIPLE_DUPLICATES),
+            Triple("111123", config(maxConsecutiveDuplicateDigits = 3), GuessValidationReason.TOO_MANY_CONSECUTIVE_DUPLICATES),
         )
+
+        cases.forEach { (guess, gameConfig, reason) ->
+            val message = GuessValidator.validateOrMessage(guess, gameConfig)
+
+            assertEquals(
+                "Unexpected typed reason for $guess",
+                reason,
+                GuessValidator.validateOrReason(guess, gameConfig),
+            )
+            assertTrue(
+                "Bridge message must be present for $reason",
+                message.isNotBlank(),
+            )
+        }
+    }
+
+    @Test
+    fun messageBridgeReturnsNullForValidGuess() {
+        val valid = "123456"
+
+        assertEquals(null, GuessValidator.validateOrMessage(valid, config()))
+        assertEquals(null, GuessValidator.validateOrReason(valid, config()))
     }
 
     @Test

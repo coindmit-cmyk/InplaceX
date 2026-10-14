@@ -56,6 +56,7 @@ internal fun OnlineDuelGameField(
     snapshot: OnlineDuelSnapshotState,
     knownPlayerGuesses: Map<Int, String>,
     submitting: Boolean,
+    autoModeAvailable: Boolean = true,
     onSubmitGuess: (String) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -107,6 +108,7 @@ internal fun OnlineDuelGameField(
             snapshot.playStyle == RemoteFriendPlayStyle.RACE ||
                 snapshot.currentTurn == PLAYER_ACTOR
             ) && !submitting,
+        autoModeAvailable = autoModeAvailable,
         modeLabel = if (snapshot.playStyle == RemoteFriendPlayStyle.RACE) {
             strings.text("social.match.timed.field_title")
         } else {
@@ -291,6 +293,7 @@ internal fun buildOnlineDuelGameFieldState(
     inputEnabled: Boolean,
     modeLabel: String,
     turnLabel: String,
+    autoModeAvailable: Boolean = true,
     elapsedSeconds: Int = 0,
     totalTimeLimitSeconds: Int = 0,
 ): com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState {
@@ -344,7 +347,7 @@ internal fun buildOnlineDuelGameFieldState(
             totalTimeLimitSeconds = totalTimeLimitSeconds,
             hintsEnabled = false,
             boostsEnabled = false,
-            autoModeAvailable = true,
+            autoModeAvailable = autoModeAvailable,
         ),
         match = GameFieldMatchState(
             phase = MatchPhase.ACTIVE,
