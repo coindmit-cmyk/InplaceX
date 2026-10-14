@@ -65,7 +65,7 @@ object AdPolicy {
             return AdDecision.Blocked(AdBlockReason.PLACEMENT_FORMAT_MISMATCH)
         }
         if (request.placement == AdPlacement.POST_MATCH_INTERSTITIAL) {
-            if (request.matchesPlayed < MinimumMatchesBeforeInterstitial) {
+            if (request.matchesPlayed <= MinimumMatchesBeforeInterstitial) {
                 return AdDecision.Blocked(AdBlockReason.EARLY_PLAYER)
             }
             if (request.matchesPlayed % InterstitialCadence != 0) {
