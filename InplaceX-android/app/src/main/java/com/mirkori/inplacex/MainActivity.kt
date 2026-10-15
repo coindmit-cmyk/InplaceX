@@ -1107,6 +1107,7 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                autoModeAvailable = effectiveProgressState.autoTableAssistEnabledAt(currentTimeMs),
                                 initialActiveSessionId = activeOnlineSessionId,
                                 initialPendingInviteCode = pendingOnlineInviteCode,
                                 onPendingInviteChange = { code ->

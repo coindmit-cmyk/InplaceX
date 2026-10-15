@@ -99,6 +99,7 @@ fun SocialRootScreen(
     onInGameChange: (Boolean) -> Unit = {},
     onNestedScreenChange: (Boolean) -> Unit = {},
     onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
+    autoModeAvailable: Boolean = false,
 ) {
     val strings = LocalAppStrings.current
     var activeDestination by rememberSaveable {
@@ -265,6 +266,7 @@ fun SocialRootScreen(
                 onBackRequestConsumed = onExitGameConsumed,
                 onExitDestination = ::exitActiveDestination,
                 onSnapshotObserved = onSnapshotObserved,
+                autoModeAvailable = autoModeAvailable,
             )
         }
         return

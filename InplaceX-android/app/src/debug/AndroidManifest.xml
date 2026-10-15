@@ -4,5 +4,8 @@
         <activity
             android:name="com.mirkori.inplacex.debug.GameFieldRecreationTestActivity"
             android:exported="false" />
+        <activity
+            android:name="com.mirkori.inplacex.debug.AutoTableAccessTestActivity"
+            android:exported="false" />
     </application>
 </manifest>

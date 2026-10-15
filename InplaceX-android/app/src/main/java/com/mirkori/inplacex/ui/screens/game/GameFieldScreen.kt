@@ -55,7 +55,7 @@ fun GameFieldScreen(
     openPositionHints: Int = 0,
     checkDigitHints: Int = 0,
     checkPositionHints: Int = 0,
-    autoModeAvailable: Boolean = true,
+    autoModeAvailable: Boolean = false,
     infiniteHintsEnabled: Boolean = false,
     extraMovesBoosts: Int = 0,
     extraTimeBoosts: Int = 0,

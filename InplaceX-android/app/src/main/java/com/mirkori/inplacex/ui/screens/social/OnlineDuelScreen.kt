@@ -84,6 +84,7 @@ internal fun OnlineDuelScreen(
     onBackRequestConsumed: () -> Unit = {},
     onExitDestination: () -> Unit = {},
     onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
+    autoModeAvailable: Boolean = false,
 ) {
     val currentOnSnapshotObserved by rememberUpdatedState(onSnapshotObserved)
     val context = LocalContext.current
@@ -432,6 +433,7 @@ internal fun OnlineDuelScreen(
                 }
             },
             onBack = ::returnFromActiveGame,
+            autoModeAvailable = autoModeAvailable,
         )
         return
     }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Applied the same existing Pro entitlement to auto-table assistance in every
+  local and online mode. Default-denied entry points and synchronous online
+  input/projection guards prevent saved preferences from granting access;
+  revocation preserves manual marks, input, history and the user's manual mode.
+  Added isolated SQLite and debug-only UI coverage on both physical phones.
 - Counted accepted online match starts and caller-relative PvP results in the
   profile once per server session. A schema-12 SQLite receipt journal shares a
   transaction with counters, preserving prior progress through migration and
