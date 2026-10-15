@@ -9,6 +9,7 @@ import com.mirkori.inplacex.core.monetization.TemporaryProPolicy
 import com.mirkori.inplacex.core.retention.RetentionRewardPolicy
 import com.mirkori.inplacex.core.retention.RetentionRewardType
 import com.mirkori.inplacex.platform.logging.AppLog
+import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 
 enum class HintStockType {
     OPEN_POSITION,
@@ -519,6 +520,109 @@ class GameProgressRepository(
                 MonetizationProductType.PRO_PLUS_SUBSCRIPTION -> row.copy(proPlusSubscriptionActive = false)
             }
         }
+    }
+
+    /** Applies an accepted server snapshot without awarding race coins or guessing a result. */
+    fun recordOnlineSnapshot(snapshot: OnlineDuelSnapshotState): GameProgressState {
+        val fact = OnlineMatchStatistics.fromSnapshot(snapshot) ?: return loadState()
+        if (!fact.started && fact.terminalOutcome == null) return loadState()
+
+        val db = helper.writableDatabase
+        var logOutcome: String? = null
+        db.beginTransaction()
+        val state = try {
+            ensureDefaultRow(db)
+            val previous = db.query(
+                GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS,
+                arrayOf(
+                    GameProgressDatabase.COL_ONLINE_STAT_STARTED,
+                    GameProgressDatabase.COL_ONLINE_STAT_TERMINAL_OUTCOME,
+                ),
+                "${GameProgressDatabase.COL_ONLINE_STAT_SESSION_ID} = ?",
+                arrayOf(fact.sessionId),
+                null, null, null,
+            ).use { cursor ->
+                if (cursor.moveToFirst()) {
+                    Pair(cursor.getInt(0) != 0, if (cursor.isNull(1)) null else cursor.getString(1))
+                } else null
+            }
+            val wasStarted = previous?.first == true
+            val wasTerminal = previous?.second != null
+            val nowStarted = wasStarted || fact.started
+            val newOutcome = when (fact.terminalOutcome) {
+                OnlineMatchOutcome.WIN -> "win"
+                OnlineMatchOutcome.LOSS -> "loss"
+                OnlineMatchOutcome.NEUTRAL -> "neutral"
+                null -> null
+            }
+            val startChanged = !wasTerminal && !wasStarted && nowStarted
+            val terminalChanged = !wasTerminal && newOutcome != null
+
+            if (previous == null) {
+                val values = ContentValues().apply {
+                    put(GameProgressDatabase.COL_ONLINE_STAT_SESSION_ID, fact.sessionId)
+                    put(GameProgressDatabase.COL_ONLINE_STAT_STARTED, if (nowStarted) 1 else 0)
+                    put(GameProgressDatabase.COL_ONLINE_STAT_TERMINAL_OUTCOME, newOutcome)
+                }
+                db.insertOrThrow(GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS, null, values)
+            } else if (startChanged || terminalChanged) {
+                val values = ContentValues().apply {
+                    put(GameProgressDatabase.COL_ONLINE_STAT_STARTED, if (nowStarted) 1 else 0)
+                    put(GameProgressDatabase.COL_ONLINE_STAT_TERMINAL_OUTCOME, newOutcome)
+                }
+                check(db.update(
+                    GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS,
+                    values,
+                    "${GameProgressDatabase.COL_ONLINE_STAT_SESSION_ID} = ?",
+                    arrayOf(fact.sessionId),
+                ) == 1) { "Online receipt update failed" }
+            }
+
+            if (startChanged || (terminalChanged && newOutcome != "neutral")) {
+                val values = ContentValues().apply {
+                    if (startChanged) put(
+                        GameProgressDatabase.COL_MATCHES_PLAYED,
+                        Math.addExact(loadRow(db).matchesPlayed, 1),
+                    )
+                    if (terminalChanged && newOutcome == "win") {
+                        val row = loadRow(db)
+                        put(GameProgressDatabase.COL_MATCHES_WON, Math.addExact(row.matchesWon, 1))
+                        put(GameProgressDatabase.COL_PVP_WINS, Math.addExact(row.pvpWins, 1))
+                    }
+                    if (terminalChanged && newOutcome == "loss") {
+                        put(GameProgressDatabase.COL_PVP_LOSSES, Math.addExact(loadRow(db).pvpLosses, 1))
+                    }
+                }
+                check(db.update(
+                    GameProgressDatabase.TABLE_PROGRESS,
+                    values,
+                    "${GameProgressDatabase.COL_ID} = ?",
+                    arrayOf(GameProgressDatabase.PROFILE_ID.toString()),
+                ) == 1) { "Online statistics update failed" }
+            }
+            if (startChanged || terminalChanged) {
+                logOutcome = when {
+                    terminalChanged && newOutcome == "win" -> "win"
+                    terminalChanged && newOutcome == "loss" -> "loss"
+                    terminalChanged && nowStarted -> "neutral_played"
+                    terminalChanged -> "neutral_unplayed"
+                    else -> "started"
+                }
+            }
+            val result = loadRow(db).toState()
+            db.setTransactionSuccessful()
+            result
+        } finally {
+            db.endTransaction()
+        }
+        logOutcome?.let { outcome ->
+            AppLog.info(
+                tag = "OnlineMatchStatistics",
+                message = "Online match statistics updated",
+                attributes = mapOf("outcome" to outcome),
+            )
+        }
+        return state
     }
 
     fun recordMatchStarted(): GameProgressState {

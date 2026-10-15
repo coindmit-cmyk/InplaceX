@@ -1126,6 +1126,9 @@ class MainActivity : ComponentActivity() {
                                         activeOnlineSessionId = sessionId
                                     }
                                 },
+                                onSnapshotObserved = { snapshot ->
+                                    progressState = progressRepository.recordOnlineSnapshot(snapshot)
+                                },
                                 friends = savedFriends,
                                 pendingFriendRequests = pendingFriendRequests,
                                 currentPlayerId = mirkoriAccountState.gamePlayerId,

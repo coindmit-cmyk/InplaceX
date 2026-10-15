@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,7 +83,9 @@ internal fun OnlineDuelScreen(
     requestBack: Boolean = false,
     onBackRequestConsumed: () -> Unit = {},
     onExitDestination: () -> Unit = {},
+    onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
 ) {
+    val currentOnSnapshotObserved by rememberUpdatedState(onSnapshotObserved)
     val context = LocalContext.current
     val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
@@ -145,6 +148,7 @@ internal fun OnlineDuelScreen(
     ): OnlineDuelUiState {
         when (result) {
             is OnlineClientResult.Success -> {
+                currentOnSnapshotObserved(result.value)
                 onActiveSessionChange(result.value.sessionId.takeUnless { result.value.phase == "finished" })
                 onPendingInviteChange(null)
             }
@@ -378,6 +382,7 @@ internal fun OnlineDuelScreen(
                     delay(SynchronizationPollMillis)
                     when (val result = runtime.readSession(current.snapshot.sessionId)) {
                         is OnlineClientResult.Success -> {
+                            currentOnSnapshotObserved(result.value)
                             onActiveSessionChange(
                                 result.value.sessionId.takeUnless { result.value.phase == "finished" },
                             )

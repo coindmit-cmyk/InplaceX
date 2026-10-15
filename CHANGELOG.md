@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Counted accepted online match starts and caller-relative PvP results in the
+  profile once per server session. A schema-12 SQLite receipt journal shares a
+  transaction with counters, preserving prior progress through migration and
+  preventing duplicates on polling, cold restore and concurrent writes. Neutral
+  finishes do not invent wins/losses or race rewards.
 - Rejected campaign-energy purchases that cannot increase stock, including
   regeneration to full capacity and concurrent purchases of the last slot.
   Coin deduction and energy update now share one SQLite transaction; the shop

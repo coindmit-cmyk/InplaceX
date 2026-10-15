@@ -54,6 +54,7 @@ import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
@@ -97,6 +98,7 @@ fun SocialRootScreen(
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
     onNestedScreenChange: (Boolean) -> Unit = {},
+    onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     var activeDestination by rememberSaveable {
@@ -262,6 +264,7 @@ fun SocialRootScreen(
                 requestBack = requestExitGame,
                 onBackRequestConsumed = onExitGameConsumed,
                 onExitDestination = ::exitActiveDestination,
+                onSnapshotObserved = onSnapshotObserved,
             )
         }
         return
