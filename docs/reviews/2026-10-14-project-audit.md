@@ -199,6 +199,8 @@ APK: `globalDebug`, пакет `com.mirkori.inplacex`, версия `1.0`, `vers
 
 Это вопрос согласования продукта и публичных правил: уточнить название/описание этого варианта либо привести механику к определению общей гонки. Не следует автоматически менять транспортное значение `race`. [Game Modes and Rules.md:50](<D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-docs/Game/Human/Game Modes and Rules.md:50>), [DuelMatch.kt:99](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-backend/src/main/kotlin/com/mirkori/inplacex/backend/domain/duel/DuelMatch.kt:99).
 
+**Решение владельца 15 октября:** сделать оба отдельных формата — общую Гонку и Дуэль на время с разными секретами, сохранив обычную пошаговую дуэль. Реализация и обратная совместимость выделены в [задание A18](../automation/tasks/INPX-AUDIT-A18-20261015.md); пункт пока не закрыт.
+
 ### A19 — P2. UI-прогон на Redmi не даёт результата и не ограничен по времени
 
 **Подтверждено тремя запусками.** Набор из 65 тестов остановился на первом `homeCompanyCardChangesGlobalSection`; отдельно повторённый этот тест также не завершился. Отключение анимаций и дополнительный вывод тестовой Activity не дали результата. При диагностике передний план оставался у launcher. Причина запуска/фокуса Activity на этом устройстве требует отдельной проверки; ручные сценарии приложения на Redmi работали.
