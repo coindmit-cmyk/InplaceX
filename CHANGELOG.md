@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Kept the private-code join button above the software keyboard, with the code
+  field and create-own action in one scrollable form. Input survives keyboard
+  transitions. Verified with real IME tests and private connections in both
+  directions on Redmi/Android 14 and OnePlus/Android 13 (audit A06).
+
 - Applied the same existing Pro entitlement to auto-table assistance in every
   local and online mode. Default-denied entry points and synchronous online
   input/projection guards prevent saved preferences from granting access;
