@@ -18,6 +18,12 @@
 - Generated full-screen mockups are reference evidence, not runtime screens. Approved independent
   decorative assets derived from them may ship when they contain no controls, labels, or game state.
 
+## Game Typography
+
+- Owner decision (2026-10-15 UTC): shared game fields use standard 1.0 typography sizing.
+- Game typography adapts to available physical width, height, and density while retaining original pixel density.
+- Native system and menu fonts outside the game subtree retain user preferences; the app does not change Android font or density settings.
+
 ## Toy Room v5 Visual Direction
 
 The owner-approved visual references define the current art direction for

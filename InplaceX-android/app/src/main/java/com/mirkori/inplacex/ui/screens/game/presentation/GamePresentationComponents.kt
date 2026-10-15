@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +40,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -119,7 +124,7 @@ internal fun shouldUseReferenceGameGeometry(
     codeLength: Int,
 ): Boolean = width >= 340.dp &&
     height >= 660.dp &&
-    fontScale <= 1.3f &&
+    fontScale <= 1.0f &&
     codeLength in 4..6
 
 /** Callbacks supplied by the route that owns external inventory, navigation and lifecycle effects. */
@@ -144,6 +149,24 @@ fun GamePresentationLayout(
     modifier: Modifier = Modifier,
     debugSlot: (@Composable () -> Unit)? = null,
 ) {
+    val ambientDensity = LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalDensity provides androidx.compose.ui.unit.Density(
+            density = ambientDensity.density,
+            fontScale = 1f,
+        ),
+    ) {
+        GamePresentationLayoutContent(uiState, callbacks, modifier, debugSlot)
+    }
+}
+
+@Composable
+private fun GamePresentationLayoutContent(
+    uiState: GameFieldUiState,
+    callbacks: GamePresentationCallbacks,
+    modifier: Modifier,
+    debugSlot: (@Composable () -> Unit)?,
+) {
     val active = uiState.route.inputEnabled && isInputEnabled(uiState.match.phase)
     val feedback = LocalAppFeedbackRuntime.current
 
@@ -161,17 +184,23 @@ fun GamePresentationLayout(
         }
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize().testTag("game-presentation-layout"),
+    ) {
+        val availableHeight = maxHeight
         val metrics = finalGameFieldMetrics(
             codeLength = uiState.parameters.codeLength,
             compactHeight = maxHeight < 760.dp,
+            fontScale = LocalDensity.current.fontScale,
         )
         val referenceGeometry = shouldUseReferenceGameGeometry(
             width = maxWidth,
             height = maxHeight,
             fontScale = LocalDensity.current.fontScale,
             codeLength = uiState.parameters.codeLength,
-        )
+        ) && uiState.route.modeLabel.isNullOrBlank() &&
+            uiState.route.secondaryStatusText.isNullOrBlank() &&
+            uiState.route.turnLabel.isNullOrBlank()
         if (referenceGeometry) {
             ReferenceGamePresentation(
                 uiState = uiState,
@@ -185,6 +214,7 @@ fun GamePresentationLayout(
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(FinalUiDimens.ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
             ) {
@@ -199,7 +229,7 @@ fun GamePresentationLayout(
                 uiState.route.opponentProgress?.let { progress ->
                     PresentationCard(
                         modifier = Modifier
-                            .height(OpponentProgressPanelHeight)
+                            .defaultMinSize(minHeight = OpponentProgressPanelHeight * metrics.fontScale)
                             .testTag("game-opponent-results-panel"),
                         accent = uiState.parameters.mode.accent,
                         accentStrength = 0.13f,
@@ -220,12 +250,19 @@ fun GamePresentationLayout(
                         feedback.performHaptic(AppHapticCue.SELECTION)
                         callbacks.onAnalysisCellPressed(digit, position)
                     },
-                    modifier = Modifier.weight(1f, fill = false),
+                    forcedHeight = minOf(
+                        gameWorkBoardHeight(
+                            metrics,
+                            shouldUseStackedGameBoard(uiState.parameters.codeLength) || metrics.fontScale > 1f,
+                        ),
+                        availableHeight * 0.75f,
+                    ),
+                    modifier = Modifier,
                 )
 
                 if (uiState.parameters.hintsEnabled || uiState.parameters.boostsEnabled) {
                     PresentationCard(
-                        modifier = Modifier.height(metrics.helpersHeight),
+                        modifier = Modifier.defaultMinSize(minHeight = metrics.helpersHeight),
                         accent = FinalUiColors.ModeGreen,
                     ) {
                         GameHelpersPanel(
@@ -244,7 +281,7 @@ fun GamePresentationLayout(
 
                 PresentationCard(
                     modifier = Modifier
-                        .height(metrics.toolsHeight)
+                        .defaultMinSize(minHeight = metrics.toolsHeight)
                         .testTag("game-tools-panel"),
                     accent = FinalUiColors.ModeOrange,
                 ) {
@@ -459,6 +496,28 @@ private fun GameOpponentResultsPanel(
     val statusKey = opponentProgressStatusKey(progress)
     val visibleAttempts = latestOpponentAttempts(progress.attempts)
 
+    if (LocalDensity.current.fontScale > 1f) {
+        Column(
+            modifier = modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(strings.text("home.race.opponent.title"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FinalUiColors.ModeOrangeText)
+            Text(strings.text(statusKey), fontSize = 8.5.sp, color = if (progress.failed) FinalUiColors.StateNo else FinalUiColors.WarmTextMuted)
+            if (visibleAttempts.isEmpty()) {
+                Text(strings.text("home.race.opponent.empty"), fontSize = 9.sp, color = FinalUiColors.WarmTextMuted)
+            } else {
+                visibleAttempts.forEach { attempt ->
+                    Text(
+                        text = "${opponentAttemptLabel(attempt)}  ${attempt.exactMatches}/$codeLength",
+                        fontSize = 10.sp,
+                        color = FinalUiColors.PrimaryDeep,
+                    )
+                }
+            }
+        }
+        return
+    }
+
     Row(
         modifier = modifier.padding(horizontal = 7.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -547,7 +606,8 @@ private fun GameWorkBoard(
     forcedHeight: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
-    val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength)
+    val useStackedBoard = shouldUseStackedGameBoard(uiState.parameters.codeLength) ||
+        (!referenceGeometry && metrics.fontScale > 1f)
     val boardHeight = forcedHeight ?: gameWorkBoardHeight(metrics, useStackedBoard)
 
     if (useStackedBoard) {
@@ -557,7 +617,7 @@ private fun GameWorkBoard(
                 .height(boardHeight),
             verticalArrangement = Arrangement.spacedBy(FinalUiDimens.SectionGap),
         ) {
-            val attemptsHeight = stackedAttemptsPanelHeight(metrics)
+            val attemptsHeight = minOf(stackedAttemptsPanelHeight(metrics), boardHeight * 0.55f)
             PresentationCard(
                 modifier = Modifier
                     .height(attemptsHeight)
@@ -630,24 +690,26 @@ private fun GameWorkBoard(
 internal fun shouldUseStackedGameBoard(codeLength: Int): Boolean = codeLength > 6
 
 private val GamePanelHorizontalPadding = 5.dp
-private val GamePanelHeaderHeight = 23.dp
+private val GamePanelHeaderHeight = 30.dp
 private val MatrixHeaderContentGap = 4.dp
 private const val MatrixRows = 10
 private const val StackedVisibleAttempts = 3
 
 internal fun analysisPanelHeight(metrics: GameFieldLayoutMetrics): Dp =
     GamePanelHorizontalPadding * 2 +
-        GamePanelHeaderHeight +
+        GamePanelHeaderHeight * metrics.fontScale +
         MatrixHeaderContentGap +
         metrics.matrixCellHeight * MatrixRows +
         metrics.matrixGap * (MatrixRows - 1)
 
 internal fun stackedAttemptsPanelHeight(metrics: GameFieldLayoutMetrics): Dp =
-    (GamePanelHorizontalPadding * 2 +
-        GamePanelHeaderHeight +
-        metrics.attemptRowHeight * StackedVisibleAttempts +
-        3.dp * (StackedVisibleAttempts - 1))
-        .coerceIn(120.dp, 150.dp)
+    maxOf(
+        120.dp,
+        GamePanelHorizontalPadding * 2 +
+            GamePanelHeaderHeight * metrics.fontScale +
+            metrics.attemptRowHeight * StackedVisibleAttempts +
+            3.dp * (StackedVisibleAttempts - 1),
+    )
 
 internal fun gameWorkBoardHeight(
     metrics: GameFieldLayoutMetrics,
@@ -690,6 +752,50 @@ fun GameTopPanel(
         ?: uiState.route.secondaryStatusText?.takeIf(String::isNotBlank)
     val supportingText = message ?: uiState.route.turnLabel?.takeIf(String::isNotBlank)
 
+    if (LocalDensity.current.fontScale > 1f) {
+        Column(
+            modifier = modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 3.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(mode, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = parameters.mode.accentDeep)
+            supportingText?.let { text ->
+                Text(
+                    text = text,
+                    modifier = Modifier.testTag("game-status"),
+                    fontSize = 10.sp,
+                    color = if (message != null && isErrorStatus(uiState.status)) MaterialTheme.colorScheme.error else FinalUiColors.WarmTextMuted,
+                    fontWeight = if (message != null && isErrorStatus(uiState.status)) FontWeight.SemiBold else FontWeight.Normal,
+                )
+            }
+            GameInfoMetric(
+                strings.text("game.top.moves"),
+                moveValue(
+                    uiState.match.attempts.size,
+                    if (uiState.route.movesUnlimited) null else uiState.route.configuredMoveLimit ?: parameters.attemptLimit,
+                    uiState.counters.bonusMoves,
+                ),
+                FinalUiColors.ModeOrangeText,
+                Modifier.fillMaxWidth(),
+            )
+            GameInfoMetric(
+                strings.text("game.top.total"),
+                timerValue(
+                    uiState.timers.elapsedSeconds,
+                    if (parameters.totalTimeLimitSeconds > 0) parameters.totalTimeLimitSeconds + uiState.timers.bonusTimeSeconds else 0,
+                ),
+                FinalUiColors.PrimaryDeep,
+                Modifier.fillMaxWidth(),
+            )
+            GameInfoMetric(
+                strings.text("game.top.turn"),
+                timerValue(uiState.timers.turnElapsedSeconds, parameters.turnTimeLimitSeconds),
+                FinalUiColors.ModeGreenDeep,
+                Modifier.fillMaxWidth(),
+            )
+        }
+        return
+    }
+
     Row(
         modifier = modifier.padding(horizontal = 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -704,7 +810,6 @@ fun GameTopPanel(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = parameters.mode.accentDeep,
-                maxLines = 1,
             )
             supportingText?.let { text ->
                 Text(
@@ -721,7 +826,6 @@ fun GameTopPanel(
                     } else {
                         FontWeight.Normal
                     },
-                    maxLines = 1,
                 )
             }
         }
@@ -847,6 +951,7 @@ private fun ReferenceGameTopPanel(
                     Text(
                         text = mode,
                         fontSize = 13.sp,
+                        lineHeight = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = parameters.mode.accentDeep,
                         maxLines = 1,
@@ -875,6 +980,7 @@ private fun ReferenceGameTopPanel(
                 Text(
                     text = totalValue,
                     fontSize = 10.sp,
+                    lineHeight = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = parameters.mode.accentDeep,
                     maxLines = 1,
@@ -940,15 +1046,15 @@ private fun GameInfoMetric(
         Text(
             text = label,
             fontSize = 10.sp,
+            lineHeight = 14.sp,
             color = FinalUiColors.WarmTextMuted,
-            maxLines = 1,
         )
         Text(
             text = value,
             fontSize = 12.sp,
+            lineHeight = 16.sp,
             color = valueColor,
             fontWeight = FontWeight.Bold,
-            maxLines = 1,
         )
     }
 }
@@ -1030,27 +1136,29 @@ internal fun GameAttemptList(
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
-                contentPadding = PaddingValues(
-                    bottom = if (compactEmptyState) rowHeight else 0.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                itemsIndexed(attempts) { index, line ->
-                    val parsed = parseAttemptLine(line)
-                    CompactAttemptRow(
-                        guess = parsed.first,
-                        score = parsed.second,
-                        latest = index == attempts.lastIndex,
-                        contentDescription = line,
-                        textSize = textSize,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(rowHeight)
-                            .testTag("game-attempt-${index + 1}"),
-                    )
+            androidx.compose.material3.ProvideTextStyle(MaterialTheme.typography.bodySmall) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(
+                        bottom = if (compactEmptyState) rowHeight else 0.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    itemsIndexed(attempts) { index, line ->
+                        val parsed = parseAttemptLine(line)
+                        CompactAttemptRow(
+                            guess = parsed.first,
+                            score = parsed.second,
+                            latest = index == attempts.lastIndex,
+                            contentDescription = line,
+                            textSize = textSize,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(rowHeight)
+                                .testTag("game-attempt-${index + 1}"),
+                        )
+                    }
                 }
             }
         }
@@ -1080,39 +1188,50 @@ fun GameAnalysisPanel(
             val columns = uiState.parameters.codeLength
             val verticalGap = metrics.matrixGap
             val horizontalGap = metrics.matrixGap
-            val cellWidth = (maxWidth - horizontalGap * (columns - 1)) / columns
-            val availableCellHeight = (maxHeight - verticalGap * (MatrixRows - 1)) / MatrixRows
-            val cellHeight = minOf(metrics.matrixCellHeight, availableCellHeight)
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(verticalGap),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            val cellWidth = maxOf(
+                (maxWidth - horizontalGap * (columns - 1)) / columns,
+                26.dp * metrics.fontScale,
+            )
+            val contentWidth = cellWidth * columns + horizontalGap * (columns - 1)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .horizontalScroll(rememberScrollState())
+                    .testTag("game-analysis-scroll"),
             ) {
-                repeat(MatrixRows) { digit ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
-                        repeat(columns) { position ->
-                            val symbol = digit.digitToChar()
-                            val editable = enabled && analysisCellEditable(uiState, symbol, position)
-                            val cellState = analysisCellStateFor(uiState, symbol, position, enabled)
-                            val stateDescription = analysisCellStateText(cellState, strings::text)
-                            WarmAnalysisCell(
-                                digit = symbol,
-                                state = cellState,
-                                stateDescription = stateDescription,
-                                enabled = editable,
-                                contentDescription = strings.text("game.race.matrix.cell")
-                                    .replace("{digit}", symbol.toString())
-                                    .replace("{position}", (position + 1).toString())
-                                    .replace("{state}", stateDescription),
-                                digitSize = metrics.matrixDigitSize,
-                                radius = metrics.matrixRadius,
-                                preserveSquare = false,
-                                onClick = { onCellClick(symbol, position) },
-                                modifier = Modifier
-                                    .width(cellWidth)
-                                    .height(cellHeight)
-                                    .testTag("game-analysis-$digit-${position + 1}"),
-                            )
+                LazyColumn(
+                    modifier = Modifier
+                        .width(contentWidth)
+                        .fillMaxHeight()
+                        .testTag("game-analysis-rows"),
+                    verticalArrangement = Arrangement.spacedBy(verticalGap),
+                ) {
+                    items(MatrixRows) { digit ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
+                            repeat(columns) { position ->
+                                val symbol = digit.digitToChar()
+                                val editable = enabled && analysisCellEditable(uiState, symbol, position)
+                                val cellState = analysisCellStateFor(uiState, symbol, position, enabled)
+                                val stateDescription = analysisCellStateText(cellState, strings::text)
+                                WarmAnalysisCell(
+                                    digit = symbol,
+                                    state = cellState,
+                                    stateDescription = stateDescription,
+                                    enabled = editable,
+                                    contentDescription = strings.text("game.race.matrix.cell")
+                                        .replace("{digit}", symbol.toString())
+                                        .replace("{position}", (position + 1).toString())
+                                        .replace("{state}", stateDescription),
+                                    digitSize = metrics.matrixDigitSize,
+                                    radius = metrics.matrixRadius,
+                                    preserveSquare = false,
+                                    onClick = { onCellClick(symbol, position) },
+                                    modifier = Modifier
+                                        .width(cellWidth)
+                                        .height(metrics.matrixCellHeight)
+                                        .testTag("game-analysis-$digit-${position + 1}"),
+                                )
+                            }
                         }
                     }
                 }
@@ -1127,7 +1246,8 @@ private fun GamePanelHeader(
     accent: Color,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().height(GamePanelHeaderHeight)) {
+    val fontScale = LocalDensity.current.fontScale
+    Column(modifier = modifier.fillMaxWidth().height(GamePanelHeaderHeight * fontScale)) {
         Text(
             text = title,
             fontSize = 14.sp,
@@ -1150,11 +1270,14 @@ fun GameHelpersPanel(
     onExtraTimeBoostRequested: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val fontScale = LocalDensity.current.fontScale
+    val adaptive = fontScale > 1f
     Row(
-        modifier = modifier.padding(horizontal = 3.dp),
+        modifier = modifier.fillMaxWidth().then(if (adaptive) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(horizontal = 3.dp).testTag("game-helpers-scroll"),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val itemModifier = if (adaptive) Modifier.width(150.dp * fontScale).defaultMinSize(minHeight = 40.dp * fontScale) else Modifier.weight(1f)
         if (uiState.parameters.hintsEnabled) {
             GameHintButton(
                 mode = GameFieldHintMode.OPEN_POSITION,
@@ -1162,7 +1285,7 @@ fun GameHelpersPanel(
                 infinite = uiState.route.infiniteHintsEnabled,
                 selected = uiState.tools.selectedHint == GameFieldHintMode.OPEN_POSITION,
                 enabled = enabled,
-                modifier = Modifier.weight(1f),
+                modifier = itemModifier,
                 onClick = onHintSelected,
             )
             GameHintButton(
@@ -1171,7 +1294,7 @@ fun GameHelpersPanel(
                 infinite = uiState.route.infiniteHintsEnabled,
                 selected = uiState.tools.selectedHint == GameFieldHintMode.CHECK_DIGIT,
                 enabled = enabled,
-                modifier = Modifier.weight(1f),
+                modifier = itemModifier,
                 onClick = onHintSelected,
             )
             GameHintButton(
@@ -1180,7 +1303,7 @@ fun GameHelpersPanel(
                 infinite = uiState.route.infiniteHintsEnabled,
                 selected = uiState.tools.selectedHint == GameFieldHintMode.CHECK_POSITION,
                 enabled = enabled,
-                modifier = Modifier.weight(1f),
+                modifier = itemModifier,
                 onClick = onHintSelected,
             )
         }
@@ -1193,7 +1316,7 @@ fun GameHelpersPanel(
                 count = uiState.route.extraMovesBoosts,
                 accent = FinalUiColors.StateMaybe,
                 enabled = enabled,
-                modifier = Modifier.weight(1f),
+                modifier = itemModifier,
                 onClick = onExtraMovesBoostRequested,
             )
             GameBoostButton(
@@ -1204,7 +1327,7 @@ fun GameHelpersPanel(
                 count = uiState.route.extraTimeBoosts,
                 accent = FinalUiColors.Primary,
                 enabled = enabled,
-                modifier = Modifier.weight(1f),
+                modifier = itemModifier,
                 onClick = onExtraTimeBoostRequested,
             )
         }
@@ -1293,7 +1416,10 @@ private fun GameBoostButton(
             modifier = Modifier.size(18.dp),
             tint = Color.Unspecified,
         )
-        Text("$label $count", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        Text(
+            text = if (LocalDensity.current.fontScale > 1f) "$contentDescription $label $count" else "$label $count",
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }
 
@@ -1345,29 +1471,32 @@ fun GameToolsPanel(
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
+    val fontScale = LocalDensity.current.fontScale
+    val adaptive = fontScale > 1f
     Row(
-        modifier = modifier.padding(horizontal = 3.dp),
+        modifier = modifier.fillMaxWidth().then(if (adaptive) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(horizontal = 3.dp).testTag("game-tools-scroll"),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
+        val itemModifier = if (adaptive) Modifier.width(160.dp * fontScale).defaultMinSize(minHeight = 36.dp * fontScale) else Modifier.weight(1f)
         GameToolButton(
             strings.text("game.tool.no"),
             GameFieldTool.NO,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-no"),
+            itemModifier.testTag("game-tool-no"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.maybe"),
             GameFieldTool.MAYBE,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-maybe"),
+            itemModifier.testTag("game-tool-maybe"),
             onToolSelected,
         )
         GameToolButton(
             strings.text("game.tool.yes"),
             GameFieldTool.YES,
             uiState.tools.selectedTool,
-            Modifier.weight(1f).fillMaxHeight().testTag("game-tool-yes"),
+            itemModifier.testTag("game-tool-yes"),
             onToolSelected,
         )
         WarmSegmentButton(
@@ -1380,7 +1509,7 @@ fun GameToolsPanel(
             accent = FinalUiColors.StatePro,
             enabled = uiState.parameters.autoModeAvailable,
             onClick = { onAutoExcludeChanged(!uiState.tools.autoExcludeEnabled) },
-            modifier = Modifier.weight(1f).fillMaxHeight().testTag("game-auto-mode"),
+            modifier = itemModifier.testTag("game-auto-mode"),
         )
     }
 }
@@ -1431,8 +1560,14 @@ fun GameInputPanel(
             fontWeight = FontWeight.Bold,
             color = FinalUiColors.PrimaryDeep,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(metrics.inputSlotGap)) {
-            shownSlots.forEachIndexed { index, value ->
+        val adaptiveInput = metrics.fontScale > 1f
+        val slotsPerRow = if (adaptiveInput) 5 else shownSlots.size
+        shownSlots.withIndex().chunked(slotsPerRow).forEach { rowSlots ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(metrics.inputSlotGap),
+            ) {
+                rowSlots.forEach { (index, value) ->
                 val slotShape = RoundedCornerShape(8.dp)
                 Box(
                     modifier = Modifier
@@ -1471,9 +1606,10 @@ fun GameInputPanel(
                         color = FinalUiColors.WarmText,
                     )
                 }
+                }
             }
         }
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
@@ -1482,9 +1618,15 @@ fun GameInputPanel(
                     shape = RoundedCornerShape(10.dp),
                 )
                 .padding(1.dp),
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            "1234567890".forEach { digit ->
+            val keyRows = if (adaptiveInput) listOf("12345", "67890") else listOf("1234567890")
+            keyRows.forEachIndexed { rowIndex, digits ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    digits.forEach { digit ->
                 GameKeypadButton(
                     onClick = { onDigitClick(digit) },
                     enabled = enabled,
@@ -1502,7 +1644,7 @@ fun GameInputPanel(
                     )
                 }
             }
-            GameKeypadButton(
+            if (rowIndex == keyRows.lastIndex) GameKeypadButton(
                 onClick = { onEvent(GameFieldEvent.BackspacePressed) },
                 enabled = enabled,
                 visualHeight = metrics.keypadHeight,
@@ -1518,6 +1660,25 @@ fun GameInputPanel(
                     tint = FinalUiColors.WarmText,
                 )
             }
+                }
+            }
+        }
+        if (adaptiveInput) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                WarmSecondaryButton(
+                    label = strings.text("game.action.reset"),
+                    onClick = { onEvent(GameFieldEvent.MatchRestarted) },
+                    enabled = uiState.route.inputEnabled,
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = GameMinimumTouchTargetHeight).testTag("game-reset"),
+                )
+                WarmPrimaryButton(
+                    label = strings.text("game.action.confirm"),
+                    onClick = { onEvent(GameFieldEvent.GuessSubmitted) },
+                    enabled = enabled && shownSlots.all { it != null },
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = GameMinimumTouchTargetHeight).testTag("game-confirm"),
+                )
+            }
+            return@Column
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             WarmSecondaryButton(
