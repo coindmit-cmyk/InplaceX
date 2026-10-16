@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GameProgressDatabaseMigrationTest {
     @Test
-    fun freshDatabaseCreatesCompleteV11Schema() {
+    fun freshDatabaseCreatesCompleteV12Schema() {
         withIsolatedDatabase("fresh_v11", ::fixedNowMs) { context, config ->
             GameProgressDatabase(context, config).use { helper ->
                 val db = helper.writableDatabase
@@ -71,6 +71,92 @@ class GameProgressDatabaseMigrationTest {
     @Test
     fun migrationFromV10ToV11AddsDeliveryJournalAndPreservesSentinelData() {
         assertMigrationFrom(10)
+    }
+
+    @Test
+    fun migrationFromFullV11PreservesProgressCampaignQueueAndDelivery() {
+        withIsolatedDatabase("migration_full_v11", ::fixedNowMs) { context, config ->
+            GameProgressDatabase(context, config).use { helper ->
+                val db = helper.writableDatabase
+                db.insertOrThrow(GameProgressDatabase.TABLE_PROGRESS, null, ContentValues().apply {
+                    put(GameProgressDatabase.COL_ID, GameProgressDatabase.PROFILE_ID)
+                    put(GameProgressDatabase.COL_PLAYER_DISPLAY_NAME, "Full V11 Sentinel")
+                    put(GameProgressDatabase.COL_COINS, 777)
+                    put(GameProgressDatabase.COL_MATCHES_PLAYED, 31)
+                    put(GameProgressDatabase.COL_MATCHES_WON, 19)
+                    put(GameProgressDatabase.COL_PVP_WINS, 8)
+                    put(GameProgressDatabase.COL_CAMPAIGN_TUTORIAL_COMPLETED, 1)
+                })
+                db.insertOrThrow(GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS, null, ContentValues().apply {
+                    put(GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER, 8)
+                    put(GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING, 7)
+                })
+                db.execSQL("INSERT INTO ${GameProgressDatabase.TABLE_SYNC_QUEUE} (id, scope, operation_type, payload_json, endpoint_path, method, status, retry_count) VALUES ('queue-v11', 'match', 'upsert', '{\"keep\":true}', '/v1/matches', 'POST', 'pending', 3)")
+                db.insertOrThrow(GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES, null, ContentValues().apply {
+                    put(GameProgressDatabase.COL_DELIVERY_ID, "delivery-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ACCOUNT_ID, "account-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_GAME_PLAYER_ID, "player-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_EVENT_ID, "event-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_ID, "entitlement-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_SEQUENCE_NUMBER, 1L)
+                    put(GameProgressDatabase.COL_DELIVERY_ACTION, "grant")
+                    put(GameProgressDatabase.COL_DELIVERY_GAME_ID, "game-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_PRODUCT_ID, "product-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ORDER_ID, "order-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KEY, "key-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_KIND, "coins")
+                    put(GameProgressDatabase.COL_DELIVERY_APPLICATION, "COINS")
+                    put(GameProgressDatabase.COL_DELIVERY_QUANTITY_DELTA, 5L)
+                    put(GameProgressDatabase.COL_DELIVERY_VALID_FROM_MS, 100L)
+                    put(GameProgressDatabase.COL_DELIVERY_CORRECTION_QUANTITY, 0L)
+                    put(GameProgressDatabase.COL_DELIVERY_PAYLOAD_SHA256, "a".repeat(64))
+                    put(GameProgressDatabase.COL_DELIVERY_CREATED_AT_MS, 101L)
+                    put(GameProgressDatabase.COL_DELIVERY_ACK_IDEMPOTENCY_KEY, "ack-v11")
+                    put(GameProgressDatabase.COL_DELIVERY_APPLIED_AT_MS, 102L)
+                })
+                db.execSQL("DROP TABLE ${GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS}")
+                db.version = 11
+            }
+            GameProgressDatabase(context, config).use { helper ->
+                val db = helper.writableDatabase
+                assertEquals(CURRENT_DATABASE_VERSION, db.version)
+                assertRequiredTables(db)
+                db.query(GameProgressDatabase.TABLE_PROGRESS, null, null, null, null, null, null).use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals("Full V11 Sentinel", it.getString(it.getColumnIndexOrThrow(GameProgressDatabase.COL_PLAYER_DISPLAY_NAME)))
+                    assertEquals(777, it.int(GameProgressDatabase.COL_COINS))
+                    assertEquals(31, it.int(GameProgressDatabase.COL_MATCHES_PLAYED))
+                    assertEquals(19, it.int(GameProgressDatabase.COL_MATCHES_WON))
+                    assertEquals(8, it.int(GameProgressDatabase.COL_PVP_WINS))
+                    assertEquals(1, it.int(GameProgressDatabase.COL_CAMPAIGN_TUTORIAL_COMPLETED))
+                    assertFalse(it.moveToNext())
+                }
+                db.query(GameProgressDatabase.TABLE_CAMPAIGN_PROGRESS, null, null, null, null, null, null).use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals(8, it.int(GameProgressDatabase.COL_CAMPAIGN_LEVEL_NUMBER))
+                    assertEquals(7, it.int(GameProgressDatabase.COL_CAMPAIGN_BEST_BACKEND_RATING))
+                    assertFalse(it.moveToNext())
+                }
+                db.query(GameProgressDatabase.TABLE_SYNC_QUEUE, null, null, null, null, null, null).use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals("queue-v11", it.getString(it.getColumnIndexOrThrow("id")))
+                    assertEquals("{\"keep\":true}", it.getString(it.getColumnIndexOrThrow("payload_json")))
+                    assertEquals(3, it.int("retry_count"))
+                    assertFalse(it.moveToNext())
+                }
+                db.query(GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES, null, null, null, null, null, null).use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals("delivery-v11", it.getString(it.getColumnIndexOrThrow(GameProgressDatabase.COL_DELIVERY_ID)))
+                    assertEquals("event-v11", it.getString(it.getColumnIndexOrThrow(GameProgressDatabase.COL_DELIVERY_ENTITLEMENT_EVENT_ID)))
+                    assertEquals(5L, it.long(GameProgressDatabase.COL_DELIVERY_QUANTITY_DELTA))
+                    assertEquals("ack-v11", it.getString(it.getColumnIndexOrThrow(GameProgressDatabase.COL_DELIVERY_ACK_IDEMPOTENCY_KEY)))
+                    assertFalse(it.moveToNext())
+                }
+                db.query(GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS, null, null, null, null, null, null).use {
+                    assertFalse(it.moveToFirst())
+                }
+            }
+        }
     }
 
     private fun assertMigrationFrom(oldVersion: Int) {
@@ -357,6 +443,7 @@ class GameProgressDatabaseMigrationTest {
                     GameProgressDatabase.TABLE_ONLINE_MATCH_TURNS,
                     GameProgressDatabase.TABLE_SYNC_QUEUE,
                     GameProgressDatabase.TABLE_MIRKORI_GAME_DELIVERIES,
+                    GameProgressDatabase.TABLE_ONLINE_MATCH_STAT_RECEIPTS,
                 ),
             ),
         )
@@ -373,7 +460,7 @@ class GameProgressDatabaseMigrationTest {
     private fun fixedNowMs(): Long = FIXED_NOW_MS
 
     companion object {
-        private const val CURRENT_DATABASE_VERSION = 11
+        private const val CURRENT_DATABASE_VERSION = 12
         private const val FIXED_NOW_MS = 1_725_000_000_000L
         private const val SENTINEL_ENERGY_UPDATED_AT = FIXED_NOW_MS - 60_000L
 

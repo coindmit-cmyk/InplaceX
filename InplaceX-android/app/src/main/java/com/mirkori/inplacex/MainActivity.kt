@@ -55,6 +55,7 @@ import com.mirkori.inplacex.platform.ads.YandexGameBanner
 import com.mirkori.inplacex.platform.ads.AdUsageTracker
 import com.mirkori.inplacex.platform.ads.completedMatchCountForAds
 import com.mirkori.inplacex.platform.localization.AppLanguage
+import com.mirkori.inplacex.platform.localization.AppLanguageSettingsStore
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.StaticLocalizationProvider
 import com.mirkori.inplacex.platform.logging.AppLog
@@ -140,10 +141,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var adUsageTracker: AdUsageTracker
     private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
     private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
+    private lateinit var appLanguageSettingsStore: AppLanguageSettingsStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         captureMirkoriCallback(intent)
+        appLanguageSettingsStore = AppLanguageSettingsStore(applicationContext)
         adUsageTracker = AdUsageTracker.create(applicationContext)
         feedbackSettingsStore = AppFeedbackSettingsStore(applicationContext)
         feedbackRuntime = AndroidAppFeedbackRuntime(applicationContext)
@@ -262,7 +265,9 @@ class MainActivity : ComponentActivity() {
                 }
                 var isVariantToolsOpen by rememberSaveable { mutableStateOf(false) }
                 var variantToolsEnabled by rememberSaveable { mutableStateOf(false) }
-                var currentLanguageName by rememberSaveable { mutableStateOf(AppLanguage.RU.name) }
+                var currentLanguageName by rememberSaveable {
+                    mutableStateOf(appLanguageSettingsStore.read().name)
+                }
                 var currentInspectionValue by rememberSaveable { mutableStateOf<String?>(null) }
                 var homeScreenState by rememberSaveable { mutableStateOf(HomeScreenState.ROOT) }
                 var requestedOnlinePlayStyleName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -1032,6 +1037,8 @@ class MainActivity : ComponentActivity() {
                                 currentSection == AppSection.HOME -> HomeRootScreen(
                                     screenState = homeScreenState,
                                     onScreenStateChange = { homeScreenState = it },
+                                    pveStats = progressState.pveStats,
+                                    pvpStats = progressState.pvpStats,
                                     requestExitGame = requestExitGame,
                                     onExitGameConsumed = { requestExitGame = false },
                                     onInGameChange = { inGame -> isInGame = inGame },
@@ -1107,6 +1114,7 @@ class MainActivity : ComponentActivity() {
 
                             currentSection == AppSection.SOCIAL -> SocialRootScreen(
                                 onlineRuntime = onlineRuntime,
+                                autoModeAvailable = effectiveProgressState.autoTableAssistEnabledAt(currentTimeMs),
                                 initialActiveSessionId = activeOnlineSessionId,
                                 initialPendingInviteCode = pendingOnlineInviteCode,
                                 onPendingInviteChange = { code ->
@@ -1125,6 +1133,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                         activeOnlineSessionId = sessionId
                                     }
+                                },
+                                onSnapshotObserved = { snapshot ->
+                                    progressState = progressRepository.recordOnlineSnapshot(snapshot)
                                 },
                                 friends = savedFriends,
                                 pendingFriendRequests = pendingFriendRequests,
@@ -1953,7 +1964,11 @@ class MainActivity : ComponentActivity() {
                                 adConsentDecision = AdConsentDecision.valueOf(adConsentDecisionName),
                                 feedbackSettings = feedbackSettings,
                                 onLanguageChange = { language ->
-                                    currentLanguageName = language.name
+                                    if (appLanguageSettingsStore.write(language)) {
+                                        currentLanguageName = language.name
+                                    } else {
+                                        AppLog.warn("MainActivity", "Failed to persist app language selection")
+                                    }
                                 },
                                 onVibrationChange = { enabled ->
                                     feedbackSettings = feedbackSettings.copy(vibrationEnabled = enabled)

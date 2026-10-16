@@ -17,11 +17,13 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.localization.LocalizationProvider
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
@@ -65,6 +68,9 @@ internal fun shouldAutoStartQuickMatch(
     requested: Boolean,
 ): Boolean = requested && entryPoint == OnlineDuelEntryPoint.QUICK_MATCH && initialSessionId == null
 
+internal fun onlineDuelUsesGameShell(phase: String?): Boolean =
+    phase == "setup" || phase == "active"
+
 @Composable
 internal fun OnlineDuelScreen(
     runtime: OnlineRuntime,
@@ -82,7 +88,12 @@ internal fun OnlineDuelScreen(
     requestBack: Boolean = false,
     onBackRequestConsumed: () -> Unit = {},
     onExitDestination: () -> Unit = {},
+    onInGameChange: (Boolean) -> Unit = {},
+    onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
+    autoModeAvailable: Boolean = false,
 ) {
+    val currentOnSnapshotObserved by rememberUpdatedState(onSnapshotObserved)
+    val currentOnInGameChange by rememberUpdatedState(onInGameChange)
     val context = LocalContext.current
     val strings = LocalAppStrings.current
     val scope = rememberCoroutineScope()
@@ -123,6 +134,29 @@ internal fun OnlineDuelScreen(
     var attemptedAutoStart by remember { mutableStateOf(false) }
     val selectedPlayStyle = RemoteFriendPlayStyle.valueOf(selectedPlayStyleName)
 
+    val lastLoggedInGame = remember { booleanArrayOf(false) }
+    LaunchedEffect(state, onInGameChange) {
+        val phase = (state as? OnlineDuelUiState.Playing)?.snapshot?.phase
+        val inGame = onlineDuelUsesGameShell(phase)
+        if (lastLoggedInGame[0] != inGame) {
+            AppLog.info(
+                tag = "OnlineDuelScreen",
+                message = if (inGame) "game_shell_entered" else "game_shell_exited",
+            )
+            lastLoggedInGame[0] = inGame
+        }
+        currentOnInGameChange(inGame)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (lastLoggedInGame[0]) {
+                AppLog.info(tag = "OnlineDuelScreen", message = "game_shell_exited")
+                lastLoggedInGame[0] = false
+            }
+            currentOnInGameChange(false)
+        }
+    }
+
     fun snapshotState(result: OnlineClientResult<OnlineDuelSnapshotState>): OnlineDuelUiState =
         when (result) {
             is OnlineClientResult.Success -> OnlineDuelUiState.Playing(result.value)
@@ -145,6 +179,7 @@ internal fun OnlineDuelScreen(
     ): OnlineDuelUiState {
         when (result) {
             is OnlineClientResult.Success -> {
+                currentOnSnapshotObserved(result.value)
                 onActiveSessionChange(result.value.sessionId.takeUnless { result.value.phase == "finished" })
                 onPendingInviteChange(null)
             }
@@ -378,6 +413,7 @@ internal fun OnlineDuelScreen(
                     delay(SynchronizationPollMillis)
                     when (val result = runtime.readSession(current.snapshot.sessionId)) {
                         is OnlineClientResult.Success -> {
+                            currentOnSnapshotObserved(result.value)
                             onActiveSessionChange(
                                 result.value.sessionId.takeUnless { result.value.phase == "finished" },
                             )
@@ -427,6 +463,7 @@ internal fun OnlineDuelScreen(
                 }
             },
             onBack = ::returnFromActiveGame,
+            autoModeAvailable = autoModeAvailable,
         )
         return
     }

@@ -1,116 +1,101 @@
 package com.mirkori.inplacex.ui.screens.game.state
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.test.core.app.ActivityScenario
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import com.mirkori.inplacex.MainActivity
-import com.mirkori.inplacex.core.analysis.AcceptedAttemptEvidence
-import com.mirkori.inplacex.core.analysis.DeductionResult
-import com.mirkori.inplacex.core.analysis.ManualHypothesis
-import com.mirkori.inplacex.core.analysis.ProvenFact
-import com.mirkori.inplacex.ui.viewmodel.GameFieldViewModel
-import java.util.concurrent.atomic.AtomicReference
+import com.mirkori.inplacex.debug.GameFieldRecreationTestActivity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class GameFieldActivityRecreationTest {
+    @get:Rule val composeRule = createAndroidComposeRule<GameFieldRecreationTestActivity>()
+
     @Test
-    fun activityRecreationPreservesSecretAttemptsPartialInputAndAnalysis() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val activeViewModel = AtomicReference<GameFieldViewModel>()
+    fun activityRecreationPreservesTheDisplayedGameAndNewSessionStartsFresh() {
+        composeRule.waitForIdle()
+        composeRule.activityRule.scenario.onActivity {
+            assertEquals("1234", it.observedSecret)
+            assertEquals(1, it.matchStartCount)
+        }
 
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.obtainGameFieldViewModel(activeViewModel, initialSecret = "1234")
-            instrumentation.waitForIdleSync()
+        listOf(5, 6, 7, 8).forEach { digit ->
+            composeRule.onNodeWithTag("game-digit-$digit").performClick()
+        }
+        composeRule.onNodeWithTag("game-confirm").performClick()
+        composeRule.onNodeWithTag("game-attempt-1").assertExists()
+        assertCounter(1)
+        composeRule.onNodeWithTag("game-digit-9").performClick()
+        guessValue(1).assertTextEquals("9")
+        (2..4).forEach { guessValue(it).assertTextEquals(" ") }
 
-            val source = checkNotNull(activeViewModel.get())
-            source.submit("5678")
-            source.dispatch(GameFieldEvent.DigitEntered('9'))
-            source.dispatch(
-                GameFieldEvent.ManualMarkChanged(
-                    position = 1,
-                    symbol = '7',
-                    type = GameFieldManualMarkType.MAYBE,
-                ),
-            )
-            source.dispatch(GameFieldEvent.OpenPositionHintRequested(position = 2))
-            val expected = source.snapshotForRecreation()
+        val cell = composeRule.onNodeWithTag("game-analysis-9-1", useUnmergedTree = true)
+        val unmarkedDescription = cell.fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
+        composeRule.onNodeWithTag("game-tool-maybe").performClick()
+        cell.performClick()
+        val markedDescription = cell.fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
+        assertNotEquals(unmarkedDescription, markedDescription)
 
-            activeViewModel.set(null)
-            scenario.recreate()
-            scenario.obtainGameFieldViewModel(activeViewModel, initialSecret = "9999")
-            instrumentation.waitForIdleSync()
+        // Observe an actual timer tick first, so resetting to 02:00 cannot pass.
+        composeRule.waitUntil(timeoutMillis = 5_000) { remainingSeconds() < 120 }
+        val remainingBefore = remainingSeconds()
+        composeRule.activityRule.scenario.recreate()
+        composeRule.waitForIdle()
 
-            assertEquals(expected, checkNotNull(activeViewModel.get()).snapshotForRecreation())
+        composeRule.onNodeWithTag("game-attempt-1").assertExists()
+        assertCounter(1)
+        guessValue(1).assertTextEquals("9")
+        (2..4).forEach { guessValue(it).assertTextEquals(" ") }
+        assertEquals(
+            markedDescription,
+            composeRule.onNodeWithTag("game-analysis-9-1", useUnmergedTree = true)
+                .fetchSemanticsNode().config[SemanticsProperties.ContentDescription],
+        )
+        assertTrue("Remaining timer increased after recreation", remainingSeconds() <= remainingBefore)
+        composeRule.activityRule.scenario.onActivity {
+            assertEquals("1234", it.observedSecret)
+            assertEquals(1, it.matchStartCount)
+        }
+
+        composeRule.onNodeWithTag("game-fixture-new-session").performClick()
+        composeRule.onNodeWithTag("game-attempt-1").assertDoesNotExist()
+        assertCounter(0)
+        (1..4).forEach { guessValue(it).assertTextEquals(" ") }
+        composeRule.activityRule.scenario.onActivity {
+            assertEquals("1234", it.observedSecret)
+            assertEquals(2, it.matchStartCount)
         }
     }
 
-    private fun ActivityScenario<MainActivity>.obtainGameFieldViewModel(
-        destination: AtomicReference<GameFieldViewModel>,
-        initialSecret: String,
-    ) {
-        onActivity { activity ->
-            val provider = ViewModelProvider(
-                owner = activity,
-                factory = GameFieldRecreationViewModelFactory(initialSecret),
-            )
-            destination.set(provider[VIEW_MODEL_KEY, GameFieldViewModel::class.java])
-        }
+    private fun guessValue(position: Int) =
+        composeRule.onNodeWithTag("game-guess-value-$position", useUnmergedTree = true)
+
+    private fun assertCounter(attempts: Int) {
+        val expected = Regex("""\b$attempts\s*/\s*12\b""")
+        assertTrue("Expected displayed counter $attempts/12", composeRule.onAllNodes(textMatching(expected)).fetchSemanticsNodes().isNotEmpty())
     }
 
-    private companion object {
-        const val VIEW_MODEL_KEY = "game-field-recreation-test"
+    private fun remainingSeconds(): Int {
+        val timer = Regex("""\b(\d{2}):(\d{2})\b""")
+        val displayed = composeRule.onAllNodes(textMatching(timer)).fetchSemanticsNodes()
+            .asSequence()
+            .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty().asSequence() }
+            .mapNotNull { timer.find(it.text) }
+            .first()
+        return displayed.groupValues[1].toInt() * 60 + displayed.groupValues[2].toInt()
+    }
+
+    private fun textMatching(pattern: Regex) = SemanticsMatcher("text matching $pattern") { node ->
+        node.config.getOrNull(SemanticsProperties.Text)
+            ?.any { pattern.containsMatchIn(it.text) } == true
     }
 }
-
-private class GameFieldRecreationViewModelFactory(
-    private val initialSecret: String,
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(
-        modelClass: Class<T>,
-        extras: CreationExtras,
-    ): T {
-        return GameFieldViewModel(
-            savedStateHandle = extras.createSavedStateHandle(),
-            parameters = RECREATION_PARAMETERS,
-            initialSecret = initialSecret,
-        ) as T
-    }
-}
-
-private data class RecreationSnapshot(
-    val secret: String,
-    val attempts: List<String>,
-    val input: List<Char?>,
-    val manualMarks: List<GameFieldManualMark>,
-    val acceptedAttempts: List<AcceptedAttemptEvidence>,
-    val hypotheses: List<ManualHypothesis>,
-    val provenFacts: Set<ProvenFact>,
-    val deduction: DeductionResult,
-)
-
-private fun GameFieldViewModel.snapshotForRecreation(): RecreationSnapshot {
-    val state = uiState.value
-    return RecreationSnapshot(
-        secret = state.match.debugSecret,
-        attempts = state.match.attempts.map { it.guess },
-        input = state.input.slots,
-        manualMarks = state.manualMarks,
-        acceptedAttempts = state.evidence.acceptedAttempts,
-        hypotheses = state.evidence.hypotheses,
-        provenFacts = state.evidence.provenFacts,
-        deduction = state.evidence.deduction,
-    )
-}
-
-private val RECREATION_PARAMETERS = GameFieldMatchParameters(
-    codeLength = 4,
-    attemptLimit = 12,
-)

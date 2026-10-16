@@ -232,6 +232,7 @@ internal fun ReferenceModeSetupScreen(
     onPlayOnline: () -> Unit,
     onlineAvailable: Boolean,
     onBack: () -> Unit,
+    onOpenRecords: () -> Unit = {},
 ) {
     val strings = LocalAppStrings.current
     val race = kind == ReferenceSetupKind.RACE
@@ -343,10 +344,10 @@ internal fun ReferenceModeSetupScreen(
                             subtitle = strings.text("reference.race.records.unavailable"),
                             art = R.drawable.art_records_podium_v11,
                             artScale = 1.12f,
-                            enabled = false,
+                            enabled = true,
                             height = 72.dp,
                             testTag = "reference-race-records",
-                            onClick = {},
+                            onClick = onOpenRecords,
                         )
                     } else {
                         Spacer(Modifier.height(31.dp))
@@ -383,12 +384,12 @@ internal fun ReferenceModeSetupScreen(
                             art = R.drawable.art_records_trophy_v12,
                             artSize = 64.dp,
                             artScale = 1.15f,
-                            enabled = false,
+                            enabled = true,
                             disabledAlpha = .82f,
                             height = 99.dp,
                             titleFontSize = 20.sp,
                             testTag = "reference-duel-records",
-                            onClick = {},
+                            onClick = onOpenRecords,
                         )
                     }
                 }
