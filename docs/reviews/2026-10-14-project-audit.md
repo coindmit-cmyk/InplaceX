@@ -153,6 +153,8 @@ APK: `globalDebug`, пакет `com.mirkori.inplacex`, версия `1.0`, `vers
 
 `SocialRootScreen` устанавливает `isInGame` только для `FRIEND_MATCH` и `ONLINE_MATCH`, а игра, начатая из `INVITES`, продолжает считаться обычной страницей. Это меняет доступную высоту поля и поведение навигации для одной и той же игровой формы. [SocialRootScreen.kt:140](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/social/SocialRootScreen.kt:140). [Приватный матч](D:/Work/DevOps/MobileGame/InplaceX/build/reports/project-audit-20261014/remote-private-now.png).
 
+**Исправлено и проверено 2026-10-16.** Актуальная игровая оболочка теперь определяется по фактическому состоянию OnlineDuelScreen, а не destination enum; INVITES и другие online child entry points используют игровой HUD во время игры. Проверены однократный HUD exit, системный Back, возврат в меню после результата/выхода и показ баннера только после SDK `onAdLoaded`. 22 JVM tests прошли; изолированные native tests и реальные private matches/UI проверены на двух телефонах. Результат и ограничения зафиксированы в `INPX-AUDIT-A10-20261015.md`; initial evidence и ссылки выше сохранены.
+
 ### A11 — P2. «Рекорды» недоступны; в дуэли причина не объясняется
 
 **По коду и UI-проверкам.** Карточки рекордов Race и Duel отключены и не имеют маршрута. Race честно пишет «Раздел скоро появится». Duel пишет «Ваши лучшие результаты и статистика», хотя открыть их нельзя; причина недоступности не указана, карточка лишь слегка приглушена.
