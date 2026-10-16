@@ -79,6 +79,14 @@ layouts. The shared opponent-choice surface groups code length and opponent
 actions inside one cream card and uses the current mode color only for the
 primary action.
 
+## Local Statistics Contract
+
+Race statistics are read-only local PvE bot-training wins and losses. Duel statistics are read-only shared PvP wins and losses: bot duels and all online matches, including online Race. Do not imply a historical per-online-format split. Show accurate zero/zero when no local results exist. Local statistics are not a global leaderboard or server ranking.
+
+Provide explicit Russian and English scope labels and empty states. Best-time records, attempt records, and global/server ranking are NOT_DONE and must not be presented as available.
+
+Statistics are nested, non-game destinations: preserve the home chrome and selected code length on return. Support explicit, system, and HUD Back. Mode state uses warm cream surfaces with semantic orange for Race and purple for Duel, plus non-color labels; long content remains scrollable. The primary Back target must remain at least 48 native dp even inside a scaled reference canvas.
+
 ## Gameplay Color Pass Contract
 
 - Scope is visual only: keep every screen, block, breakpoint, weight, height,

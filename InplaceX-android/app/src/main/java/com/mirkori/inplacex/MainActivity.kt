@@ -1037,6 +1037,8 @@ class MainActivity : ComponentActivity() {
                                 currentSection == AppSection.HOME -> HomeRootScreen(
                                     screenState = homeScreenState,
                                     onScreenStateChange = { homeScreenState = it },
+                                    pveStats = progressState.pveStats,
+                                    pvpStats = progressState.pvpStats,
                                     requestExitGame = requestExitGame,
                                     onExitGameConsumed = { requestExitGame = false },
                                     onInGameChange = { inGame -> isInGame = inGame },

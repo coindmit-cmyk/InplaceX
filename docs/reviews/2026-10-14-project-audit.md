@@ -159,9 +159,9 @@ APK: `globalDebug`, пакет `com.mirkori.inplacex`, версия `1.0`, `vers
 
 ### A11 — P2. «Рекорды» недоступны; в дуэли причина не объясняется
 
-**По коду и UI-проверкам.** Карточки рекордов Race и Duel отключены и не имеют маршрута. Race честно пишет «Раздел скоро появится». Duel пишет «Ваши лучшие результаты и статистика», хотя открыть их нельзя; причина недоступности не указана, карточка лишь слегка приглушена.
+**Результат проверки 2026-10-16.** Карточки Race и Duel теперь открывают доступную локальную статистику и названы «Статистика» / “Statistics”. Race показывает PvE-тренировки с ботом; Duel — общую PvP-статистику: дуэли с ботом и все онлайн-матчи, включая Race. Показаны реальные wins/losses и 0/0 для пустого состояния; это не глобальный рейтинг.
 
-Это незавершённая функция, а не подтверждение, что все пункты меню работают. [ReferenceHomeScreens.kt:346](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/ReferenceHomeScreens.kt:346), [карточка Duel:382](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/ReferenceHomeScreens.kt:382).
+Проверены четыре native JUnit-метода на каждом из двух телефонов, 17 scoped JVM-тестов и восемь реальных Main-сценариев (два телефона, RU/EN, оба режима); значения сверены с сохранёнными данными, сохранность данных подтверждена. Back и возврат к выбранной длине кода проверены. NOT_DONE: best time records, attempt records, global leaderboard/server ranking и историческое разделение общей PvP-статистики по онлайн-форматам. [ReferenceHomeScreens.kt:346](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/ReferenceHomeScreens.kt:346), [карточка Duel:382](D:/Work/DevOps/MobileGame/agent-runtime/project-audit-20261014/develop-2263510f/InplaceX-android/app/src/main/java/com/mirkori/inplacex/ui/screens/home/ReferenceHomeScreens.kt:382).
 
 ### A12 — P2. Часть игровых целей нажатия существенно меньше 48 dp
 
