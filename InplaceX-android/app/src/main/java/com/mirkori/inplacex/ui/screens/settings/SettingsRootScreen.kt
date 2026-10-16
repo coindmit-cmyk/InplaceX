@@ -29,6 +29,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -145,6 +150,9 @@ fun SettingsRootScreen(
                         description = strings.text("settings.music.description"),
                         checked = feedbackSettings.musicEnabled,
                         onCheckedChange = onMusicChange,
+                        enabled = false,
+                        rowTestTag = "settings.music.row",
+                        switchTestTag = "settings.music.switch",
                     )
                 }
 
@@ -228,12 +236,18 @@ private fun SettingsToggleRow(
     description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    rowTestTag: String? = null,
+    switchTestTag: String? = null,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (rowTestTag == null) Modifier else Modifier.testTag(rowTestTag)),
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-        onClick = { onCheckedChange(!checked) },
+        enabled = enabled,
+        onClick = { if (enabled) onCheckedChange(!checked) },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -253,7 +267,13 @@ private fun SettingsToggleRow(
             }
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = if (enabled) onCheckedChange else null,
+                enabled = enabled,
+                modifier = (if (switchTestTag == null) Modifier else Modifier.testTag(switchTestTag))
+                    .semantics {
+                        toggleableState = if (checked) ToggleableState.On else ToggleableState.Off
+                        if (!enabled) disabled()
+                    },
             )
         }
     }
