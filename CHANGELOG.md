@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- 19 октября 2026: перенесены проверенные исправления ревизии и сохранённые
+  изменения ядра; начата очистка старых веток и рабочих копий с проверяемой
+  историей в `E:\MyProgectHistory\InplaceX\cleanup-20261019`.
+  Незавершённая интеграция SDK и оставшиеся ограничения описаны в
+  `docs/project-cleanup-20261019.md`.
+
 - Kept the private-code join button above the software keyboard, with the code
   field and create-own action in one scrollable form. Input survives keyboard
   transitions. Verified with real IME tests and private connections in both
