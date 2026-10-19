@@ -211,6 +211,7 @@ class SocialGameShellTest {
             fixture.transport.phase.set(Phase(4, "finished"))
             fixture.await { fixture.observedRevision.get() == 4L && fixture.session.value == null }
             assertEquals(listOf(1L, 2L, 3L, 4L), fixture.observedRevisions.toList())
+            assertEquals(SessionId, fixture.sessionAtTerminalObservation.get())
             fixture.assertOnlyExpectedRequests()
         } finally {
             fixture.close()
@@ -255,6 +256,7 @@ class SocialGameShellTest {
         val nested = AtomicReference<Boolean?>(null)
         val observedRevision = AtomicLong(-1)
         val observedRevisions = CopyOnWriteArrayList<Long>()
+        val sessionAtTerminalObservation = AtomicReference<String?>(null)
         val consumed = AtomicInteger()
         val firstEvents = CopyOnWriteArrayList<Boolean>()
         val secondEvents = CopyOnWriteArrayList<Boolean>()
@@ -283,6 +285,7 @@ class SocialGameShellTest {
                             onNestedScreenChange = { nested.set(it) },
                             onSnapshotObserved = {
                                 observedRevisions.add(it.revision)
+                                if (it.phase == "finished") sessionAtTerminalObservation.set(session.value)
                                 observedRevision.set(it.revision)
                             },
                         )

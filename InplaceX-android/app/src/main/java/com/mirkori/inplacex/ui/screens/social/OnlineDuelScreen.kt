@@ -413,11 +413,12 @@ internal fun OnlineDuelScreen(
                     delay(SynchronizationPollMillis)
                     when (val result = runtime.readSession(current.snapshot.sessionId)) {
                         is OnlineClientResult.Success -> {
+                            val revisionChanged = result.value.revision != current.snapshot.revision
+                            if (revisionChanged) currentOnSnapshotObserved(result.value)
                             onActiveSessionChange(
                                 result.value.sessionId.takeUnless { result.value.phase == "finished" },
                             )
-                            if (result.value.revision != current.snapshot.revision) {
-                                currentOnSnapshotObserved(result.value)
+                            if (revisionChanged) {
                                 state = OnlineDuelUiState.Playing(result.value)
                             }
                         }
