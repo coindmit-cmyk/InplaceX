@@ -114,6 +114,10 @@ class GuessValidatorTest {
                 compatibilityMessages.getValue(reason),
                 message,
             )
+            assertTrue(
+                "Bridge message must be present for $reason",
+                message?.isNotBlank() == true,
+            )
         }
     }
 

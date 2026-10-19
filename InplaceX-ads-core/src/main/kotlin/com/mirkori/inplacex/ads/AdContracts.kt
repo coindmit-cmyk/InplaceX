@@ -242,7 +242,7 @@ object AdPolicy {
             return AdDecision.Blocked(AdBlockReason.ENTITLEMENT)
         }
         if (request.placement == AdPlacement.POST_MATCH_INTERSTITIAL) {
-            if (request.matchesPlayed < interstitialPolicy.minimumCompletedMatches) {
+            if (request.matchesPlayed <= interstitialPolicy.minimumCompletedMatches) {
                 return AdDecision.Blocked(AdBlockReason.EARLY_PLAYER)
             }
             if (request.foregroundUsageSeconds < interstitialPolicy.minimumForegroundUsageSeconds) {

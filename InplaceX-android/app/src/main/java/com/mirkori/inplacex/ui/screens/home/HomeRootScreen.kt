@@ -112,6 +112,7 @@ fun HomeRootScreen(
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
+    var showPvpModes by rememberSaveable { mutableStateOf(false) }
     var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var raceResultLostToOpponent by rememberSaveable { mutableStateOf(false) }
     var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
@@ -148,6 +149,7 @@ fun HomeRootScreen(
         )
         if (screenState == HomeScreenState.ROOT) {
             onDebugSecretChange(null)
+            showPvpModes = false
         }
     }
 
@@ -214,6 +216,15 @@ fun HomeRootScreen(
         onDebugSecretChange(null)
     }
 
+    fun openLocalDuel() {
+        preMatchPhase = PreMatchPhase.SECRET_SELECTION
+        preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
+        botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
+        preMatchSecretInput = ""
+        preMatchError = null
+        showPreMatchDialog = true
+    }
+
     BackHandler(
         enabled = showExitDialog ||
             showPreMatchDialog ||
@@ -259,6 +270,12 @@ fun HomeRootScreen(
             raceResultWon == null
     ) {
         showExitDialog = true
+    }
+
+    BackHandler(
+        enabled = screenState == HomeScreenState.ROOT && showPvpModes,
+    ) {
+        showPvpModes = false
     }
 
     when (screenState) {

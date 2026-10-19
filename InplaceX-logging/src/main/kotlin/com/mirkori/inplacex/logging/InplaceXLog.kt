@@ -49,16 +49,19 @@ class SensitiveKeyLogSanitizer(
             "authorization",
             "cookie",
             "credential",
+            "email",
             "guess",
             "integrity",
             "key",
             "password",
             "private",
             "providerpayload",
+            "providerid",
             "purchase",
             "rawpayload",
             "secret",
             "token",
+            "verificationcode",
         )
     }
 }

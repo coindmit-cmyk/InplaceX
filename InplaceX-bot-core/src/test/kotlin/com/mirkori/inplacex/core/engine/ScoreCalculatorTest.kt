@@ -88,4 +88,25 @@ class ScoreCalculatorTest {
             entries
         }
     }
+
+    @Test
+    fun returnsDocumentedExactPositionScoresForBothPaths() {
+        val cases = listOf(
+            Triple("01234567890123456789", "01234567890123456789", 20),
+            Triple("01234567890123456789", "10234567890123456789", 18),
+            Triple("01234567890123456789", "98765432109876543210", 0),
+            Triple("10011001", "10101010", 4),
+            Triple("0123", "3012", 0),
+        )
+
+        cases.forEach { (secret, guess, expectedScore) ->
+            assertEquals(expectedScore, ScoreCalculator.countExactMatches(secret, guess))
+
+            val mutableSecret = secret.toCharArray()
+            val mutableGuess = guess.toCharArray()
+            assertEquals(expectedScore, ScoreCalculator.countExactMatches(mutableSecret, mutableGuess))
+            assertTrue(mutableSecret.contentEquals(secret.toCharArray()))
+            assertTrue(mutableGuess.contentEquals(guess.toCharArray()))
+        }
+    }
 }

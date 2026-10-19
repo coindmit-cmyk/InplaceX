@@ -245,6 +245,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(ShopCategory.BOOSTS.name)
                 }
                 var requestExitGame by rememberSaveable { mutableStateOf(false) }
+                var socialAutoQuickMatchRequested by rememberSaveable { mutableStateOf(false) }
                 var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
                 var selectedBannerProviderName by remember {
                     mutableStateOf<String?>(null)
