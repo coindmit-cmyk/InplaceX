@@ -47,7 +47,10 @@ class OnlineDuelInputTest {
                 CompositionLocalProvider(
                     LocalAppStrings provides StaticLocalizationProvider.forLanguage(AppLanguage.RU),
                 ) {
-                    OnlineDuelGameField(snapshot, snapshot.knownPlayerGuesses(), false, { submitted = it }, {})
+                    OnlineDuelGameField(
+                        snapshot, snapshot.knownPlayerGuesses(), false, { submitted = it }, {},
+                        autoModeAvailable = true,
+                    )
                 }
             }
         }

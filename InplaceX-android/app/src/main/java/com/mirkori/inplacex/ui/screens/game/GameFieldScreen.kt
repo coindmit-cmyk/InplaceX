@@ -5,8 +5,12 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.SavedStateHandle
 import com.mirkori.inplacex.data.local.HintStockType
@@ -51,7 +55,7 @@ fun GameFieldScreen(
     openPositionHints: Int = 0,
     checkDigitHints: Int = 0,
     checkPositionHints: Int = 0,
-    autoModeAvailable: Boolean = true,
+    autoModeAvailable: Boolean = false,
     infiniteHintsEnabled: Boolean = false,
     extraMovesBoosts: Int = 0,
     extraTimeBoosts: Int = 0,
@@ -79,8 +83,16 @@ fun GameFieldScreen(
             GuessValidator.validate(candidate, matchParameters.toGameConfig())
         }
     }
-    val viewModel = remember(matchParameters, acceptedFixedSecret) {
-        GameFieldViewModel(SavedStateHandle(), matchParameters, acceptedFixedSecret)
+    val savedStateHandle = rememberSaveable(
+        matchParameters,
+        acceptedFixedSecret,
+        saver = gameFieldHandleSaver,
+    ) { SavedStateHandle() }
+    val viewModel = remember(matchParameters, acceptedFixedSecret, savedStateHandle) {
+        GameFieldViewModel(savedStateHandle, matchParameters, acceptedFixedSecret)
+    }
+    var matchStartReported by rememberSaveable(matchParameters, acceptedFixedSecret) {
+        mutableStateOf(false)
     }
     LaunchedEffect(viewModel, autoModeAvailable) {
         viewModel.updateAutoModeAvailability(autoModeAvailable)
@@ -132,7 +144,10 @@ fun GameFieldScreen(
                 "fixedSecret" to (fixedSecret != null).toString(),
             ),
         )
-        currentLifecycleCallbacks.onMatchStarted()
+        if (!matchStartReported) {
+            matchStartReported = true
+            currentLifecycleCallbacks.onMatchStarted()
+        }
     }
     LaunchedEffect(holderState.match.debugSecret) {
         onDebugSecretChange(holderState.match.debugSecret)
@@ -267,6 +282,23 @@ fun GameFieldScreen(
         ),
     )
 }
+
+// GameFieldSavedStateStore already serializes durable match and holder state into this handle.
+// Save its Android-saveable key/value snapshot; route overlays and operations remain transient.
+private val gameFieldHandleSaver = listSaver<SavedStateHandle, Any>(
+    save = { handle ->
+        handle.keys().flatMap { key ->
+            listOf(key, requireNotNull(handle.get<Any>(key)))
+        }
+    },
+    restore = { values ->
+        SavedStateHandle().apply {
+            values.chunked(2).forEach { pair ->
+                set(pair[0] as String, pair[1])
+            }
+        }
+    },
+)
 
 @Composable
 internal fun AttemptsModule(

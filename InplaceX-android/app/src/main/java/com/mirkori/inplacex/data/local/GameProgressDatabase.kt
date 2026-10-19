@@ -60,6 +60,7 @@ internal open class GameProgressDatabase(
         createCampaignChapterRewardsTable(db)
         createRetentionRewardClaimsTable(db)
         createMirkoriGameDeliveriesTable(db)
+        createOnlineMatchStatReceiptsTable(db)
 
         createPlatformTables(db)
     }
@@ -139,6 +140,25 @@ internal open class GameProgressDatabase(
         if (oldVersion < 11) {
             createMirkoriGameDeliveriesTable(db)
         }
+
+        if (oldVersion < 12) {
+            createOnlineMatchStatReceiptsTable(db)
+        }
+    }
+
+    private fun createOnlineMatchStatReceiptsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_ONLINE_MATCH_STAT_RECEIPTS (
+                $COL_ONLINE_STAT_SESSION_ID TEXT PRIMARY KEY,
+                $COL_ONLINE_STAT_STARTED INTEGER NOT NULL CHECK ($COL_ONLINE_STAT_STARTED IN (0, 1)),
+                $COL_ONLINE_STAT_TERMINAL_OUTCOME TEXT CHECK (
+                    $COL_ONLINE_STAT_TERMINAL_OUTCOME IS NULL OR
+                    $COL_ONLINE_STAT_TERMINAL_OUTCOME IN ('win', 'loss', 'neutral')
+                )
+            )
+            """.trimIndent(),
+        )
     }
 
     private fun createCampaignChapterRewardsTable(db: SQLiteDatabase) {
@@ -380,7 +400,7 @@ internal open class GameProgressDatabase(
     }
 
     companion object {
-        private const val DB_VERSION = 11
+        private const val DB_VERSION = 12
 
         const val TABLE_PROGRESS = "game_progress"
         const val TABLE_CAMPAIGN_PROGRESS = "campaign_progress"
@@ -395,6 +415,10 @@ internal open class GameProgressDatabase(
         const val TABLE_ONLINE_MATCH_TURNS = "online_match_turns"
         const val TABLE_SYNC_QUEUE = "sync_queue"
         const val TABLE_MIRKORI_GAME_DELIVERIES = "mirkori_game_entitlement_deliveries"
+        const val TABLE_ONLINE_MATCH_STAT_RECEIPTS = "online_match_stat_receipts"
+        const val COL_ONLINE_STAT_SESSION_ID = "session_id"
+        const val COL_ONLINE_STAT_STARTED = "started"
+        const val COL_ONLINE_STAT_TERMINAL_OUTCOME = "terminal_outcome"
         const val COL_ID = "id"
         const val COL_PLAYER_DISPLAY_NAME = "player_display_name"
         const val COL_GOOGLE_PLAY_SIGNED_IN = "google_play_signed_in"

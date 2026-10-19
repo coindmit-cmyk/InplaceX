@@ -17,13 +17,19 @@ class OnlineDuelGameFieldTest {
     fun fiveEnteredDigitsSkipTwoAutomaticallyConfirmedMiddlePositions() {
         val facts = setOf(ProvenFact.exactMatch(3, '5'), ProvenFact.exactMatch(4, '5'))
         var editor = OnlineDuelEditorState.empty(7)
+            .reduce(GameFieldEvent.AutoExcludeChanged(true), autoModeAvailable = true)
 
-        "11111".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        "11111".forEach {
+            editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts, autoModeAvailable = true)
+        }
 
         assertEquals("1115511", editor.input.guessOrNull(facts))
         assertNull(editor.input.slots[3])
         assertNull(editor.input.slots[4])
-        assertEquals(editor, editor.reduce(GameFieldEvent.DigitEntered('9'), facts))
+        assertEquals(
+            editor,
+            editor.reduce(GameFieldEvent.DigitEntered('9'), facts, autoModeAvailable = true),
+        )
     }
 
     @Test
@@ -45,11 +51,14 @@ class OnlineDuelGameFieldTest {
         var editor = OnlineDuelEditorState.empty(7).afterAcceptedAttempt(2)
         val facts = buildOnlineDuelGameFieldState(
             snapshot, snapshot.knownPlayerGuesses(), editor, true, "Online", "Your turn",
+            autoModeAvailable = true,
         ).evidence.deduction.provenFacts
         assertEquals(setOf(3, 4), facts.filter { it.isExactMatch }.map { it.position }.toSet())
 
         repeat(2) {
-            "11111".forEach { digit -> editor = editor.reduce(GameFieldEvent.DigitEntered(digit), facts) }
+            "11111".forEach { digit ->
+                editor = editor.reduce(GameFieldEvent.DigitEntered(digit), facts, autoModeAvailable = true)
+            }
             assertEquals("1115511", editor.input.guessOrNull(facts))
             editor = editor.afterAcceptedAttempt(editor.acceptedAttemptCount + 1)
         }
@@ -61,14 +70,20 @@ class OnlineDuelGameFieldTest {
         var editor = OnlineDuelEditorState.empty(7)
             .reduce(GameFieldEvent.ToolSelected(GameFieldTool.YES))
             .changeManualMark('5', 3)
-        "1234".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        "1234".forEach {
+            editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts, autoModeAvailable = true)
+        }
         assertEquals("5125345", editor.input.guessOrNull(facts))
 
-        repeat(4) { editor = editor.reduce(GameFieldEvent.BackspacePressed, facts) }
+        repeat(4) {
+            editor = editor.reduce(GameFieldEvent.BackspacePressed, facts, autoModeAvailable = true)
+        }
         assertEquals(listOf(null, null, null, '5', null, null, null), editor.input.slots)
         val cleared = editor
-        assertEquals(cleared, editor.reduce(GameFieldEvent.BackspacePressed, facts))
-        "4321".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        assertEquals(cleared, editor.reduce(GameFieldEvent.BackspacePressed, facts, autoModeAvailable = true))
+        "4321".forEach {
+            editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts, autoModeAvailable = true)
+        }
         assertEquals("5435215", editor.input.guessOrNull(facts))
     }
 
@@ -76,7 +91,7 @@ class OnlineDuelGameFieldTest {
     fun disabledAutoTableDoesNotReserveInferredPositions() {
         val facts = setOf(ProvenFact.exactMatch(3, '5'), ProvenFact.exactMatch(4, '5'))
         var editor = OnlineDuelEditorState.empty(7)
-            .reduce(GameFieldEvent.AutoExcludeChanged(false))
+            .reduce(GameFieldEvent.AutoExcludeChanged(false), autoModeAvailable = true)
         "1234567".forEach { editor = editor.reduce(GameFieldEvent.DigitEntered(it), facts) }
         assertEquals("1234567", editor.input.guessOrNull(emptySet()))
     }
@@ -84,6 +99,7 @@ class OnlineDuelGameFieldTest {
     @Test
     fun manualYesPrefillsEveryFollowingOnlineAttempt() {
         val editor = OnlineDuelEditorState.empty(codeLength = 4)
+            .reduce(GameFieldEvent.AutoExcludeChanged(true), autoModeAvailable = true)
             .reduce(GameFieldEvent.ToolSelected(GameFieldTool.YES))
             .changeManualMark(symbol = '6', position = 2)
             .reduce(GameFieldEvent.DigitEntered('4'))
@@ -118,6 +134,7 @@ class OnlineDuelGameFieldTest {
             inputEnabled = true,
             modeLabel = "Online duel",
             turnLabel = "Your turn",
+            autoModeAvailable = true,
         )
 
         assertEquals(1, uiState.match.attempts.size)
@@ -125,6 +142,98 @@ class OnlineDuelGameFieldTest {
         assertEquals(2, uiState.match.attempts.single().score)
         assertEquals(8, uiState.match.attemptsLeft)
         assertEquals(2, uiState.evidence.acceptedAttempts.single().score)
+    }
+
+    @Test
+    fun autoModeDefaultsDeniedAndExplicitlyDeniedForDuelAndRace() {
+        listOf(RemoteFriendPlayStyle.TURN_BASED, RemoteFriendPlayStyle.RACE).forEach { style ->
+            val snapshot = OnlineDuelSnapshotState(
+                sessionId = "00000000-0000-0000-0000-000000000001", revision = 1,
+                phase = "active", currentTurn = "player", winner = null,
+                playStyle = style, codeLength = 4, attemptLimit = null,
+                allowDuplicates = true, attempts = emptyList(),
+            )
+            val editor = OnlineDuelEditorState.empty(4)
+            assertEquals(false, buildOnlineDuelGameFieldState(
+                snapshot, emptyMap(), editor, true, "Online", "Your turn",
+            ).parameters.autoModeAvailable)
+            assertEquals(false, buildOnlineDuelGameFieldState(
+                snapshot, emptyMap(), editor, true, "Online", "Your turn",
+                autoModeAvailable = false,
+            ).tools.autoExcludeEnabled)
+        }
+    }
+
+    @Test
+    fun deniedSavedPreferenceAndToggleCannotApplyInferredFacts() {
+        val facts = setOf(ProvenFact.exactMatch(3, '5'))
+        val restored = OnlineDuelEditorState.empty(7).copy(autoExcludeEnabled = true)
+        assertEquals(restored, restored.reduce(GameFieldEvent.AutoExcludeChanged(true), facts))
+        val ui = buildOnlineDuelGameFieldState(
+            snapshot = OnlineDuelSnapshotState(
+                sessionId = "00000000-0000-0000-0000-000000000001", revision = 1,
+                phase = "active", currentTurn = "player", winner = null,
+                codeLength = 7, attemptLimit = null, allowDuplicates = true, attempts = emptyList(),
+            ), knownPlayerGuesses = emptyMap(), editor = restored, inputEnabled = true,
+            modeLabel = "Online", turnLabel = "Your turn",
+        )
+        assertEquals(false, ui.tools.autoExcludeEnabled)
+        var typed = restored
+        "1234567".forEach { typed = typed.reduce(GameFieldEvent.DigitEntered(it), facts) }
+        assertEquals("1234567", typed.input.guessOrNull(emptySet()))
+        assertEquals(listOf('1', '2', '3', '4', '5', '6', '7'), typed.input.slots)
+        repeat(4) {
+            typed = typed.reduce(GameFieldEvent.BackspacePressed, facts)
+        }
+        assertEquals(listOf('1', '2', '3', null, null, null, null), typed.input.slots)
+        val autoOff = restored.copy(autoExcludeEnabled = false)
+        assertEquals(autoOff, autoOff.reduce(GameFieldEvent.AutoExcludeChanged(true), facts))
+    }
+
+    @Test
+    fun entitlementTransitionsPreserveManualMarksInputAndAutoOffPreference() {
+        val snapshot = OnlineDuelSnapshotState(
+            sessionId = "00000000-0000-0000-0000-000000000001", revision = 1,
+            phase = "active", currentTurn = "player", winner = null,
+            codeLength = 4, attemptLimit = null, allowDuplicates = true,
+            attempts = listOf(OnlineDuelAttemptState("player", 1, 1, "0123")),
+        )
+        var editor = OnlineDuelEditorState.empty(4).afterAcceptedAttempt(1)
+            .reduce(GameFieldEvent.AutoExcludeChanged(false), autoModeAvailable = true)
+            .reduce(GameFieldEvent.ToolSelected(GameFieldTool.YES))
+            .changeManualMark('6', 2)
+            .reduce(GameFieldEvent.DigitEntered('4'), autoModeAvailable = true)
+
+        val granted = buildOnlineDuelGameFieldState(
+            snapshot, snapshot.knownPlayerGuesses(), editor, true, "Online", "Your turn",
+            autoModeAvailable = true,
+        )
+        val revoked = buildOnlineDuelGameFieldState(
+            snapshot, snapshot.knownPlayerGuesses(), editor, true, "Online", "Your turn",
+            autoModeAvailable = false,
+        )
+        val regained = buildOnlineDuelGameFieldState(
+            snapshot, snapshot.knownPlayerGuesses(), editor, true, "Online", "Your turn",
+            autoModeAvailable = true,
+        )
+
+        val expectedSlots = listOf('4', null, '6', null)
+        assertEquals(expectedSlots, granted.input.slots)
+        assertEquals(expectedSlots, revoked.input.slots)
+        assertEquals(expectedSlots, regained.input.slots)
+        assertEquals(1, editor.manualMarks.count())
+        assertEquals('6', editor.manualMarks.single().symbol)
+        assertEquals(2, editor.manualMarks.single().position)
+        assertEquals(granted.evidence.acceptedAttempts, revoked.evidence.acceptedAttempts)
+        assertEquals(granted.evidence.acceptedAttempts, regained.evidence.acceptedAttempts)
+        assertEquals("0123", granted.evidence.acceptedAttempts.single().guess)
+        assertEquals("0123", revoked.evidence.acceptedAttempts.single().guess)
+        assertEquals("0123", regained.evidence.acceptedAttempts.single().guess)
+        assertEquals(false, granted.tools.autoExcludeEnabled)
+        assertEquals(false, revoked.tools.autoExcludeEnabled)
+        assertEquals(false, regained.tools.autoExcludeEnabled)
+        assertEquals(1, editor.acceptedAttemptCount)
+        assertEquals(editor, editor.reduce(GameFieldEvent.AutoExcludeChanged(true)))
     }
 
     @Test
@@ -172,6 +281,7 @@ class OnlineDuelGameFieldTest {
             turnLabel = "Both play",
             elapsedSeconds = 12,
             totalTimeLimitSeconds = 600,
+            autoModeAvailable = true,
         )
 
         assertEquals(GameFieldMode.RACE, uiState.parameters.mode)

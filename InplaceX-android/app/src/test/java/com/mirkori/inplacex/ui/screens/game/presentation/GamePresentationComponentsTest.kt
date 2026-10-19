@@ -137,7 +137,8 @@ class GamePresentationComponentsTest {
     @Test
     fun `reference geometry keeps narrow large font and long code on adaptive path`() {
         assertTrue(shouldUseReferenceGameGeometry(358.dp, 710.dp, 1f, 4))
-        assertTrue(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1.3f, 6))
+        assertFalse(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1.3f, 6))
+        assertFalse(shouldUseReferenceGameGeometry(374.dp, 877.dp, 2f, 6))
         assertFalse(shouldUseReferenceGameGeometry(320.dp, 877.dp, 1f, 4))
         assertFalse(shouldUseReferenceGameGeometry(374.dp, 650.dp, 1f, 4))
         assertFalse(shouldUseReferenceGameGeometry(374.dp, 877.dp, 1.5f, 4))
@@ -158,9 +159,9 @@ class GamePresentationComponentsTest {
         val eightDigits = finalGameFieldMetrics(8, compactHeight = false)
         val tenDigits = finalGameFieldMetrics(10, compactHeight = false)
 
-        assertEquals(315.dp, analysisPanelHeight(fourDigits))
-        assertEquals(384.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
-        assertEquals(360.dp, gameWorkBoardHeight(tenDigits, stacked = true))
+        assertEquals(322.dp, analysisPanelHeight(fourDigits))
+        assertEquals(395.5.dp, gameWorkBoardHeight(eightDigits, stacked = true))
+        assertEquals(367.dp, gameWorkBoardHeight(tenDigits, stacked = true))
     }
 
     @Test
@@ -206,7 +207,7 @@ class GamePresentationComponentsTest {
 
     @Test
     fun `stacked attempts panel reserves exactly three complete rows`() {
-        assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
+        assertEquals(124.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(8, compactHeight = false)))
         assertEquals(120.dp, stackedAttemptsPanelHeight(finalGameFieldMetrics(10, compactHeight = false)))
     }
 
@@ -232,6 +233,28 @@ class GamePresentationComponentsTest {
             "game.race.matrix.state.disabled",
             analysisCellStateText(AnalysisCellVisualState.DISABLED) { it },
         )
+    }
+
+    @Test
+    fun `font-aware metrics grow vertically at supported accessibility scales`() {
+        for (codeLength in listOf(4, 6, 10)) {
+            val normal = finalGameFieldMetrics(codeLength, compactHeight = false, fontScale = 1f)
+            val large = finalGameFieldMetrics(codeLength, compactHeight = false, fontScale = 1.3f)
+            val largest = finalGameFieldMetrics(codeLength, compactHeight = false, fontScale = 2f)
+
+            assertEquals(1f, normal.fontScale)
+            assertEquals(1.3f, large.fontScale)
+            assertEquals(2f, largest.fontScale)
+            assertTrue(large.matrixCellHeight > normal.matrixCellHeight)
+            assertTrue(largest.matrixCellHeight > large.matrixCellHeight)
+            assertTrue(large.attemptRowHeight > normal.attemptRowHeight)
+            assertTrue(largest.attemptRowHeight > large.attemptRowHeight)
+            assertTrue(large.inputSlotHeight > normal.inputSlotHeight)
+            assertTrue(largest.keypadHeight > large.keypadHeight)
+            assertTrue(large.topPanelMinHeight > normal.topPanelMinHeight)
+            assertTrue(largest.helpersHeight > large.helpersHeight)
+            assertTrue(largest.toolsHeight > large.toolsHeight)
+        }
     }
 
     @Test

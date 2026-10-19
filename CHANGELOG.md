@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+- Kept the private-code join button above the software keyboard, with the code
+  field and create-own action in one scrollable form. Input survives keyboard
+  transitions. Verified with real IME tests and private connections in both
+  directions on Redmi/Android 14 and OnePlus/Android 13 (audit A06).
+
+- Applied the same existing Pro entitlement to auto-table assistance in every
+  local and online mode. Default-denied entry points and synchronous online
+  input/projection guards prevent saved preferences from granting access;
+  revocation preserves manual marks, input, history and the user's manual mode.
+  Added isolated SQLite and debug-only UI coverage on both physical phones.
+- Counted accepted online match starts and caller-relative PvP results in the
+  profile once per server session. A schema-12 SQLite receipt journal shares a
+  transaction with counters, preserving prior progress through migration and
+  preventing duplicates on polling, cold restore and concurrent writes. Neutral
+  finishes do not invent wins/losses or race rewards.
+- Rejected campaign-energy purchases that cannot increase stock, including
+  regeneration to full capacity and concurrent purchases of the last slot.
+  Coin deduction and energy update now share one SQLite transaction; the shop
+  disables full-energy purchases with a localized explanation.
+- Preserved the displayed local game's secret, guesses, partial input, analysis
+  and elapsed timer across Activity recreation without counting the match start
+  twice. Replaced the unrelated-ViewModel recreation test with a debug-only
+  fixture that exercises the production screen and checks a fresh session.
+- Recorded the October 14 project audit and A01 recovery: both primary develop
+  checkouts now use the published baseline while local commits, WIP and task
+  state remain preserved. Documented freshness checks and one sequential audit PR.
+- Added a Git freshness preflight that verifies live develop, rejects obsolete
+  build sources and reports dirty work while preserving local state during fetch.
 - Updated the Mirkori Games Telegram download catalog for Platform schema v3.
   It now validates the RF and global distribution contract plus complete
   lifecycle coverage, exposes only active RF Mirkori direct-APK releases,
