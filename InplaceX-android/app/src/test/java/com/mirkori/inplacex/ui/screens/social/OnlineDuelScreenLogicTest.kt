@@ -86,6 +86,15 @@ class OnlineDuelScreenLogicTest {
     }
 
     @Test
+    fun gameShellIsLimitedToSetupAndActivePhases() {
+        assertTrue(onlineDuelUsesGameShell("setup"))
+        assertTrue(onlineDuelUsesGameShell("active"))
+        assertFalse(onlineDuelUsesGameShell("finished"))
+        assertFalse(onlineDuelUsesGameShell(null))
+        assertFalse(onlineDuelUsesGameShell("unknown"))
+    }
+
+    @Test
     fun hudAndSystemBackShareTheActiveMatchDestinationContract() {
         assertEquals(OnlineDuelBackTarget.MATCH_SETUP, onlineDuelBackTarget("active"))
         assertEquals(OnlineDuelBackTarget.SOCIAL_ROOT, onlineDuelBackTarget("finished"))

@@ -55,7 +55,7 @@ class AdPolicyTest {
             ),
         )
         assertEquals(
-            AdDecision.Allowed,
+            AdDecision.Blocked(AdBlockReason.EARLY_PLAYER),
             AdPolicy.evaluate(
                 AdRequest(AdPlacement.POST_MATCH_INTERSTITIAL, AdFormat.INTERSTITIAL, 20),
                 entitlements,
@@ -108,6 +108,32 @@ class AdPolicyTest {
                 policy,
             ),
         )
+    }
+
+    @Test
+    fun `post match interstitial onboarding and cadence boundaries are literal`() {
+        val entitlements = AdEntitlements(adsDisabled = false)
+        val placement = AdPlacement.POST_MATCH_INTERSTITIAL
+        val format = AdFormat.INTERSTITIAL
+
+        listOf(0, 1, 19, 20).forEach { count ->
+            assertEquals(
+                AdDecision.Blocked(AdBlockReason.EARLY_PLAYER),
+                AdPolicy.evaluate(AdRequest(placement, format, count), entitlements),
+            )
+        }
+        listOf(21, 22, 23, 25, 27).forEach { count ->
+            assertEquals(
+                AdDecision.Blocked(AdBlockReason.CADENCE),
+                AdPolicy.evaluate(AdRequest(placement, format, count), entitlements),
+            )
+        }
+        listOf(24, 28).forEach { count ->
+            assertEquals(
+                AdDecision.Allowed,
+                AdPolicy.evaluate(AdRequest(placement, format, count), entitlements),
+            )
+        }
     }
 
     @Test

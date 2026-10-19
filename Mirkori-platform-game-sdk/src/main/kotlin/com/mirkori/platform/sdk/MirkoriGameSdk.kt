@@ -823,6 +823,30 @@ class MirkoriGameSdk(
         ).also { profiles -> profiles.forEach(::validatePublicProfile) }
     }
 
+    suspend fun stableAndroidUpdate(installedVersionCode: Long): PlatformGameUpdateDecision {
+        require(installedVersionCode > 0)
+        val decision = codec.updateDecisionResponse(
+            get(
+                "/api/v1/catalog/games/${urlEncode(config.gameId)}/updates" +
+                    "?platform=android&channel=stable&versionCode=$installedVersionCode",
+            ),
+        )
+        require(decision.gameId == config.gameId)
+        require(decision.platform == PlatformReleasePlatform.ANDROID)
+        require(decision.channel == PlatformReleaseChannel.STABLE)
+        require(decision.currentVersionCode == installedVersionCode)
+        val release = decision.release
+        if (!decision.updateAvailable) {
+            require(!decision.required && release == null)
+            return decision
+        }
+        requireNotNull(release)
+        validateStableAndroidRelease(release)
+        require(release.versionCode > installedVersionCode)
+        require(decision.required == (installedVersionCode < release.minimumSupportedVersionCode))
+        return decision
+    }
+
     private suspend fun post(
         path: String,
         body: String,
@@ -1130,6 +1154,40 @@ class MirkoriGameSdk(
         )
     }
 
+    private fun validateStableAndroidRelease(release: PlatformGameRelease) {
+        require(release.id.matches(ResourceIdPattern))
+        require(release.gameId == config.gameId)
+        require(release.platform == PlatformReleasePlatform.ANDROID)
+        require(release.channel == PlatformReleaseChannel.STABLE)
+        require(release.versionName.length in 1..64 && release.versionName.trim() == release.versionName &&
+            release.versionName.none(Char::isISOControl))
+        require(release.versionCode > 0)
+        require(release.minimumSupportedVersionCode in 1..release.versionCode)
+        require(release.minimumAndroidSdk != null && release.minimumAndroidSdk in 21..100)
+        require(release.packageName != null && release.packageName.matches(AndroidPackageNamePattern))
+        require(release.signingCertificateSha256Fingerprints.isNotEmpty())
+        require(release.signingCertificateSha256Fingerprints.distinct().size == release.signingCertificateSha256Fingerprints.size)
+        require(release.signingCertificateSha256Fingerprints.all { it.matches(CertificateFingerprintPattern) })
+        require(release.changelog.length in 1..4000 && release.changelog.trim() == release.changelog)
+        require(release.fileName.matches(ArtifactFileNamePattern) && release.fileName.endsWith(".apk", true))
+        require(release.sizeBytes in 1..MaximumArtifactBytes)
+        require(release.sha256.matches(Sha256Pattern))
+        validateDownloadUrl(release)
+    }
+
+    private fun validateDownloadUrl(release: PlatformGameRelease) {
+        val uri = runCatching { URI(release.downloadUrl) }
+            .getOrElse { throw IllegalArgumentException("Invalid update download URL") }
+        val expectedPath = "/downloads/${urlEncode(release.id)}/${urlEncode(release.fileName)}"
+        require(
+            sameOrigin(uri, baseUri) &&
+                uri.rawPath == expectedPath &&
+                uri.rawQuery == null &&
+                uri.fragment == null &&
+                uri.userInfo == null
+        )
+    }
+
     private fun endpoint(path: String): String {
         require(path.startsWith('/') && !path.startsWith("//"))
         return baseUri.toASCIIString().removeSuffix("/") + path
@@ -1183,6 +1241,8 @@ class MirkoriGameSdk(
         val PublicAvatarKeys = setOf("rocket", "robot", "star", "gamepad", "heart", "bolt")
         const val MaximumArtifactBytes = 4L * 1024L * 1024L * 1024L
         val AllowedDecisionClockSkew: Duration = Duration.ofSeconds(30)
+        val ArtifactFileNamePattern = FileNamePattern
+        val AndroidPackageNamePattern = AndroidPackagePattern
     }
 }
 
@@ -1238,6 +1298,11 @@ private fun sameEndpoint(first: URI, second: URI): Boolean =
     first.scheme.equals(second.scheme, ignoreCase = true) &&
         first.host.equals(second.host, ignoreCase = true) &&
         effectivePort(first) == effectivePort(second) && first.path == second.path && first.userInfo == null
+
+private fun sameOrigin(first: URI, second: URI): Boolean =
+    first.scheme.equals(second.scheme, ignoreCase = true) &&
+        first.host.equals(second.host, ignoreCase = true) &&
+        effectivePort(first) == effectivePort(second)
 
 private fun effectivePort(uri: URI): Int = when {
     uri.port >= 0 -> uri.port

@@ -18,6 +18,7 @@ import com.mirkori.platform.sdk.PlatformAuthMode
 import com.mirkori.platform.sdk.PlatformCallbackRejectedException
 import com.mirkori.platform.sdk.PlatformCredentials
 import com.mirkori.platform.sdk.PlatformFriendRequest
+import com.mirkori.platform.sdk.PlatformGameUpdateDecision
 import com.mirkori.platform.sdk.PlatformProfileConflictException
 import com.mirkori.platform.sdk.PlatformProfileConflictResolution
 import com.mirkori.platform.sdk.PlatformPublicPlayerProfile
@@ -146,6 +147,9 @@ class MirkoriPlatformRuntime internal constructor(
             error.toLoginFailure()
         }
     }
+
+    suspend fun stableAndroidUpdate(installedVersionCode: Long): PlatformGameUpdateDecision =
+        sdk.stableAndroidUpdate(installedVersionCode)
 
     suspend fun completeLogin(callbackUrl: String): MirkoriLoginResult = operationMutex.withLock {
         val state = persistedState ?: return@withLock MirkoriLoginResult.Rejected

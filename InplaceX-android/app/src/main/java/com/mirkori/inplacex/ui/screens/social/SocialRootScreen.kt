@@ -39,6 +39,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ import com.mirkori.inplacex.data.local.LocalSocialRelationship
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
+import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.platform.mirkori.MirkoriPlayerSearchResult
 import com.mirkori.inplacex.platform.mirkori.MirkoriPublicPlayerProfile
@@ -97,8 +99,12 @@ fun SocialRootScreen(
     onExitGameConsumed: () -> Unit = {},
     onInGameChange: (Boolean) -> Unit = {},
     onNestedScreenChange: (Boolean) -> Unit = {},
+    onSnapshotObserved: (OnlineDuelSnapshotState) -> Unit = {},
+    autoModeAvailable: Boolean = false,
 ) {
     val strings = LocalAppStrings.current
+    val currentOnInGameChange = rememberUpdatedState(onInGameChange)
+    val currentOnNestedScreenChange = rememberUpdatedState(onNestedScreenChange)
     var activeDestination by rememberSaveable {
         mutableStateOf<SocialDestination?>(
             when {
@@ -136,12 +142,16 @@ fun SocialRootScreen(
         if (shouldReturnToOrigin) onReturnToQuickMatchOrigin()
     }
 
-    LaunchedEffect(activeDestination) {
-        onNestedScreenChange(activeDestination != null)
-        onInGameChange(
-            activeDestination == SocialDestination.FRIEND_MATCH ||
-                activeDestination == SocialDestination.ONLINE_MATCH,
+    LaunchedEffect(activeDestination, onlineRuntime, onNestedScreenChange, onInGameChange) {
+        currentOnNestedScreenChange.value(activeDestination != null)
+        val hasOnlineChild = onlineRuntime != null && activeDestination in setOf(
+            SocialDestination.INVITES,
+            SocialDestination.FRIEND_MATCH,
+            SocialDestination.ONLINE_MATCH,
         )
+        if (!hasOnlineChild) {
+            currentOnInGameChange.value(false)
+        }
     }
     LaunchedEffect(onlineRuntime, initialActiveSessionId) {
         if (initialActiveSessionId != null && onlineRuntime == null) {
@@ -174,10 +184,12 @@ fun SocialRootScreen(
     }
     LaunchedEffect(requestExitGame) {
         if (requestExitGame) {
-            if (
-                activeDestination != SocialDestination.FRIEND_MATCH &&
-                activeDestination != SocialDestination.ONLINE_MATCH
-            ) {
+            val hasOnlineChild = onlineRuntime != null && activeDestination in setOf(
+                SocialDestination.INVITES,
+                SocialDestination.FRIEND_MATCH,
+                SocialDestination.ONLINE_MATCH,
+            )
+            if (!hasOnlineChild) {
                 onActiveSessionChange(null)
                 selectedFriend = null
                 autoAcceptInviteCode = null
@@ -188,8 +200,8 @@ fun SocialRootScreen(
     }
     DisposableEffect(Unit) {
         onDispose {
-            onNestedScreenChange(false)
-            onInGameChange(false)
+            currentOnNestedScreenChange.value(false)
+            currentOnInGameChange.value(false)
         }
     }
     BackHandler(enabled = activeDestination != null) {
@@ -262,6 +274,9 @@ fun SocialRootScreen(
                 requestBack = requestExitGame,
                 onBackRequestConsumed = onExitGameConsumed,
                 onExitDestination = ::exitActiveDestination,
+                onInGameChange = onInGameChange,
+                onSnapshotObserved = onSnapshotObserved,
+                autoModeAvailable = autoModeAvailable,
             )
         }
         return

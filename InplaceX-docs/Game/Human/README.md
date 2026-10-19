@@ -21,6 +21,7 @@
 15. `Provider Setup.md`
 16. `Roadmap.md`
 17. `ADR Index.md`
+18. `Обновления APK.md`
 
 ## Purpose
 

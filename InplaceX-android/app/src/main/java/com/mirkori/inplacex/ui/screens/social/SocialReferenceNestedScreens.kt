@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -42,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,6 +57,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +73,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import com.mirkori.inplacex.R
 import com.mirkori.inplacex.data.local.LocalSocialRelationship
@@ -493,88 +501,152 @@ internal fun SocialJoinCodeReferenceContent(
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalAppStrings.current
-    BoxWithConstraints(modifier.fillMaxSize().testTag("social-join-code-reference-screen")) {
-        val adaptive = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.3f
+    val density = LocalDensity.current
+    val view = LocalView.current
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val keyboardOpen = imeBottomPx > 0
+    var contentTopPx by remember { mutableIntStateOf(0) }
+    val codeRequester = remember { BringIntoViewRequester() }
+    LaunchedEffect(keyboardOpen) {
+        if (keyboardOpen) codeRequester.bringIntoView()
+    }
+    BoxWithConstraints(
+        modifier.fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                contentTopPx = coordinates.positionInWindow().y.toInt()
+            }
+            .testTag("social-join-code-reference-screen"),
+    ) {
+        val adaptive = maxWidth < 340.dp || density.fontScale > 1.3f
+        // The shell already reserves its HUD and footer. Its fixed reference canvas does not
+        // resize for the IME, so clamp only this content to the remaining window pixels.
+        // Insets and coordinates are both pixels; convert once with the shell's local density.
+        val viewportHeight = if (keyboardOpen && view.rootView.height > 0) {
+            val remainingPx = (view.rootView.height - imeBottomPx - contentTopPx)
+                .coerceAtLeast(0)
+            minOf(maxHeight, with(density) { remainingPx.toDp() })
+        } else {
+            maxHeight
+        }
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .then(if (adaptive) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(horizontal = 21.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .fillMaxWidth()
+                .height(viewportHeight)
+                .then(if (adaptive && !keyboardOpen) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                .padding(horizontal = 21.dp, vertical = if (keyboardOpen) 0.dp else 4.dp),
+            verticalArrangement = Arrangement.spacedBy(if (keyboardOpen) 0.dp else 12.dp),
         ) {
-            SocialReferenceHero(
-                artRes = R.drawable.art_join_shield_v11,
-                artSize = 72.dp,
-                artScaleX = 1.42f,
-                artScaleY = 1.70f,
-                title = strings.text("social.invite.join.title"),
-                description = strings.text("social.invite.join.description"),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = if (adaptive) 154.dp else 141.dp)
-                    .testTag("social-join-code-hero"),
-            )
+            if (!keyboardOpen) {
+                SocialReferenceHero(
+                    artRes = R.drawable.art_join_shield_v11,
+                    artSize = 72.dp,
+                    artScaleX = 1.42f,
+                    artScaleY = 1.70f,
+                    title = strings.text("social.invite.join.title"),
+                    description = strings.text("social.invite.join.description"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = if (adaptive) 154.dp else 141.dp)
+                        .testTag("social-join-code-hero"),
+                )
+            }
             IllustratedSurface(
                 colors = FriendsReferenceStyle.Cream,
-                modifier = if (adaptive) {
+                modifier = (if (keyboardOpen) {
+                    Modifier.fillMaxWidth().weight(1f)
+                } else if (adaptive) {
                     Modifier.fillMaxWidth().heightIn(min = 500.dp)
                 } else {
                     Modifier.fillMaxWidth().weight(1f)
-                }.testTag("social-join-code-form"),
+                }).testTag("social-join-code-form"),
                 radius = 17.dp,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(17.dp),
+                    modifier = Modifier.fillMaxSize().padding(
+                        horizontal = 14.dp,
+                        vertical = if (keyboardOpen) 6.dp else 20.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(if (keyboardOpen) 6.dp else 17.dp),
                 ) {
-                    Text(
-                        strings.text("social.invite.join.code_label"),
-                        style = FriendsReferenceStyle.CardTitle.copy(fontSize = 18.sp),
-                        modifier = Modifier.semantics { heading() },
-                    )
-                    Text(
-                        strings.text("social.invite.join.code_length")
-                            .replace("{count}", FriendInviteCodeLength.toString()),
-                        style = FriendsReferenceStyle.Body,
-                    )
-                    ReferenceInviteCodeField(
-                        value = inviteCode,
-                        onValueChange = onInviteCodeChange,
-                        enabled = !busy,
-                        modifier = Modifier.fillMaxWidth().height(72.dp),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFFFEAB5), RoundedCornerShape(13.dp))
-                            .border(1.dp, Color(0xFFF0C870), RoundedCornerShape(13.dp))
-                            .padding(horizontal = 10.dp, vertical = 15.dp)
-                            .testTag("social-invite-expiry-policy"),
+                    Column(
+                        modifier = if (keyboardOpen) {
+                            Modifier.weight(1f).verticalScroll(rememberScrollState())
+                        } else {
+                            Modifier
+                        },
+                        verticalArrangement = Arrangement.spacedBy(if (keyboardOpen) 6.dp else 17.dp),
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                            Icon(Icons.Outlined.StarOutline, contentDescription = null, tint = Color(0xFFFFA600), modifier = Modifier.size(25.dp))
-                            Text(strings.text("social.invite.join.expiry"), style = FriendsReferenceStyle.Small)
+                        Text(
+                            strings.text("social.invite.join.code_label"),
+                            style = FriendsReferenceStyle.CardTitle.copy(fontSize = 18.sp),
+                            modifier = Modifier.semantics { heading() },
+                        )
+                        Text(
+                            strings.text("social.invite.join.code_length")
+                                .replace("{count}", FriendInviteCodeLength.toString()),
+                            style = FriendsReferenceStyle.Body,
+                        )
+                        ReferenceInviteCodeField(
+                            value = inviteCode,
+                            onValueChange = onInviteCodeChange,
+                            enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().height(72.dp)
+                                .bringIntoViewRequester(codeRequester),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFEAB5), RoundedCornerShape(13.dp))
+                                .border(1.dp, Color(0xFFF0C870), RoundedCornerShape(13.dp))
+                                .padding(horizontal = 10.dp, vertical = 15.dp)
+                                .testTag("social-invite-expiry-policy"),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                Icon(Icons.Outlined.StarOutline, contentDescription = null, tint = Color(0xFFFFA600), modifier = Modifier.size(25.dp))
+                                Text(strings.text("social.invite.join.expiry"), style = FriendsReferenceStyle.Small)
+                            }
+                        }
+                        if (keyboardOpen) {
+                            Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                                ReferenceDivider(strings.text("social.reference.or"))
+                            }
+                            ReferenceRouteTile(
+                                label = strings.text("social.invite.create_own"),
+                                leading = { Icon(Icons.Outlined.Key, contentDescription = null, modifier = Modifier.size(27.dp)) },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 66.dp)
+                                    .testTag("social-invite-create-own"),
+                                onClick = onCreateOwnCode,
+                            )
+                        } else {
+                            Spacer(Modifier.height(9.dp))
                         }
                     }
-                    Spacer(Modifier.height(9.dp))
                     ReferenceBlueButton(
                         label = strings.text("social.invite.join.action"),
                         enabled = inviteCode.length == FriendInviteCodeLength && !busy,
                         busy = busy,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).testTag("social-invite-join"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)
+                            .testTag("social-invite-join"),
                         leading = { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(25.dp)) },
                         onClick = onJoin,
                     )
-                    Spacer(Modifier.height(7.dp))
-                    Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
-                        ReferenceDivider(strings.text("social.reference.or"))
+                    if (!keyboardOpen) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                        ) {
+                            Box(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                                ReferenceDivider(strings.text("social.reference.or"))
+                            }
+                            ReferenceRouteTile(
+                                label = strings.text("social.invite.create_own"),
+                                leading = { Icon(Icons.Outlined.Key, contentDescription = null, modifier = Modifier.size(27.dp)) },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 66.dp)
+                                    .testTag("social-invite-create-own"),
+                                onClick = onCreateOwnCode,
+                            )
+                        }
                     }
-                    ReferenceRouteTile(
-                        label = strings.text("social.invite.create_own"),
-                        leading = { Icon(Icons.Outlined.Key, contentDescription = null, modifier = Modifier.size(27.dp)) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 66.dp).testTag("social-invite-create-own"),
-                        onClick = onCreateOwnCode,
-                    )
                 }
             }
         }

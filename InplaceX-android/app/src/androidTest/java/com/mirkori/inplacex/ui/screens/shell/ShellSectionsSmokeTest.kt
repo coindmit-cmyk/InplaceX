@@ -20,6 +20,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -1414,7 +1415,9 @@ class ShellSectionsSmokeTest {
 
         composeRule.onNodeWithText("Дуэль").performClick()
         composeRule.onNodeWithText("Быстрая дуэль").assertIsNotEnabled()
-        composeRule.onNodeWithTag("reference-duel-records").assertIsNotEnabled()
+        composeRule.onNodeWithTag("reference-duel-records").assertIsEnabled()
+        composeRule.onNodeWithTag("reference-duel-records").performClick()
+        composeRule.onNodeWithTag("home-records-screen").assertIsDisplayed()
     }
 
     @Test

@@ -51,6 +51,7 @@ import com.mirkori.inplacex.core.engine.SecretGenerator
 import com.mirkori.inplacex.core.match.PreMatchPhase
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.core.model.GameModeDefinition
+import com.mirkori.inplacex.data.local.ModeStats
 import com.mirkori.inplacex.platform.config.AppConfigCatalog
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
@@ -98,6 +99,8 @@ fun HomeRootScreen(
     onMatchStarted: () -> Unit = {},
     onRecordPveResult: (Boolean) -> Unit = {},
     onRecordPvpResult: (Boolean) -> Unit = {},
+    pveStats: ModeStats = ModeStats(wins = 0, losses = 0),
+    pvpStats: ModeStats = ModeStats(wins = 0, losses = 0),
     onOpenCompany: () -> Unit = {},
     onOpenOnlineMatch: (RemoteFriendPlayStyle, Int) -> Unit = { _, _ -> },
     onlineAvailable: Boolean = false,
@@ -109,6 +112,7 @@ fun HomeRootScreen(
     var showPreMatchDialog by rememberSaveable { mutableStateOf(false) }
     var showDuelResultDialog by rememberSaveable { mutableStateOf(false) }
     var duelResultText by rememberSaveable { mutableStateOf("") }
+    var showPvpModes by rememberSaveable { mutableStateOf(false) }
     var raceResultWon by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var raceResultLostToOpponent by rememberSaveable { mutableStateOf(false) }
     var raceResultAttempts by rememberSaveable { mutableIntStateOf(0) }
@@ -135,9 +139,17 @@ fun HomeRootScreen(
 
     LaunchedEffect(screenState) {
         onInGameChange(screenState == HomeScreenState.PVE_GAME || screenState == HomeScreenState.PVP_GAME)
-        onNestedScreenChange(screenState == HomeScreenState.RACE_MODES || screenState == HomeScreenState.PVP_MODES)
+        onNestedScreenChange(
+            screenState in setOf(
+                HomeScreenState.RACE_MODES,
+                HomeScreenState.PVP_MODES,
+                HomeScreenState.RACE_RECORDS,
+                HomeScreenState.PVP_RECORDS,
+            ),
+        )
         if (screenState == HomeScreenState.ROOT) {
             onDebugSecretChange(null)
+            showPvpModes = false
         }
     }
 
@@ -186,6 +198,8 @@ fun HomeRootScreen(
 
         when (screenState) {
             HomeScreenState.ROOT -> Unit
+            HomeScreenState.RACE_RECORDS -> onScreenStateChange(HomeScreenState.RACE_MODES)
+            HomeScreenState.PVP_RECORDS -> onScreenStateChange(HomeScreenState.PVP_MODES)
             HomeScreenState.RACE_MODES,
             HomeScreenState.PVP_MODES -> onScreenStateChange(HomeScreenState.ROOT)
             HomeScreenState.PVE_GAME,
@@ -200,6 +214,15 @@ fun HomeRootScreen(
         raceResultLostToOpponent = false
         onScreenStateChange(HomeScreenState.ROOT)
         onDebugSecretChange(null)
+    }
+
+    fun openLocalDuel() {
+        preMatchPhase = PreMatchPhase.SECRET_SELECTION
+        preMatchTimeoutLeft = pvpMode.preMatchConfig?.secretSelectionTimeoutSeconds ?: 60
+        botWaitLeft = pvpMode.preMatchConfig?.devBotSecretDelaySeconds ?: 5
+        preMatchSecretInput = ""
+        preMatchError = null
+        showPreMatchDialog = true
     }
 
     BackHandler(
@@ -223,6 +246,14 @@ fun HomeRootScreen(
         }
     }
     BackHandler(
+        enabled = screenState in setOf(HomeScreenState.RACE_RECORDS, HomeScreenState.PVP_RECORDS),
+    ) {
+        onScreenStateChange(
+            if (screenState == HomeScreenState.RACE_RECORDS) HomeScreenState.RACE_MODES
+            else HomeScreenState.PVP_MODES,
+        )
+    }
+    BackHandler(
         enabled = screenState in setOf(HomeScreenState.RACE_MODES, HomeScreenState.PVP_MODES) &&
             !showExitDialog &&
             !showPreMatchDialog &&
@@ -239,6 +270,12 @@ fun HomeRootScreen(
             raceResultWon == null
     ) {
         showExitDialog = true
+    }
+
+    BackHandler(
+        enabled = screenState == HomeScreenState.ROOT && showPvpModes,
+    ) {
+        showPvpModes = false
     }
 
     when (screenState) {
@@ -270,6 +307,7 @@ fun HomeRootScreen(
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
+                onOpenRecords = { onScreenStateChange(HomeScreenState.PVP_RECORDS) },
             )
         }
 
@@ -284,6 +322,23 @@ fun HomeRootScreen(
                 },
                 onlineAvailable = onlineAvailable,
                 onBack = { onScreenStateChange(HomeScreenState.ROOT) },
+                onOpenRecords = { onScreenStateChange(HomeScreenState.RACE_RECORDS) },
+            )
+        }
+
+        HomeScreenState.RACE_RECORDS -> {
+            HomeRecordsScreen(
+                kind = ReferenceSetupKind.RACE,
+                stats = pveStats,
+                onBack = { onScreenStateChange(HomeScreenState.RACE_MODES) },
+            )
+        }
+
+        HomeScreenState.PVP_RECORDS -> {
+            HomeRecordsScreen(
+                kind = ReferenceSetupKind.DUEL,
+                stats = pvpStats,
+                onBack = { onScreenStateChange(HomeScreenState.PVP_MODES) },
             )
         }
 

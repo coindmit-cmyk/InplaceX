@@ -8,9 +8,11 @@ import com.mirkori.inplacex.platform.online.AccessTokenProvider
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.services.BillingService
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
+import com.mirkori.inplacex.platform.update.AppUpdateOriginPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,6 +28,7 @@ class ReleaseVariantIsolationTest {
         assertEquals(expectedPackage, BuildConfig.APPLICATION_ID)
         assertTrue(BuildConfig.MIRKORI_PLATFORM_BASE_URL.startsWith("https://"))
         assertFalse(BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK)
+        assertFalse(BuildConfig.SIDELOAD_UPDATES_ENABLED)
         assertFalse(testFriendBotEnabled())
         assertEquals(
             BuildConfig.GOOGLE_PLAY_WEB_CLIENT_ID.isNotBlank(),
@@ -93,6 +96,21 @@ class ReleaseVariantIsolationTest {
         assertEquals("inplacex.remove_ads", BuildConfig.BILLING_REMOVE_ADS_PRODUCT_ID)
         assertEquals("inplacex.pro", BuildConfig.BILLING_PRO_SUBSCRIPTION_ID)
         assertEquals("inplacex.pro_plus", BuildConfig.BILLING_PRO_PLUS_SUBSCRIPTION_ID)
+    }
+
+    @Test
+    fun `release update origin is HTTPS and cannot enable a cleartext remote download`() {
+        assertTrue(BuildConfig.VERSION_CODE > 0)
+        AppUpdateOriginPolicy(
+            platformBaseUrl = BuildConfig.MIRKORI_PLATFORM_BASE_URL,
+            allowCleartextLoopback = BuildConfig.MIRKORI_PLATFORM_ALLOW_CLEARTEXT_LOOPBACK,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            AppUpdateOriginPolicy(
+                platformBaseUrl = "http://games.dmit.life",
+                allowCleartextLoopback = false,
+            )
+        }
     }
 
     @Test

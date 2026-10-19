@@ -29,6 +29,7 @@ class DebugProviderServicesTest {
         )
 
         assertEquals("sandbox", BuildConfig.PROVIDER_ENVIRONMENT)
+        assertFalse(BuildConfig.SIDELOAD_UPDATES_ENABLED)
         assertTrue(services.authService is StubGooglePlayAuthService)
         assertTrue(services.adService is StubAdService)
         assertTrue(services.billingService is StubBillingService)

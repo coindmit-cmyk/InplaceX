@@ -6,6 +6,7 @@ import com.mirkori.platform.sdk.PlatformHttpRequest
 import com.mirkori.platform.sdk.PlatformHttpResponse
 import com.mirkori.platform.sdk.PlatformTransport
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
@@ -56,16 +57,21 @@ class MirkoriTransportException(
 
 fun createMirkoriHttpClient(policy: MirkoriTransportPolicy = MirkoriTransportPolicy()): HttpClient =
     HttpClient(OkHttp) {
-        expectSuccess = false
-        install(HttpTimeout) {
-            connectTimeoutMillis = policy.connectTimeoutMillis
-            requestTimeoutMillis = policy.requestTimeoutMillis
-            socketTimeoutMillis = policy.socketTimeoutMillis
-        }
+        applyMirkoriHttpClientPolicy(policy)
         engine {
             config { followRedirects(false) }
         }
     }
+
+internal fun HttpClientConfig<*>.applyMirkoriHttpClientPolicy(policy: MirkoriTransportPolicy) {
+    expectSuccess = false
+    followRedirects = false
+    install(HttpTimeout) {
+        connectTimeoutMillis = policy.connectTimeoutMillis
+        requestTimeoutMillis = policy.requestTimeoutMillis
+        socketTimeoutMillis = policy.socketTimeoutMillis
+    }
+}
 
 class KtorMirkoriPlatformTransport(
     private val client: HttpClient,

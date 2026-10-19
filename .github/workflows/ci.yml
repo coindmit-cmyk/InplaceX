@@ -42,6 +42,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform and signing tools
         run: sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
@@ -60,6 +62,9 @@ jobs:
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleRfDebug
+
+      - name: Verify debug merged manifest excludes sideload capability
+        run: python3 scripts/ci/validate_sideload_update_contract.py --merged-manifest InplaceX-android/app/build/intermediates/merged_manifests/rfDebug/processRfDebugManifest/AndroidManifest.xml
 
       - name: Write debug artifact identity
         run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/rf/debug/app-rf-debug.apk --output-dir build/ci-artifacts --artifact-type debug --expected-signing verified
@@ -92,6 +97,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform
         run: sdkmanager --install "platform-tools" "platforms;android-36"
@@ -133,6 +140,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android platform and signing tools
         run: sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
@@ -148,6 +157,78 @@ jobs:
 
       - name: Assemble unsigned release artifact
         run: ./gradlew :app:assembleRelease
+
+      - name: Verify release merged manifest excludes sideload capability
+        run: python3 scripts/ci/validate_sideload_update_contract.py --merged-manifest InplaceX-android/app/build/intermediates/merged_manifests/rfRelease/processRfReleaseManifest/AndroidManifest.xml
+
+      - name: Create ephemeral CI signing identity
+        id: ephemeral_signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          signing_directory="$(mktemp -d "${RUNNER_TEMP}/inplacex-ci-signing.XXXXXX")"
+          signing_store="$signing_directory/ci-only.p12"
+          signing_properties="$signing_directory/signing.properties"
+          signing_password="$(od -An -N24 -tx1 /dev/urandom | tr -d '[:space:]')"
+          keytool -genkeypair \
+            -storetype PKCS12 \
+            -keystore "$signing_store" \
+            -storepass "$signing_password" \
+            -keypass "$signing_password" \
+            -alias inplacex-ci-only \
+            -keyalg RSA \
+            -keysize 2048 \
+            -sigalg SHA256withRSA \
+            -validity 2 \
+            -dname "CN=InplaceX CI,OU=Ephemeral,O=InplaceX,C=US" \
+            -noprompt
+          certificate_sha256="$(
+            keytool -exportcert \
+              -keystore "$signing_store" \
+              -storepass "$signing_password" \
+              -alias inplacex-ci-only |
+              sha256sum |
+              awk '{ print toupper($1) }' |
+              sed 's/../&:/g; s/:$//'
+          )"
+          test -n "$certificate_sha256"
+          {
+            printf 'storeFile=%s\n' "$signing_store"
+            printf 'storePassword=%s\n' "$signing_password"
+            printf 'keyAlias=%s\n' 'inplacex-ci-only'
+            printf 'keyPassword=%s\n' "$signing_password"
+            printf 'expectedCertificateSha256=%s\n' "$certificate_sha256"
+          } > "$signing_properties"
+          chmod 0600 "$signing_store" "$signing_properties"
+          printf 'properties=%s\n' "$signing_properties" >> "$GITHUB_OUTPUT"
+          printf 'directory=%s\n' "$signing_directory" >> "$GITHUB_OUTPUT"
+
+      - name: Run signed candidate unit tests
+        run: ./gradlew :app:testRfSignedReleaseCandidateUnitTest -PinplacexReleaseSigningFile="${{ steps.ephemeral_signing.outputs.properties }}"
+
+      - name: Generate signed candidate merged manifest
+        run: ./gradlew :app:processRfSignedReleaseCandidateManifest -PinplacexReleaseSigningFile="${{ steps.ephemeral_signing.outputs.properties }}"
+
+      - name: Verify signed candidate merged manifest includes isolated sideload capability
+        run: python3 scripts/ci/validate_sideload_update_contract.py --merged-manifest InplaceX-android/app/build/intermediates/merged_manifests/rfSignedReleaseCandidate/processRfSignedReleaseCandidateManifest/AndroidManifest.xml --updater-enabled
+
+      - name: Remove ephemeral CI signing identity
+        if: always()
+        shell: bash
+        env:
+          SIGNING_DIRECTORY: ${{ steps.ephemeral_signing.outputs.directory }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$SIGNING_DIRECTORY" ]]; then
+            exit 0
+          fi
+          case "$SIGNING_DIRECTORY" in
+            "${RUNNER_TEMP}"/inplacex-ci-signing.*) ;;
+            *) exit 1 ;;
+          esac
+          rm -f -- "$SIGNING_DIRECTORY/signing.properties" "$SIGNING_DIRECTORY/ci-only.p12"
+          rmdir -- "$SIGNING_DIRECTORY"
 
       - name: Write release artifact identity
         run: bash scripts/ci/artifact_identity.sh --apk InplaceX-android/app/build/outputs/apk/rf/release/app-rf-release-unsigned.apk --output-dir build/ci-release-artifacts --artifact-type release --expected-signing unverified
@@ -178,6 +259,9 @@ jobs:
 
       - name: Validate CI contract and hostile fixtures
         run: python3 scripts/ci/validate_ci_contract.py --self-test
+
+      - name: Validate signed-candidate sideload isolation
+        run: python3 scripts/ci/validate_sideload_update_contract.py
 
   backend-production-runtime:
     name: Production backend deploy and rollback

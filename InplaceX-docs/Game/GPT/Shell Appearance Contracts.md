@@ -39,6 +39,13 @@ Current runtime behavior:
 - runtime Compose still renders fallback colors and material icons
 - this keeps the shell editable without introducing a full asset-loader yet
 
+## Online game ownership contract
+
+- Shell appearance follows the child's actual game state, not its destination: setup/active play owns the in-game shell; Ready, loading, waiting, error, and finished states use the ordinary menu shell.
+- The online child reports state through SocialRoot. While that child owns Back, its HUD exit is forwarded and consumed once; system Back remains supported. The active-to-match setup contract is preserved, and the latest callback/disposal resets shell state.
+- During gameplay the child-owned HUD exposes Back and shell navigation (including shop/tabs) is hidden. The menu shell returns after result/exit.
+- A suitable SDK banner reserves bottom space only after `onAdLoaded`; menus and ineligible entitlement/consent states do not gain an ad slot. Existing ad producer and entitlement/consent policy remain authoritative.
+
 ## Localization keys
 
 Top bar keys:

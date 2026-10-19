@@ -608,6 +608,8 @@ private fun BoostsCatalog(
                 onBuyEnergy,
                 strings.text("shop.item.energy.desc"),
                 Icons.Outlined.Bolt, R.drawable.art_energy_v10,
+                purchaseAvailable = progressState.campaignEnergy < progressState.campaignEnergyMax,
+                unavailableReason = strings.text("shop.energy_full"),
             ),
             ShopItem(
                 strings.text("shop.item.check_position"),
@@ -649,6 +651,8 @@ private data class ShopItem(
     val description: String,
     val icon: ImageVector,
     val artwork: Int? = null,
+    val purchaseAvailable: Boolean = true,
+    val unavailableReason: String? = null,
 )
 
 @Composable
@@ -716,14 +720,16 @@ private fun ShopItemCard(
 ) {
     val strings = LocalAppStrings.current
     val affordable = coins >= item.price
+    val purchaseEnabled = affordable && item.purchaseAvailable
     val stockLabel = strings.text("shop.stock").replace("{count}", item.stock.toString())
     val priceLabel = strings.text("shop.price").replace("{price}", item.price.toString())
-    val errorLabel = strings.text("shop.not_enough_coins")
+    val errorLabel = item.unavailableReason.takeUnless { item.purchaseAvailable }
+        ?: strings.text("shop.not_enough_coins")
 
     if (!compact) {
         ExpandedShopItemCard(
             item = item,
-            affordable = affordable,
+            affordable = purchaseEnabled,
             stockLabel = stockLabel,
             priceLabel = priceLabel,
             errorLabel = errorLabel,
@@ -823,7 +829,7 @@ private fun ShopItemCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (!affordable) {
+                    if (!purchaseEnabled) {
                         Text(
                             text = errorLabel,
                             color = PageColors.Error,
@@ -840,7 +846,7 @@ private fun ShopItemCard(
                 price = item.price,
                 priceLabel = priceLabel,
                 errorLabel = errorLabel,
-                enabled = affordable,
+                enabled = purchaseEnabled,
                 onClick = { onReport(item.onBuy()) },
             )
         }

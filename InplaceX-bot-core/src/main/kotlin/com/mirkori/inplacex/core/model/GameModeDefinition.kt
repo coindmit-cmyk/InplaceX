@@ -29,5 +29,8 @@ data class GameModeDefinition(
         require(moveLimit == null || moveLimit > 0) {
             "moveLimit must be null or > 0"
         }
+        require(turnTimeLimitSeconds == null || turnTimeLimitSeconds > 0) {
+            "turnTimeLimitSeconds must be null or positive"
+        }
     }
 }

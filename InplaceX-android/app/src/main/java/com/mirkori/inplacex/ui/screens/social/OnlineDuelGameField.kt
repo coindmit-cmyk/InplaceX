@@ -28,6 +28,7 @@ import com.mirkori.inplacex.core.match.MatchFeedback
 import com.mirkori.inplacex.core.match.MatchPhase
 import com.mirkori.inplacex.core.model.GameConfig
 import com.mirkori.inplacex.platform.localization.LocalAppStrings
+import com.mirkori.inplacex.platform.logging.AppLog
 import com.mirkori.inplacex.platform.online.OnlineDuelSnapshotState
 import com.mirkori.inplacex.platform.online.RemoteFriendPlayStyle
 import com.mirkori.inplacex.ui.GameScreen
@@ -59,8 +60,15 @@ internal fun OnlineDuelGameField(
     submitting: Boolean,
     onSubmitGuess: (String) -> Unit,
     onBack: () -> Unit,
+    autoModeAvailable: Boolean = false,
 ) {
     val strings = LocalAppStrings.current
+    LaunchedEffect(autoModeAvailable) {
+        AppLog.info(
+            tag = "OnlineDuelGameField",
+            message = if (autoModeAvailable) "auto_mode_available" else "auto_mode_unavailable",
+        )
+    }
     var editor by rememberSaveable(
         snapshot.sessionId,
         stateSaver = onlineDuelEditorSaver(snapshot.codeLength),
@@ -104,6 +112,7 @@ internal fun OnlineDuelGameField(
         snapshot = snapshot,
         knownPlayerGuesses = knownPlayerGuesses,
         editor = editor,
+        autoModeAvailable = autoModeAvailable,
         inputEnabled = (
             snapshot.playStyle == RemoteFriendPlayStyle.RACE ||
                 snapshot.currentTurn == PLAYER_ACTOR
@@ -123,7 +132,7 @@ internal fun OnlineDuelGameField(
         totalTimeLimitSeconds = totalTimeLimitSeconds,
     )
 
-    val effectiveFacts = if (editor.autoExcludeEnabled) {
+    val effectiveFacts = if (autoModeAvailable && editor.autoExcludeEnabled) {
         uiState.evidence.deduction.provenFacts
     } else {
         emptySet()
@@ -175,14 +184,18 @@ internal fun OnlineDuelGameField(
                         }
 
                         GameFieldEvent.MatchRestarted -> editor.clearInputKeepingYes()
-                        else -> editor.reduce(event, effectiveFacts)
+                        else -> editor.reduce(event, effectiveFacts, autoModeAvailable)
                     }
                 },
                 onAnalysisCellPressed = { digit, position ->
                     editor = editor.changeManualMark(digit, position, snapshot.allowDuplicates)
                 },
                 onDigitPressed = { digit ->
-                    editor = editor.reduce(GameFieldEvent.DigitEntered(digit), effectiveFacts)
+                    editor = editor.reduce(
+                        GameFieldEvent.DigitEntered(digit),
+                        effectiveFacts,
+                        autoModeAvailable,
+                    )
                 },
             ),
         )
@@ -200,13 +213,14 @@ internal data class OnlineDuelEditorState(
     fun reduce(
         event: GameFieldEvent,
         provenFacts: Collection<ProvenFact> = emptySet(),
+        autoModeAvailable: Boolean = false,
     ): OnlineDuelEditorState = when (event) {
         is GameFieldEvent.DigitEntered -> copy(
-            input = input.enterDigit(event.digit, fixedPositions(provenFacts)),
+            input = input.enterDigit(event.digit, fixedPositions(provenFacts, autoModeAvailable)),
             status = GameFieldStatus.Idle,
         )
         GameFieldEvent.BackspacePressed -> copy(
-            input = input.backspace(fixedPositions(provenFacts)),
+            input = input.backspace(fixedPositions(provenFacts, autoModeAvailable)),
             status = GameFieldStatus.Idle,
         )
         is GameFieldEvent.ToolSelected -> copy(
@@ -214,10 +228,11 @@ internal data class OnlineDuelEditorState(
             status = GameFieldStatus.Idle,
         )
 
-        is GameFieldEvent.AutoExcludeChanged -> copy(
-            autoExcludeEnabled = event.enabled,
-            status = GameFieldStatus.Idle,
-        )
+        is GameFieldEvent.AutoExcludeChanged -> if (autoModeAvailable) {
+            copy(autoExcludeEnabled = event.enabled, status = GameFieldStatus.Idle)
+        } else {
+            this
+        }
 
         is GameFieldEvent.NoticeChanged -> copy(status = GameFieldStatus.Idle)
         else -> this
@@ -276,11 +291,14 @@ internal data class OnlineDuelEditorState(
         return copy(input = GameFieldInputState(slots), status = GameFieldStatus.Idle)
     }
 
-    private fun fixedPositions(provenFacts: Collection<ProvenFact>): Set<Int> {
+    private fun fixedPositions(
+        provenFacts: Collection<ProvenFact>,
+        autoModeAvailable: Boolean,
+    ): Set<Int> {
         val positions = manualMarks
             .filter { it.type == GameFieldManualMarkType.YES }
             .mapTo(mutableSetOf(), GameFieldManualMark::position)
-        if (autoExcludeEnabled) {
+        if (autoModeAvailable && autoExcludeEnabled) {
             provenFacts.filter(ProvenFact::isExactMatch).mapTo(positions, ProvenFact::position)
         }
         return positions
@@ -307,6 +325,7 @@ internal fun buildOnlineDuelGameFieldState(
     turnLabel: String,
     elapsedSeconds: Int = 0,
     totalTimeLimitSeconds: Int = 0,
+    autoModeAvailable: Boolean = false,
 ): com.mirkori.inplacex.ui.screens.game.state.GameFieldUiState {
     val playerAttempts = snapshot.attempts
         .filter { it.actor == PLAYER_ACTOR }
@@ -361,7 +380,7 @@ internal fun buildOnlineDuelGameFieldState(
             totalTimeLimitSeconds = totalTimeLimitSeconds,
             hintsEnabled = false,
             boostsEnabled = false,
-            autoModeAvailable = true,
+            autoModeAvailable = autoModeAvailable,
         ),
         match = GameFieldMatchState(
             phase = MatchPhase.ACTIVE,
@@ -382,7 +401,7 @@ internal fun buildOnlineDuelGameFieldState(
         timers = GameFieldTimers(elapsedSeconds = elapsedSeconds),
         tools = GameFieldToolsState(
             selectedTool = editor.selectedTool,
-            autoExcludeEnabled = editor.autoExcludeEnabled,
+            autoExcludeEnabled = autoModeAvailable && editor.autoExcludeEnabled,
         ),
         counters = GameFieldCounters(),
         status = editor.status,

@@ -82,6 +82,7 @@ object FinalUiDimens {
 
 @Immutable
 data class GameFieldLayoutMetrics(
+    val fontScale: Float = 1f,
     val attemptsWeight: Float,
     val matrixWeight: Float,
     val matrixGap: Dp,
@@ -105,6 +106,7 @@ data class GameFieldLayoutMetrics(
 fun finalGameFieldMetrics(
     codeLength: Int,
     compactHeight: Boolean,
+    fontScale: Float = 1f,
 ): GameFieldLayoutMetrics {
     val normalized = codeLength.coerceIn(4, 10)
     val base = when (normalized) {
@@ -176,7 +178,7 @@ fun finalGameFieldMetrics(
             toolsHeight = 34.dp,
         )
     }
-    return if (!compactHeight) {
+    val heightAdjusted = if (!compactHeight) {
         base
     } else {
         base.copy(
@@ -189,4 +191,15 @@ fun finalGameFieldMetrics(
             toolsHeight = (base.toolsHeight - 2.dp).coerceAtLeast(32.dp),
         )
     }
+    val scale = fontScale
+    return heightAdjusted.copy(
+        fontScale = scale,
+        matrixCellHeight = heightAdjusted.matrixCellHeight * scale,
+        attemptRowHeight = heightAdjusted.attemptRowHeight * scale,
+        inputSlotHeight = heightAdjusted.inputSlotHeight * scale,
+        keypadHeight = heightAdjusted.keypadHeight * scale,
+        topPanelMinHeight = heightAdjusted.topPanelMinHeight * scale,
+        helpersHeight = heightAdjusted.helpersHeight * scale,
+        toolsHeight = heightAdjusted.toolsHeight * scale,
+    )
 }

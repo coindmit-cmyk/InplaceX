@@ -18,6 +18,12 @@
 - Generated full-screen mockups are reference evidence, not runtime screens. Approved independent
   decorative assets derived from them may ship when they contain no controls, labels, or game state.
 
+## Game Typography
+
+- Owner decision (2026-10-15 UTC): shared game fields use standard 1.0 typography sizing.
+- Game typography adapts to available physical width, height, and density while retaining original pixel density.
+- Native system and menu fonts outside the game subtree retain user preferences; the app does not change Android font or density settings.
+
 ## Toy Room v5 Visual Direction
 
 The owner-approved visual references define the current art direction for
@@ -72,6 +78,14 @@ Home mode cards keep titles to one line and descriptions to two lines on phone
 layouts. The shared opponent-choice surface groups code length and opponent
 actions inside one cream card and uses the current mode color only for the
 primary action.
+
+## Local Statistics Contract
+
+Race statistics are read-only local PvE bot-training wins and losses. Duel statistics are read-only shared PvP wins and losses: bot duels and all online matches, including online Race. Do not imply a historical per-online-format split. Show accurate zero/zero when no local results exist. Local statistics are not a global leaderboard or server ranking.
+
+Provide explicit Russian and English scope labels and empty states. Best-time records, attempt records, and global/server ranking are NOT_DONE and must not be presented as available.
+
+Statistics are nested, non-game destinations: preserve the home chrome and selected code length on return. Support explicit, system, and HUD Back. Mode state uses warm cream surfaces with semantic orange for Race and purple for Duel, plus non-color labels; long content remains scrollable. The primary Back target must remain at least 48 native dp even inside a scaled reference canvas.
 
 ## Gameplay Color Pass Contract
 

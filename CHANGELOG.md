@@ -2,6 +2,54 @@
 
 ## Unreleased
 
+- Онлайн-опрос больше не вызывает запись статистики для неизменившейся ревизии
+  матча каждые 750 мс. Первый снимок, восстановление сессии и новые ревизии,
+  включая завершение матча, сохраняют прежний учёт. Добавлена UI-регрессия с
+  несколькими повторными опросами и проверкой доставки обновления и результата.
+
+- Исправлен запуск UI-регрессий в GitHub CI: включена экранная клавиатура,
+  foreground handshake и параметры
+  A05/A07 задаются явно только для эмулятора. Smoke-тест восстановления проходит
+  через актуальный экран настройки гонки и проверяет сохранение попытки и ввода;
+  локальная статистика остаётся доступна без online runtime. Production-код и
+  ручные проверки физических устройств сохранены. Настройка SDK больше не
+  запрашивает удалённый пакет `tools`.
+
+- 19 октября 2026: объединены проверенные исправления ревизии, сохранённые
+  изменения ядра и защищённый APK updater с текущими контрактами платформы.
+  Локально оставлены `develop` и `release`; история всех 156 исходных веток,
+  уникальные изменения и старые материалы сохранены без копий всего проекта в
+  `E:\MyProgectHistory\InplaceX\cleanup-20261019`. Проверки и остаток очистки
+  файловой системы описаны в `docs/project-cleanup-20261019.md`.
+
+- Kept the private-code join button above the software keyboard, with the code
+  field and create-own action in one scrollable form. Input survives keyboard
+  transitions. Verified with real IME tests and private connections in both
+  directions on Redmi/Android 14 and OnePlus/Android 13 (audit A06).
+
+- Applied the same existing Pro entitlement to auto-table assistance in every
+  local and online mode. Default-denied entry points and synchronous online
+  input/projection guards prevent saved preferences from granting access;
+  revocation preserves manual marks, input, history and the user's manual mode.
+  Added isolated SQLite and debug-only UI coverage on both physical phones.
+- Counted accepted online match starts and caller-relative PvP results in the
+  profile once per server session. A schema-12 SQLite receipt journal shares a
+  transaction with counters, preserving prior progress through migration and
+  preventing duplicates on polling, cold restore and concurrent writes. Neutral
+  finishes do not invent wins/losses or race rewards.
+- Rejected campaign-energy purchases that cannot increase stock, including
+  regeneration to full capacity and concurrent purchases of the last slot.
+  Coin deduction and energy update now share one SQLite transaction; the shop
+  disables full-energy purchases with a localized explanation.
+- Preserved the displayed local game's secret, guesses, partial input, analysis
+  and elapsed timer across Activity recreation without counting the match start
+  twice. Replaced the unrelated-ViewModel recreation test with a debug-only
+  fixture that exercises the production screen and checks a fresh session.
+- Recorded the October 14 project audit and A01 recovery: both primary develop
+  checkouts now use the published baseline while local commits, WIP and task
+  state remain preserved. Documented freshness checks and one sequential audit PR.
+- Added a Git freshness preflight that verifies live develop, rejects obsolete
+  build sources and reports dirty work while preserving local state during fetch.
 - Updated the Mirkori Games Telegram download catalog for Platform schema v3.
   It now validates the RF and global distribution contract plus complete
   lifecycle coverage, exposes only active RF Mirkori direct-APK releases,
@@ -332,6 +380,41 @@
   `inplacex.*` values; debug catalog IDs remain configurable. Account changes
   synchronously discard the previous identity's cached paid UI state before
   any network refresh, including when the new account keeps the same player ID.
+
+- Added the first Google Play-independent Android update flow backed by the
+  public Mirkori Games stable catalog. The typed SDK verifies exact update and
+  `minimumSupportedVersionCode` semantics plus exact Android package and
+  ordered signer-lineage fields, accepts only immutable same-origin HTTPS APK
+  links, and sends no account token. The updater is isolated to the signed
+  release candidate, continuously refreshes open prompts, and durably restores
+  a required gate across restart/offline. Its bounded no-redirect downloader
+  fsyncs and atomically publishes only an exact size/SHA match; PackageManager
+  then verifies package, greater exact version, minSdk, non-debuggable status,
+  singular current signer, full target lineage, and installed-lineage prefix
+  before the narrow FileProvider and system installer are reachable. Russian
+  and English UI expose download, verification, unknown-source permission,
+  ready, unsupported, and recoverable states.
+  Installer handoff is now a serialized one-shot operation that rechecks the
+  exact durable release and artifact and keeps the runtime mutex through the
+  Android launch callback, giving handoff, refresh, replacement, and revocation
+  one linear order. Corrupt,
+  unreadable, unknown-schema, or configuration-drifted policy blocks in an
+  explicit recovery state until an authoritative response arrives, while
+  stale directories and symlinks are removed without traversal and cleanup
+  failures can no longer leave a verified artifact installable. Authoritative
+  replacement/revocation persists a recovery marker before cleanup, and both
+  the Platform and APK clients disable redirects at the Ktor and engine layers.
+  A durable refresh tombstone is now written before every authority query,
+  including when no APK is cached, so crash/restart cannot revive a revoked
+  downloadable policy or forget a newly required response. Response-marker
+  persistence and physical invalidation then run independently, so either
+  outcome still blocks stale offline restore. PR CI now runs the signed-candidate
+  unit suite and verifies its merged provider/permission boundary with a fresh
+  ephemeral CI-only signing identity that is never published.
+  Post-install cleanup now retains a blocking installed-release marker until
+  the verified cache is physically removed, so cleanup retries safely after an
+  offline restart. APK status and required-header rejection now also cancel
+  the streaming response body before returning an error.
 
 - InplaceX now bootstraps a global Mirkori Games guest profile, stores its
   installation/session, pending PKCE state and in-flight refresh identity under
