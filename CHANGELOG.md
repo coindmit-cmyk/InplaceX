@@ -2,11 +2,12 @@
 
 ## Unreleased
 
-- 19 октября 2026: перенесены проверенные исправления ревизии и сохранённые
-  изменения ядра; начата очистка старых веток и рабочих копий с проверяемой
-  историей в `E:\MyProgectHistory\InplaceX\cleanup-20261019`.
-  Незавершённая интеграция SDK и оставшиеся ограничения описаны в
-  `docs/project-cleanup-20261019.md`.
+- 19 октября 2026: объединены проверенные исправления ревизии, сохранённые
+  изменения ядра и защищённый APK updater с текущими контрактами платформы.
+  Локально оставлены `develop` и `release`; история всех 156 исходных веток,
+  уникальные изменения и старые материалы сохранены без копий всего проекта в
+  `E:\MyProgectHistory\InplaceX\cleanup-20261019`. Проверки и остаток очистки
+  файловой системы описаны в `docs/project-cleanup-20261019.md`.
 
 - Kept the private-code join button above the software keyboard, with the code
   field and create-own action in one scrollable form. Input survives keyboard
