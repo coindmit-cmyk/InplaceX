@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "rules": [
+    "Implement only the assigned task and preserve project product/architecture constraints.",
+    "Preserve unrelated changes, secrets, user data, paused work and owner-only hardware/release gates.",
+    "Use the existing project task authority; no new queue, migration or automatic activation.",
+    "Return scoped code/tests only. The host applies, checks and handles local Git and task state.",
+    "Never weaken checks or claim unperformed validation. Request missing context rather than inventing facts.",
+    "Keep existing native Android shell and project/module boundaries; do not broaden a reference UI task."
+  ],
+  "stage_limits": {
+    "context": 18000,
+    "implementation": 65000,
+    "diagnosis": 35000
+  }
+}
