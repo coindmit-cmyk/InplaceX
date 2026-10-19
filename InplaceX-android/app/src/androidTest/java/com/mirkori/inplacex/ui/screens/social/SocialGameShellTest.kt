@@ -193,6 +193,30 @@ class SocialGameShellTest {
         }
     }
 
+    @Test fun unchangedPollsDoNotRepeatSnapshotObservation() {
+        val fixture = Fixture()
+        try {
+            fixture.mount()
+            fixture.enterActive()
+            val activeReads = fixture.transport.sessionReads.get()
+            fixture.await { fixture.transport.sessionReads.get() >= activeReads + 3 }
+            assertEquals(listOf(1L, 2L), fixture.observedRevisions.toList())
+
+            fixture.transport.phase.set(Phase(3, "active"))
+            fixture.await { fixture.observedRevision.get() == 3L }
+            val revisedReads = fixture.transport.sessionReads.get()
+            fixture.await { fixture.transport.sessionReads.get() >= revisedReads + 3 }
+            assertEquals(listOf(1L, 2L, 3L), fixture.observedRevisions.toList())
+
+            fixture.transport.phase.set(Phase(4, "finished"))
+            fixture.await { fixture.observedRevision.get() == 4L && fixture.session.value == null }
+            assertEquals(listOf(1L, 2L, 3L, 4L), fixture.observedRevisions.toList())
+            fixture.assertOnlyExpectedRequests()
+        } finally {
+            fixture.close()
+        }
+    }
+
     @Test fun menuWithoutRuntimeReportsNotInGame() {
         val fixture = Fixture()
         try {
@@ -230,6 +254,7 @@ class SocialGameShellTest {
         val callbackVersion = mutableStateOf(0)
         val nested = AtomicReference<Boolean?>(null)
         val observedRevision = AtomicLong(-1)
+        val observedRevisions = CopyOnWriteArrayList<Long>()
         val consumed = AtomicInteger()
         val firstEvents = CopyOnWriteArrayList<Boolean>()
         val secondEvents = CopyOnWriteArrayList<Boolean>()
@@ -256,7 +281,10 @@ class SocialGameShellTest {
                             },
                             onInGameChange = if (callbackVersion.value == 0) firstCallback else secondCallback,
                             onNestedScreenChange = { nested.set(it) },
-                            onSnapshotObserved = { observedRevision.set(it.revision) },
+                            onSnapshotObserved = {
+                                observedRevisions.add(it.revision)
+                                observedRevision.set(it.revision)
+                            },
                         )
                     }
                 }
@@ -318,6 +346,7 @@ class SocialGameShellTest {
         val matched = AtomicBoolean(false)
         val phase = AtomicReference(Phase(1, "setup"))
         val inviteReads = AtomicInteger()
+        val sessionReads = AtomicInteger()
         val accepts = AtomicInteger()
         val unexpected = AtomicInteger()
 
@@ -327,7 +356,10 @@ class SocialGameShellTest {
                     inviteReads.incrementAndGet()
                     inviteJson(matched.get())
                 }
-                request.method == RemoteHttpMethod.GET && request.path == "/api/v1/sessions/$SessionId" -> snapshotJson(phase.get())
+                request.method == RemoteHttpMethod.GET && request.path == "/api/v1/sessions/$SessionId" -> {
+                    sessionReads.incrementAndGet()
+                    snapshotJson(phase.get())
+                }
                 request.method == RemoteHttpMethod.POST && request.path == "/api/v1/friends/invites/$InviteCode/accept" -> {
                     accepts.incrementAndGet()
                     inviteJson(true)
