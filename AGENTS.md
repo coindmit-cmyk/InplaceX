@@ -1,3 +1,18 @@
+<!-- luna-pipeline-context:start -->
+## Active execution policy — 2026-09-30
+
+Use the script + Luna pipeline for implementation; Luna diagnoses failures and
+Sol is a bounded fallback. Start from `.agent/PIPELINE_CONTEXT.md` only, then the
+assigned task and relevant project facts. Do not preload AiStudio, all `.agent/`,
+skill catalogs, earlier chats, role procedures or complete task registries into models.
+The host reads the existing task authority and gives models only the selected task.
+For each call pass only the role-specific input described in that short document.
+This owner decision supersedes older mandatory bootstrap/reading, chat-only and
+multi-role procedure requirements below; retain product rules, privacy, hardware
+gates, paused work, existing task authority and unrelated changes. Do not activate
+timers, migrate queues, publish externally or start additional work by adopting this policy.
+<!-- luna-pipeline-context:end -->
+
 # InplaceX Agent Guide
 
 This file is the entry point for AI agents working in this repository.
@@ -51,9 +66,9 @@ Run root Gradle commands from the repository root unless a task explicitly requi
 ## Build And VPS Safety
 
 - Build Android, backend, container, and production release artifacts only on
-  the owner's workstation, an approved remote build PC, or a trusted CI runner
-  with sufficient resources. Never run Gradle, Docker/Buildx, or another
-  resource-intensive production build on the application VPS.
+  the owner's workstation or an approved remote build PC with sufficient
+  resources. Never run Gradle, Docker/Buildx, or another resource-intensive
+  production build on the application VPS.
 - The VPS may receive only an already-built, immutable, checksum-pinned
   artifact. Use it for preflight, deployment, health/smoke verification, and
   rollback—not compilation or image construction.
