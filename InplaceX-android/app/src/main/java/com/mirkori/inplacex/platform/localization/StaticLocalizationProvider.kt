@@ -20,8 +20,8 @@ object StaticLocalizationProvider {
 
     internal fun featureCatalogs(language: AppLanguage): List<LocalizationCatalog> {
         val commonCatalogs = when (language) {
-            AppLanguage.RU -> listOf(HomeCatalog.ru, SecondaryCatalog.ru, GameCatalog.ru)
-            AppLanguage.EN -> listOf(HomeCatalog.en, SecondaryCatalog.en, GameCatalog.en)
+            AppLanguage.RU -> listOf(HomeCatalog.ru, SecondaryCatalog.ru, GameCatalog.ru, UpdateCatalog.ru)
+            AppLanguage.EN -> listOf(HomeCatalog.en, SecondaryCatalog.en, GameCatalog.en, UpdateCatalog.en)
         }
         return commonCatalogs + variantLocalizationCatalogs(language)
     }

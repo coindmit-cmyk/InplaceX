@@ -1,5 +1,6 @@
 package com.mirkori.inplacex.platform.mirkori
 
+import com.mirkori.inplacex.platform.update.platformDistributionUpdateCatalog
 import com.mirkori.platform.sdk.PlatformDistributionDeliveryChannel
 import com.mirkori.platform.sdk.PlatformDistributionGameRelease
 import com.mirkori.platform.sdk.PlatformDistributionMarketScope
@@ -14,10 +15,48 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MirkoriUpdateServiceTest {
+    @Test
+    fun `signed APK catalog retains RF identity required policy and selected language`() = runBlocking {
+        val catalog = platformDistributionUpdateCatalog(
+            check = { decision(required = true) },
+            distributionId = "rf-mirkori",
+            packageName = RfPackage,
+            language = { "en" },
+        )
+
+        val result = catalog.check(42)
+        assertTrue(result.required)
+        assertEquals(RfPackage, result.release?.packageName)
+        assertEquals("Fixes", result.release?.changelog)
+        assertEquals(DownloadUrl, result.release?.downloadUrl)
+        assertEquals(listOf(Fingerprint), result.release?.signingCertificateSha256Fingerprints)
+    }
+
+    @Test
+    fun `signed APK catalog rejects a foreign distribution package and store channel`() {
+        val invalid = listOf(
+            decision(distribution = distribution(id = "another-game")),
+            decision(distribution = distribution(packageName = GlobalPackage)),
+            decision(distribution = distribution(deliveryChannel = PlatformDistributionDeliveryChannel.GOOGLE_PLAY)),
+        )
+        invalid.forEach { response ->
+            val catalog = platformDistributionUpdateCatalog(
+                check = { response },
+                distributionId = "rf-mirkori",
+                packageName = RfPackage,
+                language = { "ru" },
+            )
+            assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { catalog.check(42) }
+            }
+        }
+    }
+
     @Test
     fun `maps current direct APK and Google Play decisions without granting trust to a wrong package`() = runBlocking {
         var requestedVersion = 0L

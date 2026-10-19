@@ -776,11 +776,17 @@ internal class SdkJsonCodec {
         return primitive.content.takeIf { it.length in 1..maximum && it.none(Char::isISOControl) } ?: reject()
     }
 
-    private fun JsonObject.long(name: String): Long =
-        runCatching { get(name)?.jsonPrimitive?.long }.getOrNull() ?: reject()
+    private fun JsonObject.long(name: String): Long {
+        val primitive = get(name) as? JsonPrimitive ?: reject()
+        require(!primitive.isString)
+        return runCatching { primitive.long }.getOrNull() ?: reject()
+    }
 
-    private fun JsonObject.boolean(name: String): Boolean =
-        runCatching { get(name)?.jsonPrimitive?.boolean }.getOrNull() ?: reject()
+    private fun JsonObject.boolean(name: String): Boolean {
+        val primitive = get(name) as? JsonPrimitive ?: reject()
+        require(!primitive.isString)
+        return runCatching { primitive.boolean }.getOrNull() ?: reject()
+    }
 
     private fun JsonObject.instant(name: String): Instant = runCatching {
         Instant.parse(string(name, 64))

@@ -90,6 +90,8 @@ import com.mirkori.inplacex.platform.online.OnlineClientResult
 import com.mirkori.inplacex.platform.online.OnlineFriendInvite
 import com.mirkori.inplacex.platform.online.OnlineRuntime
 import com.mirkori.inplacex.platform.profile.ProfileAvatarStore
+import com.mirkori.inplacex.platform.update.AndroidAppUpdateFactory
+import com.mirkori.inplacex.platform.update.AppUpdateState
 import com.mirkori.inplacex.platform.services.BillingProductId
 import com.mirkori.inplacex.platform.services.BillingAvailability
 import com.mirkori.inplacex.platform.services.BillingNotice
@@ -123,6 +125,7 @@ import com.mirkori.inplacex.ui.screens.home.HomeScreenState
 import com.mirkori.inplacex.ui.state.TransientOperationGate
 import com.mirkori.inplacex.ui.theme.InplaceXTheme
 import com.mirkori.inplacex.ui.theme.InplaceXColors
+import com.mirkori.inplacex.ui.update.AppUpdateDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -138,6 +141,7 @@ class MainActivity : ComponentActivity() {
     private var resumeGeneration by mutableLongStateOf(0L)
     private var socialNotificationRequest by mutableLongStateOf(0L)
     private var activityStarted by mutableStateOf(false)
+    private var updateCheckSignal by mutableLongStateOf(0L)
     private lateinit var adUsageTracker: AdUsageTracker
     private lateinit var feedbackRuntime: AndroidAppFeedbackRuntime
     private lateinit var feedbackSettingsStore: AppFeedbackSettingsStore
@@ -173,7 +177,7 @@ class MainActivity : ComponentActivity() {
                         .getOrNull()
                 }
                 val mirkoriUpdateService = remember(mirkoriPlatformRuntime) {
-                    mirkoriPlatformRuntime?.let { runtime ->
+                    mirkoriPlatformRuntime?.takeUnless { BuildConfig.SIDELOAD_UPDATES_ENABLED }?.let { runtime ->
                         MirkoriUpdateService(
                             sdk = runtime.sdk,
                             installedVersionCode = BuildConfig.VERSION_CODE.toLong(),
@@ -320,6 +324,30 @@ class MainActivity : ComponentActivity() {
                 var localAvatarPath by remember { mutableStateOf<String?>(null) }
                 var mirkoriAuthResultKey by rememberSaveable { mutableStateOf<String?>(null) }
                 val mirkoriAuthOperation = remember { TransientOperationGate() }
+                var appUpdateFactoryRetry by remember { mutableLongStateOf(0L) }
+                val appUpdateComponents = remember(appUpdateFactoryRetry) {
+                    runCatching { AndroidAppUpdateFactory.createOrNull(applicationContext) }
+                        .onFailure { error ->
+                            AppLog.warn(
+                                tag = "MainActivity",
+                                message = "Public app update runtime is unavailable",
+                                attributes = mapOf("errorClass" to error.javaClass.name),
+                            )
+                        }
+                        .getOrNull()
+                }
+                val appUpdateRuntime = appUpdateComponents?.runtime
+                var appUpdateState by remember(appUpdateRuntime, appUpdateFactoryRetry) {
+                    mutableStateOf(
+                        initialAppUpdateCompositionState(
+                            updaterEnabled = BuildConfig.SIDELOAD_UPDATES_ENABLED,
+                            runtimeState = appUpdateRuntime?.state?.value,
+                        ),
+                    )
+                }
+                DisposableEffect(appUpdateRuntime) {
+                    onDispose { appUpdateRuntime?.close() }
+                }
                 var publicPlayerProfile by remember {
                     mutableStateOf<MirkoriPublicPlayerProfile?>(null)
                 }
@@ -497,6 +525,19 @@ class MainActivity : ComponentActivity() {
                     when (val result = withContext(Dispatchers.IO) { runtime.loadPublicProfile() }) {
                         is MirkoriPublicProfileResult.Success -> publicPlayerProfile = result.profile
                         else -> publicPlayerProfile = null
+                    }
+                }
+                LaunchedEffect(appUpdateRuntime) {
+                    appUpdateRuntime?.state?.collect { state -> appUpdateState = state }
+                }
+                LaunchedEffect(updateCheckSignal, appUpdateRuntime) {
+                    val runtime = appUpdateRuntime ?: return@LaunchedEffect
+                    if (updateCheckSignal <= 0L) return@LaunchedEffect
+                    withContext(Dispatchers.IO) { runtime.refresh() }
+                }
+                LaunchedEffect(resumeGeneration, appUpdateRuntime) {
+                    if (appUpdateRuntime != null && resumeGeneration > 0L) {
+                        withContext(Dispatchers.IO) { appUpdateRuntime.refreshInstallPermission() }
                     }
                 }
                 val onlineRuntime = remember(mirkoriPlatformRuntime) {
@@ -2013,7 +2054,84 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (isAdPrivacyOpen) {
+                        if (appUpdateState.hasVisibleUpdateDialog()) {
+                            AppUpdateDialog(
+                                state = appUpdateState,
+                                onPrimaryAction = {
+                                    val runtime = appUpdateRuntime
+                                    if (runtime == null) {
+                                        if (BuildConfig.SIDELOAD_UPDATES_ENABLED) appUpdateFactoryRetry += 1L
+                                        return@AppUpdateDialog
+                                    }
+                                    when (val state = appUpdateState) {
+                                        is AppUpdateState.NeedsPermission,
+                                        is AppUpdateState.Ready,
+                                        -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                runtime.performInstallAction { claim ->
+                                                    withContext(Dispatchers.Main.immediate) {
+                                                        val installer = requireNotNull(appUpdateComponents).installer
+                                                        startActivity(
+                                                            if (claim.needsPermission) {
+                                                                installer.permissionIntent()
+                                                            } else {
+                                                                installer.installIntent(claim.artifact)
+                                                            },
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        is AppUpdateState.RecoverableError -> coroutineScope.launch {
+                                            if (state.artifact != null) {
+                                                withContext(Dispatchers.IO) {
+                                                    runtime.performInstallAction { claim ->
+                                                        withContext(Dispatchers.Main.immediate) {
+                                                            val installer = requireNotNull(appUpdateComponents).installer
+                                                            startActivity(
+                                                                if (claim.needsPermission) {
+                                                                    installer.permissionIntent()
+                                                                } else {
+                                                                    installer.installIntent(claim.artifact)
+                                                                },
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                withContext(Dispatchers.IO) { runtime.prepareInstall() }
+                                            }
+                                        }
+                                        is AppUpdateState.Unsupported -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.refresh() }
+                                        }
+                                        AppUpdateState.PolicyRecovery -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.refresh() }
+                                        }
+                                        is AppUpdateState.Optional,
+                                        is AppUpdateState.Required,
+                                        -> coroutineScope.launch {
+                                            withContext(Dispatchers.IO) { runtime.prepareInstall() }
+                                        }
+                                        AppUpdateState.Checking,
+                                        AppUpdateState.Current,
+                                        is AppUpdateState.Downloading,
+                                        is AppUpdateState.Verifying,
+                                        is AppUpdateState.Refreshing,
+                                        is AppUpdateState.HandingOff,
+                                        -> Unit
+                                    }
+                                },
+                                onDismissOptional = {
+                                    appUpdateState.releaseIdForOptionalDismissal()
+                                        ?.let { releaseId ->
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                appUpdateRuntime?.dismissOptional(releaseId)
+                                            }
+                                        }
+                                },
+                            )
+                        } else if (isAdPrivacyOpen) {
                             AdPrivacyConsentDialog(
                                 onAccept = {
                                     providerServices.adConsent.updateDecision(
@@ -2095,6 +2213,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         activityStarted = true
         adUsageTracker.onForeground()
+        updateCheckSignal += 1L
     }
 
     override fun onStop() {
@@ -2137,6 +2256,34 @@ class MainActivity : ComponentActivity() {
         mirkoriCallbackUrl = null
         setIntent(Intent(intent).setData(null))
     }
+}
+
+private fun AppUpdateState.releaseIdForOptionalDismissal(): String? = when (this) {
+    is AppUpdateState.Optional -> release.id
+    is AppUpdateState.Unsupported -> release.id.takeIf { !required }
+    is AppUpdateState.RecoverableError -> release?.id?.takeIf { !required }
+    is AppUpdateState.NeedsPermission -> release.id.takeIf { !required }
+    is AppUpdateState.Ready -> release.id.takeIf { !required }
+    is AppUpdateState.Refreshing -> release.id.takeIf { !required }
+    else -> null
+}
+
+private fun AppUpdateState.hasVisibleUpdateDialog(): Boolean = when (this) {
+    AppUpdateState.Checking,
+    AppUpdateState.Current,
+    -> false
+    AppUpdateState.PolicyRecovery -> true
+    is AppUpdateState.RecoverableError -> release != null
+    else -> true
+}
+
+internal fun initialAppUpdateCompositionState(
+    updaterEnabled: Boolean,
+    runtimeState: AppUpdateState?,
+): AppUpdateState = runtimeState ?: if (updaterEnabled) {
+    AppUpdateState.PolicyRecovery
+} else {
+    AppUpdateState.Current
 }
 
 internal fun initialSectionForActiveOnlineSession(sessionId: String?): AppSection =

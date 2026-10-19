@@ -4,13 +4,26 @@ import com.mirkori.inplacex.platform.mirkori.MirkoriProAccessState
 import com.mirkori.inplacex.platform.mirkori.MirkoriProAvailability
 import com.mirkori.inplacex.platform.mirkori.MirkoriProNotice
 import com.mirkori.inplacex.platform.services.MonetizationEntitlements
+import com.mirkori.inplacex.platform.update.AppUpdateState
 import com.mirkori.inplacex.ui.navigation.AppSection
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MainActivityLogicTest {
+    @Test
+    fun `enabled updater construction failure blocks instead of assuming current`() {
+        assertSame(
+            AppUpdateState.PolicyRecovery,
+            initialAppUpdateCompositionState(updaterEnabled = true, runtimeState = null),
+        )
+        assertSame(
+            AppUpdateState.Current,
+            initialAppUpdateCompositionState(updaterEnabled = false, runtimeState = null),
+        )
+    }
     @Test
     fun activeOnlineSessionRestoresSocialSection() {
         assertEquals(

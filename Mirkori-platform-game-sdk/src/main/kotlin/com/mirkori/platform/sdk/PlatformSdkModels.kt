@@ -90,6 +90,8 @@ data class PlatformUpdateDecision(
         }
 }
 
+typealias PlatformGameUpdateDecision = PlatformUpdateDecision
+
 enum class PlatformDistributionMarketScope(val wireName: String) {
     RF("rf"),
     GLOBAL("global");
