@@ -1,5 +1,13 @@
 # Тестирование
 
+В GitHub CI `scripts/ci/run_instrumentation.sh` запускает весь RF debug набор
+на единственном API 35 эмуляторе, задаёт системный масштаб шрифта 1.0 и передаёт
+метки сохранения A05/A07 evidence. Параметр `ciEmulatorForeground=true` разрешает
+тестовому helper вывести обычную MainActivity через shell перед проверкой
+foreground handshake. Helper дополнительно проверяет emulator hardware
+`ranchu`/`goldfish`. Без этого параметра сохраняется ручной host handshake;
+запуск на физических телефонах и их отдельные проверки не включаются.
+
 ## Полная проектная проверка
 
 ```powershell

@@ -24,4 +24,9 @@ serial=${devices[0]}
 [[ "$(adb -s "$serial" get-state)" == 'device' ]] || die 'emulator is not ready'
 [[ "$(adb -s "$serial" shell getprop sys.boot_completed | tr -d '\r')" == '1' ]] || die 'emulator boot is incomplete'
 
-./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache
+adb -s "$serial" shell settings put system font_scale 1.0
+./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache \
+    -Pandroid.testInstrumentationRunnerArguments.ciEmulatorForeground=true \
+    -Pandroid.testInstrumentationRunnerArguments.a07FontScale=1.0 \
+    -Pandroid.testInstrumentationRunnerArguments.a07EvidenceRun="ci-$GITHUB_SHA" \
+    -Pandroid.testInstrumentationRunnerArguments.a05EvidenceRun="ci-$GITHUB_SHA"

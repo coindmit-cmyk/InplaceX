@@ -42,6 +42,7 @@ class AutoTableAccessUiTest {
             instrumentation.sendStatus(0, Bundle().apply { putString("stream", "$message\n") })
         }
         status("A05_WAIT_FOREGROUND")
+        com.mirkori.inplacex.testsupport.foregroundMainActivityForCiEmulator()
         val deadline = SystemClock.elapsedRealtime() + 25_000L
         var mainResumed = false
         while (SystemClock.elapsedRealtime() < deadline && !mainResumed) {

@@ -51,6 +51,7 @@ class SocialGameShellTest {
                 val instrumentation = InstrumentationRegistry.getInstrumentation()
                 instrumentation.sendStatus(0, Bundle().apply { putString("stream", "A10_WAIT_FOREGROUND\\n") })
                 val deadline = SystemClock.elapsedRealtime() + 25_000L
+                com.mirkori.inplacex.testsupport.foregroundMainActivityForCiEmulator()
                 var mainResumed = false
                 while (SystemClock.elapsedRealtime() < deadline && !mainResumed) {
                     instrumentation.runOnMainSync {

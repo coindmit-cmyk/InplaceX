@@ -73,6 +73,7 @@ class GameTypographyTest {
             instrumentation.sendStatus(0, Bundle().apply { putString("stream", "$message\n") })
         }
         fun awaitOrdinaryMain(boundary: String) {
+            com.mirkori.inplacex.testsupport.foregroundMainActivityForCiEmulator()
             var mainResumed = false
             instrumentation.runOnMainSync {
                 mainResumed = ActivityLifecycleMonitorRegistry.getInstance()
