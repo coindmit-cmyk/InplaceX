@@ -25,6 +25,9 @@ serial=${devices[0]}
 [[ "$(adb -s "$serial" shell getprop sys.boot_completed | tr -d '\r')" == '1' ]] || die 'emulator boot is incomplete'
 
 adb -s "$serial" shell settings put system font_scale 1.0
+adb -s "$serial" shell settings put secure show_ime_with_hard_keyboard 1
+[[ "$(adb -s "$serial" shell settings get secure show_ime_with_hard_keyboard | tr -d '\r')" == '1' ]] || die 'software keyboard setting did not apply'
+adb -s "$serial" shell ime list -s
 ./gradlew :app:assembleRfDebugAndroidTest :app:connectedRfDebugAndroidTest --no-configuration-cache \
     -Pandroid.testInstrumentationRunnerArguments.ciEmulatorForeground=true \
     -Pandroid.testInstrumentationRunnerArguments.a07FontScale=1.0 \
